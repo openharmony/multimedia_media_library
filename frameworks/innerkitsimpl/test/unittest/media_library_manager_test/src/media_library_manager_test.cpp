@@ -2686,5 +2686,62 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetUrisFromFusePaths
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryExtendManager_GetUrisFromFusePaths_test_002 exit");
 }
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_CheckCloudDownloadPermission_test_001
+ * @tc.name      : Get uri
+ * @tc.desc      : CheckPermission fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckCloudDownloadPermission_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckCloudDownloadPermission_test_001 enter");
+    uint32_t tokenId = 1;
+    vector<string> uris;
+    for (int i = 0; i < 6; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+    SetSelfTokenID(tokenId);
+    vector<bool> resultSet;
+    vector<uint32_t> permissionFlags{1, 2, 3, 1, 2, 3};
+    auto ret = mediaLibraryExtendManager->CheckCloudDownloadPermission(tokenId, uris, resultSet, permissionFlags);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckCloudDownloadPermission_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_CheckCloudDownloadPermission_test_002
+ * @tc.name      : Get uri
+ * @tc.desc      : CheckPermission success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckCloudDownloadPermission_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckCloudDownloadPermission_test_002 enter");
+    uint32_t srcTokenId = 1;
+    uint32_t targetTokenId = IPCSkeleton::GetSelfTokenID();
+    vector<string> uris;
+    for (int i = 0; i < 6; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+    vector<PhotoPermissionType> permissionTypes{
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+        PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO,
+    };
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    auto ret = mediaLibraryExtendManager->GrantPhotoUriPermission(
+        srcTokenId, targetTokenId, uris, permissionTypes, SensitiveType);
+    ASSERT_EQ(ret, E_OK);
+    
+    vector<bool> resultSet;
+    vector<uint32_t> permissionFlags{1, 1, 1, 1, 1, 1};
+    ret = mediaLibraryExtendManager->CheckCloudDownloadPermission(targetTokenId, uris, resultSet, permissionFlags);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckCloudDownloadPermission_test_002 exit");
+}
 } // namespace Media
 } // namespace OHOS

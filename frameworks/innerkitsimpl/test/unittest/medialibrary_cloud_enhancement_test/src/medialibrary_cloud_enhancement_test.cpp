@@ -333,6 +333,17 @@ int32_t UpdateIsAuto(int32_t fileId, int32_t isAuto)
     return MediaLibraryPhotoOperations::Update(cmd);
 }
 
+int32_t UpdatePhotoStatus(int32_t fileId, int32_t subType, int32_t effectMode)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_SUBTYPE, subType);
+    values.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    return MediaLibraryPhotoOperations::Update(cmd);
+}
+
 void TestCloudEnhancementImage(vector<string> &columns, int32_t associateFileId, int32_t fileId, int32_t hidden,
     int32_t subtype)
 {
@@ -940,7 +951,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_004, T
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
-    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, assetRefresh);
+    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
 
     MEDIA_INFO_LOG("enhancement_callback_on_failed_004 End");
@@ -1302,6 +1313,17 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_006,
     MEDIA_INFO_LOG("manager_is_add_operation_enabled_006 End");
 }
 
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_007, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_007 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    bool ret = instance.IsAddOperationEnabled(2);
+    EXPECT_FALSE(ret);
+ 
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_007 End");
+}
+
 HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_auto_add_operation_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_handle_auto_add_operation_001 Start");
@@ -1356,6 +1378,18 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_state_changed_operatio
     int32_t ret = instance.HandleStateChangedOperation(true);
     ASSERT_EQ(ret, 0);
     MEDIA_INFO_LOG("manager_handle_state_changed_operation_001 End");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_state_changed_operation_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_handle_state_changed_operation_002 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    bool isCameraIdle = instance.isCameraIdle_;
+    int32_t ret = instance.HandleStateChangedOperation(isCameraIdle);
+    EXPECT_EQ(ret, E_OK);
+ 
+    MEDIA_INFO_LOG("manager_handle_state_changed_operation_002 End");
 }
 
 HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_net_changed_001, TestSize.Level1)
@@ -1424,11 +1458,11 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, CancelTasksInternal_Test_001, TestSiz
     int32_t fileId = PrepareHighQualityPhoto("202410011800", "cam_pic.jpg");
     ASSERT_GT(fileId, 0);
 
-    UpdateCEAvailable(fileId, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    UpdateCEAvailable(fileId, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
     int32_t ceAvailable = QueryCeAvailableByFileID(fileId);
     int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
-    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
 
     vector<string> fileIds, photoIds;
@@ -1579,7 +1613,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, RevertEditUpdateInternal_Test_001, Te
 
     ceAvailable = QueryCeAvailableByFileID(fileId);
     compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
-    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
 
     MEDIA_INFO_LOG("End RevertEditUpdateInternal_Test_001");
@@ -1787,6 +1821,46 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncCleanCompositePhoto_Test_004, Tes
     MEDIA_INFO_LOG("End SyncCleanCompositePhoto_Test_004");
 }
 
+HWTEST_F(MediaLibraryCloudEnhancementTest, SyncClearNormalPhoto_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start SyncClearNormalPhoto_Test_001");
+
+    int32_t fileId = PrepareHighQualityPhoto("202410011800", "cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::PLAIN_PICTURE));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::PLAIN_PICTURE));
+
+    bool ret = EnhancementManager::GetInstance().SyncClearNormalPhoto(fileId);
+    ASSERT_EQ(ret, true);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::PLAIN_PICTURE));
+    
+    MEDIA_INFO_LOG("End SyncClearNormalPhoto_Test_001");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, SyncClearNormalPhoto_Test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start SyncClearNormalPhoto_Test_002");
+
+    int32_t fileId = PrepareHighQualityPhoto("202410011800", "cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    bool ret = EnhancementManager::GetInstance().SyncClearNormalPhoto(fileId);
+    ASSERT_EQ(ret, true);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::PLAIN_PICTURE));
+    
+    MEDIA_INFO_LOG("End SyncClearNormalPhoto_Test_002");
+}
+
 HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start SyncDealWithCompositeDisplayStatus_Test_001");
@@ -1800,8 +1874,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Te
     system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata");
     
     bool exchange = false;
-    int32_t ret = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
-    ASSERT_EQ(ret, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT));
+    auto [newCompositeDisplayStatus, newCeAvailable] =
+        EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
+    ASSERT_EQ(newCompositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT));
+    ASSERT_EQ(newCeAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
 
     system("rm -rf  /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata");
     MEDIA_INFO_LOG("End SyncDealWithCompositeDisplayStatus_Test_001");
@@ -1820,8 +1896,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Te
     system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata");
     
     bool exchange = true;
-    int32_t ret = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
-    ASSERT_EQ(ret, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED_EDIT));
+    auto [newCompositeDisplayStatus, newCeAvailable] =
+        EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
+    ASSERT_EQ(newCompositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED_EDIT));
+    ASSERT_EQ(newCeAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
 
     system("rm -rf  /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata");
     MEDIA_INFO_LOG("End SyncDealWithCompositeDisplayStatus_Test_002");
@@ -1839,8 +1917,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Te
     system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
     
     bool exchange = false;
-    int32_t ret = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
-    ASSERT_EQ(ret, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    auto [newCompositeDisplayStatus, newCeAvailable] =
+        EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
+    ASSERT_EQ(newCompositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    ASSERT_EQ(newCeAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
 
     MEDIA_INFO_LOG("End SyncDealWithCompositeDisplayStatus_Test_003");
 }
@@ -1857,8 +1937,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Te
     system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
     
     bool exchange = true;
-    int32_t ret = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
-    ASSERT_EQ(ret, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+    auto [newCompositeDisplayStatus, newCeAvailable] =
+        EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(fileId, filePath, exchange);
+    ASSERT_EQ(newCompositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+    ASSERT_EQ(newCeAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
 
     MEDIA_INFO_LOG("End SyncDealWithCompositeDisplayStatus_Test_004");
 }
@@ -1868,10 +1950,89 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, SyncDealWithCompositeDisplayStatus_Te
     MEDIA_INFO_LOG("Start SyncDealWithCompositeDisplayStatus_Test_001");
     string filePath = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
     bool exchange = true;
-    int32_t ret = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(-10, filePath, exchange);
-    ASSERT_EQ(ret, 0);
+    auto [newCompositeDisplayStatus, newCeAvailable] =
+        EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(-10, filePath, exchange);
+    ASSERT_EQ(newCompositeDisplayStatus, 0);
+    ASSERT_EQ(newCeAvailable, 0);
 
     MEDIA_INFO_LOG("End SyncDealWithCompositeDisplayStatus_Test_005");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_auto_add_operation_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_handle_auto_add_operation_002 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 1);
+    UpdateIsAuto(fileId, 1);
+    UpdatePhotoStatus(fileId, 3, 1);
+    instance.photosAutoOption_ = "WLAN and networks";
+    instance.isCellularNetConnected_ = true;
+    int32_t ret = instance.HandleAutoAddOperation(false);
+    EXPECT_EQ(ret, E_OK);
+ 
+    UpdatePhotoStatus(fileId, 0, 1);
+    ret = instance.HandleAutoAddOperation(false);
+    EXPECT_EQ(ret, E_ERR);
+ 
+    UpdatePhotoStatus(fileId, 3, 0);
+    ret = instance.HandleAutoAddOperation(false);
+    EXPECT_EQ(ret, E_ERR);
+ 
+    ret = instance.HandleAutoAddOperation(true);
+    EXPECT_EQ(ret, E_ERR);
+ 
+    MEDIA_INFO_LOG("manager_handle_auto_add_operation_002 End");
+}
+ 
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_auto_task_enabled_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_auto_task_enabled_001 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    instance.photosAutoOption_ = "invalid";
+    bool ret = instance.IsAutoTaskEnabled();
+    EXPECT_FALSE(ret);
+    instance.photosAutoOption_ = "close";
+ 
+    MEDIA_INFO_LOG("manager_is_auto_task_enabled_001 End");
+}
+ 
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_auto_task_enabled_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_auto_task_enabled_002 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    instance.isCameraIdle_ = false;
+    bool ret = instance.IsAutoTaskEnabled();
+    EXPECT_FALSE(ret);
+    instance.photosAutoOption_ = "invalid";
+    ret = instance.IsAutoTaskEnabled();
+    EXPECT_FALSE(ret);
+    
+    instance.photosAutoOption_ = "close";
+    instance.isCameraIdle_ = true;
+ 
+    MEDIA_INFO_LOG("manager_is_auto_task_enabled_002 End");
+}
+ 
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_auto_operation_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_handle_cancel_all_auto_operation_001 Start");
+ 
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 8);
+ 
+    int32_t ret = instance.HandleCancelAllAutoOperation();
+    EXPECT_EQ(ret, E_OK);
+ 
+    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID, 0);
+    ret = instance.HandleCancelAllAutoOperation();
+    EXPECT_EQ(ret, E_OK);
+ 
+    MEDIA_INFO_LOG("manager_handle_cancel_all_auto_operation_001 End");
 }
 #endif
 } // namespace Media

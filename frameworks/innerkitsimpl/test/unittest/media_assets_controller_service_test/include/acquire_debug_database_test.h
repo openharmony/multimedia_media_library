@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
-#define OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
+#ifndef ACQUIRE_DEBUG_DATABASE_TEST_H
+#define ACQUIRE_DEBUG_DATABASE_TEST_H
 
-#include "i_media_parcelable.h"
+#include <gtest/gtest.h>
 
-#include <string>
-
-namespace OHOS::Media {
-class RemoveDatabaseDFXReqBody : public IPC::IMediaParcelable {
+namespace OHOS {
+namespace Media {
+class AcquireDebugDatabaseTest : public testing::Test {
 public:
-    std::string betaId;
-
-    bool Unmarshalling(MessageParcel &parcel) override;
-    bool Marshalling(MessageParcel &parcel) const override;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
-}  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
+} // namespace Media
+} // namespace OHOS
+#endif // ACQUIRE_DEBUG_DATABASE_TEST_H

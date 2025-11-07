@@ -15,6 +15,7 @@
 #ifndef MEDIALIBRARY_APPSTATE_OBSERVER_H
 #define MEDIALIBRARY_APPSTATE_OBSERVER_H
 
+#include <mutex>
 #include "safe_map.h"
 
 #include "app_mgr_interface.h"
@@ -43,6 +44,7 @@ class MedialibraryAppStateObserverManager {
     private:
         sptr<IAppMgr> GetAppManagerInstance();
         SafeMap<int64_t, bool> revokeMap_;
+        std::mutex mutex_;
 };
 
 class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserverStub {

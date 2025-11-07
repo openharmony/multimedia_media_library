@@ -1341,7 +1341,6 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
 
     data.needGenerateExThumbnail = false;
     data.lastLoadSource = thumbType == ThumbnailType::LCD ? SourceState::CLOUD_LCD : SourceState::CLOUD_THUMB;
-    ThumbnailUtils::HandleImageExifRotate(data);
     if (!LoadSourceFromThumbnailFd(data, fd, thumbType)) {
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());

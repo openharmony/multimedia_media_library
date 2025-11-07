@@ -118,7 +118,8 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
             return;
         }
         for (auto &obj : jsonObj) {
-            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE) {
+            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE && obj.contains(PHONE_DETAIL) &&
+                obj.at(PHONE_DETAIL).is_string()) {
                 clonePhoneName_ = obj.at(PHONE_DETAIL);
             }
         }
@@ -857,7 +858,6 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
         insertInfos.push_back(info);
     }
     InsertPhoto(insertInfos);
-    UpdateHdrMode(insertInfos);
 }
 
 void OthersCloneRestore::ReportCloneBefore()
@@ -1141,8 +1141,9 @@ void OthersCloneRestore::AnalyzeSource()
 
 size_t GetIosMovingPhotoSize(const std::string iosMovingPhotoImagePath)
 {
-    std::string iosMovingPhotoVideoPath =
-        iosMovingPhotoImagePath.substr(0, iosMovingPhotoImagePath.find_last_of(".")) + ".MOV";
+    size_t destPos = iosMovingPhotoImagePath.find_last_of(".");
+    CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, 0, "iosMovingPhotoImagePath not contain '.'");
+    std::string iosMovingPhotoVideoPath = iosMovingPhotoImagePath.substr(0, destPos) + ".MOV";
     size_t imageSize = 0;
     size_t videoSize = 0;
     (void)MediaFileUtils::GetFileSize(iosMovingPhotoImagePath, imageSize);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,19 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "remove_database_dfx_vo.h"
 
-#include "media_log.h"
+#ifndef MEDIALIBRARY_NOTIFICATION_UTILS_TEST_H
+#define MEDIALIBRARY_NOTIFICATION_UTILS_TEST_H
 
-namespace OHOS::Media {
+#include <gtest/gtest.h>
+#include <string>
 
-bool RemoveDatabaseDFXReqBody::Unmarshalling(MessageParcel &parcel)
-{
-    return parcel.ReadString(this->betaId);
-}
+namespace OHOS {
+namespace Media {
+class NotificationUtilsTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 
-bool RemoveDatabaseDFXReqBody::Marshalling(MessageParcel &parcel) const
-{
-    return parcel.WriteString(this->betaId);
-}
-}  // namespace OHOS::Media
+private:
+    std::string baseQuotaVal_;
+    std::string extraQuotaVal_;
+    std::string proactiveVal_;
+};
+} // namespace Media
+} // namespace OHOS
+#endif

@@ -96,8 +96,8 @@
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
-#include "get_database_dfx_vo.h"
-#include "remove_database_dfx_vo.h"
+#include "acquire_debug_database_vo.h"
+#include "release_debug_database_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -529,12 +529,12 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::CameraInnerAddImage
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX),
-        &MediaAssetsControllerService::GetDatabaseDFX
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE),
+        &MediaAssetsControllerService::AcquireDebugDatabase
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX),
-        &MediaAssetsControllerService::RemoveDatabaseDFX
+        static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE),
+        &MediaAssetsControllerService::ReleaseDebugDatabase
     },
 };
 
@@ -2594,44 +2594,42 @@ int32_t MediaAssetsControllerService::HeifTranscodingCheck(MessageParcel &data, 
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-int32_t MediaAssetsControllerService::GetDatabaseDFX(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AcquireDebugDatabase(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("MediaAssetsControllerService::GetDatabaseDFX enter");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX);
+    MEDIA_INFO_LOG("MediaAssetsControllerService::AcquireDebugDatabase start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
-    GetDatabaseDFXReqBody reqBody;
-    GetDatabaseDFXRespBody respBody;
+    AcquireDebugDatabaseReqBody reqBody;
+    AcquireDebugDatabaseRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetDatabaseDFX ReadRequestBody Error");
+        MEDIA_ERR_LOG("AcquireDebugDatabase ReadRequestBody Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ret = MediaAssetsService::GetInstance().GetDatabaseDFX(reqBody.betaId, respBody);
-    MEDIA_INFO_LOG("fileName: %{public}s, fileSize: %{public}s byte", respBody.fileName.c_str(),
-        respBody.fileSize.c_str());
+    ret = MediaAssetsService::GetInstance().AcquireDebugDatabase(reqBody.betaIssueId, reqBody.betaScenario, respBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to get DatabaseDFX, ret: %{public}d", ret);
+        MEDIA_ERR_LOG("MediaAssetsControllerService::AcquireDebugDatabase fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-int32_t MediaAssetsControllerService::RemoveDatabaseDFX(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::ReleaseDebugDatabase(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("MediaAssetsControllerService::RemoveDatabaseDFX enter");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX);
+    MEDIA_INFO_LOG("MediaAssetsControllerService::ReleaseDebugDatabase start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
-    RemoveDatabaseDFXReqBody reqBody;
+    ReleaseDebugDatabaseReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("RemoveDatabaseDFX ReadRequestBody Error");
+        MEDIA_ERR_LOG("ReleaseDebugDatabase ReadRequestBody Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ret = MediaAssetsService::GetInstance().RemoveDatabaseDFX(reqBody.betaId);
+    ret = MediaAssetsService::GetInstance().ReleaseDebugDatabase(reqBody.betaIssueId);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to remove DatabaseDFX, ret: %{public}d", ret);
+        MEDIA_ERR_LOG("MediaAssetsControllerService::ReleaseDebugDatabase fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);

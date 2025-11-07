@@ -26,6 +26,9 @@
 #include "medialibrary_mock_tocken.h"
 #include "medialibrary_uripermission_operations.h"
 #include "uri.h"
+#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
+#include "medialibrary_db_const_sqls.h"
 #include "vision_column.h"
 #include "photo_album_column.h"
 #include "vision_face_tag_column.h"
@@ -43,7 +46,6 @@
 #undef private
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
-#include "zip_util.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -55,6 +57,24 @@ static constexpr int32_t NOT_DISPLAY_FOR_BACKGROUND = -1;
 static constexpr int32_t ALBUM_IS_REMOVED = 1;
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
+
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_MEDIA_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    MEDIALIBRARY_TABLE,
+};
 
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
@@ -78,6 +98,8 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     g_shellToken = IPCSkeleton::GetSelfTokenID();
     MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryUnitTestUtils::CreateTestTables(rdbStore, createTableSqlLists);
 
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
@@ -90,6 +112,8 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 
 void MediaLibraryDataManagerUnitTest::TearDownTestCase(void)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryUnitTestUtils::CleanTestTables(rdbStore, testTables);
     MediaLibraryUnitTestUtils::CleanTestFiles();
     if (mockToken != nullptr) {
         delete mockToken;
@@ -2406,27 +2430,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreInvalidHDCCloudDataPos_test_001
 
     auto ret = dataManager->RestoreInvalidHDCCloudDataPos();
     EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, Data_Manager_GetDatabaseDFX_Test_001, TestSize.Level0)
-{
-    std::string betaId = "beta123";
-    std::string fileName;
-    std::string fileSize;
-    const std::string destFilePath ="/data/storage/el2/log/logpack/media_library_" + betaId + ".db.zip";
-    zipFile compressZip = Media::ZipUtil::CreateZipFile(destFilePath);
-    Media::ZipUtil::CloseZipFile(compressZip);
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    int32_t result = dataManager->GetDatabaseDFX(betaId, fileName, fileSize);
-    EXPECT_EQ(result, E_SUCCESS);
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, Data_Manager_RemoveDatabaseDFX_Test_001, TestSize.Level0)
-{
-    std::string betaId = "beta123";
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    int32_t result = dataManager->RemoveDatabaseDFX(betaId);
-    EXPECT_EQ(result, E_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS

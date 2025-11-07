@@ -296,15 +296,12 @@ int32_t MultiStagesVideoCaptureManager::SaveCameraVideo(const SaveCameraPhotoDto
 {
     MediaLibraryTracer tracer;
     tracer.Start("MultiStagesVideoCaptureManager::SaveCameraVideo");
-    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}d", dto.fileId);
+    MEDIA_ERR_LOG("MultistagesCapture, start save fileId: %{public}d", dto.fileId);
 
     int32_t ret = UpdateIsTempAndDirty(dto.fileId, dto.photoSubType);
-    if (dto.path.empty()) {
-        MEDIA_ERR_LOG("path is empty.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!(dto.path.empty()), E_ERR, "path is empty.");
     MediaLibraryAssetOperations::ScanFile(dto.path, false, true, true, dto.fileId);
-    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}d, ret: %{public}d", dto.fileId, ret);
+    MEDIA_ERR_LOG("MultistagesCapture Success, fileId: %{public}d, ret: %{public}d", dto.fileId, ret);
     return ret;
 }
 } // Media

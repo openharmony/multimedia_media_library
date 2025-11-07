@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "MediaAssetsControllerServiceTest"
 
-#include "remove_database_dfx_test.h"
+#include "acquire_debug_database_test.h"
 
 #include <string>
 #include <vector>
@@ -27,8 +27,7 @@
 #undef protected
 
 #include "medialibrary_data_manager.h"
-#include "remove_database_dfx_vo.h"
-#include "get_database_dfx_vo.h"
+#include "acquire_debug_database_vo.h"
 #include "media_assets_service.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_rdbstore.h"
@@ -58,72 +57,59 @@ static int32_t ClearTable(const string &table)
     return E_OK;
 }
 
-void RemoveDatabaseDFXTest::SetUpTestCase(void)
+void AcquireDebugDatabaseTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     controllerService = make_shared<MediaAssetsControllerService>();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
+        MEDIA_ERR_LOG("Start AcquireDebugDatabaseTest failed, can not get g_rdbStore");
         exit(1);
     }
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
-void RemoveDatabaseDFXTest::TearDownTestCase(void)
+void AcquireDebugDatabaseTest::TearDownTestCase(void)
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
-void RemoveDatabaseDFXTest::SetUp()
+void AcquireDebugDatabaseTest::SetUp()
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("SetUp");
 }
 
-void RemoveDatabaseDFXTest::TearDown(void)
+void AcquireDebugDatabaseTest::TearDown(void)
 {
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(RemoveDatabaseDFXTest, RemoveDatabaseDFX_Test_001, TestSize.Level0)
+HWTEST_F(AcquireDebugDatabaseTest, AcquireDebugDatabase_Test_001, TestSize.Level0)
 {
     MessageParcel data;
     MessageParcel reply;
 
-    int32_t ret = controllerService->RemoveDatabaseDFX(data, reply);
+    int32_t ret = controllerService->AcquireDebugDatabase(data, reply);
     EXPECT_NE(ret, E_OK);
 }
 
-HWTEST_F(RemoveDatabaseDFXTest, RemoveDatabaseDFX_Test_002, TestSize.Level0)
+HWTEST_F(AcquireDebugDatabaseTest, AcquireDebugDatabase_Test_002, TestSize.Level0)
 {
-    // 测试失败分支
+    // 测试调用成功
     MessageParcel data;
     MessageParcel reply;
-    RemoveDatabaseDFXReqBody reqBody;
-    std::string betaId = "123456789";
-    reqBody.betaId = betaId;
+    AcquireDebugDatabaseReqBody reqBody;
+    reqBody.betaIssueId = "123";
+    reqBody.betaScenario = "1025_1041_1018";
     bool isValid = reqBody.Marshalling(data);
-    int32_t ret = controllerService->RemoveDatabaseDFX(data, reply);
-    EXPECT_EQ(ret, E_FILE_OPER_FAIL);
-    // 构建测试成功条件
-    MessageParcel data0;
-    MessageParcel reply0;
-    GetDatabaseDFXReqBody reqBody0;
-    reqBody0.betaId = betaId;
-    isValid = reqBody0.Marshalling(data0);
-    ret = controllerService->GetDatabaseDFX(data0, reply0);
-    // 测试成功分支
-    MessageParcel data1;
-    MessageParcel reply1;
-    isValid = reqBody.Marshalling(data1);
     EXPECT_EQ(isValid, true);
-    ret = controllerService->RemoveDatabaseDFX(data1, reply1);
-    EXPECT_EQ(ret, E_OK);
+    int32_t ret = controllerService->AcquireDebugDatabase(data, reply);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 }  // namespace OHOS::Media

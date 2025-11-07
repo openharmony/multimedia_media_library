@@ -405,6 +405,7 @@ napi_value FileAssetNapi::AttachCreateFileAsset(napi_env env, std::shared_ptr<Fi
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset)
 {
     if (iAsset == nullptr) {
+        NAPI_ERR_LOG("CreateFileAsset iAsset is null");
         return nullptr;
     }
 
@@ -5467,7 +5468,7 @@ static void GetEditDataString(char* editDataBuffer, string& result)
 
     nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
-        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID) && editDataJson[EDIT_DATA].is_string()) {
         // edit data saved by media change request
         result = editDataJson.at(EDIT_DATA);
     } else {

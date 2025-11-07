@@ -226,6 +226,10 @@ CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
     return instance;
 }
 
+CloudMediaAssetManager::CloudMediaAssetManager() {}
+
+CloudMediaAssetManager::~CloudMediaAssetManager() {}
+
 int32_t CloudMediaAssetManager::CheckDownloadTypeOfTask(const CloudMediaDownloadType &type)
 {
     if (static_cast<int32_t>(type) < static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE) ||
@@ -278,7 +282,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
     bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
     CHECK_AND_RETURN_RET(!cond, E_ERR);
 
-    operation_->ResetDownloadTryTime();
+    CHECK_AND_EXECUTE(cause != CloudMediaTaskRecoverCause::NETWORK_NORMAL, operation_->ResetDownloadTryTime());
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
     CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, OHOS::Media::E_OK,
         "The task status is download, no need to recover.");
@@ -579,7 +583,6 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "BackupAlbumOrderInfo failed. rdbStore is null.");
 
-    int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     std::string subWhereClause =
         "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
@@ -596,6 +599,7 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
     std::vector<NativeRdb::ValuesBucket> values;
+    int32_t rowCount = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         ValuesBucket value;
 
@@ -616,10 +620,14 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
         value.PutInt("style2_order_section", section2);
         
         values.emplace_back(value);
+        rowCount++;
+    }
+    if (rowCount != 0) {
+        int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
     }
     int64_t insertNum = 0;
     if (!values.empty()) {
-        ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
+        int32_t ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
     }
     MEDIA_INFO_LOG("End_BackupAlbumOrderInfo");
     return OHOS::Media::E_OK;
@@ -883,7 +891,9 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
         CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "hdc force retain. ret %{public}d.", ret);
     }
     if (CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        MEDIA_INFO_LOG("cloud sync manager start reset cursor");
         FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor(true);
+        MEDIA_INFO_LOG("cloud sync manager end reset cursor");
     }
     SetSouthDeviceSyncSwitchStatus(CloudSyncStatus::SYNC_SWITCHED_OFF);
 

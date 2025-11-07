@@ -39,10 +39,14 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_data_manager.h"
 #include "others_clone_restore.h"
 #include "photos_dao.h"
 #include "photos_data_handler.h"
 #include "burst_key_generator.h"
+#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
+#include "story_db_sqls.h"
 #undef protected
 #undef private
 #include "parameters.h"
@@ -85,26 +89,45 @@ const int32_t TEST_ORIENTATION_ZERO = 0;
 const int32_t TEST_ORIENTATION_NINETY = 90;
 const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 const int32_t PAGE_SIZE = 200;
-const vector<string> CLEAR_SQLS = {
-    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
-    "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
-        to_string(PhotoAlbumType::SYSTEM),
-    "DELETE FROM " + PhotoMap::TABLE,
-    "DELETE FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_SUBTYPE + " != " +
-        to_string(PhotoAlbumSubType::SHOOTING_MODE),
-    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
-    "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
-    "DELETE FROM " + GEO_DICTIONARY_TABLE,
-    "DELETE FROM " + SEGMENTATION_ANALYSIS_TABLE,
-    "DELETE FROM " + VISION_LABEL_TABLE,
-    "DELETE FROM " + VISION_VIDEO_LABEL_TABLE,
-    "DELETE FROM " + GEO_KNOWLEDGE_TABLE,
-    "DELETE FROM " + VISION_TOTAL_TABLE,
-    "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE,
-    "DELETE FROM " + ANALYSIS_VIDEO_FACE_TABLE,
-    "DELETE FROM " + ANALYSIS_BEAUTY_SCORE_TABLE,
-    "DELETE FROM " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME,
+
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoMap::CREATE_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    AudioColumn::CREATE_AUDIO_TABLE,
+    CREATE_GEO_DICTIONARY_TABLE,
+    CREATE_SEGMENTATION_ANALYSIS_TABLE,
+    CREATE_TAB_ANALYSIS_LABEL,
+    CREATE_TAB_ANALYSIS_VIDEO_LABEL,
+    CREATE_GEO_KNOWLEDGE_TABLE,
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_SEARCH_INDEX_TBL,
+    CREATE_VIDEO_FACE_TBL,
+    CREATE_AESTHETICS_SCORE_TBL,
+    ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
 };
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    PhotoMap::TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    AudioColumn::AUDIOS_TABLE,
+    GEO_DICTIONARY_TABLE,
+    SEGMENTATION_ANALYSIS_TABLE,
+    VISION_LABEL_TABLE,
+    VISION_VIDEO_LABEL_TABLE,
+    GEO_KNOWLEDGE_TABLE,
+    VISION_TOTAL_TABLE,
+    ANALYSIS_SEARCH_INDEX_TABLE,
+    ANALYSIS_VIDEO_FACE_TABLE,
+    ANALYSIS_BEAUTY_SCORE_TABLE,
+    ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME,
+};
+
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
 };
@@ -173,7 +196,7 @@ void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sq
 void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
@@ -216,6 +239,7 @@ void MediaLibraryBackupCloneTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
     MEDIA_INFO_LOG("Start init restoreService");
     restoreService = make_unique<CloneRestore>();
     restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
@@ -224,9 +248,10 @@ void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 void MediaLibraryBackupCloneTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
-    ClearData();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
     restoreService->mediaLibraryRdb_ = nullptr;
     MediaFileUtils::DeleteDir(CONFIG_DB_DIRECTOYR);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
@@ -235,6 +260,7 @@ void MediaLibraryBackupCloneTest::SetUp()
     OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP));
     OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP));
     OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP));
+    ClearData();
 }
 
 void MediaLibraryBackupCloneTest::TearDown(void) {}
@@ -242,7 +268,6 @@ void MediaLibraryBackupCloneTest::TearDown(void) {}
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_restore_test_001");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -255,7 +280,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_table_column_status_test_002");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
@@ -282,7 +306,6 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_002 start");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -389,7 +412,6 @@ int32_t GetAlbumOrMapTotalCount(shared_ptr<NativeRdb::RdbStore> rdbStore,
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_table_column_status_test_003");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -402,7 +424,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_audio_test_001 start");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -427,7 +448,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_audio_test_002 start");
     int32_t count = 3;
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1777,8 +1797,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_DICTIONARY_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1832,8 +1850,6 @@ void MediaLibraryBackupCloneTest::VerifyGeoDictionaryRestore(const std::shared_p
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_002");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_DICTIONARY_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1863,8 +1879,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_003");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_DICTIONARY_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1890,8 +1904,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_004");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_DICTIONARY_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1910,8 +1922,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_005");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_DICTIONARY_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -1949,8 +1959,6 @@ void InitPhotoInfoMap(unique_ptr<CloneRestore> &cloneRestoreService, int32_t fil
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2023,8 +2031,6 @@ void MediaLibraryBackupCloneTest::VerifyClassifyVideoRestore(const std::shared_p
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_002");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2062,8 +2068,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_003");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2090,8 +2094,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_004");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2121,8 +2123,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_005");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2145,8 +2145,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_006");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2165,8 +2163,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_007");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2186,8 +2182,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_008");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList;
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2207,8 +2201,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_009");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2769,8 +2761,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_tes
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2789,8 +2779,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_002");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2810,7 +2798,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_003");
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList;
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2830,8 +2817,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_004");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -2853,7 +2838,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_001");
-    ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
@@ -2865,7 +2849,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_002");
-    ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
@@ -2877,7 +2860,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_003");
-    ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
@@ -3037,8 +3019,6 @@ void MediaLibraryBackupCloneTest::VerifySearchIndexRestore(const std::shared_ptr
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_search_index_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_search_index_test_001");
-    ClearData();
-
     CloneSource cloneSource;
     vector<string> tableList = { ANALYSIS_SEARCH_INDEX_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3123,8 +3103,6 @@ void MediaLibraryBackupCloneTest::VerifyBeautyScoreRestore(const std::shared_ptr
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_score_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_beauty_score_test_001");
-    ClearData();
-
     CloneSource cloneSource;
     vector<string> tableList = { ANALYSIS_BEAUTY_SCORE_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3191,8 +3169,6 @@ static void VerifyVideoFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& d
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_face_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_video_face_test_001");
-    ClearData();
-
     CloneSource cloneSource;
     vector<string> tableList = { ANALYSIS_VIDEO_FACE_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3215,7 +3191,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_fa
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_001");
-    ClearData();
     CloneSource cloneSource;
     vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3232,7 +3207,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_002");
-    ClearData();
     CloneSource cloneSource;
     vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3258,7 +3232,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_003");
-    ClearData();
     CloneSource cloneSource;
     vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3287,7 +3260,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_004");
-    ClearData();
     CloneSource cloneSource;
     vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3411,8 +3383,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_release_001, Tes
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_face_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_query_old_no_face_status_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3444,8 +3414,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_fac
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_face_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_query_old_no_face_status_test_002");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3465,8 +3433,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_fac
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_face_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_new_no_face_status_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3525,8 +3491,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_fa
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_face_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_new_no_face_status_test_002");
-
-    ClearData();
     auto newRdbStore = g_rdbStore->GetRaw();
     ASSERT_NE(newRdbStore, nullptr);
 
@@ -3542,8 +3506,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_fa
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_face_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_total_no_face_status_test_001");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3601,8 +3563,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_face_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_total_no_face_status_test_002");
-
-    ClearData();
     CloneSource cloneSource;
     vector<string> tableList = { VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
@@ -3681,8 +3641,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_update_config_info_test_002, 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_asset_map_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_asset_map_test_001");
-    ClearData();
-
     CloneSource cloneSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);

@@ -33,6 +33,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "../medialibrary_unittest_utils/include",

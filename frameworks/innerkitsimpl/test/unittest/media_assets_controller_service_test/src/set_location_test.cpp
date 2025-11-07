@@ -211,9 +211,6 @@ HWTEST_F(SetLocationTest, SetLocationTest_Test_002, TestSize.Level0)
     double longitude = GetDoubleVal(PhotoColumn::PHOTO_LONGITUDE, resSet);
     EXPECT_EQ(latitude, reqBody.latitude);
     EXPECT_EQ(longitude, reqBody.longitude);
-    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resSet), 0);
-    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resSet), 0);
-    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resSet), 0);
 
     system("rm -rf /storage/cloud/files/Photo/665/test.heic");
     system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");

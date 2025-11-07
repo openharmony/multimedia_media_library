@@ -12,21 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef GET_DATABASE_DFX_TEST_H
-#define GET_DATABASE_DFX_TEST_H
-
-#include <gtest/gtest.h>
-
-namespace OHOS {
-namespace Media {
-class GetDatabaseDFXTest : public testing::Test {
+ 
+#ifndef MEDIALIBRARY_VIDEO_MODE_TEST_H
+#define MEDIALIBRARY_VIDEO_MODE_TEST_H
+ 
+#include "gtest/gtest.h"
+ 
+#include <string>
+#include <vector>
+#include <map>
+ 
+namespace OHOS::Media::Background {
+class MediaLibraryVideoModeTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
 };
-} // namespace Media
-} // namespace OHOS
-#endif // GET_DATABASE_DFX_TEST_H
+}  // namespace OHOS::Media::Background
+#endif  // MEDIA_LIBRARY_VIDEO_MODE_TEST_H

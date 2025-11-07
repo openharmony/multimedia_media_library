@@ -40,6 +40,8 @@ public:  // getter & setter
     std::string GetTraceId() const override;
     void SetUserId(const int32_t &userId) override;
     void SetCloudType(const int32_t cloudType) override;
+    void SetCloudSpaceFull(bool isCloudSpaceFull) override;
+    bool IsCloudSpaceFull() override;
 
 public:
     int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,

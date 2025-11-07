@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 375;
+const int32_t MEDIA_RDB_VERSION = 379;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -265,6 +265,10 @@ enum {
     VERSION_UPDATE_BURST_MODE_ALBUM_INDEX = 373,
     VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED = 374,
     VERSION_ADD_IMAGE_FACE_DETAIL = 375,
+    VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS = 376,
+    VERSION_ADD_BATCH_DOWNLOAD = 377,
+    VERSION_VIDEO_MODE = 378,
+    VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX = 379,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -295,8 +299,9 @@ const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 
 constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
 
-const std::string MEDIA_DATA_DFX_BETA_ID = "beta_id";
-const std::string MEDIA_DATA_DFX_FILE_FD = "file_fd";
+const std::string MEDIA_DATA_BETA_ISSUE_ID = "beta_issue_id";
+const std::string MEDIA_DATA_BETA_SCENARIO = "beta_scenario";
+const std::string MEDIA_DATA_BETA_DEBUG_DB_FD = "beta_debug_db_fd";
 const std::string MEDIA_DATA_DB_ID = "file_id";
 const std::string MEDIA_DATA_DB_URI = "uri";
 const std::string MEDIA_DATA_DB_FILE_PATH = "data";

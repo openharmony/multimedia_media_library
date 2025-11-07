@@ -25,6 +25,7 @@
 
 namespace OHOS::Media {
 struct RestoreTaskInfo {
+    std::string dbPath;
     std::string albumLpath;
     std::string keyPath;
     bool isDeduplication;
@@ -74,6 +75,25 @@ struct UniqueNumber {
     int32_t videoCurrentNumber = 0;
 };
 
+struct TimeInfo {
+    int64_t dateAdded{0};
+    int64_t dateTaken{0};
+    std::string detailTime;
+};
+
+class ShareRestoreRdbCallback : public NativeRdb::RdbOpenCallback {
+public:
+    virtual int32_t OnCreate(NativeRdb::RdbStore &rdb) override
+    {
+        return 0;
+    }
+
+    virtual int32_t OnUpgrade(NativeRdb::RdbStore &rdb, int32_t oldVersion, int32_t newVersion) override
+    {
+        return 0;
+    }
+};
+
 const std::string CUSTOM_RESTORE_DIR = ROOT_MEDIA_DIR + CUSTOM_RESTORE_VALUES;
 const int MAX_RESTORE_FILE_NUM = 200;
 const int MAX_RESTORE_THREAD_NUM = 2;
@@ -104,20 +124,23 @@ private:
     void DoCustomRestore(RestoreTaskInfo &restoreTaskInfo);
     void InitRestoreTask(RestoreTaskInfo &restoreTaskInfo, int32_t fileNum);
     void ReleaseCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
-    int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
-        UniqueNumber &uniqueNumber);
-    bool HandleFirstRestoreFile(
-        RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
-    void HandleBatchCustomRestore(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles);
-    vector<FileInfo> GetFileInfos(vector<string> &filePathVector, UniqueNumber &uniqueNumber);
+    int32_t HandleCustomRestore(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
+        const vector<string> &filePathVector, bool isFirst, UniqueNumber &uniqueNumber);
+    bool HandleFirstRestoreFile(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
+        const vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
+    void HandleBatchCustomRestore(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
+        int32_t notifyType, const vector<string> &subFiles);
+    vector<FileInfo> GetFileInfos(const vector<string> &filePathVector, UniqueNumber &uniqueNumber);
     int32_t UpdateUniqueNumber(UniqueNumber &uniqueNumber);
     int32_t CreateAssetUniqueNumber(int32_t type, UniqueNumber &uniqueNumber);
     vector<FileInfo> SetDestinationPath(vector<FileInfo> &restoreFiles, UniqueNumber &uniqueNumber);
     void GetAssetRootDir(int32_t mediaType, string &rootDirPath);
-    vector<FileInfo> BatchInsert(
-        RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst);
-    NativeRdb::ValuesBucket GetInsertValue(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
-    int32_t FillMetadata(std::unique_ptr<Metadata> &data);
+    vector<FileInfo> BatchInsert(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
+        vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst);
+    NativeRdb::ValuesBucket GetInsertValue(
+        const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
+    int32_t FillMetadata(
+        const unordered_map<string, TimeInfo> &timeInfoMap, const FileInfo &fileInfo, std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(const vector<FileInfo> &restoreFiles);
     int32_t BatchUpdateTimePending(const vector<FileInfo> &restoreFiles,
@@ -137,6 +160,9 @@ private:
     int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
     void DeleteDatabaseRecord(const string &filePath);
     int32_t GetAlbumInfoBySubType(int32_t subType, string &albumUri, int32_t &albumId);
+    unordered_map<string, TimeInfo> QueryMediaInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    unordered_map<string, TimeInfo> GetTimeInfoMap(RestoreTaskInfo &restoreTaskInfo);
+    void SetTimeInfo(const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value);
 
 private:
     std::atomic<bool> isRunning_{false};

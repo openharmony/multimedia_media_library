@@ -59,6 +59,7 @@ public:
     std::optional<std::string> shootingModeTag;       // PhotoColumn::PHOTO_SHOOTING_MODE_TAG;
     std::optional<int32_t> dynamicRangeType;          // PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE;
     std::optional<int32_t> hdrMode;                   // PhotoColumn::PHOTO_HDR_MODE;
+    std::optional<int32_t> videoMode;                 // PhotoColumn::PHOTO_VIDEO_MODE;
     std::optional<std::string> frontCamera;           // PhotoColumn::PHOTO_FRONT_CAMERA;
     std::optional<std::string> detailTime;            // PhotoColumn::PHOTO_DETAIL_TIME;
     std::optional<int64_t> editTime;                  // PhotoColumn::PHOTO_EDIT_TIME;

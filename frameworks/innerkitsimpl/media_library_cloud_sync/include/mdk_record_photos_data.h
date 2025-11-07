@@ -127,6 +127,8 @@ public:  // attributes getter & setter
     MDKRecordPhotosData &SetDynamicRangeType(const int32_t dynamicRangeType);
     std::optional<int32_t> GetHdrMode() const;
     MDKRecordPhotosData &SetHdrMode(const int32_t hdrMode);
+    std::optional<int32_t> GetVideoMode() const;
+    MDKRecordPhotosData &SetVideoMode(const int32_t videoMode);
     std::optional<std::string> GetFrontCamera() const;
     MDKRecordPhotosData &SetFrontCamera(const std::string &frontCamera);
     std::optional<int64_t> GetEditTime() const;
@@ -209,6 +211,7 @@ private:
     const std::string FILE_EDIT_DATA = "editData";
     const std::string FILE_MIME_TYPE = "mimeType";
     const std::string FILE_EDIT_DATA_CAMERA = "editDataCamera";
+    const std::string VIDEO_MODE = "video_mode";
 
     /* attributes */
     const std::string FILE_FIX_VERSION = "fix_version";

@@ -63,6 +63,7 @@ void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Wa
     pickerCallBack_->displayName = result.GetStringParam("displayName");
     pickerCallBack_->recommendationType = result.GetIntParam("recommendationType", 0);
     pickerCallBack_->selectedRecommendationType = result.GetIntParam("selectedRecommendationType", 0);
+    pickerCallBack_->movingPhotoBadgeStates = result.GetIntArrayParam("select-item-moving-enabled");
 }
 
 void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)

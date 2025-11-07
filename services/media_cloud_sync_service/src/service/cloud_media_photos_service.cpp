@@ -41,7 +41,6 @@
 #include "cloud_media_sync_const.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dfx_service.h"
-#include "enhancement_manager.h"
 #include "background_cloud_batch_selected_file_processor.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
@@ -125,7 +124,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
 
 int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pullData, bool &changed)
 {
-    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs != -1) {
+    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs > 0) {
         std::string cloudDateModified = std::to_string(pullData.attributesEditedTimeMs);
         MEDIA_INFO_LOG("localDateModified: %{public}s, attributesEditedTimeMs: %{public}s",
             pullData.localDateModified.c_str(),
@@ -182,7 +181,7 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
         // for cloud enhancement composite photo
-        if (EnhancementManager::GetInstance().IsCloudEnhancementSupposed() &&
+        if (CloudMediaSyncUtils::IsCloudEnhancementSupported() &&
             PhotoFileUtils::IsEditDataSourceBackExists(pullData.localPath)) {
             CloudMediaSyncUtils::BackUpEditDataSourcePath(pullData.localPath);
         }
@@ -694,7 +693,6 @@ int32_t CloudMediaPhotosService::OnDentryFileInsert(
 
 int32_t CloudMediaPhotosService::GetRetryRecords(std::vector<std::string> &cloudIds)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords enter");
     int32_t ret = this->photosDao_.GetRetryRecords(cloudIds);
     MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords end, "
                    "ret: %{public}d, size: %{public}zu",

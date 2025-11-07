@@ -38,7 +38,7 @@ struct GalleryOCRInfo {
 
 class OCRRestore {
 public:
-    void Init(int32_t sceneCode, std::string taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    void Init(int32_t sceneCode, const std::string& taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
     void RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 

@@ -53,6 +53,7 @@ public:
     static bool IsPhotoInProcess(const std::string &photoId);
     static int32_t UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType);
     static std::string GetProcessingPhotoId(int32_t fileId);
+    static int32_t GetProcessingFileId(const std::string &photoId, int32_t &fileId);
 
 private:
     // key: file_id, value: photo_id

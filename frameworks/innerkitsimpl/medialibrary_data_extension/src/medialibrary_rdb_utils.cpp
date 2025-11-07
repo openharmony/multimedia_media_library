@@ -2002,7 +2002,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         MEDIA_INFO_LOG("Start trashed album, album id is: %{public}s", albumId.c_str());
         const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id, data, display_name FROM"
             " Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag = 0 AND hidden = 0";
+            " AND clean_flag = 0 AND hidden = 0 AND sync_status = 0 AND date_trashed = 0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2025,7 +2025,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
 
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
-        predicatesPhotos.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
         predicatesPhotos.And()->In(MediaColumn::MEDIA_ID, fileAssetsIds);
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
@@ -2344,8 +2343,8 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
     UpdateAnalysisAlbumInternal(rdbStore, albumIds);
 }
 
-static void UpdateCommonAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &albumIds = {})
+void MediaLibraryRdbUtils::UpdateCommonAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const vector<string> &albumIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCommonAlbumHiddenState");

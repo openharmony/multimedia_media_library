@@ -34,7 +34,6 @@ bool MultiThreadAssetChangeInfoMgr::CheckInsertBeforeInfo(PhotoAssetChangeInfo& 
         multiThreadChangeData.count_ = 1;
         multiThreadChangeData.infoBefore_ = info;
         assetChangeDataMap_.emplace(info.fileId_, multiThreadChangeData);
-        ACCURATE_DEBUG("first insert fieldId[%{public}d]", info.fileId_);
         return false;
     }
 
@@ -68,7 +67,7 @@ bool MultiThreadAssetChangeInfoMgr::CheckInsertAfterInfo(PhotoAssetChangeInfo& i
     }
     if (!multiThreadChangeData.isMultiOperation_) {
         assetChangeDataMap_.erase(iter);
-        ACCURATE_DEBUG("no multi thread, remove fieldId[%{public}d]", info.fileId_);
+        MEDIA_DEBUG_LOG("no multi thread, remove fieldId[%{public}d]", info.fileId_);
         return false;
     }
     multiThreadChangeData.infoAfter_ = info;

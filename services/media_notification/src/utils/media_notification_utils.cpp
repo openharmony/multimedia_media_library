@@ -19,6 +19,7 @@
 #include <securec.h>
 #include "media_log.h"
 #include "parcel.h"
+#include "parameters.h"
 #include "media_change_info.h"
 #include "medialibrary_errno.h"
 
@@ -26,6 +27,18 @@ namespace OHOS::Media {
 using namespace Notification;
 const size_t MAX_PARCEL_SIZE = 200 * 1024 * 0.95;
 const uint64_t INTERVAL_TIME_MS = 10;
+
+const std::string PARAM_NEED_DC_BASE_QUOTA_ANALYSIS = "persist.multimedia.media_analysis.dc_base_quota_analysis";
+const std::string NO_NEED_DC_BASE_QUOTA_ANALYSIS = "0";
+const std::string NEED_DC_BASE_QUOTA_ANALYSIS = "1";
+
+const std::string PARAM_NEED_DC_EXTRA_QUOTA_ANALYSIS = "persist.multimedia.media_analysis.dc_extra_quota_analysis";
+const std::string NO_NEED_DC_EXTRA_QUOTA_ANALYSIS = "0";
+const std::string NEED_DC_EXTRA_QUOTA_ANALYSIS = "1";
+
+const std::string PARAM_NEED_DC_PROACTIVE_ANALYSIS = "persist.multimedia.media_analysis.dc_proactive_analysis";
+const std::string NO_NEED_DC_PROACTIVE_ANALYSIS = "0";
+const std::string NEED_DC_PROACTIVE_ANALYSIS = "1";
 
 struct MarshallingPtrVisitor {
     std::shared_ptr<Parcel> &parcel;
@@ -175,5 +188,38 @@ int32_t NotificationUtils::SendDownloadProgressInfoNotification(const sptr<AAFwk
         "dataObserver or changeInfo is nullptr");
     dataObserver->OnChangeExt(*changeInfo);
     return E_OK;
+}
+
+void NotificationUtils::UpdateNotificationProp()
+{
+    if (system::GetParameter(PARAM_NEED_DC_BASE_QUOTA_ANALYSIS, NO_NEED_DC_BASE_QUOTA_ANALYSIS) !=
+        NEED_DC_BASE_QUOTA_ANALYSIS) {
+        bool isSet = system::SetParameter(PARAM_NEED_DC_BASE_QUOTA_ANALYSIS, NEED_DC_BASE_QUOTA_ANALYSIS);
+        if (isSet) {
+            MEDIA_DEBUG_LOG("set %{public}s success", PARAM_NEED_DC_BASE_QUOTA_ANALYSIS.c_str());
+        } else {
+            MEDIA_WARN_LOG("set %{public}s failed", PARAM_NEED_DC_BASE_QUOTA_ANALYSIS.c_str());
+        }
+    }
+
+    if (system::GetParameter(PARAM_NEED_DC_EXTRA_QUOTA_ANALYSIS, NO_NEED_DC_EXTRA_QUOTA_ANALYSIS) !=
+        NEED_DC_EXTRA_QUOTA_ANALYSIS) {
+        bool isSet = system::SetParameter(PARAM_NEED_DC_EXTRA_QUOTA_ANALYSIS, NEED_DC_EXTRA_QUOTA_ANALYSIS);
+        if (isSet) {
+            MEDIA_DEBUG_LOG("set %{public}s success", PARAM_NEED_DC_EXTRA_QUOTA_ANALYSIS.c_str());
+        } else {
+            MEDIA_WARN_LOG("set %{public}s failed", PARAM_NEED_DC_EXTRA_QUOTA_ANALYSIS.c_str());
+        }
+    }
+
+    if (system::GetParameter(PARAM_NEED_DC_PROACTIVE_ANALYSIS, NO_NEED_DC_PROACTIVE_ANALYSIS) !=
+        NEED_DC_PROACTIVE_ANALYSIS) {
+        bool isSet = system::SetParameter(PARAM_NEED_DC_PROACTIVE_ANALYSIS, NEED_DC_PROACTIVE_ANALYSIS);
+        if (isSet) {
+            MEDIA_DEBUG_LOG("set %{public}s success", PARAM_NEED_DC_PROACTIVE_ANALYSIS.c_str());
+        } else {
+            MEDIA_WARN_LOG("set %{public}s failed", PARAM_NEED_DC_PROACTIVE_ANALYSIS.c_str());
+        }
+    }
 }
 } // OHOS::Media

@@ -170,7 +170,7 @@ public:
 
     EXPORT int32_t mediaType {-1};
     EXPORT int32_t orientation {0};
-    EXPORT int32_t exifRotate {0};
+    EXPORT int32_t exifRotate {-1};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
     EXPORT int32_t dirty {-1};

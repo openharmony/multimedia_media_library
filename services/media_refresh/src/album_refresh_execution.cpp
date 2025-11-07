@@ -716,6 +716,7 @@ int32_t AlbumRefreshExecution::RefreshAllAlbum(std::unordered_set<int32_t> album
     MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT, {}, notifyAlbumType);
     MediaLibraryRdbUtils::UpdateCommonAlbumInternal(rdbStore, albumIdList, (notifyAlbumType & USER_ALBUM) ||
         (notifyAlbumType & SOURCE_ALBUM), isRefreshWithDateModified);
+    MediaLibraryRdbUtils::UpdateCommonAlbumHiddenState(rdbStore, albumIdList);
     return ACCURATE_REFRESH_RET_OK;
 }
 

@@ -290,6 +290,20 @@ int32_t MediaAssetsService::AssetChangeSetLocation(const SetLocationDto &dto)
     return E_OK;
 }
 
+int32_t MediaAssetsService::UpdateExistedTasksTitle(int32_t fileId)
+{
+    MEDIA_INFO_LOG("UpdateExistedTasksTitle In fileId: %{public}d", fileId);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateExistedTasksTitle Failed to get rdbStore.");
+    const std::string UPDATE_DISPLAY_NAME_IN_DOWNLOADTASK = "UPDATE " + DownloadResourcesColumn::TABLE +
+        " SET " + DownloadResourcesColumn::MEDIA_NAME + "=" + "(SELECT " + MediaColumn::MEDIA_NAME + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + "=" +
+        std::to_string(fileId) + ")  WHERE " + DownloadResourcesColumn::MEDIA_ID + "=" + std::to_string(fileId);
+    int32_t ret = rdbStore->ExecuteSql(UPDATE_DISPLAY_NAME_IN_DOWNLOADTASK);
+    MEDIA_INFO_LOG("UpdateExistedTasksTitle End ret: %{public}d", ret);
+    return ret;
+}
+
 int32_t MediaAssetsService::AssetChangeSetTitle(const int32_t fileId, const std::string &title)
 {
     DataShare::DataSharePredicates predicate;
@@ -305,7 +319,9 @@ int32_t MediaAssetsService::AssetChangeSetTitle(const int32_t fileId, const std:
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    return MediaLibraryPhotoOperations::Update(cmd);
+    int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
+    UpdateExistedTasksTitle(fileId);
+    return ret;
 }
 
 int32_t MediaAssetsService::AssetChangeSetEditData(const NativeRdb::ValuesBucket &values)
@@ -532,6 +548,33 @@ int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLin
     return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
 }
 
+int32_t MediaAssetsService::SubmitMetadataChanged(const int32_t fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId))
+        ->And()
+        ->NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL))
+        ->And()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED))
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY))
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_TDIRTY))
+        ->EndWrap();
+    
+    int32_t updateRows = -1;
+    int32_t ret = rdbStore->Update(updateRows, values, predicates);
+    MEDIA_INFO_LOG("SubmitMetadataChanged executed ret: %{public}d, updateRows: %{public}d", ret, updateRows);
+    return ret;
+}
+
 int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType)
 {
     MediaLibraryCommand cmd(
@@ -548,7 +591,11 @@ int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, cons
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    return MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
+    int32_t updateRows = MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
+    CHECK_AND_RETURN_RET_LOG(updateRows > 0, updateRows,
+        "UpdateSupportedWatermarkType failed. updateRows: %{public}d", updateRows);
+    SubmitMetadataChanged(fileId);
+    return updateRows;
 }
 
 int32_t MediaAssetsService::SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode)
@@ -831,7 +878,9 @@ int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &tit
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    return MediaLibraryPhotoOperations::Update(cmd);
+    int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
+    UpdateExistedTasksTitle(fileId);
+    return ret;
 }
 
 int32_t MediaAssetsService::SetAssetPending(int32_t fileId, int32_t pending)
@@ -1277,7 +1326,7 @@ shared_ptr<NativeRdb::ResultSet> MediaAssetsService::GetCloudEnhancementPair(con
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleGetPairOperation(cmd);
 #else
-    return E_ERR;
+    return nullptr;
 #endif
 }
 
@@ -1474,6 +1523,7 @@ int32_t MediaAssetsService::GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getU
 int32_t MediaAssetsService::Restore(const RestoreDto &dto)
 {
     NativeRdb::ValuesBucket values;
+    values.PutString("dbPath", dto.dbPath);
     values.PutString("albumLpath", dto.albumLpath);
     values.PutString("keyPath", dto.keyPath);
     values.PutString("isDeduplication", dto.isDeduplication ? "true" : "false");
@@ -1687,58 +1737,49 @@ int32_t MediaAssetsService::CanSupportedCompatibleDuplicate(const std::string &b
     return E_OK;
 }
 
-static int32_t WriteDFXTaskSet(const string& betaId)
+static int32_t WriteBetaDebugTaskSet(const string& betaIssueId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) == 0, E_DFX_TASK_IS_EXIST);
-    DFXTaskSet.insert(betaId);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaIssueId) == 0, E_ACQ_BETA_TASK_FAIL);
+    DFXTaskSet.insert(betaIssueId);
     return E_SUCCESS;
 }
 
-static int32_t EraseDFXTaskSet(const string& betaId)
+static int32_t EraseBetaDebugTaskSet(const string& betaIssueId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) != 0, E_DFX_TASK_NOT_EXIST);
-    DFXTaskSet.erase(betaId);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaIssueId) != 0, E_ACQ_BETA_TASK_FAIL);
+    DFXTaskSet.erase(betaIssueId);
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::GetDatabaseDFX(const string &betaId, GetDatabaseDFXRespBody &respBody)
+int32_t MediaAssetsService::AcquireDebugDatabase(const string &betaIssueId, const std::string &betaScenario,
+    AcquireDebugDatabaseRespBody &respBody)
 {
-    MEDIA_INFO_LOG("MediaAssetsService::GetDatabaseDFX enter");
-    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t status = WriteDFXTaskSet(betaId);
-    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "Get Database DFX Task is exist, betaId = %{public}s",
-        betaId.c_str());
+    MEDIA_INFO_LOG("MediaAssetsService::AcquireDebugDatabase start");
+    int32_t status = WriteBetaDebugTaskSet(betaIssueId);
+    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "Acquire atabase task is exist, betaIssueId = %{public}s",
+        betaIssueId.c_str());
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
 
-    std::string fileName = "";
-    std::string fileSize = "";
-    int32_t ret = dataManager->GetDatabaseDFX(betaId, fileName, fileSize);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("failed to get databaseDFX, errCode = %{public}d", ret);
-        CHECK_AND_PRINT_LOG(EraseDFXTaskSet(betaId) == E_SUCCESS, "failed to erase DFX task");
-        return ret;
-    }
+    std::string fileName;
+    std::string fileSize;
+    int32_t ret = dataManager->AcquireDebugDatabase(betaIssueId, betaScenario, fileName, fileSize);
+    CHECK_AND_PRINT_LOG(EraseBetaDebugTaskSet(betaIssueId) == E_SUCCESS, "Failed to erase beta task");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to acquire debug database, errCode = %{public}d", ret);
     respBody.fileName = fileName;
     respBody.fileSize = fileSize;
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Get %{public}s bytes DatabaseFile success, cost %{public}s ms", fileSize.c_str(),
-        std::to_string(end -begin).c_str());
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::RemoveDatabaseDFX(const string &betaId)
+int32_t MediaAssetsService::ReleaseDebugDatabase(const string &betaIssueId)
 {
-    MEDIA_INFO_LOG("MediaAssetsService::RemoveDatabaseDFX enter");
+    MEDIA_INFO_LOG("MediaAssetsService::ReleaseDebugDatabase start");
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
-    int32_t ret = dataManager->RemoveDatabaseDFX(betaId);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to remove databaseDFX, errCode = %{public}d", ret);
-    int32_t status = EraseDFXTaskSet(betaId);
-    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "failed to erase DFX task");
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
+    int32_t ret = dataManager->ReleaseDebugDatabase(betaIssueId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to release debug database");
     return E_SUCCESS;
 }
 } // namespace OHOS::Media

@@ -45,6 +45,7 @@ export struct PhotoPickerComponent {
   onExceedMaxSelected?: ExceedMaxSelectedCallback;
   onCurrentAlbumDeleted?: CurrentAlbumDeletedCallback;
   onVideoPlayStateChanged?: VideoPlayStateChangedCallback;
+  onMovingPhotoBadgeStateChanged?: (uri: string, state: MovingPhotoBadgeStateType) => void;
   badgeConfig?: BadgeConfig;
   batchBadgeConfigSize: number = 1000;
   maxBadgeConfigSize: number = 200000;
@@ -102,9 +103,16 @@ export struct PhotoPickerComponent {
       console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else if (data?.has('SET_BADGE_CONFIGS')) {
       this.onChangedBadgeConfigs(data);
+    } else if(data?.has('UPDATE_CONFIG')){
+      this.onUpdateConfig(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
+  }
+
+  private onUpdateConfig(data?: Map<string, Object>) {
+    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerOptions });
+    console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
   }
 
   private onSetMaxSelectCount(data?: Map<string, Object>): void {
@@ -220,7 +228,8 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            preselectedInfos: this.pickerOptions?.preselectedInfos as Array<PreselectedInfo>
+            preselectedInfos: this.pickerOptions?.preselectedInfos as Array<PreselectedInfo>,
+            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
           }
         })
           .height('100%')
@@ -281,6 +290,9 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'onBadgeConfigSend') {
       this.handleBadgeConfigSend(wantParam)
       console.info('PhotoPickerComponent onReceive: onBadgeConfigSend');
+    } else if (dataType === 'onMovingPhotoBadgeStateChange') {
+      this.onMovingPhotoBadgeStateChangeSend(wantParam)
+      console.info('PhotoPickerComponent onReceive: onMovingPhotoBadgeStateChangeSend');
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -299,6 +311,14 @@ export struct PhotoPickerComponent {
     }
     if (index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize)) {
         this.badgeConfigIsSending = false;
+    }
+  }
+
+  private onMovingPhotoBadgeStateChangeSend(wantParam: Record<string, Object>): void {
+    let uri = wantParam.uri as string;
+    let enabledMovingPhotoBadge = wantParam.enabledMovingPhotoBadge as MovingPhotoBadgeStateType;
+    if (uri && enabledMovingPhotoBadge !== undefined && this.onMovingPhotoBadgeStateChanged) {
+      this.onMovingPhotoBadgeStateChanged(uri, enabledMovingPhotoBadge);
     }
   }
 
@@ -365,6 +385,8 @@ export struct PhotoPickerComponent {
       itemInfo.photoSubType = wantParam['subtype'] as number;
       itemInfo.dynamicRangeType = wantParam['dynamicRangeType'] as number;
       itemInfo.orientation = wantParam['imageOrientation'] as number;
+      itemInfo.videoMode = wantParam['videoMode'] as number;
+      itemInfo.movingPhotoBadgeState = wantParam['movingPhotoBadgeState'] as number;
       let result: boolean = this.onItemClicked(itemInfo, clickType);
       console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);
       if (this.proxy) {
@@ -461,8 +483,8 @@ export struct PhotoPickerComponent {
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     } else {
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
@@ -677,6 +699,16 @@ export class PickerController {
     }
   }
 
+  updatePickerOptions(updateConfig: UpdatablePickerOptions): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (e !== undefined) {
+        this.data = new Map([['UPDATE_CONFIG', updateConfig]]);
+        console.info('PhotoPickerComponent UPDATE_CONFIG ' + JSON.stringify(updateConfig));
+      }
+      resolve();
+    });
+  }
+
   setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
     photoBrowserRangeInfo.uri = uri;
@@ -824,6 +856,22 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
+export class UpdatablePickerOptions {
+  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+  mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
+  maxSelectNumber?: number;
+  maxPhotoSelectNumber?: number;
+  maxVideoSelectNumber?: number;
+  selectMode?: SelectMode;
+  singleSelectionMode?: photoAccessHelper.SingleSelectionMode;
+  isRepeatSelectSupported?: boolean;
+  preselectedUris?: Array<string>;
+  checkBoxColor?: string;
+  checkboxTextColor?: string;
+  backgroundColor?: string;
+  photoBrowserBackgroundColorMode?: PickerColorMode
+}
+
 export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
@@ -831,6 +879,7 @@ export class BaseItemInfo {
   height?: number;
   size?: number;
   duration?: number;
+  movingPhotoBadgeState?: MovingPhotoBadgeStateType;
 }
 
 export class ItemInfo extends BaseItemInfo {
@@ -961,4 +1010,16 @@ export enum BadgeOptionType {
   SET_DATA = 1,
   ADD_DATA = 2,
   DELETE_DATA = 3
+}
+
+export enum SingleSelectMode {
+  BROWSER_MODE = 0,
+  SELECT_MODE = 1,
+  BROWSER_AND_SELECT_MODE = 2
+}
+
+export enum MovingPhotoBadgeStateType {
+  NOT_MOVING_PHOTO	= 0,
+  MOVING_PHOTO_ENABLED	= 1,
+  MOVING_PHOTO_DISABLED	= 2
 }

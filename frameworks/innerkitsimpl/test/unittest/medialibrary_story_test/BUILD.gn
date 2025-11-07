@@ -25,6 +25,7 @@ ohos_unittest("medialibrary_story_unittest") {
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 

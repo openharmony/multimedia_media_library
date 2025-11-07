@@ -41,6 +41,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "ohos_account_kits.h"
+#include "photo_file_utils.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -349,6 +350,8 @@ void CloneRestore::ParseDstDeviceBackupInfo()
     for (const auto& item : jsonArray) {
         bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
+        cond = (!item["type"].is_string() || !item["detail"].is_string());
+        CHECK_AND_CONTINUE(!cond);
         if (item["type"] == "compatibility_info") {
             compatibilityInfoStr = item["detail"];
             break;
@@ -409,9 +412,9 @@ CloneRestoreConfigInfo CloneRestore::GetCurrentDeviceCloneConfigInfo()
     CloneRestoreConfigInfo cloneConfigInfo;
     cloneConfigInfo.switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
     bool isSyncSwitchStatusValid = (cloneConfigInfo.switchStatus != SwitchStatus::NONE);
-    bool isDeviceIdValid = true;
-    if (cloneConfigInfo.switchStatus == SwitchStatus::HDC &&
-        !(isDeviceIdValid = SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId))) {
+    bool isDeviceIdValid = (cloneConfigInfo.switchStatus == SwitchStatus::HDC ?
+        SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId) : true);
+    if (!isDeviceIdValid) {
         MEDIA_ERR_LOG("fail to get deviceId of current device");
         cloneConfigInfo.switchStatus = SwitchStatus::NONE;
         cloneConfigInfo.deviceId = "";
@@ -473,6 +476,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
+    RestoreSearchIndex();
     StopParameterForRestore();
     StopParameterForClone();
     CloseAllKvStore();
@@ -572,9 +576,11 @@ void CloneRestore::GetAccountValid()
     nlohmann::json jsonArr = nlohmann::json::parse(restoreInfo_, nullptr, false);
     CHECK_AND_RETURN_LOG(!jsonArr.is_discarded(), "cloud account parse failed");
     for (const auto& item : jsonArr) {
-        bool cond = (!item.contains("type") || !item.contains("detail") || item["type"] != "singleAccountId");
+        bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
-        oldId = item["detail"];
+        cond = (!item["type"].is_string() ||  item["type"] != "singleAccountId");
+        CHECK_AND_CONTINUE(!cond);
+        oldId = item["detail"].is_string() ? item["detail"] : "";
         MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
         break;
     }
@@ -2123,9 +2129,12 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         return false;
     }
 
-    fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
-    fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
-    fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    fileInfo.dateAdded = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet), MediaFileUtils::UTCTimeMilliSeconds());
+    fileInfo.dateModified = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet), fileInfo.dateAdded);
+    fileInfo.dateTaken = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet), min(fileInfo.dateAdded, fileInfo.dateModified));
     fileInfo.thumbnailReady = GetInt64Val(PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet);
     fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
     fileInfo.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
@@ -2317,7 +2326,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
 
-    RestoreHdrMode(fileInfos);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }
 

@@ -266,6 +266,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_SELECTED_ASSETS),
         &MediaAlbumsControllerService::AlbumGetSelectAssets
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLONED_ALBUM_URIS),
+        &MediaAlbumsControllerService::GetClonedAlbumUris
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -445,7 +449,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
     cond = (PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype)) && cond;
+        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype)) && cond;
     cond = cond && !reqBody.albumName.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
@@ -996,6 +1001,32 @@ int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, Messag
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().GetAlbumsByIds(dto, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetClonedAlbumUris(MessageParcel &data, MessageParcel &reply)
+{
+    GetClonedAlbumUrisReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckWhereClause fialed");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    GetClonedAlbumUrisDto dto = GetClonedAlbumUrisDto::Create(reqBody);
+    auto resultSet = MediaAlbumsService::GetInstance().GetClonedAlbumUris(dto);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+    }
+    GetClonedAlbumUrisRespBody respBody;
+    respBody.resultSet = resultSet;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
 int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, MessageParcel &reply)

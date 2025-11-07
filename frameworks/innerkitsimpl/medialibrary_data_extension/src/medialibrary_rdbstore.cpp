@@ -408,6 +408,16 @@ void MediaLibraryRdbStore::UpdateIndexDateAdded(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("end update idx_schpt_date_added_new");
 }
 
+void MediaLibraryRdbStore::AddVideoFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> sqls = {
+        CREATE_VIDEO_FACE_TAG_ID_INDEX,
+    };
+    MEDIA_INFO_LOG("start add video_face_tag_id_index");
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("end add video_face_tag_id_index");
+}
+
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -1134,8 +1144,8 @@ static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector
         }
         argsInfo += arg;
     }
-    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
-    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+    MEDIA_DEBUG_LOG("Predicates Statement is %{private}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{private}s", argsInfo.c_str());
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const AbsRdbPredicates &predicates,
@@ -1879,6 +1889,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IMAGE_FACE_INDEX,
     CREATE_IMAGE_FACE_TAG_ID_INDEX,
     CREATE_VIDEO_FACE_INDEX,
+    CREATE_VIDEO_FACE_TAG_ID_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
@@ -4694,6 +4705,16 @@ static void AddAffective(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("End add affective");
 }
 
+static void AddVideoMode(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_VIDEO_MODE +
+            " INT NOT NULL DEFAULT -1",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add VideoMode column end");
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5470,6 +5491,39 @@ static void AddImageFaceDetail(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        ADD_EXTRA_QUOTA_INDEX_BUILD_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_INDEX_UPDATE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_INDEX_DELETE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_OCR_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_SHARED_BACKBONE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_MODIFY_TIME_COLUMN,
+        ADD_BASE_QUOTA_INDEX_BUILD_CNT_COLUMN,
+        ADD_BASE_QUOTA_INDEX_UPDATE_CNT_COLUMN,
+        ADD_BASE_QUOTA_INDEX_DELETE_CNT_COLUMN,
+        ADD_BASE_QUOTA_OCR_CNT_COLUMN,
+        ADD_BASE_QUOTA_SHARED_BACKBONE_CNT_COLUMN,
+        ADD_BASE_QUOTA_LABEL_CNT_COLUMN,
+        ADD_BASE_QUOTA_MODIFY_TIME_COLUMN,
+    };
+    MEDIA_INFO_LOG("start add analysis progress columns");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end add analysis progress columns");
+}
+
+static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("create batchdownload records begin");
+    const vector<string> executeSqlStrs = {
+        DownloadResourcesColumn::CREATE_TABLE,
+        DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
+    };
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("create batchdownload records end");
+}
+
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_ALBUM &&
@@ -5482,6 +5536,25 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_IMAGE_FACE_DETAIL, true)) {
         AddImageFaceDetail(store, VERSION_ADD_IMAGE_FACE_DETAIL);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_DETAIL, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true)) {
+        AddAnalysisProgressColumns(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true);
+    }
+    
+    if (oldVersion < VERSION_ADD_BATCH_DOWNLOAD &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_BATCH_DOWNLOAD, true)) {
+        CreateBatchDownloadRecords(store, VERSION_ADD_BATCH_DOWNLOAD);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_BATCH_DOWNLOAD, true);
+    }
+
+    if (oldVersion < VERSION_VIDEO_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_VIDEO_MODE, true)) {
+        MEDIA_INFO_LOG("AddVideoMode start");
+        AddVideoMode(store, VERSION_VIDEO_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_VIDEO_MODE, true);
     }
 }
 

@@ -298,7 +298,6 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
         "    OR detail_time IS NULL OR detail_time = '' "
         "    OR date_day <> REPLACE ( SUBSTR( detail_time, 1, 10 ), ':', '' ) "
         "    OR detail_time <> strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' ) "
-        "    OR all_exif <> '' "
         "  ) "
         "ORDER BY"
         "  file_id ASC "
