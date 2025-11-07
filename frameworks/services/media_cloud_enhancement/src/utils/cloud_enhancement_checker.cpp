@@ -132,6 +132,7 @@ void CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName()
             static_cast<int32_t>(StrongAssociationType::NORMAL));
         const string enhancedSuffix = "%_enhanced";
         predicates.Like(MediaColumn::MEDIA_TITLE, enhancedSuffix);
+        predicates.EqualTo(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
         ValuesBucket values;
         values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
             static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
@@ -152,6 +153,8 @@ void CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName()
 
     if (needRefreshAlbum) {
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore,
+            {to_string(static_cast<int32_t>(PhotoAlbumSubType::CLOUD_ENHANCEMENT))});
+        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore,
             {to_string(static_cast<int32_t>(PhotoAlbumSubType::CLOUD_ENHANCEMENT))});
     }
     MEDIA_INFO_LOG("end recognize cloud enhancement photos by display name. File id progress: %{public}d",
