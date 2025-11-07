@@ -1129,7 +1129,7 @@ int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
         opVideoRet = this->CopyFile(srcLocalVideoPath, localVideoPath);
     }
     CHECK_AND_RETURN_RET_LOG(opVideoRet == E_OK, E_FAIL, "Move video of moving photo failed");
-    BackupFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
+    MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
     return E_OK;
 }
 
@@ -2185,7 +2185,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
             UpdateFailedFiles(fileInfo.fileType, fileInfo, RestoreError::MOVE_FAILED);
             continue;
         }
-        BackupFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
+        MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;

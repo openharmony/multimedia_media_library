@@ -2648,4 +2648,24 @@ int64_t MediaFileUtils::StrToInt64(const std::string &value)
     }
     return res;
 }
+
+int32_t MediaFileUtils::UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec)
+{
+    CHECK_AND_RETURN_RET_LOG(localMtimeInMsec >= 0, E_VIOLATION_PARAMETERS,
+        "ModifyTime %{public}" PRId64 "< 0, localPath: %{public}s",
+        localMtimeInMsec, DesensitizePath(localPath).c_str());
+    CHECK_AND_RETURN_RET_LOG(access(localPath.c_str(), F_OK) == 0, E_FILE_EXIST,
+        "File not exist, localPath: %{public}s", DesensitizePath(localPath).c_str());
+
+    struct timeval times[2];
+    // set atime
+    times[0].tv_sec = static_cast<time_t>(localMtimeInMsec / MSEC_TO_SEC);
+    times[0].tv_usec = static_cast<suseconds_t>((localMtimeInMsec % MSEC_TO_SEC) * MSEC_TO_SEC);
+    // set mtime
+    times[1] = times[0];
+
+    CHECK_AND_RETURN_RET_LOG(utimes(localPath.c_str(), times) >= 0, errno,
+        "utimes failed %{public}d, localPath: %{public}s", errno, DesensitizePath(localPath).c_str());
+    return E_OK;
+}
 } // namespace OHOS::Media
