@@ -766,12 +766,13 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(trans);
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
             "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
 
-        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        outRow = InsertAssetInDb(trans, cmd, fileAsset, assetRefresh);
         if (outRow <= 0) {
             MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
             return E_HAS_DB_ERROR;
@@ -783,6 +784,8 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
         return errCode;
     }
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
     return outRow;
 }
 
