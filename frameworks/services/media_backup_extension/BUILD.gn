@@ -69,6 +69,7 @@ ohos_shared_library("mediabackup") {
     "./src/backup_restore_service.cpp",
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
+    "./src/classify/classify_restore.cpp",
     "./src/classify/clone_restore_classify.cpp",
     "./src/clone_restore.cpp",
     "./src/cloud_backup_restore.cpp",
