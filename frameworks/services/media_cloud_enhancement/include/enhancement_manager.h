@@ -90,10 +90,11 @@ public:
     EXPORT int32_t HandlePhotosAutoOptionChange(const std::string &photosAutoOption);
     EXPORT int32_t HandleNetChange(const bool isWifiConnected, const bool isCellularNetConnected);
     EXPORT void HandlePhotosWaterMarkChange(const bool shouldAddWaterMark);
-    EXPORT bool IsCloudEnhancementSupposed();
     EXPORT bool SyncCleanCompositePhoto(const std::string &photoPath);
+    EXPORT bool SyncClearNormalPhoto(int32_t fileId);
     EXPORT bool SyncDealWithCompositePhoto(const std::string &photoPath);
-    EXPORT int32_t SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath, bool exchange);
+    EXPORT std::pair<int32_t, int32_t> SyncDealWithCompositeDisplayStatus(int32_t fileId,
+        const std::string &photoPath, bool exchange);
     EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, int32_t compositeDisplayStatus,
         int32_t ceAvailable = 0);
     EXPORT std::optional<std::tuple<std::string, int32_t, int32_t>> QueryCompositePhotoInfo(int32_t fileId);

@@ -37,7 +37,6 @@
 #include "dfx_const.h"
 #include "exif_rotate_utils.h"
 #include "media_gallery_sync_notify.h"
-#include "enhancement_manager.h"
 #include "dfx_utils.h"
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
@@ -389,18 +388,7 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         }
     }
     // for cloud enhancement composite photo
-    if (EnhancementManager::GetInstance().IsCloudEnhancementSupposed()) {
-        string photoCloudPath = CloudMediaSyncUtils::RestoreCloudPath(assetData.path);
-        if (PhotoFileUtils::IsEditDataSourceBackExists(photoCloudPath)) {
-            bool exchange = EnhancementManager::GetInstance().SyncCleanCompositePhoto(photoCloudPath);
-            int32_t compositeDisplayStatus = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(
-                photo.fileId.value_or(0), photoCloudPath, exchange);
-            int32_t updateRet = EnhancementManager::GetInstance().UpdateCompositeDisplayStatus(
-                photo.fileId.value_or(0), compositeDisplayStatus);
-            CHECK_AND_PRINT_LOG(updateRet == E_OK, "fail to update composite display status of fileId: %{public}d",
-                photo.fileId.value_or(0));
-        }
-    }
+    CloudMediaSyncUtils::SyncDealWithCompositePhoto(assetData.path, photo.fileId.value_or(0));
     MEDIA_INFO_LOG("SliceAsset, assetData: %{public}s", assetData.ToString().c_str());
     return ret;
 }
