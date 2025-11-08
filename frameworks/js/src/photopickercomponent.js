@@ -56,8 +56,10 @@ export class PhotoPickerComponent extends ViewPU {
         this.onMovingPhotoBadgeStateChanged = void 0;
         this.badgeConfig = void 0;
         this.batchBadgeConfigSize = 1000;
+        this.batchPreselectedInfos = 200;
         this.maxBadgeConfigSize = 200000;
         this.badgeConfigIsSending = void 0;
+        this.preselectedInfos = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
@@ -80,6 +82,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
         void 0 !== e.onMovingPhotoBadgeStateChanged && (this.onMovingPhotoBadgeStateChanged = e.onMovingPhotoBadgeStateChanged);
         void 0 !== e.pickerOptions?.badgeConfig && (this.badgeConfig = e.pickerOptions?.badgeConfig);
+        void 0 !== e.pickerOptions?.preselectedInfos && (this.preselectedInfos = e.pickerOptions?.preselectedInfos);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
             console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
@@ -133,7 +136,7 @@ export class PhotoPickerComponent extends ViewPU {
             this.proxy.send({ albumUri: null == o ? void 0 : o.get('SET_ALBUM_URI') });
             console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
         } else if (null == o ? void 0 : o.has('SET_SELECTED_INFO')) {
-            this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 : o.get('SET_SELECTED_INFO') });
+            this.onChangeSelectedInfo(o);
             console.info('PhotoPickerComponent onChanged: SET_SELECTED_INFO');
         } else if (null == o ? void 0 : o.has('SET_MAX_SELECT_COUNT')) {
             this.onSetMaxSelectCount(o);
@@ -178,6 +181,13 @@ export class PhotoPickerComponent extends ViewPU {
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
+    }
+
+    onChangeSelectedInfo(o) {
+        this.preselectedInfos = null === o ? void 0 : o.get('SET_SELECTED_INFO');
+        console.log(`preselectedInfos start send1 ${o.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos).length}`);
+        this.proxy({ uriAndPickerIndexLists: null === o ? void 0 : o.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos),
+             index: 0, preselectedInfosIsOver: this.preselectedInfos.length <= this.batchPreselectedInfos });
     }
 
     onUpdateConfig(o) {
@@ -305,7 +315,6 @@ export class PhotoPickerComponent extends ViewPU {
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
-                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos,
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
                 }
             });
@@ -348,6 +357,11 @@ export class PhotoPickerComponent extends ViewPU {
                         this.badgeConfig?.badgeType + '---' + new Date().getTime().toString());
                     this.badgeConfigIsSending = true;
                     this.proxy.send({needSendBadgeConfigs: true, BadgeOptionType: BadgeOptionType.SET_DATA});
+                }
+                if (this.preselectedInfos && this.preselectedInfos.length > 0){
+                    console.log('preselectedInfos start send');
+                    this.proxy.send({ uriAndPickerIndexLists: this.preselectedInfos.slice(0, this.batchPreselectedInfos),
+                        index: 0, preselectedInfosIsOver: this.preselectedInfos.length <= this.batchPreselectedInfos })
                 }
                 console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
             }
@@ -411,6 +425,10 @@ export class PhotoPickerComponent extends ViewPU {
             if (this.onCurrentAlbumDeleted) {
                 this.onCurrentAlbumDeleted();
             }
+        } else if ('onPreselectedInfo' === o) {
+            console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
+            this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
+                index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
         } else {
             console.info('PhotoPickerComponent onReceive: other case');
         }
