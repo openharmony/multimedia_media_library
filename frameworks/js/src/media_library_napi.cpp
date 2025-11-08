@@ -2994,7 +2994,7 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     std::function<void()> task = [wrapper, this]() {
         UvQueueWork(wrapper);
     };
-    ret = napi_send_event(env_, task, napi_eprio_immediate);
+    ret = napi_send_event(env_, task, napi_eprio_immediate, "MLB_MediaLib_off");
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute napi_send_event, ret: %{public}d", ret);
         free(msg->data_);
@@ -3919,7 +3919,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
         JSReleaseCompleteCallback(env, status, context);
     };
 
-    status = napi_send_event(env, task, napi_eprio_immediate);
+    status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_release");
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
@@ -4918,7 +4918,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
             JSGetActivePeersCompleteCallback(env, status, context);
         };
 
-        status = napi_send_event(env, task, napi_eprio_immediate);
+        status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_getActivePeers");
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -4959,7 +4959,7 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         std::function<void()> task = [env, status, context]() {
             JSGetAllPeersCompleteCallback(env, status, context);
         };
-        status = napi_send_event(env, task, napi_eprio_immediate);
+        status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_getAllPeers");
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
