@@ -771,7 +771,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             continue;
         }
-        BackupFileUtils::ModifyFile(dstPath, fileInfos[i].dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(dstPath, fileInfos[i].dateModified);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;
@@ -853,7 +853,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
         "MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
-    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+    MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
     
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         size_t destPos = fileInfo.filePath.find_last_of(".");
@@ -869,7 +869,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             "Move moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
             BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
             BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
-        BackupFileUtils::ModifyFile(movTargetPath, fileInfo.dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(movTargetPath, fileInfo.dateModified);
         
         CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
             "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
@@ -890,7 +890,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             (void)MediaFileUtils::DeleteFile(localPath);
             return false;
         }
-        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
         return MoveExtraData(fileInfo, sceneCode);
     }
     return true;
