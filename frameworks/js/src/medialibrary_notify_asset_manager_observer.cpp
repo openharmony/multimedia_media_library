@@ -160,7 +160,7 @@ void MediaOnNotifyAssetManagerObserver::OnJsCallbackEvent(std::unique_ptr<NewJsO
         CHECK_AND_RETURN_LOG(event != nullptr, "event is nullptr");
         OnChangeNotifyDetail(event);
     };
-    if (napi_send_event(env, task, napi_eprio_immediate) != napi_ok) {
+    if (napi_send_event(env, task, napi_eprio_immediate, "MLB_CloudAssetMng_onDownloadProgressChange") != napi_ok) {
         NAPI_ERR_LOG("failed to execute task");
         delete event;
     }
