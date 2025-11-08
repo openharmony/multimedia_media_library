@@ -304,7 +304,6 @@ void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecor
         int32_t errCode = 0;
         shared_ptr<NativePreferences::Preferences> prefs =
             NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
-        CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
         prefs->PutInt(LAST_LOCAL_MIMETYPE_REPAIR, repairRecord);
         prefs->FlushSync();
         MEDIA_INFO_LOG("repair mimetype to %{public}d", repairRecord);
