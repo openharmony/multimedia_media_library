@@ -26,6 +26,8 @@
 
 using namespace std;
 namespace OHOS::Media {
+const int32_t PAGE_SIZE = 200;
+
 void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
@@ -161,16 +163,29 @@ void CloneRestorePortrait::Restore()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     RestoreImageFaceInfo();
-    UpdateAnalysisTotalTblNoFaceStatus();
-    UpdateAnalysisTotalTblStatus();
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     int32_t ret = RestoreMaps();
     CHECK_AND_RETURN_LOG(ret == E_OK, "fail to update analysis photo map status");
+    RestoreAnalysisTotalFaceStatus();
     ReportPortraitCloneStat(sceneCode_);
     
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
+}
+
+void CloneRestorePortrait::RestoreAnalysisTotalFaceStatus()
+{
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal;
+    cloneRestoreAnalysisTotal.Init("face", PAGE_SIZE, mediaRdb_, mediaLibraryRdb_);
+    int32_t totalNumber = cloneRestoreAnalysisTotal.GetTotalNumber();
+    for (int32_t offset = 0; offset < totalNumber; offset += PAGE_SIZE) {
+        cloneRestoreAnalysisTotal.GetInfos(photoInfoMap_);
+        cloneRestoreAnalysisTotal.UpdateDatabase();
+    }
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: UpdateDatabase: %{public}" PRId64, end - start);
 }
 
 void CloneRestorePortrait::RestoreFromGalleryPortraitAlbum()
