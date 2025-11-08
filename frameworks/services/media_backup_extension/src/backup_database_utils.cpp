@@ -788,21 +788,13 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceSql);
 
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> totalTablePredicates =
-        std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
+    const std::string updateTotalSql =
+        "UPDATE " + VISION_TOTAL_TABLE +
+        " SET face = 0, status = CASE WHEN status =1 THEN 0 ELSE status END " +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
+    int32_t totalRet = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, updateTotalSql);
 
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
-    totalTablePredicates->SetWhereClause(fileIdCondition);
-
-    NativeRdb::ValuesBucket totalValues;
-    totalValues.PutInt("face", 0);
-
-    int32_t totalUpdatedRows = 0;
-    int32_t totalRet = BackupDatabaseUtils::Update(mediaLibraryRdb,
-        totalUpdatedRows, totalValues, totalTablePredicates);
-
-    bool totalUpdateFailed = (totalUpdatedRows < 0 || totalRet < 0);
-    CHECK_AND_RETURN_LOG(!totalUpdateFailed, "Failed to update VISION_TOTAL_TABLE face field to 0");
+    CHECK_AND_RETURN_LOG(totalRet >= 0, "Failed to update VISION_TOTAL_TABLE face field to 0");
 }
 
 void BackupDatabaseUtils::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
