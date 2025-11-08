@@ -39,6 +39,7 @@ enum NotifyType {
     NOTIFY_ALBUM_ADD,
     NOTIFY_ALBUM_UPDATE,
     NOTIFY_ALBUM_REMOVE,
+    NOTIFY_ASSET_YUV_READY,
 };
 
 enum DownloadAssetsNotifyType {

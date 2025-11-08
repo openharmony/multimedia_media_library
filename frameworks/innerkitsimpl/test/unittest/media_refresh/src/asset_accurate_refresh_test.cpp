@@ -1728,5 +1728,67 @@ HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_023, TestSize.Level2)
     EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
 }
 
+HWTEST_F(AssetAccurateRefreshTest, NotifyYuvReady_024, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("NotifyYuvReady start");
+    AssetAccurateRefresh assetRefresh("NotifyYuvReady_024");
+    auto ret = ACCURATE_REFRESH_RET_OK;
+    ret = assetRefresh.NotifyYuvReady(GetFavoriteImageAsset().fileId_);
+    ACCURATE_DEBUG("NotifyYuvReady end");
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, NotifyYuvReady_025, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("NotifyYuvReady start");
+    AssetAccurateRefresh assetRefresh("NotifyYuvReady_025");
+    auto ret = ACCURATE_REFRESH_RET_OK;
+    ret = assetRefresh.NotifyYuvReady(GetFavoriteImageAsset().fileId_ + 10);
+    ACCURATE_DEBUG("NotifyYuvReady end");
+    EXPECT_TRUE(ret != ACCURATE_REFRESH_RET_OK);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, NotifyYuvReady_026, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("NotifyYuvReady start");
+    AssetAccurateRefresh assetRefresh("NotifyYuvReady_026");
+
+    int32_t ret = ACCURATE_REFRESH_RET_OK;
+    const std::vector<int32_t> keys = { GetFavoriteImageAsset().fileId_ };
+    assetRefresh.dataManager_.Init(keys);
+    assetRefresh.UpdateModifiedDatasInner(keys, RDB_OPERATION_UPDATE);
+    ret = assetRefresh.dataManager_.PostProcessModifiedDatas(keys);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    PhotoAssetChangeData changeData;
+    ret = assetRefresh.dataManager_.GetChangeDataByKey(GetFavoriteImageAsset().fileId_, changeData);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    assetRefresh.notifyExe_.NotifyYuvReady(changeData);
+    ACCURATE_DEBUG("NotifyYuvReady end");
+}
+
+HWTEST_F(AssetAccurateRefreshTest, NotifyYuvReady_027, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("NotifyYuvReady start");
+    AssetAccurateRefresh assetRefresh("NotifyYuvReady_027");
+
+    int32_t ret = ACCURATE_REFRESH_RET_OK;
+    const std::vector<int32_t> keys = { GetFavoriteImageAsset().fileId_ };
+    assetRefresh.dataManager_.Init(keys);
+    assetRefresh.UpdateModifiedDatasInner(keys, RDB_OPERATION_UPDATE);
+    ret = assetRefresh.dataManager_.PostProcessModifiedDatas(keys);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    PhotoAssetChangeData changeData;
+    ret = assetRefresh.dataManager_.GetChangeDataByKey(GetFavoriteImageAsset().fileId_ + 10, changeData);
+    EXPECT_TRUE(ret != ACCURATE_REFRESH_RET_OK);
+    ACCURATE_DEBUG("NotifyYuvReady end");
+}
 } // namespace Media
 } // namespace OHOS
