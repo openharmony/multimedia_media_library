@@ -211,8 +211,6 @@ int32_t CloudSyncConvert::CompensateAttVideoMode(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t videoMode = data.attributesVideoMode;
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        videoMode != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::videoMode.");
     values.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
     return E_OK;
 }
