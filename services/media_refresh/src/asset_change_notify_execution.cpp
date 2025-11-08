@@ -150,6 +150,29 @@ void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &chan
     }
 }
 
+void AssetChangeNotifyExecution::NotifyYuvReady(const PhotoAssetChangeData &changeData)
+{
+    InsertNotifyInfo(ASSET_OPERATION_YUV_READY, changeData);
+
+    if (notifyInfos_.find(ASSET_OPERATION_YUV_READY) != notifyInfos_.end()) {
+        NotifyInfoInner notifyInfo;
+        notifyInfo.tableType = NotifyTableType::PHOTOS;
+        notifyInfo.operationType = ASSET_OPERATION_YUV_READY;
+        NotifyLevel level;
+        notifyInfo.notifyLevel = level;
+        auto &changeDatas = notifyInfos_[ASSET_OPERATION_YUV_READY];
+        bool recordFirst = false;
+        for (auto &changeData : changeDatas) {
+            notifyInfo.infos.push_back(changeData);
+            PrintNotifyLog(ASSET_OPERATION_YUV_READY, changeDatas.size(), recordFirst, notifyInfo, changeData);
+        }
+        // 调用发送通知接口
+        Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
+    } else {
+        MEDIA_WARN_LOG("No yuv ready notify info found");
+    }
+}
+
 void AssetChangeNotifyExecution::InsertNotifyInfo(AssetRefreshOperation operationType,
     const PhotoAssetChangeData &changeData)
 {

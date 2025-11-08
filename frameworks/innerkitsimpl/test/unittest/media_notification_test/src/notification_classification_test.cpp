@@ -525,5 +525,21 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     MEDIA_INFO_LOG("end medialib_notification_classification_test028");
 }
 
+HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test029, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test029");
+    std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
+    const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
+    const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
+    auto notifyInfos = Notification::NotificationTestData::buildPhotoNotifyTaskInfo(
+        Notification::NotifyTableType::PHOTOS,
+        {deletePhotoData1, deletePhotoData2},
+        Notification::AssetRefreshOperation::ASSET_OPERATION_YUV_READY,
+        {Notification::Priority::NORMAL, 1}
+    );
+    Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
+    EXPECT_TRUE(!mediaChangeInfos.empty());
+    MEDIA_INFO_LOG("end medialib_notification_classification_test029");
+}
 } // namespace Media
 } // namespace OHOS

@@ -174,7 +174,7 @@ const std::vector<std::string> cloudMediaTaskPauseCauseEnum {
 };
 
 const std::vector<std::string> notifyChangeTypeEnum {
-    "NOTIFY_CHANGE_ADD", "NOTIFY_CHANGE_UPDATE", "NOTIFY_CHANGE_REMOVE"
+    "NOTIFY_CHANGE_ADD", "NOTIFY_CHANGE_UPDATE", "NOTIFY_CHANGE_REMOVE", "NOTIFY_CHANGE_YUV_READY"
 };
  
 const std::vector<std::string> thumbnailChangeStatusEnum {
