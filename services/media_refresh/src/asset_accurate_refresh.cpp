@@ -148,6 +148,24 @@ int32_t AssetAccurateRefresh::Notify()
     return Notify(dataManager_.GetChangeDatas());
 }
 
+int32_t AssetAccurateRefresh::NotifyYuvReady(const int32_t fileId)
+{
+    int32_t ret = ACCURATE_REFRESH_RET_OK;
+    const std::vector<int32_t> keys = { fileId };
+    // 查询当前资产数据
+    dataManager_.Init(keys);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_UPDATE);
+    ret = dataManager_.PostProcessModifiedDatas(keys);
+    CHECK_AND_RETURN_RET_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+        "UpdateModifiedDatasInner failed, err: %{public}d", ret);
+    PhotoAssetChangeData changeData;
+    ret = dataManager_.GetChangeDataByKey(fileId, changeData);
+    CHECK_AND_RETURN_RET_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+        "GetChangeDataByKey failed, err: %{public}d", ret);
+    notifyExe_.NotifyYuvReady(changeData);
+    return ret;
+}
+
 // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
 int32_t AssetAccurateRefresh::Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas)
 {
