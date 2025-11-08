@@ -99,6 +99,8 @@
 #include "scanner_map_code_utils.h"
 #include "photo_map_code_column.h"
 #include "photo_map_code_operation.h"
+#include "tab_cloned_old_photos_table_event_handler.h"
+
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1994,6 +1996,9 @@ static int32_t ExecuteSql(RdbStore &store)
     CHECK_AND_RETURN_RET(TabFaCardPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
     if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+    if (TabClonedOldPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
     TableEventHandler().OnCreate(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
@@ -5555,6 +5560,14 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         MEDIA_INFO_LOG("AddVideoMode start");
         AddVideoMode(store, VERSION_VIDEO_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_VIDEO_MODE, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_CLONED_OLD_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true)) {
+        MEDIA_INFO_LOG("CreateTabClonedOldPhotos start");
+        int32_t ret = TabClonedOldPhotosTableEventHandler().OnCreate(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, 0, ret);
     }
 }
 
