@@ -536,6 +536,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE),
         &MediaAssetsControllerService::ReleaseDebugDatabase
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE_FOR_PICKER),
+        &MediaAssetsControllerService::AssetChangeSubmitCache
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
