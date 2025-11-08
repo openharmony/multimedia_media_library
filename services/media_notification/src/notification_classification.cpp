@@ -50,6 +50,7 @@ std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         {AssetRefreshOperation::ASSET_OPERATION_HIDDEN, HandleAssetHidden},
         {AssetRefreshOperation::ASSET_OPERATION_UNHIDDEN, HandleAssetUnhidden},
         {AssetRefreshOperation::ASSET_OPERATION_RECHECK, HandleAssetRecheck},
+        {AssetRefreshOperation::ASSET_OPERATION_YUV_READY, HandleYuvReady},
 
         {AlbumRefreshOperation::ALBUM_OPERATION_ADD, HandleAlbumAdd},
         {AlbumRefreshOperation::ALBUM_OPERATION_UPDATE, HandleAlbumUpdate},
@@ -224,6 +225,12 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRecheck(Noti
     return {BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::HIDDEN_PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::TRASH_PHOTO_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleYuvReady(NotifyInfoInner &notifyInfoInner)
+{
+    MEDIA_INFO_LOG("HandleYuvReady");
+    return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_YUV_READY, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumAdd(NotifyInfoInner &notifyInfoInner)

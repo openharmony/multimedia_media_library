@@ -85,6 +85,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_TITLE), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE_FOR_PICKER),
+        {{SYSTEMAPI_PERM, WRITE_PERM, ACCESS_MEDIALIB_THUMB_DB_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_ADD_IMAGE), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_CAMERA_SHOT_KEY), {{SYSTEMAPI_PERM, WRITE_PERM}}},

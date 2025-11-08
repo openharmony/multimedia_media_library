@@ -29,6 +29,7 @@
 #include "file_asset.h"
 #include "parameters.h"
 #include "media_db_permission_check.h"
+#include "media_access_medialib_thumb_db_permission_check.h"
 
 using namespace std;
 using namespace OHOS::Media;
@@ -44,6 +45,7 @@ std::unordered_map<PermissionType, std::shared_ptr<PermissionCheck>> PermissionC
     {CLOUD_READ, std::make_shared<CloudReadPermissionCheck>()},
     {CLOUD_WRITE, std::make_shared<CloudWritePermissionCheck>()},
     {SYSTEMINNERAPI_PERM, std::make_shared<SystemInnerApiPermissionCheck>()},
+    {ACCESS_MEDIALIB_THUMB_DB_PERM, std::make_shared<AccessMedialibThumbDbPermissionCheck>()},
 };
 
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,

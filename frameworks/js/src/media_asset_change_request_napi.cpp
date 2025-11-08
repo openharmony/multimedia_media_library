@@ -1746,19 +1746,21 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResourceForPicker(nap
     tracer.Start("AddMovingPhotoVideoResourceForPicker");
 
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env,
+    CHECK_COND_WITH_ERR_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        JS_E_PARAM_INVALID,
         "Failed to get object info");
     auto changeRequest = asyncContext->objectInfo;
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
-    CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, JS_E_PARAM_INVALID,
+        "Failed to get napi type");
 
     // addResource by file uri
-    CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
+    CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), JS_E_PARAM_INVALID);
     if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check video resource of moving photo");
         return nullptr;
     }
     changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
@@ -1828,12 +1830,12 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
 napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
-        ARGS_TWO, ARGS_TWO) == napi_ok, "Failed to get object info");
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_TWO, ARGS_TWO) == napi_ok, JS_E_PARAM_INVALID, "Failed to get object info");
     auto changeRequest = asyncContext->objectInfo;
-    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env, changeRequest != nullptr, JS_E_PARAM_INVALID, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    CHECK_COND(env, fileAsset != nullptr, JS_E_INNER_FAIL);
 
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -1842,21 +1844,22 @@ napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, nap
     CHECK_COND(env, HasAccessMedialibThumbDbPermission(), OHOS_PERMISSION_DENIED_CODE);
 
     int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
-        resourceType) == napi_ok, "Failed to get resourceType");
-    CHECK_COND(env, CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
+        resourceType) == napi_ok, JS_E_PARAM_INVALID, "Failed to get resourceType");
+    CHECK_COND(env, CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_INNER_FAIL);
     if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
         return AddMovingPhotoVideoResourceForPicker(env, info);
     }
-    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()),
-        "Failed to check resourceType");
+    CHECK_COND_WITH_ERR_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()),
+        JS_E_PARAM_INVALID, "Failed to check resourceType");
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
-    CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
-
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, JS_E_PARAM_INVALID,
+        "Failed to get napi type");
+    
     // addResource by file uri
-    CHECK_COND(env, ParseFileUri(env, value, fileAsset->GetMediaType(), asyncContext), OHOS_INVALID_PARAM_CODE);
+    CHECK_COND(env, ParseFileUri(env, value, fileAsset->GetMediaType(), asyncContext), JS_E_PARAM_INVALID);
     changeRequest->realPath_ = asyncContext->realPath;
     changeRequest->addResourceMode_ = AddResourceMode::FILE_URI;
 
@@ -2188,7 +2191,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCacheForPicker(bool isCreation, const
     int32_t ret{E_FAIL};
     SubmitCacheReqBody reqBody;
     SubmitCacheRespBody respBody;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE_FOR_PICKER);
     if (isCreation) {
         creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
         if (IsMovingPhoto()) {
