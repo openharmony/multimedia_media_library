@@ -1627,6 +1627,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DIRTY,
+        MediaColumn::MEDIA_NAME,
     };
 
     CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfo(opts.store, predicates, columns, data, err),
