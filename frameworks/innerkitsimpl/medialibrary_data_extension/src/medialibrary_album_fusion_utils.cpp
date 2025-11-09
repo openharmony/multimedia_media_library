@@ -1564,7 +1564,7 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
     string UpdatePhotoOwnerAlbumSql;
     if (fileIdsInAlbum) {
         UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
-            to_string(newAlbumId) + " WHERE file_id IN (";
+            to_string(newAlbumId) + ", meta_date_modified = strftime('%s000', 'now') WHERE file_id IN (";
         bool isFirst = true;
         for (const auto& fileId : *fileIdsInAlbum) {
             if (!isFirst) {
@@ -1575,8 +1575,8 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
         }
         UpdatePhotoOwnerAlbumSql += ")";
     } else {
-        UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
-            to_string(newAlbumId) + " WHERE owner_album_id = " + to_string(oldAlbumId);
+        UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " + to_string(newAlbumId) +
+            ", meta_date_modified = strftime('%s000', 'now') WHERE owner_album_id = " + to_string(oldAlbumId);
     }
     if (executeObject.assetRefresh != nullptr) {
         RdbPredicates rdbPredicatesPhoto(PhotoColumn::PHOTOS_TABLE);
