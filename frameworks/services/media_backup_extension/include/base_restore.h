@@ -54,8 +54,10 @@ public:
     virtual void StartBackup();
     void StartBackupEx(std::string& backupExInfo);
     void Release(ReleaseScene releaseScene);
-    std::string restoreInfo_;
     void InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value);
+    void SetIsRestore(bool isRestore);
+
+    std::string restoreInfo_;
 
 protected:
     int32_t Init(void);
@@ -166,6 +168,7 @@ protected:
     void GetUpdateUniqueNumberCount();
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();
+    virtual void SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error);
     virtual int32_t GetNoNeedMigrateCount();
     bool ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::PhotosRowData &rowData);
     void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
@@ -265,6 +268,7 @@ protected:
     int32_t syncSwitchType_;
     size_t totalFailCount_{0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
+    bool isRestore_ = false;
 };
 } // namespace Media
 } // namespace OHOS

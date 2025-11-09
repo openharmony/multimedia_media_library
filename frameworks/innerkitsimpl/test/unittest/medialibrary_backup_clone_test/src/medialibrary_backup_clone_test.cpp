@@ -2242,7 +2242,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_tes
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_handle_dirty_test");
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(EXPECTED_COUNT_0, "", g_rdbStore->GetRaw());
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(true);
     EXPECT_EQ(photosDataHandler_.dirtyFileCleanNumber_, EXPECTED_COUNT_0);
 }
 
@@ -2945,11 +2945,25 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_
 
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(true);
 
     int32_t result = INVALID_COUNT;
     QueryDirtyFileCount(result);
     EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_db_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_delete_dirty_files_in_db_test_002");
+    InsertDirtyFile("path_with_invalid_prefix");
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    photosDataHandler_.HandleDirtyFiles(false);
+
+    int32_t result = INVALID_COUNT;
+    QueryDirtyFileCount(result);
+    EXPECT_GT(result, 0);
 }
 
 void MediaLibraryBackupCloneTest::InsertSampleSearchIndexData(const std::shared_ptr<NativeRdb::RdbStore>& db,

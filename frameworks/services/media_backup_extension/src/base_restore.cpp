@@ -272,7 +272,7 @@ int32_t BaseRestore::Init(void)
     MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
     MEDIA_INFO_LOG("audioNumber: %{public}d", (int)audioNumber_);
     photosDataHandler_.OnStart(sceneCode_, taskId_, mediaLibraryRdb_);
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(isRestore_);
     return E_OK;
 }
 
@@ -2062,15 +2062,22 @@ std::string BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errC
 std::string BaseRestore::GetRestoreTotalInfo()
 {
     std::stringstream restoreTotalInfo;
-    uint64_t success = migrateFileNumber_;
-    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
-    uint64_t failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
-        GetFailedFiles(STAT_TYPE_VIDEO).size());
-    uint64_t error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
+    uint64_t failed = 0;
+    uint64_t error = 0;
+    SetRestoreFailedAndErrorCount(failed, error);
     restoreTotalInfo << failed;
     restoreTotalInfo << ";" << error;
     restoreTotalInfo << ";" << GetNoNeedMigrateCount();
     return restoreTotalInfo.str();
+}
+
+void BaseRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error)
+{
+    uint64_t success = migrateFileNumber_;
+    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
+    failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
+        GetFailedFiles(STAT_TYPE_VIDEO).size());
+    error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
 }
 
 int32_t BaseRestore::GetNoNeedMigrateCount()
@@ -2306,6 +2313,11 @@ void BaseRestore::RestoreSearchIndex()
         IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
     int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
+}
+
+void BaseRestore::SetIsRestore(bool isRestore)
+{
+    isRestore_ = isRestore;
 }
 } // namespace Media
 } // namespace OHOS
