@@ -103,7 +103,8 @@ int32_t CloudSyncConvert::CompensateAttVirtualPath(const CloudMediaPullDataDto &
 int32_t CloudSyncConvert::CompensateAttMetaDateModified(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    int64_t metaDateModified = data.attributesMetaDateModified;
+    int64_t metaDateModified = data.attributesMetaDateModified == 0 ? data.basicEditedTime
+                                                                    : data.attributesMetaDateModified;
     CHECK_AND_RETURN_RET_WARN_LOG(
         metaDateModified != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::metaDateModified.");
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, metaDateModified);
