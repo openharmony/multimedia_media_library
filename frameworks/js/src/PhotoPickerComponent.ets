@@ -241,7 +241,7 @@ export struct PhotoPickerComponent {
           }
         },
         {
-          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
         })
           .height('100%')
           .width('100%')
