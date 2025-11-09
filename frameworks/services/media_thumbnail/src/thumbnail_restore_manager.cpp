@@ -253,6 +253,7 @@ int32_t ThumbnailRestoreManager::RestoreAstcDualFrame(ThumbRdbOpt &opts, const i
         infos.size(), restoreAstcCount);
 
     for (auto &info : infos) {
+        info.genThumbScene = GenThumbScene::CLONE_OR_DUAL_FRAME_UPGRADE;
         opts.row = info.id;
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);

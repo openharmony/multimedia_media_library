@@ -161,6 +161,8 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
     ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority,
     std::shared_ptr<ExecuteParamBuilder> param)
 {
+    thumbData.taskCreatedInfo = "created time " + MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
     CHECK_AND_RETURN_LOG(thumbnailWorker != nullptr, "thumbnailWorker is null");
@@ -173,6 +175,8 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
 void IThumbnailHelper::AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
     ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId)
 {
+    thumbData.taskCreatedInfo = "created time " + MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
     CHECK_AND_RETURN_LOG(thumbnailWorker != nullptr, "thumbnailWorker is null");
@@ -587,8 +591,9 @@ bool IThumbnailHelper::TrySavePicture(ThumbnailData &data, const bool isSourceEx
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateLcd, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
-        "position:%{public}d",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
+        "position:%{public}d, gen thumb scene: %{public}s, task info: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position,
+        GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     ThumbnailWait thumbnailWait(true);
     WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD, data.dateModified);
     data.needCheckWaitStatus = true;
@@ -971,8 +976,9 @@ int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateThumbnail, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
-        "position:%{public}d",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
+        "position:%{public}d, gen thumb scene: %{public}s, task info: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position,
+        GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     ThumbnailWait thumbnailWait(true);
     WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB, data.dateModified);
@@ -1156,8 +1162,9 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
-        "position:%{public}d",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
+        "position:%{public}d, gen thumb scene: %{public}s, task info: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position,
+        GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     data.loaderOpts.decodeInThumbSize = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
@@ -1231,8 +1238,9 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     
     MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
-        "position:%{public}d",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
+        "position:%{public}d, gen thumb scene: %{public}s, task info: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position,
+        GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("No available file in THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
