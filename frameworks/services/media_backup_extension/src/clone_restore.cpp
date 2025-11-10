@@ -269,6 +269,12 @@ bool CloneRestore::UpdateConfigInfo()
         return ret;
     };
     auto ret = trans.RetryTrans(func, true);
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .Report("UpdateConfigInfo", "",
+                "sceneId: " + std::to_string(static_cast<int>(ConfigInfoSceneId::CLONE_RESTORE)) +
+                ", deviceId: " + srcCloneRestoreConfigInfo_.deviceId +
+                ", srcSwitchStatus: " + std::to_string(static_cast<int>(srcCloneRestoreConfigInfo_.switchStatus)) +
+                ", result: " + (ret == NativeRdb::E_OK ? "success" : "failure"));
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "fail to insert backupInfo into ConfigInfo.");
     return true;
 }
