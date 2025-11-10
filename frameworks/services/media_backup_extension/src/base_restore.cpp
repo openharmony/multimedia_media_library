@@ -121,8 +121,9 @@ void BaseRestore::GetAccountValid()
 
     for (const auto& item : json_arr) {
         bool checkContain = item.contains("type") && item.contains("detail");
+        CHECK_AND_CONTINUE(checkContain);
         bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == "dualAccountId";
-        CHECK_AND_CONTINUE(checkContain && checkType);
+        CHECK_AND_CONTINUE(checkType);
         oldId = item["detail"];
         MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
         break;
@@ -176,8 +177,9 @@ bool BaseRestore::IsRestorePhoto()
 
     for (const auto& item : jsonArray) {
         bool checkContain = item.contains("type") && item.contains("detail");
+        CHECK_AND_CONTINUE(checkContain);
         bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == STAT_KEY_BACKUP_INFO;
-        CHECK_AND_CONTINUE(checkContain && checkType);
+        CHECK_AND_CONTINUE(checkType);
         for (const auto& backupInfo : item["detail"]) {
             bool conds = (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
                 backupInfo == STAT_TYPE_GALLERY_DATA);
