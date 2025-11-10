@@ -599,6 +599,8 @@ struct AnalysisAlbumTbl {
     std::optional<std::string> relationship;
     std::optional<int32_t> albumIdOld;
     std::optional<int32_t> albumIdNew;
+    std::optional<double> age;
+    std::optional<int32_t> gender;
 };
 
 struct PortraitAlbumDfx {
@@ -669,6 +671,8 @@ struct ImageFaceTbl {
     std::optional<double> faceEyeClose;
     std::optional<std::string> faceDetailVersion;
     std::optional<double> faceExpression;
+    std::optional<double> age;
+    std::optional<int32_t> gender;
     std::optional<std::string> preferredGrade;
     std::optional<double> jointBeautyBounderX;
     std::optional<double> jointBeautyBounderY;
