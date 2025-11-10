@@ -22,6 +22,27 @@ group("unittest") {
 
 ohos_unittest("medialibrary_handler_unittest") {
   module_out_path = "media_library/media_library-asset"
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wfloat-equal",
+    "-Wdate-time",
+    "-Werror",
+    "-Wimplicit-fallthrough",
+    "-Wsign-compare",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   include_dirs = [
     "./include",
