@@ -2777,7 +2777,6 @@ void CloneRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &err
     error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
 }
 
-
 int32_t CloneRestore::GetNoNeedMigrateCount()
 {
     return this->photosClone_.GetNoNeedMigrateCount();
