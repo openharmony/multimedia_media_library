@@ -459,7 +459,6 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
 int32_t CloudMediaDownloadService::OnDownloadAsset(
     const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadAsset, %{public}zu", cloudIds.size());
     // get downloadAssetDataVec
     std::vector<PhotosPo> photosPoVec;
     int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
