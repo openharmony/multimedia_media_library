@@ -2767,6 +2767,15 @@ int32_t CloneRestore::CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhot
     return RESTORE_LCD_VISIT_TIME_NO_LCD;
 }
 
+void CloneRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error)
+{
+    uint64_t success = migrateFileNumber_ + migrateLakeFileNumber_;
+    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_ +
+        migrateLakePhotoDuplicateNumber_ + migrateLakeVideoDuplicateNumber_;
+    failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
+        GetFailedFiles(STAT_TYPE_VIDEO).size());
+    error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
+}
 
 int32_t CloneRestore::GetNoNeedMigrateCount()
 {
