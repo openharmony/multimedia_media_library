@@ -239,6 +239,9 @@ export struct PhotoPickerComponent {
             pickerIndex: this.pickerOptions?.pickerIndex as number,
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
           }
+        },
+        {
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
         })
           .height('100%')
           .width('100%')
