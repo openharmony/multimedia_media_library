@@ -317,6 +317,9 @@ export class PhotoPickerComponent extends ViewPU {
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
                 }
+            }
+            ,{
+                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');
