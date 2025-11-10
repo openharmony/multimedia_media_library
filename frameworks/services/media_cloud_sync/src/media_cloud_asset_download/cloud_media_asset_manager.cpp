@@ -226,10 +226,6 @@ CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
     return instance;
 }
 
-CloudMediaAssetManager::CloudMediaAssetManager() {}
-
-CloudMediaAssetManager::~CloudMediaAssetManager() {}
-
 int32_t CloudMediaAssetManager::CheckDownloadTypeOfTask(const CloudMediaDownloadType &type)
 {
     if (static_cast<int32_t>(type) < static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE) ||
