@@ -91,6 +91,8 @@ const std::string ANALYSIS_COL_RENAME_OPERATION = "rename_operation";
 const std::string ANALYSIS_COL_IS_LOCAL = "is_local";
 const std::string ANALYSIS_COL_IS_COVER_SATISFIED = "is_cover_satisfied";
 const std::string ANALYSIS_COL_RELATIONSHIP = "relationship";
+const std::string ANALYSIS_COL_AGE = "age";
+const std::string ANALYSIS_COL_GENDER = "gender";
 
 /* FaceTag TBL COL_NAME */
 const std::string FACE_TAG_COL_ID = "id";
@@ -145,6 +147,8 @@ const std::string IMAGE_FACE_COL_FACE_SATURATION = "face_saturation";
 const std::string IMAGE_FACE_COL_FACE_EYE_CLOSE = "face_eye_close";
 const std::string IMAGE_FACE_COL_FACE_DETAIL_VERSION = "face_detail_version";
 const std::string IMAGE_FACE_COL_FACE_EXPRESSION = "face_expression";
+const std::string IMAGE_FACE_COL_AGE = "age";
+const std::string IMAGE_FACE_COL_GENDER = "gender";
 const std::string IMAGE_FACE_COL_PREFERRED_GRADE = "preferred_grade";
 const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X = "joint_beauty_bounder_x";
 const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y = "joint_beauty_bounder_y";

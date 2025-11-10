@@ -688,6 +688,10 @@ void  CloneRestorePortrait::ParseImageFaceResultSet1(const std::shared_ptr<Nativ
         IMAGE_FACE_COL_GROUP_VERSION);
     imageFaceTbl.faceDetailVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_FACE_DETAIL_VERSION);
+    imageFaceTbl.age = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_AGE);
+    imageFaceTbl.gender = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        IMAGE_FACE_COL_GENDER);
 }
 
 void CloneRestorePortrait::BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls)
@@ -746,6 +750,8 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromImageFaceTbl
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_FACE_SATURATION, imageFaceTbl.faceSaturation);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
+    BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_AGE, imageFaceTbl.age);
+    BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_GENDER, imageFaceTbl.gender);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X, imageFaceTbl.jointBeautyBounderX);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y, imageFaceTbl.jointBeautyBounderY);
