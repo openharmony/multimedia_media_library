@@ -57,6 +57,7 @@ public:  // getter & setter
 
 public:
     int32_t FixPhotoRelation();
+    int32_t BuildAlbumBySourcePath(const std::string &sourcePath);
 
 private:
     std::string ToStringWithComma(const std::vector<NativeRdb::ValueObject> &bindArgs) const;
@@ -88,6 +89,7 @@ private:
         const std::unordered_map<std::string, MediaData> &albumInfos);
     std::vector<std::string> GetScreenVideoFileIds();
     int32_t FixScreenVideoRelation();
+    int32_t GetPhotoAlbumId(const std::string &lPath);
 
 private:  // sqls
     const int32_t MEDIA_TYPE_VIDEO = 2;
