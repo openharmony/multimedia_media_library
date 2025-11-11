@@ -623,7 +623,9 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_RDB, "UpdateDBProgressInfoForFileId Failed");
 
     if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)) {
+        int64_t downloadId = GetDownloadIdByFileIdInCurrentRound(fileIdStr);
         unique_lock<mutex> downloadLock(downloadResultMutex_);
+        currentDownloadIdFileInfoMap_.erase(downloadId);
         downloadFileIdAndCount_.erase(fileIdStr);
         downloadResult_.erase(fileIdStr);
         downloadLock.unlock();

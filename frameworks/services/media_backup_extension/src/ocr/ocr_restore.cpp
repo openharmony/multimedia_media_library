@@ -33,10 +33,10 @@ void OCRRestore::Init(int32_t sceneCode, const std::string &taskId,
     galleryRdb_ = galleryRdb;
 }
 
-void OCRRestore::RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+void OCRRestore::RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied)
 {
     CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
-    RestoreOCRInfos(photoInfoMap);
+    RestoreOCRInfos(photoInfoMap, isCloudRestoreSatisfied);
 }
 
 void OCRRestore::UpdateOcrInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const GalleryOCRInfo &ocrInfo)
@@ -83,13 +83,15 @@ void OCRRestore::RestoreOCRTotal(const vector<int32_t> &fileIds)
         updatedRows);
 }
 
-void OCRRestore::RestoreOCRInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+void OCRRestore::RestoreOCRInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap,
+    bool isCloudRestoreSatisfied)
 {
-    MEDIA_INFO_LOG("Start to restore ocr info.");
+    MEDIA_INFO_LOG("Start to restore ocr info. isCloudRestoreSatisfied: %{public}d",
+        static_cast<int>(isCloudRestoreSatisfied));
     std::string querySql = "select gallery_media._id, gallery_media.hash, ocr_text, version_ocr, t_ocr_result.width, "
                            "t_ocr_result.height from t_ocr_result INNER JOIN gallery_media on t_ocr_result.hash = "
                            "gallery_media.hash and " +
-                           LOCAL_PHOTOS_WHERE_CLAUSE +
+                           (isCloudRestoreSatisfied ? ALL_PHOTOS_WHERE_CLAUSE : LOCAL_PHOTOS_WHERE_CLAUSE) +
                            " AND gallery_media._id > ? ORDER BY gallery_media._id ASC LIMIT ?";
     int rowCount = 0;
     int offset = 0;

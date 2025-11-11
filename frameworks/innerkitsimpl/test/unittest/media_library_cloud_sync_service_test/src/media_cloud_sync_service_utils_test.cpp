@@ -449,6 +449,21 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestS
     EXPECT_EQ(dateAdded, 1752233169000);
 }
 
+HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_003, TestSize.Level1)
+{
+    ValuesBucket values;
+    CloudMediaPullDataDto data;
+    data.propertiesFirstUpdateTime = "";
+    data.basicCreatedTime = 1751544669000;  // 2025-07-03 20:11:09
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+
+    int64_t dateAdded = 0;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
+    valueObject.GetLong(dateAdded);
+    EXPECT_EQ(dateAdded, 1751544669000);
+}
+
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDetailTime_Test_001, TestSize.Level1)
 {
     ValuesBucket values;

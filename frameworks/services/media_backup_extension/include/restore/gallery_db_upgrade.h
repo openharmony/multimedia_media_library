@@ -40,6 +40,7 @@ private:
     int32_t AddRelativeBucketIdColumn(NativeRdb::RdbStore &store);
     int32_t AddUserDisplayLevelIntoMergeTag(NativeRdb::RdbStore &store);
     int32_t AddHdcUniqueIdIntoGalleryMedia(NativeRdb::RdbStore &store);
+    int32_t AddVersionOcrOfTOcrResult(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -113,6 +114,8 @@ private:
     )";
     const std::string SQL_GALLERY_MEDIA_TABLE_ADD_HDC_UNIQUE_ID_COLUMN = "\
         ALTER TABLE gallery_media ADD COLUMN hdc_unique_id INT DEFAULT 0;";
+    const std::string SQL_T_OCR_RESULT_TABLE_ADD_VERSION_OCR = "\
+        ALTER TABLE t_ocr_result ADD COLUMN version_ocr INTEGER NOT NULL DEFAULT 0;";
 private:
     DbUpgradeUtils dbUpgradeUtils_;
 };

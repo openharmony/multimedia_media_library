@@ -87,7 +87,7 @@ constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
 constexpr int32_t ALBUM_SETNAME_OK = 1;
-constexpr int32_t HIGHLIGHT_DELETED = -2;
+constexpr int32_t HIGHLIGHT_DELETED = -3;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 constexpr int32_t ALBUM_RENAMED = 2;
@@ -2785,12 +2785,13 @@ int32_t MediaLibraryAlbumOperations::SetDisplayLevel(const ValuesBucket &values,
     return err;
 }
 
-void QueryIsMeAlbumIds(vector<string> &albumIds, shared_ptr<MediaLibraryRdbStore> uniStore)
+void QueryIsMeAndRelationshipAlbumIds(vector<string> &albumIds, shared_ptr<MediaLibraryRdbStore> uniStore)
 {
-    std::string queryIsMe = "SELECT DISTINCT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
-                            " WHERE " + IS_ME + " = 1 ";
-    auto resultSet = uniStore->QuerySql(queryIsMe);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query isMe albumIds!");
+    std::string queryAlbumIds = "SELECT DISTINCT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
+                            " WHERE (is_me = 1 or ( relationship is not null and relationship != '' )) "
+                            " AND album_subtype = " + to_string(PhotoAlbumSubType::PORTRAIT);
+    auto resultSet = uniStore->QuerySql(queryAlbumIds);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query isMe and relationship albumIds!");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int albumId = 0;
         if (GetIntValueFromResultSet(resultSet, ALBUM_ID, albumId) == E_OK) {
@@ -2798,6 +2799,35 @@ void QueryIsMeAlbumIds(vector<string> &albumIds, shared_ptr<MediaLibraryRdbStore
         }
     }
     resultSet->Close();
+}
+
+void QueryAlbumIdsByPredicate(vector<string> &albumIds, RdbPredicates rdbPredicates,
+    shared_ptr<MediaLibraryRdbStore> uniStore)
+{
+    std::string queryAlbumIds = "SELECT DISTINCT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
+                                " WHERE GROUP_TAG IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+                                " WHERE " + rdbPredicates.GetWhereClause() + ")"
+                                " AND album_subtype = " + to_string(PhotoAlbumSubType::PORTRAIT);
+    auto bindArgs = rdbPredicates.GetBindArgs();
+    auto resultSet = uniStore->QuerySql(queryAlbumIds, bindArgs);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query albumIds by predicates!");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int albumId = 0;
+        if (GetIntValueFromResultSet(resultSet, ALBUM_ID, albumId) == E_OK) {
+            albumIds.push_back(to_string(albumId));
+        }
+    }
+    resultSet->Close();
+}
+
+static void DoUpdateAlbumSearchIndex(const std::vector<string> &albumIds)
+{
+    if (albumIds.empty()) {
+        MEDIA_ERR_LOG("albumIds is empty");
+        return;
+    }
+    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::ALBUM_UPDATE_INDEX_TASK), albumIds);
 }
 
 void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> uniStore)
@@ -2979,8 +3009,11 @@ int32_t SetAnalysisAlbumRelationship(const ValuesBucket &values, const DataShare
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    vector<string> needUpdateSearchAlbumIds;
+    QueryAlbumIdsByPredicate(needUpdateSearchAlbumIds, rdbPredicates, rdbStore);
     int ret = rdbStore->ExecuteSql(sqlStr, bindArgs);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update relationship failed, error id: %{public}d", ret);
+    DoUpdateAlbumSearchIndex(needUpdateSearchAlbumIds);
     return ret;
 }
 
@@ -2996,14 +3029,15 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
         return MediaLibraryAlbumOperations::SetIsMe(values, predicates);
     }
 
+    vector<string> needUpdateSearchAlbumIds;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     // 如果当前相册是“我”，设置为其它相册，则清理is_me等数据
     if (isMeAlbum == IS_ME_ALBUM) {
-        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
-            "uniStore is nullptr! failed update for set relationship");
+        QueryIsMeAndRelationshipAlbumIds(needUpdateSearchAlbumIds, rdbStore);
         vector<string> updateSqls;
-        SetMyOldAlbum(updateSqls, uniStore);
-        int32_t err = ExecSqls(updateSqls, uniStore);
+        SetMyOldAlbum(updateSqls, rdbStore);
+        int32_t err = ExecSqls(updateSqls, rdbStore);
         CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "SetMyOldAlbum failed, error id: %{public}d", err);
     }
 
@@ -3019,11 +3053,10 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
         GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + rdbPredicates.GetWhereClause() + ")";
     string sqlStr = sql.str();
     auto bindArgs = rdbPredicates.GetBindArgs();
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    QueryAlbumIdsByPredicate(needUpdateSearchAlbumIds, rdbPredicates, rdbStore);
     int ret = rdbStore->ExecuteSql(sqlStr, bindArgs);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update relationship failed, error id: %{public}d", ret);
+    DoUpdateAlbumSearchIndex(needUpdateSearchAlbumIds);
 
     auto whereArgs = rdbPredicates.GetWhereArgs();
     if (whereArgs.empty()) {
@@ -3077,18 +3110,14 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     updateSqls.push_back(updateForSetIsMe);
     updateSqls.push_back(updateSqlForGroupPhoto);
     vector<string> needUpdateSearchAlbumIds;
-    QueryIsMeAlbumIds(needUpdateSearchAlbumIds, uniStore);
+    QueryIsMeAndRelationshipAlbumIds(needUpdateSearchAlbumIds, uniStore);
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyPortraitAlbum(changeAlbumIds);
     }
-    QueryIsMeAlbumIds(needUpdateSearchAlbumIds, uniStore);
-    if (!needUpdateSearchAlbumIds.empty()) {
-        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
-            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::ALBUM_UPDATE_INDEX_TASK),
-            needUpdateSearchAlbumIds);
-    }
+    QueryIsMeAndRelationshipAlbumIds(needUpdateSearchAlbumIds, uniStore);
+    DoUpdateAlbumSearchIndex(needUpdateSearchAlbumIds);
     return err;
 }
 

@@ -38,10 +38,17 @@ private:
     int32_t BatchInsertWithRetry(const std::string &tableName,
         const std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
     std::string ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight);
-    void ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex, CloneRestoreHighlight &cloneHighlight);
-    void ParseEffectlineFileData(nlohmann::json &newPlayInfo, size_t effectlineIndex,
+    void ParseEffectline(nlohmann::json &newPlayInfo, CloneRestoreHighlight &cloneHighlight);
+    void ProcessEffectVideoUri(nlohmann::json &effectlineInfoArray, size_t effectlineIndex,
         CloneRestoreHighlight &cloneHighlight);
-    void ParseTimeline(nlohmann::json &newPlayInfo, size_t TimelineIndex, CloneRestoreHighlight &cloneHighlight);
+    void ProcessTransitionVideoUri(nlohmann::json &effectlineInfoArray, size_t effectlineIndex,
+        CloneRestoreHighlight &cloneHighlight);
+    void ParseEffectlineFileData(nlohmann::json &effectlineInfoArray, size_t effectlineIndex,
+        CloneRestoreHighlight &cloneHighlight);
+    void ProcessIds(nlohmann::json &effectlineInfo, CloneRestoreHighlight &cloneHighlight);
+    void ProcessUris(nlohmann::json &effectlineInfo, CloneRestoreHighlight &cloneHighlight);
+    void ParseTimeline(nlohmann::json &newPlayInfo, CloneRestoreHighlight &cloneHighlight);
+    void ProcessTimelineInfo(nlohmann::json &timelineInfo, CloneRestoreHighlight &cloneHighlight);
     void UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight, std::vector<int32_t> &updateHighlightIds);
     void ReportCloneRestoreCVAnalysisTask();
     std::string GetNewEffectVideoUri(const std::string &oldVideoUri, CloneRestoreHighlight &cloneHighlight);

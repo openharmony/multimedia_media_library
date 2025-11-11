@@ -40,11 +40,11 @@ class OCRRestore {
 public:
     void Init(int32_t sceneCode, const std::string& taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied);
 
 private:
     void UpdateOcrInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const GalleryOCRInfo &ocrInfo);
-    void RestoreOCRInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreOCRInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied);
     void RestoreOCRTotal(const vector<int32_t> &fileIds);
 
     int32_t BatchInsertWithRetry(

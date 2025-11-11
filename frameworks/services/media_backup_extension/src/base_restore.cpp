@@ -272,7 +272,7 @@ int32_t BaseRestore::Init(void)
     MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
     MEDIA_INFO_LOG("audioNumber: %{public}d", (int)audioNumber_);
     photosDataHandler_.OnStart(sceneCode_, taskId_, mediaLibraryRdb_);
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(isRestore_);
     return E_OK;
 }
 
@@ -771,7 +771,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             continue;
         }
-        BackupFileUtils::ModifyFile(dstPath, fileInfos[i].dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(dstPath, fileInfos[i].dateModified);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;
@@ -853,7 +853,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
         "MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
-    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+    MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
     
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         size_t destPos = fileInfo.filePath.find_last_of(".");
@@ -869,7 +869,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             "Move moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
             BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
             BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
-        BackupFileUtils::ModifyFile(movTargetPath, fileInfo.dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(movTargetPath, fileInfo.dateModified);
         
         CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
             "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
@@ -890,7 +890,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             (void)MediaFileUtils::DeleteFile(localPath);
             return false;
         }
-        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
         return MoveExtraData(fileInfo, sceneCode);
     }
     return true;
@@ -2062,15 +2062,22 @@ std::string BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errC
 std::string BaseRestore::GetRestoreTotalInfo()
 {
     std::stringstream restoreTotalInfo;
-    uint64_t success = migrateFileNumber_;
-    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
-    uint64_t failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
-        GetFailedFiles(STAT_TYPE_VIDEO).size());
-    uint64_t error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
+    uint64_t failed = 0;
+    uint64_t error = 0;
+    SetRestoreFailedAndErrorCount(failed, error);
     restoreTotalInfo << failed;
     restoreTotalInfo << ";" << error;
     restoreTotalInfo << ";" << GetNoNeedMigrateCount();
     return restoreTotalInfo.str();
+}
+
+void BaseRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error)
+{
+    uint64_t success = migrateFileNumber_;
+    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
+    failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
+        GetFailedFiles(STAT_TYPE_VIDEO).size());
+    error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
 }
 
 int32_t BaseRestore::GetNoNeedMigrateCount()
@@ -2306,6 +2313,11 @@ void BaseRestore::RestoreSearchIndex()
         IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
     int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
+}
+
+void BaseRestore::SetIsRestore(bool isRestore)
+{
+    isRestore_ = isRestore;
 }
 } // namespace Media
 } // namespace OHOS

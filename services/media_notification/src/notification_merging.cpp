@@ -132,7 +132,8 @@ int32_t NotificationMerging::ProcessNotifyDownloadProgressInfo(Notification::Dow
     uintptr_t buf = parcel->GetData();
     auto *uBuf = new (std::nothrow) uint8_t[parcel->GetDataSize()];
     CHECK_AND_RETURN_RET_LOG(uBuf != nullptr, E_ERR, "parcel GetDataSize is null");
-    memcpy_s(uBuf, parcel->GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel->GetDataSize());
+    int32_t ret = memcpy_s(uBuf, parcel->GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel->GetDataSize());
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "memcpy failed");
     std::shared_ptr<AAFwk::ChangeInfo> serverChangeInfo = std::make_shared<AAFwk::ChangeInfo>();
     serverChangeInfo->data_ = uBuf;
     serverChangeInfo->size_ = parcel->GetDataSize();

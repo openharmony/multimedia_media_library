@@ -3416,6 +3416,7 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     for (auto obs : offObservers) {
         UserFileClient::UnregisterObserverExt(Uri(uri),
             static_cast<shared_ptr<DataShare::DataShareObserver>>(obs));
+        napi_delete_reference(env, obs->ref_);
     }
 }
 
@@ -3562,9 +3563,9 @@ static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status statu
         jsContext->data = mapNapiValue;
         jsContext->status = true;
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        GetOldUriQueryResult(env, context, jsContext);
     }
 
-    GetOldUriQueryResult(env, context, jsContext);
     tracer.Finish();
 
     if (context->work != nullptr) {
@@ -7326,6 +7327,41 @@ static std::string GetTotalCount()
     return to_string(totalCount);
 }
 
+static void UpdateAnalysisProgress(const shared_ptr<DataShare::DataShareResultSet>& resultSet,
+    const string& curTotalCount, MediaLibraryAsyncContext* context)
+{
+    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, HIGHLIGHT_ANALYSIS_PROGRESS);
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
+        resultSet->Close();
+        NAPI_ERR_LOG("retJson is empty or invalid");
+        return;
+    }
+
+    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    if (!curJsonObj.contains("totalCount")) {
+        resultSet->Close();
+        NAPI_ERR_LOG("retJson do not contain totalCount");
+        return;
+    }
+
+    if (!curJsonObj["totalCount"].is_number_integer()) {
+        resultSet->Close();
+        NAPI_ERR_LOG("totalCount is not an integer type");
+        return;
+    }
+
+    int preTotalCount = curJsonObj["totalCount"];
+    if (to_string(preTotalCount) != curTotalCount) {
+        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
+            curTotalCount.c_str(), preTotalCount);
+        curJsonObj["totalCount"] = curTotalCount;
+    }
+
+    context->analysisProgress = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
+    resultSet->Close();
+}
+
 static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     string curTotalCount = GetTotalCount();
@@ -7361,22 +7397,7 @@ static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
             context->analysisProgress.c_str());
         return;
     }
-    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
-    if (retJson == "" || !nlohmann::json::accept(retJson)) {
-        ret->Close();
-        NAPI_ERR_LOG("retJson is empty or invalid");
-        return;
-    }
-    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
-    int preTotalCount = curJsonObj["totalCount"];
-    if (to_string(preTotalCount) != curTotalCount) {
-        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
-            curTotalCount.c_str(), preTotalCount);
-        curJsonObj["totalCount"] = curTotalCount;
-    }
-    context->analysisProgress = curJsonObj.dump();
-    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
-    ret->Close();
+    UpdateAnalysisProgress(ret, curTotalCount, context);
 }
 
 static void GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
@@ -9554,11 +9575,11 @@ static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status statu
         jsContext->data = mapNapiValue;
         jsContext->status = true;
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        GetOldAlbumUriQueryResult(env, context, jsContext);
     } else {
         context->HandleError(env, jsContext->error);
     }
 
-    GetOldAlbumUriQueryResult(env, context, jsContext);
     tracer.Finish();
 
     if (context->work != nullptr) {
@@ -10414,7 +10435,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_THREE], tokenId));
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_FOUR], authorizationMode));
     CHECK_COND_WITH_MESSAGE(env, authorizationMode == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
-    asyncContext->tokenId = tokenId;
+    asyncContext->tokenId = static_cast<uint32_t>(tokenId);
     int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
         tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
     if (ret != E_SUCCESS) {

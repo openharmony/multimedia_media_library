@@ -861,6 +861,9 @@ int32_t EnhancementManager::SetCompositeDisplayMode(int32_t fileId, const int32_
     CHECK_AND_RETURN_RET_LOG(result.has_value(), E_DB_FAIL, "Failed to get file path and composite display status");
     auto [filePath, fileStatus, fileCeAvailable] = result.value();
 
+    CHECK_AND_RETURN_RET_LOG(PhotoFileUtils::IsEditDataSourceBackExists(filePath), E_ERR,
+        "the asset is not a composite photo");
+
     int32_t compositeDisplayStatus = 0;
     int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT);
 
@@ -882,7 +885,7 @@ int32_t EnhancementManager::SetCompositeDisplayMode(int32_t fileId, const int32_
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
         "Failed to do change composite mode from %{public}d to %{public}d, photoId: %{public}d",
         fileStatus, compositeDisplayStatus, fileId);
-    
+
     ret = this->UpdateCompositeDisplayStatus(fileId, compositeDisplayStatus, ceAvailable);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to update composite display status");
     MEDIA_INFO_LOG("set composite mode, from %{public}d to %{public}d, photoId: %{public}d",
@@ -1362,17 +1365,19 @@ bool EnhancementManager::SyncDealWithCompositePhoto(const std::string &photoPath
     return true;
 }
 
-int32_t EnhancementManager::SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath,
-    bool exchange)
+pair<int32_t, int32_t> EnhancementManager::SyncDealWithCompositeDisplayStatus(int32_t fileId,
+    const std::string &photoPath, bool exchange)
 {
+    const auto defaultRet = pair<int32_t, int32_t>();
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_RET_LOG(fileId > 0, 0,
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, defaultRet,
         "Failed to deal with composite_display_status of wrong fileId:%{public}d", fileId);
     auto result = QueryCompositePhotoInfo(fileId);
-    CHECK_AND_RETURN_RET_LOG(result.has_value(), 0, "Failed to get file path and composite display status");
+    CHECK_AND_RETURN_RET_LOG(result.has_value(), defaultRet, "Failed to get file path and composite display status");
     auto [filePath, oldCompositeDisplayStatus, fileCeAvailable] = result.value();
 
     int32_t compositeDisplayStatus = 0;
+    int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT);
     int32_t featureValue = oldCompositeDisplayStatus + static_cast<int32_t>(exchange);
     string editDataPath = PhotoFileUtils::GetEditDataPath(photoPath);
     bool editDataPathExist = MediaFileUtils::IsFileExists(editDataPath);
@@ -1384,25 +1389,18 @@ int32_t EnhancementManager::SyncDealWithCompositeDisplayStatus(int32_t fileId, c
         // otherwise, it should be original.
         compositeDisplayStatus = (editDataPathExist ? static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT)
             : static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+        ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS);
     } else {
         // if editdata exists, the composite display status should be enhanced_edit,
         // otherwise, it should be enhanced.
         compositeDisplayStatus = (editDataPathExist ? static_cast<int32_t>(CompositeDisplayStatus::ENHANCED_EDIT)
             : static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+        ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::FINISH);
     }
 
-    return compositeDisplayStatus;
+    return make_pair(compositeDisplayStatus, ceAvailable);
 #else
-    return 0;
-#endif
-}
-
-bool EnhancementManager::IsCloudEnhancementSupposed()
-{
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    return true;
-#else
-    return false;
+    return defaultRet;
 #endif
 }
 
@@ -1427,6 +1425,27 @@ bool EnhancementManager::SyncCleanCompositePhoto(const std::string &photoPath)
 #endif
 }
 
+bool EnhancementManager::SyncClearNormalPhoto(int32_t fileId)
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, false,
+        "Failed to clear normal photo of wrong fileId:%{public}d", fileId);
+    auto result = QueryCompositePhotoInfo(fileId);
+    CHECK_AND_RETURN_RET_LOG(result.has_value(), false, "Failed to get file path and composite display status");
+    auto [filePath, oldCompositeDisplayStatus, fileCeAvailable] = result.value();
+
+    int32_t newCompositeDisplayStatus = static_cast<int32_t>(CompositeDisplayStatus::PLAIN_PICTURE);
+    if (oldCompositeDisplayStatus != newCompositeDisplayStatus) {
+        int32_t updateRet = UpdateCompositeDisplayStatus(fileId, newCompositeDisplayStatus);
+        CHECK_AND_RETURN_RET_LOG(updateRet == E_OK, false,
+            "fail to update composite display status of fileId: %{public}d", fileId);
+    }
+    return true;
+#else
+    return true;
+#endif
+}
+
 int32_t EnhancementManager::UpdateCompositeDisplayStatus(int32_t fileId, int32_t compositeDisplayStatus,
     int32_t ceAvailable)
 {
@@ -1441,7 +1460,7 @@ int32_t EnhancementManager::UpdateCompositeDisplayStatus(int32_t fileId, int32_t
         rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     }
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR,
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_DB_FAIL,
         "Failed to update composite_display_status:%{public}d, errno:%{public}d", compositeDisplayStatus, errno);
     return E_OK;
 #else

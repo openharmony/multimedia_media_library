@@ -40,6 +40,7 @@ enum AssetType {
 class AssetChangeNotifyExecution {
 public:
     void Notify(const std::vector<PhotoAssetChangeData> &changeDatas);
+    void NotifyYuvReady(const PhotoAssetChangeData &changeData);
 private:
     void InsertNotifyInfo(Notification::AssetRefreshOperation operationType, const PhotoAssetChangeData &changeData);
     Notification::AssetRefreshOperation GetAddOperation(const PhotoAssetChangeInfo &changeInfo);

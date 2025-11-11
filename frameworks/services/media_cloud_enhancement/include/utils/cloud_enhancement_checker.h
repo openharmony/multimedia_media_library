@@ -22,6 +22,8 @@ namespace Media {
 class CloudEnhancementChecker {
 public:
     static void AddPermissionForCloudEnhancement();
+    // 息屏充电任务，将名字带'_enhanced'后缀的非云增强图片识别为云增强图片
+    static void RecognizeCloudEnhancementPhotosByDisplayName();
 };
 } // namespace Media
 } // namespace OHOS
