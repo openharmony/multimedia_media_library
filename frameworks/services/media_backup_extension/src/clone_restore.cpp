@@ -41,6 +41,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "ohos_account_kits.h"
+#include "photo_file_utils.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -268,6 +269,12 @@ bool CloneRestore::UpdateConfigInfo()
         return ret;
     };
     auto ret = trans.RetryTrans(func, true);
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .Report("UpdateConfigInfo", "",
+                "sceneId: " + std::to_string(static_cast<int>(ConfigInfoSceneId::CLONE_RESTORE)) +
+                ", deviceId: " + srcCloneRestoreConfigInfo_.deviceId +
+                ", srcSwitchStatus: " + std::to_string(static_cast<int>(srcCloneRestoreConfigInfo_.switchStatus)) +
+                ", result: " + (ret == NativeRdb::E_OK ? "success" : "failure"));
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "fail to insert backupInfo into ConfigInfo.");
     return true;
 }
@@ -348,6 +355,8 @@ void CloneRestore::ParseDstDeviceBackupInfo()
     std::string compatibilityInfoStr;
     for (const auto& item : jsonArray) {
         bool cond = (!item.contains("type") || !item.contains("detail"));
+        CHECK_AND_CONTINUE(!cond);
+        cond = (!item["type"].is_string() || !item["detail"].is_string());
         CHECK_AND_CONTINUE(!cond);
         if (item["type"] == "compatibility_info") {
             compatibilityInfoStr = item["detail"];
@@ -573,9 +582,11 @@ void CloneRestore::GetAccountValid()
     nlohmann::json jsonArr = nlohmann::json::parse(restoreInfo_, nullptr, false);
     CHECK_AND_RETURN_LOG(!jsonArr.is_discarded(), "cloud account parse failed");
     for (const auto& item : jsonArr) {
-        bool cond = (!item.contains("type") || !item.contains("detail") || item["type"] != "singleAccountId");
+        bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
-        oldId = item["detail"];
+        cond = (!item["type"].is_string() ||  item["type"] != "singleAccountId");
+        CHECK_AND_CONTINUE(!cond);
+        oldId = item["detail"].is_string() ? item["detail"] : "";
         MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
         break;
     }
@@ -1104,6 +1115,7 @@ int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
         "Move photo file failed, filePath = %{public}s, deleteOriginalFile = %{public}d",
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
         deleteOriginalFile);
+    MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
     return E_OK;
 }
 
@@ -1124,7 +1136,7 @@ int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
         opVideoRet = this->CopyFile(srcLocalVideoPath, localVideoPath);
     }
     CHECK_AND_RETURN_RET_LOG(opVideoRet == E_OK, E_FAIL, "Move video of moving photo failed");
-    BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+    MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
     return E_OK;
 }
 
@@ -2124,9 +2136,12 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         return false;
     }
 
-    fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
-    fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
-    fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    fileInfo.dateAdded = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet), MediaFileUtils::UTCTimeMilliSeconds());
+    fileInfo.dateModified = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet), fileInfo.dateAdded);
+    fileInfo.dateTaken = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet), min(fileInfo.dateAdded, fileInfo.dateModified));
     fileInfo.thumbnailReady = GetInt64Val(PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet);
     fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
     fileInfo.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
@@ -2177,7 +2192,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
             UpdateFailedFiles(fileInfo.fileType, fileInfo, RestoreError::MOVE_FAILED);
             continue;
         }
-        BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+        MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;
@@ -2758,6 +2773,15 @@ int32_t CloneRestore::CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhot
     return RESTORE_LCD_VISIT_TIME_NO_LCD;
 }
 
+void CloneRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error)
+{
+    uint64_t success = migrateFileNumber_ + migrateLakeFileNumber_;
+    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_ +
+        migrateLakePhotoDuplicateNumber_ + migrateLakeVideoDuplicateNumber_;
+    failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
+        GetFailedFiles(STAT_TYPE_VIDEO).size());
+    error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
+}
 
 int32_t CloneRestore::GetNoNeedMigrateCount()
 {

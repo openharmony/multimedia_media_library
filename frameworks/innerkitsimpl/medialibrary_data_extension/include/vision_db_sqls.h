@@ -590,6 +590,10 @@ const std::string VIDEO_FACE_INDEX = "video_face_index";
 const std::string CREATE_VIDEO_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + VIDEO_FACE_INDEX + " ON " +
     VISION_VIDEO_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
 
+const std::string VIDEO_FACE_TAG_ID_INDEX = "video_face_tag_id_index";
+const std::string CREATE_VIDEO_FACE_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " + VIDEO_FACE_TAG_ID_INDEX +
+    " ON " + VISION_VIDEO_FACE_TABLE + " (" + TAG_ID + ")" + " WHERE " + TAG_ID + " LIKE " + "'ser%'";
+
 const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
 const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +
     " SET " + STATUS + " = 0, " + SALIENCY + " = 0 WHERE " +

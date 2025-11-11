@@ -766,12 +766,13 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(trans);
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
             "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
 
-        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        outRow = InsertAssetInDb(trans, cmd, fileAsset, assetRefresh);
         if (outRow <= 0) {
             MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
             return E_HAS_DB_ERROR;
@@ -783,6 +784,8 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
         return errCode;
     }
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
     return outRow;
 }
 
@@ -4110,6 +4113,10 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+            // 添加YUV_READY通知
+            auto assetRefresh =
+                make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
+            assetRefresh->NotifyYuvReady(fileId);
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
             resultPicture = picture;
             return FileUtils::SavePicture(path, picture, mime_type, isEdited);
@@ -4125,8 +4132,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type, true) == E_OK, E_FAIL,
-                "Failed to add filters to photo");
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type, true, fileId) == E_OK,
+                E_FAIL, "Failed to add filters to photo");
             resultPicture = picture;
             isTakeEffect = true;
             return E_OK;
@@ -4178,7 +4185,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
-    const std::string &outputPath, string &editdata, const std::string &mime_type, bool isHighQualityPicture)
+    const std::string &outputPath, string &editdata, const std::string &mime_type,
+    bool isHighQualityPicture, const int32_t fileId)
 {
     (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
     MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
@@ -4187,6 +4195,10 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
+    // 添加YUV_READY通知
+    auto assetRefresh =
+        make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
+    assetRefresh->NotifyYuvReady(fileId);
     FileUtils::DealPicture(mime_type, outputPath, inPicture, isHighQualityPicture);
     return E_OK;
 }

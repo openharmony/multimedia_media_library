@@ -132,19 +132,12 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         }
     }
 
-    int32_t ret = 0;
-    if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(editDataSourcePath, editDataSourceBackPath), E_ERR,
-            "Fail to move %{public}s to %{public}s", editDataSourcePath.c_str(), editDataSourceBackPath.c_str());
-        ret = FileUtils::SaveImage(editDataSourcePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
-        MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", editDataSourcePath.c_str());
-    } else {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(info->filePath, editDataSourceBackPath), E_ERR,
-            "Fail to move %{public}s to %{public}s", info->filePath.c_str(), editDataSourceBackPath.c_str());
-        ret = FileUtils::SaveImage(info->filePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
-        MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", info->filePath.c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
+    string primarySourcePath = MediaFileUtils::IsFileExists(editDataCameraPath) ? editDataSourcePath : info->filePath;
+    MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", primarySourcePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(primarySourcePath, editDataSourceBackPath), E_ERR,
+        "Fail to move %{public}s to %{public}s", primarySourcePath.c_str(), editDataSourceBackPath.c_str());
+    int32_t ret = FileUtils::SaveImage(primarySourcePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement photo failed. ret=%{public}d, errno=%{public}d",
         ret, errno);
         
     // 为 primarySourcePath 加exif
@@ -160,8 +153,11 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
         string extension = MediaFileUtils::GetExtensionFromPath(info->filePath);
         string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-        MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(info->fileId,
+        ret = MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(info->fileId,
             info->filePath, editDataCameraPath, mimeType);
+        MEDIA_INFO_LOG("save cloud enhancement photo with editDataCamera, ret: %{public}d", ret);
+        CHECK_AND_EXECUTE(ret == E_OK, CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(editDataSourcePath,
+            info->filePath), E_ERR, "Fail to copy editdata_source to file_path"));
     }
 
     int err = UpdateCloudEnhancementPhotoInfo(info->fileId, assetRefresh);

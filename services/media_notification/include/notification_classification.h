@@ -58,6 +58,7 @@ private:
     static std::vector<MediaChangeInfo> HandleAssetHidden(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAssetUnhidden(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAssetRecheck(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleYuvReady(NotifyInfoInner &notifyInfoInner);
  
     static std::vector<MediaChangeInfo> HandleAlbumAdd(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumRemove(NotifyInfoInner &notifyInfoInner);

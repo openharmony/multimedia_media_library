@@ -268,6 +268,10 @@ void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecor
     std::unique_lock<std::mutex> lock(repairMimeTypeMutex_, std::defer_lock);
     CHECK_AND_RETURN_WARN_LOG(lock.try_lock(), "Repairing mimetype has started, skipping this operation");
     MEDIA_INFO_LOG("Start repair mimetype from %{public}d", lastRecord);
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     bool terminate = false;
     int32_t repairRecord = lastRecord;
     std::vector<PhotosPo> photosPoVec = GetRepairMimeTypeData(repairRecord);
@@ -301,9 +305,6 @@ void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecor
                 break;
             }
         }
-        int32_t errCode = 0;
-        shared_ptr<NativePreferences::Preferences> prefs =
-            NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
         prefs->PutInt(LAST_LOCAL_MIMETYPE_REPAIR, repairRecord);
         prefs->FlushSync();
         MEDIA_INFO_LOG("repair mimetype to %{public}d", repairRecord);

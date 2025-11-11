@@ -67,6 +67,12 @@ private:
     int32_t GetNextCloneSequence();
 
     /**
+     * @brief Clean up the tab_old_albums table by deleting all rows
+     * @return int32_t Returns 0 on success, error code on failure
+     */
+    int32_t CleanupTable();
+
+    /**
      * @brief Insert album data into tab_old_albums table
      * @param albumMapTbl Album data struct containing all required fields
      * @return int32_t Returns 0 on success, error code on failure

@@ -136,7 +136,8 @@ protected:
     static int32_t CreateOperation(MediaLibraryCommand &cmd);
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
     static int32_t InsertAssetInDb(std::shared_ptr<TransactionOperations> trans,
-        MediaLibraryCommand &cmd, const FileAsset &fileAsset);
+        MediaLibraryCommand &cmd, const FileAsset &fileAsset,
+        shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static int32_t CheckWithType(bool isContains, const std::string &displayName,
          const std::string &extention, int32_t mediaType);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);

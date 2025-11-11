@@ -103,7 +103,8 @@ int32_t CloudSyncConvert::CompensateAttVirtualPath(const CloudMediaPullDataDto &
 int32_t CloudSyncConvert::CompensateAttMetaDateModified(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    int64_t metaDateModified = data.attributesMetaDateModified;
+    int64_t metaDateModified = data.attributesMetaDateModified == 0 ? data.basicEditedTime
+                                                                    : data.attributesMetaDateModified;
     CHECK_AND_RETURN_RET_WARN_LOG(
         metaDateModified != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::metaDateModified.");
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, metaDateModified);
@@ -211,8 +212,6 @@ int32_t CloudSyncConvert::CompensateAttVideoMode(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t videoMode = data.attributesVideoMode;
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        videoMode != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::videoMode.");
     values.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
     return E_OK;
 }
@@ -348,7 +347,7 @@ void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, Nat
         MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
             data.propertiesFirstUpdateTime.c_str(),
             data.cloudId.c_str());
-        dateAdded = 0;
+        dateAdded = data.basicCreatedTime;
     }
     dateAdded = PhotoFileUtils::NormalizeTimestamp(dateAdded, MediaFileUtils::UTCTimeMilliSeconds());
     values.Put(PhotoColumn::MEDIA_DATE_ADDED, dateAdded);

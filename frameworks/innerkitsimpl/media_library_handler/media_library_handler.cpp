@@ -77,6 +77,7 @@ namespace OHOS {
 namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryHandler::sDataShareHelper_ = nullptr;
 sptr<IRemoteObject> MediaLibraryHandler::token_ = nullptr;
+constexpr int32_t DEFAULT_USER_ID = 100;
 
 MediaLibraryHandler *MediaLibraryHandler::GetMediaLibraryHandler()
 {
@@ -99,13 +100,25 @@ sptr<IRemoteObject> MediaLibraryHandler::InitToken()
     return remoteObj;
 }
 
+static int32_t GetCurrentAccountId()
+{
+    int32_t activeUserId = DEFAULT_USER_ID;
+    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("fail to get activeUser:%{public}d", ret);
+    }
+    return activeUserId;
+}
+
 void MediaLibraryHandler::InitMediaLibraryHandler()
 {
-    if (sDataShareHelper_ == nullptr) {
+    int32_t activeUser =  GetCurrentAccountId();
+    if (sDataShareHelper_ == nullptr || activeUser != userId_) {
         token_ = InitToken();
         if (token_ != nullptr) {
             sDataShareHelper_ = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
         }
+        userId_ = activeUser;
     }
 }
 

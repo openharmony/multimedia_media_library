@@ -36,7 +36,7 @@ public:  // basic functions
 
 class GetBatchDownloadCloudResourcesCountRespBody : public IPC::IMediaParcelable {
 public:
-    int32_t count;
+    int32_t count = -1;
 
     // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

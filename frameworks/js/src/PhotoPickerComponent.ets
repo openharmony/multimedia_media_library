@@ -49,6 +49,8 @@ export struct PhotoPickerComponent {
   badgeConfig?: BadgeConfig;
   batchBadgeConfigSize: number = 1000;
   maxBadgeConfigSize: number = 200000;
+  batchPreselectedInfos: number = 200;
+  preselectedInfos = undefined;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
@@ -66,7 +68,7 @@ export struct PhotoPickerComponent {
       this.proxy.send({ 'albumUri': data?.get('SET_ALBUM_URI') as string });
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
     } else if (data?.has('SET_SELECTED_INFO')) {
-      this.proxy.send({ 'uriAndPickerIndexLists': data?.get('SET_SELECTED_INFO') as Array<PreselectedInfo> });
+      this.onChangeSelectedInfo(data)
       console.info('PhotoPickerComponent onChanged: SET_SELECTED_INFO');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
       this.onSetMaxSelectCount(data);
@@ -108,6 +110,13 @@ export struct PhotoPickerComponent {
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
+  }
+
+  onChangeSelectedInfo(data) {
+      this.preselectedInfos = null === data ? void 0 : data.get('SET_SELECTED_INFO');
+      console.log(`preselectedInfos start send1 ${data.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos).length}`);
+      this.proxy({ uriAndPickerIndexLists: null === data ? void 0 : data.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos),
+            index: 0, preselectedInfosIsOver: this.preselectedInfos.length <= this.batchPreselectedInfos });
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
@@ -228,9 +237,11 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            preselectedInfos: this.pickerOptions?.preselectedInfos as Array<PreselectedInfo>,
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
           }
+        },
+        {
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
         })
           .height('100%')
           .width('100%')
@@ -271,6 +282,11 @@ export struct PhotoPickerComponent {
           console.log('handleOnReceive: send msg to photo:uri.length:',this.badgeConfig?.uris?.length)
           this.badgeConfigIsSending = true;
           this.proxy.send({needSendBadgeConfigs : true, BadgeOptionType : BadgeOptionType.SET_DATA});
+        }
+        if (this.preselectedInfos && this.preselectedInfos.length > 0){
+            console.log('preselectedInfos start send');
+            this.proxy.send({ uriAndPickerIndexLists: this.preselectedInfos.slice(0, this.batchPreselectedInfos),
+                index: 0, preselectedInfosIsOver: this.preselectedInfos.length <= this.batchPreselectedInfos })
         }
         console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
       }
@@ -336,6 +352,10 @@ export struct PhotoPickerComponent {
       if (this.onCurrentAlbumDeleted) {
         this.onCurrentAlbumDeleted();
       }
+    } else if ('onPreselectedInfo' === o) {
+      console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
+      this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
+          index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
@@ -385,6 +405,7 @@ export struct PhotoPickerComponent {
       itemInfo.photoSubType = wantParam['subtype'] as number;
       itemInfo.dynamicRangeType = wantParam['dynamicRangeType'] as number;
       itemInfo.orientation = wantParam['imageOrientation'] as number;
+      itemInfo.videoMode = wantParam['videoMode'] as number;
       itemInfo.movingPhotoBadgeState = wantParam['movingPhotoBadgeState'] as number;
       let result: boolean = this.onItemClicked(itemInfo, clickType);
       console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);

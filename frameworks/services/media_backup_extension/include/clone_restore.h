@@ -204,6 +204,7 @@ private:
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error) override;
     int32_t GetNoNeedMigrateCount() override;
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
@@ -259,6 +260,10 @@ private:
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
+    std::atomic<uint64_t> migrateLakeFileNumber_{0};
+    std::atomic<uint64_t> migrateLakeVideoFileNumber_{0};
+    std::atomic<uint64_t> migrateLakePhotoDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateLakeVideoDuplicateNumber_{0};
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;

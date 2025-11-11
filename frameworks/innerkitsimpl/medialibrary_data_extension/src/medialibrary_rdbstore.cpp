@@ -99,6 +99,8 @@
 #include "scanner_map_code_utils.h"
 #include "photo_map_code_column.h"
 #include "photo_map_code_operation.h"
+#include "tab_cloned_old_photos_table_event_handler.h"
+
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -406,6 +408,16 @@ void MediaLibraryRdbStore::UpdateIndexDateAdded(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("start update idx_schpt_date_added_new");
     ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
     MEDIA_INFO_LOG("end update idx_schpt_date_added_new");
+}
+
+void MediaLibraryRdbStore::AddVideoFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> sqls = {
+        CREATE_VIDEO_FACE_TAG_ID_INDEX,
+    };
+    MEDIA_INFO_LOG("start add video_face_tag_id_index");
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("end add video_face_tag_id_index");
 }
 
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
@@ -1134,8 +1146,8 @@ static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector
         }
         argsInfo += arg;
     }
-    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
-    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+    MEDIA_DEBUG_LOG("Predicates Statement is %{private}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{private}s", argsInfo.c_str());
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const AbsRdbPredicates &predicates,
@@ -1879,6 +1891,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IMAGE_FACE_INDEX,
     CREATE_IMAGE_FACE_TAG_ID_INDEX,
     CREATE_VIDEO_FACE_INDEX,
+    CREATE_VIDEO_FACE_TAG_ID_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
@@ -1983,6 +1996,9 @@ static int32_t ExecuteSql(RdbStore &store)
     CHECK_AND_RETURN_RET(TabFaCardPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
     if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+    if (TabClonedOldPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
     TableEventHandler().OnCreate(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
@@ -5544,6 +5560,14 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         MEDIA_INFO_LOG("AddVideoMode start");
         AddVideoMode(store, VERSION_VIDEO_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_VIDEO_MODE, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_CLONED_OLD_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true)) {
+        MEDIA_INFO_LOG("CreateTabClonedOldPhotos start");
+        int32_t ret = TabClonedOldPhotosTableEventHandler().OnCreate(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, 0, ret);
     }
 }
 

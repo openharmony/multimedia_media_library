@@ -35,7 +35,6 @@
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("OnFetchRecords enter");
     OnFetchRecordsAlbumReqBody req;
     OnFetchRecordsAlbumRespBody resp;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);

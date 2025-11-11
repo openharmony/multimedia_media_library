@@ -90,6 +90,21 @@ const std::vector<std::pair<std::function<bool(std::pair<AssetType, AssetType>)>
     },
 };
 
+static void PrintNotifyLog(Notification::AssetRefreshOperation operationType,
+    size_t totalLogSize, bool& recordFirst, const NotifyInfoInner& notifyInfo, const PhotoAssetChangeData& changeData)
+{
+    size_t logTimesLimit = 50;
+    if (totalLogSize <= logTimesLimit || !recordFirst) {
+        ACCURATE_INFO("notify PHOTOS info: operationType(0x%{public}x), level(%{public}d), info(%{public}s)",
+            static_cast<int32_t>(operationType),
+            static_cast<int32_t>(notifyInfo.notifyLevel.priority), changeData.ToString().c_str());
+        recordFirst = true;
+        if (totalLogSize > logTimesLimit) {
+            ACCURATE_INFO("%{public}zu total notify datas", totalLogSize);
+        }
+    }
+}
+
 void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &changeDatas)
 {
     // 轮询所有的changeDatas
@@ -125,14 +140,36 @@ void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &chan
         NotifyLevel level;
         notifyInfo.notifyLevel = level;
         auto &changeDatas = item.second;
+        bool recordFirst = false;
         for (auto &changeData : changeDatas) {
             notifyInfo.infos.push_back(changeData);
-            ACCURATE_INFO("notify PHOTOS info: operationType(0x%{public}x), level(%{public}d), info(%{public}s)",
-                static_cast<int32_t>(item.first),
-                static_cast<int32_t>(notifyInfo.notifyLevel.priority), changeData.ToString().c_str());
+            PrintNotifyLog(item.first, changeDatas.size(), recordFirst, notifyInfo, changeData);
         }
         // 调用发送通知接口
         Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
+    }
+}
+
+void AssetChangeNotifyExecution::NotifyYuvReady(const PhotoAssetChangeData &changeData)
+{
+    InsertNotifyInfo(ASSET_OPERATION_YUV_READY, changeData);
+
+    if (notifyInfos_.find(ASSET_OPERATION_YUV_READY) != notifyInfos_.end()) {
+        NotifyInfoInner notifyInfo;
+        notifyInfo.tableType = NotifyTableType::PHOTOS;
+        notifyInfo.operationType = ASSET_OPERATION_YUV_READY;
+        NotifyLevel level;
+        notifyInfo.notifyLevel = level;
+        auto &changeDatas = notifyInfos_[ASSET_OPERATION_YUV_READY];
+        bool recordFirst = false;
+        for (auto &changeData : changeDatas) {
+            notifyInfo.infos.push_back(changeData);
+            PrintNotifyLog(ASSET_OPERATION_YUV_READY, changeDatas.size(), recordFirst, notifyInfo, changeData);
+        }
+        // 调用发送通知接口
+        Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
+    } else {
+        MEDIA_WARN_LOG("No yuv ready notify info found");
     }
 }
 
@@ -190,12 +227,12 @@ void AssetChangeNotifyExecution::InsertNormalAssetOperation(const PhotoAssetChan
         AlbumAssetHelper::IsCommonSystemAsset(changeData.infoBeforeChange_) ? ASSET_NORMAL : ASSET_INVALID;
     AssetType after =
         AlbumAssetHelper::IsCommonSystemAsset(changeData.infoAfterChange_) ? ASSET_NORMAL : ASSET_INVALID;
-    ACCURATE_DEBUG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
+    MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
     for (auto &operationCal : NORMAL_ASSET_OPERATION_CALS) {
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
-            ACCURATE_DEBUG("insert normal operation: %{public}x", operationCal.second);
+            MEDIA_DEBUG_LOG("insert normal operation: %{public}x", operationCal.second);
             break;
         }
     }
@@ -205,12 +242,12 @@ void AssetChangeNotifyExecution::InsertTrashAssetOperation(const PhotoAssetChang
 {
     AssetType before = TrashAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_TRASH : ASSET_INVALID;
     AssetType after = TrashAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_TRASH : ASSET_INVALID;
-    ACCURATE_DEBUG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
+    MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
     for (auto &operationCal : TRASH_ASSET_OPERATION_CALS) {
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
-            ACCURATE_DEBUG("insert trash operation: %{public}x", operationCal.second);
+            MEDIA_DEBUG_LOG("insert trash operation: %{public}x", operationCal.second);
             break;
         }
     }
@@ -220,12 +257,12 @@ void AssetChangeNotifyExecution::InsertHiddenlAssetOperation(const PhotoAssetCha
 {
     AssetType before = HiddenAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_HIDDEN : ASSET_INVALID;
     AssetType after = HiddenAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_HIDDEN : ASSET_INVALID;
-    ACCURATE_DEBUG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
+    MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
     for (auto &operationCal : HIDDEN_ASSET_OPERATION_CALS) {
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
-            ACCURATE_DEBUG("insert hidden operation: %{public}x", operationCal.second);
+            MEDIA_DEBUG_LOG("insert hidden operation: %{public}x", operationCal.second);
             break;
         }
     }

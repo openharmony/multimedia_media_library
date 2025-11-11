@@ -118,7 +118,8 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
             return;
         }
         for (auto &obj : jsonObj) {
-            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE && obj.contains(PHONE_DETAIL)) {
+            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE && obj.contains(PHONE_DETAIL) &&
+                obj.at(PHONE_DETAIL).is_string()) {
                 clonePhoneName_ = obj.at(PHONE_DETAIL);
             }
         }
@@ -776,7 +777,7 @@ void OthersCloneRestore::UpdateFileTimeInfo(FileInfo &fileInfo, CloneDbInfo *dbI
     fileInfo.dateModified = static_cast<int64_t>(dateModified);
     fileInfo.dateTaken = static_cast<int64_t>(dateTaken);
 
-    BackupFileUtils::ModifyFile(fileInfo.filePath, fileInfo.dateModified / MSEC_TO_SEC);
+    MediaFileUtils::UpdateModifyTimeInMsec(fileInfo.filePath, fileInfo.dateModified);
 }
 
 void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
