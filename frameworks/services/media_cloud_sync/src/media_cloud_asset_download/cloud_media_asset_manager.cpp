@@ -1045,7 +1045,6 @@ int32_t CloudMediaAssetManager::ResumeBatchDownloadCloudResources(ResumeBatchDow
     }
     std::vector<std::string> allFileIds;
     this->batchDownloadResourcesTaskDao_.FromUriToAllFileIds(reqBody.uris, allFileIds);
-
     int32_t ret = this->batchDownloadResourcesTaskDao_.UpdateResumeDownloadResourcesInfo(allFileIds);
     MEDIA_INFO_LOG("BatchSelectFileDownload ResumeBatchDownloadCloudResources Resume ret:%{public}d", ret);
     CHECK_AND_RETURN_RET_LOG(ret == OHOS::Media::E_OK, E_ERR, "UpdateResumeDownloadResourcesInfo failed");
