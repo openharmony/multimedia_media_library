@@ -95,6 +95,10 @@ const std::map<uint32_t, SpecialRequestHandle> SPECIAL_HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS),
         &MediaAlbumsControllerService::AlbumGetAssets
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSETS),
+        &MediaAlbumsControllerService::AlbumGetAssets
+    },
 };
 
 const std::map<uint32_t, RequestHandle> HANDLERS = {
@@ -269,6 +273,22 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLONED_ALBUM_URIS),
         &MediaAlbumsControllerService::GetClonedAlbumUris
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ALBUMS),
+        &MediaAlbumsControllerService::QueryAlbums
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_DELETE_ALBUMS),
+        &MediaAlbumsControllerService::DeletePhotoAlbums
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ALBUM),
+        &MediaAlbumsControllerService::CreatePhotoAlbum
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS),
+        &MediaAlbumsControllerService::MoveAssets
     },
 };
 
