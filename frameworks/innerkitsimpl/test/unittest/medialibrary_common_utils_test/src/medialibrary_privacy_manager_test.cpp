@@ -24,6 +24,13 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+const int32_t ALL_DESENSITIZE = 0;
+const int32_t GEOGRAPHIC_LOCATION_DESENSITIZE = 1;
+const int32_t SHOOTING_PARAM_DESENSITIZE = 2;
+const int32_t NO_DESENSITIZE = 3;
+const int32_t DEFAULT = 4;
+
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_001, TestSize.Level1)
 {
     string path = "";
@@ -122,6 +129,61 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_010, TestSize.Level1)
     MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_011, TestSize.Level1)
+{
+    string path = "/storage/cloud/100/files/1.jpg";
+    string mode = "r";
+    string fileId = "1";
+    int32_t type = ALL_DESENSITIZE;
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId, type);
+    int32_t ret = mediaPrivacyManager.Open();
+    EXPECT_EQ(ret, -ENOMEM);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_012, TestSize.Level1)
+{
+    string path = "/storage/cloud/100/files/1.jpg";
+    string mode = "r";
+    string fileId = "1";
+    int32_t type = GEOGRAPHIC_LOCATION_DESENSITIZE;
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId, type);
+    int32_t ret = mediaPrivacyManager.Open();
+    EXPECT_EQ(ret, -ENOMEM);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_013, TestSize.Level1)
+{
+    string path = "/storage/cloud/100/files/1.jpg";
+    string mode = "r";
+    string fileId = "1";
+    int32_t type = SHOOTING_PARAM_DESENSITIZE;
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId, type);
+    int32_t ret = mediaPrivacyManager.Open();
+    EXPECT_EQ(ret, -ENOMEM);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_014, TestSize.Level1)
+{
+    string path = "/storage/cloud/100/files/1.jpg";
+    string mode = "r";
+    string fileId = "1";
+    int32_t type = NO_DESENSITIZE;
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId, type);
+    int32_t ret = mediaPrivacyManager.Open();
+    EXPECT_EQ(ret, -ENOMEM);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_015, TestSize.Level1)
+{
+    string path = "/storage/cloud/100/files/1.jpg";
+    string mode = "r";
+    string fileId = "1";
+    int32_t type = DEFAULT;
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId, type);
+    int32_t ret = mediaPrivacyManager.Open();
+    EXPECT_EQ(ret, -ENOMEM);
 }
 } // namespace Media
 } // namespace OHOS
