@@ -86,11 +86,17 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE),
         { {SYSTEMAPI_PERM, WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLONED_ALBUM_URIS), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ALBUMS), { {READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_DELETE_ALBUMS), { {SYSTEMAPI_PERM, WRITE_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ALBUM), { {SYSTEMAPI_PERM, WRITE_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS), { {SYSTEMAPI_PERM, WRITE_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSETS), { {READ_PERM} }},
 };
 
 static std::unordered_set<uint32_t> mediaAlbumsPermissionDbBypass = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS),
     static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSETS),
 };
 
 int32_t MediaAlbumsControllerService::GetPermissionPolicy(

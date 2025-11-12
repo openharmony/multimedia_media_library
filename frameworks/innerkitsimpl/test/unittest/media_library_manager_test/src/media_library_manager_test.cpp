@@ -38,6 +38,7 @@
 #include "thumbnail_const.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS;
@@ -243,6 +244,7 @@ static string CreatePhotoAsset(string displayName)
     } else if (displayName.find(".mp4") != std::string::npos) {
         resWrite = write(destFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     }
+    mediaLibraryManager->CloseAsset(uri, destFd);
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
     }
@@ -260,6 +262,13 @@ static bool CompareIfArraysEquals(const unsigned char originArray[],
     return true;
 }
 
+static string GetFileAssetUri(unique_ptr<FileAsset> &fileAsset)
+{
+    string filePath = fileAsset->GetPath();
+    string displayName = fileAsset->GetDisplayName();
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    return MediaFileUtils::GetUriByExtrConditions("file://media/Photo/", to_string(fileAsset->GetId()), extrUri);
+}
 /**
  * @tc.number    : MediaLibraryManager_test_001
  * @tc.name      : create a test.jpg
@@ -307,6 +316,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level1)
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     free(buf);
+    mediaLibraryManager->CloseAsset(uri, srcFd);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -337,6 +347,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level1)
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     free(buf);
+    mediaLibraryManager->CloseAsset(uri, srcFd);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -381,6 +392,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level1)
     ASSERT_NE(buf, nullptr);
     read(srcFd, buf, srcLen);
     free(buf);
+    mediaLibraryManager->CloseAsset(uri, srcFd);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -2742,6 +2754,935 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckCloudDownloadPe
     ret = mediaLibraryExtendManager->CheckCloudDownloadPermission(targetTokenId, uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckCloudDownloadPermission_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAlbums_test_001
+ * @tc.name      : Get albums
+ * @tc.desc      : Get albums success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbums_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbums_test_001 enter");
+    DataSharePredicates predicates;
+    vector<string> columns;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columns, &predicates);
+    int32_t albumCountSrc = albumsFetchResult.GetCount();
+    string albumNameTest = "testAlbum";
+    int32_t ret = mediaLibraryManager->CreateAlbum(albumNameTest);
+    EXPECT_GE(ret, 0);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columns, &predicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), albumCountSrc + 1);
+    unique_ptr<PhotoAlbum> lastAlbumPtr = albumsFetchResult.GetLastObject();
+    ASSERT_NE(lastAlbumPtr, nullptr);
+    vector<unique_ptr<PhotoAlbum>> albumsVector;
+    albumsVector.push_back(move(lastAlbumPtr));
+    ret = mediaLibraryManager->DeleteAlbums(albumsVector);
+    EXPECT_GE(ret, 0);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columns, &predicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), albumCountSrc);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbums_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAlbums_test_002
+ * @tc.name      : Get albums
+ * @tc.desc      : Get albums by album name success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbums_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbums_test_002 enter");
+    string albumNameTest = "testAlbum";
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = mediaLibraryManager->CreateAlbum(albumNameTest);
+    EXPECT_GE(ret, 0);
+    DataSharePredicates predicates;
+    vector<string> columns;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumNameTest);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columns, &predicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), 1);
+    auto albumPtr = albumsFetchResult.GetFirstObject();
+    ASSERT_NE(albumPtr, nullptr);
+    DataSharePredicates predicatesErr;
+    predicatesErr.EqualTo(PhotoAlbumColumns::ALBUM_NAME, "errAlbumName");
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columns, &predicatesErr);
+    EXPECT_EQ(albumsFetchResult.GetCount(), 0);
+    vector<unique_ptr<PhotoAlbum>> albumsVector;
+    albumsVector.push_back(move(albumPtr));
+    ret = mediaLibraryManager->DeleteAlbums(albumsVector);
+    EXPECT_GE(ret, albumsVector.size());
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columns, nullptr);
+    EXPECT_EQ(albumsFetchResult.GetCount(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbums_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_ReadAssets_test_001
+ * @tc.name      : Read assets
+ * @tc.desc      : Read assets success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_001 enter");
+    string displayName = "test.jpg";
+    string uri =  mediaLibraryManager->CreateAsset(displayName);
+    ASSERT_NE(uri, "");
+    GTEST_LOG_(INFO) << "uri is " << uri;
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
+    DataSharePredicates predicatesAlbum;
+    vector<string> columnsAlbum;
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    int32_t albumCountSrc = albumsFetchResult.GetCount();
+    EXPECT_GE(albumCountSrc, 0);
+    unique_ptr<PhotoAlbum> albumPtr = albumsFetchResult.GetFirstObject();
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+    while (albumPtr != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        albumPtr = albumsFetchResult.GetNextObject();
+    }
+    ASSERT_NE(albumPtr, nullptr);
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_ReadAssets_test_002
+ * @tc.name      : Read assets
+ * @tc.desc      : Read assets when columns is not empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_002 enter");
+    DataSharePredicates predicatesAlbum;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    EXPECT_GE(albumCount, 0);
+    unique_ptr<PhotoAlbum> albumPtr;
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset{ MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME };
+    FetchResult<FileAsset> assetsFetchResult;
+    for (int i = albumCount - 1; i >= 0; i--) {
+        albumPtr = albumsFetchResult.GetObjectAtPosition(i);
+        ASSERT_NE(albumPtr, nullptr);
+        assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+    }
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    unique_ptr<FileAsset> firstAssetPtr = assetsFetchResult.GetFirstObject();
+    ASSERT_NE(firstAssetPtr, nullptr);
+    string displayNameRec = firstAssetPtr->GetDisplayName();
+    GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << displayNameRec;
+    int32_t mediaId = firstAssetPtr->GetId();
+    GTEST_LOG_(INFO) << "firstAssetPtr's mediaId is " << mediaId;
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_ReadAssets_test_003
+ * @tc.name      : Read assets
+ * @tc.desc      : Read assets when columns and predicates are not empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_003 enter");
+    string displayName = "test1.jpg";
+    string uri =  mediaLibraryManager->CreateAsset(displayName);
+    ASSERT_NE(uri, "");
+    GTEST_LOG_(INFO) << "uri is " << uri;
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
+
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    EXPECT_GT(albumCount, 0);
+    unique_ptr<PhotoAlbum> srcAlbum;
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset{ MediaColumn::MEDIA_NAME };
+    DataSharePredicates predicatesAsset;
+    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "test1.jpg");
+    for (int32_t i = albumCount - 1; i >= 0; i--) {
+        srcAlbum = albumsFetchResult.GetObjectAtPosition(i);
+        assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+    }
+    unique_ptr<FileAsset> firstAssetPtr = assetsFetchResult.GetFirstObject();
+    ASSERT_NE(firstAssetPtr, nullptr);
+    string assetDisplayName = firstAssetPtr->GetDisplayName();
+    GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << assetDisplayName;
+    string assetUri = GetFileAssetUri(firstAssetPtr);
+    GTEST_LOG_(INFO) << "assetUri is " << assetUri;
+    int32_t assetFd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(assetFd, 0);
+    mediaLibraryManager->CloseAsset(assetUri, assetFd);
+    MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CreateAlbum_test_001
+ * @tc.name      : Create album
+ * @tc.desc      : Create album success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreateAlbum_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_001 enter");
+    DataSharePredicates predicatesAlbum;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    int32_t albumCountBefore = albumsFetchResult.GetCount();
+    string albumName = "testAlbum";
+    unique_ptr<PhotoAlbum> album = make_unique<PhotoAlbum>();
+    for (int i = 0; i < albumCountBefore; i++) {
+        album = albumsFetchResult.GetObjectAtPosition(i);
+        if (album->GetAlbumName() == albumName) {
+            FAIL() << "albumName is " << albumName << ", it already exists";
+        }
+    }
+    int32_t ret = mediaLibraryManager->CreateAlbum(albumName);
+    ASSERT_GT(ret, 0);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    ASSERT_EQ(albumCountBefore + 1, albumCount);
+    for (int i = 0; i < albumCount; i++) {
+        album = albumsFetchResult.GetObjectAtPosition(i);
+        if (album->GetAlbumName() == albumName) {
+            break;
+        }
+    }
+    EXPECT_EQ(ret, album->GetAlbumId());
+    vector<unique_ptr<PhotoAlbum>> albumsVector;
+    albumsVector.push_back(move(album));
+    ret = mediaLibraryManager->DeleteAlbums(albumsVector);
+    EXPECT_GE(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CreateAlbum_test_002
+ * @tc.name      : Create album
+ * @tc.desc      : Create album fail when album is already exists
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreateAlbum_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_002 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    string albumName = "testAlbum";
+    int32_t albumId = -1;
+    bool isAlbumExist = false;
+    unique_ptr<PhotoAlbum> album = make_unique<PhotoAlbum>();
+    int32_t albumCountBefore = 0;
+    FetchResult<PhotoAlbum> albumsFetchResult;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    while (!isAlbumExist) {
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        albumCountBefore = albumsFetchResult.GetCount();
+        for (int i = 0; i < albumCountBefore; i++) {
+            album = albumsFetchResult.GetObjectAtPosition(i);
+            if (album->GetAlbumName() == albumName) {
+                isAlbumExist = true;
+                albumId = album->GetAlbumId();
+                break;
+            }
+        }
+        if (!isAlbumExist) {
+            int32_t id = mediaLibraryManager->CreateAlbum(albumName);
+            EXPECT_GT(id, 0);
+        }
+    }
+    int32_t errCode = mediaLibraryManager->CreateAlbum(albumName);
+    ASSERT_EQ(errCode, -1);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    vector<unique_ptr<PhotoAlbum>> albumsVector;
+    albumsVector.push_back(move(album));
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albumsVector);
+    EXPECT_GE(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CreateAlbum_test_003
+ * @tc.name      : Create album
+ * @tc.desc      : Create album fail when albumName is invalid
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreateAlbum_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_003 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCountBefore = albumsFetchResult.GetCount();
+    string albumName = "test*Album?";
+    unique_ptr<PhotoAlbum> album = make_unique<PhotoAlbum>();
+    for (int i = 0; i < albumCountBefore; i++) {
+        album = albumsFetchResult.GetObjectAtPosition(i);
+        if (album->GetAlbumName() == albumName) {
+            FAIL() << "albumName is " << albumName << ", it already exists";
+        }
+    }
+    int32_t errCode = mediaLibraryManager->CreateAlbum(albumName);
+    ASSERT_EQ(errCode, E_FAIL);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    ASSERT_EQ(albumsFetchResult.GetCount(), albumCountBefore);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreateAlbum_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_001
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete one album success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_001 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    vector<unique_ptr<PhotoAlbum>> albums;
+    FetchResult<PhotoAlbum> albumsFetchResult;
+    int32_t albumCountBefore = 0;
+    string albumName = "testAlbum";
+    bool isAlbumExist = false;
+    unique_ptr<PhotoAlbum> album = make_unique<PhotoAlbum>();
+    int32_t albumId = -1;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    while (!isAlbumExist) {
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        albumCountBefore = albumsFetchResult.GetCount();
+        for (int i = 0; i < albumsFetchResult.GetCount(); i++) {
+            album = albumsFetchResult.GetObjectAtPosition(i);
+            ASSERT_NE(album, nullptr);
+            if (album->GetAlbumName() == albumName) {
+                isAlbumExist = true;
+                albumId = album->GetAlbumId();
+                albums.push_back(move(album));
+                break;
+            }
+        }
+        if (!isAlbumExist) {
+            int32_t id = mediaLibraryManager->CreateAlbum(albumName);
+            EXPECT_GT(id, 0);
+        }
+    }
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(ret, 1);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    ASSERT_EQ(albumsFetchResult.GetCount(), albumCountBefore - 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbum_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_002
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete album fail when albumId is invalid
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_002 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    vector<unique_ptr<PhotoAlbum>> albums;
+    FetchResult<PhotoAlbum> albumsFetchResult;
+    int32_t albumCountBefore = 0;
+    string albumName = "testAlbum";
+    bool isAlbumExist = false;
+    unique_ptr<PhotoAlbum> album = make_unique<PhotoAlbum>();
+    int32_t albumId = -1;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    while (!isAlbumExist) {
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        albumCountBefore = albumsFetchResult.GetCount();
+        for (int i = 0; i < albumsFetchResult.GetCount(); i++) {
+            album = albumsFetchResult.GetObjectAtPosition(i);
+            if (album->GetAlbumName() == albumName) {
+                isAlbumExist = true;
+                albumId = album->GetAlbumId();
+                break;
+            }
+        }
+        if (!isAlbumExist) {
+            int32_t id = mediaLibraryManager->CreateAlbum(albumName);
+            EXPECT_GT(id, 0);
+        }
+    }
+    while (albumId++) {
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        if (albumsFetchResult.GetCount() == 0) {
+            break;
+        }
+    }
+    album->SetAlbumId(albumId);
+    albums.push_back(move(album));
+    int32_t errCode = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(errCode, E_INVALID_URI);
+    DataSharePredicates emptyPredicate;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &emptyPredicate);
+    ASSERT_EQ(albumsFetchResult.GetCount(), albumCountBefore);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_003
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete album fail when album is system album
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_003 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    vector<unique_ptr<PhotoAlbum>> albums;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCountBefore = albumsFetchResult.GetCount();
+    EXPECT_GE(albumCountBefore, 0);
+    unique_ptr<PhotoAlbum> album = albumsFetchResult.GetFirstObject();
+    while (album != nullptr) {
+        if (album->IsSystemAlbum(album->GetPhotoAlbumType())) {
+            albums.push_back(move(album));
+            break;
+        }
+        album = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_GE(albums.size(), 1);
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(ret, E_FAIL);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    ASSERT_EQ(albumsFetchResult.GetCount(), albumCountBefore);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_004
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete albums success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_004 enter");
+    vector<string> albumNames = {"testAlbum1", "testAlbum2", "testAlbum3"};
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> columnsAlbum;
+    DataSharePredicates predicates;
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    vector<unique_ptr<PhotoAlbum>> albums;
+    int32_t albumCount = albumsFetchResult.GetCount();
+    for (auto albumName : albumNames) {
+        int id = mediaLibraryManager->CreateAlbum(albumName);
+        EXPECT_GT(id, 0);
+        DataSharePredicates tempPredicates;
+        tempPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
+        FetchResult<PhotoAlbum> albumsToDelete= mediaLibraryManager->GetAlbums(columnsAlbum, &tempPredicates);
+        EXPECT_EQ(albumsToDelete.GetCount(), 1);
+        auto album = albumsToDelete.GetFirstObject();
+        ASSERT_NE(album, nullptr);
+        albums.push_back(move(album));
+    }
+    DataSharePredicates emptyPredicates;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), albumCount + albums.size());
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(ret, albums.size());
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &emptyPredicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), albumCount);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_004 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_005
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete albums fail with unexistent album
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_005 enter");
+    vector<string> albumNames = {"testAlbum1", "testAlbum2", "testAlbum3"};
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> columnsAlbum;
+    DataSharePredicates predicates, emptyPredicates;
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    vector<unique_ptr<PhotoAlbum>> albums;
+    int32_t albumCount = albumsFetchResult.GetCount();
+    for (auto albumName : albumNames) {
+        int id = mediaLibraryManager->CreateAlbum(albumName);
+        EXPECT_GT(id, 0);
+        DataSharePredicates tempPredicates;
+        tempPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
+        FetchResult<PhotoAlbum> albumsToDelete= mediaLibraryManager->GetAlbums(columnsAlbum, &tempPredicates);
+        EXPECT_EQ(albumsToDelete.GetCount(), 1);
+        auto album = albumsToDelete.GetFirstObject();
+        ASSERT_NE(album, nullptr);
+        albums.push_back(move(album));
+    }
+    int32_t albumInvalidId = 100;
+    while (albumInvalidId++) {
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumInvalidId);
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        if (albumsFetchResult.GetCount() == 0) {
+            break;
+        }
+    }
+    unique_ptr<PhotoAlbum> albumInvalid = make_unique<PhotoAlbum>();
+    albumInvalid->SetAlbumId(albumInvalidId);
+    albums.push_back(move(albumInvalid));
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(ret, E_INVALID_URI);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &emptyPredicates);
+    EXPECT_EQ(albumsFetchResult.GetCount(), albumCount + albums.size() - 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_005 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAlbums_test_006
+ * @tc.name      : Delete albums
+ * @tc.desc      : Delete albums fail with system album
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAlbums_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_006 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    vector<unique_ptr<PhotoAlbum>> albums;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCountBefore = albumsFetchResult.GetCount();
+    EXPECT_GE(albumCountBefore, 0);
+    unique_ptr<PhotoAlbum> album = albumsFetchResult.GetFirstObject();
+    while (album != nullptr) {
+        if (album->IsSystemAlbum(album->GetPhotoAlbumType())) {
+            albums.push_back(move(album));
+            break;
+        }
+        album = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_GE(albums.size(), 1);
+    int32_t albumId = mediaLibraryManager->CreateAlbum("testAlbum4");
+    EXPECT_GT(albumId, 0);
+    DataSharePredicates albumsPredicates;
+    albumsPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    auto albumPtr = mediaLibraryManager->GetAlbums(columnsAlbum, &albumsPredicates);
+    EXPECT_EQ(albumPtr.GetCount(), 1);
+    auto normalAlbum = albumPtr.GetFirstObject();
+    ASSERT_NE(normalAlbum, nullptr);
+    albums.push_back(move(normalAlbum));
+    int32_t ret = mediaLibraryManager->DeleteAlbums(albums);
+    ASSERT_EQ(ret, E_FAIL);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    ASSERT_EQ(albumsFetchResult.GetCount(), albumCountBefore + 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAlbums_test_006 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_001
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets fail, predicate is nullptr
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_001 enter");
+    DataSharePredicates predicatesAlbum;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    EXPECT_GE(albumsFetchResult.GetCount(), 0);
+    unique_ptr<PhotoAlbum> albumPtr = albumsFetchResult.GetFirstObject();
+    ASSERT_NE(albumPtr, nullptr);
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+    while (albumPtr != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        albumPtr = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, nullptr);
+    EXPECT_EQ(assetsFetchResult.GetCount(), 0);
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_002
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets fail, fetchColumns is invalid
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_002 enter");
+    DataSharePredicates predicatesAlbum;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicatesAlbum);
+    EXPECT_GE(albumsFetchResult.GetCount(), 0);
+    unique_ptr<PhotoAlbum> albumPtr = albumsFetchResult.GetFirstObject();
+    ASSERT_NE(albumPtr, nullptr);
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+    while (albumPtr != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        albumPtr = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    columnsAsset.push_back("xxx");
+    assetsFetchResult = mediaLibraryManager->GetAssets(*albumPtr, columnsAsset, &predicatesAsset);
+    EXPECT_EQ(assetsFetchResult.GetCount(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_002 exit");
+}
+
+void TestMoveAssets()
+{
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    EXPECT_GT(albumsFetchResult.GetCount(), 0);
+    unique_ptr<PhotoAlbum> srcAlbum = albumsFetchResult.GetFirstObject();
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset;
+    DataSharePredicates predicatesAsset;
+    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "testForMove.jpg");
+    while (srcAlbum != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        srcAlbum = albumsFetchResult.GetNextObject();
+    }
+    ASSERT_NE(srcAlbum, nullptr);
+    vector<unique_ptr<FileAsset>> assets;
+    for (int i = 0; i < assetsFetchResult.GetCount(); i++) {
+        auto asset = assetsFetchResult.GetObjectAtPosition(i);
+        assets.push_back(move(asset));
+    }
+    EXPECT_EQ(assets.size(), assetsFetchResult.GetCount());
+    string tagetAlbumName = "testAlbumForMove1";
+    bool isTargetAlbumExist = false;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    unique_ptr<PhotoAlbum> targetAlbum = albumsFetchResult.GetFirstObject();
+    while (targetAlbum != nullptr) {
+        if (targetAlbum->GetAlbumName() == tagetAlbumName) {
+            isTargetAlbumExist = true;
+            break;
+        }
+        targetAlbum = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_TRUE(isTargetAlbumExist);
+    int32_t targetAlbumAssetCount = targetAlbum->GetCount();
+    int32_t ret = mediaLibraryManager->MoveAssets(assets, *srcAlbum, *targetAlbum);
+    EXPECT_GE(ret, 0);
+    EXPECT_EQ(targetAlbum->GetCount(), targetAlbumAssetCount + assets.size());
+}
+
+void TestMoveAssetsFromUserAlbumToUserAlbum()
+{
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    EXPECT_GT(albumsFetchResult.GetCount(), 0);
+    string srcAlbumName = "testAlbumForMove1";
+    bool isSrcAlbumExist = false;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    unique_ptr<PhotoAlbum> srcAlbum = albumsFetchResult.GetFirstObject();
+    while (srcAlbum != nullptr) {
+        if (srcAlbum->GetAlbumName() == srcAlbumName) {
+            isSrcAlbumExist = true;
+            break;
+        }
+        srcAlbum = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_TRUE(isSrcAlbumExist);
+    int32_t srcAlbumAssetCount = srcAlbum->GetCount();
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset;
+    DataSharePredicates predicatesAsset;
+    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "testForMove.jpg");
+    assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+    ASSERT_NE(srcAlbum, nullptr);
+    vector<unique_ptr<FileAsset>> assets;
+    for (int i = 0; i < assetsFetchResult.GetCount(); i++) {
+        auto asset = assetsFetchResult.GetObjectAtPosition(i);
+        assets.push_back(move(asset));
+    }
+    EXPECT_EQ(assets.size(), assetsFetchResult.GetCount());
+    string targetAlbumName = "testAlbumForMove2";
+    bool isTargetAlbumExist = false;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    unique_ptr<PhotoAlbum> targetAlbum = albumsFetchResult.GetFirstObject();
+    while (targetAlbum != nullptr) {
+        if (targetAlbum->GetAlbumName() == targetAlbumName) {
+            isTargetAlbumExist = true;
+            break;
+        }
+        targetAlbum = albumsFetchResult.GetNextObject();
+    }
+    EXPECT_TRUE(isTargetAlbumExist);
+    int32_t targetAlbumAssetCount = targetAlbum->GetCount();
+    int32_t ret = mediaLibraryManager->MoveAssets(assets, *srcAlbum, *targetAlbum);
+    EXPECT_GE(ret, 0);
+    EXPECT_EQ(srcAlbum->GetCount(), srcAlbumAssetCount - assets.size());
+    EXPECT_EQ(targetAlbum->GetCount(), targetAlbumAssetCount + assets.size());
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_MoveAssets_test_001
+ * @tc.name      : Move assets to other album
+ * @tc.desc      : Move assets to other album success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_MoveAssets_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_001 enter");
+    string albumNameTest = "testAlbumForMove1";
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = mediaLibraryManager->CreateAlbum(albumNameTest);
+    EXPECT_GE(ret, 0);
+    string albumNameTest2 = "testAlbumForMove2";
+    ret = mediaLibraryManager->CreateAlbum(albumNameTest2);
+    EXPECT_GE(ret, 0);
+    string displayName = "testForMove.jpg";
+    string uri =  mediaLibraryManager->CreateAsset(displayName);
+    ASSERT_NE(uri, "");
+    GTEST_LOG_(INFO) << "uri is " << uri;
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
+    TestMoveAssets();
+    TestMoveAssetsFromUserAlbumToUserAlbum();
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_MoveAssets_test_002
+ * @tc.name      : Move assets to other album
+ * @tc.desc      : Move assets to other album fail, assets is empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_MoveAssets_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_002 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    EXPECT_GT(albumsFetchResult.GetCount(), 0);
+    unique_ptr<PhotoAlbum> srcAlbum = albumsFetchResult.GetFirstObject();
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+    while (srcAlbum != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicates);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        srcAlbum = albumsFetchResult.GetNextObject();
+    }
+    ASSERT_NE(srcAlbum, nullptr);
+    int32_t srcAlbumId = srcAlbum->GetAlbumId();
+    EXPECT_GT(srcAlbumId, 0);
+    DataSharePredicates predicatesAsset;
+    vector<unique_ptr<FileAsset>> assets;
+    string tagetAlbumName = "testAlbum";
+    bool isTargetAlbumExist = false;
+    unique_ptr<PhotoAlbum> targetAlbum = make_unique<PhotoAlbum>();
+    int32_t targetAlbumId = -1;
+    int32_t targetAlbumCount = 0;
+    while (!isTargetAlbumExist) {
+        albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+        albumCount = albumsFetchResult.GetCount();
+        for (int i = 0; i < albumCount ; i++) {
+            targetAlbum = albumsFetchResult.GetObjectAtPosition(i);
+            if (targetAlbum->GetAlbumName() == tagetAlbumName) {
+                isTargetAlbumExist = true;
+                targetAlbumCount = targetAlbum->GetCount();
+                targetAlbumId = targetAlbum->GetAlbumId();
+                break;
+            }
+        }
+        if (!isTargetAlbumExist) {
+            int32_t id = mediaLibraryManager->CreateAlbum(tagetAlbumName);
+            EXPECT_GT(id, 0);
+        }
+    }
+    EXPECT_GT(targetAlbumId, 0);
+    int32_t ret = mediaLibraryManager->MoveAssets(assets, *srcAlbum, *targetAlbum);
+    EXPECT_EQ(ret, E_FAIL);
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_MoveAssets_test_003
+ * @tc.name      : Move assets to other album
+ * @tc.desc      : Move assets to other album fail, targetAlbum is not user album or source album
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_MoveAssets_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_003 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    EXPECT_GT(albumCount, 0);
+    unique_ptr<PhotoAlbum> srcAlbum = albumsFetchResult.GetFirstObject();
+    int32_t srcAlbumId = -1;
+    int32_t srcAlbumImageCount = 0;
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset;
+    DataSharePredicates predicatesAsset;
+    while (srcAlbum != nullptr) {
+        assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            break;
+        }
+        srcAlbum = albumsFetchResult.GetNextObject();
+    }
+    ASSERT_NE(srcAlbum, nullptr);
+    srcAlbumId = srcAlbum->GetAlbumId();
+    srcAlbumImageCount = srcAlbum->GetCount();
+    EXPECT_GT(srcAlbumId, 0);
+    vector<unique_ptr<FileAsset>> assets;
+    assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+    EXPECT_EQ(assetsFetchResult.GetCount(), srcAlbumImageCount);
+    for (int i = 0; i < srcAlbumImageCount; i++) {
+        auto asset = assetsFetchResult.GetObjectAtPosition(i);
+        assets.push_back(move(asset));
+    }
+    EXPECT_EQ(assets.size(), srcAlbumImageCount);
+
+    bool isTargetAlbumExist = false;
+    unique_ptr<PhotoAlbum> targetAlbum = nullptr;
+    int32_t targetAlbumId = -1;
+    int32_t targetAlbumAssetCount = 0;
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    albumCount = albumsFetchResult.GetCount();
+    for (int i = 0; i < albumCount ; i++) {
+        targetAlbum = albumsFetchResult.GetObjectAtPosition(i);
+        if (!PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType())
+            && !PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType())) {
+            isTargetAlbumExist = true;
+            targetAlbumAssetCount = targetAlbum->GetCount();
+            targetAlbumId = targetAlbum->GetAlbumId();
+            break;
+        }
+    }
+    EXPECT_TRUE(isTargetAlbumExist);
+    EXPECT_GT(targetAlbumId, 0);
+    int32_t ret = mediaLibraryManager->MoveAssets(assets, *srcAlbum, *targetAlbum);
+    EXPECT_EQ(ret, E_FAIL);
+    EXPECT_EQ(targetAlbumAssetCount, targetAlbum->GetCount());
+    MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAssets_test_001
+ * @tc.name      : Delete assets
+ * @tc.desc      : Delete assets success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAssets_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_001 enter");
+    DataSharePredicates predicates;
+    vector<string> columnsAlbum;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    FetchResult<PhotoAlbum> albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    int32_t albumCount = albumsFetchResult.GetCount();
+    EXPECT_GT(albumCount, 0);
+    unique_ptr<PhotoAlbum> srcAlbum;
+    int32_t srcAlbumId = -1;
+    int32_t srcAlbumImageCount = 0;
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset;
+    DataSharePredicates predicatesAsset;
+    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "test.jpg");
+    for (int32_t i = albumCount - 1; i >= 0; i--) {
+        srcAlbum = albumsFetchResult.GetObjectAtPosition(i);
+        assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
+        if (assetsFetchResult.GetCount() > 0) {
+            srcAlbumId = srcAlbum->GetAlbumId();
+            srcAlbumImageCount = srcAlbum->GetCount();
+            break;
+        }
+    }
+    EXPECT_GT(srcAlbumId, 0);
+    unique_ptr<FileAsset> firstAssetPtr = assetsFetchResult.GetFirstObject();
+    ASSERT_NE(firstAssetPtr, nullptr);
+    string assetPath = firstAssetPtr->GetPath();
+    GTEST_LOG_(INFO) << "firstAssetPtr's path is " << assetPath;
+    string assetDisplayName = firstAssetPtr->GetDisplayName();
+    GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << assetDisplayName;
+    vector<unique_ptr<FileAsset>> assets;
+    assets.push_back(move(firstAssetPtr));
+    int32_t ret =mediaLibraryManager->DeleteAssets(assets);
+    EXPECT_EQ(ret, assets.size());
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, srcAlbumId);
+    albumsFetchResult = mediaLibraryManager->GetAlbums(columnsAlbum, &predicates);
+    EXPECT_GT(albumsFetchResult.GetCount(), 0);
+    srcAlbum = albumsFetchResult.GetFirstObject();
+    ASSERT_NE(srcAlbum, nullptr);
+    EXPECT_EQ(srcAlbum->GetCount(), srcAlbumImageCount - 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAssets_test_002
+ * @tc.name      : Delete assets
+ * @tc.desc      : Delete assets fail, assets is empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAssets_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_002 enter");
+    vector<unique_ptr<FileAsset>> assets;
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = mediaLibraryManager->DeleteAssets(assets);
+    EXPECT_EQ(ret, E_FAIL);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_DeleteAssets_test_003
+ * @tc.name      : Delete assets
+ * @tc.desc      : Delete assets fail, assets' uri is invalid
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAssets_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_003 enter");
+    vector<unique_ptr<FileAsset>> assets;
+    unique_ptr<FileAsset> asset = make_unique<FileAsset>();
+    asset->SetDisplayName("errAsset");
+    assets.push_back(move(asset));
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = mediaLibraryManager->DeleteAssets(assets);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_003 exit");
 }
 } // namespace Media
 } // namespace OHOS
