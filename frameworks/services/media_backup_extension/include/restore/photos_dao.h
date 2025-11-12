@@ -35,7 +35,7 @@ public:
         int32_t fileSourceType {0};
         bool IsValid()
         {
-            return !data.empty() || fileId != 0;
+            return !cleanFlag && !data.empty() && fileId != 0;
         }
     };
 
