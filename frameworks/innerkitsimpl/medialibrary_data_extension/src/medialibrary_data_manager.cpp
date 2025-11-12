@@ -3423,9 +3423,8 @@ static shared_ptr<NativeRdb::ResultSet> BatchQueryUninitHdrPhoto(const shared_pt
     string querySql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_ID + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " > " + to_string(g_updateHdrModeId) +
         " AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_IMAGE) +
-        " AND " + PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " = " +
-        to_string(static_cast<int32_t>(DynamicRangeType::HDR)) +
         " AND " + PhotoColumn::PHOTO_HDR_MODE + " = " + to_string(static_cast<int32_t>(HdrMode::DEFAULT)) +
+        " AND " + PhotoColumn::PHOTO_POSITION + " != " + to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)) +
         " ORDER BY " + MediaColumn::MEDIA_ID + " LIMIT " + to_string(UPDATE_BATCH_SIZE);
 
     auto resultSet = rdbStore->QueryByStep(querySql);
