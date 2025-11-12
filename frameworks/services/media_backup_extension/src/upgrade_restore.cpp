@@ -1119,9 +1119,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
 bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 {
     PhotosDao::PhotosRowData rowData = this->photosRestore_.FindSameFile(fileInfo);
-    int32_t fileId = rowData.fileId;
-    std::string cloudPath = rowData.data;
-    if (fileId <= 0 || cloudPath.empty()) {
+    if (!rowData.IsValid()) {
         return false;
     }
     // Meed extra check to determine whether or not to drop the duplicate file.

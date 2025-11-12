@@ -2542,10 +2542,8 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     CHECK_AND_RETURN_RET(tableName == PhotoColumn::PHOTOS_TABLE,
         IsSameAudioFile(mediaLibraryRdb_, tableName, fileInfo));
     PhotosDao::PhotosRowData rowData = this->photosClone_.FindSameFile(fileInfo);
-    int32_t fileId = rowData.fileId;
-    std::string cloudPath = rowData.data;
-    bool cond = (fileId <= 0 || cloudPath.empty());
-    CHECK_AND_RETURN_RET(!cond, false);
+    bool cond = rowData.IsValid();
+    CHECK_AND_RETURN_RET(cond, false);
     // Meed extra check to determine whether or not to drop the duplicate file.
     return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
