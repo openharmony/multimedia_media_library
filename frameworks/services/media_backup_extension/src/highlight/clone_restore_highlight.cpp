@@ -928,8 +928,9 @@ void CloneRestoreHighlight::GetCoverGroundSourceInfo(HighlightCoverInfo &info,
     CHECK_AND_RETURN(cond);
     std::string wordartPath = "/storage/media/local/files/highlight/cover/" +
         std::to_string(info.highlightIdNew.value()) + "/" + info.ratio.value() + "/wordart.png";
+    auto wordart = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "wordart");
     bool isWordartNeedUpdate = MediaFileUtils::IsFileExists(wordartPath) &&
-        !BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "wordart").has_value();
+        wordart.has_value() && !wordart.value().empty();
     CHECK_AND_EXECUTE(!isWordartNeedUpdate,
         info.wordart = "file://media/highlight/cover/" + std::to_string(info.highlightIdNew.value()) +
         "/" + info.ratio.value() + "/wordart.png?oper=highlight");
