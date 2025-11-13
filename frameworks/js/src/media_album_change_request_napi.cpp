@@ -66,6 +66,7 @@ thread_local napi_ref MediaAlbumChangeRequestNapi::mediaAnalysisAlbumChangeReque
 thread_local napi_ref MediaAlbumChangeRequestNapi::mediaHighlightAlbumChangeRequestConstructor_ = nullptr;
 static const int32_t VALUE_IS_ME = 1;
 static const int32_t VALUE_IS_REMOVED = 1;
+static const int32_t QUERY_IS_ME_VALUE = 2;
 static const int32_t NAPI_INVALID_PARAMETER_ERROR = 23800151;
 static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
 static const int32_t MEDIA_LIBRARY_PARAM_ERROR = 23800151;
@@ -1055,7 +1056,7 @@ static void GetIsMeInfo(int32_t &isMe, bool &isMeExist, const int32_t albumId)
         // check has is me
         std::vector<std::string> fetchColumnNew{IS_ME, ALBUM_ID};
         DataShare::DataSharePredicates queryPredicatesNew;
-        queryPredicatesNew.EqualTo(IS_ME, 1);
+        queryPredicatesNew.EqualTo(IS_ME, QUERY_IS_ME_VALUE);
         int errCodeNew = 0;
         auto isMeExistRet = UserFileClient::Query(queryUri, queryPredicatesNew, fetchColumnNew, errCodeNew);
         if (errCodeNew == E_SUCCESS && isMeExistRet != nullptr && isMeExistRet->GoToFirstRow() == NativeRdb::E_OK) {
