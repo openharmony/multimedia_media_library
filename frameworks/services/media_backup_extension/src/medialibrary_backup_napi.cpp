@@ -123,7 +123,7 @@ static int32_t CheckPermission(void)
 
 void MediaLibraryBackupNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
 {
-    uv_queue_work(loop, work, [](uv_work_t *work) {
+    uv_queue_work_internal(loop, work, [](uv_work_t *work) {
         RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
         if (block == nullptr) {
             delete work;
@@ -144,7 +144,7 @@ void MediaLibraryBackupNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
         napi_close_handle_scope(block->env, scope);
         delete block;
         delete work;
-    });
+    }, "MLB_Backup_startRestoreEx");
 }
 
 bool ParseContext(const napi_env &env, const napi_value &input,
@@ -222,7 +222,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
 
 void MediaLibraryBackupNapi::UvQueueWorkEx(uv_loop_s *loop, uv_work_t *work)
 {
-    uv_queue_work(loop, work, [](uv_work_t *work) {
+    uv_queue_work_internal(loop, work, [](uv_work_t *work) {
         RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
         BackupRestoreService::GetInstance().StartRestoreEx(block->context.lock(), block->restoreInfo,
             block->restoreExInfo);
@@ -244,7 +244,7 @@ void MediaLibraryBackupNapi::UvQueueWorkEx(uv_loop_s *loop, uv_work_t *work)
         napi_close_handle_scope(block->env, scope);
         delete block;
         delete work;
-    });
+    }, "MLB_Backup_startRestoreEx");
 }
 
 napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_info info)
@@ -340,7 +340,7 @@ napi_value MediaLibraryBackupNapi::JSGetProgressInfo(napi_env env, napi_callback
 
 void MediaLibraryBackupNapi::UvBackupWork(uv_loop_s *loop, uv_work_t *work)
 {
-    uv_queue_work(loop, work, [](uv_work_t *work) {
+    uv_queue_work_internal(loop, work, [](uv_work_t *work) {
         BackupBlock *block = reinterpret_cast<BackupBlock *> (work->data);
         BackupRestoreService::GetInstance().StartBackup(block->sceneCode, block->galleryAppName,
             block->mediaAppName);
@@ -362,7 +362,7 @@ void MediaLibraryBackupNapi::UvBackupWork(uv_loop_s *loop, uv_work_t *work)
         napi_close_handle_scope(block->env, scope);
         delete block;
         delete work;
-    });
+    }, "MLB_Backup_startBackup");
 }
 
 napi_value MediaLibraryBackupNapi::JSStartBackup(napi_env env, napi_callback_info info)
@@ -455,7 +455,7 @@ napi_value MediaLibraryBackupNapi::JSStartBackupEx(napi_env env, napi_callback_i
 
 void MediaLibraryBackupNapi::UvBackupWorkEx(uv_loop_s *loop, uv_work_t *work)
 {
-    uv_queue_work(loop, work, [](uv_work_t *work) {
+    uv_queue_work_internal(loop, work, [](uv_work_t *work) {
         BackupExBlock *block = reinterpret_cast<BackupExBlock *> (work->data);
         BackupRestoreService::GetInstance().StartBackupEx(block->sceneCode, block->galleryAppName,
             block->mediaAppName, block->backupInfo, block->backupExInfo);
@@ -477,7 +477,7 @@ void MediaLibraryBackupNapi::UvBackupWorkEx(uv_loop_s *loop, uv_work_t *work)
         napi_close_handle_scope(block->env, scope);
         delete block;
         delete work;
-    });
+    }, "MLB_Backup_startBackupEx");
 }
 
 napi_value MediaLibraryBackupNapi::JSRelease(napi_env env, napi_callback_info info)

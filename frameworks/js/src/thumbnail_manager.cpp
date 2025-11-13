@@ -741,7 +741,7 @@ void ThumbnailManager::NotifyImage(const RequestSharedPtr &request)
     std::function<void()> task = [msg, this]() {
         UvJsExecute(msg);
     };
-    int ret = napi_send_event(request->callback_.env_, task, napi_eprio_immediate);
+    int ret = napi_send_event(request->callback_.env_, task, napi_eprio_immediate, "MLB_FileAsset_requestPhoto");
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
