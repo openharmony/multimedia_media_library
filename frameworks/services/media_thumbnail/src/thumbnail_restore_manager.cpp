@@ -60,7 +60,7 @@ void ThumbnailRestoreManager::InitializeRestore(int64_t totalTasks)
     completedTasks_.store(0);
     isRestoreActive_.store(true);
     
-    MEDIA_INFO_LOG("Initialized restore progress: totalTasks=%{public}ld", totalTasks);
+    MEDIA_INFO_LOG("Initialized restore progress: totalTasks=%{public}" PRId64, totalTasks);
 
     bool isScreenOn = false;
 #ifdef HAS_POWER_MANAGER_PART
