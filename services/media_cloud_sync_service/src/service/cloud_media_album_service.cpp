@@ -188,7 +188,6 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecordNew(
 int32_t CloudMediaAlbumService::HandleFetchOldRecord(
     PhotoAlbumDto &record, bool &bContinue, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp)
 {
-    MEDIA_INFO_LOG("HandleFetchOldRecord enter");
     int32_t ret = E_OK;
     auto [resultSet, rowCount] = this->albumDao_.QueryLocalMatchAlbum(record.cloudId);
     if (resultSet == nullptr) {
