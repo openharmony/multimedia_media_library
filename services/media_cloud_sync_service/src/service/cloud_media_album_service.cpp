@@ -73,7 +73,6 @@ int32_t CloudMediaAlbumService::ConvertToSingleScreenshots(PhotoAlbumDto &album,
 int32_t CloudMediaAlbumService::OnFetchRecords(
     std::vector<PhotoAlbumDto> &albumDtoList, OnFetchRecordsAlbumRespBody &resp)
 {
-    MEDIA_INFO_LOG("OnFetchRecords enter");
     std::vector<PhotoAlbumDto> oldRecords;
     std::vector<PhotoAlbumDto> lpathRecords;
     int32_t ret = E_OK;
