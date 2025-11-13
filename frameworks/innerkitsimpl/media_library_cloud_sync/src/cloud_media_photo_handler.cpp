@@ -81,7 +81,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
                 record.GetRecordId().c_str());
             continue;
         }
-        MEDIA_INFO_LOG("OnFetchRecords OnFetchPhotoVo: %{public}s", onFetchPhotoVo.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchPhotoVo: %{public}s", onFetchPhotoVo.ToString().c_str());
         reqBody.AddOnFetchPhotoData(onFetchPhotoVo);
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_FETCH_RECORDS);
