@@ -84,6 +84,7 @@ private:
     NativeRdb::ValuesBucket GetMapInsertValue(int32_t albumId, int32_t fileId, std::optional<int32_t> &order);
     void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     void ReportPortraitCloneStat(int32_t sceneCode);
+    void RestoreAnalysisTotalFaceStatus();
 
 public:
     std::vector<CoverUriInfo> coverUriInfo_;
