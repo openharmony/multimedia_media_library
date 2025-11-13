@@ -106,6 +106,7 @@ private:
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
     EXPORT static int32_t HandleDuplicateAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
     EXPORT static int32_t HandleMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
 
 private:
     static std::mutex cloudAlbumAndDataMutex_;
