@@ -45,7 +45,8 @@ enum class HideSensitiveType : int32_t {
     ALL_DESENSITIZE = 0,
     GEOGRAPHIC_LOCATION_DESENSITIZE,
     SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE
+    NO_DESENSITIZE,
+    DEFAULT
 };
 
 enum class OperationMode : uint32_t {

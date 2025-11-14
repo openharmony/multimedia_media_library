@@ -39,11 +39,13 @@ const int AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE = 0;
 const int AppUriSensitiveColumn::SENSITIVE_GEOGRAPHIC_LOCATION_DESENSITIZE = 1;
 const int AppUriSensitiveColumn::SENSITIVE_SHOOTING_PARAM_DESENSITIZE = 2;
 const int AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE = 3;
+const int AppUriSensitiveColumn::SENSITIVE_DEFAULT = 4;
 const std::set<int> AppUriSensitiveColumn::SENSITIVE_TYPES_ALL = {
     AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE,
     AppUriSensitiveColumn::SENSITIVE_GEOGRAPHIC_LOCATION_DESENSITIZE,
     AppUriSensitiveColumn::SENSITIVE_SHOOTING_PARAM_DESENSITIZE,
-    AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE};
+    AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE,
+    AppUriSensitiveColumn::SENSITIVE_DEFAULT};
 
 const std::string AppUriSensitiveColumn::URI_URITYPE_APPID_INDEX = "uri_uritype_appid_index";
 
