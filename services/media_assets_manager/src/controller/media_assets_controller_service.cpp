@@ -540,6 +540,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE_FOR_PICKER),
         &MediaAssetsControllerService::AssetChangeSubmitCache
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_TRASH_ASSETS),
+        &MediaAssetsControllerService::SysTrashPhotos
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_DELETE_ASSETS),
+        &MediaAssetsControllerService::DeletePhotos
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
