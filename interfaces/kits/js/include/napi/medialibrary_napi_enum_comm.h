@@ -98,7 +98,8 @@ const std::vector<std::string> photoPermissionTypeEnum {
 };
 
 const std::vector<std::string> hideSensitiveTypeEnum {
-    "HIDE_LOCATION_AND_SHOOTING_PARAM", "HIDE_LOCATION_ONLY", "HIDE_SHOOTING_PARAM_ONLY", "NO_HIDE_SENSITIVE_TYPE"
+    "HIDE_LOCATION_AND_SHOOTING_PARAM", "HIDE_LOCATION_ONLY", "HIDE_SHOOTING_PARAM_ONLY",
+    "NO_HIDE_SENSITIVE_TYPE", "DEFAULT"
 };
 
 const std::vector<std::string> notifyTypeEnum {
