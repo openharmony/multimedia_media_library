@@ -3034,12 +3034,6 @@ napi_value FileAssetNapi::PhotoAccessHelperCreateTmpCompatibleDup(napi_env env, 
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Only image file type is supported");
         return nullptr;
     }
-    // Check if the file is HEIF/HEIC format
-    std::string originExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    if (originExtension != "heif" && originExtension != "heic") {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "extension must be heif or heic");
-        return nullptr;
-    }
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCreateTmpCompatibleDup",
         PhotoAccessHelperCreateTmpCompatibleDupExecute, PhotoAccessHelperCreateTmpCompatibleDupComplete);
