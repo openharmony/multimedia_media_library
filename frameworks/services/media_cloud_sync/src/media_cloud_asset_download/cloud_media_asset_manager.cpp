@@ -854,6 +854,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
     // 判断是不是已经有个南向设备端在cleaning, 如果有也直接返回
     bool isCloudCleaning = IsSouthDeviceSyncCleaning(CloudMediaRetainType::RETAIN_FORCE);
     bool isHdcCleaning = IsSouthDeviceSyncCleaning(CloudMediaRetainType::HDC_RETAIN_FORCE);
+    MEDIA_INFO_LOG("cloud: %{public}d, hdc: %{public}d", isCloudCleaning, isHdcCleaning);
     SetSouthDeviceCleanStatus(retainType, CloudSyncStatus::CLOUD_CLEANING);
     if (needAvoidRepeatedDoing && (isCloudCleaning || isHdcCleaning)) {
         MEDIA_INFO_LOG("some south device is cleaning. cloud: %{public}d, hdc: %{public}d",
