@@ -343,7 +343,8 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
 void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int64_t dateAdded = 0;
-    if (data.propertiesFirstUpdateTime.empty() || !convertToLong(data.propertiesFirstUpdateTime, dateAdded)) {
+    if (data.propertiesFirstUpdateTime.empty() || !convertToLong(data.propertiesFirstUpdateTime, dateAdded) ||
+        dateAdded <= 0) {
         MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
             data.propertiesFirstUpdateTime.c_str(),
             data.cloudId.c_str());
