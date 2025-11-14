@@ -873,6 +873,8 @@ bool ThumbnailService::GetCurrentStatusForTask()
 
 void ThumbnailService::NotifyTempStatusForReady(const int32_t &currentTemperatureLevel)
 {
+    static std::mutex notifyTempStatusForReadyLock;
+    std::lock_guard<std::mutex> lock(notifyTempStatusForReadyLock);
     currentTemperatureLevel_ = currentTemperatureLevel;
     if (isTemperatureHighForReady_ && currentTemperatureLevel_ < READY_TEMPERATURE_LEVEL) {
         MEDIA_INFO_LOG("temperature is normal, the opreation is resumed");

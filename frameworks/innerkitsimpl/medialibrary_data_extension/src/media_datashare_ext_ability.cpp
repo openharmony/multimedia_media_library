@@ -247,13 +247,6 @@ static void RestartCloudMediaAssetDownload()
     }).detach();
 }
 
-static void ExecuteSubscribeWork()
-{
-    std::thread([&] {
-        Media::MedialibrarySubscriber::Subscribe();
-    }).detach();
-}
-
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -298,7 +291,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
     OnStartSub(want);
-    ExecuteSubscribeWork();
+    Media::MedialibrarySubscriber::SubscribeAsync();
     Media::HeifTranscodingCheckUtils::InitCheckList();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
@@ -316,6 +309,7 @@ void MediaDataShareExtAbility::OnStop()
     MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
+    Media::MedialibrarySubscriber::UnSubscribe();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }
 
