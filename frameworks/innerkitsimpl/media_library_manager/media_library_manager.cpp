@@ -68,6 +68,12 @@
 #include "get_albums_lpath_by_ids_vo.h"
 #include "query_albums_vo.h"
 #include "retain_cloud_media_asset_vo.h"
+#include "delete_albums_vo.h"
+#include "create_album_vo.h"
+#include "trash_photos_vo.h"
+#include "delete_photos_vo.h"
+#include "change_request_move_assets_vo.h"
+#include "album_get_assets_vo.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -87,6 +93,7 @@ constexpr int32_t DEFAULT_MONTH_THUMBNAIL_SIZE = 128;
 constexpr int32_t DEFAULT_YEAR_THUMBNAIL_SIZE = 64;
 constexpr int32_t URI_MAX_SIZE = 1000;
 
+const std::string PENDING_STATUS_INNER = "pending";
 const std::string MULTI_USER_URI_FLAG = "user=";
 
 struct UriParams {
@@ -1156,6 +1163,397 @@ int32_t MediaLibraryManager::RetainCloudMediaAsset(CloudMediaRetainType retainTy
         errCode);
     MEDIA_DEBUG_LOG("MediaLibraryManager::RetainCloudMediaAsset End.");
     return errCode;
+}
+
+FetchResult<PhotoAlbum> MediaLibraryManager::GetAlbums(const std::vector<std::string> &fetchColumns,
+    const DataShare::DataSharePredicates *predicate)
+{
+    MEDIA_DEBUG_LOG("GetAlbums Start.");
+    FetchResult<PhotoAlbum> emptyPhotoAlbum;
+    CHECK_AND_RETURN_RET_LOG(predicate != nullptr, emptyPhotoAlbum, "predicate is nullptr");
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, emptyPhotoAlbum, "dataShareHelper is nullptr");
+
+    QueryAlbumsReqBody reqBody;
+    QueryAlbumsRespBody respBody;
+    reqBody.albumType = PhotoAlbumType::INVALID;
+    reqBody.albumSubType = PhotoAlbumSubType::ANY;
+    reqBody.columns = fetchColumns;
+    reqBody.predicates = *predicate;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ALBUMS);
+    int32_t errCode = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_)
+        .Call(businessCode, reqBody, respBody);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, emptyPhotoAlbum,
+        "after IPC::UserInnerIPCClient().Call, errCode: %{public}d.",
+        errCode);
+    if (respBody.resultSet == nullptr) {
+        MEDIA_ERR_LOG("respBody.resultSet is nullptr, errCode is %{public}d", errCode);
+        return emptyPhotoAlbum;
+    }
+    MEDIA_DEBUG_LOG("GetAlbums End.");
+    return FetchResult<PhotoAlbum>(std::move(respBody.resultSet));
+}
+
+int32_t MediaLibraryManager::DeleteAlbums(const std::vector<std::unique_ptr<PhotoAlbum>> &albums)
+{
+    MEDIA_DEBUG_LOG("DeleteAlbums Start.");
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_FAIL, "dataShareHelper is nullptr");
+    vector<string> deleteAlbumIds;
+    for (const auto &album : albums) {
+        if (!PhotoAlbum::IsUserPhotoAlbum(album->GetPhotoAlbumType(), album->GetPhotoAlbumSubType())) {
+            MEDIA_ERR_LOG("albumType not support, albumId: %{public}d", album->GetAlbumId());
+            return E_FAIL;
+        }
+        deleteAlbumIds.push_back(to_string(album->GetAlbumId()));
+    }
+    if (deleteAlbumIds.empty()) {
+        MEDIA_ERR_LOG("deleteAlbumIds empty");
+        return E_FAIL;
+    }
+
+    DeleteAlbumsReqBody reqBody;
+    reqBody.albumIds = deleteAlbumIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_DELETE_ALBUMS);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "after IPC::UserInnerIPCClient().Call, errCode: %{public}d.",
+        ret);
+    MEDIA_DEBUG_LOG("DeleteAlbums End. ret = %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaLibraryManager::CreateAlbum(const std::string &albumName)
+{
+    MEDIA_DEBUG_LOG("CreateAlbum Start.");
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_FAIL, "dataShareHelper is nullptr");
+    if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
+        MEDIA_ERR_LOG("CreateAlbum albumName is invalid, albumName: %{public}s", albumName.c_str());
+        return E_FAIL;
+    }
+
+    CreateAlbumReqBody reqBody;
+    reqBody.albumName = albumName;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ALBUM);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "after IPC::UserInnerIPCClient().Call, errCode: %{public}d.",
+        ret);
+    MEDIA_DEBUG_LOG("CreateAlbum End. ret = %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaLibraryManager::DeleteAssets(const std::vector<std::unique_ptr<FileAsset>> &assets)
+{
+    MEDIA_DEBUG_LOG("DeleteAssets Start.");
+    if (assets.empty()) {
+        MEDIA_ERR_LOG("DeleteAssets assets empty");
+        return E_FAIL;
+    }
+    vector<string> assetsUriList;
+    for (const auto &asset : assets) {
+        if ((asset->GetMediaType() != MEDIA_TYPE_IMAGE && asset->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            MEDIA_INFO_LOG("Skip invalid asset, mediaType: %{public}d", asset->GetMediaType());
+            continue;
+        }
+        string displayName = asset->GetDisplayName();
+        string filePath = asset->GetPath();
+        std::string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            to_string(asset->GetId()), MediaFileUtils::GetExtraUri(displayName, filePath));
+        assetsUriList.push_back(uri);
+    }
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_FAIL, "dataShareHelper is nullptr");
+
+    TrashPhotosReqBody reqBody;
+    reqBody.uris = assetsUriList;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_TRASH_ASSETS);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "after INNER_TRASH_ASSETS, ret: %{public}d.", ret);
+
+    DeletePhotosReqBody deleteReqBody;
+    deleteReqBody.uris = assetsUriList;
+    uint32_t deleteBusinessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_DELETE_ASSETS);
+    int32_t changedRows = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_)
+        .Call(deleteBusinessCode, deleteReqBody);
+    CHECK_AND_RETURN_RET_LOG(changedRows >= 0, changedRows, "after INNER_DELETE_ASSETS, changedRows: %{public}d.",
+        changedRows);
+    MEDIA_INFO_LOG("DeleteAssets End. ret = %{public}d, changedRows = %{public}d",
+        ret, changedRows);
+    return changedRows;
+}
+
+int32_t MediaLibraryManager::MoveAssets(const std::vector<std::unique_ptr<FileAsset>> &assets, PhotoAlbum &srcAlbum,
+    PhotoAlbum &targetAlbum)
+{
+    MEDIA_DEBUG_LOG("MoveAssets Start.");
+    CHECK_AND_RETURN_RET_LOG(!assets.empty(), E_FAIL, "assets is empty");
+    CHECK_AND_RETURN_RET_LOG(PhotoAlbum::IsUserPhotoAlbum(targetAlbum.GetPhotoAlbumType(),
+        targetAlbum.GetPhotoAlbumSubType()) || PhotoAlbum::IsSourceAlbum(targetAlbum.GetPhotoAlbumType(),
+        targetAlbum.GetPhotoAlbumSubType()), E_FAIL, "Only user and source albums can be set as target album.");
+    int32_t targetAlbumId = targetAlbum.GetAlbumId();
+    int32_t albumId = srcAlbum.GetAlbumId();
+    CHECK_AND_RETURN_RET_LOG(albumId != targetAlbumId, E_FAIL, "targetAlbum cannot be self");
+    bool isTargetHiddenOnly = targetAlbum.GetHiddenOnly();
+    vector<string> assetUriArray;
+
+    ChangeRequestMoveAssetsReqBody reqBody;
+    ChangeRequestMoveAssetsRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS);
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_FAIL, "dataShareHelper is nullptr");
+    for (const auto &asset : assets) {
+        if ((asset->GetMediaType() != MEDIA_TYPE_IMAGE && asset->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            MEDIA_INFO_LOG("Skip invalid asset, mediaType: %{public}d", asset->GetMediaType());
+            continue;
+        }
+        string displayName = asset->GetStrMember(MEDIA_DATA_DB_NAME);
+        string filePath = asset->GetStrMember(MEDIA_DATA_DB_FILE_PATH);
+        string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            to_string(asset->GetInt32Member(MEDIA_DATA_DB_ID)), MediaFileUtils::GetExtraUri(displayName, filePath));
+        reqBody.assets.push_back(uri);
+    }
+    reqBody.albumId = albumId;
+    reqBody.targetAlbumId = targetAlbumId;
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, respBody);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, E_FAIL, "Failed to move assets into album %{public}d, err: %{public}d",
+        targetAlbumId, ret);
+    MEDIA_INFO_LOG("Move %{public}d asset into album %{public}d", ret, targetAlbumId);
+    targetAlbum.SetVideoCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumVideoCount);
+    targetAlbum.SetImageCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumImageCount);
+    targetAlbum.SetCount(respBody.targetAlbumCount);
+    bool isHiddenOnly = srcAlbum.GetHiddenOnly();
+    srcAlbum.SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
+    srcAlbum.SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
+    srcAlbum.SetCount(respBody.albumCount);
+    MEDIA_INFO_LOG("origin album video count: %{public}d, image count: %{public}d, count: %{public}d",
+        respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
+    MEDIA_DEBUG_LOG("MoveAssets End.");
+    return ret;
+}
+
+inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const int32_t dateTrashed,
+    const bool isHidden, const int32_t timePending, const bool isTemp)
+{
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(dateTrashed));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+}
+
+static void SetFavoriteSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    constexpr int32_t isFavorite = 1;
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(isFavorite));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetVideoSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetHiddenSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    SetDefaultPredicatesCondition(predicates, 0, 1, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetTrashSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+    predicates.EndWrap();
+}
+
+static void SetScreenshotSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetCameraSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetImageSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+
+static void SetCloudSubTypeDefaultPredicates(DataSharePredicates &predicates, bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+}
+int32_t GetSystemAlbumPredicatesForInner(const PhotoAlbumSubType subType, DataSharePredicates &predicates,
+    const bool hiddenOnly)
+{
+    switch (subType) {
+        case PhotoAlbumSubType::FAVORITE: {
+            SetFavoriteSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::VIDEO: {
+            SetVideoSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::HIDDEN: {
+            SetHiddenSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::TRASH: {
+            SetTrashSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::SCREENSHOT: {
+            SetScreenshotSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::CAMERA: {
+            SetCameraSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::IMAGE: {
+            SetImageSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            SetCloudSubTypeDefaultPredicates(predicates, hiddenOnly);
+            break;
+        }
+        default: {
+            MEDIA_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
+            return E_INVALID_ARGUMENTS;
+        }
+    }
+    return E_SUCCESS;
+}
+
+int32_t GetPredicatesByAlbumTypesForInner(const PhotoAlbum &photoAlbum, DataSharePredicates &predicates,
+    const bool hiddenOnly)
+{
+    int32_t albumId = photoAlbum.GetAlbumId();
+    PhotoAlbumSubType subType = photoAlbum.GetPhotoAlbumSubType();
+    bool isLocationAlbum = subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION;
+    if (albumId <= 0 && !isLocationAlbum) {
+        MEDIA_ERR_LOG("Invalid album ID");
+        return E_INVALID_ARGUMENTS;
+    }
+    PhotoAlbumType type = photoAlbum.GetPhotoAlbumType();
+    if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        MEDIA_ERR_LOG("Invalid album type or subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+            static_cast<int>(subType));
+        return E_INVALID_ARGUMENTS;
+    }
+    if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+        return E_SUCCESS;
+    }
+    if (PhotoAlbum::IsSourceAlbum(type, subType)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS,
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+        SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+        return E_SUCCESS;
+    }
+    if (type == PhotoAlbumType::SYSTEM) {
+        return GetSystemAlbumPredicatesForInner(subType, predicates, hiddenOnly);
+    }
+    MEDIA_ERR_LOG("Invalid album type and subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+        static_cast<int>(subType));
+    return E_INVALID_ARGUMENTS;
+}
+
+static bool AddDefaultAssetColumnsForInner(vector<string> &fetchColumn,
+    function<bool(const string &columnName)> isValidColumn)
+{
+    auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
+    validFetchColumns.insert(
+        PhotoColumn::DEFAULT_FETCH_COLUMNS.begin(), PhotoColumn::DEFAULT_FETCH_COLUMNS.end());
+    for (const auto &column : fetchColumn) {
+        if (column == PENDING_STATUS_INNER) {
+            validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
+        } else if (isValidColumn(column) || (column == MEDIA_SUM_SIZE)) {
+            validFetchColumns.insert(column);
+        } else if (column == MEDIA_DATA_DB_URI) {
+            continue;
+        } else if (DATE_TRANSITION_MAP.count(column) != 0) {
+            validFetchColumns.insert(DATE_TRANSITION_MAP.at(column));
+        } else {
+            MEDIA_ERR_LOG("input parameter invalid");
+            return false;
+        }
+    }
+    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
+    return true;
+}
+
+bool IsFeaturedSinglePortraitAlbum(const PhotoAlbum &photoAlbum)
+{
+    constexpr int portraitAlbumId = 0;
+    return photoAlbum.GetPhotoAlbumSubType() == PhotoAlbumSubType::CLASSIFY &&
+        photoAlbum.GetAlbumName().compare(to_string(portraitAlbumId)) == 0;
+}
+
+FetchResult<FileAsset> MediaLibraryManager::GetAssets(const PhotoAlbum &album,
+    const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate)
+{
+    MEDIA_DEBUG_LOG("GetAssets Start.");
+    FetchResult<FileAsset> fileAsset;
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, fileAsset, "dataShareHelper is nullptr");
+    CHECK_AND_RETURN_RET_LOG(predicate != nullptr, fileAsset, "predicate is nullptr");
+    std::vector<std::string> fetchColumnsForChange = fetchColumns;
+    DataShare::DataSharePredicates predicateForChange = *predicate;
+    auto err = GetPredicatesByAlbumTypesForInner(album, predicateForChange, album.GetHiddenOnly());
+    CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS, fileAsset, "input parameter invalid");
+    CHECK_AND_RETURN_RET_LOG(AddDefaultAssetColumnsForInner(fetchColumnsForChange, PhotoColumn::IsPhotoColumn),
+        fileAsset, "AddDefaultAssetColumnsForInner invalid");
+    if (album.GetHiddenOnly() || album.GetPhotoAlbumSubType() == PhotoAlbumSubType::HIDDEN) {
+        predicateForChange.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+    }
+    if (album.GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
+        album.GetPhotoAlbumSubType() != PhotoAlbumSubType::GROUP_PHOTO && !IsFeaturedSinglePortraitAlbum(album)) {
+    } else {
+        for (size_t i = 0; i < fetchColumnsForChange.size(); i++) {
+            if (fetchColumnsForChange[i] != "count(*)") {
+                fetchColumnsForChange[i] = PhotoColumn::PHOTOS_TABLE + "." + fetchColumnsForChange[i];
+            }
+        }
+    }
+
+    AlbumGetAssetsReqBody reqBody;
+    reqBody.predicates = predicateForChange;
+    reqBody.columns = fetchColumnsForChange;
+    AlbumGetAssetsRespBody respBody;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSETS);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (ret == E_OK) {
+        resultSet = respBody.resultSet;
+    } else {
+        MEDIA_ERR_LOG("UserInnerIPCClient Call failed, errCode is %{public}d", ret);
+        return fileAsset;
+    }
+    return FetchResult<FileAsset>(std::move(resultSet));
 }
 } // namespace Media
 } // namespace OHOS
