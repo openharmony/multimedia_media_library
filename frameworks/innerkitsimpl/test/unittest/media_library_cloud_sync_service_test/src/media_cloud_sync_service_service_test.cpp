@@ -1876,7 +1876,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ScanShootingMode_Test_
     CloudMediaScanService service;
     CloudMediaScanService::ScanResult scanResult;
     std::string filePath = "/Invalid/Path/filename.txt";
-    int32_t ret = service.ScanShootingMode(filePath, scanResult);
+    int32_t ret = service.ScanDownloadedFile(filePath, scanResult);
     EXPECT_NE(ret, E_OK);
 }
 
@@ -1889,7 +1889,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ScanShootingMode_Test_
     int32_t fd = open(filePath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0x777);
     write(fd, buffer, strlen(buffer));
     close(fd);
-    int32_t ret = service.ScanShootingMode(filePath, scanResult);
+    int32_t ret = service.ScanDownloadedFile(filePath, scanResult);
     EXPECT_EQ(ret, E_OK);
     system("rm -rf /data/filename1.jpg");
 }
