@@ -1885,6 +1885,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
@@ -5518,6 +5519,21 @@ static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("end add analysis progress columns");
 }
 
+static void CreateVisionVideoTotal(RdbStore& store, int32_t version)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_UPDATE_TRIGGER,
+        DROP_DELETE_VISION_TRIGGER,
+        CREATE_VISION_DELETE_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start create video total");
+    ExecSqlsWithDfx(sqls, store, version);
+}
+
 static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("create batchdownload records begin");
@@ -5527,6 +5543,16 @@ static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
     };
     ExecSqlsWithDfx(executeSqlStrs, store, version);
     MEDIA_INFO_LOG("create batchdownload records end");
+}
+
+static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
+{
+    MEDIA_INFO_LOG("start update vision trigger");
+    if (oldVersion < VERSION_UPDATE_VIDEO_LABLE_FACE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, true)) {
+        CreateVisionVideoTotal(store, VERSION_UPDATE_VIDEO_LABLE_FACE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_LABLE_FACE, true);
+    }
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5569,6 +5595,7 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true);
         RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, 0, ret);
     }
+    UpgradeExtensionPart12(store, oldVersion);
 }
 
 static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
