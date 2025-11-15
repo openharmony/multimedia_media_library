@@ -351,6 +351,18 @@ static int32_t ExecSqlsWithDfx(const vector<string> &sqls, RdbStore &store, int3
     return NativeRdb::E_OK;
 }
 
+void MediaLibraryRdbStore::AddPetTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_PET_INDEX,
+        CREATE_PET_TAG_ID_INDEX,
+        UPDATE_PET_TOTAL_VALUE,
+    };
+    MEDIA_INFO_LOG("add pet face index start");
+    ExecSqlsWithDfx(executeSqlStrs, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("add pet face index end");
+}
+
 void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -1915,6 +1927,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_ANALYSIS_HEAD,
     CREATE_TAB_ANALYSIS_POSE,
+    CREATE_TAB_ANALYSIS_PET_FACE,
+    CREATE_TAB_ANALYSIS_PET_TAG,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
@@ -1932,6 +1946,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_COMPOSITION_INDEX,
     CREATE_HEAD_INDEX,
     CREATE_POSE_INDEX,
+    CREATE_PET_INDEX,
+    CREATE_PET_TAG_ID_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
@@ -4280,6 +4296,18 @@ void AddHighlightMapTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddPetFaceTable(RdbStore &store, int32_t version)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_PET_FACE,
+        CREATE_TAB_ANALYSIS_PET_TAG,
+        ADD_PET_STATUS_COLUMN,
+    };
+    MEDIA_INFO_LOG("add pet tables start");
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("add pet tables end");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -5650,6 +5678,15 @@ static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t ver
     MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
 }
 
+static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_PET_TABLES &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, true)) {
+        AddPetFaceTable(store, VERSION_ADD_PET_TABLES);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, true);
+    }
+}
+
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
 {
     MEDIA_INFO_LOG("start update vision trigger");
@@ -5703,6 +5740,7 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         AddAnalysisProgressCheckSpaceColumn(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN, true);
     }
+    UpgradeExtensionPart13(store, oldVersion);
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)

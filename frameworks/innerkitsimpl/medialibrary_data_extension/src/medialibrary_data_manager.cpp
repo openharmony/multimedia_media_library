@@ -617,7 +617,6 @@ static void UpdateVideoTotalFaceId(const shared_ptr<MediaLibraryRdbStore>& store
     MEDIA_INFO_LOG("End update face id of video total");
 }
 
-
 static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     MEDIA_INFO_LOG("Start to Update 3DGS mode album");
@@ -875,6 +874,13 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         UpdateAllShootingModeAlbums(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false);
+    }
+
+    if (oldVersion < VERSION_ADD_PET_TABLES &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, false)) {
+        MediaLibraryRdbStore::AddPetTagIdIndex(rdbStore, VERSION_ADD_PET_TABLES);
+        rdbStore->SetOldVersion(VERSION_ADD_PET_TABLES);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, false);
     }
 }
 

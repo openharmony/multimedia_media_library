@@ -129,6 +129,8 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::VISION_POSE,
     OperationObject::VISION_TOTAL,
     OperationObject::VISION_VIDEO_TOTAL,
+    OperationObject::VISION_PET_FACE,
+    OperationObject::VISION_PET_TAG,
     OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
     OperationObject::GEO_DICTIONARY,
     OperationObject::GEO_KNOWLEDGE,

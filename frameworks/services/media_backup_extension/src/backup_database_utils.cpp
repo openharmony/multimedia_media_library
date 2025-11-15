@@ -353,6 +353,15 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis face tag count failed, ret=%{public}d", errCode);
 }
 
+void BackupDatabaseUtils::UpdateAnalysisPetTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    std::string updateSql = "UPDATE tab_analysis_pet_tag SET count = (SELECT count(1) from tab_analysis_pet_face \
+        WHERE tab_analysis_pet_face.pet_tag_id = tab_analysis_pet_tag.tag_id \
+        AND tab_analysis_pet_face.pet_tag_id LIKE 'ser%')";
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
+    CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis face tag count failed, ret=%{public}d", errCode);
+}
+
 void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     const std::vector<FileIdPair>& fileIdPair)
 {
@@ -795,6 +804,40 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
         "UPDATE " + VISION_TOTAL_TABLE +
         " SET face = 0, status = CASE WHEN status =1 THEN 0 ELSE status END " +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
+    int32_t totalRet = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, updateTotalSql);
+
+    CHECK_AND_RETURN_LOG(totalRet >= 0, "Failed to update VISION_TOTAL_TABLE face field to 0");
+}
+
+void BackupDatabaseUtils::DeleteExistingPetFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<FileIdPair>& fileIdPair)
+{
+    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
+    std::vector<int> realNewFileIds;
+    for (auto fileId: newFileIds) {
+        CHECK_AND_EXECUTE(fileId == -1, realNewFileIds.emplace_back(fileId));
+    }
+
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(realNewFileIds, ", ") + ")";
+
+    std::string deleteAnalysisPhotoMapSql =
+        "DELETE FROM AnalysisPhotoMap WHERE "
+        "map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4106) "
+        // 4096: SMART, 4106: PET
+        "AND map_asset IN ("
+        "SELECT " + PET_FACE_COL_FILE_ID + " FROM " + VISION_PET_FACE_TABLE +
+        " WHERE " + PET_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause +
+        ") ";
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisPhotoMapSql);
+
+    std::string deleteFaceSql = "DELETE FROM " + VISION_PET_FACE_TABLE +
+        " WHERE " + PET_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceSql);
+
+    const std::string updateTotalSql =
+        "UPDATE " + VISION_TOTAL_TABLE +
+        " SET face = 0, status = CASE WHEN status =1 THEN 0 ELSE status END " +
+        " WHERE " + PET_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
     int32_t totalRet = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, updateTotalSql);
 
     CHECK_AND_RETURN_LOG(totalRet >= 0, "Failed to update VISION_TOTAL_TABLE face field to 0");

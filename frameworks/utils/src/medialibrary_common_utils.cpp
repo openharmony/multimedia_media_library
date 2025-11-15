@@ -231,6 +231,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     CATEGORY_ID,
     HEAD,
     POSE,
+    PET_STATUS,
     SCALE_X,
     SCALE_Y,
     SCALE_HEIGHT,

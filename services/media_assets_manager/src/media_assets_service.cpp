@@ -63,6 +63,7 @@
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
@@ -1090,6 +1091,12 @@ static const map<int32_t, struct AnalysisConfig> ANALYSIS_CONFIG_MAP = {
     { ANALYSIS_BONE_POSE, { VISION_POSE_TABLE, POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_MULTI_CROP, { VISION_RECOMMENDATION_TABLE, RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
+    { ANALYSIS_PET_TAG, { VISION_PET_TAG_TABLE, PET_TAG, { TAG_ID, PET_LABEL, CENTER_FEATURES, TAG_VERSION,
+        COUNT, DATE_MODIFIED, ANALYSIS_VERSION } } },
+    { ANALYSIS_PET_FACE, { VISION_PET_FACE_TABLE, PET_FACE, { FILE_ID, PET_ID, PROB, PET_LABEL, PET_TOTAL_FACES,
+        FEATURES, PET_TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, HEAD_VERSION, PET_FEATURE_VERSION,
+        TAG_VERSION, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y, BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT,
+        DATE_MODIFIED } } },
 };
 
 int32_t MediaAssetsService::GetAssetAnalysisData(GetAssetAnalysisDataDto &dto)

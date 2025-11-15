@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef BACKUP_DFX_UTILS_H
-#define BACKUP_DFX_UTILS_H
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_PET_FACE_COLUMN_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_PET_FACE_COLUMN_H
 
-#include <string>
+#include "vision_column_comm.h"
 
 namespace OHOS {
 namespace Media {
-class BackupDfxUtils {
-public:
-    static void PostPortraitStat(uint32_t albumCount, uint64_t photoCount, uint64_t faceCount, uint64_t totalTimeCost);
-    static void PostPetStat(uint32_t albumCount, uint64_t photoCount, uint64_t petCount, uint64_t totalTimeCost);
-};
+const std::string PET_ID = "pet_id";
+const std::string PET_TAG_ID = "pet_tag_id";
+const std::string PET_LABEL = "pet_label";
+const std::string PET_TOTAL_FACES = "pet_total_faces";
+const std::string PET_FEATURE_VERSION = "feature_version";
+const std::string PET_TAG_VERSION = "tag_version";
 } // namespace Media
 } // namespace OHOS
-
-#endif  // BACKUP_DFX_UTILS_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_PET_FACE_COLUMN_H
