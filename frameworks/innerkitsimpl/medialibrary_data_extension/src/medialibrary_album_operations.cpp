@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <type_traits>
 #define MLOG_TAG "AlbumOperation"
 
 #include "medialibrary_album_operations.h"
@@ -621,7 +622,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
     GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
-    if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO)) {
+    if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO) && subtype != to_string(PET)) {
         return err;
     }
     int rowId;
@@ -2452,7 +2453,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     const std::string queryAlbumInfo = "SELECT " + ALBUM_ID + "," + GROUP_TAG + "," + COUNT + "," + IS_ME + "," +
         COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + "," +
-        ALBUM_NAME + "," + IS_COVER_SATISFIED + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
+        ALBUM_NAME + "," + IS_COVER_SATISFIED + "," + ALBUM_TYPE + "," + ALBUM_SUBTYPE +
+        " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
         to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
@@ -2473,7 +2475,9 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
+            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK ||
+            GetIntValueFromResultSet(resultSet, ALBUM_TYPE, albumInfo.albumType) != E_OK ||
+            GetIntValueFromResultSet(resultSet, ALBUM_SUBTYPE, albumInfo.albumSubtype) != E_OK) {
                 MEDIA_ERR_LOG("Failed to get values from result set");
                 return E_HAS_DB_ERROR;
             }
@@ -2634,11 +2638,26 @@ static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInf
     return UpdateForMergeAlbums(updateAlbumInfo, mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
 }
 
-/**
- * Merge album
- * @param values contains current and target album_id
- */
-int32_t MediaLibraryAlbumOperations::MergePortraitAlbums(const ValuesBucket &values)
+bool MediaLibraryAlbumOperations::IsOnlyPortraitOrPetAlbumMerge(const vector<MergeAlbumInfo>& mergeAlbumInfo)
+{
+    if (mergeAlbumInfo.size() != MERGE_ALBUM_COUNT) { // merge album count
+        MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
+        return false;
+    }
+    if (((mergeAlbumInfo[0].albumType == PhotoAlbumType::SMART &&
+          mergeAlbumInfo[0].albumSubtype == PhotoAlbumSubType::PORTRAIT) &&
+         (mergeAlbumInfo[1].albumType == PhotoAlbumType::SMART &&
+          mergeAlbumInfo[1].albumSubtype == PhotoAlbumSubType::PORTRAIT)) ||
+        ((mergeAlbumInfo[0].albumType == PhotoAlbumType::SMART &&
+          mergeAlbumInfo[0].albumSubtype == PhotoAlbumSubType::PET) &&
+         (mergeAlbumInfo[1].albumType == PhotoAlbumType::SMART &&
+          mergeAlbumInfo[1].albumSubtype == PhotoAlbumSubType::PET))) {
+        return true;
+    }
+    return false;
+}
+
+int32_t MediaLibraryAlbumOperations::MergeAlbums(const NativeRdb::ValuesBucket &values)
 {
     int32_t currentAlbumId;
     int32_t targetAlbumId;
@@ -2668,18 +2687,16 @@ int32_t MediaLibraryAlbumOperations::MergePortraitAlbums(const ValuesBucket &val
         MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
         return E_INVALID_VALUES;
     }
+    if (!IsOnlyPortraitOrPetAlbumMerge(mergeAlbumInfo)) {
+        MEDIA_ERR_LOG("Only portrait or only pet album can merge");
+        return E_INVALID_VALUES;
+    }
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
     err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("MergeAlbum failed");
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "MergeAlbum failed, err %{public}d", err);
     err = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("MergeGroupAlbum failed");
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "MergeGroupAlbum failed, err %{public}d", err);
     vector<int32_t> changeAlbumIds = { currentAlbumId };
     NotifyPortraitAlbum(changeAlbumIds);
     return err;
@@ -3279,7 +3296,7 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
         case OperationType::PORTRAIT_DISPLAY_LEVEL:
             return SetDisplayLevel(values, predicates);
         case OperationType::PORTRAIT_MERGE_ALBUM:
-            return MergePortraitAlbums(values);
+            return MergeAlbums(values);
         case OperationType::PORTRAIT_IS_ME:
             return SetIsMe(values, predicates);
         case OperationType::PORTRAIT_ALBUM_NAME:

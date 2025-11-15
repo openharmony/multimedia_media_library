@@ -476,7 +476,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype)) && cond;
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype)) && cond;
     cond = cond && !reqBody.albumName.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
@@ -507,7 +508,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &da
     bool cond = PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype);
+        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype);
     cond = cond && !reqBody.coverUri.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
@@ -561,7 +563,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetDisplayLevel(MessageParcel
     PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
     int32_t albumId = atoi(reqBody.albumId.c_str());
     bool cond = (PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype)) &&
+        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype)) &&
         MediaFileUtils::CheckDisplayLevel(reqBody.displayLevel) && albumId > 0;
     if (!cond) {
         MEDIA_ERR_LOG("params is invalid");

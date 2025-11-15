@@ -24,6 +24,7 @@
 #include "backup_log_utils.h"
 #include "clone_restore_classify.h"
 #include "clone_restore_cv_analysis.h"
+#include "clone_restore_pet_album.h"
 #include "clone_restore_portrait_album.h"
 #include "clone_restore_highlight.h"
 #include "clone_restore_geo.h"
@@ -1982,6 +1983,7 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisClassify();
     RestoreAnalysisGeo();
     RestoreAnalysisPortrait();
+    RestoreAnalysisPet();
     RestoreGroupPhoto();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     RestoreAnalysisData();
@@ -2844,6 +2846,15 @@ void CloneRestore::RestoreAnalysisPortrait()
     portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
     portraitAlbumClone.Preprocess();
     portraitAlbumClone.Restore();
+}
+
+void CloneRestore::RestoreAnalysisPet()
+{
+    CloneRestorePet petAlbumClone;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
+    petAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
+    petAlbumClone.Preprocess();
+    petAlbumClone.Restore();
 }
 
 void CloneRestore::RestoreAnalysisGeo()

@@ -34,6 +34,7 @@ namespace Media {
 using FileIdPair = std::pair<int32_t, int32_t>;
 using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 constexpr int32_t TOTAL_TBL_FACE_ANALYSED = 2;
+constexpr int32_t TOTAL_TBL_PET_ANALYSED = 1;
 class BackupDatabaseUtils {
 public:
     using ConfigInfoType = std::unordered_map<ConfigInfoSceneId, std::unordered_map<std::string, std::string>>;
@@ -70,6 +71,7 @@ public:
     static uint32_t GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start);
     static void UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static void UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static void UpdateAnalysisPetTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static bool SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
         std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
@@ -102,6 +104,8 @@ public:
         const std::vector<FileIdPair>& fileIdPair);
     static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileIdPair>& fileIdPair);
+    static void DeleteExistingPetFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         const std::vector<FileIdPair>& fileIdPair);
     static std::vector<TagPairOpt> QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,

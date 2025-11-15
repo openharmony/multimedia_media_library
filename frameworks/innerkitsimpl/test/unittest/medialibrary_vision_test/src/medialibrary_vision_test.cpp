@@ -95,6 +95,8 @@ static std::vector<std::string> createTableSqlLists = {
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_HEAD,
+    CREATE_TAB_ANALYSIS_PET_TAG,
+    CREATE_TAB_ANALYSIS_PET_FACE,
     CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_TAB_IMAGE_FACE,
@@ -135,6 +137,22 @@ static std::vector<std::string> testTables = {
     PhotoAlbumColumns::TABLE,
 };
 
+void CleanVisionDataPart1(DataShare::DataSharePredicates &predicates)
+{
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand petTagCmd(petTagUri);
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand petFaceCmd(petFaceUri);
+    Uri imageFaceUri(URI_IMAGE_FACE);
+    MediaLibraryCommand imageFaceCmd(imageFaceUri);
+    Uri faceTagUri(URI_FACE_TAG);
+    MediaLibraryCommand faceTagCmd(faceTagUri);
+    MediaLibraryDataManager::GetInstance()->Delete(petTagCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(petFaceCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(imageFaceCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
+}
+
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -162,10 +180,6 @@ void CleanVisionData()
     MediaLibraryCommand poseCmd(poseUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
-    Uri imageFaceUri(URI_IMAGE_FACE);
-    MediaLibraryCommand imageFaceCmd(imageFaceUri);
-    Uri faceTagUri(URI_FACE_TAG);
-    MediaLibraryCommand faceTagCmd(faceTagUri);
     Uri geoDictionaryUri(URI_GEO_DICTIONARY);
     MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
@@ -181,10 +195,9 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(headCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(poseCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(imageFaceCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
+    CleanVisionDataPart1(predicates);
 }
 
 void ClearVideoAestheticsData()
@@ -203,6 +216,21 @@ void ClearVideoFaceData()
     MediaLibraryDataManager::GetInstance()->Delete(videoFaceCmd, predicates);
 }
 
+void ClearPetFaceData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand petFaceCmd(petFaceUri);
+    MediaLibraryDataManager::GetInstance()->Delete(petFaceCmd, predicates);
+}
+
+void ClearPetTagData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand petTagCmd(petTagUri);
+    MediaLibraryDataManager::GetInstance()->Delete(petTagCmd, predicates);
+}
 void ClearAnalysisAlbumTotalData()
 {
     DataShare::DataSharePredicates predicates;
@@ -268,6 +296,8 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
     ClearVideoAestheticsData();
+    ClearPetFaceData();
+    ClearPetTagData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -276,6 +306,8 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
     ClearVideoAestheticsData();
+    ClearPetFaceData();
+    ClearPetTagData();
     if (mockToken != nullptr) {
         delete mockToken;
         mockToken = nullptr;
@@ -295,6 +327,8 @@ void MediaLibraryVisionTest::SetUp(void)
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
     ClearVideoAestheticsData();
+    ClearPetFaceData();
+    ClearPetTagData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -1444,6 +1478,299 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level1
     EXPECT_EQ(count, 2);
     DataShare::DataSharePredicates predicates1;
     predicates1.EqualTo(FILE_ID, 5);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+    EXPECT_EQ(retVal, 2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertPetFace_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertPetImage_Test_001::Start");
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand cmd(petFaceUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(PET_ID, 1);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(PET_TOTAL_FACES, 1);
+    valuesBucket.Put(FEATURES, "xyijd");
+    valuesBucket.Put(PET_TAG_ID, "11");
+    valuesBucket.Put(SCALE_X, 1.2);
+    valuesBucket.Put(SCALE_Y, 1.3);
+    valuesBucket.Put(SCALE_HEIGHT, 3.4);
+    valuesBucket.Put(SCALE_WIDTH, 2.3);
+    valuesBucket.Put(HEAD_VERSION, "1.01");
+    valuesBucket.Put(PET_FEATURE_VERSION, "0.01");
+    valuesBucket.Put(TAG_VERSION, "1.0");
+    valuesBucket.Put(ANALYSIS_VERSION, "2.0");
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 1.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 1.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 1);
+    valuesBucket1.Put(PET_ID, 1);
+    valuesBucket1.Put(PET_FEATURE_VERSION, "1.01");
+    valuesBucket1.Put(PROB, 2.344);
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 1);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePetFace_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdatePetFace_Test_001::Start");
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand cmd(petFaceUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(PET_ID, 1);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(PET_TOTAL_FACES, 1);
+    valuesBucket.Put(FEATURES, "xyijd");
+    valuesBucket.Put(PET_TAG_ID, "11");
+    valuesBucket.Put(SCALE_X, 1.2);
+    valuesBucket.Put(SCALE_Y, 1.3);
+    valuesBucket.Put(SCALE_HEIGHT, 3.4);
+    valuesBucket.Put(SCALE_WIDTH, 2.3);
+    valuesBucket.Put(HEAD_VERSION, "1.01");
+    valuesBucket.Put(PET_FEATURE_VERSION, "0.01");
+    valuesBucket.Put(TAG_VERSION, "1.0");
+    valuesBucket.Put(ANALYSIS_VERSION, "2.0");
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 1.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 1.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(PET_LABEL, 10); // dog
+    updateValues.Put(PET_FEATURE_VERSION, "2.01");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("2");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdatePetFace_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 2);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeletePetFace_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeletePetFace_Test_001::Start");
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand cmd(petFaceUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(PET_ID, 1);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(PET_TOTAL_FACES, 1);
+    valuesBucket.Put(FEATURES, "xyijd");
+    valuesBucket.Put(PET_TAG_ID, "11");
+    valuesBucket.Put(SCALE_X, 1.2);
+    valuesBucket.Put(SCALE_Y, 1.3);
+    valuesBucket.Put(SCALE_HEIGHT, 3.4);
+    valuesBucket.Put(SCALE_WIDTH, 2.3);
+    valuesBucket.Put(HEAD_VERSION, "1.01");
+    valuesBucket.Put(PET_FEATURE_VERSION, "0.01");
+    valuesBucket.Put(TAG_VERSION, "1.0");
+    valuesBucket.Put(ANALYSIS_VERSION, "2.0");
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 1.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 1.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 4);
+    valuesBucket1.Put(PET_ID, 2);
+    valuesBucket1.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 4);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeletePetFace_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryPetFace_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_QueryPetFace_Test_001::Start");
+    Uri petFaceUri(URI_PET_FACE);
+    MediaLibraryCommand cmd(petFaceUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 5);
+    valuesBucket.Put(PET_ID, 1);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(PET_TOTAL_FACES, 1);
+    valuesBucket.Put(FEATURES, "xyijd");
+    valuesBucket.Put(PET_TAG_ID, "11");
+    valuesBucket.Put(SCALE_X, 1.2);
+    valuesBucket.Put(SCALE_Y, 1.3);
+    valuesBucket.Put(SCALE_HEIGHT, 3.4);
+    valuesBucket.Put(SCALE_WIDTH, 2.3);
+    valuesBucket.Put(HEAD_VERSION, "1.01");
+    valuesBucket.Put(PET_FEATURE_VERSION, "0.01");
+    valuesBucket.Put(TAG_VERSION, "1.0");
+    valuesBucket.Put(ANALYSIS_VERSION, "2.0");
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 1.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 1.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 5);
+    valuesBucket1.Put(PET_ID, 2);
+    valuesBucket1.Put(PET_FEATURE_VERSION, "1.015");
+    valuesBucket1.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 5);
+    vector<string> columns = { PET_ID };
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 2);
+    MEDIA_INFO_LOG("Vision_DeletePetFace_Test_001::count = %{public}d. End", count);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 5);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+    EXPECT_EQ(retVal, 2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertPetTag_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertPetTag_Test_001::Start");
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand cmd(petTagUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(TAG_ID, 1);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(CENTER_FEATURES, "xyijd");
+    valuesBucket.Put(TAG_VERSION, "2.2");
+    valuesBucket.Put(COUNT, 4);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    valuesBucket.Put(ANALYSIS_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertPetTag_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(TAG_ID, 1);
+    valuesBucket1.Put(TAG_VERSION, "2.3");
+    valuesBucket1.Put(ANALYSIS_VERSION, "1.1");
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(TAG_ID, 1);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePetTag_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdatePetFace_Test_001::Start");
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand cmd(petTagUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(TAG_ID, 2);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(CENTER_FEATURES, "xyijd");
+    valuesBucket.Put(TAG_VERSION, "2.2");
+    valuesBucket.Put(COUNT, 4);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    valuesBucket.Put(ANALYSIS_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(PET_LABEL, 10); // dog
+    updateValues.Put(TAG_VERSION, "2.4");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("2");
+    predicates.In(TAG_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdatePetFace_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(TAG_ID, 2);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeletePetTag_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeletePetFace_Test_001::Start");
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand cmd(petTagUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(TAG_ID, 3);
+    valuesBucket.Put(PET_LABEL, 9); // cat
+    valuesBucket.Put(CENTER_FEATURES, "xyijd");
+    valuesBucket.Put(TAG_VERSION, "2.2");
+    valuesBucket.Put(COUNT, 4);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    valuesBucket.Put(ANALYSIS_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(TAG_ID, 4);
+    valuesBucket1.Put(PET_LABEL, 9); // cat
+    valuesBucket1.Put(COUNT, 5);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PET_LABEL, 9);
+    retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeletePetFace_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryPetTag_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_QueryPetFace_Test_001::Start");
+    Uri petTagUri(URI_PET_TAG);
+    MediaLibraryCommand cmd(petTagUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(TAG_ID, 5);
+    valuesBucket.Put(PET_LABEL, 10); // dog
+    valuesBucket.Put(CENTER_FEATURES, "xyijd");
+    valuesBucket.Put(TAG_VERSION, "2.2");
+    valuesBucket.Put(COUNT, 4);
+    valuesBucket.Put(DATE_MODIFIED, 1627891234);
+    valuesBucket.Put(ANALYSIS_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(TAG_ID, 6);
+    valuesBucket1.Put(PET_LABEL, 10); // dog
+    valuesBucket1.Put(TAG_VERSION, "1.015");
+    valuesBucket1.Put(COUNT, 2);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PET_LABEL, 10);
+    vector<string> columns = { TAG_ID };
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 2);
+    MEDIA_INFO_LOG("Vision_QueryPetFace_Test_001::count = %{public}d. End", count);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(PET_LABEL, 10);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
     EXPECT_EQ(retVal, 2);
 }
