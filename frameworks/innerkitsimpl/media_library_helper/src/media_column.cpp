@@ -686,9 +686,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
 {
     // Since date_modified has been checked in mdirty and fdirty, omit it here.
     const std::vector<std::string> uploadPhotoColumns = {
-        MEDIA_FILE_PATH,
-        MEDIA_SIZE,
-        MEDIA_NAME,
+        MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_NAME,
         MEDIA_TYPE,
         MEDIA_MIME_TYPE,
         MEDIA_OWNER_PACKAGE,
@@ -721,6 +719,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_COVER_POSITION,
         PHOTO_ORIGINAL_SUBTYPE,
         PHOTO_IS_RECTIFICATION_COVER,
+        PHOTO_STRONG_ASSOCIATION,
     };
 
     std::string result = "(";
