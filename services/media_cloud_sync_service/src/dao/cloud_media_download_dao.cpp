@@ -210,7 +210,7 @@ int32_t CloudMediaDownloadDao::QueryDownloadAssetByCloudIds(
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
     predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
-    auto resultSet = rdbStore->Query(predicates, this->COLUMNS_DOWNLOAD_ASSET_QUERY_BY_CLOUD_ID);
+    auto resultSet = rdbStore->Query(predicates, {});
     int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(result);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to query, ret: %{public}d", ret);
     MEDIA_INFO_LOG("QueryDownloadAssetByCloudId, rowCount: %{public}d", static_cast<int32_t>(result.size()));
@@ -237,10 +237,8 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, scanResult.shootingMode);
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, scanResult.frontCamera);
-        if (scanResult.subType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
-            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, scanResult.subType);
-        }
     }
+    this->FillScaned3DGSSubtypeInfo(values, scanResult);
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
@@ -300,5 +298,14 @@ int32_t CloudMediaDownloadDao::UpdateTransCodeInfo(const std::string &path)
     CHECK_AND_PRINT_LOG(changedRows > 0, "Check updateRows: %{public}d.", changedRows);
     MEDIA_INFO_LOG("UpdateTransCodeInfo success, changedRows: %{public}d.", changedRows);
     return ret;
+}
+
+void CloudMediaDownloadDao::FillScaned3DGSSubtypeInfo(NativeRdb::ValuesBucket &values,
+    const CloudMediaScanService::ScanResult &scanResult)
+{
+    bool isValid = scanResult.scanSuccess;
+    CHECK_AND_RETURN(isValid);
+    CHECK_AND_RETURN(scanResult.subType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, scanResult.subType);
 }
 }  // namespace OHOS::Media::CloudSync

@@ -27,6 +27,7 @@
 #include "media_operate_result_dto.h"
 #include "cloud_media_define.h"
 #include "on_download_asset_data_dto.h"
+#include "cloud_media_scan_service.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDownloadService {
@@ -74,6 +75,7 @@ private:
 private:
     CloudMediaDownloadDao dao_;
     CloudMediaDownloadServiceProcessor processor_;
+    CloudMediaScanService scanService_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DOWNLOAD_SERVICE_H

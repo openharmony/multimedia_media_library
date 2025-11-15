@@ -24,18 +24,23 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaScanService {
 public:
-    struct ScanResult {
+    class ScanResult {
+    public:
         bool scanSuccess = false;
         std::string shootingMode;
         std::string shootingModeTag;
         std::string frontCamera;
         int32_t subType;
+        std::string filePath;
+
+    public:
+        std::string ToString() const;
     };
 
 public:
     int32_t FillMetadata(std::unique_ptr<Metadata>& data);
     int32_t ScanMetaData(const std::string& path, std::unique_ptr<Metadata>& data);
-    int32_t ScanShootingMode(const std::string& path, CloudMediaScanService::ScanResult& result);
+    int32_t ScanDownloadedFile(const std::string& path, CloudMediaScanService::ScanResult& result);
     void UpdateAndNotifyShootingModeAlbumIfNeeded(const CloudMediaScanService::ScanResult& scanResult);
 };
 }  // namespace OHOS::Media::CloudSync
