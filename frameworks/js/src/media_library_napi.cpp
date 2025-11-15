@@ -9669,7 +9669,7 @@ static std::vector<std::string> ExtractIDAlbumOldUris(const std::vector<std::str
         if (!finalParsing.empty()) {
             result.emplace_back(finalParsing);
         } else {
-            NAPI_ERR_LOG("SplitPathAndIDAlbumOldUris: Failed to retrieve ID from %{album}s", oldAlbum.c_str());
+            NAPI_ERR_LOG("SplitPathAndIDAlbumOldUris: Failed to retrieve ID from %{public}s", oldAlbum.c_str());
         }
     }
     return result;
