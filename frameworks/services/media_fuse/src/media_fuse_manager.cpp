@@ -610,22 +610,21 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Delete failed");
         MEDIA_CREATE_WRITE_MAP[target] = false;
         res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
-        if (fd <= 0) {
-            MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{private}s", filePath.c_str());
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "MediaLibraryPhotoOperations::Create failed, path = %{private}s",
+            filePath.c_str());
         MEDIA_CREATE_WRITE_MAP[target] = true;
         return E_SUCCESS;
     }
     string localPath;
     res = MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ConvertToLocalPhotoPath failed");
-    CHECK_AND_RETURN_RET_LOG(!localPath.empty(), E_ERR, "localPath is empty");
+    char realPath[PATH_MAX] = {0};
+    bool bflag = realpath(localPath.c_str(), realPath) == nullptr;
+    CHECK_AND_RETURN_RET_LOG(!bflag, E_ERR,
+        "check dirPath fail, dirPath = %{public}s", localPath.c_str());
     fd = open(localPath.c_str(), flags);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("Open failed, localPath=%{private}s, errno=%{public}d", localPath.c_str(), -errno);
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_ERR, "Open failed, localPath=%{private}s, errno=%{public}d",
+        localPath.c_str(), -errno);
     return E_SUCCESS;
 }
 
