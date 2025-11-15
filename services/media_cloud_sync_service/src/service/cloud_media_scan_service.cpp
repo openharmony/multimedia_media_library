@@ -92,7 +92,7 @@ int32_t CloudMediaScanService::ScanMetaData(const string& path, std::unique_ptr<
     return FillMetadata(data);
 }
 
-int32_t CloudMediaScanService::ScanShootingMode(const string& path, CloudMediaScanService::ScanResult& result)
+int32_t CloudMediaScanService::ScanDownloadedFile(const string& path, CloudMediaScanService::ScanResult& result)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     if (data == nullptr) {
@@ -108,6 +108,7 @@ int32_t CloudMediaScanService::ScanShootingMode(const string& path, CloudMediaSc
     result.frontCamera = data->GetFrontCamera();
     result.subType = data->GetPhotoSubType();
     result.scanSuccess = true;
+    MEDIA_INFO_LOG("ScanDownloadedFile, result: %{public}s", result.ToString().c_str());
     return E_OK;
 }
 
@@ -127,6 +128,7 @@ static void NotifyAnalysisAlbum(const vector<string>& changedAlbumIds)
 void CloudMediaScanService::UpdateAndNotifyShootingModeAlbumIfNeeded(
     const CloudMediaScanService::ScanResult& scanResult)
 {
+    CHECK_AND_RETURN(scanResult.scanSuccess);
     vector<ShootingModeAlbumType> albumTypes = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
         scanResult.subType, "", -1, scanResult.frontCamera, scanResult.shootingMode);
 
@@ -145,5 +147,16 @@ void CloudMediaScanService::UpdateAndNotifyShootingModeAlbumIfNeeded(
         MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsToUpdate);
         NotifyAnalysisAlbum(albumIdsToUpdate);
     }
+}
+
+std::string CloudMediaScanService::ScanResult::ToString() const
+{
+    std::stringstream ss;
+    ss << "scanSuccess:: " << scanSuccess << ", "
+       << "shootingMode: " << shootingMode << ", "
+       << "shootingModeTag" << shootingModeTag << ", "
+       << "frontCamera" << frontCamera << ", "
+       << "subType" << subType;
+    return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync
