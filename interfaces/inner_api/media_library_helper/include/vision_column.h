@@ -28,6 +28,7 @@
 namespace OHOS {
 namespace Media {
 // table name
+const std::string PHOTOS_TABLE = "Photos";
 const std::string VISION_OCR_TABLE = "tab_analysis_ocr";
 const std::string VISION_LABEL_TABLE = "tab_analysis_label";
 const std::string VISION_VIDEO_LABEL_TABLE = "tab_analysis_video_label";
@@ -41,6 +42,7 @@ const std::string VISION_SALIENCY_TABLE = "tab_analysis_saliency_detect";
 const std::string VISION_HEAD_TABLE = "tab_analysis_head";
 const std::string VISION_POSE_TABLE = "tab_analysis_pose";
 const std::string VISION_TOTAL_TABLE = "tab_analysis_total";
+const std::string VISION_VIDEO_TOTAL_TABLE = "tab_analysis_video_total";
 const std::string VISION_IMAGE_FACE_TABLE = "tab_analysis_image_face";
 const std::string VISION_VIDEO_FACE_TABLE = "tab_analysis_video_face";
 const std::string VISION_ANALYSIS_ALBUM_TOTAL_TABLE = "tab_analysis_album_total";
