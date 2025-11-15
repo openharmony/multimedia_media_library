@@ -7569,10 +7569,39 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
     delete context;
 }
 
+static bool CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static bool CheckGetAnalysisDataPermission(MediaLibraryAsyncContext *context)
+{
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
+        auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        context->analysisDatas.push_back("");
+        if (!err) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetAnalysisDataExecute");
+    CHECK_AND_RETURN(CheckGetAnalysisDataPermission(context));
 
     std::string analysisUri;
     if (context->isForce) {
@@ -7590,7 +7619,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        //Chinese and English supported. Other languages English default.
+
         language = (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
