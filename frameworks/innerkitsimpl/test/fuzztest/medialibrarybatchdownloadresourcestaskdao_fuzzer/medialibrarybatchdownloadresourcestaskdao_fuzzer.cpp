@@ -15,7 +15,6 @@
 
 #include "medialibrarybatchdownloadresourcestaskdao_fuzzer.h"
 
-#include <array>
 #include <cstddef>
 #include <sstream>
 #include <string>
@@ -44,12 +43,6 @@ static constexpr int32_t CASE_3 = 3;
 static constexpr int32_t CASE_4 = 4;
 static constexpr int32_t CASE_5 = 5;
 static constexpr int32_t CASE_6 = 6;
-static constexpr int32_t CASE_7 = 7;
-static constexpr int32_t CASE_8 = 8;
-static constexpr int32_t CASE_9 = 9;
-static constexpr int32_t CASE_10 = 10;
-static constexpr int32_t CASE_11 = 11;
-static constexpr int32_t CASE_12 = 12;
 static constexpr int32_t NUM_BYTES = 1;
 static constexpr int32_t MIN_MEDIA_PERCENT = -1;
 static constexpr int32_t MAX_MEDIA_PERCENT = 0;
@@ -292,62 +285,75 @@ static void QueryCloudMediaBatchDownloadResourcesCountTest()
     MEDIA_INFO_LOG("QueryCloudMediaBatchDownloadResourcesCountTest end");
 }
 
-static void BatchDownloadResourcesTaskDaoTest()
+static void BatchDownloadResourcesTaskDaoTest1()
 {
-    int32_t value = OHOS::Media::provider->ConsumeIntegralInRange<int32_t>(0, CASE_12);
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, CASE_6);
     switch (value) {
         case CASE_0: {
-            OHOS::Media::FromUriToAllFileIdsTest();
+            FromUriToAllFileIdsTest();
             break;
         }
         case CASE_1: {
-            OHOS::Media::QueryValidBatchDownloadPoFromPhotosTest();
+            QueryValidBatchDownloadPoFromPhotosTest();
             break;
         }
         case CASE_2: {
-            OHOS::Media::BatchInsertTest();
+            BatchInsertTest();
             break;
         }
         case CASE_3: {
-            OHOS::Media::QueryPauseDownloadingStatusResourcesTest();
+            QueryPauseDownloadingStatusResourcesTest();
             break;
         }
         case CASE_4: {
-            OHOS::Media::UpdatePauseDownloadResourcesInfoTest();
+            UpdatePauseDownloadResourcesInfoTest();
             break;
         }
         case CASE_5: {
-            OHOS::Media::UpdateResumeDownloadResourcesInfoTest();
+            UpdateResumeDownloadResourcesInfoTest();
             break;
         }
         case CASE_6: {
-            OHOS::Media::QueryCancelDownloadingStatusResourcesTest();
+            QueryCancelDownloadingStatusResourcesTest();
             break;
         }
-        case CASE_7: {
-            OHOS::Media::DeleteCancelStateDownloadResourcesTest();
+        default:
+            MEDIA_ERR_LOG("no case");
+            break;
+    }
+}
+
+static void BatchDownloadResourcesTaskDaoTest2()
+{
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, CASE_5);
+    switch (value) {
+        case CASE_0: {
+            DeleteCancelStateDownloadResourcesTest();
             break;
         }
-        case CASE_8: {
-            OHOS::Media::ClassifyExistedDownloadTasksTest();
+        case CASE_1: {
+            ClassifyExistedDownloadTasksTest();
             break;
         }
-        case CASE_9: {
-            OHOS::Media::ClassifyInvalidDownloadTasksTest();
+        case CASE_2: {
+            ClassifyInvalidDownloadTasksTest();
             break;
         }
-        case CASE_10: {
-            OHOS::Media::HandleAddExistedDownloadTasksTest();
+        case CASE_3: {
+            HandleAddExistedDownloadTasksTest();
             break;
         }
-        case CASE_11: {
-            OHOS::Media::QueryCloudMediaBatchDownloadResourcesStatusTest();
+        case CASE_4: {
+            QueryCloudMediaBatchDownloadResourcesStatusTest();
             break;
         }
-        case CASE_12: {
-            OHOS::Media::QueryCloudMediaBatchDownloadResourcesCountTest();
+        case CASE_5: {
+            QueryCloudMediaBatchDownloadResourcesCountTest();
             break;
         }
+        default:
+            MEDIA_ERR_LOG("no case");
+            break;
     }
 }
 
@@ -432,7 +438,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (OHOS::Media::provider == nullptr) {
         return 0;
     }
-    OHOS::Media::BatchDownloadResourcesTaskDaoTest();
+    OHOS::Media::BatchDownloadResourcesTaskDaoTest1();
+    OHOS::Media::BatchDownloadResourcesTaskDaoTest2();
     OHOS::Media::ClearKvStore();
     return 0;
 }
