@@ -166,7 +166,10 @@ template <class T>
 int32_t FetchResult<T>::GetCount()
 {
     int32_t count = 0;
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchResult<T>::GetCount resultset_->GetRowCount");
     bool cond = (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK);
+    tracer.Finish();
     CHECK_AND_RETURN_RET(!cond, 0);
     return count < 0 ? 0 : count;
 }
@@ -272,20 +275,26 @@ unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 template <class T>
 unique_ptr<T> FetchResult<T>::GetFirstObject()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchResult<T>::GetFirstObject resultset_->GoToFirstRow()");
     if ((resultset_ == nullptr) || (resultset_->GoToFirstRow() != 0)) {
         MEDIA_DEBUG_LOG("resultset is null|first row failed");
         return nullptr;
     }
+    tracer.Finish();
     return GetObject();
 }
 
 template <class T>
 unique_ptr<T> FetchResult<T>::GetNextObject()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchResult<T>::GetNextObject resultset_->GoToNextRow()");
     if ((resultset_ == nullptr) || (resultset_->GoToNextRow() != 0)) {
         MEDIA_DEBUG_LOG("resultset is null|go to next row failed");
         return nullptr;
     }
+    tracer.Finish();
 
     return GetObject();
 }

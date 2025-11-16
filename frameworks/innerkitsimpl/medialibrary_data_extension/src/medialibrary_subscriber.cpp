@@ -279,6 +279,11 @@ bool MedialibrarySubscriber::Subscribe(void)
     subscriber_ = std::make_shared<MedialibrarySubscriber>(subscribeInfo);
     CHECK_AND_RETURN_RET_LOG(subscriber_ != nullptr, false, "Subscriber_ is null!");
     bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber_);
+    CHECK_AND_EXECUTE(ret, {
+        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEventf failed");
+        subscriber_ = nullptr;
+        return false;
+    });
 
     CreateOptions options;
     options.enabled_ = true;

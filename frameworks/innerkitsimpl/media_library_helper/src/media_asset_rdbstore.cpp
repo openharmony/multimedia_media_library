@@ -344,7 +344,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
 
     AddQueryFilter(rdbPredicates);
     PrintPredicatesInfo(rdbPredicates, columns);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaAssetRdbStore::QueryRdb QueryByStep");
     auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
+    tracer.Finish();
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
     return resultSet;
 }
