@@ -73,6 +73,7 @@ struct UpdateAlbumData {
     int64_t coverDateTime;
     int64_t hiddenCoverDateTime;
     std::string albumName;
+    std::string groupTag;
 };
 
 struct UpdateAllAlbumsData {
@@ -132,6 +133,21 @@ public:
 
     EXPORT static int32_t QueryAnalysisAlbumIdOfAssets(const std::vector<std::string>& assetIds,
         std::set<std::string>& albumIds);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbumCover(
+        const std::shared_ptr<MediaLibraryRdbStore>& rdbStore, const std::string &albumId);
+    EXPORT static int32_t QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
+        std::unordered_map<int32_t, std::set<std::string>>& fileToAlbums, std::set<std::string>& allAlbumIds);
+    EXPORT static int32_t QueryAnalysisAlbumsForAccurateRefresh(
+        const std::vector<std::string> &affectedAlbumIds,
+        std::vector<UpdateAlbumData> &albumDatas,
+        std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap);
+    EXPORT static int32_t ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
+        int32_t deltaCount, std::string newCover);
+    EXPORT static void GetAlbumCountAndCoverPredicates(const UpdateAlbumData& albumInfo,
+        NativeRdb::RdbPredicates &predicates, const bool hiddenState, const bool isUpdateAlbum = false);
+    EXPORT static void DetermineQueryOrder(NativeRdb::RdbPredicates& predicates, const UpdateAlbumData& data,
+        bool hiddenState, std::vector<std::string>& columns);
+    EXPORT static std::string GetCover(const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
 
