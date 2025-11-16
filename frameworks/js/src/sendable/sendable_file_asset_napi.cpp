@@ -877,6 +877,21 @@ static DataShare::DataSharePredicates GetPredicatesHelper(SendableFileAssetAsync
     return predicates;
 }
 
+static bool CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
 {
     MediaLibraryTracer tracer;
@@ -884,6 +899,14 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) == ANALYSIS_SOURCE_INFO_MAP.end()) {
         NAPI_ERR_LOG("Invalid analysisType");
         return;
+    }
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
+        auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        context->analysisData = "";
+        if (!err) {
+            return;
+        }
     }
     auto &analysisInfo = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType);
     DataShare::DataSharePredicates predicates = GetPredicatesHelper(context);
