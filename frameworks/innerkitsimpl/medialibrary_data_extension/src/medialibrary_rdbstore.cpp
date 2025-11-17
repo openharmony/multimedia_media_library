@@ -5545,6 +5545,16 @@ static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("create batchdownload records end");
 }
 
+static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
+}
+
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
 {
     MEDIA_INFO_LOG("start update vision trigger");
@@ -5552,6 +5562,13 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, true)) {
         CreateVisionVideoTotal(store, VERSION_UPDATE_VIDEO_LABLE_FACE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_LABLE_FACE, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true)) {
+        MEDIA_INFO_LOG("Update mdirty trigger for strong association start");
+        UpdateMdirtyTriggerForStrongAssociation(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true);
     }
 }
 
