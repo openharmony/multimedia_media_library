@@ -42,9 +42,8 @@ public:
     std::unordered_map<int32_t, int32_t>& oldAnaVideoLableMap,
     std::unordered_map<int32_t, int32_t>& oldAnaVideoStatusMap);
     bool CopyAnalysisVideoTotalTab();
-    void UpdateAnalysisVideoTotalTblNoFaceStatus();
-    void UpdateAnalysisVideoTotalTblStatus();
-    void UpdateAnalysisVideoTotalTblLabel();
+    void UpdateAnalysisVideoTotalTblLabelAndFace();
+    void UpdateAnalysisVideoTotalTblFaceAndTagId();
     int32_t RestoreMaps();
 
 protected:
