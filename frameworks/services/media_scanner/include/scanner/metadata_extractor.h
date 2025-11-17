@@ -47,6 +47,10 @@ private:
     EXPORT static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
         std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data);
     static int32_t CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data, bool isCameraShotMovingPhoto = false);
+    EXPORT static void ExtractImageTimeInfo(
+        const std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data);
+    EXPORT static void PopulateVideoTimeInfo(const std::shared_ptr<Meta> &customMeta,
+        const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data);
 };
 } // namespace Media
 } // namespace OHOS

@@ -230,6 +230,14 @@ const std::unordered_map<SwitchStatus, SouthDeviceType> PHOTO_SYNC_OPTION_SOUTH_
     {SwitchStatus::HDC, SouthDeviceType::SOUTH_DEVICE_HDC},
 };
 
+static const unordered_set<string> TIME_INFO_COLUMNS{PhotoColumn::MEDIA_DATE_ADDED,
+    PhotoColumn::MEDIA_DATE_MODIFIED,
+    PhotoColumn::MEDIA_DATE_TAKEN,
+    PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_DATE_YEAR,
+    PhotoColumn::PHOTO_DATE_MONTH,
+    PhotoColumn::PHOTO_DATE_DAY};
+
 static std::string GetConfigInfoInsertValue(ConfigInfoSceneId sceneId,
     const std::string key, const std::string value)
 {
@@ -1394,22 +1402,53 @@ void CloneRestore::GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb:
         PhotoColumn::PHOTOS_TABLE);
     for (auto it = fileInfo.valMap.begin(); it != fileInfo.valMap.end(); ++it) {
         string columnName = it->first;
+        if (TIME_INFO_COLUMNS.count(columnName) > 0) {
+            continue;
+        }
         auto columnVal = it->second;
         if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
             PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
             continue;
         }
-        if (columnName == PhotoColumn::MEDIA_DATE_TAKEN) {
-            if (get<int64_t>(columnVal) > SECONDS_LEVEL_LIMIT) {
-                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal));
-            } else {
-                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal) * MSEC_TO_SEC);
-            }
-            continue;
-        }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
     PrepareShootingModeVal(fileInfo, values);
+}
+
+void CloneRestore::SetTimeInfo(const FileInfo &info, NativeRdb::ValuesBucket &values)
+{
+    int64_t dateAdded = info.dateAdded > SECONDS_LEVEL_LIMIT ? info.dateAdded : info.dateAdded * MSEC_TO_SEC;
+    int64_t dateModified =
+        info.dateModified > SECONDS_LEVEL_LIMIT ? info.dateModified : info.dateModified * MSEC_TO_SEC;
+    int64_t dateTaken = info.dateTaken > SECONDS_LEVEL_LIMIT ? info.dateTaken : info.dateTaken * MSEC_TO_SEC;
+
+    dateAdded = PhotoFileUtils::NormalizeTimestamp(dateAdded, MediaFileUtils::UTCTimeMilliSeconds());
+    dateModified = PhotoFileUtils::NormalizeTimestamp(dateModified, dateAdded);
+    dateTaken = PhotoFileUtils::NormalizeTimestamp(dateTaken, min(dateAdded, dateModified));
+
+    values.Put(PhotoColumn::MEDIA_DATE_ADDED, dateAdded);
+    values.Put(PhotoColumn::MEDIA_DATE_MODIFIED, dateModified);
+    values.Put(PhotoColumn::MEDIA_DATE_TAKEN, dateTaken);
+
+    std::string detailTime = info.detailTime;
+    const auto [normalizeDateTaken, normalizeDetailTime] =
+        PhotoFileUtils::ExtractTimeInfo(detailTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
+    if (normalizeDateTaken < MIN_MILSEC_TIMESTAMP || normalizeDateTaken > MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - normalizeDateTaken) > MAX_TIMESTAMP_DIFF) {
+        MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
+            detailTime.c_str(),
+            static_cast<long long>(dateTaken));
+        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    } else {
+        detailTime = normalizeDetailTime;
+    }
+
+    values.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
+
+    const auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    values.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
+    values.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
+    values.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, const string &newPath,
@@ -1421,8 +1460,8 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
-    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
-    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
+    // [time info]date_added, date_modified, date_taken, detail_time, date_year, date_month, date_day
+    SetTimeInfo(fileInfo, values);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
     values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, fileInfo.exifRotate);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
@@ -1454,8 +1493,8 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
-    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
-    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
+    // [time info]date_added, date_modified, date_taken, detail_time, date_year, date_month, date_day
+    SetTimeInfo(fileInfo, values);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
     values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, fileInfo.exifRotate);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
@@ -2136,12 +2175,10 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         return false;
     }
 
-    fileInfo.dateAdded = PhotoFileUtils::NormalizeTimestamp(
-        GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet), MediaFileUtils::UTCTimeMilliSeconds());
-    fileInfo.dateModified = PhotoFileUtils::NormalizeTimestamp(
-        GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet), fileInfo.dateAdded);
-    fileInfo.dateTaken = PhotoFileUtils::NormalizeTimestamp(
-        GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet), min(fileInfo.dateAdded, fileInfo.dateModified));
+    fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+    fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    fileInfo.detailTime = GetStringVal(PhotoColumn::PHOTO_DETAIL_TIME, resultSet);
     fileInfo.thumbnailReady = GetInt64Val(PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet);
     fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
     fileInfo.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);

@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 struct DateAnomalyPhoto {
     int32_t fileId{0};
+    int32_t dirty{-1};
     int64_t dateTaken{0};
     int64_t dateModified{0};
     int64_t dateAdded{0};
