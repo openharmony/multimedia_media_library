@@ -857,7 +857,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
     MEDIA_INFO_LOG("cloud: %{public}d, hdc: %{public}d", isCloudCleaning, isHdcCleaning);
     SetSouthDeviceCleanStatus(retainType, CloudSyncStatus::CLOUD_CLEANING);
     if (needAvoidRepeatedDoing && (isCloudCleaning || isHdcCleaning)) {
-        MEDIA_INFO_LOG("some south devices is cleaning. cloud: %{public}d, hdc: %{public}d",
+        MEDIA_INFO_LOG("some south devices are being cleaned. cloud: %{public}d, hdc: %{public}d",
             isCloudCleaning, isHdcCleaning);
         return OHOS::Media::E_OK;
     }
