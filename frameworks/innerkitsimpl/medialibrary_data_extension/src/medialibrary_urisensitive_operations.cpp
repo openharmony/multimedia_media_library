@@ -383,7 +383,8 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, cons
     int32_t numRows = 0;
     resultSet->GetRowCount(numRows);
     if (numRows == 0) {
-        return 0;
+        // Refer MEDIA_LOCATION permission to hide location and shooting parameters.
+        return AppUriSensitiveColumn::SENSITIVE_DEFAULT;
     }
     resultSet->GoToFirstRow();
     return MediaLibraryRdbStore::GetInt(resultSet, AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
