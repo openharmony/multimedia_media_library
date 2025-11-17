@@ -169,7 +169,6 @@ int32_t CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data,
 
 int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter Album OnCreateRecords");
     OnCreateRecordsAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
