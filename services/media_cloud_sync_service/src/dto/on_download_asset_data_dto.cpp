@@ -37,7 +37,7 @@ std::string OnDownloadAssetData::ToString() const
        << "\"needParseCover\": " << needParseCover << ","
        << "\"mediaType\": " << mediaType << ","
        << "\"exifRotate\": " << exifRotate << ","
-       << "\"needScan3DGSVideo\": " << needScan3DGSVideo << ","
+       << "\"needScanSubtype\": " << needScanSubtype << ","
        << "\"needScanShootingMode\": " << needScanShootingMode;
     ss << "\"}";
     return ss.str();
