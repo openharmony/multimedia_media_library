@@ -169,6 +169,12 @@ public:
     static bool QueryPhotoUniqueSouthDeviceType(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType);
     static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateStatusToAnalysisTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void DeleteDirtytagIdFromFaceTagTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateVideoFaceTagId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateVideoTotalFaceId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
