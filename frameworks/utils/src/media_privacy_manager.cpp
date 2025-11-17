@@ -417,11 +417,16 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         return E_PERMISSION_DENIED;
     }
     int32_t err = -1;
-    //collect ranges by hideSensitiveType
-    HideSensitiveType sensitiveType =
-        static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId_, fileId_));
-    MEDIA_DEBUG_LOG("GetPrivacyRanges::sensitiveType: %{public}d", static_cast<int32_t>(sensitiveType));
-    err = CollectRanges(path_, sensitiveType, ranges_);
+    if (type_ != DEFAULT_TYPE) {
+        MEDIA_DEBUG_LOG("force type");
+        err = CollectRanges(path_, (HideSensitiveType)type_, ranges_);
+    } else {
+        //collect ranges by hideSensitiveType
+        HideSensitiveType sensitiveType =
+            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId_, fileId_));
+        MEDIA_DEBUG_LOG("GetPrivacyRanges::sensitiveType: %{public}d", static_cast<int32_t>(sensitiveType));
+        err = CollectRanges(path_, sensitiveType, ranges_);
+    }
     if (err < 0) {
         return err;
     }
