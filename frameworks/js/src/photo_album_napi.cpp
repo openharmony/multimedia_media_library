@@ -483,9 +483,6 @@ napi_value PhotoAlbumNapi::JSGetLongitude(napi_env env, napi_callback_info info)
 
 napi_value PhotoAlbumNapi::JSGetAlbumLPath(napi_env env, napi_callback_info info)
 {
-    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
-        "Get lpath permission denied: not a system app", nullptr, "Get album lpath failed: not a system app");
-    CHECK_COND(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED);
     PhotoAlbumNapi *obj = nullptr;
     CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
