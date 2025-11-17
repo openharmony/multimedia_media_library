@@ -21,6 +21,7 @@
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager.h"

@@ -165,6 +165,7 @@
             <option name="shell" value="rm -rf /storage/cloud/100/files/Videos/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/.*"/>
             <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /storage/cloud/100/files/Documents" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /storage/cloud/100/files/Documents" src="res"/>
         </preparer>
     </target>
     <target name="medialibrary_backup_clone_test">
