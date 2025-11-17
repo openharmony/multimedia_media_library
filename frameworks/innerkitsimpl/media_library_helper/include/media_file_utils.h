@@ -52,7 +52,9 @@ constexpr int FILE_VIRTUAL_IDENTIFIER = 2;
 constexpr int CAMERA_SHOT_KEY_SIZE = 30;
 
 constexpr int64_t MSEC_TO_SEC = 1e3;
+constexpr int64_t SEC_TO_MSEC = 1e3;
 constexpr int64_t MSEC_TO_NSEC = 1e6;
+constexpr int64_t TIMESTAMP_CONVERSION_FACTOR = 1e3;
 
 enum EXPORT TrashType {
     NOT_TRASHED = 0,

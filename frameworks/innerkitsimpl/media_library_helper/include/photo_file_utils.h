@@ -26,9 +26,8 @@ const int64_t MIN_MILSEC_TIMESTAMP = 1'000;
 // The minimum time that can be set on a mobile phone system is 2008-01-01 00:00:00.
 // Convert it to a timestamp and multiply it by 10 to get 2349-12-30 00:00:00(11'991'456'000'000).
 const int64_t MAX_MILSEC_TIMESTAMP = 11'991'456'000'000;
-const int64_t MAX_TIMESTAMP_DIFF = 93'600'000;
-
-const int64_t MICSEC_TO_MILSEC = 1000;
+const int64_t MAX_TIMESTAMP_DIFF = 93'600'000;  // 26 hours(UTC+14,UTC-12)
+const int64_t MIN_TIMESTAMP_DIFF = 1'000;       // 1 second
 
 class PhotoFileUtils {
 public:
@@ -48,10 +47,10 @@ public:
     EXPORT static std::string GetMetaDataRealPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static bool IsThumbnailExists(const std::string &photoPath);
     EXPORT static bool IsThumbnailLatest(const std::string &photoPath);
+    EXPORT static std::tuple<int64_t, std::string> ExtractTimeInfo(
+        const std::string &timeStr, const std::string &format, bool isUTC = false);
     EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
-    EXPORT static std::string ExtractDetailTimeFromGPS(const std::string &gpsDate, const std::string &gpsTime);
     EXPORT static int64_t NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue);
-    EXPORT static int64_t ParseTimestampFromDetailTime(const std::string &detailTime);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);
