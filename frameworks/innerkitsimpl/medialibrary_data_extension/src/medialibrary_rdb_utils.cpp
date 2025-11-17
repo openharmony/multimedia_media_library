@@ -2035,7 +2035,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, fileAssetsUri);
         assetRefresh.RefreshAlbum();
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
