@@ -38,7 +38,6 @@ using namespace testing::ext;
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 std::atomic<int> g_num{0};
 
-const int64_t SEC_TO_MSEC = 1000;
 const int32_t MILSEC_TO_MICSEC = 1000;
 
 int32_t ExecSqls(const vector<string> &sqls)

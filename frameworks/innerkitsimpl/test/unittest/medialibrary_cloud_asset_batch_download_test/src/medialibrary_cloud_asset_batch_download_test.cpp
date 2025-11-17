@@ -77,7 +77,6 @@ DataShare::DataSharePredicates predicates;
 
 static const int IMG_SIZE = 175258;
 static std::atomic<int> number_(0);
-static constexpr int64_t SEC_TO_MSEC = 1e3;
 static const string IMG_BASE_NAME = "IMG_00";
 static const string IMG_BASE_PATH = "/storage/cloud/files/Photo/16/";
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;

@@ -225,6 +225,7 @@ private:
     void RestoreBeautyScoreData();
     void RestoreVideoFaceData();
     void PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void SetTimeInfo(const FileInfo &info, NativeRdb::ValuesBucket &values);
     void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void SetAggregateBitThird();
 
