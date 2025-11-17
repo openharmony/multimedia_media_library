@@ -541,6 +541,7 @@ static void AddPhotoAlbumTypeFilter(DataShare::DataSharePredicates &predicates,
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC),
         }));
     }
 }
