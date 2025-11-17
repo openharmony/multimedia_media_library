@@ -37,7 +37,7 @@ public:
     int32_t mediaType;
     int32_t exifRotate;
     bool needScanShootingMode;
-    bool needScan3DGSVideo{false};
+    bool needScanSubtype{false};
 
 public:  // basic functions
     std::string ToString() const;
