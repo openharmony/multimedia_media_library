@@ -359,6 +359,8 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_GetStorageFreeRa
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck();
     BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition();
+    BackgroundCloudBatchSelectedFileProcessor::IsCellularNetConnected();
+    BackgroundCloudBatchSelectedFileProcessor::IsNetValidated();
     BatchDownloadAutoPauseReasonType autoPauseReason;
     BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason);
     InsertBatchDownloadTask(1, "file://media/Photo/1/1.jpg", "1.jpg",
