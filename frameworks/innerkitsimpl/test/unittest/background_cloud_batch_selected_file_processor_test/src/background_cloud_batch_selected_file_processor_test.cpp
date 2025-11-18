@@ -45,6 +45,7 @@ static std::atomic<int> num{0};
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
 
+static constexpr int64_t SEC_TO_MSEC = 1e3;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int32_t ExecSqls(const vector<string> &sqls)
@@ -359,6 +360,8 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_GetStorageFreeRa
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck();
     BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition();
+    BackgroundCloudBatchSelectedFileProcessor::IsCellularNetConnected();
+    BackgroundCloudBatchSelectedFileProcessor::IsNetValidated();
     BatchDownloadAutoPauseReasonType autoPauseReason;
     BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason);
     InsertBatchDownloadTask(1, "file://media/Photo/1/1.jpg", "1.jpg",
