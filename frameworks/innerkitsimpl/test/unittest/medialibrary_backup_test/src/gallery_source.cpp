@@ -336,6 +336,18 @@ void GallerySource::InitGalleryMediaFour()
         "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/Y/Y_1.jpg', 0, '3275', 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(36, 57064, ") +
+        "'/storage/emulated/0/Pictures/A/A_1.jpg', 2971707, 1723044589, 1720190486," +
+        "'A_1', NULL, 'A_1.jpg', 0, -1035207678, 0, 1, 65537, 3968, 2976, NULL, " +
+        "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/A/A_1.jpg', 0, '3280', 0, " +
+        "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "0, 0, NULL, NULL, NULL)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(37, 57065, ") +
+        "'/storage/emulated/0/Pictures/A/A_2.jpg', 2971707, 1723044589, 1720190486," +
+        "'A_2', NULL, 'A_2.jpg', 0, -1035207678, 0, 1, 65537, 3968, 2976, NULL, " +
+        "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/A/A_2.jpg', 0, '3281', 0, " +
+        "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "0, 0, NULL, NULL, NULL)");
 }
 
 void GallerySource::InitGalleryMediaFive()
@@ -464,6 +476,13 @@ void GallerySource::InitGalleryMergeTag()
         rename_operation) VALUES ('ser_274602026436444', 'ser_274602026436444', 'Y', 1, 0)")); // 'Y', groupped
     galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
         rename_operation) VALUES ('ser_274602037407069', 'ser_274602026436444', 'Y', 0, 1)")); // 'Y', groupped
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
+        rename_operation) VALUES ('ser_4970706812782', 'ser_4970706812782', 'A1', 0, 1)"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
+        rename_operation) VALUES ('ser_4970715412782', 'ser_4970715412782', 'A2', 0, 1)"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
+        rename_operation) VALUES ('ser_4970706812782|ser_4970715412782', 'ser_4970706812782|ser_4970715412782', \
+        'A', 0, 1)"));
 }
 
 void GallerySource::InitGalleryMergeFace()
@@ -493,6 +512,16 @@ void GallerySource::InitGalleryMergeFace()
         'ser_274602026436444', 0.4325, 0.4294, 0.0473, 0.0746, \
         x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', NULL, 1.9596, -1.9596, \
         3.9188, 2)")); // 'Y'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3280', '0', \
+        'ser_4970706812782', 0.5696, 0.4046, 0.0449, 0.0645, \
+        x'7c04000079020000ab04000074020000920400008b02000085040000a7020000ab040000a3020000', NULL, 1.9596, -1.3064, \
+        2.6128, 2)"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3281', '1', \
+        'ser_4970715412782', 0.4325, 0.4294, 0.0473, 0.0746, \
+        x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', NULL, 1.9596, -1.9596, \
+        3.9188, 2)"));
 }
 
 void GallerySource::InitGalleryFace()
@@ -522,6 +551,16 @@ void GallerySource::InitGalleryFace()
         'ser_274602026436444', 0.4325, 0.4294, 0.0473, 0.0746, \
         x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', 0, 1.9596, -1.9596, \
         3.9188, 2)")); // 'Y'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3280', '0', \
+        'ser_4970706812782', 0.5696, 0.4046, 0.0449, 0.0645, \
+        x'7c04000079020000ab04000074020000920400008b02000085040000a7020000ab040000a3020000', 0, 1.9596, -1.3064, \
+        2.6128, 2)"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3281', '1', \
+        'ser_4970715412782', 0.4325, 0.4294, 0.0473, 0.0746, \
+        x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', 0, 1.9596, -1.9596, \
+        3.9188, 2)"));
 }
 
 void GallerySource::InitTStoryAlbum()
