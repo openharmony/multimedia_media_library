@@ -112,6 +112,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_albums_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/clone_group_photo_album.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/clone_source.cpp",

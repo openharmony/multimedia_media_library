@@ -93,6 +93,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/clone_group_photo_album.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/external_source.cpp",
     "./src/gallery_source.cpp",
