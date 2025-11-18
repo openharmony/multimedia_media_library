@@ -1273,7 +1273,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
         values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
-        values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
+        values.PutInt(RENAME_OPERATION, portraitAlbumInfo.renameOperation);
         values.PutString("relationship", portraitAlbumInfo.relationship);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
