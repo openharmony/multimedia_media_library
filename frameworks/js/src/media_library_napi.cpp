@@ -2736,6 +2736,23 @@ napi_status ChangeListenerNapi::SetSharedAssetArray(const napi_env& env, const c
     return status;
 }
 
+napi_status ChangeListenerNapi::SetExtraSharedAssetArray(const napi_env& env, const char* fieldStr,
+    ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SolveOnChange BuildExtraSharedPhotoAssetsObj");
+    napi_status status = napi_ok;
+    napi_value assetResults =  ChangeListenerNapi::BuildExtraSharedPhotoAssetsObj(env, wrapper);
+    if (assetResults == nullptr) {
+        NAPI_ERR_LOG("Failed to get assets Result from rdb");
+    }
+    status = napi_set_named_property(env, result, fieldStr, assetResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: %{public}s", fieldStr);
+    }
+    return status;
+}
+
 static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
     napi_value& result)
 {
@@ -2760,14 +2777,7 @@ static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChang
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
     }
-    napi_value photoAssetArray = MediaLibraryNapiUtils::GetSharedPhotoAssets(env, wrapper->extraSharedAssets_, len);
-    if (photoAssetArray == nullptr) {
-        NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
-    }
-    status = napi_set_named_property(env, result, "sharedExtraPhotoAssets", photoAssetArray);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set extraAssets named property error!");
-    }
+    ChangeListenerNapi::SetExtraSharedAssetArray(env, "sharedExtraPhotoAssets", wrapper, result, true);
     return status;
 }
 
@@ -2991,6 +3001,7 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
         wrapper->sharedAssetsRowObjVector_.clear();
         NAPI_WARN_LOG("Failed to ParseSharedPhotoAssets, ret: %{public}d", ret);
     }
+    ChangeListenerNapi::ParseExtraSharedPhotoAssets(wrapper);
     std::function<void()> task = [wrapper, this]() {
         UvQueueWork(wrapper);
     };
@@ -3079,6 +3090,33 @@ int ChangeListenerNapi::ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCal
     return ret;
 }
 
+int ChangeListenerNapi::ParseExtraSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ParseExtraSharedPhotoAssets");
+    int ret = -1;
+
+    std::shared_ptr<NativeRdb::ResultSet> result = wrapper->extraSharedAssets_;
+    if (result == nullptr) {
+        NAPI_ERR_LOG("ParseExtraSharedPhotoAssets result is nullptr");
+        return ret;
+    }
+    wrapper->extraSharedAssetsRowObjVector_.clear();
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        std::shared_ptr<RowObject> rowObj = std::make_shared<RowObject>();
+        ret = MediaLibraryNapiUtils::ParseNextRowObject(rowObj, result, true);
+        if (ret != NativeRdb::E_OK) {
+            NAPI_ERR_LOG("ParseExtraSharedPhotoAssets result failed");
+            wrapper->extraSharedAssetsRowObjVector_.clear();
+            result->Close();
+            return ret;
+        }
+        wrapper->extraSharedAssetsRowObjVector_.emplace_back(std::move(rowObj));
+    }
+    result->Close();
+    return ret;
+}
+
 napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
     ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto)
 {
@@ -3118,6 +3156,36 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
         }
     }
     wrapper->sharedAssets_->Close();
+    return value;
+}
+
+napi_value ChangeListenerNapi::BuildExtraSharedPhotoAssetsObj(const napi_env& env,
+    ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, wrapper->extraSharedAssetsRowObjVector_.size(), &value);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    if (wrapper->extraSharedAssets_ == nullptr) {
+        NAPI_WARN_LOG("wrapper extraSharedAssets is nullptr");
+        return nullptr;
+    }
+    size_t elementIndex = 0;
+    while (elementIndex < wrapper->extraSharedAssetsRowObjVector_.size()) {
+        napi_value assetValue;
+        assetValue = MediaLibraryNapiUtils::BuildNextRowObject(
+            env, wrapper->extraSharedAssetsRowObjVector_[elementIndex], true);
+        if (assetValue == nullptr) {
+            wrapper->extraSharedAssets_->Close();
+            return nullptr;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetValue);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set photo asset value failed");
+            wrapper->extraSharedAssets_->Close();
+            return nullptr;
+        }
+    }
+    wrapper->extraSharedAssets_->Close();
     return value;
 }
 
