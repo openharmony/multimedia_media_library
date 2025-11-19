@@ -292,7 +292,7 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
     int32_t ret = this->photosDao_.ConflictDataMerge(
         pullData, localKeyData.filePath, cloudStd, cloudMapIds, refreshAlbums, photoRefresh);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Conflict dataMerge fail");
+        MEDIA_ERR_LOG("Conflict dataMerge failed");
         return ret;
     }
     ret = this->photosDao_.UpdateAssetInPhotoMap(pullData.attributesFileId, cloudMapIds);
