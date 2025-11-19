@@ -597,6 +597,17 @@ void MetadataExtractor::PopulateVideoTimeInfo(const shared_ptr<Meta> &customMeta
         detailTime.c_str());
 }
 
+static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data, const std::string &videoShootingMode,
+    const std::string &strTemp)
+{
+    if (videoShootingMode == SLOW_MOTION_ALBUM_TAG || strTemp == SLOW_MOTION_ALBUM_TAG) {
+        MEDIA_DEBUG_LOG("shoot mode type is SlowMotion");
+        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO));
+        data->SetShootingModeTag(SLOW_MOTION_ALBUM_TAG);
+        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(SLOW_MOTION_ALBUM_TAG));
+    }
+}
+
 void PopulateExtractedAVMetadataTwo(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
@@ -616,6 +627,7 @@ void PopulateExtractedAVMetadataTwo(
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingModeTag(videoShootingMode);
         data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(videoShootingMode));
+        FillSlowMotionMetadata(data, videoShootingMode, strTemp);
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";

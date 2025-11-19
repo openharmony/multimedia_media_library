@@ -238,7 +238,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, scanResult.frontCamera);
     }
-    this->FillScaned3DGSSubtypeInfo(values, scanResult);
+    this->FillScanedSubtypeInfo(values, scanResult);
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
@@ -300,12 +300,13 @@ int32_t CloudMediaDownloadDao::UpdateTransCodeInfo(const std::string &path)
     return ret;
 }
 
-void CloudMediaDownloadDao::FillScaned3DGSSubtypeInfo(NativeRdb::ValuesBucket &values,
+void CloudMediaDownloadDao::FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values,
     const CloudMediaScanService::ScanResult &scanResult)
 {
     bool isValid = scanResult.scanSuccess;
     CHECK_AND_RETURN(isValid);
-    CHECK_AND_RETURN(scanResult.subType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
+    CHECK_AND_RETURN(scanResult.subType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS) ||
+        scanResult.subType == static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO));
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, scanResult.subType);
 }
 }  // namespace OHOS::Media::CloudSync
