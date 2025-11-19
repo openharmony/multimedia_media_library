@@ -120,7 +120,7 @@ export struct PhotoPickerComponent {
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
-    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerOptions });
+    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerConfigs });
     console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
   }
 
@@ -719,7 +719,7 @@ export class PickerController {
     }
   }
 
-  updatePickerOptions(updateConfig: UpdatablePickerOptions): Promise<void> {
+  updatePickerOptions(updateConfig: UpdatablePickerConfigs): Promise<void> {
     return new Promise((resolve, reject) => {
       if (e !== undefined) {
         this.data = new Map([['UPDATE_CONFIG', updateConfig]]);
@@ -876,8 +876,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
-export class UpdatablePickerOptions {
-  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+export class UpdatablePickerConfigs {
+  mimeType?: photoAccessHelper.PhotoViewMIMETypes;
   mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
   maxSelectNumber?: number;
   maxPhotoSelectNumber?: number;
@@ -889,7 +889,8 @@ export class UpdatablePickerOptions {
   checkBoxColor?: string;
   checkboxTextColor?: string;
   backgroundColor?: string;
-  photoBrowserBackgroundColorMode?: PickerColorMode
+  photoBrowserBackgroundColorMode?: PickerColorMode,
+  uiComponentColorMode?: PickerColorMode
 }
 
 export class BaseItemInfo {
