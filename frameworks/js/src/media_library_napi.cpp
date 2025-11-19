@@ -2753,7 +2753,7 @@ napi_status ChangeListenerNapi::SetExtraSharedAssetArray(const napi_env& env, co
     return status;
 }
 
-static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+napi_status ChangeListenerNapi::SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
     napi_value& result)
 {
     MediaLibraryTracer tracer;
@@ -2777,7 +2777,7 @@ static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChang
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
     }
-    ChangeListenerNapi::SetExtraSharedAssetArray(env, "sharedExtraPhotoAssets", wrapper, result, true);
+    ChangeListenerNapi::SetExtraSharedAssetArray(env, "sharedExtraPhotoAssets", wrapper, result);
     return status;
 }
 
