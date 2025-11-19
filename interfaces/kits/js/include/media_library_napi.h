@@ -106,6 +106,7 @@ public:
         std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
         std::vector<std::shared_ptr<RowObject>> sharedAssetsRowObjVector_;
         std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
+        std::vector<std::shared_ptr<RowObject>> extraSharedAssetsRowObjVector_;
         std::string trashAlbumUriCached_;
     };
 
@@ -157,11 +158,16 @@ private:
 
     static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result, bool isPhoto);
+    static napi_status SetExtraSharedAssetArray(const napi_env& env, const char* fieldStr,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result);
 
     static int ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
         bool isPhoto);
+    static int ParseExtraSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper);
     static napi_value BuildSharedPhotoAssetsObj(const napi_env& env,
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
+    static napi_value BuildExtraSharedPhotoAssetsObj(const napi_env& env,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
