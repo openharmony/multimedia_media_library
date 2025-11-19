@@ -168,6 +168,9 @@ private:
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
     static napi_value BuildExtraSharedPhotoAssetsObj(const napi_env& env,
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper);
+
+    static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+        napi_value& result);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
