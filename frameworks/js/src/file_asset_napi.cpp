@@ -2274,17 +2274,39 @@ static std::shared_ptr<DataShare::DataShareResultSet> CallQueryAnalysisData(
     return UserFileClient::Query(uriAnalysis, predicates, fetchColumn, errCode, userId);
 }
 
+static bool CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSGetThumbnailExecute");
+    tracer.Start("JSGetAnalysisDataExecute");
     int32_t analysisType = context->analysisType;
     auto it = ANALYSIS_SOURCE_INFO_MAP.find(analysisType);
     if (it == ANALYSIS_SOURCE_INFO_MAP.end()) {
         NAPI_ERR_LOG("Invalid analysisType");
         return;
     }
-    
+    if (analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
+        auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        context->analysisData = "";
+        if (!err) {
+            return;
+        }
+    }
     const AnalysisSourceInfo &analysisInfo = it->second;
     const std::vector<std::string> &fetchColumn = analysisInfo.fetchColumn;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = CallQueryAnalysisData(context, analysisInfo, false);
@@ -3865,21 +3887,6 @@ napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info
 }
 
 static void UserFileMgrGetExifExecute(napi_env env, void *data) {}
-
-static bool CheckNapiCallerPermission(const std::string &permission)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("CheckNapiCallerPermission");
-
-    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
-    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
-    if (res != PermissionState::PERMISSION_GRANTED) {
-        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
-        return false;
-    }
-
-    return true;
-}
 
 static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *data)
 {

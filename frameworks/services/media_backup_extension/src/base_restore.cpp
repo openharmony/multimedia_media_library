@@ -576,14 +576,17 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
 
 void BaseRestore::InsertDateTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo)
 {
-    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(fileInfo.detailTime);
-    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
-        abs(fileInfo.dateTaken - timestamp) > MAX_TIMESTAMP_DIFF) {
+    const auto [dateTaken, detailTime] =
+        PhotoFileUtils::ExtractTimeInfo(fileInfo.detailTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
+    if (dateTaken < MIN_MILSEC_TIMESTAMP || dateTaken > MAX_MILSEC_TIMESTAMP ||
+        abs(fileInfo.dateTaken - dateTaken) > MAX_TIMESTAMP_DIFF) {
         MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
             fileInfo.detailTime.c_str(),
             static_cast<long long>(fileInfo.dateTaken));
         fileInfo.detailTime =
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken);
+    } else {
+        fileInfo.detailTime = detailTime;
     }
 
     value.Put(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);

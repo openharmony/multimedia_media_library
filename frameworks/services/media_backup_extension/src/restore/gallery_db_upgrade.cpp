@@ -52,7 +52,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddRelativeBucketIdColumn(store);
     this->AddUserDisplayLevelIntoMergeTag(store);
     this->AddHdcUniqueIdIntoGalleryMedia(store);
-    this->AddVersionOcrOfTOcrResult(store);
+    this->AddColumnsOfTOcrResult(store);
     return NativeRdb::E_OK;
 }
 
@@ -275,18 +275,45 @@ int32_t GalleryDbUpgrade::AddHdcUniqueIdIntoGalleryMedia(NativeRdb::RdbStore &st
 }
 
 /**
- * @brief Add version_ocr of t_ocr_result table in gallery.db.
+ * @brief Add version_ocr, width, height of t_ocr_result table in gallery.db.
  */
-int32_t GalleryDbUpgrade::AddVersionOcrOfTOcrResult(NativeRdb::RdbStore &store)
+int32_t GalleryDbUpgrade::AddColumnsOfTOcrResult(NativeRdb::RdbStore &store)
 {
-    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "t_ocr_result", "version_ocr");
-    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
-    std::string sql = this->SQL_T_OCR_RESULT_TABLE_ADD_VERSION_OCR;
-    int32_t ret = store.ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddVersionOcrOfTOcrResult failed,"
-        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
-    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddVersionOcrOfTOcrResult success");
-    return ret;
+    bool isVersionExists = this->dbUpgradeUtils_.IsColumnExists(store, "t_ocr_result", "version_ocr");
+    if (!isVersionExists) {
+        std::string sql = this->SQL_T_OCR_RESULT_TABLE_ADD_VERSION_OCR;
+        int32_t ret = store.ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddColumnsOfTOcrResult add version_ocr failed,"
+            "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+        MEDIA_INFO_LOG("AddColumnsOfTOcrResult add version_ocr end");
+    }
+
+    bool isWidthExists = this->dbUpgradeUtils_.IsColumnExists(store, "t_ocr_result", "width");
+    if (!isWidthExists) {
+        std::string sql = this->SQL_T_OCR_RESULT_TABLE_ADD_WIDTH;
+        int32_t ret = store.ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddColumnsOfTOcrResult add width failed,"
+            "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+        MEDIA_INFO_LOG("AddColumnsOfTOcrResult add width end");
+    }
+
+    bool isHeightExists = this->dbUpgradeUtils_.IsColumnExists(store, "t_ocr_result", "height");
+    if (!isHeightExists) {
+        std::string sql = this->SQL_T_OCR_RESULT_TABLE_ADD_HEIGHT;
+        int32_t ret = store.ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddColumnsOfTOcrResult add height failed,"
+            "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+        MEDIA_INFO_LOG("AddColumnsOfTOcrResult add height end");
+    }
+
+    if (!isWidthExists || !isHeightExists) {
+        std::string sql = this->SQL_T_OCR_RESULT_TABLE_COPY_WIDTH_HEIGHT;
+        int32_t ret = store.ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddColumnsOfTOcrResult copy width height failed,"
+            "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+        MEDIA_INFO_LOG("AddColumnsOfTOcrResult copy width height end");
+    }
+    return NativeRdb::E_OK;
 }
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

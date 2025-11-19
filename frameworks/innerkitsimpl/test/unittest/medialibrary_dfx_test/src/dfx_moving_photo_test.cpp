@@ -45,7 +45,6 @@ using namespace std;
 using namespace testing::ext;
 
 static constexpr int32_t SLEEP_THREE_SECONDS = 3;
-static constexpr int64_t SEC_TO_MSEC = 1e3;
 static const std::string PHOTO_DIR = "/storage/cloud/files/photo/16/";
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> g_num{0};

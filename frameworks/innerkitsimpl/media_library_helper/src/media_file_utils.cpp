@@ -1421,8 +1421,6 @@ int64_t MediaFileUtils::UTCTimeSeconds()
 int64_t MediaFileUtils::UTCTimeMilliSeconds()
 {
     struct timespec t;
-    constexpr int64_t SEC_TO_MSEC = 1e3;
-    constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }

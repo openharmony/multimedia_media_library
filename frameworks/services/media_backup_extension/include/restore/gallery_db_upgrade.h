@@ -40,7 +40,7 @@ private:
     int32_t AddRelativeBucketIdColumn(NativeRdb::RdbStore &store);
     int32_t AddUserDisplayLevelIntoMergeTag(NativeRdb::RdbStore &store);
     int32_t AddHdcUniqueIdIntoGalleryMedia(NativeRdb::RdbStore &store);
-    int32_t AddVersionOcrOfTOcrResult(NativeRdb::RdbStore &store);
+    int32_t AddColumnsOfTOcrResult(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -116,6 +116,16 @@ private:
         ALTER TABLE gallery_media ADD COLUMN hdc_unique_id INT DEFAULT 0;";
     const std::string SQL_T_OCR_RESULT_TABLE_ADD_VERSION_OCR = "\
         ALTER TABLE t_ocr_result ADD COLUMN version_ocr INTEGER NOT NULL DEFAULT 0;";
+    const std::string SQL_T_OCR_RESULT_TABLE_ADD_WIDTH = "\
+        ALTER TABLE t_ocr_result ADD COLUMN width INTEGER NOT NULL DEFAULT 0;";
+    const std::string SQL_T_OCR_RESULT_TABLE_ADD_HEIGHT = "\
+        ALTER TABLE t_ocr_result ADD COLUMN height INTEGER NOT NULL DEFAULT 0;";
+    const std::string SQL_T_OCR_RESULT_TABLE_COPY_WIDTH_HEIGHT = "\
+        UPDATE t_ocr_result SET \
+        width = (SELECT width FROM gallery_media WHERE gallery_media.hash = t_ocr_result.hash), \
+        height = (SELECT height FROM gallery_media WHERE gallery_media.hash = t_ocr_result.hash) \
+        WHERE EXISTS (SELECT 1 FROM gallery_media WHERE gallery_media.hash = t_ocr_result.hash);";
+
 private:
     DbUpgradeUtils dbUpgradeUtils_;
 };
