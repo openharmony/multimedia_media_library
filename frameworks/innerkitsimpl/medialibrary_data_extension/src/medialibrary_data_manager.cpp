@@ -3567,7 +3567,7 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
         std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
         if (err != E_OK || imageSource == nullptr) {
             MEDIA_ERR_LOG("CreateImageSource failed, filePath: %{public}s", filePath.c_str());
-            return E_ERR;
+            continue;
         }
         HdrMode hdrMode = HdrMode::DEFAULT;
         if (imageSource->IsHdrImage()) {
@@ -3580,7 +3580,7 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
         int32_t ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to update rdb");
-            return E_ERR;
+            continue;
         }
         g_updateHdrModeId = fileId;
     }

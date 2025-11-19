@@ -5497,6 +5497,19 @@ static void AddImageFaceDetail(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void AddImageFaceAndFaceTagAgeGender(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("start to add age and gender for image face and face tag");
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end to add age and gender for image face and face tag");
+}
+
 static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
@@ -5545,6 +5558,16 @@ static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("create batchdownload records end");
 }
 
+static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
+}
+
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
 {
     MEDIA_INFO_LOG("start update vision trigger");
@@ -5552,6 +5575,19 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, true)) {
         CreateVisionVideoTotal(store, VERSION_UPDATE_VIDEO_LABLE_FACE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_LABLE_FACE, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true)) {
+        MEDIA_INFO_LOG("Update mdirty trigger for strong association start");
+        UpdateMdirtyTriggerForStrongAssociation(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true);
+    }
+
+    if (oldVersion < VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, true)) {
+        AddImageFaceAndFaceTagAgeGender(store, VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, true);
     }
 }
 

@@ -63,7 +63,6 @@ static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
 static constexpr double DEVICE_STORAGE_FREE_RATIO_LOW = 0.05;
 
 static constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
-static constexpr int64_t SEC_TO_MSEC = 1e3;
 static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_HIGH = 1000;
 static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_HIGH = 30;
 static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_LOW = 250;

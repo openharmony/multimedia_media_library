@@ -49,7 +49,7 @@ public:
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
     int32_t GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId);
-    void FillScaned3DGSSubtypeInfo(NativeRdb::ValuesBucket &values,
+    void FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values,
         const CloudMediaScanService::ScanResult &scanResult);
 
 private:

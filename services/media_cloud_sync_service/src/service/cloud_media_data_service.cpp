@@ -205,7 +205,6 @@ int32_t CloudMediaDataService::UpdateLocalFileDirty(const std::vector<std::strin
 
 int32_t CloudMediaDataService::CheckAndFixAlbum()
 {
-    MEDIA_INFO_LOG("CheckAndFixAlbum enter");
     int32_t ret = this->dataDao_.CheckAndDeleteAlbum();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to CheckAndDeleteAlbum, ret = %{public}d", ret);
     ret = this->dataDao_.CheckAndUpdateAlbum();
