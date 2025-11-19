@@ -29,6 +29,7 @@
 #include "userfile_manager_types.h"
 #include "album_accurate_refresh.h"
 #include "refresh_business_name.h"
+#include "medialibrary_rdb_utils.h"
 using namespace std;
 namespace OHOS::Media {
 constexpr int64_t INVALID_SIZE = 0;
@@ -282,6 +283,24 @@ int32_t MediaLibraryPtpOperations::GetBurstPhotosInfo(const std::string &burstKe
     return NativeRdb::E_OK;
 }
 
+static void UpdateAndNotifyBurstAlbum()
+{
+    vector<string> albumIdsStr;
+    int32_t albumId;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+        ShootingModeAlbumType::BURST_MODE_ALBUM, albumId), "Failed to query BURST album id");
+    albumIdsStr.push_back(to_string(albumId));
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (const string& albumId : albumIdsStr) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
 int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbPredicate)
 {
     int32_t ret = 0;
@@ -309,6 +328,7 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
         bool needClearBurst = isLastBurstPhoto || isBurstCover;
         ret = UpdateBurstPhotoInfo(burstKey, needClearBurst, rdbPredicate, assetRefresh);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "UpdateBurstPhotoInfo fail.");
+        UpdateAndNotifyBurstAlbum();
     }
     if (isBurstCover) {
         auto watch = MediaLibraryNotify::GetInstance();
