@@ -2994,7 +2994,7 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     std::function<void()> task = [wrapper, this]() {
         UvQueueWork(wrapper);
     };
-    ret = napi_send_event(env_, task, napi_eprio_immediate);
+    ret = napi_send_event(env_, task, napi_eprio_immediate, "MLB_MediaLib_off");
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute napi_send_event, ret: %{public}d", ret);
         free(msg->data_);
@@ -3919,7 +3919,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
         JSReleaseCompleteCallback(env, status, context);
     };
 
-    status = napi_send_event(env, task, napi_eprio_immediate);
+    status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_release");
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
@@ -4918,7 +4918,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
             JSGetActivePeersCompleteCallback(env, status, context);
         };
 
-        status = napi_send_event(env, task, napi_eprio_immediate);
+        status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_getActivePeers");
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -4959,7 +4959,7 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         std::function<void()> task = [env, status, context]() {
             JSGetAllPeersCompleteCallback(env, status, context);
         };
-        status = napi_send_event(env, task, napi_eprio_immediate);
+        status = napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_getAllPeers");
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -7327,52 +7327,36 @@ static std::string GetTotalCount()
     return to_string(totalCount);
 }
 
-static void ParseFaceAnalysisResultSet(MediaLibraryAsyncContext* context,
-    const shared_ptr<DataShare::DataShareResultSet>& resultSet, const string& curTotalCount, int errCode)
+static void UpdateAnalysisProgress(const shared_ptr<DataShare::DataShareResultSet>& resultSet,
+    const string& curTotalCount, MediaLibraryAsyncContext* context)
 {
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("resultSet is nullptr");
-        return;
-    }
-    if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
-        resultSet->Close();
-        nlohmann::json jsonObj;
-        jsonObj["cvFinishedCount"] = 0;
-        jsonObj["geoFinishedCount"] = 0;
-        jsonObj["searchFinishedCount"] = 0;
-        jsonObj["totalCount"] = curTotalCount;
-        context->analysisProgress = jsonObj.dump();
-        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
-            context->analysisProgress.c_str());
-        return;
-    }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, HIGHLIGHT_ANALYSIS_PROGRESS);
     if (retJson == "" || !nlohmann::json::accept(retJson)) {
         resultSet->Close();
         NAPI_ERR_LOG("retJson is empty or invalid");
         return;
     }
+
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
-    if (!curJsonObj.contains("totalCount") || !curJsonObj["totalCount"].is_number()) {
+    if (!curJsonObj.contains("totalCount")) {
+        resultSet->Close();
         NAPI_ERR_LOG("retJson do not contain totalCount");
-        resultSet->Close();
         return;
     }
 
-    int preTotalCount = 0;
-    try {
-        preTotalCount = curJsonObj["totalCount"].get<int>();
-    } catch (const nlohmann::json::exception& e) {
-        NAPI_ERR_LOG("Failed to get totalCount as int: %s", e.what());
+    if (!curJsonObj["totalCount"].is_number_integer()) {
         resultSet->Close();
+        NAPI_ERR_LOG("totalCount is not an integer type");
         return;
     }
 
+    int preTotalCount = curJsonObj["totalCount"];
     if (to_string(preTotalCount) != curTotalCount) {
         NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
             curTotalCount.c_str(), preTotalCount);
         curJsonObj["totalCount"] = curTotalCount;
     }
+
     context->analysisProgress = curJsonObj.dump();
     NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
     resultSet->Close();
@@ -7396,8 +7380,24 @@ static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
         }
         NAPI_ERR_LOG("Get Face Analysis Progress failed! errCode is = %{public}d", errCode);
     }
-    shared_ptr<DataShare::DataShareResultSet> resultSet = respBody.resultSet;
-    ParseFaceAnalysisResultSet(context, resultSet, curTotalCount, errCode);
+    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return;
+    }
+    if (ret->GoToNextRow() != NativeRdb::E_OK) {
+        ret->Close();
+        nlohmann::json jsonObj;
+        jsonObj["cvFinishedCount"] = 0;
+        jsonObj["geoFinishedCount"] = 0;
+        jsonObj["searchFinishedCount"] = 0;
+        jsonObj["totalCount"] = curTotalCount;
+        context->analysisProgress = jsonObj.dump();
+        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
+            context->analysisProgress.c_str());
+        return;
+    }
+    UpdateAnalysisProgress(ret, curTotalCount, context);
 }
 
 static void GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
@@ -7569,10 +7569,39 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
     delete context;
 }
 
+static bool CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static bool CheckGetAnalysisDataPermission(MediaLibraryAsyncContext *context)
+{
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
+        auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        context->analysisDatas.push_back("");
+        if (!err) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetAnalysisDataExecute");
+    CHECK_AND_RETURN(CheckGetAnalysisDataPermission(context));
 
     std::string analysisUri;
     if (context->isForce) {
@@ -7590,7 +7619,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        //Chinese and English supported. Other languages English default.
+
         language = (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
@@ -9669,7 +9698,7 @@ static std::vector<std::string> ExtractIDAlbumOldUris(const std::vector<std::str
         if (!finalParsing.empty()) {
             result.emplace_back(finalParsing);
         } else {
-            NAPI_ERR_LOG("SplitPathAndIDAlbumOldUris: Failed to retrieve ID from %{album}s", oldAlbum.c_str());
+            NAPI_ERR_LOG("SplitPathAndIDAlbumOldUris: Failed to retrieve ID from %{public}s", oldAlbum.c_str());
         }
     }
     return result;

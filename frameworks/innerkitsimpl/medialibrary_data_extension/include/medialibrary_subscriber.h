@@ -15,8 +15,9 @@
 #ifndef MEDIALIBRARY_SUBSCRIBER_H
 #define MEDIALIBRARY_SUBSCRIBER_H
 
-#include <thread>
 #include <atomic>
+#include <future>
+#include <thread>
 
 #include "common_event_manager.h"
 #include "common_event_subscribe_info.h"
@@ -76,7 +77,8 @@ public:
     };
     EXPORT MedialibrarySubscriber() = default;
     EXPORT explicit MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
-    EXPORT static bool Subscribe(void);
+    EXPORT static void SubscribeAsync(void);
+    EXPORT static bool UnSubscribe();
     EXPORT virtual ~MedialibrarySubscriber();
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
@@ -103,9 +105,14 @@ private:
     int32_t batteryCapacity_ {0};
     int64_t lockTime_ {0};
     Background::MediaBackgroundTaskFactory backgroundTaskFactory_;
+    static std::shared_ptr<MedialibrarySubscriber> subscriber_;
+    static std::future<bool> subscribeAsyncTask_;
+    static std::mutex subscribeLock_;
+    static std::mutex subscribeAsyncTaskLock_;
 
     DelayTask backgroundDelayTask_{"backgroundTask"};
     DelayTask thumbnailBgDelayTask_{"thumbnailBgTask"};
+    EXPORT static bool Subscribe(void);
     EXPORT void ClearDirtyData();
     EXPORT void DoBackgroundOperation();
     EXPORT void DoBackgroundOperationStepTwo();

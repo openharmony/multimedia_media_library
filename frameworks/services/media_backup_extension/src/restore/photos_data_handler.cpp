@@ -51,8 +51,12 @@ PhotosDataHandler &PhotosDataHandler::SetMediaLibraryRdb(std::shared_ptr<NativeR
     return *this;
 }
 
-void PhotosDataHandler::HandleDirtyFiles()
+void PhotosDataHandler::HandleDirtyFiles(bool isRestore)
 {
+    if (!isRestore) {
+        MEDIA_WARN_LOG("Only handle dirty files in restore scene");
+        return;
+    }
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t totalNumber = photosDao_.GetDirtyFilesCount();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
@@ -120,12 +124,15 @@ bool PhotosDataHandler::DeleteDirtyFile(const PhotosDao::PhotosRowData &dirtyFil
     std::string thumbsFolder =
         BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, dirtyFile.data);
     bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
-    if (!deleteFileRet || !deleteThumbsRet) {
-        MEDIA_ERR_LOG("Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d,"
-            " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, DEFAULT_RESTORE_ID).c_str(),
-            static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
-        return false;
-    }
+    // clean editData folder
+    std::string editDataFolder =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_EDIT_DATA, dirtyFile.data);
+    bool deleteEditDataRet = MediaFileUtils::DeleteFileOrFolder(editDataFolder, false);
+    CHECK_AND_RETURN_RET_LOG(deleteFileRet && deleteThumbsRet && deleteEditDataRet, false,
+        "Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d, "
+        "deleteEditDataRet: %{public}d, errno: %{public}d",
+        BackupFileUtils::GarbleFilePath(dirtyFile.data, DEFAULT_RESTORE_ID).c_str(),
+        deleteFileRet, deleteThumbsRet, deleteEditDataRet, errno);
     return true;
 }
 

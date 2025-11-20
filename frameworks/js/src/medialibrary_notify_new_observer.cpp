@@ -180,7 +180,7 @@ void MediaOnNotifyNewObserver::OnJsCallbackEvent(std::unique_ptr<NewJsOnChangeCa
         CHECK_AND_RETURN_LOG(event != nullptr, "event is nullptr");
         OnChangeNotifyDetail(event);
     };
-    if (napi_send_event(env, task, napi_eprio_immediate) != napi_ok) {
+    if (napi_send_event(env, task, napi_eprio_immediate, "MLB_MediaLib_on") != napi_ok) {
         NAPI_ERR_LOG("failed to execute task");
         delete event;
     }

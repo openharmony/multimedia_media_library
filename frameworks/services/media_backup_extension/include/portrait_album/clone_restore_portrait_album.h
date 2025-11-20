@@ -38,6 +38,13 @@ public:
     void RestoreImageFaceInfo();
     void UpdateAnalysisTotalTblNoFaceStatus();
     void UpdateAnalysisTotalTblStatus();
+    void WriteDataToAnaVideoTotalTab(std::unordered_map<int32_t, int32_t>& oldAnaVideoFaceMap,
+    std::unordered_map<int32_t, int32_t>& oldAnaVideoLableMap,
+    std::unordered_map<int32_t, int32_t>& oldAnaVideoStatusMap);
+    bool CopyAnalysisVideoTotalTab();
+    void UpdateAnalysisVideoTotalTblNoFaceStatus();
+    void UpdateAnalysisVideoTotalTblStatus();
+    void UpdateAnalysisVideoTotalTblLabel();
     int32_t RestoreMaps();
 
 protected:
@@ -84,6 +91,7 @@ private:
     NativeRdb::ValuesBucket GetMapInsertValue(int32_t albumId, int32_t fileId, std::optional<int32_t> &order);
     void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     void ReportPortraitCloneStat(int32_t sceneCode);
+    void RestoreAnalysisTotalFaceStatus();
 
 public:
     std::vector<CoverUriInfo> coverUriInfo_;

@@ -48,7 +48,6 @@ const int32_t SEED_SIZE = 1024;
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 std::atomic<int> g_num{0};
-const int64_t SEC_TO_MSEC = 1000;
 const int32_t MILSEC_TO_MICSEC = 1000;
 
 static inline int32_t FuzzPhotoPosition()

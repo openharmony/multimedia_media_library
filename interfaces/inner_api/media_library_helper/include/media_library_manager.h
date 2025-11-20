@@ -30,6 +30,10 @@ using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
 struct UriParams;
+class PhotoAlbum;
+class FileAsset;
+template <class T>
+class FetchResult;
 
 enum class CloudMediaRetainType : int32_t {
     RETAIN_FORCE = 0,
@@ -262,6 +266,61 @@ public:
      * @return errorCode
      */
     EXPORT int32_t RetainCloudMediaAsset(CloudMediaRetainType retainType);
+
+    /**
+     * @brief Get Albums
+     *
+     * @param fetchColumns Indicates the members to query
+     * @param predicate Rule options for getting albums
+     * @return The albums obtained
+     */
+    EXPORT FetchResult<PhotoAlbum> GetAlbums(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
+
+    /**
+     * @brief Delete Albums
+     *
+     * @param albums Indicates the albums to delete
+     * @return Number of albums successfully deleted or errorCode
+     */
+    EXPORT int32_t DeleteAlbums(const std::vector<std::unique_ptr<PhotoAlbum>> &albums);
+
+    /**
+     * @brief Create Album
+     *
+     * @param albumName Indicates the album name to create
+     * @return Album id or errorCode
+     */
+    EXPORT int32_t CreateAlbum(const std::string &albumName);
+
+    /**
+     * @brief Delete Assets
+     *
+     * @param assets Indicates the assets to delete
+     * @return Number of assets successfully deleted or errorCode
+     */
+    EXPORT int32_t DeleteAssets(const std::vector<std::unique_ptr<FileAsset>> &assets);
+
+    /**
+     * @brief Move Assets
+     *
+     * @param assets Indicates the assets to move
+     * @param srcAlbum Indicates the album to move assets from
+     * @param targetAlbum Indicates the album to move assets to
+     * @return Number of assets successfully moved or errorCode
+     */
+    EXPORT int32_t MoveAssets(const std::vector<std::unique_ptr<FileAsset>> &assets, PhotoAlbum &srcAlbum,
+        PhotoAlbum &targetAlbum);
+
+    /**
+     * @brief Get Assets
+     * @param album Indicates the album to get assets from
+     * @param fetchColumns Indicates the members to query
+     * @param predicate Rule options for getting assets
+     * @return The assets obtained
+     */
+    EXPORT FetchResult<FileAsset> GetAssets(const PhotoAlbum &album, const std::vector<std::string> &fetchColumns,
+       const DataShare::DataSharePredicates *predicate);
 
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);

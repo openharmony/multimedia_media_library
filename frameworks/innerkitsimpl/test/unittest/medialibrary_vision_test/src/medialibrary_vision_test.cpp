@@ -928,6 +928,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.3);
     valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.01");
     valuesBucket.Put(IS_EXCLUDED, 1);
+    valuesBucket.Put(AGE, 25.8);
+    valuesBucket.Put(GENDER, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
@@ -973,10 +975,13 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.8);
     valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.31");
     valuesBucket.Put(IS_EXCLUDED, 0);
+    valuesBucket.Put(AGE, 25.6);
+    valuesBucket.Put(GENDER, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TOTAL_FACES, 8);
     updateValues.Put(IMAGE_FACE_VERSION, "2.01");
+    updateValues.Put(AGE, 31.4);
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
     inValues.push_back("2");
@@ -1064,6 +1069,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level1
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 8.3);
     valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.11");
     valuesBucket.Put(IS_EXCLUDED, 1);
+    valuesBucket.Put(AGE, 32.1);
+    valuesBucket.Put(GENDER, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -1071,10 +1078,12 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level1
     valuesBucket1.Put(FACE_ID, 2);
     valuesBucket1.Put(IMAGE_FACE_VERSION, "1.015");
     valuesBucket1.Put(PROB, 2.344);
+    valuesBucket1.Put(AGE, 27.2);
+    valuesBucket1.Put(GENDER, 0);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 5);
-    vector<string> columns = { FACE_ID };
+    vector<string> columns = { FACE_ID, AGE, GENDER };
     int errCode = 0;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
@@ -1276,6 +1285,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level1)
     valuesBucket.Put(PORTRAIT_DATE_MODIFY, 3333);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
+    valuesBucket.Put(AGE, 31.2);
+    valuesBucket.Put(GENDER, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
@@ -1312,10 +1323,13 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level1)
     valuesBucket.Put(PORTRAIT_DATE_MODIFY, 2222);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
+    valuesBucket.Put(AGE, 19.1);
+    valuesBucket.Put(GENDER, 0);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TAG_NAME, "she");
     updateValues.Put(IS_REMOVED, 0);
+    updateValues.Put(AGE, 21.2);
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
     inValues.push_back("tag333");
@@ -1349,6 +1363,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level1)
     valuesBucket.Put(PORTRAIT_DATE_MODIFY, 444);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
+    valuesBucket.Put(AGE, 24.2);
+    valuesBucket.Put(GENDER, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataSharePredicates predicates;

@@ -54,11 +54,16 @@ void CloudSyncObserver::DealCloudSync(const ChangeInfo &changeInfo)
     CHECK_AND_RETURN_WARN_LOG(nlohmann::json::accept(dataString),
         "Failed to verify the meataData format, metaData is: %{public}s", dataString.c_str());
     nlohmann::json jsonData = nlohmann::json::parse(dataString);
-    CHECK_AND_EXECUTE(!jsonData.contains("taskType"), info.taskType = jsonData["taskType"]);
-    CHECK_AND_EXECUTE(!jsonData.contains("syncId"), info.syncId = jsonData["syncId"]);
-    CHECK_AND_EXECUTE(!jsonData.contains("syncType"), info.syncType = jsonData["syncType"]);
-    CHECK_AND_EXECUTE(!jsonData.contains("totalAssets"), info.totalAssets = jsonData["totalAssets"]);
-    CHECK_AND_EXECUTE(!jsonData.contains("totalAlbums"), info.totalAlbums = jsonData["totalAlbums"]);
+    bool isValid = jsonData.contains("taskType") && jsonData["taskType"].is_number_unsigned();
+    CHECK_AND_EXECUTE(!isValid, info.taskType = jsonData["taskType"]);
+    isValid = jsonData.contains("syncId") && jsonData["syncId"].is_string();
+    CHECK_AND_EXECUTE(!isValid, info.syncId = jsonData["syncId"]);
+    isValid = jsonData.contains("syncType") && jsonData["syncType"].is_number_unsigned();
+    CHECK_AND_EXECUTE(!isValid, info.syncType = jsonData["syncType"]);
+    isValid = jsonData.contains("totalAssets") && jsonData["totalAssets"].is_number_unsigned();
+    CHECK_AND_EXECUTE(!isValid, info.totalAssets = jsonData["totalAssets"]);
+    isValid = jsonData.contains("totalAlbums") && jsonData["totalAlbums"].is_number_unsigned();
+    CHECK_AND_EXECUTE(!isValid, info.totalAlbums = jsonData["totalAlbums"]);
 
     if (info.taskType == TIME_BEGIN_SYNC) {
         PostEventUtils::GetInstance().CreateCloudDownloadSyncStat(info.syncId);

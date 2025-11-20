@@ -52,6 +52,7 @@
 #include "media_file_utils.h"
 #include "cloud_media_context.h"
 #include "hi_audit.h"
+#include "photo_owner_album_id_operation.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -597,6 +598,8 @@ int32_t CloudMediaPhotosDao::FixEmptyAlbumId(const CloudMediaPullDataDto &data, 
         albumId = ALBUM_ID_HIDDEN;
     } else if (!data.propertiesSourcePath.empty()) {
         albumId = ALBUM_ID_NEED_REBUILD;
+        int32_t buildAlbumId = PhotoOwnerAlbumIdOperation().BuildAlbumBySourcePath(data.propertiesSourcePath);
+        CHECK_AND_EXECUTE(buildAlbumId <= 0, albumId = buildAlbumId);
     } else {
         this->FixAlbumIdToBeOtherAlbumId(albumId);
     }

@@ -360,6 +360,12 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
         case HideSensitiveType::SHOOTING_PARAM_DESENSITIZE:
             err = imageSource->GetFilterArea(SHOOTING_PARAM_EXIF, areas);
             break;
+        case HideSensitiveType::DEFAULT:
+            if (PermissionUtils::CheckCallerPermission(PERMISSION_NAME_MEDIA_LOCATION)) {
+                return E_SUCCESS;
+            }
+            err = imageSource->GetFilterArea(ALL_SENSITIVE_EXIF, areas);
+            break;
         default:
             MEDIA_ERR_LOG("Invaild hide sensitive type %{public}d", sensitiveType);
             return E_SUCCESS;
@@ -398,39 +404,31 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
     if (mode_.find('w') != string::npos) {
         return E_SUCCESS;
     }
+    bool result;
     if (fuseFlag_ == false) {
         string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
         appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
         tokenId_ = PermissionUtils::GetTokenId();
+        result = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+    } else {
+        result = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_MEDIA_LOCATION, uid_);
     }
-    bool result;
-    for (auto &item : PRIVACY_PERMISSION_MAP) {
-        const string &perm = item.second;
-        if (fuseFlag_ == false) {
-            result = PermissionUtils::CheckCallerPermission(perm);
-        } else {
-            result = PermissionUtils::CheckCallerPermission(perm, uid_);
-        }
-        if ((result == false) && (perm == PERMISSION_NAME_MEDIA_LOCATION) && IsWriteMode(mode_)) {
-            return E_PERMISSION_DENIED;
-        }
-        int32_t err = -1;
-        if (type_ != DEFAULT_TYPE) {
-            MEDIA_DEBUG_LOG("force type");
-            err = CollectRanges(path_, (HideSensitiveType)type_, ranges_);
-        } else {
-            //collect ranges by hideSensitiveType
-            bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId_, fileId_);
-            if (!isForceSensitive && result) {
-                continue;
-            }
-            HideSensitiveType sensitiveType =
+    if ((result == false) && IsWriteMode(mode_)) {
+        return E_PERMISSION_DENIED;
+    }
+    int32_t err = -1;
+    if (type_ != DEFAULT_TYPE) {
+        MEDIA_DEBUG_LOG("force type");
+        err = CollectRanges(path_, (HideSensitiveType)type_, ranges_);
+    } else {
+        //collect ranges by hideSensitiveType
+        HideSensitiveType sensitiveType =
             static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId_, fileId_));
-            err = CollectRanges(path_, sensitiveType, ranges_);
-        }
-        if (err < 0) {
-            return err;
-        }
+        MEDIA_DEBUG_LOG("GetPrivacyRanges::sensitiveType: %{public}d", static_cast<int32_t>(sensitiveType));
+        err = CollectRanges(path_, sensitiveType, ranges_);
+    }
+    if (err < 0) {
+        return err;
     }
     return SortRangesAndCheck(ranges_);
 }

@@ -840,13 +840,16 @@ void PhotoCustomRestoreOperation::SetTimeInfo(
     value.Put(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
 
     std::string detailTime = data->GetDetailTime();
-    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(detailTime);
-    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
-        abs(dateTaken - timestamp) >= MAX_TIMESTAMP_DIFF) {
+    const auto [normalizeDateTaken, normalizeDetailTime] =
+        PhotoFileUtils::ExtractTimeInfo(detailTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
+    if (normalizeDateTaken < MIN_MILSEC_TIMESTAMP || normalizeDateTaken > MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - normalizeDateTaken) > MAX_TIMESTAMP_DIFF) {
         MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
             detailTime.c_str(),
             static_cast<long long>(dateTaken));
         detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    } else {
+        detailTime = normalizeDetailTime;
     }
 
     value.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);

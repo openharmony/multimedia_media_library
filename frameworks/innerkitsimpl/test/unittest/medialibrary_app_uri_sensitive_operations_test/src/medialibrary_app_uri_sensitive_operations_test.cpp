@@ -519,6 +519,37 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 }
 
 /**
+ * batch update two no sensitiveType.
+ */
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_0011, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_0011");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    ASSERT_GT(photoId1, 0);
+    ASSERT_GT(photoId2, 0);
+
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    for (int i = 0; i < 2; ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, photoIds[i]);
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+            AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+        dataShareValue.Put(AppUriSensitiveColumn::URI_TYPE, AppUriSensitiveColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+    int ret = TestBatchInsert(dataShareValues);
+    EXPECT_EQ(ret, MediaLibraryAppUriSensitiveOperations::ERROR);
+
+    ret = TestBatchInsert(dataShareValues);
+    EXPECT_EQ(ret, MediaLibraryAppUriSensitiveOperations::ERROR);
+
+    MEDIA_INFO_LOG("end tdd app_uri_sensitive_oprn_api12_test_0011");
+}
+
+/**
  * BeForceSensitive_test.
  */
 HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, Mausot_BeForceSensitive_test_001, TestSize.Level1)

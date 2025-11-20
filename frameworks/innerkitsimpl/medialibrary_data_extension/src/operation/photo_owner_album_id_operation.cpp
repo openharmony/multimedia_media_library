@@ -27,6 +27,8 @@
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "refresh_business_name.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {
 using MediaData = PhotoOwnerAlbumIdOperation::MediaData;
@@ -567,5 +569,37 @@ int32_t PhotoOwnerAlbumIdOperation::FixScreenVideoRelation()
     CHECK_AND_RETURN_RET_LOG(!conn, E_ERR, "Media_Operation: albumInfo is empty.");
 
     return this->UpdatePhotoOwnerAlbumId(fileIds, albumInfo.albumId);
+}
+
+int32_t PhotoOwnerAlbumIdOperation::GetPhotoAlbumId(const std::string &lPath)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoOwnerAlbumIdOperation::GetPhotoAlbumId");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    bool conn = rdbStore == nullptr || lPath.empty();
+    CHECK_AND_RETURN_RET_LOG(!conn, E_ERR, "Media_Operation: rdbStore is null or lPath is empty.");
+
+    std::string sql = SQL_PHOTO_ALBUM_QUERY;
+    std::vector<NativeRdb::ValueObject> params = {lPath};
+    auto resultSet = rdbStore->QuerySql(sql, params);
+    conn = resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK;
+    CHECK_AND_RETURN_RET_LOG(!conn, E_ERR, "Media_Operation: QuerySql failed, sql: %{public}s.", sql.c_str());
+    return GetInt32Val("album_id", resultSet);
+}
+
+int32_t PhotoOwnerAlbumIdOperation::BuildAlbumBySourcePath(const std::string &sourcePath)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoOwnerAlbumIdOperation::BuildAlbumBySourcePath");
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_ERR, "Media_Operation: sourcePath is empty.");
+    std::string lPath = this->ParseSourcePathToLPath(sourcePath);
+
+    std::unordered_set<std::string> lPathSet = { lPath };
+    int32_t err = this->CreateAlbums(lPathSet);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_ERR, "Media_Operation: CreateAlbums failed, err: %{public}d.", err);
+    int32_t albumId = this->GetPhotoAlbumId(lPath);
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_ERR, "Media_Operation: failed to get albumInfo.");
+    MEDIA_INFO_LOG("Media_Operation: success to build and get album, albumId: %{public}d", albumId);
+    return albumId;
 }
 }  // namespace OHOS::Media

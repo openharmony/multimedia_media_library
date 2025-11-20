@@ -353,6 +353,7 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_map_code_dao.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_column.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
   ]
 

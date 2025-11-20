@@ -2242,7 +2242,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_tes
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_handle_dirty_test");
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(EXPECTED_COUNT_0, "", g_rdbStore->GetRaw());
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(true);
     EXPECT_EQ(photosDataHandler_.dirtyFileCleanNumber_, EXPECTED_COUNT_0);
 }
 
@@ -2945,11 +2945,25 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_
 
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
-    photosDataHandler_.HandleDirtyFiles();
+    photosDataHandler_.HandleDirtyFiles(true);
 
     int32_t result = INVALID_COUNT;
     QueryDirtyFileCount(result);
     EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_db_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_delete_dirty_files_in_db_test_002");
+    InsertDirtyFile("path_with_invalid_prefix");
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    photosDataHandler_.HandleDirtyFiles(false);
+
+    int32_t result = INVALID_COUNT;
+    QueryDirtyFileCount(result);
+    EXPECT_GT(result, 0);
 }
 
 void MediaLibraryBackupCloneTest::InsertSampleSearchIndexData(const std::shared_ptr<NativeRdb::RdbStore>& db,
@@ -4157,6 +4171,111 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_hdc_device_id_001, TestSi
     bool ret = SettingsDataManager::GetHdcDeviceId(deviceId);
     bool flag = ((ret && !deviceId.empty()) || (!ret && deviceId.empty()));
     EXPECT_TRUE(flag);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest,
+    medialibrary_backup_clone_update_video_total_no_face_status_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_video_total_no_face_status_test_001");
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(oldRdbStore, nullptr);
+    ASSERT_NE(newRdbStore, nullptr);
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, -1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, -2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 0)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (104, -3)"
+    });
+    ExecuteSqls(newRdbStore, {
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (204, 8)"
+    });
+    vector<FileIdPair> fileIdPair = {
+        {101, 201},
+        {102, 202},
+        {103, 203},
+        {104, 204},
+        {105, 205}
+    };
+    BackupDatabaseUtils::UpdateAnalysisVideoTotalTblNoFaceStatus(newRdbStore, oldRdbStore, fileIdPair);
+    auto verifyFaceValue = [&](int32_t fileId, int32_t expectedFace) {
+        string querySql = "SELECT face FROM " + VISION_VIDEO_TOTAL_TABLE + " WHERE file_id = " + to_string(fileId);
+        auto resultSet = newRdbStore->QuerySql(querySql);
+        ASSERT_NE(resultSet, nullptr);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            int32_t faceValue;
+            resultSet->GetInt(0, faceValue);
+            EXPECT_EQ(faceValue, expectedFace);
+        }
+        resultSet->Close();
+    };
+    verifyFaceValue(201, -1);
+    verifyFaceValue(202, -2);
+    verifyFaceValue(203, 7);
+    verifyFaceValue(204, -3);
+    verifyFaceValue(205, 8);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest,
+    medialibrary_backup_clone_update_video_total_no_face_status_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_video_total_no_face_status_test_002");
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(oldRdbStore, nullptr);
+    ASSERT_NE(newRdbStore, nullptr);
+
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, 1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, 2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 3)"
+    });
+
+    ExecuteSqls(newRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)"
+    });
+
+    vector<FileIdPair> fileIdPair = {
+        {101, 201},
+        {102, 202},
+        {103, 203}
+    };
+
+    BackupDatabaseUtils::UpdateAnalysisVideoTotalTblNoFaceStatus(newRdbStore, oldRdbStore, fileIdPair);
+    auto verifyFaceValue = [&](int32_t fileId, int32_t expectedFace) {
+        string querySql = "SELECT face FROM " + VISION_VIDEO_TOTAL_TABLE + " WHERE file_id = " + to_string(fileId);
+        auto resultSet = newRdbStore->QuerySql(querySql);
+        ASSERT_NE(resultSet, nullptr);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            int32_t faceValue;
+            resultSet->GetInt(0, faceValue);
+            EXPECT_EQ(faceValue, expectedFace);
+        }
+        resultSet->Close();
+    };
+
+    verifyFaceValue(201, 5);
+    verifyFaceValue(202, 6);
+    verifyFaceValue(203, 7);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 } // namespace Media
 } // namespace OHOS

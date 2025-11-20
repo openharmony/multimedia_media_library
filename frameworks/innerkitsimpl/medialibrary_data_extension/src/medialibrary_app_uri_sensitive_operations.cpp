@@ -42,6 +42,18 @@ const int MediaLibraryAppUriSensitiveOperations::SUCCEED = 0;
 const int MediaLibraryAppUriSensitiveOperations::ALREADY_EXIST = 1;
 const int MediaLibraryAppUriSensitiveOperations::NO_DATA_EXIST = 0;
 
+static void DoSubscribeAppStop(const ValuesBucket &value)
+{
+    ValueObject valueObject;
+    int64_t destTokenId = -1;
+    if (value.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
+    // delete the temporary permission when the app dies
+    MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
+}
+
 int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("insert appUriSensitive begin");
@@ -67,7 +79,7 @@ int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibrar
     }
 
     // delete the temporary Sensitive when the app dies
-    MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    DoSubscribeAppStop(cmd.GetValueBucket());
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -140,7 +152,7 @@ int32_t MediaLibraryAppUriSensitiveOperations::BatchInsert(
 
         if (queryFlag == 0) {
             // delete the temporary sensitive when the app dies
-            MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+            DoSubscribeAppStop(value);
             value.PutLong(AppUriSensitiveColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
             insertVector.push_back(value);
         } else if (UpdateSensitiveTypeAndForceHideSensitive(resultSet, sensitiveTypeParam, value) == ERROR) {

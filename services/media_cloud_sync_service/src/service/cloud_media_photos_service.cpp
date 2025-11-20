@@ -292,7 +292,7 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
     int32_t ret = this->photosDao_.ConflictDataMerge(
         pullData, localKeyData.filePath, cloudStd, cloudMapIds, refreshAlbums, photoRefresh);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Conflict dataMerge fail");
+        MEDIA_ERR_LOG("Conflict dataMerge failed");
         return ret;
     }
     ret = this->photosDao_.UpdateAssetInPhotoMap(pullData.attributesFileId, cloudMapIds);
@@ -881,7 +881,6 @@ int32_t CloudMediaPhotosService::OnMdirtyRecords(std::vector<PhotosDto> &records
 
 int32_t CloudMediaPhotosService::OnFdirtyRecords(std::vector<PhotosDto> &records, int32_t &failedSize)
 {
-    MEDIA_INFO_LOG("OnFdirtyRecords enter");
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
         std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(

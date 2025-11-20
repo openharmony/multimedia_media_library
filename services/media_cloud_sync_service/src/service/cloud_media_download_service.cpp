@@ -291,6 +291,7 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &
                                                                std::to_string(photosPo.fileId.value_or(0)), extraUri);
     assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
         (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
+    assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.mediaType = photosPo.mediaType.value_or(0);
     assetData.exifRotate = CloudMediaSyncUtils::GetExifRotate(assetData.mediaType, assetData.localPath);
     return assetData;
@@ -459,7 +460,6 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
 int32_t CloudMediaDownloadService::OnDownloadAsset(
     const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadAsset, %{public}zu", cloudIds.size());
     // get downloadAssetDataVec
     std::vector<PhotosPo> photosPoVec;
     int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
@@ -499,9 +499,8 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     CloudMediaScanService::ScanResult scanResult;
-    if (assetData.needScanShootingMode) {
-        CloudMediaScanService().ScanShootingMode(assetData.path, scanResult);
-    }
+    bool isNeedScan = assetData.needScanShootingMode || assetData.needScanSubtype;
+    CHECK_AND_EXECUTE(!isNeedScan, this->scanService_.ScanDownloadedFile(assetData.path, scanResult));
     ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
     if (scanResult.scanSuccess) {
         CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);

@@ -2072,7 +2072,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(const std::shared_
     return E_OK;
 }
 
-static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
+int32_t MediaLibraryAlbumFusionUtils::TransferMisMatchScreenRecord(
+    const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     MEDIA_INFO_LOG("Transfer miss matched screeRecord begin");
     const std::string QUERY_SCREEN_RECORD_ALBUM =
@@ -2097,6 +2098,7 @@ static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRd
     int32_t err = upgradeStore->ExecuteSql(TRANSFER_MISS_MATCH_ASSET);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Fatal error! Failed to exec: %{public}s", TRANSFER_MISS_MATCH_ASSET.c_str());
+    SetRefreshAlbum(true);
     MEDIA_INFO_LOG("Transfer miss matched screenRecord end");
     return E_OK;
 }

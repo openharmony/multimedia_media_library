@@ -248,9 +248,10 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate, trans);
 }
 
-static void AppstateOberserverBuild(int32_t sensitiveType)
+static void AppstateOberserverBuild(int64_t destTokenId)
 {
     MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
 }
 
 static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values)
@@ -312,7 +313,8 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
             return E_ERR;
         }
         int32_t sensitiveType = values.at(0).Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
-        AppstateOberserverBuild(sensitiveType);
+        int64_t targetTokenId = values.at(0).Get(AppUriSensitiveColumn::TARGET_TOKENID, isValid);
+        AppstateOberserverBuild(targetTokenId);
         QueryUriSensitive(cmd, values, resultSet);
         GetAllUriDbOperation(values, dbOperation, resultSet);
         for (size_t i = 0; i < values.size(); i++) {
@@ -383,7 +385,8 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, cons
     int32_t numRows = 0;
     resultSet->GetRowCount(numRows);
     if (numRows == 0) {
-        return 0;
+        // Refer MEDIA_LOCATION permission to hide location and shooting parameters.
+        return AppUriSensitiveColumn::SENSITIVE_DEFAULT;
     }
     resultSet->GoToFirstRow();
     return MediaLibraryRdbStore::GetInt(resultSet, AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);

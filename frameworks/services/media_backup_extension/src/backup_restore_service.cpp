@@ -110,6 +110,7 @@ void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Co
     Init(info);
     CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media restore service failed.");
     CHECK_AND_EXECUTE(context == nullptr, BackupFileUtils::CreateDataShareHelper(context->GetToken()));
+    restoreService_->SetIsRestore(true);
     restoreService_->StartRestore(serviceBackupDir_, UPGRADE_FILE_DIR);
 }
 
@@ -126,6 +127,7 @@ void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::
         return;
     }
     CHECK_AND_EXECUTE(context == nullptr, BackupFileUtils::CreateDataShareHelper(context->GetToken()));
+    restoreService_->SetIsRestore(true);
     restoreService_->StartRestoreEx(serviceBackupDir_, UPGRADE_FILE_DIR, restoreExInfo);
 }
 

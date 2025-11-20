@@ -1421,8 +1421,6 @@ int64_t MediaFileUtils::UTCTimeSeconds()
 int64_t MediaFileUtils::UTCTimeMilliSeconds()
 {
     struct timespec t;
-    constexpr int64_t SEC_TO_MSEC = 1e3;
-    constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }
@@ -2652,10 +2650,10 @@ int64_t MediaFileUtils::StrToInt64(const std::string &value)
 
 int32_t MediaFileUtils::UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec)
 {
-    CHECK_AND_RETURN_RET_LOG(localMtimeInMsec >= 0, E_VIOLATION_PARAMETERS,
-        "ModifyTime %{public}" PRId64 "< 0, localPath: %{public}s",
+    CHECK_AND_RETURN_RET_LOG(localMtimeInMsec > 0, E_VIOLATION_PARAMETERS,
+        "ModifyTime %{public}" PRId64 "<= 0, localPath: %{public}s",
         localMtimeInMsec, DesensitizePath(localPath).c_str());
-    CHECK_AND_RETURN_RET_LOG(access(localPath.c_str(), F_OK) == 0, E_FILE_EXIST,
+    CHECK_AND_RETURN_RET_LOG(access(localPath.c_str(), F_OK) == 0, E_NO_SUCH_FILE,
         "File not exist, localPath: %{public}s", DesensitizePath(localPath).c_str());
 
     struct timeval times[2];

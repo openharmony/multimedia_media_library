@@ -23,6 +23,7 @@
 #include "background_cloud_file_processor.h"
 #undef private
 
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
@@ -38,8 +39,6 @@ using namespace testing::ext;
 
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
-
-static constexpr int64_t SEC_TO_MSEC = 1e3;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {

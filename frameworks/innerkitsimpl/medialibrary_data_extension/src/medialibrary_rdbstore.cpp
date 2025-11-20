@@ -1885,6 +1885,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
@@ -5496,6 +5497,19 @@ static void AddImageFaceDetail(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void AddImageFaceAndFaceTagAgeGender(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("start to add age and gender for image face and face tag");
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end to add age and gender for image face and face tag");
+}
+
 static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
@@ -5518,6 +5532,21 @@ static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("end add analysis progress columns");
 }
 
+static void CreateVisionVideoTotal(RdbStore& store, int32_t version)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_UPDATE_TRIGGER,
+        DROP_DELETE_VISION_TRIGGER,
+        CREATE_VISION_DELETE_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start create video total");
+    ExecSqlsWithDfx(sqls, store, version);
+}
+
 static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("create batchdownload records begin");
@@ -5527,6 +5556,39 @@ static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
     };
     ExecSqlsWithDfx(executeSqlStrs, store, version);
     MEDIA_INFO_LOG("create batchdownload records end");
+}
+
+static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
+}
+
+static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
+{
+    MEDIA_INFO_LOG("start update vision trigger");
+    if (oldVersion < VERSION_UPDATE_VIDEO_LABLE_FACE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, true)) {
+        CreateVisionVideoTotal(store, VERSION_UPDATE_VIDEO_LABLE_FACE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_LABLE_FACE, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true)) {
+        MEDIA_INFO_LOG("Update mdirty trigger for strong association start");
+        UpdateMdirtyTriggerForStrongAssociation(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION, true);
+    }
+
+    if (oldVersion < VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, true)) {
+        AddImageFaceAndFaceTagAgeGender(store, VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, true);
+    }
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5569,6 +5631,7 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, true);
         RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_CREATE_TAB_CLONED_OLD_PHOTOS, 0, ret);
     }
+    UpgradeExtensionPart12(store, oldVersion);
 }
 
 static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
