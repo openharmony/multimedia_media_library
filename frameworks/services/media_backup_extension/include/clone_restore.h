@@ -145,6 +145,7 @@ private:
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName);
     void UpdateSystemAlbumColumns(const string &tableName);
+    void PopulateSystemAlbumIdMap();
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
         std::vector<std::string> &albumIds, const std::string &tableName);

@@ -1765,6 +1765,71 @@ void CloneRestore::UpdateSystemAlbumColumns(const string &tableName)
     resultSet->Close();
 }
 
+void CloneRestore::PopulateSystemAlbumIdMap()
+{
+    MEDIA_INFO_LOG("Mapping system albums to tableAlbumIdMap_");
+    
+    CHECK_AND_RETURN_LOG(this->mediaRdb_ != nullptr, "source rdbStore is null");
+    CHECK_AND_RETURN_LOG(this->mediaLibraryRdb_ != nullptr, "destination rdbStore is null");
+    
+    std::string dstSql = "SELECT album_id, album_type, album_subtype FROM PhotoAlbum "
+                        "WHERE album_type = " + std::to_string(PhotoAlbumType::SYSTEM) + " "
+                        "ORDER BY album_id";
+    
+    auto dstResultSet = mediaLibraryRdb_->QuerySql(dstSql);
+    CHECK_AND_RETURN_LOG(dstResultSet != nullptr, "Failed to query destination system albums");
+    
+    // Build a map: (album_type, album_subtype) -> album_id for destination albums
+    std::map<std::pair<int32_t, int32_t>, int32_t> dstAlbumMap;
+    while (dstResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t newAlbumId = GetInt32Val("album_id", dstResultSet);
+        int32_t albumType = GetInt32Val("album_type", dstResultSet);
+        int32_t albumSubtype = GetInt32Val("album_subtype", dstResultSet);
+        
+        std::pair<int32_t, int32_t> key = std::make_pair(albumType, albumSubtype);
+        // If multiple albums with same type/subtype exist, keep the first one
+        if (dstAlbumMap.find(key) == dstAlbumMap.end()) {
+            dstAlbumMap[key] = newAlbumId;
+        }
+    }
+    dstResultSet->Close();
+
+    std::string srcSql = "SELECT album_id, album_type, album_subtype FROM PhotoAlbum "
+                        "WHERE album_type = " + std::to_string(PhotoAlbumType::SYSTEM) + " "
+                        "ORDER BY album_id";
+    
+    auto srcResultSet = mediaRdb_->QuerySql(srcSql);
+    CHECK_AND_RETURN_LOG(srcResultSet != nullptr, "Failed to query source system albums");
+    
+    auto& albumIdMap = tableAlbumIdMap_[PhotoAlbumColumns::TABLE];
+    int32_t mappedCount = 0;
+    
+    while (srcResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t oldAlbumId = GetInt32Val("album_id", srcResultSet);
+        int32_t albumType = GetInt32Val("album_type", srcResultSet);
+        int32_t albumSubtype = GetInt32Val("album_subtype", srcResultSet);
+        
+        // Skip if already mapped (shouldn't happen for system albums)
+        if (albumIdMap.find(oldAlbumId) != albumIdMap.end()) {
+            continue;
+        }
+        
+        std::pair<int32_t, int32_t> key = std::make_pair(albumType, albumSubtype);
+        auto dstIt = dstAlbumMap.find(key);
+        if (dstIt != dstAlbumMap.end()) {
+            int32_t newAlbumId = dstIt->second;
+            albumIdMap[oldAlbumId] = newAlbumId;
+            mappedCount++;
+            
+            MEDIA_DEBUG_LOG("Mapped system album (subtype=%{public}d): old=%{public}d -> new=%{public}d",
+                albumSubtype, oldAlbumId, newAlbumId);
+        }
+    }
+    srcResultSet->Close();
+    
+    MEDIA_INFO_LOG("System album mapping completed. Mapped %{public}d albums", mappedCount);
+}
+
 void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tableName)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
@@ -2030,6 +2095,7 @@ void CloneRestore::RestoreAnalysisData()
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
     PopulateAnalysisAlbumIdMap();
+    PopulateSystemAlbumIdMap();
     RestoreTabOldAlbumsData();
 }
 
