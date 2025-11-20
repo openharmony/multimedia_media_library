@@ -86,8 +86,7 @@ int32_t CloudSyncConvert::CompensateAttHiddenTime(const CloudMediaPullDataDto &d
 int32_t CloudSyncConvert::CompensateAttRelativePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string relativePath = data.attributesRelativePath;
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        !relativePath.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::relativePath.");
+    CHECK_AND_RETURN_RET(!relativePath.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::MEDIA_RELATIVE_PATH, relativePath);
     return E_OK;
 }
@@ -95,7 +94,7 @@ int32_t CloudSyncConvert::CompensateAttRelativePath(const CloudMediaPullDataDto 
 int32_t CloudSyncConvert::CompensateAttVirtualPath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string virtualPath = data.attributesVirtualPath;
-    CHECK_AND_RETURN_RET_WARN_LOG(!virtualPath.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::virtualPath.");
+    CHECK_AND_RETURN_RET(!virtualPath.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::MEDIA_VIRTURL_PATH, virtualPath);
     return E_OK;
 }
@@ -137,7 +136,7 @@ int32_t CloudSyncConvert::CompensateAttBurstCoverLevel(
 int32_t CloudSyncConvert::CompensateAttBurstKey(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string burstKey = data.attributesBurstKey;
-    CHECK_AND_RETURN_RET_WARN_LOG(!burstKey.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::burstKey.");
+    CHECK_AND_RETURN_RET(!burstKey.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     return E_OK;
 }
@@ -172,8 +171,7 @@ int32_t CloudSyncConvert::CompensateAttShootingMode(const CloudMediaPullDataDto 
     if (!data.attributesShootingModeTag.empty()) {
         shootingMode = ShootingModeAlbum::MapShootingModeTagToShootingMode(data.attributesShootingModeTag);
     }
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        !shootingMode.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::shootingMode.");
+    CHECK_AND_RETURN_RET(!shootingMode.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, shootingMode);
     return E_OK;
 }
@@ -182,8 +180,7 @@ int32_t CloudSyncConvert::CompensateAttShootingModeTag(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string shootingModeTag = data.attributesShootingModeTag;
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        !shootingModeTag.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::shootingModeTag.");
+    CHECK_AND_RETURN_RET(!shootingModeTag.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, shootingModeTag);
     return E_OK;
 }
@@ -219,7 +216,7 @@ int32_t CloudSyncConvert::CompensateAttVideoMode(
 int32_t CloudSyncConvert::CompensateAttFrontCamera(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string frontCamera = data.attributesFrontCamera;
-    CHECK_AND_RETURN_RET_WARN_LOG(!frontCamera.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::frontCamera.");
+    CHECK_AND_RETURN_RET(!frontCamera.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, frontCamera);
     return E_OK;
 }
@@ -439,7 +436,7 @@ int32_t CloudSyncConvert::CompensateBasicMimeType(const CloudMediaPullDataDto &d
 int32_t CloudSyncConvert::CompensateBasicDeviceName(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string deviceName = data.basicDeviceName;
-    CHECK_AND_RETURN_RET_WARN_LOG(!deviceName.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::deviceName.");
+    CHECK_AND_RETURN_RET(!deviceName.empty(), E_CLOUDSYNC_INVAL_ARG);
     values.PutString(PhotoColumn::MEDIA_DEVICE_NAME, deviceName);
     return E_OK;
 }
