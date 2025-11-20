@@ -168,7 +168,7 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
 };
 
 static const std::unordered_set<std::string> BETACLUB_FAULT_TREE_CODES = {
-    "1024_1041_1018"
+    "1025_1041_1018"
 };
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -13000,6 +13000,21 @@ void MediaLibraryNapi::SetUserId(const int32_t &userId)
     userId_ = userId;
 }
 
+static bool CheckBetaIssueId(const std::string &betaIssueId)
+{
+    return MediaLibraryNapiUtils::IsNumber(betaIssueId) && betaIssueId.length() == 10;
+}
+
+static bool CheckBetaScenario(const std::string &betaScenario)
+{
+    return !betaScenario.empty() && BETACLUB_FAULT_TREE_CODES.count(betaScenario) != 0;
+}
+
+static bool CheckFileDescriptor(int32_t fileFd)
+{
+    return fileFd >= 0 && fileFd <= 1023;
+}
+
 static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -13017,12 +13032,11 @@ static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaIssueId) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaIssueId");
-    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::IsNumber(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is empty");
+    CHECK_ARGS_WITH_MEG(env, CheckBetaIssueId(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is invalid");
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], betaScenario) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaScenario");
-    CHECK_ARGS_WITH_MEG(env, !betaScenario.empty() && BETACLUB_FAULT_TREE_CODES.count(betaScenario) != 0,
-        JS_E_PARAM_INVALID, "betaScenario is invalid");
+    CHECK_ARGS_WITH_MEG(env, CheckBetaScenario(betaScenario), JS_E_PARAM_INVALID, "betaScenario is invalid");
     context->valuesBucket.Put(MEDIA_DATA_BETA_ISSUE_ID, betaIssueId);
     context->valuesBucket.Put(MEDIA_DATA_BETA_SCENARIO, betaScenario);
 
@@ -13153,10 +13167,9 @@ static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaIssueId) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaIssueId");
-    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::IsNumber(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is empty");
-    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[ARGS_ONE], fileFd) != nullptr,
-        JS_E_PARAM_INVALID, "Failed to parse fileFd");
-    CHECK_ARGS_WITH_MEG(env, fileFd >= 0, JS_E_PARAM_INVALID, "fileFd is invalid");
+    CHECK_ARGS_WITH_MEG(env, CheckBetaIssueId(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is invalid");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ONE], fileFd), JS_E_PARAM_INVALID);
+    CHECK_ARGS_WITH_MEG(env, CheckFileDescriptor(fileFd), JS_E_PARAM_INVALID, "fileFd is invalid");
     context->valuesBucket.Put(MEDIA_DATA_BETA_ISSUE_ID, betaIssueId);
     context->valuesBucket.Put(MEDIA_DATA_BETA_DEBUG_DB_FD, fileFd);
 
