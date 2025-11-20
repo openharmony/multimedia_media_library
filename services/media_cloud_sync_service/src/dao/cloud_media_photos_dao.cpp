@@ -419,7 +419,6 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
     bool mtimeChanged, std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("UpdateRecordToDatabase enter");
     NativeRdb::ValuesBucket values;
     this->GetUpdateRecordValues(pullData, values);
     if (mtimeChanged) {
@@ -446,7 +445,7 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
     }
     bool isThumbFailDirty = pullData.localDirty == static_cast<int32_t>(DirtyType::TYPE_TDIRTY);
     if (!(isThumbFailDirty && !mtimeChanged)) {
-        MEDIA_INFO_LOG("upate TYPE_SYNC when not TDIRTY");
+        MEDIA_DEBUG_LOG("upate TYPE_SYNC when not TDIRTY");
         values.Delete(PhotoColumn::PHOTO_DIRTY);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
