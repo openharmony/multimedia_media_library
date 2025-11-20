@@ -907,7 +907,8 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
     }
 }
 
-void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api,
+    std::shared_ptr<Media::Picture> picture)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -926,6 +927,9 @@ void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path,
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
+    }
+    if (picture != nullptr) {
+        scanFileCb->SetOriginalPhotoPicture(picture);
     }
     int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanFileCb, api, true);
     if (ret != 0) {
