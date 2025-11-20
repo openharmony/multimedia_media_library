@@ -98,13 +98,14 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
             if (path == "" || fileId <= 0 || position <= 0) {
                 continue;
             }
-            if (position == static_cast<int32_t>(POSITION_CLOUD) && !MedialibrarySubscriber::IsWifiConnected()) {
+            if (position == static_cast<int32_t>(PhotoPosition::POSITION_CLOUD) && 
+                !MedialibrarySubscriber::IsWifiConnected()) {
                 MEDIA_INFO_LOG("Break repair cause wifi not connect");
                 terminate = true;
                 break;
             }
             repairRecord = fileId;
-            this_thread::sleep_for(chrono::milliseconds(MIMETYPE_REPAIR_INTERVAL));
+            this_thread::sleep_for(chrono::milliseconds(LOCATION_REPAIR_INTERVAL));
             if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
                 MEDIA_INFO_LOG("Break repair cause invalid status");
                 terminate = true;
@@ -131,7 +132,7 @@ void MediaLocationSynchronizeTask::Execute()
     std::vector<PhotosPo> photosPoVec = GetRepairLocationData(localRepairRecord);
     CHECK_AND_RETURN_LOG(photosPoVec.size() > 0, "no data for repair");
     MEDIA_INFO_LOG("need repair location count %{public}d", static_cast<int>(photosPoVec.size()));
-    std::thread([localRepairRecord]() {
+    std::thread([localRepairRecord, this]() {
         HandleRepairLocation(localRepairRecord);
     }).detach();
 }
