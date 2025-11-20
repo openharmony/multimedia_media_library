@@ -621,8 +621,8 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
     char realPath[PATH_MAX] = {0};
     bool bflag = realpath(localPath.c_str(), realPath) == nullptr;
     CHECK_AND_RETURN_RET_LOG(!bflag, E_ERR,
-        "check dirPath fail, dirPath = %{public}s", localPath.c_str());
-    fd = open(localPath.c_str(), flags);
+        "check dirPath fail, dirPath = %{private}s", localPath.c_str());
+    fd = open(realPath, flags);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_ERR, "Open failed, localPath=%{private}s, errno=%{public}d",
         localPath.c_str(), -errno);
     return E_SUCCESS;
