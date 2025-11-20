@@ -237,7 +237,9 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
+            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
+            preselectedInfos: this.pickerOptions?.preselectedInfos as Array<PreselectedInfo>,
+            isDestroyedWithNavigation: this.pickerOptions?.isDestroyedWithNavigation as boolean,
           }
         },
         {
@@ -874,6 +876,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   combinedMediaTypeFilter?: Array<string>;
   pickerIndex?: number;
   preselectedInfos?: Array<PreselectedInfo>;
+  isDestroyedWithNavigation?: boolean;
 }
 
 export class UpdatablePickerOptions {
