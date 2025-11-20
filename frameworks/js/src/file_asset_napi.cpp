@@ -4415,19 +4415,6 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
         NAPI_ERR_LOG("fileAsset is null");
         return;
     }
-
-    MimeTypeReqBody mimeTypeReqBody;
-    mimeTypeReqBody.fileId = fileAsset->GetId();
-    MimeTypeRespBody mimeTypeRespBody;
-    mimeTypeRespBody.result = false;
-    IPC::UserDefineIPCClient mimeTypeClient;
-    mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
-        mimeTypeReqBody,mimeTypeRespBody);
-    if (!mimeTypeRespBody.result) {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
-        return;
-    }
-
     ConvertFormatReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
     reqBody.title = context->title;
@@ -4457,7 +4444,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
     NAPI_INFO_LOG("End ConvertFormatHandlerExecute.");
 }
 
-static bool CheckConvertFormatParams(const std::string &originExtension, const std::string &title,
+static bool CheckConvertFormatParams(const int32_t &fileId, const std::string &title,
     const std::string &extension)
 {
     std::string displayName = title + "." + extension;
@@ -4476,7 +4463,15 @@ static bool CheckConvertFormatParams(const std::string &originExtension, const s
         NAPI_ERR_LOG("The format of transition is not supported.");
         return false;
     }
-    return true;
+
+    MimeTypeReqBody mimeTypeReqBody;
+    mimeTypeReqBody.fileId = fileId;
+    MimeTypeRespBody mimeTypeRespBody;
+    mimeTypeRespBody.result = false;
+    IPC::UserDefineIPCClient mimeTypeClient;
+    mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+        mimeTypeReqBody,mimeTypeRespBody);
+    return mimeTypeRespBody.result;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperConvertFormat(napi_env env, napi_callback_info info)
@@ -4496,9 +4491,9 @@ napi_value FileAssetNapi::PhotoAccessHelperConvertFormat(napi_env env, napi_call
     MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ZERO], title);
     string extension;
     MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], extension);
-    std::string originExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
+    int32_t fileId = fileAsset->GetId();
     NAPI_INFO_LOG("ConvertFormat title: %{public}s, extension: %{public}s", title.c_str(), extension.c_str());
-    if (!CheckConvertFormatParams(originExtension, title, extension)) {
+    if (!CheckConvertFormatParams(fileId, title, extension)) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
         return nullptr;
     }

@@ -113,6 +113,8 @@ const std::string COLUMN_DATA = "data";
 const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
+const std::string HEIF_MIME_TYPE = "image/heif";
+const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
@@ -1136,8 +1138,8 @@ bool MediaAssetsService::CheckMimeType(const int32_t fileId)
         return false;
     }
     string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    string extention = MediaFileUtils::SplitByChar(mimeType, '/');
-    if (extension != "heif" && extension != "heic") {
+
+    if (mimeType != HEIF_MIME_TYPE && mimeType != HEIC_MIME_TYPE) {
         MEDIA_ERR_LOG("The requested asset must be heif|heic");
         return false;
     }
