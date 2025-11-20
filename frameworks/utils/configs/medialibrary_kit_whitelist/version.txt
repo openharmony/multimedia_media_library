@@ -1,0 +1,6 @@
+version=1.10.25.100
+type=medialibrary_kit_whitelist
+subtype=generic
+compatibleVersion=1
+classify=1
+displayVersion=MEDIALIBRARY_WHITELIST.1.10.25.100
