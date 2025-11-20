@@ -88,6 +88,9 @@ public:
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
+    EXPORT static int32_t AddFiltersForSourcePicture(std::shared_ptr<Media::Picture> &picture,
+        const string& assetPath, const string& editDataCameraSourcePath,
+        const string& mimeType, int32_t fileId);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
     EXPORT static void TrashPhotosSendNotify(const std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> albumData = nullptr);
