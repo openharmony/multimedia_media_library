@@ -30,14 +30,12 @@ const bundleManager = requireNapi('bundle.bundleManager');
 const LengthMetrics = requireNapi('arkui.node').LengthMetrics;
 const LengthUnit = requireNapi('arkui.node').LengthUnit;
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
-const display = requireNapi('display');
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
     ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
     ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
 ]);
-const cooperation_multi_name = 'Cooperation-multi'
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
         super(e, t, i);
@@ -63,7 +61,6 @@ export class PhotoPickerComponent extends ViewPU {
         this.preselectedInfos = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
-        this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
         this.setInitiallyProvidedValue(o);
         this.declareWatch('pickerController', this.onChanged);
@@ -94,11 +91,6 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.proxy && (this.proxy = e.proxy);
         if (e.revokeIndex !== undefined) {
             this.revokeIndex = e.revokeIndex;
-        }
-        const displayName = display.getDefaultDisplaySync().name;
-        console.log(`displayName = ${displayName}`);
-        if (cooperation_multi_name === displayName){
-            this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
         }
     }
 
@@ -327,7 +319,7 @@ export class PhotoPickerComponent extends ViewPU {
                 }
             }
             ,{
-                dpiFollowStrategy: this.dpiFollowStrategy
+                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');
