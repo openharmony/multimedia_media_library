@@ -98,7 +98,7 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
             if (path == "" || fileId <= 0 || position <= 0) {
                 continue;
             }
-            if (position == static_cast<int32_t>(PhotoPosition::POSITION_CLOUD) && 
+            if (position == static_cast<int32_t>(PhotoPosition::POSITION_CLOUD) &&
                 !MedialibrarySubscriber::IsWifiConnected()) {
                 MEDIA_INFO_LOG("Break repair cause wifi not connect");
                 terminate = true;
