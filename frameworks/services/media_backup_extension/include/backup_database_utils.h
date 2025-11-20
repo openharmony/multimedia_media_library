@@ -146,11 +146,21 @@ public:
     static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::vector<int32_t> QueryIntVec(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::string& sql, const std::string& columnName);
+    static std::unordered_map<int32_t, int32_t> QueryIntMap(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::string& sql, const std::string& keyColumnName, const std::string& valueColumnName);
     static std::unordered_map<int32_t, int32_t> QueryOldNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> oldRdbStore,
         const std::vector<int32_t>& oldFileIds);
     static void UpdateNewNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
         const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateVideoNewNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
+        const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateAnalysisVideoTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
+        std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateVideoNewStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
+        const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
     static void UpdateAnalysisTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
+        std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateAnalysisVideoTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
         std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
     static bool isTableExist(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::string &tableName, bool& result);

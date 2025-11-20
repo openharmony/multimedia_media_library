@@ -328,7 +328,7 @@ static int32_t CheckGrantPermission(const vector<string> &urisSource, vector<Pho
     }
 
     cond = (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
-        hideSensitiveTpye > HideSensitiveType::NO_DESENSITIZE);
+        hideSensitiveTpye > HideSensitiveType::DEFAULT);
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "HideSensitiveType error, please check param!");
     return E_SUCCESS;
 }

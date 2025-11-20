@@ -45,6 +45,7 @@ public:
     static const int SENSITIVE_GEOGRAPHIC_LOCATION_DESENSITIZE EXPORT;
     static const int SENSITIVE_SHOOTING_PARAM_DESENSITIZE EXPORT;
     static const int SENSITIVE_NO_DESENSITIZE EXPORT;
+    static const int SENSITIVE_DEFAULT EXPORT;
     static const std::set<int> SENSITIVE_TYPES_ALL EXPORT;
     // static const std::set<int> PERMISSION_TYPES_PICKER EXPORT;
 

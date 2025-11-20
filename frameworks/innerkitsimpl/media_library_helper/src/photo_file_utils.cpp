@@ -19,7 +19,6 @@
 
 #include <ctime>
 #include <iomanip>
-#include <regex>
 #include <sstream>
 
 #include "media_column.h"
@@ -31,8 +30,6 @@
 using namespace std;
 
 namespace OHOS::Media {
-const int64_t SEC_TO_MILSEC = 1000;
-
 string PhotoFileUtils::AppendUserId(const string& path, int32_t userId)
 {
     if (userId < 0 || !MediaFileUtils::StartsWith(path, ROOT_MEDIA_DIR)) {
@@ -237,6 +234,41 @@ bool PhotoFileUtils::IsThumbnailLatest(const string &photoPath)
     return false;
 }
 
+std::tuple<int64_t, std::string> PhotoFileUtils::ExtractTimeInfo(
+    const std::string &timeStr, const std::string &format, bool isUTC)
+{
+    if (timeStr.empty()) {
+        MEDIA_ERR_LOG("Failed to parse time, timeStr is empty");
+        return {0, ""};
+    }
+
+    std::tm timeInfo{};
+    std::istringstream iss(timeStr);
+    iss >> std::get_time(&timeInfo, format.c_str());
+    if (iss.fail()) {
+        MEDIA_ERR_LOG("Convert failed, timeStr:%{public}s", timeStr.c_str());
+        return {0, ""};
+    }
+
+    time_t timeStamp = 0;
+    if (isUTC) {
+        timeInfo.tm_isdst = 0;
+        timeStamp = timegm(&timeInfo);
+    } else {
+        timeInfo.tm_isdst = -1;
+        timeStamp = std::mktime(&timeInfo);
+    }
+
+    if (timeStamp <= 0) {
+        MEDIA_ERR_LOG("Failed to convert time, timeStr: %{public}s", timeStr.c_str());
+        return {0, ""};
+    }
+
+    std::ostringstream oss;
+    oss << std::put_time(&timeInfo, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str());
+    return {static_cast<int64_t>(timeStamp) * SEC_TO_MSEC, oss.str()};
+}
+
 std::tuple<std::string, std::string, std::string> PhotoFileUtils::ExtractYearMonthDay(const std::string &detailTime)
 {
     const size_t detailTimeLength = 19;
@@ -270,50 +302,18 @@ std::tuple<std::string, std::string, std::string> PhotoFileUtils::ExtractYearMon
     return std::make_tuple(year, year + month, year + month + day);
 }
 
-string PhotoFileUtils::ExtractDetailTimeFromGPS(const string &gpsDate, const string &gpsTime)
-{
-    static const regex datePattern(R"(^\d{4}:\d{2}:\d{2}$)");
-    if (!regex_match(gpsDate, datePattern)) {
-        MEDIA_ERR_LOG("invalid gpsDate: %{public}s", gpsDate.c_str());
-        return "";
-    }
-
-    static const regex timePattern(R"(^\d{2}:\d{2}:\d{2}(\.\d+)?$)");
-    if (!regex_match(gpsTime, timePattern)) {
-        MEDIA_ERR_LOG("invalid gpsTime: %{public}s", gpsTime.c_str());
-        return "";
-    }
-
-    size_t dotPos = gpsTime.find(".");
-    string timePart = (dotPos != string::npos) ? gpsTime.substr(0, dotPos) : gpsTime;
-
-    return gpsDate + " " + timePart;
-}
-
 int64_t PhotoFileUtils::NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue)
 {
-    while (timestamp >= MAX_MILSEC_TIMESTAMP) {
+    if (timestamp > MAX_MILSEC_TIMESTAMP) {
         MEDIA_ERR_LOG("timestamp: %{public}lld, precision is incorrect", static_cast<long long>(timestamp));
-        timestamp /= MICSEC_TO_MILSEC;
+        while (timestamp > MAX_MILSEC_TIMESTAMP) {
+            timestamp /= TIMESTAMP_CONVERSION_FACTOR;
+        }
     }
-    if (timestamp <= MIN_MILSEC_TIMESTAMP) {
+    if (timestamp < MIN_MILSEC_TIMESTAMP) {
         MEDIA_ERR_LOG("invalid timestamp: %{public}lld", static_cast<long long>(timestamp));
         return fallbackValue;
     }
     return timestamp;
-}
-
-int64_t PhotoFileUtils::ParseTimestampFromDetailTime(const std::string &detailTime)
-{
-    std::tm tm{};
-    std::istringstream iss(detailTime);
-    iss >> std::get_time(&tm, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str());
-    if (iss.fail()) {
-        MEDIA_ERR_LOG("Failed to parse dateTaken, detailTime: %{public}s", detailTime.c_str());
-        return 0;
-    }
-
-    std::time_t time = std::mktime(&tm);
-    return static_cast<int64_t>(time) * SEC_TO_MILSEC;
 }
 } // namespace OHOS::Media

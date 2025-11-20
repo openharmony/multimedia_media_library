@@ -139,6 +139,16 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     int32_t ret = FileUtils::SaveImage(primarySourcePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement photo failed. ret=%{public}d, errno=%{public}d",
         ret, errno);
+        
+    // 为 primarySourcePath 加exif
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(primarySourcePath, opts, errorCode);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, E_ERR, "imageSource is nullptr err: %{public}d", errorCode);
+
+    // 修改 exif 字段
+    ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_CLOUD_ENHANCE_MODE, to_string(1));
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "modify image property longitude fail %{public}d", ret);
 
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
         string extension = MediaFileUtils::GetExtensionFromPath(info->filePath);

@@ -76,6 +76,7 @@ public:
 private:
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static sptr<IRemoteObject> token_;
+    int32_t userId_;
 };
 } // namespace Media
 } // namespace OHOS

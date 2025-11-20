@@ -924,11 +924,14 @@ void CloneRestoreHighlight::GetCoverRowInfo(HighlightCoverInfo &info,
 void CloneRestoreHighlight::GetCoverGroundSourceInfo(HighlightCoverInfo &info,
     std::shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    bool cond = (!info.highlightIdNew.has_value() || !info.ratio.has_value());
-    CHECK_AND_RETURN(!cond);
+    bool cond = info.highlightIdNew.has_value() && info.ratio.has_value();
+    CHECK_AND_RETURN(cond);
     std::string wordartPath = "/storage/media/local/files/highlight/cover/" +
         std::to_string(info.highlightIdNew.value()) + "/" + info.ratio.value() + "/wordart.png";
-    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(wordartPath),
+    auto wordart = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "wordart");
+    bool isWordartNeedUpdate = MediaFileUtils::IsFileExists(wordartPath) &&
+        wordart.has_value() && !wordart.value().empty();
+    CHECK_AND_EXECUTE(!isWordartNeedUpdate,
         info.wordart = "file://media/highlight/cover/" + std::to_string(info.highlightIdNew.value()) +
         "/" + info.ratio.value() + "/wordart.png?oper=highlight");
 

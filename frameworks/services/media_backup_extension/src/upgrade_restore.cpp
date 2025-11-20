@@ -380,7 +380,8 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
-    ocrRestore_.RestoreOCR(photoInfoMap_);
+    bool isCloudRestore = IsCloudRestoreSatisfied();
+    ocrRestore_.RestoreOCR(photoInfoMap_, isCloudRestore);
     int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
     classifyRestore_.RestoreClassify(photoInfoMap_);
     int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();

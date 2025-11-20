@@ -49,6 +49,8 @@ public:
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
     int32_t GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId);
+    void FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values,
+        const CloudMediaScanService::ScanResult &scanResult);
 
 private:
     const std::vector<std::string> DOWNLOAD_THUMBNAIL_COLUMNS = {
@@ -70,25 +72,6 @@ private:
         PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIENTATION,
-    };
-    const std::vector<std::string> COLUMNS_DOWNLOAD_ASSET_QUERY_BY_CLOUD_ID = {
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_MODIFIED,
-        PhotoColumn::PHOTO_DIRTY,
-        PhotoColumn::PHOTO_POSITION,
-        PhotoColumn::PHOTO_CLOUD_ID,
-        PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
-        MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_ID,
-        PhotoColumn::PHOTO_COVER_POSITION,
-        PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
-        PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
-        PhotoColumn::PHOTO_FRONT_CAMERA,
-        PhotoColumn::PHOTO_EXIF_ROTATE,
-        MediaColumn::MEDIA_TYPE,
-        MediaColumn::MEDIA_DATE_TAKEN,
     };
     const uint32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;

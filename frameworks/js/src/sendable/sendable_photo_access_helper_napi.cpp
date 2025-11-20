@@ -724,7 +724,7 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
     std::function<void()> task = [env, status, context]() {
         JSReleaseCompleteCallback(env, status, context);
     };
-    status = napi_send_event(env, task, napi_eprio_immediate);
+    status = napi_send_event(env, task, napi_eprio_immediate, "MLB_SendablePah_release");
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {

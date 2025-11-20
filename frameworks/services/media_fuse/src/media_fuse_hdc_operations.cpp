@@ -47,6 +47,7 @@ static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
 static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t PHOTO_POSITION_ONE = 1;
 static constexpr int32_t PHOTO_POSITION_THREE = 3;
+static constexpr int32_t FUSE_MAX_PAGE_NUM = 22;
 
 time_t MediaFuseHdcOperations::GetAlbumMTime(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
@@ -609,6 +610,7 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
     }
     auto resultSet = QueryAlbumPhotos(albumId);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Failed to query photos in album");
+    int32_t count = 0;
     off_t curr_off = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         if (curr_off < offset) {
@@ -632,14 +634,16 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
             std::string videoName = JpgToMp4(displayName);
             fileNames.insert(videoName);
         }
+        if (++count >= FUSE_MAX_PAGE_NUM) {
+            return E_SUCCESS;
+        }
         for (const auto& name : fileNames) {
             std::string fullPath = (name == displayName) ? localPath : videoPath;
-            off_t nextoff = curr_off + 1;
+            off_t nextoff = (name == displayName) ? (++curr_off) : curr_off;
             if (FillDirectoryEntry(buf, filler, name, fullPath, nextoff)) {
                 //filler is full
                 return E_SUCCESS;
             }
-            curr_off++;
         }
     }
     resultSet->Close();

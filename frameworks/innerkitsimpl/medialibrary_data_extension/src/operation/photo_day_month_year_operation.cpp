@@ -45,7 +45,7 @@ struct UpdatePhoto {
 
 const std::string REPAIR_DATE_TIME_XML = "/data/storage/el2/base/preferences/repair_date_time.xml";
 const std::string CURRENT_VERSION = "CURRENT_VERSION";
-const int32_t RESCAN_VERSION = 1;
+const int32_t RESCAN_VERSION = 3;
 
 const std::string CURRENT_FILE_ID = "CURRENT_FILE_ID";
 const std::string ZEROTIMESTRING = "0000:00:00 00:00:00";
@@ -282,18 +282,19 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
     const std::vector<NativeRdb::ValueObject> bindArgs = {startFileId, BATCH_SIZE};
     const std::string sql =
         "SELECT"
-        "  file_id, date_taken, date_modified, date_added, date_year, date_month, date_day, detail_time, all_exif "
+        "  file_id, dirty, date_taken, date_modified, date_added, "
+        "  date_year, date_month, date_day, detail_time, all_exif "
         "FROM"
         "  Photos "
         "WHERE"
         "  file_id > ? AND time_pending = 0 AND is_temp = 0 "
         "  AND ("
-        "    date_taken <= " +
-        to_string(MIN_MILSEC_TIMESTAMP) + " OR date_taken >= " + to_string(MAX_MILSEC_TIMESTAMP) +
-        "    OR date_modified <= " + to_string(MIN_MILSEC_TIMESTAMP) +
-        " OR date_modified >= " + to_string(MAX_MILSEC_TIMESTAMP) +
-        "    OR date_added <= " + to_string(MIN_MILSEC_TIMESTAMP) +
-        " OR date_added >= " + to_string(MAX_MILSEC_TIMESTAMP) +
+        "    date_taken < " +
+        to_string(MIN_MILSEC_TIMESTAMP) + " OR date_taken > " + to_string(MAX_MILSEC_TIMESTAMP) +
+        "    OR date_modified < " + to_string(MIN_MILSEC_TIMESTAMP) +
+        "    OR date_modified > " + to_string(MAX_MILSEC_TIMESTAMP) +
+        "    OR date_added < " + to_string(MIN_MILSEC_TIMESTAMP) +
+        "    OR date_added > " + to_string(MAX_MILSEC_TIMESTAMP) +
         "    OR date_day IS NULL OR date_day = '' OR date_day = '19700101' "
         "    OR detail_time IS NULL OR detail_time = '' "
         "    OR date_day <> REPLACE ( SUBSTR( detail_time, 1, 10 ), ':', '' ) "
@@ -309,6 +310,7 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
     do {
         DateAnomalyPhoto photo;
         photo.fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
+        photo.dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
         photo.dateTaken = GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet);
         photo.dateModified = GetInt64Val(PhotoColumn::MEDIA_DATE_MODIFIED, resultSet);
         photo.dateAdded = GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet);
@@ -369,29 +371,6 @@ static int32_t OffsetTimeToSeconds(const std::string &offsetStr, int32_t &offset
     return E_OK;
 }
 
-static time_t ConvertTimeStrToTimeStamp(string &timeStr)
-{
-    struct tm timeinfo;
-    strptime(timeStr.c_str(), PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str(), &timeinfo);
-    time_t timeStamp = mktime(&timeinfo);
-    return timeStamp;
-}
-
-static time_t ConvertUTCTimeStrToTimeStamp(string &timeStr)
-{
-    struct tm timeinfo;
-    strptime(timeStr.c_str(), PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str(), &timeinfo);
-    time_t convertOnceTime = mktime(&timeinfo);
-    time_t convertTwiceTime = mktime(gmtime(&convertOnceTime));
-
-    bool cond = (convertOnceTime == -1 || convertTwiceTime == -1);
-    CHECK_AND_RETURN_RET(!cond, 0);
-
-    time_t offset = convertOnceTime - convertTwiceTime;
-    time_t utcTimeStamp = convertOnceTime + offset;
-    return utcTimeStamp;
-}
-
 static std::string JsonSafeGetString(const nlohmann::json &json, const std::string &key)
 {
     auto it = json.find(key);
@@ -420,79 +399,66 @@ static void SetSubSecondTime(const nlohmann::json &exifJson, int64_t &timeStamp)
     }
 }
 
-static int64_t GetDateTakenByOriginal(const nlohmann::json &exifJson)
+static std::tuple<int64_t, std::string> GetShootingTimeByOriginal(const nlohmann::json &exifJson)
 {
     int64_t dateTaken = 0;
+    string detailTime;
     string timeString = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL);
     if (timeString.empty() || timeString == ZEROTIMESTRING) {
-        return dateTaken;
+        return {dateTaken, detailTime};
     }
     string offsetString = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL);
     int32_t offsetTime = 0;
     if (!offsetString.empty() && OffsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
-        dateTaken = (ConvertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
+        std::tie(dateTaken, detailTime) =
+            PhotoFileUtils::ExtractTimeInfo(timeString, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, true);
+        dateTaken += offsetTime * SEC_TO_MSEC;
         MEDIA_DEBUG_LOG("Get dateTaken from DateTimeOriginal and OffsetTimeOriginal in exif");
     } else {
-        dateTaken = (ConvertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
+        std::tie(dateTaken, detailTime) =
+            PhotoFileUtils::ExtractTimeInfo(timeString, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
         MEDIA_DEBUG_LOG("Get dateTaken from DateTimeOriginal in exif");
     }
     if (dateTaken > 0) {
         SetSubSecondTime(exifJson, dateTaken);
         MEDIA_DEBUG_LOG("OriginalTimeStamp:%{public}lld in exif", static_cast<long long>(dateTaken));
     }
-    return dateTaken;
+    return {dateTaken, detailTime};
 }
 
-static int64_t GetDateTakenByGPS(const nlohmann::json &exifJson)
+static std::tuple<int64_t, std::string> GetShootingTimeByGPS(const nlohmann::json &exifJson)
 {
     string dateStr = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_GPS_DATE_STAMP);
     string timeStr = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_GPS_TIME_STAMP);
     if (dateStr.empty() || timeStr.empty()) {
-        return 0;
+        return {0, ""};
     }
     string dateTime = dateStr + " " + timeStr;
     if (dateTime == ZEROTIMESTRING) {
-        return 0;
+        return {0, ""};
     }
-    int64_t dateTaken = ConvertUTCTimeStrToTimeStamp(dateTime) * MSEC_TO_SEC;
+    auto [dateTaken, detailTime] =
+        PhotoFileUtils::ExtractTimeInfo(dateTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, true);
     if (dateTaken > 0) {
         SetSubSecondTime(exifJson, dateTaken);
         MEDIA_DEBUG_LOG("GPSTimeStamp:%{public}lld in exif", static_cast<long long>(dateTaken));
-        return dateTaken;
+        return {dateTaken, detailTime};
     }
-    return 0;
+    return {0, ""};
 }
 
-static int64_t ExtractDateTaken(const nlohmann::json &exifJson)
+static std::tuple<int64_t, std::string> ExtractShootingTime(const nlohmann::json &exifJson)
 {
-    int64_t dateTaken = GetDateTakenByOriginal(exifJson);
+    auto [dateTaken, detailTime] = GetShootingTimeByOriginal(exifJson);
     if (dateTaken > 0) {
-        return dateTaken;
+        return {dateTaken, detailTime};
     }
-    dateTaken = GetDateTakenByGPS(exifJson);
+    std::tie(dateTaken, detailTime) = GetShootingTimeByGPS(exifJson);
     if (dateTaken > 0) {
-        return dateTaken;
+        return {dateTaken, detailTime};
     }
     MEDIA_ERR_LOG("invalid dateTaken: %{public}lld", static_cast<long long>(dateTaken));
-    return 0;
-}
-
-static string ExtractDetailTime(const nlohmann::json &exifJson)
-{
-    string detailTime = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL);
-    if (!detailTime.empty() && detailTime != ZEROTIMESTRING) {
-        return detailTime;
-    }
-    string dateStr = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_GPS_DATE_STAMP);
-    string timeStr = JsonSafeGetString(exifJson, PHOTO_DATA_IMAGE_GPS_TIME_STAMP);
-    if (!dateStr.empty() && !timeStr.empty()) {
-        detailTime = PhotoFileUtils::ExtractDetailTimeFromGPS(dateStr, timeStr);
-        if (!detailTime.empty() && detailTime != ZEROTIMESTRING) {
-            return detailTime;
-        }
-    }
-    MEDIA_ERR_LOG("invalid detailTime: %{public}s", detailTime.c_str());
-    return "";
+    return {0, ""};
 }
 
 static UpdatePhoto ExtractDateTime(const std::string &exif)
@@ -501,16 +467,12 @@ static UpdatePhoto ExtractDateTime(const std::string &exif)
         return {};
     }
     nlohmann::json exifJson = nlohmann::json::parse(exif, nullptr, false);
-    std::string detailTime = ExtractDetailTime(exifJson);
-    if (detailTime.empty()) {
+    auto const [dateTaken, detailTime] = ExtractShootingTime(exifJson);
+    if (dateTaken <= 0) {
         return {};
     }
     auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
     if (dateDay.empty() || dateDay == DAY_19700101) {
-        return {};
-    }
-    int64_t dateTaken = ExtractDateTaken(exifJson);
-    if (dateTaken <= 0) {
         return {};
     }
     return {dateTaken, detailTime, dateYear, dateMonth, dateDay};
@@ -528,7 +490,9 @@ static void UpdatePhotoDetails(
     const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const DateAnomalyPhoto &photo, const UpdatePhoto &updatePhoto)
 {
     ValuesBucket values;
-    PutIfChanged(values, PhotoColumn::MEDIA_DATE_TAKEN, updatePhoto.dateTaken, photo.dateTaken);
+    if (abs(photo.dateTaken - updatePhoto.dateTaken) >= MIN_TIMESTAMP_DIFF) {
+        values.Put(PhotoColumn::MEDIA_DATE_TAKEN, updatePhoto.dateTaken);
+    }
     PutIfChanged(values, PhotoColumn::PHOTO_DETAIL_TIME, updatePhoto.detailTime, photo.detailTime);
     PutIfChanged(values, PhotoColumn::PHOTO_DATE_YEAR, updatePhoto.dateYear, photo.dateYear);
     PutIfChanged(values, PhotoColumn::PHOTO_DATE_MONTH, updatePhoto.dateMonth, photo.dateMonth);
@@ -541,8 +505,11 @@ static void UpdatePhotoDetails(
     const int64_t dateModified = PhotoFileUtils::NormalizeTimestamp(photo.dateModified, dateAdded);
     PutIfChanged(values, PhotoColumn::MEDIA_DATE_MODIFIED, dateModified, photo.dateModified);
     if (values.IsEmpty()) {
-        MEDIA_INFO_LOG("no update required, file_id=%{public}d", photo.fileId);
+        MEDIA_DEBUG_LOG("no update required, file_id=%{public}d", photo.fileId);
         return;
+    }
+    if (photo.dirty == static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) {
+        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
     }
     int32_t updateCount = 0;
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -577,40 +544,39 @@ static void HandleDateAnomalyPhotos(const std::shared_ptr<MediaLibraryRdbStore> 
     }
 
     updatePhoto.dateTaken = photo.dateTaken;
-    if (updatePhoto.dateTaken <= MIN_MILSEC_TIMESTAMP) {
+    if (updatePhoto.dateTaken < MIN_MILSEC_TIMESTAMP) {
         int64_t dateAdded = photo.dateAdded;
-        while (dateAdded >= MAX_MILSEC_TIMESTAMP) {
-            dateAdded /= MICSEC_TO_MILSEC;
+        while (dateAdded > MAX_MILSEC_TIMESTAMP) {
+            dateAdded /= TIMESTAMP_CONVERSION_FACTOR;
         }
-        if (dateAdded > MIN_MILSEC_TIMESTAMP) {
+        if (dateAdded >= MIN_MILSEC_TIMESTAMP) {
             updatePhoto.dateTaken = dateAdded;
         }
 
         int64_t dateModified = photo.dateModified;
-        while (dateModified >= MAX_MILSEC_TIMESTAMP) {
-            dateModified /= MICSEC_TO_MILSEC;
+        while (dateModified > MAX_MILSEC_TIMESTAMP) {
+            dateModified /= TIMESTAMP_CONVERSION_FACTOR;
         }
-        if (dateModified > MIN_MILSEC_TIMESTAMP) {
+        if (dateModified >= MIN_MILSEC_TIMESTAMP) {
             updatePhoto.dateTaken =
-                updatePhoto.dateTaken > MIN_MILSEC_TIMESTAMP ? min(updatePhoto.dateTaken, dateModified) : dateModified;
+                updatePhoto.dateTaken >= MIN_MILSEC_TIMESTAMP ? min(updatePhoto.dateTaken, dateModified) : dateModified;
         }
     }
 
     updatePhoto.dateTaken =
         PhotoFileUtils::NormalizeTimestamp(updatePhoto.dateTaken, MediaFileUtils::UTCTimeMilliSeconds());
-    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(photo.detailTime);
-    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
-        abs(timestamp - updatePhoto.dateTaken) > MAX_TIMESTAMP_DIFF) {
+    const auto [dateTaken, detailTime] =
+        PhotoFileUtils::ExtractTimeInfo(photo.detailTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
+    if (dateTaken < MIN_MILSEC_TIMESTAMP || dateTaken > MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - updatePhoto.dateTaken) > MAX_TIMESTAMP_DIFF) {
         updatePhoto.detailTime =
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, updatePhoto.dateTaken);
     } else {
-        updatePhoto.detailTime = photo.detailTime;
+        updatePhoto.detailTime = detailTime;
     }
 
-    auto const [detailYear, detailMonth, detailDay] = PhotoFileUtils::ExtractYearMonthDay(updatePhoto.detailTime);
-    updatePhoto.dateYear = detailYear;
-    updatePhoto.dateMonth = detailMonth;
-    updatePhoto.dateDay = detailDay;
+    std::tie(updatePhoto.dateYear, updatePhoto.dateMonth, updatePhoto.dateDay) =
+        PhotoFileUtils::ExtractYearMonthDay(updatePhoto.detailTime);
     UpdatePhotoDetails(rdbStore, photo, updatePhoto);
 }
 

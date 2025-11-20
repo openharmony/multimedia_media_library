@@ -343,7 +343,8 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
 void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int64_t dateAdded = 0;
-    if (data.propertiesFirstUpdateTime.empty() || !convertToLong(data.propertiesFirstUpdateTime, dateAdded)) {
+    if (data.propertiesFirstUpdateTime.empty() || !convertToLong(data.propertiesFirstUpdateTime, dateAdded) ||
+        dateAdded <= 0) {
         MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
             data.propertiesFirstUpdateTime.c_str(),
             data.cloudId.c_str());
@@ -371,11 +372,17 @@ void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, Nat
     values.Put(PhotoColumn::MEDIA_DATE_TAKEN, dateTaken);
 
     std::string detailTime = data.propertiesDetailTime;
-    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(detailTime);
-    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
-        abs(dateTaken - timestamp) > MAX_TIMESTAMP_DIFF) {
-        MEDIA_ERR_LOG("invalid detailTime: %{public}s, cloudId: %{public}s", detailTime.c_str(), data.cloudId.c_str());
+    const auto [parseDateTaken, parseDetailTime] =
+        PhotoFileUtils::ExtractTimeInfo(detailTime, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT);
+    if (parseDateTaken < MIN_MILSEC_TIMESTAMP || parseDateTaken > MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - parseDateTaken) > MAX_TIMESTAMP_DIFF) {
+        MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld, cloudId: %{public}s",
+            detailTime.c_str(),
+            static_cast<long long>(dateTaken),
+            data.cloudId.c_str());
         detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    } else {
+        detailTime = parseDetailTime;
     }
     values.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
 

@@ -16,6 +16,7 @@
 
 #include "medialibrary_subscriber.h"
 
+#include <chrono>
 #include <memory>
 #include "appexecfwk_errors.h"
 #include "background_cloud_file_processor.h"
@@ -96,6 +97,12 @@ using namespace OHOS::AAFwk;
 
 namespace OHOS {
 namespace Media {
+
+shared_ptr<MedialibrarySubscriber> MedialibrarySubscriber::subscriber_ = nullptr;
+std::future<bool> MedialibrarySubscriber::subscribeAsyncTask_;
+std::mutex MedialibrarySubscriber::subscribeLock_;
+std::mutex MedialibrarySubscriber::subscribeAsyncTaskLock_;
+
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL = 20;
@@ -138,6 +145,7 @@ const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 std::mutex uploadDBMutex;
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
 const int64_t TWELVE_HOUR_MS = static_cast<int64_t>(12 * 3600 * 1000);
+constexpr int32_t SUBSCRIBE_TASK_TIMEOUT_SECOND = 2;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -257,28 +265,70 @@ void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
 
 bool MedialibrarySubscriber::Subscribe(void)
 {
+    std::lock_guard<std::mutex> lock(subscribeLock_);
     EventFwk::MatchingSkills matchingSkills;
     for (auto event : events_) {
         matchingSkills.AddEvent(event);
     }
 
     MEDIA_INFO_LOG("Subscribe: add event.");
+    CHECK_AND_RETURN_RET_LOG(subscriber_ == nullptr, false,
+        "Subscriber_ is not null, must unsubscribe last subscriber_");
     EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
 
-    std::shared_ptr<MedialibrarySubscriber> subscriber = std::make_shared<MedialibrarySubscriber>(subscribeInfo);
-    bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
+    subscriber_ = std::make_shared<MedialibrarySubscriber>(subscribeInfo);
+    CHECK_AND_RETURN_RET_LOG(subscriber_ != nullptr, false, "Subscriber_ is null!");
+    bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber_);
+    CHECK_AND_EXECUTE(ret, {
+        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEventf failed");
+        subscriber_ = nullptr;
+        return false;
+    });
 
     CreateOptions options;
     options.enabled_ = true;
-    subscriber->cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
-    CHECK_AND_RETURN_RET_LOG(subscriber->cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
-    std::weak_ptr<MedialibrarySubscriber> subscriberWeakPtr(subscriber);
-    subscriber->CloudMediaAssetUnlimitObserver_ = std::make_shared<CloudMediaAssetUnlimitObserver>(subscriberWeakPtr);
-    CHECK_AND_RETURN_RET_LOG(subscriber->CloudMediaAssetUnlimitObserver_ != nullptr, ret,
+    subscriber_->cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
+    CHECK_AND_RETURN_RET_LOG(subscriber_->cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
+    std::weak_ptr<MedialibrarySubscriber> subscriberWeakPtr(subscriber_);
+    subscriber_->CloudMediaAssetUnlimitObserver_ = std::make_shared<CloudMediaAssetUnlimitObserver>(subscriberWeakPtr);
+    CHECK_AND_RETURN_RET_LOG(subscriber_->CloudMediaAssetUnlimitObserver_ != nullptr, ret,
         "CloudMediaAssetUnlimitObserver_ is null.");
     // observer more than 50, failed to register
-    subscriber->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber->CloudMediaAssetUnlimitObserver_, true);
+    subscriber_->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber_->CloudMediaAssetUnlimitObserver_, true);
     return ret;
+}
+
+void MedialibrarySubscriber::SubscribeAsync()
+{
+    std::lock_guard<std::mutex> lockSubscribeAsyncTask(subscribeAsyncTaskLock_);
+    CHECK_AND_RETURN_INFO_LOG(!subscribeAsyncTask_.valid(), "There is already a task to do it");
+    subscribeAsyncTask_ = std::async(std::launch::async, [&] {
+        return Media::MedialibrarySubscriber::Subscribe();
+    });
+}
+
+bool MedialibrarySubscriber::UnSubscribe()
+{
+    std::lock_guard<std::mutex> lockSubscribeAsyncTask(subscribeAsyncTaskLock_);
+    CHECK_AND_RETURN_RET_INFO_LOG(subscribeAsyncTask_.valid(), true, "No running task, no need unsubscribe");
+    MEDIA_INFO_LOG("Waiting subscribeAsyncTask done.");
+    auto status = subscribeAsyncTask_.wait_for(std::chrono::seconds(SUBSCRIBE_TASK_TIMEOUT_SECOND));
+    if (status == std::future_status::ready) {
+        bool ret = subscribeAsyncTask_.get();
+        MEDIA_INFO_LOG("SubscribeAsyncTask execute res: %{public}d", ret);
+    } else if (status == std::future_status::timeout) {
+        MEDIA_ERR_LOG("Wait subscribeAsyncTask timeout, wait time: %{public}d second", SUBSCRIBE_TASK_TIMEOUT_SECOND);
+        return false;
+    } else {
+        MEDIA_ERR_LOG("Invalid status: %{public}d", static_cast<int>(status));
+        return false;
+    }
+    std::lock_guard<std::mutex> lockSubscribe(subscribeLock_);
+    CHECK_AND_RETURN_RET_LOG(subscriber_ != nullptr, false, "Subscriber_ is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(EventFwk::CommonEventManager::UnSubscribeCommonEvent(subscriber_),
+        false, "UnSubscribeCommonEvent failed");
+    subscriber_ = nullptr;
+    return true;
 }
 
 static bool IsBetaVersion()
@@ -528,8 +578,6 @@ void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
 int64_t MedialibrarySubscriber::GetNowTime()
 {
     struct timespec t;
-    constexpr int64_t SEC_TO_MSEC = 1e3;
-    constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }

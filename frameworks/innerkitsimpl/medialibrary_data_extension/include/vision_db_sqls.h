@@ -261,6 +261,13 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     PRIORITY + " INT NOT NULL DEFAULT 1, " +
     AFFECTIVE + " INT NOT NULL DEFAULT 0) ";
 
+const std::string CREATE_TAB_ANALYSIS_VIDEO_TOTAL = "CREATE TABLE IF NOT EXISTS " +
+    VISION_VIDEO_TOTAL_TABLE + " (" +
+    FILE_ID + " INTEGER PRIMARY KEY, " +
+    STATUS + " INT, " +
+    LABEL + " INT, " +
+    FACE + " INT) ";
+
 const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_IMAGE_FACE_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INTEGER, " +
@@ -295,7 +302,9 @@ const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION
     JOINT_BEAUTY_BOUNDER_HEIGHT + " REAL, " +
     GROUP_VERSION + " TEXT, " +
     FACE_EYE_CLOSE + " REAL, " +
-    FACE_DETAIL_VERSION + " TEXT )";
+    FACE_DETAIL_VERSION + " TEXT, " +
+    AGE + " DOUBLE, " +
+    GENDER + " INTEGER )";
 
 const std::string CREATE_TAB_VIDEO_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_VIDEO_FACE_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -336,7 +345,9 @@ const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_F
     PORTRAIT_DATE_MODIFY + " BIGINT, " +
     ALBUM_TYPE + " INTEGER, " +
     IS_REMOVED + " INTEGER, " +
-    ANALYSIS_VERSION + " TEXT)";
+    ANALYSIS_VERSION + " TEXT, " +
+    AGE + " DOUBLE, " +
+    GENDER + " INTEGER)";
 
 const std::string CREATE_ANALYSIS_ALBUM = "CREATE TABLE IF NOT EXISTS " + ANALYSIS_ALBUM_TABLE + " (" +
     ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -395,6 +406,10 @@ const std::string CREATE_VISION_DELETE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS d
     " SET " + STATUS + " = -1 " +
     " WHERE " + FILE_ID +
     " = OLD.file_id;" +
+    " UPDATE " + VISION_VIDEO_TOTAL_TABLE +
+    " SET " + STATUS + " = -1 " +
+    " WHERE " + FILE_ID +
+    " = OLD.file_id AND OLD.media_type = 2;" +
     " END;";
 
 const std::string CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL =
@@ -429,6 +444,10 @@ const std::string CREATE_VISION_UPDATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS u
     " SET " + STATUS + " = " +
     " (CASE WHEN NEW.date_trashed > 0 THEN 2 ELSE 0 END)" +
     " WHERE file_id = OLD.file_id;" +
+    " UPDATE " + VISION_VIDEO_TOTAL_TABLE +
+    " SET " + STATUS + " = " +
+    " (CASE WHEN NEW.date_trashed > 0 THEN 2 ELSE 0 END)" +
+    " WHERE file_id = OLD.file_id AND OLD.media_type = 2;" +
     " END;";
 
 const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL =
@@ -467,12 +486,14 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " BEGIN " +
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
     LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
-    SALIENCY + ", " + HEAD + ", " + POSE + ") " +
-    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" +
+    SALIENCY + ", " + HEAD + ", " + POSE + ") " + " VALUES ( NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" +
+    " INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " (" + FILE_ID + ", " + STATUS + ", " + LABEL + ", " + FACE +
+    ") SELECT NEW.file_id, 0, 0, 0 WHERE NEW.MEDIA_TYPE = 2;" +
     " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
 const std::string DROP_UPDATE_VISION_TRIGGER = "DROP TRIGGER IF EXISTS update_vision_trigger";
+const std::string DROP_DELETE_VISION_TRIGGER = "DROP TRIGGER IF EXISTS delete_vision_trigger";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL =
     "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +

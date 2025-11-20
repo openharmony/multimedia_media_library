@@ -215,9 +215,9 @@ static const struct fuse_operations high_ops = {
     .write      = Write,
     .release    = Release,
     .opendir    = OpenDir,
-    .create     = Create,
-    .readdir    = ReadDir,
     .unlink     = Unlink,
+    .readdir    = ReadDir,
+    .create     = Create,
     .releasedir = ReleaseDir,
 };
 

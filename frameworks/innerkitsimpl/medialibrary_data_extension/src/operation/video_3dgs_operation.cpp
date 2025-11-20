@@ -85,7 +85,8 @@ void Video3DgsOperation::Update3DgsType()
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(ORIGIN_3DGS_NUMBER, 0);
     while (MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
-        CHECK_AND_RETURN_LOG(QueryVideoCount(curFileId) > 0, "No 3DGS video need to handle");
+        CHECK_AND_BREAK_INFO_LOG(QueryVideoCount(curFileId) > 0,
+            "No 3DGS video need to handle, curFileId: %{public}d", curFileId);
         MEDIA_INFO_LOG("handle 3DGS video curFileId: %{public}d", curFileId);
         std::vector<CheckedVideoInfo> photoInfos = QueryVideoInfo(curFileId);
         HandleVideoInfos(photoInfos, curFileId);

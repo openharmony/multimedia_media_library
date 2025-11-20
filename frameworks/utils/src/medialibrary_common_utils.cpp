@@ -246,6 +246,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     BEAUTY_BOUNDER_VERSION,
     FACE_EYE_CLOSE,
     FACE_DETAIL_VERSION,
+    AGE,
+    GENDER,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)

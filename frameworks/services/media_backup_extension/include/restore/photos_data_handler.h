@@ -23,7 +23,7 @@ namespace OHOS::Media {
 class PhotosDataHandler {
 public:
     void OnStart(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
-    void HandleDirtyFiles();
+    void HandleDirtyFiles(bool isRestore);
 
 private:
     PhotosDataHandler &SetSceneCode(int32_t sceneCode);

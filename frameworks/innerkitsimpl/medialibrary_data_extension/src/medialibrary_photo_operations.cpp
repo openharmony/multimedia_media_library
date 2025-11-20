@@ -3723,6 +3723,15 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::AddFiltersForSourcePicture(std::shared_ptr<Media::Picture> &picture,
+    const string& assetPath, const string& editDataCameraSourcePath, const string& mimeType, int32_t fileId)
+{
+    string editData;
+    MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
+    ParseCloudEnhancementEditData(editData);
+    return AddFiltersToPicture(picture, assetPath, editData, mimeType, true, fileId);
+}
+
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
     const string& assetPath, const string& editDataCameraSourcePath, const string& mimeType)
 {

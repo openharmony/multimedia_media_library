@@ -1127,7 +1127,7 @@ static bool SetNewNameExecute(MediaLibraryAlbumFusionUtils::ExecuteObject& execu
             executeObject.albumRefresh->Update(changeRows, newNameValues, rdbPredicatesNew) == NativeRdb::E_OK,
             false, "Failed to update deleted album with same name");
         CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject,
-            executeInfo.oldAlbumId, executeInfo.newAlbumId, false, &fileIdsInAlbum) == E_OK,
+            executeInfo.oldAlbumId, executeInfo.newAlbumId, executeInfo.isCloudAlbum, &fileIdsInAlbum) == E_OK,
             false, "Failed to merge old name album with new name album");
         MEDIA_INFO_LOG("Set photo album name: update deleted album with same name success,"
             "old album id: %{public}d, new album id: %{public}" PRId64,

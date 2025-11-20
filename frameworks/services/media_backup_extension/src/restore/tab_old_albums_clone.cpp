@@ -101,7 +101,7 @@ int32_t TabOldAlbumsClone::CloneAlbumsFromTable(const std::string &sourceTable, 
     // Add a maximum iteration limit to prevent infinite loops
     const int32_t maxIterations = 10000;
     int32_t offset = 0;
-    int32_t totalCloned = 0;
+    size_t totalCloned = 0;
     int32_t iterationCount = 0;
 
     while (iterationCount < maxIterations) {
@@ -143,7 +143,8 @@ int32_t TabOldAlbumsClone::CloneAlbumsFromTable(const std::string &sourceTable, 
         return E_INVALID_ARGUMENTS;
     }
 
-    MEDIA_INFO_LOG("Successfully cloned %{public}d albums from table: %{public}s", totalCloned, sourceTable.c_str());
+    MEDIA_INFO_LOG("Successfully cloned %{public}d albums from table: %{public}s",
+        static_cast<int32_t>(totalCloned), sourceTable.c_str());
     return NativeRdb::E_OK;
 }
 
