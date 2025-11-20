@@ -97,6 +97,7 @@
 #include "media_old_photos_column.h"
 #include "cloud_media_asset_manager.h"
 #include "heif_transcoding_check_utils.h"
+#include "database_adapter.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -1119,6 +1120,28 @@ shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::ConvertFormat(cons
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to ConvertFormatAsset");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+}
+
+bool MediaAssetsService::CheckMimeType(const int32_t fileId)
+{
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, false,
+        "Invalid parameters for CheckMimeType, fileId: %{public}d", fileId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    vector<string> columns {MediaColumn::MEDIA_ID, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE};
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return false;
+    }
+    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    string extention = MediaFileUtils::SplitByChar(mimeType, '/');
+    if (extension != "heif" && extension != "heic") {
+        MEDIA_ERR_LOG("The requested asset must be heif|heic");
+        return false;
+    }
+    return true;
 }
 
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)
