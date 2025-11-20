@@ -1197,7 +1197,7 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.groupTagOld = GetStringVal(GALLERY_GROUP_TAG, resultSet);
     portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
-    portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    portraitAlbumInfo.renameOperation = (!portraitAlbumInfo.tagName.empty() ? RENAME_OPERATION_RENAMED : 0);
     portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
     std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
     if (oldRelationshipId != std::to_string(INDEX_ME)) {
@@ -1272,7 +1272,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
         values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
-        values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
+        values.PutInt(RENAME_OPERATION, portraitAlbumInfo.renameOperation);
         values.PutString("relationship", portraitAlbumInfo.relationship);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
