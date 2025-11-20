@@ -41,6 +41,7 @@
 #include "medialibrary_photo_operations.h"
 #include "mimetype_utils.h"
 #include "photo_file_utils.h"
+#include "image_source.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -813,6 +814,26 @@ int32_t EnhancementManager::CompositePhotoSetOperation(int32_t fileId, Composite
     return E_OK;
 }
 
+static std::shared_ptr<Picture> DecodePictureSourcePath(const string &filePath)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    string sourcePath = PhotoFileUtils::GetEditDataSourcePath(filePath);
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(sourcePath, opts, err);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr,
+        "Decode Picture from filePath failed, CreateImageSource err: %{public}d", err);
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, nullptr,
+        "Decode Picture from filePath failed, GetImageInfo err: %{public}d", err);
+    DecodingOptionsForPicture pictureOpts;
+    uint32_t errorCode = 0;
+    auto picturePtr = imageSource->CreatePicture(pictureOpts, errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == 0 && picturePtr != nullptr, nullptr,
+        "Decode Picture from filePath failed, CreatePicture err: %{public}d", errorCode);
+    return std::move(picturePtr);
+}
+
 int32_t EnhancementManager::DoChangeDisplayModeFile(int32_t fileId, const string &filePath)
 {
     string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(filePath);
@@ -832,26 +853,25 @@ int32_t EnhancementManager::DoChangeDisplayModeFile(int32_t fileId, const string
         E_ERR, "Fail to move source_back to source, err: %{public}d", E_ERR);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(editDataSourceTempPath, editDataSourceBackPath),
         E_ERR, "Fail to move source_temp to source_back, err: %{public}d", E_ERR);
-
+    std::shared_ptr<Picture> picture = DecodePictureSourcePath(filePath);
     if (isSourceExists) {
         if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
             // use editDataCamera
             string extension = MediaFileUtils::GetExtensionFromPath(filePath);
             string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-            int32_t ret = MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(fileId, filePath,
-                editDataCameraPath, mimeType);
+            int32_t ret = MediaLibraryPhotoOperations::AddFiltersForSourcePicture(picture, filePath,
+                editDataCameraPath, mimeType, fileId);
             MEDIA_INFO_LOG("do change display mode file with editDataCamera, ret: %{public}d", ret);
             CHECK_AND_EXECUTE(ret == E_OK, CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(editDataSourcePath,
-                filePath), E_ERR, "Fail to copy %{public}s to %{public}s",
-                editDataSourcePath.c_str(), filePath.c_str()));
+                filePath), E_ERR, "Fail to copy editdata_source to file_path"));
         } else {
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(editDataSourcePath,
-                filePath), E_ERR, "Fail to copy %{public}s to %{public}s",
-                editDataSourcePath.c_str(), filePath.c_str());
+                filePath), E_ERR, "Fail to copy editdata_source to file_path");
         }
     }
 
-    MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(filePath, to_string(fileId), MediaLibraryApi::API_10);
+    MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(filePath, to_string(fileId),
+        MediaLibraryApi::API_10, picture);
     return E_OK;
 }
 

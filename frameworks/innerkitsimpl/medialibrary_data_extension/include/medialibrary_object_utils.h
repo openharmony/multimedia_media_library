@@ -58,7 +58,8 @@ public:
     EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api,
         bool isCameraShotMovingPhoto = false, std::shared_ptr<Media::Picture> resultPicture = nullptr,
         std::shared_ptr<IMediaScannerCallback> callback = nullptr);
-    static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api);
+    static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api,
+        std::shared_ptr<Media::Picture> picture = nullptr);
     EXPORT static void ScanMovingPhotoVideoAsync(
         const std::string &path, bool isCameraShotMovingPhoto, bool isScanCreateThumb = false);
     EXPORT static int32_t GetIdByPathFromDb(const std::string &path);
