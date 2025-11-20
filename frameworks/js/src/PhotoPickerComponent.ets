@@ -18,7 +18,6 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { LengthMetrics, LengthUnit } from '@kit.ArkUI';
-import { display } = from '@ohos.display';
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
@@ -30,7 +29,6 @@ interface MimeTypeFilter {
   mimeTypeArray: string[],
   filterType: number
 }
-const cooperation_multi_name = 'Cooperation-multi'
 @Component
 export struct PhotoPickerComponent {
   pickerOptions?: PickerOptions | undefined;
@@ -52,7 +50,6 @@ export struct PhotoPickerComponent {
   batchPreselectedInfos: number = 200;
   preselectedInfos = undefined;
   badgeConfigIsSending: boolean = false;
-  dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
   @State revokeIndex = 0;
@@ -243,7 +240,7 @@ export struct PhotoPickerComponent {
           }
         },
         {
-          dpiFollowStategy: this.dpiFollowStrategy;
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
         })
           .height('100%')
           .width('100%')
