@@ -4416,6 +4416,18 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
         return;
     }
 
+    MimeTypeReqBody mimeTypeReqBody;
+    mimeTypeReqBody.fileId = fileAsset->GetId();
+    MimeTypeRespBody mimeTypeRespBody;
+    mimeTypeRespBody.result = false;
+    IPC::UserDefineIPCClient mimeTypeClient;
+    mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+        mimeTypeReqBody,mimeTypeRespBody);
+    if (!mimeTypeRespBody.result) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
+        return;
+    }
+
     ConvertFormatReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
     reqBody.title = context->title;
@@ -4462,10 +4474,6 @@ static bool CheckConvertFormatParams(const std::string &originExtension, const s
     }
     if (!supportedImageFormat) {
         NAPI_ERR_LOG("The format of transition is not supported.");
-        return false;
-    }
-    if (originExtension != "heif" && originExtension != "heic") {
-        NAPI_ERR_LOG("The requested asset must be heif|heic");
         return false;
     }
     return true;
