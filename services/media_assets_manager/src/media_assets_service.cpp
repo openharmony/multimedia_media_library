@@ -1132,15 +1132,13 @@ bool MediaAssetsService::CheckMimeType(const int32_t fileId)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     vector<string> columns {MediaColumn::MEDIA_ID, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE};
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
-
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_ERR_LOG("result set is empty");
         return false;
     }
     string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-
     if (mimeType != HEIF_MIME_TYPE && mimeType != HEIC_MIME_TYPE) {
-        MEDIA_ERR_LOG("The requested asset must be heif|heic");
+        MEDIA_ERR_LOG("mimeType : %{public}s, The requested asset must be heif|heic", mimeType.c_str());
         return false;
     }
     return true;
