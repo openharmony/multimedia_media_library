@@ -236,7 +236,6 @@ export struct PhotoPickerComponent {
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
-            isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
           }
         },
         {
