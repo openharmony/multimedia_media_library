@@ -4470,7 +4470,7 @@ static bool CheckConvertFormatParams(const int32_t &fileId, const std::string &t
     mimeTypeRespBody.result = false;
     IPC::UserDefineIPCClient mimeTypeClient;
     mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
-        mimeTypeReqBody,mimeTypeRespBody);
+        mimeTypeReqBody, mimeTypeRespBody);
     return mimeTypeRespBody.result;
 }
 
