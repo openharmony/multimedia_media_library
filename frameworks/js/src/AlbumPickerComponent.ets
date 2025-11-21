@@ -35,6 +35,9 @@ export struct AlbumPickerComponent {
             filterType: this.albumPickerOptions?.filterType,
             fontSize: this.albumPickerOptions?.fontSize,
           }
+        },
+        {
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
           console.info('AlbumPickerComponent onRemoteReady');

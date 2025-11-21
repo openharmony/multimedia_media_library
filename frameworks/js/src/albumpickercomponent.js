@@ -25,7 +25,6 @@ let __decorate = this && this.__decorate || function (e, o, t, i) {
     }
     return r > 3 && l && Object.defineProperty(o, t, l), l;
 };
-
 export class AlbumPickerComponent extends ViewPU {
     constructor(e, o, n, t = -1, i = void 0) {
         super(e, n, t);
@@ -89,6 +88,9 @@ export class AlbumPickerComponent extends ViewPU {
                     filterType: null === (m = this.albumPickerOptions) || void 0 === m ? void 0 : m.filterType,
                     fontSize: null === (i = this.albumPickerOptions) || void 0 === i ? void 0 : i.fontSize,
                 }
+            },
+            {
+                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');
