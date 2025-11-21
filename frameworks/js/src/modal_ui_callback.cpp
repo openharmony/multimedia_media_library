@@ -70,13 +70,13 @@ void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)
 {
     NAPI_INFO_LOG("OnReceive enter.");
     int32_t code = request.GetIntParam("code", INVALID_MSG_CODE);
-    if (code !== PICKER_MSG_CODE_PAGE_APPEAR) {
+    if (code != PICKER_MSG_CODE_PAGE_APPEAR) {
         return;
     }
     if (this->uiContent != nullptr) {
         this->uiContent->UpdateModalUIExtensionConfig(this->sessionId_, {
             .prohibitedRemoveByNavigation = false,
-        })
+        });
     }
 }
 
