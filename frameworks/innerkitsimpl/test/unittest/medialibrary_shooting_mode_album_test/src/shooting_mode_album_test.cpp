@@ -64,6 +64,8 @@ const string SLOW_MOTION_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbu
 const string LIGHT_PAINTING_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::LIGHT_PAINTING));
 const string HIGH_PIXEL_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::HIGH_PIXEL));
 const string SUPER_MACRO_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::SUPER_MACRO));
+const string TIME_LAPSE_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::TIME_LAPSE));
+const string QUICK_CAPTURE_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::QUICK_CAPTURE_ALBUM));
 
 int32_t ClearTable(const string &table)
 {
@@ -236,6 +238,8 @@ HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSi
     DoCheckShootingAlbumData(LIGHT_PAINTING_ALBUM);
     DoCheckShootingAlbumData(HIGH_PIXEL_ALBUM);
     DoCheckShootingAlbumData(SUPER_MACRO_ALBUM);
+    DoCheckShootingAlbumData(TIME_LAPSE_ALBUM);
+    DoCheckShootingAlbumData(QUICK_CAPTURE_ALBUM);
     MEDIA_INFO_LOG("photoalbum_create_album_001 exit");
 }
 
@@ -303,6 +307,16 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_001, TestSiz
         ShootingModeAlbumType::PORTRAIT, rdbPredicates, false);
     args = rdbPredicates.GetWhereArgs();
     EXPECT_GT(args.size(), 0);
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::QUICK_CAPTURE_ALBUM, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::TIME_LAPSE, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
 }
 
 HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSize.Level1)
@@ -313,6 +327,8 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSiz
     DataShare::DataSharePredicates dataSharePredicates4;
     DataShare::DataSharePredicates dataSharePredicates5;
     DataShare::DataSharePredicates dataSharePredicates6;
+    DataShare::DataSharePredicates dataSharePredicates7;
+    DataShare::DataSharePredicates dataSharePredicates8;
 
     ShootingModeAlbum::GetShootingModeAlbumPredicates(
         ShootingModeAlbumType::MOVING_PICTURE, dataSharePredicates1, false);
@@ -342,6 +358,16 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSiz
     ShootingModeAlbum::GetShootingModeAlbumPredicates(
         ShootingModeAlbumType::MP4_3DGS_ALBUM, dataSharePredicates6, false);
     args = dataSharePredicates6.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::TIME_LAPSE, dataSharePredicates7, false);
+    args = dataSharePredicates7.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::QUICK_CAPTURE_ALBUM, dataSharePredicates8, false);
+    args = dataSharePredicates8.GetOperationList();
     EXPECT_GT(args.size(), 0);
 }
 

@@ -72,6 +72,7 @@
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "userfilemgr_uri.h"
+#include "shooting_mode_album_operation.h"
 #include "video_3dgs_operation.h"
 #include "common_timer_errors.h"
 #include "parameters.h"
@@ -920,6 +921,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     Video3DgsOperation::Update3DgsType();
+    ShootingModeAlbumOperation::UpdateShootingModeAlbum();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
@@ -953,6 +955,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
     Video3DgsOperation::Stop();
+    ShootingModeAlbumOperation::Stop();
     AgingTmpCompatibleDuplicates(false);
 }
 

@@ -608,6 +608,16 @@ static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data, const std::s
     }
 }
 
+static void FillTimeLapseMetadata(std::unique_ptr<Metadata> &data, const std::string &videoShootingMode,
+    const std::string &strTemp)
+{
+    if (videoShootingMode == TIME_LAPSE_TAG || strTemp == TIME_LAPSE_TAG) {
+        MEDIA_DEBUG_LOG("shoot mode type is TimeLapse");
+        data->SetShootingModeTag(TIME_LAPSE_TAG);
+        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(TIME_LAPSE_TAG));
+    }
+}
+
 void PopulateExtractedAVMetadataTwo(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
@@ -628,6 +638,7 @@ void PopulateExtractedAVMetadataTwo(
         data->SetShootingModeTag(videoShootingMode);
         data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(videoShootingMode));
         FillSlowMotionMetadata(data, videoShootingMode, strTemp);
+        FillTimeLapseMetadata(data, videoShootingMode, strTemp);
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";
