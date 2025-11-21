@@ -21,7 +21,6 @@
 #include "backup_const.h"
 #include "rdb_store.h"
 #include "classify_aggregate_types.h"
-#include "media_library_db_upgrade.h"
 
 namespace OHOS::Media {
 class ClassifyRestore {
@@ -55,10 +54,10 @@ private:
     std::unordered_set<int32_t> GetAggregateTypes(const std::vector<int32_t> &labels) const;
     void CollectAlbumInfo(int32_t fileIdNew, int32_t categoryId, const std::vector<int32_t> &labels);
     int32_t EnsureClassifyAlbumId(const std::string &albumName);
-    void DeleteExistingAlbumMappings(int32_t albumId, const std::vector<int32_t> &assetIds);
     void InsertAlbumMappings(std::vector<NativeRdb::ValuesBucket> &values);
     void UpdateAlbumCounts(const std::unordered_set<int32_t> &albumIds);
     void CreateOrUpdateCategoryAlbums();
+    void DeleteExistMapping(std::vector<int32_t> &fileIds);
     void EnsureSpecialAlbums();
     void EnsureSelfieAlbum();
     void EnsureUserCommentAlbum();
