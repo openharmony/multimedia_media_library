@@ -148,7 +148,7 @@ int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pul
 void CloudMediaPhotosService::ExtractEditDataCamera(const CloudMediaPullDataDto &pullData)
 {
     std::string editDataCamera = pullData.attributesEditDataCamera;
-    CHECK_AND_RETURN_LOG(!editDataCamera.empty(), "Cannot find attributes::editDataCamera.");
+    CHECK_AND_RETURN(!editDataCamera.empty());
 
     std::string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(pullData.localPath);
     MEDIA_INFO_LOG("editDataCameraPath: %{public}s , editDataCamera: %{public}s",

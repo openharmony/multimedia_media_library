@@ -24,7 +24,7 @@
 namespace OHOS::Media::CloudSync {
 CloudMetaData CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(const PhotosVo &photosVo)
 {
-    MEDIA_INFO_LOG("ConvertPhotosVoToCloudMetaData, photosVo: %{public}s.", photosVo.ToString().c_str());
+    MEDIA_DEBUG_LOG("photosVo: %{public}s", photosVo.ToString().c_str());
     CloudMetaData cloudMetaData;
     cloudMetaData.fileId = photosVo.fileId;
     cloudMetaData.cloudId = photosVo.cloudId;
