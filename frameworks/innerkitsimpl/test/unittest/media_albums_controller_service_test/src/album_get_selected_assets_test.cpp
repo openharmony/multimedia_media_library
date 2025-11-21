@@ -156,8 +156,9 @@ static bool InsertAnalysisPhotoMap(int mediaId, int fileId)
 static bool InsertAnalysisImageFace(int fileId, string tagID)
 {
     MEDIA_INFO_LOG("InsertAnalysisImageFace");
-    std::string insertSql = "insert into tab_analysis_image_face(file_id, tag_id, aesthetics_score) values(" +
-                            std::to_string(fileId) + ", '" + tagID + "', 60)";
+    std::string insertSql =
+        "insert into tab_analysis_image_face(file_id, tag_id, aesthetics_score, is_excluded) values(" +
+        std::to_string(fileId) + ", '" + tagID + "', 60, 4095)";
     return ExecutionSql(insertSql);
 }
 
