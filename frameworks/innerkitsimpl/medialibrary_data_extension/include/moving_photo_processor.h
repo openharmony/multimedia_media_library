@@ -40,6 +40,7 @@ private:
         int32_t effectMode;
         int64_t size;
         std::string path;
+        int64_t dateAdded;
     } MovingPhotoData;
 
     typedef struct {
