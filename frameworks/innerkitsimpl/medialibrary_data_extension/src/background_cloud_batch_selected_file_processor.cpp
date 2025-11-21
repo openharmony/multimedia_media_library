@@ -909,7 +909,6 @@ void BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer
 
 void BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(bool needClean)
 {
-    SetBatchDownloadProcessRunningStatus(false); // 无任务 且timer 停止重新设置状态 先设置保证不重复进
     StopAllDownloadingTask(needClean);
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer START");
@@ -917,11 +916,13 @@ void BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(
         batchDownloadResourceTimer_.Unregister(batchDownloadResourcesStartTimerId_));
     batchDownloadResourcesStartTimerId_ = 0;
     batchDownloadResourceTimer_.Shutdown(false);
+    SetBatchDownloadProcessRunningStatus(false);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer END");
 }
 
 bool BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
 {
+    unique_lock<std::mutex> lock(mutexRunningStatus_);
     MEDIA_DEBUG_LOG("BatchSelectFileDownload BatchDownloadProcessRunningStatus: %{public}d",
         batchDownloadProcessRunningStatus_.load());
     return batchDownloadProcessRunningStatus_.load();
