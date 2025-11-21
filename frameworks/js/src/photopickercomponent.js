@@ -271,7 +271,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, j;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -316,8 +316,7 @@ export class PhotoPickerComponent extends ViewPU {
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
-                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos,
-                    isDestroyedWithNavigation: null === (j = this.pickerOptions) || void 0 === j ? void 0 : j.isDestroyedWithNavigation,
+                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos
                 }
             }
             ,{
