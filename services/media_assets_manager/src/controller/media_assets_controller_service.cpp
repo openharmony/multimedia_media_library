@@ -473,6 +473,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::ConvertFormat
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+        &MediaAssetsControllerService::CheckMimeType
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CREATE_TMP_DUPLICATE),
         &MediaAssetsControllerService::CreateTmpCompatibleDup
     },
@@ -1673,6 +1677,21 @@ int32_t MediaAssetsControllerService::ConvertFormat(MessageParcel &data, Message
     }
     ConvertFormatRespBody respBody;
     respBody.resultSet = move(resultSet);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAssetsControllerService::CheckMimeType(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CheckMimeType");
+    MimeTypeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckMimeType Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    auto result = MediaAssetsService::GetInstance().CheckMimeType(reqBody.fileId);
+    MimeTypeRespBody respBody;
+    respBody.result = result;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 

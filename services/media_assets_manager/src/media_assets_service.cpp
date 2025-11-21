@@ -97,6 +97,7 @@
 #include "media_old_photos_column.h"
 #include "cloud_media_asset_manager.h"
 #include "heif_transcoding_check_utils.h"
+#include "database_adapter.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -112,6 +113,8 @@ const std::string COLUMN_DATA = "data";
 const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
+const std::string HEIF_MIME_TYPE = "image/heif";
+const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
@@ -1119,6 +1122,26 @@ shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::ConvertFormat(cons
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to ConvertFormatAsset");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+}
+
+bool MediaAssetsService::CheckMimeType(const int32_t fileId)
+{
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, false,
+        "Invalid parameters for CheckMimeType, fileId: %{public}d", fileId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    vector<string> columns {MediaColumn::MEDIA_ID, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE};
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return false;
+    }
+    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    if (mimeType != HEIF_MIME_TYPE && mimeType != HEIC_MIME_TYPE) {
+        MEDIA_ERR_LOG("mimeType : %{public}s, The requested asset must be heif|heic", mimeType.c_str());
+        return false;
+    }
+    return true;
 }
 
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)

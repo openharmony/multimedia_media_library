@@ -110,6 +110,7 @@ public:
     EXPORT int32_t QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t ConvertFormat(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CheckMimeType(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CreateTmpCompatibleDup(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetResultSetFromDb(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetResultSetFromPhotosExtend(MessageParcel &data, MessageParcel &reply);
