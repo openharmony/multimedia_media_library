@@ -1597,6 +1597,29 @@ static int32_t Prepare3DGSModeAlbum(RdbStore &store, int32_t version)
     return NativeRdb::E_OK;
 }
 
+static int32_t PrepareOtherShootingModeAlbum(RdbStore &store, int32_t version)
+{
+    vector<string> existingAlbumNames;
+    if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Query existing shootingMode album names failed");
+        return NativeRdb::E_ERROR;
+    }
+    for (int i = static_cast<int>(ShootingModeAlbumType::START);
+        i <= static_cast<int>(ShootingModeAlbumType::END); ++i) {
+        string albumName = to_string(i);
+        if (find(existingAlbumNames.begin(), existingAlbumNames.end(), albumName) != existingAlbumNames.end()) {
+            continue;
+        }
+        auto ret = InsertShootingModeAlbumValues(albumName, store);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Prepare shootingMode album failed");
+            RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
+            return NativeRdb::E_ERROR;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, RdbStore &store)
 {
     ValuesBucket valuesBucket;
@@ -5589,6 +5612,12 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         AddImageFaceAndFaceTagAgeGender(store, VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, true);
     }
+
+    if (oldVersion < VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, true)) {
+        PrepareOtherShootingModeAlbum(store, VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, true);
+    }
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5689,6 +5718,7 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         Prepare3DGSModeAlbum(store, VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, true);
     }
+
     UpgradeExtensionPart11(store, oldVersion);
 }
 
