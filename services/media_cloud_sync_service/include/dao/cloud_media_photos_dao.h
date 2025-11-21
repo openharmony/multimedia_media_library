@@ -202,7 +202,6 @@ private:
                 dirty = 1 AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
-                LENGTH(COALESCE(user_comment,'')) <= 1024 AND \
                 date_trashed = 0 AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
