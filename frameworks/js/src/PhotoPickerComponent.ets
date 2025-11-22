@@ -31,6 +31,7 @@ interface MimeTypeFilter {
   mimeTypeArray: string[],
   filterType: number
 }
+
 @Component
 export struct PhotoPickerComponent {
   pickerOptions?: PickerOptions | undefined;
@@ -238,7 +239,7 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
+            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
           }
         },
         {
