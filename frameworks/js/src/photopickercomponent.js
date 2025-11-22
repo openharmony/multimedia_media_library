@@ -36,6 +36,8 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
     ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
 ]);
+const display = requireNapi('display');
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
         super(e, t, i);
@@ -61,6 +63,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.preselectedInfos = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
+        this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
         this.setInitiallyProvidedValue(o);
         this.declareWatch('pickerController', this.onChanged);
@@ -91,6 +94,12 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.proxy && (this.proxy = e.proxy);
         if (e.revokeIndex !== undefined) {
             this.revokeIndex = e.revokeIndex;
+        }
+        const displayName = display.getDefaultDisplaySync().name;
+        console.info(`displayName = ${displayName}`);
+        if (cooperation_multi_name.includes(displayName)) {
+            this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
+            console.info(`dpiFollowStrategy = ${this.dpiFollowStrategy}`);
         }
     }
 
@@ -315,11 +324,10 @@ export class PhotoPickerComponent extends ViewPU {
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
-                    isSlidingSupported:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSlidingSupported,
                 }
             }
             ,{
-                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+                dpiFollowStrategy: this.dpiFollowStrategy
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');

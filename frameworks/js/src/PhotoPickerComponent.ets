@@ -18,6 +18,8 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { LengthMetrics, LengthUnit } from '@kit.ArkUI';
+import { display } from @ohos.display;
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
@@ -49,6 +51,7 @@ export struct PhotoPickerComponent {
   maxBadgeConfigSize: number = 200000;
   batchPreselectedInfos: number = 200;
   preselectedInfos = undefined;
+  dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
@@ -236,11 +239,10 @@ export struct PhotoPickerComponent {
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
-            isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
           }
         },
         {
-          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+          dpiFollowStategy: this.dpiFollowStrategy
         })
           .height('100%')
           .width('100%')
