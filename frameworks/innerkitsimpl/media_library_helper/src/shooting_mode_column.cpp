@@ -94,6 +94,14 @@ void ShootingModeAlbum::GetGeneralShootingModeAlbumPredicates(const ShootingMode
     PhotoQueryFilter::Config config {};
     config.hiddenConfig = hiddenState ? PhotoQueryFilter::ConfigType::INCLUDE : PhotoQueryFilter::ConfigType::EXCLUDE;
     PhotoQueryFilter::ModifyPredicate(config, predicates);
+    if (type == ShootingModeAlbumType::TIME_LAPSE) {
+        predicates.EqualTo(PhotoColumn::PHOTO_SHOOTING_MODE, TIME_LAPSE_SHOOTING_MODE);
+        return;
+    }
+    if (type == ShootingModeAlbumType::QUICK_CAPTURE_ALBUM) {
+        predicates.EqualTo(PhotoColumn::PHOTO_SHOOTING_MODE, QUICK_CAPTURE_SHOOTING_MODE);
+        return;
+    }
     predicates.EqualTo(PhotoColumn::PHOTO_SHOOTING_MODE, to_string(static_cast<int32_t>(type)));
 }
 
@@ -160,6 +168,8 @@ string ShootingModeAlbum::GetQueryAssetsIndex(const ShootingModeAlbumType type)
         {ShootingModeAlbumType::FRONT_CAMERA_ALBUM, PhotoColumn::PHOTO_FRONT_CAMERA_ALBUM_INDEX},
         {ShootingModeAlbumType::RAW_IMAGE_ALBUM, PhotoColumn::PHOTO_RAW_IMAGE_ALBUM_INDEX},
         {ShootingModeAlbumType::MP4_3DGS_ALBUM, PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX},
+        {ShootingModeAlbumType::TIME_LAPSE, PhotoColumn::PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX},
+        {ShootingModeAlbumType::QUICK_CAPTURE_ALBUM, PhotoColumn::PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX},
     };
     if (SHOOTING_MODE_INDEX_MAP.find(type) == SHOOTING_MODE_INDEX_MAP.end()) {
         MEDIA_ERR_LOG("Shooting mode type %{public}d is not in the map", static_cast<int32_t>(type));
@@ -193,6 +203,12 @@ vector<ShootingModeAlbumType> ShootingModeAlbum::GetShootingModeAlbumOfAsset(int
     }
     if (frontCamera == "1") { // "1" means photo is taken using front camera
         result.push_back(ShootingModeAlbumType::FRONT_CAMERA_ALBUM);
+    }
+    if (shootingMode == TIME_LAPSE_SHOOTING_MODE) {
+        result.push_back(ShootingModeAlbumType::TIME_LAPSE);
+    }
+    if (shootingMode == QUICK_CAPTURE_SHOOTING_MODE) {
+        result.push_back(ShootingModeAlbumType::QUICK_CAPTURE_ALBUM);
     }
     if (!shootingMode.empty()) {
         ShootingModeAlbumType type;
@@ -233,6 +249,12 @@ string ShootingModeAlbum::MapShootingModeTagToShootingMode(const string& tag)
     auto it = SHOOTING_MODE_CAST_MAP.find(tag);
     if (it != SHOOTING_MODE_CAST_MAP.end()) {
         return it->second;
+    }
+    if (tag == TIME_LAPSE_TAG) {
+        return TIME_LAPSE_SHOOTING_MODE;
+    }
+    if (tag == QUICK_CAPTURE_TAG) {
+        return QUICK_CAPTURE_SHOOTING_MODE;
     }
     return "";
 }

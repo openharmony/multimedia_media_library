@@ -859,6 +859,13 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_UPDATE_VIDEO_FACE_TAGID);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_FACE_TAGID, false);
     }
+
+    if (oldVersion < VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false)) {
+        UpdateAllShootingModeAlbums(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
