@@ -32,6 +32,8 @@
 #include "accurate_common_data.h"
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
+#include "metadata_extractor.h"
+#include "exif_rotate_utils.h"
 
 namespace OHOS::Media::CloudSync {
 NativeRdb::AbsRdbPredicates CloudMediaDownloadDao::GetDownloadThmsConditions(const int32_t type)
@@ -252,6 +254,96 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
     return ret;
 }
 
+static bool GetRealHeightAndWidthFromPath(const std::string path, int32_t &height, int32_t &width)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath(path);
+    data->SetFileName(MediaFileUtils::GetFileName(path));
+    data->SetFileMediaType(MEDIA_TYPE_IMAGE);
+    int32_t ret = MetadataExtractor::Extract(data);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to update height and width.");
+    width = data->GetFileWidth();
+    height = data->GetFileHeight();
+    return true;
+}
+
+static bool SwapHeightAndWidthIfNeed(std::string lcdSize, int32_t &height, int32_t &width, int32_t exifRotate)
+{
+    size_t pos = lcdSize.find(':');
+    if (pos == std::string::npos || pos == 0 || pos == lcdSize.size() - 1) {
+        return false;
+    }
+    std::string lcdWidth = lcdSize.substr(0, pos);
+    std::string lcdHeight = lcdSize.substr(pos + 1);
+    if (!IsNumericStr(lcdWidth) || !IsNumericStr(lcdHeight)) {
+        return false;
+    }
+    int32_t newHeight = std::stoi(lcdHeight);
+    int32_t newWidth = std::stoi(lcdWidth);
+    if (height == 0 || width == 0 || newHeight == 0 || newWidth == 0) {
+        return false;
+    }
+    if (exifRotate >= static_cast<int32_t>(ExifRotateType::LEFT_TOP) &&
+        exifRotate <= static_cast<int32_t>(ExifRotateType::LEFT_BOTTOM)) {
+            bool cond = (height / width > 1 && newWidth / newHeight > 1) ||
+                (height / width == 1 && newWidth / newHeight == 1) ||
+                (height / width < 1 && newWidth / newHeight < 1);
+            CHECK_AND_RETURN_RET(!cond, false);
+            int32_t temp = height;
+            height = width;
+            width = temp;
+        } else {
+            bool cond = (width / height > 1 && newWidth / newHeight > 1) ||
+                (width / height == 1 && newWidth / newHeight == 1) ||
+                (width / height < 1 && newWidth / newHeight < 1);
+            CHECK_AND_RETURN_RET(!cond, false);
+            int32_t temp = height;
+            height = width;
+            width = temp;
+        }
+    return true;
+}
+
+static bool UpdateHeightAndWidth(const int32_t fileId, const int32_t exifRotate)
+{
+    MEDIA_INFO_LOG("update current id is %{public}d", fileId);
+    std::vector<NativeRdb::ValueObject> bindArgs = { fileId };
+    std::string queryImageInfo = "SELECT data, height, width, lcd_size, subtype, original_subtype,"
+        "moving_photo_effect_mode FROM Photos WHERE file_id = ?;";
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbstore!");
+    auto resultSet = rdbStore->QuerySql(queryImageInfo, bindArgs);
+    bool cond = resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK;
+    CHECK_AND_RETURN_RET_LOG(cond, false, "resultSet is null or count is 0");
+    int32_t height = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_HEIGHT, resultSet, TYPE_INT32));
+    int32_t width = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_WIDTH, resultSet, TYPE_INT32));
+    std::string path =
+        get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+    std::string lcdSize =
+        get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_LCD_SIZE, resultSet, TYPE_STRING));
+    int32_t subtype =
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32));
+    int32_t originalSubtype =
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet, TYPE_INT32));
+    int32_t movingPhotoEffectMode = get<int32_t>(
+        ResultSetUtils::GetValFromColumn(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet, TYPE_INT32));
+    if (height == -1 || width == -1 || height == 0 || width == 0) {
+        CHECK_AND_RETURN_RET_LOG(GetRealHeightAndWidthFromPath(path, height, width), false, "Failed to update.");
+    } else {
+        CHECK_AND_RETURN_RET(SwapHeightAndWidthIfNeed(lcdSize, height, width, exifRotate), false);
+    }
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
+    values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
+    int32_t updateCount = 0;
+    int32_t err = rdbStore->Update(updateCount, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
+        "Update image height and width failed, file_id=%{public}d, err=%{public}d", fileId, err);
+    return true;
+}
+
 int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
     const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail)
@@ -268,6 +360,10 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(
     if (needRegenerateThumbnail) {
         ret = photoRefresh->ExecuteSql(this->SQL_FIX_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL,
             bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+        bool cond = UpdateHeightAndWidth(fileId, exifRotate);
+        if (!cond) {
+            MEDIA_INFO_LOG("Update failed or no need update");
+        }
     } else {
         ret = photoRefresh->ExecuteSql(this->SQL_FIX_EXIF_ROTATE_WITHOUT_REGENERATE_THUMBNAIL,
             bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
