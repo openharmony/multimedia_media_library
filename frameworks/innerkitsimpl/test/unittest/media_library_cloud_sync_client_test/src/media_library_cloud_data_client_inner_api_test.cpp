@@ -163,7 +163,7 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_BasicMethods_Test002, 
     
     MDKLocalErrorCode errorCode = mdkRecordFieldString->GetString(valString);
     EXPECT_EQ(errorCode, MDKLocalErrorCode::NO_ERROR);
-    errorCode = mdkRecordFieldBlob->GetBlob(valBlob);
+    errorCode = mdkRecordFieldBlob->GetBytes(valBlob);
     EXPECT_EQ(errorCode, MDKLocalErrorCode::NO_ERROR);
     errorCode = mdkRecordFieldRecordList->GetRecordList(valRecordList);
     EXPECT_EQ(errorCode, MDKLocalErrorCode::NO_ERROR);
@@ -299,7 +299,7 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetBlob_Test_01, TestS
     std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
     ASSERT_TRUE(field);
     std::vector<uint8_t> result;
-    auto ret = field->GetBlob(result);
+    auto ret = field->GetBytes(result);
     EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
 }
 
@@ -441,7 +441,7 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Tes
 {
     Json::Value jsonValue;
     MDKSchemaField schema;
-    schema.type = MDKRecordFieldType::FIELD_TYPE_BLOB;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_BYTES;
     std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
     ASSERT_TRUE(field);
     bool ret = field->ParseFromJsonValue(schema, jsonValue);
