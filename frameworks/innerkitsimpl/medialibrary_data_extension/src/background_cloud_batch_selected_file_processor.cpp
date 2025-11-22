@@ -909,14 +909,14 @@ void BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer
 
 void BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(bool needClean)
 {
+    SetBatchDownloadProcessRunningStatus(false); // 无任务 且timer 停止重新设置状态 先设置保证不重复进
     StopAllDownloadingTask(needClean);
-    lock_guard<recursive_mutex> lock(mutex_);
+    lock_guard<recursive_mutex> lockRec(mutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer START");
     CHECK_AND_EXECUTE(batchDownloadResourcesStartTimerId_ <= 0,
         batchDownloadResourceTimer_.Unregister(batchDownloadResourcesStartTimerId_));
     batchDownloadResourcesStartTimerId_ = 0;
     batchDownloadResourceTimer_.Shutdown(false);
-    SetBatchDownloadProcessRunningStatus(false);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer END");
 }
 
@@ -1131,8 +1131,8 @@ void BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadPro
             BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) { // 有任务 无timer在运行 启动
             MEDIA_INFO_LOG("LaunchAutoResumeBatchDownloadProcessor Start Timer");
             AutoResumeAction();
-            SetBatchDownloadProcessRunningStatus(true); // 恢复任务
             BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer();
+            SetBatchDownloadProcessRunningStatus(true); // 恢复任务
         }
     } else {
         if (BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTask()
