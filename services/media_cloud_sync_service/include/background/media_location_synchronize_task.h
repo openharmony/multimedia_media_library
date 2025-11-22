@@ -20,6 +20,7 @@
 #include <mutex>
 
 #include "i_media_background_task.h"
+#include "photos_po.h"
 
 namespace OHOS::Media::Background {
 class MediaLocationSynchronizeTask : public IMediaBackGroundTask {
@@ -28,6 +29,8 @@ public:
 
 private:
     void HandleRepairLocation(const int32_t &lastRecord);
+    void RepairPhotoLocation(int32_t &repairRecord, bool &terminate, std::vector<PhotosPo> &photosPoVec);
+    int32_t GetRepairLocationData(const int32_t &lastRecord, std::vector<PhotosPo> &photosPoVec);
 
 public:
     bool Accept() override;
