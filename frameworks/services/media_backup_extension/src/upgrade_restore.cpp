@@ -44,6 +44,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "portrait_album_utils.h"
+#include "clone_group_photo_album.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -487,7 +488,8 @@ void UpgradeRestore::RestorePhoto()
     }
     RestoreSmartAlbums();
     ReportPortraitStat(sceneCode_);
-
+    CloneGroupPhotoAlbum cloneGroupPhotoAlbum(mediaLibraryRdb_, galleryRdb_);
+    cloneGroupPhotoAlbum.UpdateGroupPhoto();
     int32_t restoreMode = BaseRestore::GetRestoreMode();
     UpgradeRestoreTaskReport()
         .SetSceneCode(sceneCode_)
