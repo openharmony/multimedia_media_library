@@ -47,15 +47,20 @@ using namespace OHOS::Media::CloudSync;
 
 const std::string BACKGROUND_CLOUD_FILE_CONFIG = "/data/storage/el2/base/preferences/background_cloud_file_config.xml";
 const std::string LAST_LOCAL_LOCATION_REPAIR = "last_location_repair";
-static constexpr int32_t LOCATION_REPAIR_INTERVAL = 20000;
+static constexpr int32_t LOCATION_REPAIR_INTERVAL_CLOUD = 15000;
+static constexpr int32_t LOCATION_REPAIR_INTERVAL_LOCAL = 1000;
 static constexpr int32_t CACHE_PHOTO_NUM = 100;
+constexpr double DOUBLE_EPSILON = 1e-15;
+constexpr double DEFAULT_LONGITUDE = 0.0;
+constexpr double DEFAULT_LATITUDE = 0.0;
 
 bool MediaLocationSynchronizeTask::Accept()
 {
     return MedialibrarySubscriber::IsCurrentStatusOn();
 }
 
-std::vector<PhotosPo> GetRepairLocationData(const int32_t &lastRecord)
+int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastRecord, 
+        std::vector<PhotosPo> &photosPoVec)
 {
     MEDIA_INFO_LOG("GetRepairLocationData begin");
     std::vector<PhotosPo> photosPoVec;
@@ -74,8 +79,7 @@ std::vector<PhotosPo> GetRepairLocationData(const int32_t &lastRecord)
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, photosPoVec, "Failed to query.");
     
-    ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoVec);
-    return photosPoVec;
+    return ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoVec);
 }
 
 void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecord)
@@ -89,7 +93,8 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     bool terminate = false;
     int32_t repairRecord = lastRecord;
-    std::vector<PhotosPo> photosPoVec = GetRepairLocationData(repairRecord);
+    std::vector<PhotosPo> photosPoVec;
+    GetRepairLocationData(repairRecord, photosPoVec);
     do {
         for (PhotosPo photosPo : photosPoVec) {
             std::string path = photosPo.data.value_or("");
@@ -105,7 +110,7 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
                 break;
             }
             repairRecord = fileId;
-            this_thread::sleep_for(chrono::milliseconds(LOCATION_REPAIR_INTERVAL));
+            this_thread::sleep_for(chrono::milliseconds(LOCATION_REPAIR_INTERVAL_CLOUD));
             if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
                 MEDIA_INFO_LOG("Break repair cause invalid status");
                 terminate = true;
@@ -115,7 +120,8 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
         prefs->PutInt(LAST_LOCAL_LOCATION_REPAIR, repairRecord);
         prefs->FlushSync();
         MEDIA_INFO_LOG("repair location to %{public}d", repairRecord);
-        photosPoVec = GetRepairLocationData(repairRecord);
+        photosPoVec = {};
+        GetRepairLocationData(repairRecord, photosPoVec);
     } while (photosPoVec.size() > 0 && !terminate);
 }
 
@@ -123,14 +129,14 @@ void MediaLocationSynchronizeTask::Execute()
 {
     MEDIA_INFO_LOG("Start location synchronizing task");
     int32_t errCode = 0;
-    int64_t defaultCnt = 0;
+    int32_t defaultCnt = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t localRepairRecord = prefs->GetInt(LAST_LOCAL_LOCATION_REPAIR, defaultCnt);
 
     std::vector<PhotosPo> photosPoVec = GetRepairLocationData(localRepairRecord);
-    CHECK_AND_RETURN_LOG(photosPoVec.size() > 0, "no data for repair");
+    CHECK_AND_RETURN_LOG(photosPoVec.size() > 0, "no location data for repair");
     MEDIA_INFO_LOG("need repair location count %{public}d", static_cast<int>(photosPoVec.size()));
     std::thread([localRepairRecord, this]() {
         HandleRepairLocation(localRepairRecord);
