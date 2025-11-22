@@ -18,19 +18,16 @@
 #include <cctype>
 #include "media_library_db_upgrade.h"
 #include "userfile_manager_types.h"
-#include "classify_aggregate_types.h"
 #include "backup_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "upgrade_restore_task_report.h"
-#include <string>
 #include "medialibrary_data_manager_utils.h"
 
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 const int32_t INVALID_LABEL = -2;
 const int32_t CLASSIFY_RESTORE_STATUS_SUCCESS = 1;
-const int32_t CLASSIFY_TYPE = 4097;
 const int32_t FRONT_CAMERA = 1;
 const std::string VERSION_PREFIX = "backup";
 const std::string ANALYSIS_LABEL_TABLE = "tab_analysis_label";
@@ -97,6 +94,18 @@ void ClassifyRestore::UpdateStatus(std::vector<int32_t> &fileIds)
     CHECK_AND_RETURN_LOG(ret >= 0, "execute update analysis total failed, ret = %{public}d", ret);
 }
 
+void ClassifyRestore::DeleteExistMapping(std::vector<int32_t> &fileIds)
+{
+    CHECK_AND_RETURN_WARN_LOG(!fileIds.empty(), "fileIds is empty");
+    std::string fileIdClause = "(" + BackupDatabaseUtils::JoinValues<int>(fileIds, ", ") + ");";
+    std::string deleteSql =
+        "DELETE FROM AnalysisPhotoMap "
+        "WHERE map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_subtype = 4097) "
+        "AND map_asset IN " + fileIdClause;
+    int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteSql);
+    CHECK_AND_RETURN_LOG(ret >= 0, "execute delete exist mapping failed, ret = %{public}d", ret);
+}
+
 void ClassifyRestore::ProcessCategoryAlbums()
 {
     MEDIA_INFO_LOG("ProcessCategoryAlbums start");
@@ -104,7 +113,6 @@ void ClassifyRestore::ProcessCategoryAlbums()
     CreateOrUpdateCategoryAlbums();
     EnsureSpecialAlbums();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    restoreTimeCost_ = end - start;
     MEDIA_INFO_LOG("ProcessCategoryAlbums Time cost: %{public}" PRId64, end - start);
 }
 
@@ -191,7 +199,7 @@ int32_t ClassifyRestore::EnsureClassifyAlbumId(const std::string &albumName)
         "AND album_subtype = ? AND album_name = ?";
     std::vector<NativeRdb::ValueObject> params = {
         static_cast<int32_t>(PhotoAlbumType::SMART),
-        CLASSIFY_TYPE,
+        static_cast<int32_t>(PhotoAlbumSubType::CLASSIFY),
         albumName
     };
     auto resultSet = mediaLibraryRdb_->QuerySql(querySql, params);
@@ -205,28 +213,9 @@ int32_t ClassifyRestore::EnsureClassifyAlbumId(const std::string &albumName)
     return albumId;
 }
 
-void ClassifyRestore::DeleteExistingAlbumMappings(int32_t albumId, const std::vector<int32_t> &assetIds)
-{
-    if (assetIds.empty() || mediaLibraryRdb_ == nullptr) {
-        return;
-    }
-    for (size_t offset = 0; offset < assetIds.size(); offset += PAGE_SIZE) {
-        size_t end = std::min(offset + static_cast<size_t>(PAGE_SIZE), assetIds.size());
-        std::vector<int32_t> batch(assetIds.begin() + offset, assetIds.begin() + end);
-        std::string inClause = "(" + BackupDatabaseUtils::JoinValues<int32_t>(batch, ", ") + ")";
-        std::string deleteSql = "DELETE FROM AnalysisPhotoMap WHERE map_album = " + std::to_string(albumId) +
-            " AND map_asset IN " + inClause + ";";
-        int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteSql);
-        CHECK_AND_PRINT_LOG(ret >= 0, "DeleteExistingAlbumMappings failed, albumId:%{public}d, ret:%{public}d",
-            albumId, ret);
-    }
-}
-
 void ClassifyRestore::InsertAlbumMappings(std::vector<NativeRdb::ValuesBucket> &values)
 {
-    if (values.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(!values.empty(), "values is empty");
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
     if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
@@ -247,7 +236,6 @@ void ClassifyRestore::CreateOrUpdateCategoryAlbums()
         CHECK_AND_CONTINUE(albumId > 0);
         std::vector<int32_t> assetList(entry.second.begin(), entry.second.end());
         std::sort(assetList.begin(), assetList.end());
-        DeleteExistingAlbumMappings(albumId, assetList);
         for (int32_t assetId : assetList) {
             NativeRdb::ValuesBucket value;
             value.PutInt("map_album", albumId);
@@ -258,9 +246,7 @@ void ClassifyRestore::CreateOrUpdateCategoryAlbums()
             }
         }
     }
-    if (!mapValues.empty()) {
-        InsertAlbumMappings(mapValues);
-    }
+    CHECK_AND_EXECUTE(mapValues.empty(), InsertAlbumMappings(mapValues));
     albumAssetMap_.clear();
 }
 
@@ -357,8 +343,9 @@ void ClassifyRestore::ProcessLabelInfo(const std::shared_ptr<NativeRdb::ResultSe
         failInsertLabelCnt_ += failNums;
     }
     successInsertLabelCnt_ += updateRows;
-    UpdateStatus(labelFileIds);
+    DeleteExistMapping(labelFileIds);
     HandleOcr(subLabelMap);
+    UpdateStatus(labelFileIds);
     MEDIA_INFO_LOG("RestoreLabelInfos one batch end, values count: %{public}d, updateRows: %{public}d",
         static_cast<int>(values.size()), static_cast<int>(updateRows));
 }
@@ -387,7 +374,8 @@ void ClassifyRestore::HandleOcr(const std::unordered_map<int32_t, std::vector<in
 {
     std::vector<int32_t> fileIdsToProcess;
     for (const auto &[fileId, subLabels] : subLabelMap) {
-        auto it = std::find_if(subLabels.begin(), subLabels.end(), [](int32_t id) { return id == 4; });
+        auto it = std::find_if(subLabels.begin(), subLabels.end(),
+            [](int32_t id) { return id == static_cast<int32_t>(PhotoLabel::ID_CARD); });
         if (it != subLabels.end()) {
             fileIdsToProcess.emplace_back(fileId);
         }
@@ -417,13 +405,14 @@ void ClassifyRestore::HandleOcrHelper(const std::vector<int32_t> &fileIds)
             fileIdsToUpdateSet.insert(fileId);
         }
         ocrResultSet->Close();
-        std::vector<int32_t> filedIdsToUpdate(fileIdsToUpdateSet.begin(), fileIdsToUpdateSet.end());
+        std::vector<int32_t> fileIdsToUpdate(fileIdsToUpdateSet.begin(), fileIdsToUpdateSet.end());
+        CHECK_AND_RETURN_INFO_LOG(!fileIdsToUpdate.empty(), "fileIdsToUpdate is empty");
         std::string albumName = std::to_string(static_cast<int32_t>(aggregateType));
         const std::string UPDATE_SUB_LABEL_SQL =
                     "UPDATE tab_analysis_label SET sub_label = "
                     "CASE WHEN sub_label = '[]' THEN '[" + albumName + "]' "
                     "ELSE SUBSTR(sub_label,1,LENGTH(sub_label)-1)||'," + albumName + "]' END "
-                    "WHERE file_id IN (" + BackupDatabaseUtils::JoinValues<int>(filedIdsToUpdate, ", ") + ");";
+                    "WHERE file_id IN (" + BackupDatabaseUtils::JoinValues<int>(fileIdsToUpdate, ", ") + ");";
         
         int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, UPDATE_SUB_LABEL_SQL);
         CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "UPDATE_SUB_LABEL_SQL failed");
@@ -470,8 +459,9 @@ void ClassifyRestore::ReportRestoreTask()
 
 void ClassifyRestore::AddIdCardAlbum(OcrAggregateType type, std::unordered_set<int32_t> &fileIdsToUpdateSet)
 {
-    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddIdCardAlbum failed, rdbStore is nullptr");
     std::string idCardAlbum = std::to_string(static_cast<int32_t>(type));
+    albumAssetMap_[idCardAlbum] = fileIdsToUpdateSet;
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddIdCardAlbum failed, rdbStore is nullptr");
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
     bool isSetAggregateBit;
     bool isExist = medialibraryDbUpgrade.CheckClassifyAlbumExist(idCardAlbum,
@@ -479,7 +469,6 @@ void ClassifyRestore::AddIdCardAlbum(OcrAggregateType type, std::unordered_set<i
     CHECK_AND_RETURN_INFO_LOG(!isExist, "IdCardAlbum already exist.");
     int32_t ret = medialibraryDbUpgrade.CreateClassifyAlbum(idCardAlbum, *this->mediaLibraryRdb_);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "IdCardAlbum failed");
-    albumAssetMap_[idCardAlbum] = fileIdsToUpdateSet;
     MEDIA_INFO_LOG("IdCardAlbum success");
 }
 } // namespace OHOS::Media
