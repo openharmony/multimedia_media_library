@@ -163,4 +163,14 @@ bool CloudMediaPullDataDto::FindAlbumUploadStatus() const
     CHECK_AND_RETURN_RET_LOG(!albumInfo.IsCamera(), true, "this is a camera album");
     return albumInfo.uploadStatus.value_or(0) == 1;
 }
+
+bool CloudMediaPullDataDto::GetIsRecycleUpdated() const
+{
+    return this->isRecycleUpdated;
+}
+
+void CloudMediaPullDataDto::SetIsRecycleUpdated(bool isUpdated)
+{
+    this->isRecycleUpdated = isUpdated;
+}
 }  // namespace OHOS::Media::CloudSync
