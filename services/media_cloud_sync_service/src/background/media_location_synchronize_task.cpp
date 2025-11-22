@@ -59,7 +59,7 @@ bool MediaLocationSynchronizeTask::Accept()
     return MedialibrarySubscriber::IsCurrentStatusOn();
 }
 
-int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastRecord, 
+int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastRecord,
         std::vector<PhotosPo> &photosPoVec)
 {
     MEDIA_INFO_LOG("GetRepairLocationData begin");
