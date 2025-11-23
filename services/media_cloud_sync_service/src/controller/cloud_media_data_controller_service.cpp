@@ -41,7 +41,6 @@
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter UpdateDirtyForCloudCheck");
     UpdateDirtyReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
