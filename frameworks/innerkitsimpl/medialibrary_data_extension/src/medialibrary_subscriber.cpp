@@ -76,6 +76,7 @@
 #include "video_3dgs_operation.h"
 #include "common_timer_errors.h"
 #include "parameters.h"
+#include "height_width_correct_operation.h"
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
@@ -920,6 +921,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 {
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
+    HeightWidthCorrectOperation::UpdateHeightAndWidth();
     Video3DgsOperation::Update3DgsType();
     ShootingModeAlbumOperation::UpdateShootingModeAlbum();
     DfxManager::GetInstance()->HandleTwoDayMissions();
@@ -954,6 +956,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
+    HeightWidthCorrectOperation::Stop();
     Video3DgsOperation::Stop();
     ShootingModeAlbumOperation::Stop();
     AgingTmpCompatibleDuplicates(false);

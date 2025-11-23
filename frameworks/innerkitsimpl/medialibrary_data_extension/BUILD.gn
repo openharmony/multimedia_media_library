@@ -724,6 +724,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/moving_photo_processor.cpp",
     "src/operation/display_name_info.cpp",
     "src/operation/duplicate_photo_operation.cpp",
+    "src/operation/height_width_correct_operation.cpp",
     "src/operation/medialibrary_custom_restore_notify.cpp",
     "src/operation/medialibrary_transcode_data_aging_operation.cpp",
     "src/operation/photo_album_copy_meta_data_operation.cpp",
