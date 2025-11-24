@@ -41,6 +41,7 @@ private:
     int32_t OnDownloadThms(MessageParcel &data, MessageParcel &reply);
     int32_t GetDownloadAsset(MessageParcel &data, MessageParcel &reply);
     int32_t OnDownloadAsset(MessageParcel &data, MessageParcel &reply);
+    int32_t OnDownloadLakeAsset(MessageParcel &data, MessageParcel &reply);
 
 private:
     using RequestHandle = int32_t (CloudMediaDownloadControllerService::*)(MessageParcel &, MessageParcel &);
@@ -57,6 +58,8 @@ private:
             &CloudMediaDownloadControllerService::GetDownloadAsset},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET),
             &CloudMediaDownloadControllerService::OnDownloadAsset},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_LAKE_ASSET),
+            &CloudMediaDownloadControllerService::OnDownloadLakeAsset},
     };
 
 public:

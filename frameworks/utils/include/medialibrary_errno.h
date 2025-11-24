@@ -83,6 +83,8 @@ constexpr int32_t E_ACQ_BETA_TASK_FAIL   =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3
 constexpr int32_t E_OPR_DEBUG_DB_FAIL    =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 40);
 constexpr int32_t E_BACK_UP_DB_FAIL      =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 41);
 constexpr int32_t E_BETA_VERSION_FAIL    =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 42);
+constexpr int32_t E_THREAD_HAS_STOPPED =    MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 50);
+constexpr int32_t E_INIT_FAIL =             MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 51);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

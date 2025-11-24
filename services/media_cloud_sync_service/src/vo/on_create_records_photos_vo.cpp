@@ -42,6 +42,8 @@ bool OnCreateRecord::Unmarshalling(MessageParcel &parcel)
     parcel.ReadInt64(this->version);
     parcel.ReadInt32(this->serverErrorCode);
     parcel.ReadBool(this->isSuccess);
+    parcel.ReadInt32(this->fileSourceType);
+    parcel.ReadString(this->storagePath);
     IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
     int32_t copyRecordErrorType;
     parcel.ReadInt32(copyRecordErrorType);
@@ -68,6 +70,8 @@ bool OnCreateRecord::Marshalling(MessageParcel &parcel) const
     parcel.WriteInt64(this->version);
     parcel.WriteInt32(this->serverErrorCode);
     parcel.WriteBool(this->isSuccess);
+    parcel.WriteInt32(this->fileSourceType);
+    parcel.WriteString(this->storagePath);
     IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
     parcel.WriteInt32(static_cast<int32_t>(this->errorType));
     return true;
@@ -90,6 +94,8 @@ std::string OnCreateRecord::ToString() const
        << "\"version\": " << version << ","
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "\"isSuccess\": \"" << isSuccess << "\","
+       << "\"fileSourceType\": \"" << fileSourceType << "\","
+       << "\"storagePath\": \"" << storagePath << "\","
        << "\"livePhotoCachePath\": \"" << livePhotoCachePath << "\","
        << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
        << "\"errorDetails\": [";

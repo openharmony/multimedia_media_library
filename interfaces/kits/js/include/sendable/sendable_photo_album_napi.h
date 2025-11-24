@@ -51,6 +51,7 @@ public:
     const std::string& GetLPath() const;
     PhotoAlbumType GetPhotoAlbumType() const;
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
+    int32_t GetUploadStatus() const;
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
     void SetHiddenOnly(const bool hiddenOnly);
@@ -80,6 +81,7 @@ private:
     EXPORT static napi_value JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetUploadStatus(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value ConvertToPhotoAlbum(napi_env env, napi_callback_info info);

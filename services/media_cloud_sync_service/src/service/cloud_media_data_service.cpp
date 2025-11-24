@@ -57,6 +57,28 @@ int32_t CloudMediaDataService::UpdatePosition(const std::vector<std::string> &cl
     return ret;
 }
 
+int32_t CloudMediaDataService::UpdatePosWithType(const std::vector<std::string> &cloudIds,
+    const int32_t position, const int32_t fileSourceType)
+{
+    MEDIA_INFO_LOG("UpdatePosWithType begin, cloudIds size: %{public}zu, position: %{public}d,"
+        "fileSourceType: %{public}d",
+        cloudIds.size(), position, fileSourceType);
+    int32_t ret = this->dataDao_.UpdatePosWithType(cloudIds, position, fileSourceType);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdatePosWithType.");
+    return ret;
+}
+
+int32_t CloudMediaDataService::UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+    int32_t fileSourceType)
+{
+    MEDIA_INFO_LOG("UpdateFileSourceType begin, cloudIds size: %{public}zu, fileSourceType: %{public}d",
+        cloudIds.size(), fileSourceType);
+    int32_t ret = this->dataDao_.UpdateFileSourceType(cloudIds, fileSourceType);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateFileSourceType.");
+    return ret;
+}
+
+
 int32_t CloudMediaDataService::UpdateSyncStatus(const std::string &cloudId, const int32_t syncStatus)
 {
     MEDIA_INFO_LOG("UpdateSyncStatus, cloudId: %{public}s, syncStatus: %{public}d", cloudId.c_str(), syncStatus);

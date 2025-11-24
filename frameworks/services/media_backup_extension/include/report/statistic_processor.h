@@ -80,6 +80,20 @@ public:
         }
         return *this;
     }
+
+    StatisticProcessor &ParseLakeCount(std::unordered_map<std::string, AlbumMediaStatisticInfo> &albumInfoMap,
+        const std::vector<AlbumStatisticInfo> &lakeInfoList)
+    {
+        for (const auto &info : lakeInfoList) {
+            if (albumInfoMap.find(info.lPath) == albumInfoMap.end()) {
+                albumInfoMap[info.lPath] = AlbumMediaStatisticInfo();
+            }
+            albumInfoMap[info.lPath].lPath = info.lPath;
+            albumInfoMap[info.lPath].albumName = info.albumName;
+            albumInfoMap[info.lPath].innerEastLakeCount = info.count;
+        }
+        return *this;
+    }
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_STATISTIC_PROCESSOR_H

@@ -40,7 +40,7 @@ protected:
     void SetNeedPermissionCheck(bool needPermissionCheck);
 
     static std::unordered_map<PermissionType, std::shared_ptr<PermissionCheck>> permissionRegistry;
-    // API blacklist for deprecated read or write permission
+    // API list for deprecated read or write permission
     static std::unordered_set<uint32_t> deprecatedReadPermissionSet;
     static std::unordered_set<uint32_t> deprecatedWritePermissionSet;
     // API whitelist for check grant operation permission

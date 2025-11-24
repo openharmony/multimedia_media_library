@@ -40,8 +40,8 @@ public:
     static std::string GetCloudPath(const std::string &path, const std::string &prefixCloud);
     static std::string GetThumbParentPath(const std::string &path, const std::string &prefixCloud);
     static void RemoveThmParentPath(const std::string &path, const std::string &prefixCloud);
-    static void RemoveEditDataParentPath(const std::string &path, const std::string &prefixCloud);
-    static void RemoveMetaDataPath(const std::string &path, const std::string &prefixCloud);
+    static void RemoveEditDataParentPath(const std::string &path);
+    static void RemoveMetaDataPath(const std::string &path);
     static void InvalidVideoCache(const std::string &localPath);
     static void RemoveMovingPhoto(const CloudMediaPullDataDto &pullData);
     static void BackUpEditDataSourcePath(const std::string &localPath);

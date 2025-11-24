@@ -63,6 +63,7 @@ ohos_unittest("medialibrary_album_source_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   sanitize = {

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "cloud_data_convert_to_vo.h"
+#include "cloud_download_file_meta.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_sync_unprepared_data_vo.h"
 #include "media_itypes_utils.h"
@@ -100,6 +101,44 @@ int32_t CloudMediaDataClientHandler::UpdatePosition(const std::vector<std::strin
             .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdatePosition, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::UpdatePosWithType(const std::vector<std::string> &cloudIds,
+    int32_t position, int32_t fileSourceType)
+{
+    MEDIA_INFO_LOG("UpdatePosWithType, cloudIds: %{public}zu, position: %{public}d, fileSourceType: %{public}d",
+        cloudIds.size(), position, fileSourceType);
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "UpdatePosWithType: cloudIds is empty");
+    uint32_t operationCode = static_cast<uint32_t>(
+        CloudMediaOperationCode::CMD_UPDATE_FILE_SOURCE_TYPE);
+    UpdatePositionReqBody reqBody;
+    reqBody.cloudIds = cloudIds;
+    reqBody.position = position;
+    reqBody.fileSourceType = fileSourceType;
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to UpdatePosWithType, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+    int32_t fileSourceType)
+{
+    MEDIA_INFO_LOG("UpdateFileSourceType, cloudIds: %{public}zu, fileSourceType: %{public}d",
+        cloudIds.size(), fileSourceType);
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "UpdateFileSourceType: cloudIds is empty");
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_FILE_SOURCE_TYPE);
+    UpdatePositionReqBody reqBody;
+    reqBody.cloudIds = cloudIds;
+    reqBody.fileSourceType = fileSourceType;
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to UpdateFileSourceType, ret: %{public}d", ret);
     }
     return ret;
 }
@@ -214,6 +253,31 @@ int32_t CloudMediaDataClientHandler::GetDownloadAsset(
     return E_OK;
 }
 
+int32_t CloudMediaDataClientHandler::GetDownloadLakeAsset(
+    const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec)
+{
+    MEDIA_INFO_LOG("GetDownloadLakeAsset, uris: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadAsset: uris is empty");
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_ASSET);
+    GetDownloadAssetReqBody reqBody;
+    reqBody.pathList = uris;
+    // parcel data.
+    GetDownloadAssetRespBody respBody;
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to GetDownloadAsset, ret: %{public}d", ret);
+        return ret;
+    }
+    for (auto &photosVo : respBody.photos) {
+        CloudDlFileMeta cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToLakeCloudMetaData(photosVo);
+        MEDIA_INFO_LOG("GetDownloadAsset MetaData: %{public}s", cloudMetaData.ToString().c_str());
+        cloudMetaDataVec.push_back(cloudMetaData);
+    }
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadAsset end");
+    return E_OK;
+}
+
 int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
     const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData)
 {
@@ -263,6 +327,34 @@ int32_t CloudMediaDataClientHandler::OnDownloadAsset(
     }
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to OnDownloadAsset, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    std::vector<MediaOperateResult> &result)
+{
+    MEDIA_INFO_LOG("OnDownloadLakeAsset, cloudIds: %{public}zu", lakeInfos.size());
+    CHECK_AND_RETURN_RET_LOG(!lakeInfos.empty(), E_OK, "OnDownloadAsset: lakeInfos is empty");
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_LAKE_ASSET);
+    OnDownloadAssetReqBody reqBody;
+    reqBody.lakeInfos = lakeInfos;
+    MediaOperateResultRespBody respBody;
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    result.clear();
+    for (auto &resultVo : respBody.result) {
+        MEDIA_INFO_LOG(
+            "CloudMediaDataClientHandler::OnDownloadLakeAsset, mediaResult: %{public}s", resultVo.ToString().c_str());
+        MediaOperateResult mediaResult;
+        mediaResult.cloudId = resultVo.cloudId;
+        mediaResult.errorCode = resultVo.errorCode;
+        mediaResult.errorMsg = resultVo.errorMsg;
+        result.emplace_back(mediaResult);
+    }
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to OnDownloadLakeAsset, ret: %{public}d", ret);
     }
     return ret;
 }

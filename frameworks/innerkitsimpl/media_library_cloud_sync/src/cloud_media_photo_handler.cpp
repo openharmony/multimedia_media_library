@@ -76,6 +76,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
     for (auto record : records) {
         OnFetchPhotosVo onFetchPhotoVo;
+        // 需要从MDKRecord转换成vo 在vo中增加了两个属性
         if (dataConvertor.ConverMDKRecordToOnFetchPhotosVo(record, onFetchPhotoVo) != E_OK) {
             MEDIA_ERR_LOG("OnFetchRecords ConverMDKRecordToOnFetchPhotosVo error, recordId: %{public}s",
                 record.GetRecordId().c_str());
@@ -166,6 +167,8 @@ int32_t CloudMediaPhotoHandler::GetCheckRecords(
         cloudCheckData.dirtyType = info.dirty;
         cloudCheckData.syncStatus = info.syncStatus;
         cloudCheckData.thmStatus = info.thmStatus;
+        cloudCheckData.fileSourceType = info.fileSourceType;
+        cloudCheckData.storagePath = info.storagePath;
         for (auto &[key, value] : info.attachment) {
             CloudFileData fileData;
             fileData.fileName = value.fileName;

@@ -86,6 +86,8 @@
 #include "media_permission_check.h"
 #include "user_define_ipc.h"
 #include "medialibrary_tracer.h"
+#include "media_file_change_manager.h"
+#include "product_info.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

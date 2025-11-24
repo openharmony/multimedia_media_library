@@ -192,6 +192,7 @@ static void SetValuesFromPhotoAlbum(shared_ptr<PhotoAlbum> &photoAlbumPtr, Nativ
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, photoAlbumPtr->GetDateAdded());
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, photoAlbumPtr->GetLPath());
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, photoAlbumPtr->GetPriority());
+    values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, photoAlbumPtr->GetUploadStatus());
 }
 
 static bool GetPhotoAlbumFromJsonPart1(const nlohmann::json &j, PhotoAlbum &photoAlbum)
@@ -236,6 +237,13 @@ static bool GetPhotoAlbumFromJsonPart1(const nlohmann::json &j, PhotoAlbum &phot
     optional<int64_t> priority = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_PRIORITY);
     if (priority.has_value()) {
         photoAlbum.SetPriority((int32_t)priority.value());
+    } else {
+        ret = false;
+    }
+
+    optional<int64_t> uploadStatus = GetNumberFromJson(j, PhotoAlbumColumns::UPLOAD_STATUS);
+    if (uploadStatus.has_value()) {
+        photoAlbum.SetUploadStatus((int32_t)uploadStatus.value());
     } else {
         ret = false;
     }
@@ -841,7 +849,8 @@ void MediaLibraryMetaRecovery::AddPhotoAlbumToJson(nlohmann::json &j, const Phot
         {PhotoAlbumColumns::ALBUM_DATE_ADDED, json::number_integer_t(photoAlbum.GetDateAdded())},
         {PhotoAlbumColumns::ALBUM_IS_LOCAL, json::number_integer_t(photoAlbum.GetIsLocal())},
         {PhotoAlbumColumns::ALBUM_LPATH, json::string_t(photoAlbum.GetLPath())},
-        {PhotoAlbumColumns::ALBUM_PRIORITY, json::number_integer_t(photoAlbum.GetPriority())}
+        {PhotoAlbumColumns::ALBUM_PRIORITY, json::number_integer_t(photoAlbum.GetPriority())},
+        {PhotoAlbumColumns::UPLOAD_STATUS, json::number_integer_t(photoAlbum.GetUploadStatus())}
     };
 }
 

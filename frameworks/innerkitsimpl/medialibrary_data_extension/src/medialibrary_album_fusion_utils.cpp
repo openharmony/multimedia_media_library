@@ -183,6 +183,7 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::STYLE2_ORDER_STATUS, ResultSetDataType::TYPE_INT32},
     {PhotoAlbumColumns::COVER_URI_SOURCE, ResultSetDataType::TYPE_INT32},
     {PhotoAlbumColumns::COVER_CLOUD_ID, ResultSetDataType::TYPE_STRING},
+    {PhotoAlbumColumns::UPLOAD_STATUS, ResultSetDataType::TYPE_INT32},
 };
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
@@ -360,7 +361,8 @@ static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
     return position != POSITION_CLOUD_FLAG;
 }
 
-static inline void buildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType)
+void MediaLibraryAlbumFusionUtils::BuildTargetFilePath(
+    std::string &targetPath, std::string displayName, int32_t mediaType)
 {
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
@@ -810,7 +812,7 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
 
     int32_t mediaType;
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -968,7 +970,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     int32_t mediaType;
     GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -1165,7 +1167,7 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     }
 
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     std::string extension = MediaFileUtils::GetExtensionFromPath(displayName);
     MEDIA_INFO_LOG("ConvertFormatPhoto failed, displayName: %{public}s, targetPath: %{public}s",
         displayName.c_str(), targetPath.c_str());

@@ -51,6 +51,10 @@ public:
     int32_t serverErrorCode;
     bool isSuccess;
 
+    // lake
+    int32_t fileSourceType;
+    std::string storagePath;
+
 public:  // functions of Parcelable.
     virtual ~OnCreateRecord() = default;
     bool Unmarshalling(MessageParcel &parcel) override;

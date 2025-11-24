@@ -3097,6 +3097,8 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,
         PhotoColumn::PHOTO_EXIF_ROTATE,
+        PhotoColumn::PHOTO_STORAGE_PATH,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {

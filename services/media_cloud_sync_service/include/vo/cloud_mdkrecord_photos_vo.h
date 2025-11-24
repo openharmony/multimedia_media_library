@@ -82,6 +82,8 @@ public:
     std::string recordType;
     std::string recordId;
     bool isNew;
+    int32_t fileSourceType;
+    std::string storagePath;
 
     // Photo Album
     std::string albumCloudId;

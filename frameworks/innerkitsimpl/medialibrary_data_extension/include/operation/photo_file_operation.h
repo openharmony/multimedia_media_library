@@ -17,11 +17,15 @@
 #define OHOS_MEDIA_PHOTO_FILE_OPERATIOIN_H
 
 #include <string>
+#include <vector>
 
 #include "rdb_store.h"
+#include "photos_po.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media {
-class PhotoFileOperation {
+using namespace OHOS::Media::ORM;
+class EXPORT PhotoFileOperation {
 private:
     struct PhotoAssetInfo {
         std::string displayName;
@@ -36,11 +40,17 @@ private:
 
 public:
     int32_t CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath);
+    int32_t MovePhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo);
+    int32_t CopyPhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo);
     int32_t CopyThumbnail(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
         int64_t &newAssetId);
+    int32_t CopyThumbnail(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo, bool withAstcData = true);
     int32_t ConvertFormatPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
         const std::string &extension);
     int32_t CreateTmpCompatibleDup(const std::string &srcPath, size_t &size);
+    int32_t DeletePhoto(const PhotosPo &photoInfo);
+    int32_t DeleteThumbnail(const PhotosPo &photoInfo);
+    std::string GetAuditLog() const;
 
 private:
     std::string GetVideoFilePath(const PhotoAssetInfo &photoInfo);
@@ -70,6 +80,27 @@ private:
         const int64_t dateModified, const std::string &extension);
     int32_t ConvertFormatPhotoExtraData(const std::string &srcPath, const std::string &dstPath,
         const std::string &extension);
+    int32_t MovePhoto(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t MovePhotoFile(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t MovePhotoRelatedVideoFile(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t MovePhotoRelatedExtraData(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t MovePhotoRelatedData(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo,
+        const std::string &srcFolder, const std::string &targetFolder);
+    int32_t MoveFile(const std::string &srcPath, std::string &targetPath);
+    int32_t DeletePhoto(const PhotoAssetInfo &sourcePhotoInfo);
+    int32_t DeletePhotoFile(const PhotoAssetInfo &sourcePhotoInfo);
+    int32_t DeletePhotoRelatedVideoFile(const PhotoAssetInfo &sourcePhotoInfo);
+    int32_t DeletePhotoRelatedData(const PhotoAssetInfo &sourcePhotoInfo, const std::string &srcFolder);
+    int32_t DeletePhotoRelatedExtraData(const PhotoAssetInfo &sourcePhotoInfo);
+    void AuditLog(const std::string &path, const std::string &action, const int32_t result);
+
+private:
+    const std::string TAG_MOVE_IN = "MOVE_IN";
+    const std::string TAG_MOVE_OUT = "MOVE_OUT";
+    const std::string TAG_COPY_SOURCE = "COPY_SOURCE";
+    const std::string TAG_COPY_TARGET = "COPY_TARGET";
+    const std::string TAG_DELETE = "DELETE";
+    std::vector<std::string> opStats_;
 };
 }  // namespace OHOS::Media
 #endif  // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_PHOTO_FILE_H_
