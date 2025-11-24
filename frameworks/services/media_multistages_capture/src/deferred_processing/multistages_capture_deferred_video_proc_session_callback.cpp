@@ -65,7 +65,7 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::NotifyOnProcess(
     notifyInfo.SetUserDefineNotifyBody(notifyBody);
  
     Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
-    MEDIA_INFO_LOG("wang do: MultistagesCapture notify: %{public}s.", notifyUri.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
     return E_OK;
 }
 
