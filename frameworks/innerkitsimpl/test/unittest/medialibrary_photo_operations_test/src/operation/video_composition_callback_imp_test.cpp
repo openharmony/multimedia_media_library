@@ -52,7 +52,7 @@ static std::string EDITDATA_WATERMARK_AND_FILTER = "{\"imageEffect\":{\"filters\
     "\"values\":{\"FILTER_PARA\":0}},{\"name\":\"FrameSticker\","
     "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"},"
     "\"FILTER_CATEGORY\":\"BORDER_WATERMARK\"}],\"name\":\"imageEdit\"}}";
-static std::string EDITDATA_WITHOUT_WATERMARK = "{\"imageEffect\":{\"filters\":null,\"name\":\"imageEdit\"}}";
+static std::string EDITDATA_WITHOUT_WATERMARK = "{\"imageEffect\":{\"filters\":[],\"name\":\"imageEdit\"}}";
 
 static void CleanTestTables()
 {
@@ -276,23 +276,38 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionT
     MEDIA_INFO_LOG("end VideoComposition_Test_AddCompositionTask");
 }
 
-HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_EraseWatermarkTag, TestSize.Level1)
+HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_EraseWatermarkTagAndStickerField, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start VideoComposition_Test_EraseWatermarkTag");
     auto imp = make_shared<VideoCompositionCallbackImpl>();
     ASSERT_NE(imp, nullptr);
     std::string editData = "";
-    imp->EraseWatermarkTag(editData);
+    bool isFiltersFieldEmpty = false;
+    int32_t errCode = imp->EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
     EXPECT_EQ(editData, "");
+    EXPECT_EQ(isFiltersFieldEmpty, false);
+    EXPECT_EQ(errCode, E_ERR);
+
     editData = EDITDATA_WATERMARK;
-    imp->EraseWatermarkTag(editData);
+    isFiltersFieldEmpty = false;
+    errCode = imp->EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
     EXPECT_EQ(editData, EDITDATA_WITHOUT_WATERMARK);
+    EXPECT_EQ(isFiltersFieldEmpty, true);
+    EXPECT_EQ(errCode, E_OK);
+
     editData = EDITDATA_FILTER;
-    imp->EraseWatermarkTag(editData);
+    isFiltersFieldEmpty = false;
+    errCode = imp->EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
     EXPECT_EQ(editData, EDITDATA_FILTER);
+    EXPECT_EQ(isFiltersFieldEmpty, false);
+    EXPECT_EQ(errCode, E_OK);
+
     editData = EDITDATA_WATERMARK_AND_FILTER;
-    imp->EraseWatermarkTag(editData);
+    isFiltersFieldEmpty = false;
+    errCode = imp->EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
     EXPECT_EQ(editData, EDITDATA_FILTER);
+    EXPECT_EQ(isFiltersFieldEmpty, false);
+    EXPECT_EQ(errCode, E_OK);
     MEDIA_INFO_LOG("end VideoComposition_Test_EraseWatermarkTag");
 }
 
