@@ -20,6 +20,7 @@
 #include <vector>
 #include <map>
 
+#include "camera_character_types.h"
 #include "data_ability_helper.h"
 #include "data_ability_observer_stub.h"
 #include "data_ability_predicates.h"
@@ -55,6 +56,7 @@ struct AssetHandler {
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
     bool isError = false;
+    ObserverType observerType{ObserverType::UNDEFINED};
 
     AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
@@ -116,15 +118,6 @@ struct MediaAssetManagerAsyncContext : NapiError {
     ProgressHandler *progressHandler = nullptr;
 };
 
-class MultiStagesTaskObserver : public DataShare::DataShareObserver {
-public:
-    MultiStagesTaskObserver(int fileId)
-        : fileId_(fileId) {};
-    void OnChange(const ChangeInfo &changelnfo) override;
-private:
-    int fileId_;
-};
-
 struct WriteData {
     std::string requestUri;
     std::string destUri;
@@ -145,7 +138,8 @@ public:
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
-    static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
+    static void RegisterTaskNewObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext,
+        const ObserverType &observerType);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
