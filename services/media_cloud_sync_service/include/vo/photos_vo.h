@@ -37,6 +37,10 @@ public:
     int32_t orientation;
     int64_t modifiedTime;
     std::map<std::string, CloudFileDataVo> attachment;
+    int32_t fileSourceType;
+    std::string storagePath;
+    int32_t hidden;
+    int64_t dateTrashed;
 
 public:  // functions of Parcelable.
     virtual ~PhotosVo() = default;

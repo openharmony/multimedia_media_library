@@ -58,6 +58,7 @@
 #include "medialibrary_restore.h"
 #include "medialibrary_subscriber_database_utils.h"
 #include "media_file_utils.h"
+#include "media_lake_check_manager.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "application_context.h"
@@ -94,6 +95,7 @@
 #endif
 #include "map_code_upload_checker.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "product_info.h"
 
 using namespace OHOS::AAFwk;
 
@@ -480,6 +482,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
 
     UpdateCurrentStatus();
     UpdateThumbnailBgGenerationStatus();
+    UpdateMediaInLakeCheckStatus();
     UpdateBackgroundTimer();
     DealWithEventsAfterUpdateStatus(statusEventType);
 }
@@ -859,6 +862,111 @@ void MedialibrarySubscriber::AgingTmpCompatibleDuplicates(bool isAge)
     }
 }
 
+void UploadHiddenAssetsToCloud(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("Begin InsertOthersAndHiddenSourceAlbum");
+    const int32_t hiddenStatus = 1;
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, hiddenStatus);
+    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+
+    NativeRdb::ValuesBucket value;
+    value.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_MDIRTY));
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, value, predicates);
+    CHECK_AND_WARN_LOG(ret == E_OK,
+        "Update hidden asset dirty failed, ret = %{public}d, changedRows = %{public}d", ret, changedRows);
+    return;
+}
+
+void InsertOthersSourceAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("Begin InsertOthersSourceAlbum");
+    const std::string CREATE_OTHERS_ALBUM =
+        "INSERT OR REPLACE INTO " + PhotoAlbumColumns::TABLE +
+            "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_modified, " +
+            "date_added, lpath, priority) Values ('2048', '2049', '其它', 'com.other.album', '1', '1', " +
+            "strftime('%s000', 'now'), strftime('%s000', 'now'), '/Pictures/其它', '1')";
+    int32_t ret = rdbStore->ExecuteSql(CREATE_OTHERS_ALBUM);
+    CHECK_AND_RETURN_WARN_LOG(ret == E_OK,
+        "Can not insert othersAlbum into PhotoAlbum Table, ret = %{public}d", ret);
+    return;
+}
+
+void InsertAndUpdateHiddenSourceAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("Begin InsertAndUpdateHiddenSourceAlbum");
+    const std::string createHiddenAlbum =
+        "INSERT OR REPLACE INTO " + PhotoAlbumColumns::TABLE +
+            "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
+            " Values ('2048', '2049', '.hiddenAlbum', 'com.hidden.album', '1', "
+            "'1', strftime('%s000', 'now'), '/Pictures/hiddenAlbum', '1')";
+    int32_t ret = rdbStore->ExecuteSql(createHiddenAlbum);
+    CHECK_AND_RETURN_WARN_LOG(ret == E_OK,
+        "Can not insert hiddenAlbum into PhotoAlbum Table, ret = %{public}d", ret);
+    UploadHiddenAssetsToCloud(rdbStore);
+    return;
+}
+
+int32_t DoRecoverCloudHiddenAssets()
+{
+    MEDIA_INFO_LOG("Begin DoRecoverCloudHiddenAssets");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
+
+    const std::string hiddenAlbumLpath = "/Pictures/hiddenAlbum";
+    const std::string othersAlbumLpath = "/Pictures/其它";
+    std::vector<std::string> lpaths = {hiddenAlbumLpath, othersAlbumLpath};
+
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_LPATH, lpaths);
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_DIRTY, to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
+
+    std::vector<std::string> columns = {PhotoAlbumColumns::ALBUM_LPATH};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Failed to get resultSet");
+
+    int32_t numRows = -1;
+    int32_t ret = resultSet->GetRowCount(numRows);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && numRows >= 0, E_ERR, "Failed to get resultSet rowCount");
+
+    CHECK_AND_RETURN_RET_LOG(static_cast<size_t>(numRows) != lpaths.size(), E_SUCCESS, "Not need to recover albums");
+
+    bool isInsertHiddenAlbum = true;
+    bool isInsertOthersAlbum = true;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string lpath = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH,
+            resultSet, TYPE_STRING));
+        CHECK_AND_EXECUTE(lpath != hiddenAlbumLpath, isInsertHiddenAlbum = false);
+        CHECK_AND_EXECUTE(lpath != othersAlbumLpath, isInsertOthersAlbum = false);
+    }
+    CHECK_AND_EXECUTE(!isInsertHiddenAlbum, InsertAndUpdateHiddenSourceAlbum(rdbStore));
+    CHECK_AND_EXECUTE(!isInsertOthersAlbum, InsertOthersSourceAlbum(rdbStore));
+    return E_SUCCESS;
+}
+
+void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool isPowerSufficientForInLakeCheck = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
+    bool newStatus = isCharging_ && isScreenOff_ && isPowerSufficientForInLakeCheck &&
+        newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
+
+    if (checkInLakeStatus_ == newStatus) {
+        return;
+    }
+    checkInLakeStatus_ = newStatus;
+    MEDIA_INFO_LOG("lake update status new:%{public}d, s:%{public}d, c:%{public}d, b:%{public}d, t:%{public}d",
+        newStatus, isScreenOff_, isCharging_, batteryCapacity_, newTemperatureLevel_);
+
+    if (newStatus) {
+        MediaInLakeCheckManager::GetInstance()->Start();
+    } else {
+        MediaInLakeCheckManager::GetInstance()->Stop();
+    }
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
@@ -886,6 +994,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     ret = UpdateAllEditDataSize();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
     CloudUploadChecker::RepairNoOriginPhoto();
+
+    // recover cloud hidden assets
+    ret = DoRecoverCloudHiddenAssets();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoRecoverCloudHiddenAssets faild");
+
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     // add permission for cloud enhancement photo
     CloudEnhancementChecker::AddPermissionForCloudEnhancement();

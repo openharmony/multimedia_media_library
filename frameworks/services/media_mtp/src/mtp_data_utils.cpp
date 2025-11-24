@@ -654,7 +654,9 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
                 prop.currentValue->bin_.ui16 = format;
                 MEDIA_INFO_LOG("prop.currentValue->bin_.ui16 %{public}u", format);
             } else if (column.compare(MEDIA_DATA_DB_SIZE) == 0 && GetInt32Val(PARENT, resultSet) != PARENT_ROOT_ID) {
-                string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+                int32_t type = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+                string filePath = type == MTP_MEDIA_HO_LAKE ? GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet) :
+                    GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
                 struct stat statInfo;
                 CHECK_AND_RETURN_LOG(stat(filePath.c_str(), &statInfo) == 0, "GetOneRowPropList stat failed");
                 prop.currentValue->bin_.i64 = statInfo.st_size;

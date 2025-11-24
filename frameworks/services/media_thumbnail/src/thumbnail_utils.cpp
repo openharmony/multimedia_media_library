@@ -58,6 +58,7 @@
 #include "dfx_manager.h"
 #include "image_format_convert.h"
 #include "highlight_column.h"
+#include "lake_file_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -1291,17 +1292,10 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     }
     MEDIA_DEBUG_LOG("path = %{public}s", DfxUtils::GetSafePath(path).c_str());
 
-    string absFilePath;
-    if (!PathToRealPath(path, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to open a nullptr path, errno=%{public}d, path:%{public}s",
-            errno, DfxUtils::GetSafePath(path).c_str());
-        return E_ERR;
-    }
-
-    int32_t fd = open(absFilePath.c_str(), O_RDONLY);
+    int32_t fd = LakeFileUtils::OpenFile(path, O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, DfxUtils::GetSafePath(absFilePath).c_str(), MediaFileUtils::IsFileExists(absFilePath));
+            errno, DfxUtils::GetSafePath(path).c_str(), MediaFileUtils::IsFileExists(path));
         return E_ERR;
     }
     struct stat64 st;
@@ -1313,7 +1307,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(absFilePath, DfxType::AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
@@ -1819,7 +1813,7 @@ static bool IsMobileNetworkEnabled()
     vector<string> columns = {"value"};
     shared_ptr<DataShare::DataShareResultSet> resultSet =
         cloudHelper->Query(cloudUri, predicates, columns);
-    
+
     //default mobile network is off
     string switchOn = "0";
     if (resultSet != nullptr && resultSet->GoToNextRow()==0) {

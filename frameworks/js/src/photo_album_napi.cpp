@@ -40,6 +40,7 @@
 #include "album_get_selected_assets_vo.h"
 #include "get_face_id_vo.h"
 #include "shooting_mode_column.h"
+#include "get_fussion_assets_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -120,6 +121,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("dateModified", JSGetDateModifiedSystem),
             DECLARE_NAPI_GETTER("dateAdded", JSGetDateAdded),
             DECLARE_NAPI_GETTER("coverUriSource", JSGetCoverUriSource),
+            DECLARE_NAPI_GETTER("uploadStatus", JSGetUploadStatus),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -131,6 +133,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", JSPhotoAccessGetSharedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getFaceId", PhotoAccessHelperGetFaceId),
             DECLARE_NAPI_FUNCTION("getSelectedAssets", JSPhotoAccessGetSelectedPhotoAssets),
+            DECLARE_NAPI_FUNCTION("getFusionAssetsInfo", PhotoAccessGetFusionAssetsInfo),
         }
     };
 
@@ -283,6 +286,11 @@ bool PhotoAlbumNapi::GetHiddenOnly() const
 void PhotoAlbumNapi::SetHiddenOnly(const bool hiddenOnly_)
 {
     return photoAlbumPtr->SetHiddenOnly(hiddenOnly_);
+}
+
+int32_t PhotoAlbumNapi::GetUploadStatus() const
+{
+    return photoAlbumPtr->GetUploadStatus();
 }
 
 void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
@@ -607,6 +615,18 @@ napi_value PhotoAlbumNapi::JSGetCoverUriSource(napi_env env, napi_callback_info 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int32(env, obj->GetCoverUriSource(), &jsResult),
         JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetUploadStatus(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "GetUploadStatus permission denied: not a system app", nullptr, "GetUploadStatus failed: not a system app");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetUploadStatus(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -1957,5 +1977,140 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSelectedPhotoAssets(napi_env env, nap
  
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSelectedPhotoAssets",
         JSPhotoAccessGetSelectedPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);
+}
+
+static void PhotoAccessGetFusionAssetsInfoExec(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetFusionAssetsInfoExec");
+    NAPI_INFO_LOG("PhotoAccessGetFusionAssetsInfoExec start");
+ 
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Get Fusion Assets Async context is null");
+ 
+    auto *objectInfo = context->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(objectInfo, "Get Fusion Assets objectInfo is null");
+ 
+    auto photoAlbumInstance = objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbumInstance, "Get Fusion Assets photoAlbumInstance is null");
+ 
+    PhotoAlbumType albumType = photoAlbumInstance->GetPhotoAlbumType();
+    if (!PhotoAlbum::CheckPhotoAlbumType(albumType) || albumType == PhotoAlbumType::SMART) {
+        NAPI_WARN_LOG("albumType: %{public}d, not support getFusionAssetsInfo", albumType);
+        return;
+    }
+ 
+    GetFussionAssetsReqBody reqBody;
+    GetFussionAssetsRespBody respBody;
+    reqBody.albumId = photoAlbumInstance->GetAlbumId();
+    reqBody.albumType = static_cast<int32_t>(albumType);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_FUSION_ASSET_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->error = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+        }
+        NAPI_ERR_LOG("get fusion assets info failed, errCode is %{public}d", ret);
+        return;
+    }
+    for (auto qryResult: respBody.queryResult) {
+        FusionAssetsInfo assetInfo;
+        assetInfo.assetsType = static_cast<FusionAssetType>(qryResult.assetsType);
+        assetInfo.assetsCount = qryResult.assetsCount;
+        std::string filePath = qryResult.assetsPath;
+        assetInfo.assetsPath = std::filesystem::path(filePath).parent_path().string();
+        if (assetInfo.assetsCount != 0) {
+            context->fusionAssetInfos.push_back(assetInfo);
+        }
+    }
+}
+ 
+static bool GetFusionAssetsInfoResult(napi_env env, unique_ptr<JSAsyncContextOutput> &jsContext,
+    PhotoAlbumNapiAsyncContext* context)
+{
+    const std::string assetsType = "assetsType";
+    const std::string assetsCount = "assetsCount";
+    const std::string assetsPath = "assetsPath";
+    napi_value entity = nullptr;
+    size_t resultArraySize = context->fusionAssetInfos.size();
+    napi_status status = napi_create_array_with_length(env, resultArraySize, &entity);
+    CHECK_COND_RET(status == napi_ok, false, "Create array error!");
+    NAPI_INFO_LOG("GetFusionAssetsInfoResult, infos size: %{public}u", context->fusionAssetInfos.size());
+ 
+    for (size_t i = 0; i < context->fusionAssetInfos.size(); ++i) {
+        auto assetInfo = context->fusionAssetInfos[i];
+        napi_value entityInfo;
+        status = napi_create_object(env, &entityInfo);
+        CHECK_COND_RET(status == napi_ok, false, "create entityInfo failed");
+ 
+        napi_value entityTypeValue;
+        int32_t typeValue = static_cast<int32_t>(assetInfo.assetsType);
+        status = napi_create_int32(env, typeValue, &entityTypeValue);
+        CHECK_COND_RET(status == napi_ok, false, "create entityType failed");
+        status = napi_set_named_property(env, entityInfo, assetsType.c_str(), entityTypeValue);
+        CHECK_COND_RET(status == napi_ok, false, "failed to Set named property of entityType");
+ 
+        napi_value entityCountValue;
+        status = napi_create_int32(env, assetInfo.assetsCount, &entityCountValue);
+        CHECK_COND_RET(status == napi_ok, false, "create entityCount failed");
+        status = napi_set_named_property(env, entityInfo, assetsCount.c_str(), entityCountValue);
+        CHECK_COND_RET(status == napi_ok, false, "failed to Set named property of entityCount");
+ 
+        napi_value entityPathValue;
+        status = napi_create_string_utf8(env, assetInfo.assetsPath.c_str(), NAPI_AUTO_LENGTH, &entityPathValue);
+        CHECK_COND_RET(status == napi_ok, false, "create entityPath failed");
+        status = napi_set_named_property(env, entityInfo, assetsPath.c_str(), entityPathValue);
+        CHECK_COND_RET(status == napi_ok, false, "failed to Set named property of entityPath");
+ 
+        status = napi_set_element(env, entity, i, entityInfo);
+        CHECK_COND_RET(status == napi_ok, false, "failed to Set element property of entityInfo");
+    }
+    jsContext->data = entity;
+    return true;
+}
+ 
+static void GetFusionAssetsInfoCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFusionAssetsInfoCompleteCallback");
+ 
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+ 
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        jsContext->status = true;
+        GetFusionAssetsInfoResult(env, jsContext, context);
+    }
+    tracer.Finish();
+ 
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
+            *jsContext);
+    }
+    delete context;
+}
+ 
+napi_value PhotoAlbumNapi::PhotoAccessGetFusionAssetsInfo(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetFusionAssetsInfo");
+    NAPI_INFO_LOG("PhotoAccessGetFusionAssetsInfo start");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get the fusion assets info");
+        return nullptr;
+    }
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, 0, 0),
+        JS_ERR_PARAMETER_INVALID);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetFusionAssetsInfo",
+        PhotoAccessGetFusionAssetsInfoExec, GetFusionAssetsInfoCompleteCallback);
 }
 } // namespace OHOS::Media

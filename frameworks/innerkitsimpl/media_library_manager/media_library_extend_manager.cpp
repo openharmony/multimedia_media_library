@@ -46,6 +46,7 @@
 #include "cancel_photo_uri_permission_inner_vo.h"
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
+#include "start_asset_change_scan_vo.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -541,6 +542,19 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
         }
     }
     return respBody.resultSet;
+}
+                                   
+int32_t MediaLibraryExtendManager::SendBrokerChangeOperation(string operation)
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "datashareHelper is nullptr");
+    StartAssetChangeScanReqBody reqBody;
+    reqBody.operation = operation;
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHANGE_SCAN_ASSET);
+    MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CHANGE_SCAN_ASSET");
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    return errCode;
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,

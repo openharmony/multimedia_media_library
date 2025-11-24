@@ -93,6 +93,7 @@ public:
         const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     static bool ScreenOnInterrupt();
     static void MigratePhotoMapData(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    static void BuildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType);
 
 private:
     EXPORT static void SetRefreshAlbum(bool needRefresh);

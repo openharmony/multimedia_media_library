@@ -17,12 +17,15 @@
 #include "thumbnail_service.h"
 
 #include "cloud_sync_helper.h"
+#include "file_parser.h"
+
 #include "display_manager.h"
 #include "dfx_utils.h"
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "folder_scanner.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"

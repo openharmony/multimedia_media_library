@@ -569,7 +569,8 @@ static void ClearCloudInfoFuzzer()
     }
     std::string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     UpdatePhotoAsset(cloudId);
-    cloudMediaPhotosDao->ClearCloudInfo(cloudId);
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh;
+    cloudMediaPhotosDao->ClearCloudInfo(cloudId, photoRefresh);
 }
 
 static void DeleteFileNotExistPhotoFuzzer()
