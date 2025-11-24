@@ -4444,8 +4444,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
     NAPI_INFO_LOG("End ConvertFormatHandlerExecute.");
 }
 
-static bool CheckConvertFormatParams(const int32_t &fileId, const std::string &title,
-    const std::string &extension)
+static bool CheckConvertFormatParams(const std::string &title, const std::string &extension)
 {
     std::string displayName = title + "." + extension;
     if (MediaFileUtils::CheckDisplayName(displayName, true) != E_OK) {
@@ -4463,15 +4462,29 @@ static bool CheckConvertFormatParams(const int32_t &fileId, const std::string &t
         NAPI_ERR_LOG("The format of transition is not supported.");
         return false;
     }
+    return false;
+}
 
+static bool CheckConvertFormatMimeType(napi_env env, const int32_t fileId)
+{
+    NAPI_INFO_LOG("CheckConvertFormatMimeType in");
     MimeTypeReqBody mimeTypeReqBody;
     mimeTypeReqBody.fileId = fileId;
     MimeTypeRespBody mimeTypeRespBody;
     mimeTypeRespBody.result = false;
     IPC::UserDefineIPCClient mimeTypeClient;
-    mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+    int32_t ret = mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
         mimeTypeReqBody, mimeTypeRespBody);
-    return mimeTypeRespBody.result;
+    if (ret < 0) {
+        int32_t error = MediaLibraryNapiUtils::TransErrorCode("CheckConvertFormatMimeType", ret);
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return false;
+    }
+    if (!mimeTypeRespBody.result) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
+        return false;
+    }
+    return true;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperConvertFormat(napi_env env, napi_callback_info info)
@@ -4493,11 +4506,13 @@ napi_value FileAssetNapi::PhotoAccessHelperConvertFormat(napi_env env, napi_call
     MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], extension);
     int32_t fileId = fileAsset->GetId();
     NAPI_INFO_LOG("ConvertFormat title: %{public}s, extension: %{public}s", title.c_str(), extension.c_str());
-    if (!CheckConvertFormatParams(fileId, title, extension)) {
+    if (!CheckConvertFormatParams(title, extension)) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
         return nullptr;
     }
-
+    if (!CheckConvertFormatMimeType(env, fileId)) {
+        return nullptr;
+    }
     asyncContext->title = title;
     asyncContext->extension = extension;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ConvertFormateHandlerExecute",
