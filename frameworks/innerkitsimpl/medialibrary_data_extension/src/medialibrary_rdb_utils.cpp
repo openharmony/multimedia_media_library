@@ -2183,7 +2183,9 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
             continue;
         }
         std::string albumIdStr = std::to_string(albumId);
-        fileToAlbums[fileId].insert(albumIdStr);
+        CHECK_AND_CONTINUE_ERR_LOG(!albumIdStr.empty(), "Not valid albumIdStr");
+        auto &albumSet = fileToAlbums.try_emplace(fileId, std::set<std::string>{}).first->second;
+        albumSet.insert(albumIdStr);
         allAlbumIds.insert(albumIdStr);
     }
 
@@ -2209,24 +2211,26 @@ static std::string BuildPortraitAwareWhereClause(const std::string &idList)
     const std::string portraitSubType =
         std::to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT));
 
+    std::ostringstream ss;
     // 非人像：只查自身
-    std::string clause =
-        "(" + ALBUM_SUBTYPE + " != " + portraitSubType +
-        " AND " + ALBUM_ID + " IN (" + idList + "))";
+    ss << '('
+       << ALBUM_SUBTYPE << " != " << portraitSubType
+       << " AND " << ALBUM_ID << " IN (" << idList << "))";
 
     // 人像：查 group_tag siblings
-    clause += " OR ("
-        + ALBUM_SUBTYPE + " = " + portraitSubType +
-        " AND " + GROUP_TAG + " IN (SELECT " + GROUP_TAG +
-            " FROM " + ANALYSIS_ALBUM_TABLE +
-            " WHERE " + ALBUM_ID + " IN (" + idList + ")" +
-            " AND " + ALBUM_SUBTYPE + " = " + portraitSubType +
-        "))";
+    ss << " OR ("
+       << ALBUM_SUBTYPE << " = " << portraitSubType
+       << " AND " << GROUP_TAG << " IS NOT NULL"
+       << " AND " << GROUP_TAG << " IN (SELECT " << GROUP_TAG
+       << " FROM " << ANALYSIS_ALBUM_TABLE
+       << " WHERE " << ALBUM_ID << " IN (" << idList << ")"
+       << " AND " << ALBUM_SUBTYPE << " = " << portraitSubType
+       << "))";
 
-    return clause;
+    return ss.str();
 }
 
-static void ParseAnalysisAlbumRows(
+static void ParseAnalysisAlbumRowsForAccurateRefresh(
     const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     std::vector<UpdateAlbumData> &albumDatas,
     std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap)
@@ -2234,7 +2238,7 @@ static void ParseAnalysisAlbumRows(
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         UpdateAlbumData data;
         data.albumId = GetAlbumId(resultSet);
-        data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(resultSet));
+        data.albumSubtype = GetAlbumSubType(resultSet);
         data.albumCoverUri = GetAlbumCover(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
         data.albumCount = GetAlbumCount(resultSet, PhotoAlbumColumns::ALBUM_COUNT);
         data.isCoverSatisfied = GetIsCoverSatisfied(resultSet);
@@ -2260,7 +2264,7 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
     // 1. 构造相册id列表
     const std::string idList = JoinIds(affectedAlbumIds);
 
-    // 2. 构造 whereClause（人像自动扩展 groupTag）
+    // 2. 构造 whereClause, 人像相册数据自动扩展 groupTag
     const std::string whereClause = BuildPortraitAwareWhereClause(idList);
 
     // 3. 查询
@@ -2281,7 +2285,7 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Query failed");
 
     // 4. 解析结果
-    ParseAnalysisAlbumRows(resultSet, albumDatas, portraitGroupMap);
+    ParseAnalysisAlbumRowsForAccurateRefresh(resultSet, albumDatas, portraitGroupMap);
 
     resultSet->Close();
     return E_OK;
@@ -2293,22 +2297,20 @@ int32_t MediaLibraryRdbUtils::ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "no rdbStore");
 
-    // 1. 新 count = 旧 count + delta
     int32_t newCount = base.albumCount + deltaCount;
     if (newCount < 0) {
         newCount = 0;
     }
 
-    // 3. 如果没有变化就不写库
-    if (newCover == "") {
+    if (newCover == "" && newCount != 0) {
         newCover = base.albumCoverUri;
     }
+
     if (newCount == base.albumCount && newCover == base.albumCoverUri) {
         MEDIA_INFO_LOG("ApplyAlbumRefreshInfo: nothing changed: album=%{public}d", base.albumId);
         return E_OK;
     }
 
-    // 4. update 写库
     ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
