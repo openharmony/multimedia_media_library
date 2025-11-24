@@ -33,8 +33,10 @@
 #include "multistages_capture_manager.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
+#include "multistages_capture_notify_info.h"
 #include "multistages_capture_request_task_manager.h"
 #include "multistages_moving_photo_capture_manager.h"
+#include "medialibrary_notify_new.h"
 #include "result_set_utils.h"
 #include "media_change_effect.h"
 #include "exif_metadata.h"
@@ -46,6 +48,7 @@
 
 using namespace std;
 using namespace OHOS::CameraStandard;
+using namespace OHOS::Media::Notification;
 
 constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
@@ -93,6 +96,39 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     }
     MEDIA_DEBUG_LOG("MultistagesCapture notify: %{public}s", notifyUri.c_str());
     watch->Notify(notifyUri, NOTIFY_UPDATE);
+}
+
+int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyOnProcess(
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, MultistagesCaptureNotifyType notifyType)
+{
+    MEDIA_INFO_LOG("NotifyOnProcess begin: %{public}d.", static_cast<int32_t>(notifyType));
+    if (resultSet == nullptr || notifyType == MultistagesCaptureNotifyType::UNDEFINED) {
+        MEDIA_ERR_LOG("resultSet is nullptr or Invalid observer type.");
+        return E_ERR;
+    }
+ 
+    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    // resultSet->Close();
+ 
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
+ 
+    auto notifyBody = std::make_shared<MultistagesCaptureNotifyServerInfo>();
+    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
+    notifyBody->uri_ = notifyUri;
+    notifyBody->notifyType_ = notifyType;
+ 
+    UserDefineNotifyInfo notifyInfo(NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    notifyInfo.SetUserDefineNotifyBody(notifyBody);
+ 
+    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
+    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
+    return E_OK;
 }
 
 int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId)
@@ -171,6 +207,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
                 MEDIA_ERR_LOG("result set is empty.");
                 return;
             }
+            NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
             NotifyIfTempFile(resultSet, true);
             MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(imageId);
             break;
@@ -235,6 +272,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
         HighQualityScanFileCallback::Create(fileId));
+    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
@@ -423,6 +461,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
 
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto,
         nullptr, HighQualityScanFileCallback::Create(fileId));
+    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
