@@ -43,6 +43,7 @@ ohos_unittest("media_notification_test") {
     "./src/notification_classification_test.cpp",
     "./src/notification_distribution_test.cpp",
     "./src/notification_test_data.cpp",
+    "./src/user_define_notify_info_test.cpp",
     "./src/utils/media_notification_utils_test.cpp",
   ]
   media_notification_source = [
