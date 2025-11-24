@@ -4462,6 +4462,7 @@ static bool CheckConvertFormatParams(const std::string &title, const std::string
         NAPI_ERR_LOG("The format of transition is not supported.");
         return false;
     }
+    NAPI_INFO_LOG("CheckConvertFormatParams end");
     return false;
 }
 
@@ -4476,14 +4477,17 @@ static bool CheckConvertFormatMimeType(napi_env env, const int32_t fileId)
     int32_t ret = mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
         mimeTypeReqBody, mimeTypeRespBody);
     if (ret < 0) {
+        NAPI_ERR_LOG("Failed to CheckConvertFormatMimeType");
         int32_t error = MediaLibraryNapiUtils::TransErrorCode("CheckConvertFormatMimeType", ret);
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        NapiError::ThrowError(env, error);
         return false;
     }
     if (!mimeTypeRespBody.result) {
+        NAPI_ERR_LOG("CheckConvertFormatMimeType result false");
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
         return false;
     }
+    NAPI_INFO_LOG("CheckConvertFormatMimeType end");
     return true;
 }
 
