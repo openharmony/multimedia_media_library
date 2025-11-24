@@ -1166,7 +1166,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
 void MediaAssetManagerNapi::OnHandleRequestEfficientImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
-    NAPI_ERR_LOG("wang do: OnHandleRequestEfficientImage mode: %{public}d.",
+    NAPI_INFO_LOG("OnHandleRequestEfficientImage mode: %{public}d.",
         static_cast<int32_t>(asyncContext->deliveryMode));
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
@@ -1552,7 +1552,7 @@ std::shared_ptr<MultistagesCaptureNotifyServerInfo> MultistagesCaptureOnProcessO
 {
     if (wrapper.userDefineInfo_ == nullptr ||
         wrapper.userDefineInfo_->notifyUserDefineType_ != NotifyForUserDefineType::MULTISTAGES_CAPTURE) {
-        NAPI_WARN_LOG("wrapper is invalid.");
+        NAPI_WARN_LOG("Wrapper is invalid.");
         return nullptr;
     }
  
@@ -1564,14 +1564,14 @@ std::shared_ptr<MultistagesCaptureNotifyServerInfo> MultistagesCaptureOnProcessO
  
     auto notifyInfo = static_pointer_cast<MultistagesCaptureNotifyServerInfo>(notifyBody);
     if (notifyInfo == nullptr) {
-        NAPI_ERR_LOG("notifyInfo is nullptr.");
+        NAPI_ERR_LOG("NotifyInfo is nullptr.");
         return nullptr;
     }
  
     int32_t notifyType = static_cast<int32_t>(notifyInfo->notifyType_);
     if (notifyType <= static_cast<int32_t>(MultistagesCaptureNotifyType::UNDEFINED) ||
         notifyType >= static_cast<int32_t>(MultistagesCaptureNotifyType::NOTIFY_END)) {
-        NAPI_ERR_LOG("notifyType is invalid.");
+        NAPI_ERR_LOG("NotifyType is invalid.");
         return nullptr;
     }
     return notifyInfo;
@@ -1581,13 +1581,13 @@ bool MultistagesCaptureOnProcessObserver::MatchNotifyToObserver(
     const MultistagesCaptureNotifyType &notifyType, const ObserverType &observerType)
 {
     if (MATCH_NOTIFY_TO_OBSERVER.find(notifyType) == MATCH_NOTIFY_TO_OBSERVER.end()) {
-        NAPI_ERR_LOG("notifyType is invalid.");
+        NAPI_ERR_LOG("NotifyType is invalid.");
         return false;
     }
     std::vector<ObserverType> observers = MATCH_NOTIFY_TO_OBSERVER.at(notifyType);
     for (const auto observer : observers) {
         if (observer == observerType) {
-            NAPI_INFO_LOG("wang do: need notify.");
+            NAPI_INFO_LOG("Need notify.");
             return true;
         }
     }
@@ -1596,7 +1596,7 @@ bool MultistagesCaptureOnProcessObserver::MatchNotifyToObserver(
  
 void MultistagesCaptureOnProcessObserver::OnChange(const NewJsOnChangeCallbackWrapper &wrapper)
 {
-    NAPI_INFO_LOG("wang do: MultistagesCapture, OnChange called, %{public}s.", ToString().c_str());
+    NAPI_INFO_LOG("MultistagesCapture, OnChange called, %{public}s.", ToString().c_str());
     std::shared_ptr<MultistagesCaptureNotifyServerInfo> notifyInfo = ConvertWrapperToNotifyInfo(wrapper);
     if (notifyInfo == nullptr) {
         return;
