@@ -35,6 +35,7 @@ const std::string RegisterNotifyType::PHOTO_ALBUM_CHANGE = "photoAlbumChange";
 const std::string RegisterNotifyType::HIDDEN_ALBUM_CHANGE = "hiddenAlbumChange";
 const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange";
 const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
+const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
     MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {
@@ -44,6 +45,15 @@ const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
 
 const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_URI_MAP = {
     { Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI, RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE },
+};
+
+const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
+    MediaLibraryNotifyUtils::REGISTER_USER_DEFINE_TYPE_MAP = {
+    { Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI, Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI },
+};
+ 
+const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_USER_DEFINE_URI_MAP = {
+    { Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI, RegisterNotifyType::USER_CLIENT_CHANGE },
 };
 
 const std::map<std::string, Notification::NotifyUriType> MediaLibraryNotifyUtils::REGISTER_NOTIFY_TYPE_MAP = {
@@ -73,14 +83,14 @@ const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils
     { Notification::NotifyUriType::TRASH_ALBUM_URI, RegisterNotifyType::TRASHED_ALBUM_CHANGE },
 };
 
-const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
-    { Notification::NotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
-    { Notification::NotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
-    { Notification::NotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
-    { Notification::NotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
-    { Notification::NotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
-    { Notification::NotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
-    { Notification::NotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
+const std::map<Notification::AccurateNotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
 };
 
 const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
@@ -89,6 +99,22 @@ const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
     { JS_E_PARAM_INVALID,      JS_E_PARAM_INVALID },
     { OHOS_INVALID_PARAM_CODE, OHOS_INVALID_PARAM_CODE },
 };
+
+int32_t MediaLibraryNotifyUtils::GetUserDefineNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, string &uri)
+{
+    if (REGISTER_USER_DEFINE_TYPE_MAP.find(type) == REGISTER_USER_DEFINE_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("type is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_USER_DEFINE_TYPE_MAP.at(type);
+    if (REGISTER_USER_DEFINE_URI_MAP.find(uriType) == REGISTER_USER_DEFINE_URI_MAP.end()) {
+        NAPI_ERR_LOG("uriType is invalid");
+        return E_ERR;
+    }
+    uri = REGISTER_USER_DEFINE_URI_MAP.at(uriType);
+    return E_OK;
+}
 
 int32_t MediaLibraryNotifyUtils::GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
     Notification::NotifyUriType &uriType, string &uri)
@@ -132,7 +158,7 @@ int32_t MediaLibraryNotifyUtils::GetNotifyTypeAndUri(const Notification::NotifyU
     return E_OK;
 }
 
-int32_t MediaLibraryNotifyUtils::GetNotifyChangeType(const Notification::NotifyType &notifyType)
+int32_t MediaLibraryNotifyUtils::GetNotifyChangeType(const Notification::AccurateNotifyType &notifyType)
 {
     if (NOTIFY_CHANGE_TYPE_MAP.find(notifyType) == NOTIFY_CHANGE_TYPE_MAP.end()) {
         NAPI_ERR_LOG("notifyType is invalid");
