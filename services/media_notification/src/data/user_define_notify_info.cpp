@@ -29,7 +29,7 @@ const std::map<NotifyForUserDefineType, std::shared_ptr<UserDefineNotifyBase>> U
  
 bool UserDefineNotifyInfo::ReadHeadFromParcel(Parcel &parcel)
 {
-    MEDIA_INFO_LOG("wang do: ReadHeadFromParcel begin");
+    MEDIA_INFO_LOG("ReadHeadFromParcel begin");
     this->notifyUri_ = static_cast<NotifyUriType>(parcel.ReadUint16());
     if (this->notifyUri_ != NotifyUriType::USER_DEFINE_NOTIFY_URI) {
         MEDIA_ERR_LOG("NotityInfo type is invalid, notifyUri: %{public}d.", static_cast<int32_t>(this->notifyUri_));
@@ -40,7 +40,7 @@ bool UserDefineNotifyInfo::ReadHeadFromParcel(Parcel &parcel)
         MEDIA_ERR_LOG("notifyUserDefineType is invalid.");
         return false;
     }
-    MEDIA_INFO_LOG("wang do: ReadHeadFromParcel, notifyUri: %{public}d, NotifyUserDefineType: %{public}d.",
+    MEDIA_INFO_LOG("ReadHeadFromParcel, notifyUri: %{public}d, NotifyUserDefineType: %{public}d.",
         static_cast<int32_t>(this->notifyUri_), static_cast<int32_t>(this->notifyUserDefineType_));
     return true;
 }
@@ -60,7 +60,7 @@ bool UserDefineNotifyInfo::WriteHeadFromParcel(std::shared_ptr<Parcel> &parcel) 
  
 bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
 {
-    MEDIA_INFO_LOG("wang do: ReadBodyFromParcel begin");
+    MEDIA_INFO_LOG("ReadBodyFromParcel begin");
     auto notifyBodyIter = USER_DEFINE_NOTIFY_BODY_MAP.find(this->notifyUserDefineType_);
     if (notifyBodyIter == USER_DEFINE_NOTIFY_BODY_MAP.end()) {
         MEDIA_ERR_LOG("NotifyForUserDefineType is invalid.");
