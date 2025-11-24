@@ -4477,7 +4477,7 @@ static bool CheckConvertFormatMimeType(napi_env env, const int32_t fileId)
     int32_t ret = mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
         mimeTypeReqBody, mimeTypeRespBody);
     if (ret < 0) {
-        NAPI_ERR_LOG("Failed to CheckConvertFormatMimeType");
+        NAPI_ERR_LOG("Failed to CheckConvertFormatMimeType, ret: %{public}d", ret);
         int32_t error = MediaLibraryNapiUtils::TransErrorCode("CheckConvertFormatMimeType", ret);
         NapiError::ThrowError(env, error);
         return false;
