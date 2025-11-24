@@ -147,6 +147,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
   ]
 
+  include_media_camera_character = [
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+  ]
+
   include_backround_task = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/background",
   ]
