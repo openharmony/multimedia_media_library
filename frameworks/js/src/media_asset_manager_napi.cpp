@@ -1035,8 +1035,8 @@ napi_value MediaAssetManagerNapi::JSRequestEfficientIImage(napi_env env, napi_ca
     asyncContext->requestId = GenerateRequestId();
     asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestEfficientIImage", JSRequestExecute,
-        JSRequestComplete);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestEfficientIImage",
+        JSRequestEfficientExecute, JSRequestComplete);
 }
 
 void MediaAssetManagerNapi::ReleaseSafeFunc(napi_threadsafe_function &threadSafeFunc)
@@ -1152,6 +1152,52 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskNewObserver(env, asyncContext, ObserverType::REQUEST_IMAGE);
+            } else {
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
+            }
+            break;
+        default: {
+            NAPI_ERR_LOG("invalid delivery mode");
+            return;
+        }
+    }
+}
+
+void MediaAssetManagerNapi::OnHandleRequestEfficientImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
+{
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
+    NAPI_ERR_LOG("wang do: OnHandleRequestEfficientImage mode: %{public}d.",
+        static_cast<int32_t>(asyncContext->deliveryMode));
+    MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    switch (asyncContext->deliveryMode) {
+        case DeliveryMode::FAST:
+            if (asyncContext->needsExtraInfo) {
+                asyncContext->photoQuality =
+                    MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId, asyncContext->photoUri,
+                    asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
+            }
+            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+            ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
+            break;
+        case DeliveryMode::HIGH_QUALITY:
+            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
+            asyncContext->photoQuality = status;
+            if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
+                MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
+            } else {
+                RegisterTaskNewObserver(env, asyncContext, ObserverType::REQUEST_QUICK_IMAGE);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr);
+            }
+            break;
+        case DeliveryMode::BALANCED_MODE:
+            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
+            asyncContext->photoQuality = status;
+            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+            if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
+                RegisterTaskNewObserver(env, asyncContext, ObserverType::REQUEST_QUICK_IMAGE);
             } else {
                 ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             }
@@ -2108,6 +2154,26 @@ void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
     MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     OnHandleRequestImage(env, context);
+    if (context->subType == PhotoSubType::MOVING_PHOTO) {
+        string uri = LOG_MOVING_PHOTO;
+        Uri logMovingPhotoUri(uri);
+        DataShare::DataShareValuesBucket valuesBucket;
+        string result;
+        valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
+        AdaptedReqBody reqBody;
+        reqBody.adapted = context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO;
+        IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+            static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO), reqBody);
+    }
+}
+
+void MediaAssetManagerNapi::JSRequestEfficientExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRequestEfficientExecute");
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    OnHandleRequestEfficientImage(env, context);
     if (context->subType == PhotoSubType::MOVING_PHOTO) {
         string uri = LOG_MOVING_PHOTO;
         Uri logMovingPhotoUri(uri);
