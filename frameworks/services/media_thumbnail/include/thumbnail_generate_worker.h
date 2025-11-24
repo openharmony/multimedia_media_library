@@ -113,6 +113,7 @@ public:
     EXPORT int32_t AddTask(
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
     EXPORT void IgnoreTaskByRequestId(int32_t requestId);
+    EXPORT void RecordCurrentTaskId(int32_t requestId);
     EXPORT void TryCloseTimer();
     EXPORT bool IsLowerQueueEmpty();
 
@@ -143,6 +144,7 @@ private:
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
 
     std::atomic<int32_t> ignoreRequestId_ = 0;
+    std::atomic<int32_t> currentRequestId_ = 0;
     std::map<int32_t, int32_t> requestIdTaskMap_;
     std::mutex requestIdMapLock_;
 
