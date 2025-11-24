@@ -34,7 +34,8 @@ std::unordered_map<std::string, Notification::NotifyUriType> NOTIFY_URI_MAP = {
     {"photoAlbumChange", Notification::NotifyUriType::PHOTO_ALBUM_URI},
     {"hiddenAlbumChange", Notification::NotifyUriType::HIDDEN_ALBUM_URI},
     {"trashedAlbumChange", Notification::NotifyUriType::TRASH_ALBUM_URI},
-    {"downloadProgressChange", Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI}
+    {"downloadProgressChange", Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI},
+    {"userDefineChange", Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI},
 };
 
 std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
