@@ -48,6 +48,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/report",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/restore",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/group_photo_album",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
     "../medialibrary_unittest_utils/include",
   ]
@@ -66,6 +67,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/classify/classify_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/cloud_backup_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_knowledge/geo_knowledge_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/group_photo_album/group_photo_album_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/highlight_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/portrait_album_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit.cpp",
@@ -93,7 +95,6 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/clone_group_photo_album.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/external_source.cpp",
     "./src/gallery_source.cpp",

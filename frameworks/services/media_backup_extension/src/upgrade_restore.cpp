@@ -44,7 +44,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "portrait_album_utils.h"
-#include "clone_group_photo_album.h"
+#include "group_photo_album_restore.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -386,10 +386,16 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
     classifyRestore_.RestoreClassify(photoInfoMap_);
     int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
+    cloneGroupPhotoAlbum.UpdateGroupPhoto();
+    int64_t endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
-        " RestoreOCR cost: %{public}" PRId64 ", RestoreClassify cost: %{public}" PRId64,
+        " RestoreOCR cost: %{public}" PRId64 ", RestoreClassify cost: %{public}" PRId64
+        " GroupPhoto cost: %{public}" PRId64,
         startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
-        endRestoreOCR - endRestoreHighlight, endRestoreClassify - endRestoreOCR);
+        endRestoreOCR - endRestoreHighlight, endRestoreClassify - endRestoreOCR,
+        endGroupPhoto - startGroupPhoto);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
@@ -488,8 +494,6 @@ void UpgradeRestore::RestorePhoto()
     }
     RestoreSmartAlbums();
     ReportPortraitStat(sceneCode_);
-    CloneGroupPhotoAlbum cloneGroupPhotoAlbum(mediaLibraryRdb_, galleryRdb_);
-    cloneGroupPhotoAlbum.UpdateGroupPhoto();
     int32_t restoreMode = BaseRestore::GetRestoreMode();
     UpgradeRestoreTaskReport()
         .SetSceneCode(sceneCode_)

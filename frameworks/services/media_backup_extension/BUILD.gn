@@ -74,6 +74,7 @@ ohos_shared_library("mediabackup") {
     "./src/clone_restore.cpp",
     "./src/cloud_backup_restore.cpp",
     "./src/geo_dictionary/clone_restore_geo_dictionary.cpp",
+    "./src/group_photo_album/group_photo_album_restore.cpp",
     "./src/group_photo_album/clone_restore_group_photo.cpp",
     "./src/geo_knowledge/clone_restore_geo.cpp",
     "./src/geo_knowledge/geo_knowledge_restore.cpp",
@@ -114,7 +115,6 @@ ohos_shared_library("mediabackup") {
     "./src/restore/tab_old_photos_restore.cpp",
     "./src/upgrade_restore.cpp",
     "./src/restore_map_code_utils.cpp",
-    "./src/clone_group_photo_album.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_column.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_operation.cpp",
   ]
