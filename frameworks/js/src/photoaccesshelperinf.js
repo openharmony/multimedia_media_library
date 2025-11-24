@@ -935,6 +935,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
+    config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
   }
 
   return config;
@@ -1082,6 +1083,7 @@ function PhotoSelectOptions() {
   this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
   this.userId = -1;
+  this.isDestroyedWithNavigation = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {
