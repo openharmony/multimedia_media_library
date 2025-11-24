@@ -114,6 +114,7 @@ void HeightWidthCorrectOperation::UpdateHeightAndWidth()
     CHECK_AND_RETURN_LOG(prefs != nullptr, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(CURRENT_CHECK_ID, 0);
     std::string checkFailIds = prefs->GetString(CHECK_FAIL_IDS, "");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation::start, curFileId = %{public}d", curFileId);
     std::unordered_set<int32_t> failIds;
     if (!checkFailIds.empty()) {
         failIds = SplitString(checkFailIds, ',');
@@ -139,8 +140,8 @@ void HeightWidthCorrectOperation::UpdateHeightAndWidth()
     prefs->PutInt(CURRENT_CHECK_ID, curFileId);
     prefs->PutString(CHECK_FAIL_IDS, checkFailIds);
     prefs->FlushSync();
-    MEDIA_INFO_LOG(
-        "handle photo height and width cost: %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation::handle photo height and width cost: %{public}" PRId64,
+        MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     return;
 }
 
