@@ -398,7 +398,6 @@ HWTEST_F(NotificationDistributionTest, medialib_ProcessUserDefineNotifyInfo_test
     notifyInfo.notifyUserDefineType_ = NotifyForUserDefineType::MULTISTAGES_CAPTURE;
     int32_t ret = Media::Notification::NotificationDistribution::ProcessUserDefineNotifyInfo(notifyInfo);
     EXPECT_EQ(ret, E_ERR);
-
     MEDIA_INFO_LOG("end medialib_ProcessUserDefineNotifyInfo_test04");
 }
 } // namespace Media
