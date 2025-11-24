@@ -4463,7 +4463,7 @@ static bool CheckConvertFormatParams(const std::string &title, const std::string
         return false;
     }
     NAPI_INFO_LOG("CheckConvertFormatParams end");
-    return false;
+    return true;
 }
 
 static bool CheckConvertFormatMimeType(napi_env env, const int32_t fileId)
