@@ -44,6 +44,7 @@ std::string CloudFileDataConvert::suffixLCD_ = "/account/device_view/local/files
 std::string CloudFileDataConvert::suffix_ = "/hmdfs/account/files";
 const std::string CloudFileDataConvert::recordType_ = "media";
 constexpr off_t THUMB_LIMIT_SIZE = 2 * 1024 * 1024;
+constexpr int32_t USER_COMMENT_LIMIT_SIZE = 1024;
 
 CloudFileDataConvert::CloudFileDataConvert(CloudOperationType type, int32_t userId) : userId_(userId), type_(type)
 {}
@@ -683,7 +684,9 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     data["recycled"] = MDKRecordField(!!(upLoadRecord.dateTrashed));
     data["recycledTime"] = MDKRecordField(std::to_string(upLoadRecord.dateTrashed));
     data["favorite"] = MDKRecordField(!!(upLoadRecord.isFavorite));
-    data["description"] = MDKRecordField(upLoadRecord.userComment);
+    if (upLoadRecord.userComment.size() <= USER_COMMENT_LIMIT_SIZE) {
+        data["description"] = MDKRecordField(upLoadRecord.userComment);
+    }
     HandleFileType(data, upLoadRecord);
 
     /* gallery expand fields */
