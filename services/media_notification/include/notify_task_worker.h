@@ -20,6 +20,7 @@
 #include "media_change_info.h"
 #include "notify_info.h"
 #include "media_change_info.h"
+#include "user_define_notify_info.h"
 
 #include <atomic>
 #include <mutex>
@@ -44,6 +45,7 @@ public:
     EXPORT static std::shared_ptr<NotifyTaskWorker> GetInstance();
     EXPORT void StartWorker();
     EXPORT void AddTaskInfo(NotifyInfoInner &notifyInfoInner);
+    EXPORT void AddUserDefineTaskInfo(const UserDefineNotifyInfo &notifyInfoInner);
     EXPORT bool IsRunning();
 
 private:
@@ -56,6 +58,9 @@ private:
     EXPORT std::vector<NotifyInfo> MergeNotifyInfo(std::vector<MediaChangeInfo> changeInfos);
     EXPORT void DistributeNotifyInfo(std::vector<NotifyInfo> notifyInfos);
 
+    EXPORT std::vector<UserDefineNotifyInfo> GetCurrentUserDefineNotifyVec();
+    EXPORT void HandleUserDefineNotifyTask();
+
 private:
     EXPORT static std::unordered_map<int32_t, NotifyTaskInfo> taskInfos_;
     EXPORT static std::shared_ptr<NotifyTaskWorker> notifyTaskWorker_;
@@ -65,6 +70,9 @@ private:
     EXPORT int32_t noTaskTims_ {0};
     EXPORT std::condition_variable workCv_;
     EXPORT static std::mutex mapMutex_;
+
+    EXPORT static std::vector<UserDefineNotifyInfo> userDefineTaskInfos_;
+    EXPORT static std::mutex userDefineVecMutex_;
 };
 } // namespace Notification
 } // namespace Media
