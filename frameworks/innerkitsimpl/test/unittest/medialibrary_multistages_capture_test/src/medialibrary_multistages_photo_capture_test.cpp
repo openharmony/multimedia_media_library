@@ -44,6 +44,7 @@
 #include "exif_utils.h"
 #include "file_utils.h"
 #include "mock_deferred_photo_proc_adapter.h"
+#include "multistages_capture_dao.h"
 #include "multistages_capture_deferred_photo_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
@@ -1052,6 +1053,67 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, BeginSynchronize_test_001, Tes
     DeferredPhotoProcessingAdapter adapter;
     EXPECT_NE(adapter.deferredPhotoProcSession_, nullptr);
     adapter.BeginSynchronize();
+}
+
+/**
+ * @tc.name: NotifyOnProcess_test01
+ * @tc.desc: OnProcess通知，resultSet不能为空
+ */
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter NotifyOnProcess_test01");
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    ASSERT_NE(callback, nullptr);
+ 
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    ASSERT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end NotifyOnProcess_test01");
+}
+ 
+/**
+ * @tc.name: NotifyOnProcess_test02
+ * @tc.desc: OnProcess通知，ObserverType不能是未定义状态
+ */
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter NotifyOnProcess_test02");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+ 
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    ASSERT_NE(callback, nullptr);
+ 
+    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
+    ASSERT_NE(resultSet, nullptr);
+ 
+    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::UNDEFINED);
+    ASSERT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end NotifyOnProcess_test02");
+}
+ 
+/**
+ * @tc.name: NotifyOnProcess_test03
+ * @tc.desc: OnProcess通知
+ */
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test03, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter NotifyOnProcess_test03");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+ 
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    ASSERT_NE(callback, nullptr);
+ 
+    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
+    ASSERT_NE(resultSet, nullptr);
+ 
+    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    ASSERT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end NotifyOnProcess_test03");
 }
 }
 }
