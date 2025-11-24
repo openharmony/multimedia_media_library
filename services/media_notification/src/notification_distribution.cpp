@@ -148,7 +148,7 @@ int32_t NotificationDistribution::DistributeNotifyInfo(const std::vector<NotifyI
 
 int32_t NotificationDistribution::ProcessUserDefineNotifyInfo(const UserDefineNotifyInfo &notifyInfo)
 {
-    MEDIA_INFO_LOG("wang do: ProcessUserDefineNotifyInfo %{public}s.", notifyInfo.ToString().c_str());
+    MEDIA_INFO_LOG("ProcessUserDefineNotifyInfo %{public}s.", notifyInfo.ToString().c_str());
     if (notifyInfo.notifyUri_ != NotifyUriType::USER_DEFINE_NOTIFY_URI ||
         notifyInfo.notifyUserDefineType_ == NotifyForUserDefineType::UNDEFINED) {
         MEDIA_ERR_LOG("notifyUriType: %{public}d, notifyUserDefineType: %{public}d is nou supported.",
@@ -176,7 +176,7 @@ int32_t NotificationDistribution::ProcessUserDefineNotifyInfo(const UserDefineNo
     CHECK_AND_RETURN_RET_LOG(serverChangeInfo != nullptr, E_ERR, "serverChangeInfo is null");
     serverChangeInfo->data_ = uBuf;
     serverChangeInfo->size_ = parcel->GetDataSize();
-    MEDIA_INFO_LOG("wang do:ProcessUserDefineNotifyInfo serverChangeInfo->size_ is: %{public}zu", parcel->GetDataSize());
+    MEDIA_INFO_LOG("ProcessUserDefineNotifyInfo serverChangeInfo->size_ is: %{public}zu", parcel->GetDataSize());
  
     for (const ObserverInfo& obsInfo : obsInfos) {
         NotificationUtils::SendUserDefineNotification(obsInfo.observer, serverChangeInfo);
