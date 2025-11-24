@@ -28,6 +28,7 @@
 #include "media_change_info.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_notify_utils.h"
+#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,6 +53,7 @@ struct NewJsOnChangeCallbackWrapper {
     Notification::NotifyUriType observerUriType_;
     std::shared_ptr<Notification::MediaChangeInfo> mediaChangeInfo_;
     std::shared_ptr<Notification::AssetManagerNotifyInfo> assetManagerInfo_;
+    std::shared_ptr<Notification::UserDefineNotifyInfo> userDefineInfo_;
     std::vector<std::shared_ptr<ClientObserver>> clientObservers_;
 };
 
