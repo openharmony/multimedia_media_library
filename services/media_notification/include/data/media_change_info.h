@@ -32,7 +32,7 @@ namespace Media {
 namespace Notification {
 using namespace Media::AccurateRefresh;
 
-enum NotifyType {
+enum AccurateNotifyType {
     NOTIFY_ASSET_ADD,
     NOTIFY_ASSET_UPDATE,
     NOTIFY_ASSET_REMOVE,
@@ -68,7 +68,7 @@ class NotifyDetailInfo : public Parcelable {
 public:
     NotifyUriType uri;
     std::vector<int32_t> indexs;
-    NotifyType notifyType;
+    AccurateNotifyType notifyType;
 
 public:
     std::string ToString() const
@@ -108,7 +108,7 @@ private:
         MEDIA_INFO_LOG("unmarshalling debug: NotifyDetailInfo::ReadFromParcel");
         this->uri = static_cast<NotifyUriType>(parcel.ReadUint16());
         parcel.ReadInt32Vector(&this->indexs);
-        this->notifyType = static_cast<NotifyType>(parcel.ReadUint16());
+        this->notifyType = static_cast<AccurateNotifyType>(parcel.ReadUint16());
         return true;
     }
 };
@@ -196,7 +196,7 @@ public:
     std::vector<std::variant<PhotoAssetChangeData, AlbumChangeData>> changeInfos;
     bool isForRecheck;
     NotifyUriType notifyUri;
-    NotifyType notifyType;
+    AccurateNotifyType notifyType;
     bool isSystem;
  
 public:
@@ -258,7 +258,7 @@ public:
     {
         this->isForRecheck = parcel.ReadBool();
         this->notifyUri = static_cast<NotifyUriType>(parcel.ReadUint16());
-        this->notifyType = static_cast<NotifyType>(parcel.ReadUint16());
+        this->notifyType = static_cast<AccurateNotifyType>(parcel.ReadUint16());
         this->isSystem = parcel.ReadBool();
         bool validFlag = parcel.ReadBool();
         while (validFlag) {
@@ -314,7 +314,7 @@ private:
 
         this->isForRecheck = parcel.ReadBool();
         this->notifyUri = static_cast<NotifyUriType>(parcel.ReadUint16());
-        this->notifyType = static_cast<NotifyType>(parcel.ReadUint16());
+        this->notifyType = static_cast<AccurateNotifyType>(parcel.ReadUint16());
         this->isSystem = parcel.ReadBool();
         return true;
     }
