@@ -28,6 +28,7 @@
 #include "accurate_common_data.h"
 #include "album_change_info.h"
 #include "photo_asset_change_info.h"
+#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,11 +44,15 @@ public:
     EXPORT static std::shared_ptr<AssetManagerNotifyInfo> UnmarshalAssetManagerNotify(Parcel &parcel);
     EXPORT static void UpdateNotificationProp();
 
+    EXPORT static int32_t SendUserDefineNotification(const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
+        const std::shared_ptr<AAFwk::ChangeInfo> &changeInfo);
+    EXPORT static std::shared_ptr<UserDefineNotifyInfo> UnmarshalUserDefineNotify(Parcel &parcel);
+
 private:
     EXPORT bool WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo> &mediaChangeInfo,
         std::vector<std::shared_ptr<AAFwk::ChangeInfo>> &changeInfos);
     EXPORT bool Marshalling(const std::shared_ptr<MediaChangeInfo> &mediaChangeInfo,
-    std::vector<std::shared_ptr<Parcel>> &parcels);
+        std::vector<std::shared_ptr<Parcel>> &parcels);
 };
 
 }
