@@ -56,6 +56,7 @@ const std::string BASE_QUOTA_OCR_CNT = "base_quota_ocr_cnt";
 const std::string BASE_QUOTA_SHARED_BACKBONE_CNT = "base_quota_shared_backbone_cnt";
 const std::string BASE_QUOTA_LABEL_CNT = "base_quota_label_cnt";
 const std::string BASE_QUOTA_MODIFY_TIME = "base_quota_modify_time";
+const std::string CHECK_SPACE_FLAG = "check_space_flag";
 
 const std::string URI_PROGRESS_TABLE = "datashare:///media/" + TAB_ANALYSIS_PROGRESS_TABLE;
 } // namespace Media
