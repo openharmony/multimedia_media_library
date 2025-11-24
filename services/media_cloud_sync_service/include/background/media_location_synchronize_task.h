@@ -23,6 +23,7 @@
 #include "photos_po.h"
 
 namespace OHOS::Media::Background {
+using namespace OHOS::Media::ORM;
 class MediaLocationSynchronizeTask : public IMediaBackGroundTask {
 public:
     virtual ~MediaLocationSynchronizeTask() = default;
