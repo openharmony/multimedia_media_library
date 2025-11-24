@@ -155,7 +155,7 @@ const Media::AccurateRefresh::AlbumChangeData albumChangeData3 = []() {
 
 std::vector<Notification::MediaChangeInfo> NotificationTestData::getPhotoChangeInfos(
     const Notification::NotifyUriType &notifyUriType,
-    const Notification::NotifyType &notifyType, bool isForRecheck)
+    const Notification::AccurateNotifyType &notifyType, bool isForRecheck)
 {
     Media::Notification::MediaChangeInfo photoUriChangeInfo;
     const auto &deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
@@ -180,19 +180,20 @@ std::vector<Notification::MediaChangeInfo> NotificationTestData::getPhotnChangeI
 {
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     std::vector<Notification::MediaChangeInfo> photoUriAddChangeInfos =
-        getPhotoChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_ADD, isForRecheck);
+        getPhotoChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_ADD, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriAddChangeInfos.begin(), photoUriAddChangeInfos.end());
     std::vector<Notification::MediaChangeInfo> photoUriUpdateChangeInfos =
-        getPhotoChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_UPDATE, isForRecheck);
+        getPhotoChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_UPDATE, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriUpdateChangeInfos.begin(), photoUriUpdateChangeInfos.end());
     std::vector<Notification::MediaChangeInfo> photoUriRemoveChangeInfos =
-        getPhotoChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_REMOVE, isForRecheck);
+        getPhotoChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_REMOVE, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriRemoveChangeInfos.begin(), photoUriRemoveChangeInfos.end());
     return mediaChangeInfos;
 }
 
 std::vector<Notification::MediaChangeInfo> NotificationTestData::getAlbumChangeInfos(
-    const Notification::NotifyUriType &notifyUriType, const Notification::NotifyType &notifyType, bool isForRecheck)
+    const Notification::NotifyUriType &notifyUriType, const Notification::AccurateNotifyType &notifyType,
+    bool isForRecheck)
 {
     Media::Notification::MediaChangeInfo photoAlbumChangeInfo;
     const auto &albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
@@ -217,13 +218,13 @@ std::vector<Notification::MediaChangeInfo> NotificationTestData::getAlbumChangeI
 {
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     std::vector<Notification::MediaChangeInfo> photoUriAddChangeInfos =
-        getAlbumChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_ADD, isForRecheck);
+        getAlbumChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_ADD, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriAddChangeInfos.begin(), photoUriAddChangeInfos.end());
     std::vector<Notification::MediaChangeInfo> photoUriUpdateChangeInfos =
-        getAlbumChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_UPDATE, isForRecheck);
+        getAlbumChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_UPDATE, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriUpdateChangeInfos.begin(), photoUriUpdateChangeInfos.end());
     std::vector<Notification::MediaChangeInfo> photoUriRemoveChangeInfos =
-        getAlbumChangeInfos(notifyUriType, NotifyType::NOTIFY_ASSET_REMOVE, isForRecheck);
+        getAlbumChangeInfos(notifyUriType, AccurateNotifyType::NOTIFY_ASSET_REMOVE, isForRecheck);
     mediaChangeInfos.insert(mediaChangeInfos.end(), photoUriRemoveChangeInfos.begin(), photoUriRemoveChangeInfos.end());
     return mediaChangeInfos;
 }
