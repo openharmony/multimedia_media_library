@@ -328,14 +328,15 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChangeDataByKey(const int32_t key,
     ChangeData &changeData, bool isCheckUpdate)
 {
-    if (changeDatas_.find(key) == changeDatas_.end()) {
+    auto iter = changeDatas_.find(key);
+    if (iter == changeDatas_.end()) {
         MEDIA_WARN_LOG("no change data found by key: %{public}d", key);
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
     if (isCheckUpdate) {
         CheckUpdateDataForMultiThread(changeDatas_[key]);
     }
-    changeData = changeDatas_[key];
+    changeData = iter->second;
     return ACCURATE_REFRESH_RET_OK;
 }
 
