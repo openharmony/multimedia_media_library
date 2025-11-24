@@ -60,14 +60,13 @@ bool MediaLocationSynchronizeTask::Accept()
 }
 
 int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastRecord,
-        std::vector<PhotosPo> &photosPoVec)
+    std::vector<PhotosPo> &photosPoVec)
 {
     MEDIA_INFO_LOG("GetRepairLocationData begin");
-    std::vector<PhotosPo> photosPoVec;
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         PhotoColumn::PHOTO_POSITION };
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, photosPoVec, "Failed to get rdbStore.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
 
     predicates.IsNull(PhotoColumn::PHOTO_LATITUDE)->Or()->EqualTo(PhotoColumn::PHOTO_LATITUDE, 0);
@@ -77,7 +76,7 @@ int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastR
     predicates.Limit(CACHE_PHOTO_NUM);
     
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, photosPoVec, "Failed to query.");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query.");
     
     return ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoVec);
 }
@@ -135,7 +134,8 @@ void MediaLocationSynchronizeTask::Execute()
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t localRepairRecord = prefs->GetInt(LAST_LOCAL_LOCATION_REPAIR, defaultCnt);
 
-    std::vector<PhotosPo> photosPoVec = GetRepairLocationData(localRepairRecord);
+    std::vector<PhotosPo> photosPoVec;
+    GetRepairLocationData(localRepairRecord, photosPoVec);
     CHECK_AND_RETURN_LOG(photosPoVec.size() > 0, "no location data for repair");
     MEDIA_INFO_LOG("need repair location count %{public}d", static_cast<int>(photosPoVec.size()));
     std::thread([localRepairRecord, this]() {
