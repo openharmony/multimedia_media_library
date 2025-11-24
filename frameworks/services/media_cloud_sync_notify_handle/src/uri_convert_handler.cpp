@@ -16,6 +16,7 @@
 #include "uri_convert_handler.h"
 
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "photo_album_column.h"
 
@@ -32,7 +33,7 @@ unordered_map<ChangeType, NotifyType> NotifyTypeChangeMap = {
 };
 
 static void AddNewNotify(CloudSyncHandleData &newHandleData,
-    const list<Uri> &sendUris, const ChangeType &changeType)
+    const list<pair<Uri, string>> &sendUris, const ChangeType &changeType)
 {
     if (sendUris.size() <= 0) {
         return;
@@ -54,25 +55,58 @@ static void AddNewNotify(CloudSyncHandleData &newHandleData,
     return;
 }
 
+static string GetMediaUriWithRemark(const string &mediaUri, string &remark)
+{
+    if (!MediaFileUtils::StartsWith(mediaUri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        return mediaUri;
+    }
+
+    size_t pos = mediaUri.find("/", PhotoColumn::PHOTO_URI_PREFIX.length());
+    if (pos == string::npos) {
+        return mediaUri;
+    }
+    string sufffix = mediaUri.substr(pos + 1);
+    if (sufffix == "meta" || sufffix == "asset") {
+        remark = sufffix;
+        return PhotoColumn::PHOTO_URI_PREFIX +
+               mediaUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length(), pos - PhotoColumn::PHOTO_URI_PREFIX.length());
+    }
+    return mediaUri;
+}
+
 void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
 {
     const string org_uri_prefix = "file://cloudsync/";
+    const string gallery_uri_perfix = "file://cloudsync/gallery/";
     const string new_uri_prefix = "file://media/";
     CloudSyncNotifyInfo newNotifyInfo;
     CloudSyncHandleData newHandleData = handleData;
 
     if (handleData.orgInfo.type == ChangeType::OTHER) {
-        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) }, ChangeType::DELETE);
-        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) }, ChangeType::DELETE);
+        AddNewNotify(newHandleData, { make_pair(Uri(PhotoColumn::PHOTO_URI_PREFIX), "") }, ChangeType::DELETE);
+        AddNewNotify(newHandleData, { make_pair(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), "") }, ChangeType::DELETE);
     } else {
-        newNotifyInfo.type = handleData.orgInfo.type;
+        ChangeType type = handleData.orgInfo.type;
+        list<pair<Uri, string>> sendUris;
         for (auto &uri : handleData.orgInfo.uris) {
             string uriString = uri.ToString();
-            size_t pos = uriString.find(org_uri_prefix);
-            Uri newUri = Uri(uriString.replace(pos, org_uri_prefix.length(), new_uri_prefix));
-            newNotifyInfo.uris.push_back(newUri);
+            MEDIA_DEBUG_LOG("cloud_lake debug: uriString is %{public}s", uriString.c_str());
+            size_t pos = uriString.find(gallery_uri_perfix);
+            string mediaUriStr;
+            if (pos == string::npos) {
+                pos = uriString.find(org_uri_prefix);
+                mediaUriStr = uriString.replace(pos, org_uri_prefix.length(), new_uri_prefix);
+            } else {
+                mediaUriStr = uriString.replace(pos, gallery_uri_perfix.length(), new_uri_prefix);
+            }
+            string remark = "";
+            mediaUriStr = GetMediaUriWithRemark(mediaUriStr, remark);
+            Uri newUri = Uri(mediaUriStr);
+            MEDIA_DEBUG_LOG("cloud_lake debug: uri is %{public}s, remark is %{public}s",
+                newUri.ToString().c_str(), remark.c_str());
+            sendUris.push_back(make_pair(newUri, remark));
         }
-        AddNewNotify(newHandleData, newNotifyInfo.uris, newNotifyInfo.type);
+        AddNewNotify(newHandleData, sendUris, type);
     }
  
     if (nextHandler_ != nullptr) {

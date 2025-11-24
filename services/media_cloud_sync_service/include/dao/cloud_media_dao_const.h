@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+
 #include "media_column.h"
 #include "userfile_manager_types.h"
 
@@ -68,6 +69,8 @@ const std::vector<std::string> PULL_QUERY_COLUMNS = {
     MediaColumn::MEDIA_TYPE,
     PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID,
     PhotoColumn::PHOTO_EXIF_ROTATE,
+    PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+    PhotoColumn::PHOTO_STORAGE_PATH,
 };
 
 struct KeyData {
@@ -80,6 +83,7 @@ struct KeyData {
     int32_t mediaType;
     std::string sourceAlbum;
     std::string lPath;
+    int64_t dateTrashed;
 };
 
 struct LocalInfo {

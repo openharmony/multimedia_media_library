@@ -28,6 +28,10 @@
 #include <sstream>
 #include <regex>
 #include <iomanip>
+#include <dirent.h>
+#include <chrono>
+#include <thread>
+#include <unistd.h>
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
@@ -38,6 +42,7 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
+#include "dfx_anco_manager.h"
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "dfx_utils.h"
@@ -148,6 +153,7 @@
 #include "settings_data_manager.h"
 #include "media_image_framework_utils.h"
 #include "photo_map_code_operation.h"
+#include "global_scanner.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -195,6 +201,10 @@ static const std::string BETA_DEBUG_DB_FILE_PATH = "/data/storage/el2/log/logpac
 static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 3LL * 1024 * 1024 * 1024;
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
+static const std::string BROKER_ADD_MSG = "broker_add";
+static const std::string BROKER_REMOVE_MSG = "broker_remove";
+static const std::string BROKER_START_SCAN = "start_scan";
+static const int MAX_LOOP_CNT = 10;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -3833,5 +3843,163 @@ int32_t MediaLibraryDataManager::ReleaseDebugDatabase(const std::string &betaIss
         filePath.c_str());
     return E_SUCCESS;
 }
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::ProcessBrokerChangeMsg(const std::string &operation)
+{
+    MEDIA_INFO_LOG("anco_media change operation");
+    if (operation.empty()) {
+        MEDIA_ERR_LOG("anco_media change operation");
+        return nullptr;
+    }
+    if (operation == BROKER_REMOVE_MSG) {
+        MEDIA_INFO_LOG("anco_media receive broker remove msg");
+    } else if (operation == BROKER_START_SCAN) {
+        MEDIA_INFO_LOG("anco_media start scan");
+        ScanLakeAsset();
+    }
+    return nullptr;
+}
+
+void MediaLibraryDataManager::CheckCleanLakeAsset()
+{
+    // 1. 卸载后persist.hmos_fusion_mgr.ctl.support_hmos为false，过一段时间需要延时读取
+    thread scanTask([this]() {
+        int loopCnt = 0;
+        while (this->ReadSupportHmos()) {
+            loopCnt++;
+            if (loopCnt > MAX_LOOP_CNT) {
+                MEDIA_ERR_LOG("support hmos return.");
+                supportHmos_ = "";
+                break;
+            }
+            MEDIA_INFO_LOG("anco_media loop count: %{public}d.", loopCnt);
+            const int sleepDurationMilliseconds = 2000;
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepDurationMilliseconds));
+        }
+
+        // 2. LAKE_SCAN_DIR文件夹为空
+        if (!this->IsDirectoryEmpty()) {
+            MEDIA_ERR_LOG("dir is not empty.");
+            return;
+        }
+
+        MEDIA_INFO_LOG("anco_media delete lake assets");
+        // 3. 清空所有的数据库数据
+        const string DELETE_LAKE_ASSETS_SQL = "delete from Photos where file_source_type = 3";
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+        int ret = rdbStore->ExecuteSql(DELETE_LAKE_ASSETS_SQL);
+        CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "exe delete lake assets error:{%{public}d}", ret);
+
+        MEDIA_INFO_LOG("anco_media refresh all album");
+        // 4. 刷新全量相册
+        UpdateAllAlbumsData updateAlbumsData;
+        updateAlbumsData.shouldUpdateDateModified = true;
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {}, updateAlbumsData);
+        this->SetIsLakeAssetScanned(false);
+    });
+    scanTask.detach();
+}
+
+bool MediaLibraryDataManager::IsLakeAssetScanned()
+{
+    if (scanStatus_.empty()) {
+        scanStatus_ = system::GetParameter("multimedia.medialibrary.lake_asset.scan_status", "false");
+        MEDIA_INFO_LOG("anco_media read scan_status[%{public}s]", scanStatus_.c_str());
+    }
+    return scanStatus_ == "true";
+}
+
+bool MediaLibraryDataManager::ReadSupportHmos()
+{
+    supportHmos_ = system::GetParameter("persist.hmos_fusion_mgr.ctl.support_hmos", "true");
+    MEDIA_INFO_LOG("anco_media ReadSupportHmos[%{public}s]", supportHmos_.c_str());
+    return supportHmos_ == "true";
+}
+
+bool MediaLibraryDataManager::IsSupportHmos()
+{
+    if (supportHmos_.empty()) {
+        supportHmos_ = system::GetParameter("persist.hmos_fusion_mgr.ctl.support_hmos", "true");
+        MEDIA_INFO_LOG("anco_media init ReadSupportHmos[%{public}s]", supportHmos_.c_str());
+    }
+
+    return supportHmos_ == "true";
+}
+
+void MediaLibraryDataManager::SetIsLakeAssetScanned(bool isScanned)
+{
+    scanStatus_ = isScanned ? "true" : "false";
+    auto ret = system::SetParameter("multimedia.medialibrary.lake_asset.scan_status", scanStatus_);
+    MEDIA_INFO_LOG("anco_media SetIsLakeAssetScanned[%{public}d], ret: %{public}d", isScanned, ret);
+}
+
+void MediaLibraryDataManager::ScanLakeAsset()
+{
+    MEDIA_INFO_LOG("ScanLakeAsset enter.");
+
+    if (!IsSupportHmos()) {
+        MEDIA_INFO_LOG("anco_media no support hmos");
+        return;
+    }
+
+    if (IsLakeAssetScanned()) {
+        return;
+    }
+
+    if (access(LAKE_SCAN_DIR.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("anco_media dir[%{public}s] not exist.", LAKE_SCAN_DIR.c_str());
+        return;
+    }
+
+    thread scanTask([this]() {
+        MEDIA_INFO_LOG("ScanLakeAsset thread start.");
+        DIR* dir = opendir(LAKE_SCAN_DIR.c_str());
+        int loopCnt = 0;
+        while (dir == nullptr) {
+            loopCnt++;
+            if (loopCnt > MAX_LOOP_CNT) {
+                MEDIA_ERR_LOG("dir[%{public}s] not access.", LAKE_SCAN_DIR.c_str());
+                this->SetIsLakeAssetScanned(true);
+                return;
+            }
+            MEDIA_INFO_LOG("anco_media wait dir ready[%{public}d]", loopCnt);
+            const int WAIT_TIME_MILLISECONDS = 4000;
+            std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_TIME_MILLISECONDS));
+            dir = opendir(LAKE_SCAN_DIR.c_str());
+        }
+        closedir(dir);
+        int64_t startLoadTime = MediaFileUtils::UTCTimeMilliSeconds();
+        GlobalScanner::GetInstance().Run(LAKE_SCAN_DIR.c_str());
+        int64_t endLoadTime = MediaFileUtils::UTCTimeMilliSeconds();
+        AncoDfxManager::GetInstance().ReportFirstLoadInfo(startLoadTime, endLoadTime);
+        this->SetIsLakeAssetScanned(true);
+        MEDIA_INFO_LOG("ScanLakeAsset thread end.");
+    });
+    scanTask.detach();
+    AncoDfxManager::GetInstance().RunDfx();
+}
+
+bool MediaLibraryDataManager::IsDirectoryEmpty()
+{
+    DIR* dir = opendir(LAKE_SCAN_DIR.c_str());
+    if (!dir) {
+        MEDIA_ERR_LOG("dir is null.");
+        return true;
+    }
+
+    bool isEmpty = true;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (std::string(entry->d_name) == "." || std::string(entry->d_name) == "..") {
+            continue;
+        }
+        isEmpty = false;
+        break;
+    }
+
+    closedir(dir);
+    return isEmpty;
+}
+
 }  // namespace Media
 }  // namespace OHOS

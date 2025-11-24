@@ -46,20 +46,6 @@ public:
         bool errConn = it == this->HANDLERS.end();
         CHECK_AND_RETURN_RET(!errConn, E_ERR);
         (this->*(it->second))(val);
-        std::string columnValue = "";
-        if (std::holds_alternative<int32_t>(val)) {
-            columnValue = std::to_string(std::get<int32_t>(val));
-        } else if (std::holds_alternative<int64_t>(val)) {
-            columnValue = std::to_string(std::get<int64_t>(val));
-        } else if (std::holds_alternative<double>(val)) {
-            columnValue = std::to_string(std::get<double>(val));
-        } else if (std::holds_alternative<std::string>(val)) {
-            columnValue = std::get<std::string>(val);
-        } else {
-            MEDIA_ERR_LOG("PhotoAlbumPoWriter: SetMemberVariable: variant type is not supported");
-        }
-        CHECK_AND_RETURN_RET(!columnValue.empty(), E_OK);
-        this->objPo_.attributes[name] = columnValue;
         return E_OK;
     }
 
@@ -152,14 +138,18 @@ private:
         bool conn = std::holds_alternative<int32_t>(val);
         CHECK_AND_RETURN(conn);
         this->objPo_.coverUriSource = std::get<int32_t>(val);
-        MEDIA_DEBUG_LOG("SetCoverUriSource, %{public}d", this->objPo_.coverUriSource.value_or(0));
     }
     void SetCoverCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
     {
         bool conn = std::holds_alternative<std::string>(val);
         CHECK_AND_RETURN(conn);
         this->objPo_.coverCloudId = std::get<std::string>(val);
-        MEDIA_DEBUG_LOG("SetCoverCloudId, %{public}s", this->objPo_.coverCloudId.value_or("").c_str());
+    }
+    void SetUploadStatus(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool conn = std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(conn);
+        this->objPo_.uploadStatus = std::get<int32_t>(val);
     }
 
     using Handle = void (PhotoAlbumPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);
@@ -177,6 +167,9 @@ private:
         {PhotoAlbumColumns::ALBUM_ORDER, &PhotoAlbumPoWriter::SetAlbumOrder},
         {PhotoAlbumColumns::ALBUM_PRIORITY, &PhotoAlbumPoWriter::SetPriority},
         {PhotoAlbumColumns::ALBUM_DIRTY, &PhotoAlbumPoWriter::SetDirty},
+        {PhotoAlbumColumns::COVER_URI_SOURCE, &PhotoAlbumPoWriter::SetCoverUriSource},
+        {PhotoAlbumColumns::COVER_CLOUD_ID, &PhotoAlbumPoWriter::SetCoverCloudId},
+        {PhotoAlbumColumns::UPLOAD_STATUS, &PhotoAlbumPoWriter::SetUploadStatus},
     };
 };
 }  // namespace OHOS::Media::ORM

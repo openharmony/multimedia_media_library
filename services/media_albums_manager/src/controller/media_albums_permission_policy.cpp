@@ -91,6 +91,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ALBUM), { {SYSTEMAPI_PERM, WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS), { {SYSTEMAPI_PERM, WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSETS), { {READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS),
+        {{SYSTEMAPI_PERM, WRITE_PERM} }},
 };
 
 static std::unordered_set<uint32_t> mediaAlbumsPermissionDbBypass = {

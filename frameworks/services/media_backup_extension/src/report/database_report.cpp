@@ -140,7 +140,9 @@ int32_t DatabaseReport::PostInfoDfx(const AlbumMediaStatisticInfo &info)
         "BURST_COVER_COUNT",
         info.burstCoverCount,
         "BURST_TOTAL_COUNT",
-        info.burstTotalCount);
+        info.burstTotalCount,
+        "ANCO_COUNT",
+        info.innerEastLakeCount);
     if (ret != 0) {
         MEDIA_ERR_LOG("PostInfoDfx error:%{public}d", ret);
     }

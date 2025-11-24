@@ -74,7 +74,7 @@ public:
     int32_t OnMdirtyAlbumRecords(const std::string &cloudId);
     int32_t OnDeleteAlbumRecords(const std::string &cloudId);
     int32_t GetCopyAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
-    void InsertAlbumInsertFailedRecord(const std::string &cloudId);
+    void InsertAlbumInsertFailedRecord(const std::string &lPath);
     void InsertAlbumCreateFailedRecord(const std::string &cloudId);
     void InsertAlbumModifyFailedRecord(const std::string &cloudId);
     void RemoveAlbumInsertFailedRecord(const std::string &cloudId);
@@ -122,6 +122,54 @@ private:
         Media::PhotoAlbumColumns::ALBUM_BUNDLE_NAME,
         Media::PhotoAlbumColumns::ALBUM_CLOUD_ID,
     };
+
+private:
+    const std::string SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM = "\
+        WITH CLOUD_ALBUM AS \
+        ( \
+            SELECT DISTINCT owner_album_id AS album_id \
+            FROM Photos \
+            WHERE \
+                hidden = 0 AND \
+                date_trashed = 0 AND \
+                position != 1 \
+        ), \
+        UPLOAD_ALBUM AS  \
+        ( \
+            SELECT album_id \
+            FROM PhotoAlbum \
+            WHERE \
+                dirty = 1 AND \
+                album_type IN (0, 2048) AND \
+                count != 0 AND \
+                upload_status = 1 \
+        ) \
+        SELECT \
+            album_id, \
+            album_type, \
+            album_name, \
+            lpath, \
+            cloud_id, \
+            album_subtype, \
+            date_added, \
+            date_modified, \
+            bundle_name, \
+            local_language, \
+            cover_uri_source, \
+            cover_cloud_id \
+        FROM PhotoAlbum \
+        WHERE \
+            dirty = 1 AND \
+            ( \
+                album_id IN (SELECT album_id FROM UPLOAD_ALBUM) OR \
+                album_id IN (SELECT album_id FROM CLOUD_ALBUM) OR \
+                LOWER(lpath) = LOWER('/Pictures/hiddenAlbum') OR \
+                LOWER(lpath) = LOWER('/DCIM/Camera') \
+            ) AND \
+            album_type IN (0, 2048) AND \
+            COALESCE(cloud_id, '') NOT IN ({0}) AND \
+            COALESCE(lpath, '') NOT IN ({1}) \
+        LIMIT ? ;";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_DAO_H

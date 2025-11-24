@@ -179,6 +179,8 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setAppLinkInfo", JSSetAppLink),
             DECLARE_NAPI_FUNCTION("setCompositeDisplayMode", JSSetCompositeDisplayMode),
             DECLARE_NAPI_FUNCTION("addResourceForPicker", JSAddResourceForPicker),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsWithUri", JSDeleteLocalAssetsWithUri),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteCloudAssetsWithUri", JSDeleteCloudAssetsWithUri),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -3215,5 +3217,175 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanentlyWithUri(na
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteLocalAssetsPermanently",
         DeleteLocalAssetsPermanentlydExecute, DeleteLocalAssetsPermanentlyCallback);
+}
+
+static napi_value ParseArgsDeleteLocalOrCloudAssets(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    constexpr size_t jsArgs = ARGS_TWO;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, jsArgs, jsArgs) == napi_ok, JS_E_PARAM_INVALID,
+        "Failed to get args");
+    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_E_INNER_FAIL);
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_object) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "invalid context");
+        return nullptr;
+    }
+
+    vector<napi_value> napiValues;
+    valueType = napi_undefined;
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues),
+        JS_E_PARAM_INVALID, "Failed to get array");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !napiValues.empty(), JS_E_PARAM_INVALID, "array is empty");
+
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, valueType == napi_string, JS_E_PARAM_INVALID, "Argument must be array of strings");
+ 
+    constexpr size_t sizeOfArray = 0;
+    if (napiValues.size() > BATCH_DELETE_MAX_NUMBER || napiValues.size() == sizeOfArray) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of assetUris is 0 or over 500.");
+        return nullptr;
+    }
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        size_t str_length = 0;
+        CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) == napi_ok,
+            JS_E_PARAM_INVALID, "Failed to get string length");
+        std::vector<char> uriBuffer(str_length + 1);
+        CHECK_COND_WITH_ERR_MESSAGE(env,
+            napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
+            JS_E_PARAM_INVALID, "Failed to copy string");
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(std::string(uriBuffer.data()));
+        CHECK_COND_WITH_ERR_MESSAGE(env, fileId >= 0, JS_E_PARAM_INVALID, "Invalid URI format or empty fileId");
+        deleteIds.push_back(std::to_string(fileId));
+    }
+    context->fileIds = deleteIds;
+    RETURN_NAPI_TRUE(env);
+}
+
+static void DeleteLocalAssetsWithUriExecute(napi_env env, void *data)
+{
+    NAPI_INFO_LOG("enter DeleteLocalAssetsWithUriExecute.");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteLocalAssetsWithUriExecute");
+
+    auto *context = static_cast<MediaAssetChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->fileIds.empty(), "fileIds is empty");
+
+    DeletePhotosCompletedReqBody reqBody;
+    reqBody.fileIds = context->fileIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_DELETE_LOCAL_ASSETS_WITH_URI);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED || ret == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(ret);
+        } else {
+            context->error = JS_E_INNER_FAIL;
+        }
+        NAPI_ERR_LOG("Failed to delete local assets, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void DeleteLocalAssetsWithUriCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteLocalAssetsWithUriCallback");
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsWithUri.");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    if (!ParseArgsDeleteLocalOrCloudAssets(env, info, asyncContext)) {
+        NAPI_ERR_LOG("Failed to parse args");
+        return nullptr;
+    }
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestDeleteLocalAssetsWithUri",
+        DeleteLocalAssetsWithUriExecute, DeleteLocalAssetsWithUriCallback);
+}
+
+static void DeleteCloudAssetsWithUriExecute(napi_env env, void *data)
+{
+    NAPI_INFO_LOG("enter DeleteCloudAssetsWithUriExecute.");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteCloudAssetsWithUriExecute");
+
+    auto *context = static_cast<MediaAssetChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->fileIds.empty(), "fileIds is empty");
+
+    DeletePhotosCompletedReqBody reqBody;
+    reqBody.fileIds = context->fileIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_DELETE_CLOUD_ASSETS_WITH_URI);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED || ret == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(ret);
+        } else {
+            context->error = JS_E_INNER_FAIL;
+        }
+        NAPI_ERR_LOG("Failed to delete cloud assets, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void DeleteCloudAssetsWithUriCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteCloudAssetsWithUriCallback");
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDeleteCloudAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSDeleteCloudAssetsWithUri.");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    if (!ParseArgsDeleteLocalOrCloudAssets(env, info, asyncContext)) {
+        NAPI_ERR_LOG("Failed to parse args");
+        return nullptr;
+    }
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestDeleteCloudAssetsWithUri",
+        DeleteCloudAssetsWithUriExecute, DeleteCloudAssetsWithUriCallback);
 }
 } // namespace OHOS::Media

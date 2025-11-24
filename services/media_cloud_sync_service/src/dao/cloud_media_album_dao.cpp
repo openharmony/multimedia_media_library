@@ -49,6 +49,8 @@
 #include "media_gallery_sync_notify.h"
 #include "accurate_common_data.h"
 #include "media_file_utils.h"
+#include "cloud_media_dao_utils.h"
+#include "photo_album_upload_status_operation.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -657,6 +659,8 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
             values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
         }
     }
+    values.PutInt(
+        PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath(record.lPath));
     /* update if a album with the same name exists? */
     int64_t rowId;
     ret = albumRefreshHandle->Insert(rowId, PhotoAlbumColumns::TABLE, values);
@@ -832,31 +836,14 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    NativeRdb::AbsRdbPredicates createPredicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
-    createPredicates.EqualTo(PhotoAlbumColumns::ALBUM_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
-    createPredicates.IsNotNull(PhotoAlbumColumns::ALBUM_LPATH)
-        ->BeginWrap()
-        ->NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, "0")
-        ->Or()
-        ->EqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/hiddenAlbum")
-        ->EndWrap()
-        ->BeginWrap()
-        ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER))
-        ->Or()
-        ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE))
-        ->EndWrap();
-    if (!albumCreateFailSet_.empty()) {
-        createPredicates.NotIn(PhotoAlbumColumns::ALBUM_CLOUD_ID, albumCreateFailSet_);
-    }
-    if (!albumInsertFailSet_.empty()) {
-        createPredicates.NotIn(PhotoAlbumColumns::ALBUM_LPATH, albumInsertFailSet_);
-    }
-    createPredicates.Limit(size);
-
-    auto resultSet = rdbStore->Query(createPredicates, QUERY_ALBUM_COLUMNS);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
-    resultList = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords();
-    resultSet->Close();
+    std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->albumCreateFailSet_);
+    std::string lpathNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->albumInsertFailSet_);
+    std::vector<NativeRdb::ValueObject> bindArgs = {size};
+    std::string execSql =
+        CloudMediaDaoUtils::FillParams(this->SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM, {cloudIdNotIn, lpathNotIn});
+    auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
+    int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords(resultList);
+    MEDIA_INFO_LOG("QueryCreatedAlbums, ret: %{public}d, resultList size: %{public}zu", ret, resultList.size());
     return E_OK;
 }
 
@@ -976,10 +963,10 @@ void CloudMediaAlbumDao::InsertAlbumModifyFailedRecord(const std::string &cloudI
     albumModifyFailSet_.push_back(cloudId);
 }
 
-void CloudMediaAlbumDao::InsertAlbumInsertFailedRecord(const std::string &cloudId)
+void CloudMediaAlbumDao::InsertAlbumInsertFailedRecord(const std::string &lPath)
 {
-    MEDIA_WARN_LOG("albumInsertFailSet_ add cloudId: %{public}s", cloudId.c_str());
-    albumInsertFailSet_.push_back(cloudId);
+    MEDIA_WARN_LOG("albumInsertFailSet_ add lPath: %{public}s", lPath.c_str());
+    albumInsertFailSet_.push_back(lPath);
 }
 
 void CloudMediaAlbumDao::InsertAlbumCreateFailedRecord(const std::string &cloudId)

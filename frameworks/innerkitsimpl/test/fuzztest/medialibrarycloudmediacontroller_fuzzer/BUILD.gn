@@ -28,6 +28,7 @@ ohos_fuzztest("MediaLibraryCloudMediaControllerFuzzTest") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
   ]
 
   sources = [
@@ -57,6 +58,7 @@ ohos_fuzztest("MediaLibraryCloudMediaControllerFuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_album_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_data_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_download_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_enhance_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_data_service_processor.cpp",
@@ -78,6 +80,8 @@ ohos_fuzztest("MediaLibraryCloudMediaControllerFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/hi_audit.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/zip_util.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
   ]
 
   deps = [
@@ -108,6 +112,7 @@ ohos_fuzztest("MediaLibraryCloudMediaControllerFuzzTest") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hitrace:hitrace_meter",

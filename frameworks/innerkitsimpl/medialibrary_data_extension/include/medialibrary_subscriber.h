@@ -96,6 +96,7 @@ private:
     static bool isWifiConnected_;
     static bool currentStatus_;
     bool thumbnailBgGenerationStatus_{false};
+    bool checkInLakeStatus_{false};
     bool timerStatus_{false};
     static bool isCellularNetConnected_;
     std::mutex mutex_;
@@ -140,6 +141,7 @@ private:
     void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void UpdateThumbnailBgGenerationStatus();
+    void UpdateMediaInLakeCheckStatus();
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
     void DoAgingOperation();

@@ -66,6 +66,7 @@
 #include "photo_map_code_column.h"
 #include "photo_map_code_operation.h"
 #include "media_album_order_back.h"
+#include "settings_data_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -824,18 +825,20 @@ int32_t CloudMediaAssetManager::UpdateLocalAlbums()
     tracer.Start("UpdateLocalAlbums");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateLocalAlbums failed. rdbStore is null");
-
-    AbsRdbPredicates predicates = AbsRdbPredicates(PhotoAlbumColumns::TABLE);
-    ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    values.PutNull(PhotoAlbumColumns::ALBUM_CLOUD_ID);
-
-    int32_t changedRows = E_HAS_DB_ERROR;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && changedRows >= 0), E_ERR,
-        "Failed to UpdateLocalAlbums, ret: %{public}d, changedRows: %{public}d", ret, changedRows);
-    MEDIA_INFO_LOG("UpdateLocalAlbums successfully. ret %{public}d. changedRows %{public}d", ret, changedRows);
-    return OHOS::Media::E_OK;
+    std::vector<std::string> sqls = {
+        this->SQL_CLEAE_CLOUD_INFO_OF_ALBUM,
+        this->SQL_RESET_UPLOAD_STATUS,
+    };
+    int32_t ret = E_OK;
+    for (const auto &sql : sqls) {
+        ret = rdbStore->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(
+            ret == NativeRdb::E_OK, "Failed to execute sql, ret: %{public}d, sql: %{public}s", ret, sql.c_str());
+    }
+    MEDIA_INFO_LOG("UpdateLocalAlbums successfully. ret %{public}d.", ret);
+    // Need to update settingData.
+    SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload();
+    return E_OK;
 }
 
 int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainType retainType,

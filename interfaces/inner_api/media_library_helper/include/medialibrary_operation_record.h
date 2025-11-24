@@ -47,6 +47,7 @@ const std::string CREATE_OPERATION_ASSET_INSERT_TRIGGER =
     " AND NEW.POSITION <> 2" +
     " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
     to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
+    " AND (NEW.storage_path IS NULL OR NEW.storage_path = '')" +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
@@ -63,6 +64,7 @@ const std::string CREATE_OPERATION_ASSET_DELETE_TRIGGER =
     " AND OLD.POSITION <> 2" +
     " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
     to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
+    " AND (OLD.storage_path IS NULL OR OLD.storage_path = '')" +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
@@ -104,6 +106,7 @@ const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     " )" +
     " ) AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
     to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
+    " AND (NEW.storage_path IS NULL OR NEW.storage_path = '')" +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +

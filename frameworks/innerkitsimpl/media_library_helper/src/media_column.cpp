@@ -135,6 +135,9 @@ const std::string PhotoColumn::PHOTO_TRANSCODE_TIME = "transcode_time";
 const std::string PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE = "trans_code_file_size";
 const std::string PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE = "exist_compatible_duplicate";
 
+const std::string PhotoColumn::PHOTO_FILE_INODE = "inode";
+const std::string PhotoColumn::PHOTO_STORAGE_PATH = "storage_path";
+
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -312,6 +315,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_FILE_INODE + " TEXT, " +
+    PHOTO_STORAGE_PATH + " TEXT, " +
     PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1 " +
@@ -671,6 +676,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
     PhotoColumn::PHOTO_HDR_MODE,
+    PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

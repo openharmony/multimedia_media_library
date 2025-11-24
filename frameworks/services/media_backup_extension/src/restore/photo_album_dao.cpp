@@ -122,6 +122,7 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
             albumRowData.albumSubType = GetInt32Val(this->FIELD_NAME_ALBUM_SUBTYPE, resultSet);
             albumRowData.lPath = GetStringVal(this->FIELD_NAME_LPATH, resultSet);
             albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
+            albumRowData.uploadStatus = GetInt32Val(this->FIELD_UPLOAD_STATUS, resultSet);
             result.emplace_back(albumRowData);
         }
         // Check if there are more rows to fetch.
@@ -166,6 +167,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     albumRowData.albumSubType = GetInt32Val(this->FIELD_NAME_ALBUM_SUBTYPE, resultSet);
     albumRowData.lPath = GetStringVal(this->FIELD_NAME_LPATH, resultSet);
     albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
+    albumRowData.uploadStatus = GetInt32Val(this->FIELD_UPLOAD_STATUS, resultSet);
     resultSet->Close();
     // cache the PhotoAlbum info by lPath
     this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), albumRowData);
@@ -182,21 +184,34 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
 PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album)
 {
     // validate inputs
-    CHECK_AND_RETURN_RET_LOG(!album.lPath.empty(), album, "Media_Restore: Invalid album data, lPath is empty."
-        " Object: %{public}s", this->ToString(album).c_str());
+    CHECK_AND_RETURN_RET_LOG(!album.lPath.empty(),
+        album,
+        "Media_Restore: Invalid album data, lPath is empty."
+        " Object: %{public}s",
+        this->ToString(album).c_str());
     std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
     // try to get from cache
     PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
     CHECK_AND_RETURN_RET(albumRowData.lPath.empty(), albumRowData);
     std::string uniqueAlbumName = this->FindUniqueAlbumName(album);
     std::vector<NativeRdb::ValueObject> bindArgs = {
-        album.albumType, album.albumSubType, uniqueAlbumName, album.bundleName, album.lPath, album.priority};
-    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, album,
-        "Media_Restore: mediaLibraryRdb_ is null.");
+        album.albumType,
+        album.albumSubType,
+        uniqueAlbumName,
+        album.bundleName,
+        album.lPath,
+        album.priority,
+        album.uploadStatus,
+    };
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, album, "Media_Restore: mediaLibraryRdb_ is null.");
     auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, album, "Media_Restore: INSERT INTO PhotoAlbum failed,"
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK,
+        album,
+        "Media_Restore: INSERT INTO PhotoAlbum failed,"
         "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
-        err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
+        err,
+        this->SQL_PHOTO_ALBUM_INSERT.c_str(),
+        this->ToString(bindArgs).c_str());
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
 }
@@ -249,12 +264,21 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
             "Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
             this->ToString(data).c_str());
         std::vector<NativeRdb::ValueObject> bindArgs = {
-            data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
+            data.albumType,
+            data.albumSubType,
+            data.albumName,
+            data.bundleName,
+            data.lPath,
+            data.priority,
+            data.uploadStatus,
+        };
         err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         CHECK_AND_CONTINUE_ERR_LOG(err == NativeRdb::E_OK,
             "Media_Restore: restore albums failed, "
             "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
-            err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
+            err,
+            this->SQL_PHOTO_ALBUM_INSERT.c_str(),
+            this->ToString(bindArgs).c_str());
         count++;
     }
     MEDIA_INFO_LOG("Media_Restore: restore albums success, total %{public}d, restored %{public}d",
@@ -404,5 +428,20 @@ std::vector<int32_t> PhotoAlbumDao::GetAlbumIdsFromCache()
         };
     photoAlbumCache_.Iterate(callback);
     return result;
+}
+
+int32_t PhotoAlbumDao::UpdateUploadStatus(const std::string &lPath, const int32_t uploadStatus)
+{
+    std::vector<NativeRdb::ValueObject> bindArgs = {
+        uploadStatus,
+        lPath,
+    };
+    int32_t ret =
+        BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_UPDATE_UPLOAD_STATUS, bindArgs);
+    MEDIA_INFO_LOG("UpdateUploadStatus lPath: %{public}s, uploadStatus: %{public}d, ret: %{public}d",
+        lPath.c_str(),
+        uploadStatus,
+        ret);
+    return ret;
 }
 }  // namespace OHOS::Media

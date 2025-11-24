@@ -20,12 +20,14 @@
 #include <vector>
 
 #include "cloud_meta_data.h"
+#include "cloud_download_file_meta.h"
 #include "photos_vo.h"
 
 namespace OHOS::Media::CloudSync {
 class CloudDataConvertToVo {
 public:
     static CloudMetaData ConvertPhotosVoToCloudMetaData(const PhotosVo &photosVo);
+    static CloudDlFileMeta ConvertPhotosVoToLakeCloudMetaData(const PhotosVo &photosVo);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_DATA_CONVERT_TO_VO_H

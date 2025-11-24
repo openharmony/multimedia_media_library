@@ -46,6 +46,7 @@ public:
     int32_t serverErrorCode;
     ErrorType errorType;
     std::vector<CloudErrorDetail> errorDetails;
+
 public:
     std::string ToString();
 };

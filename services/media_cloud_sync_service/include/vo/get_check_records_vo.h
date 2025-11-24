@@ -59,6 +59,8 @@ public:
     int32_t thmStatus;
     int32_t syncStatus;
     std::map<std::string, CloudFileDataVo> attachment;
+    int32_t fileSourceType;
+    std::string storagePath;
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

@@ -141,8 +141,8 @@ std::string CloudMediaSyncUtils::GetThumbParentPath(const std::string &path, con
         MEDIA_ERR_LOG("invalid path %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
         return "";
     }
-    /* transform sandbox path to hmdfs local path*/
-    return "/storage/cloud/files/.thumbs" + path.substr(pos + prefixCloud.size());
+    /* transform sandbox path to hmdfs local path */
+    return "/storage/cloud/files/.thumbs/" + path.substr(pos + prefixCloud.size());
 }
 
 void CloudMediaSyncUtils::RemoveThmParentPath(const std::string &path, const std::string &prefixCloud)
@@ -154,7 +154,7 @@ void CloudMediaSyncUtils::RemoveThmParentPath(const std::string &path, const std
     MediaFileUtils::DeleteDir(thmPath);
 }
 
-void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path, const std::string &prefixCloud)
+void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path)
 {
     std::string editParentPath = PhotoFileUtils::GetEditDataDir(path);
 
@@ -164,7 +164,7 @@ void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path, cons
     MediaFileUtils::DeleteDir(editParentPath);
 }
 
-void CloudMediaSyncUtils::RemoveMetaDataPath(const std::string &path, const std::string &prefixCloud)
+void CloudMediaSyncUtils::RemoveMetaDataPath(const std::string &path)
 {
     std::string metaDataPath = PhotoFileUtils::GetMetaDataRealPath(path);
 
@@ -491,10 +491,11 @@ bool CloudMediaSyncUtils::IsLivePhoto(const PhotosPo &photosPo)
 
 int32_t CloudMediaSyncUtils::UpdateModifyTime(const std::string &localPath, int64_t localMtime)
 {
-    struct utimbuf ubuf {
-        .actime = localMtime / MILLISECOND_TO_SECOND, .modtime = localMtime / MILLISECOND_TO_SECOND
-    };
-    if (utime(localPath.c_str(), &ubuf) < 0) {
+    struct timeval times[2];
+    times[0].tv_sec = static_cast<time_t>(localMtime / MILLISECOND_TO_SECOND);
+    times[0].tv_usec = static_cast<suseconds_t>((localMtime % MILLISECOND_TO_SECOND) * MILLISECOND_TO_SECOND);
+    times[1] = times[0];
+    if (utimes(localPath.c_str(), times) < 0) {
         MEDIA_ERR_LOG(
             "utime failed %{public}d, lPath: %{public}s", errno, MediaFileUtils::DesensitizePath(localPath).c_str());
         return errno;
