@@ -33,7 +33,7 @@ void MediaOnNotifyUserDefineObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaOnNotifyUserDefineObserver::OnChange");
-    NAPI_INFO_LOG("wang do: begin MediaOnNotifyUserDefineObserver OnChange");
+    NAPI_INFO_LOG("Begin MediaOnNotifyUserDefineObserver OnChange");
     if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
         NAPI_ERR_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
         return;
@@ -57,7 +57,7 @@ void MediaOnNotifyUserDefineObserver::OnChange(const ChangeInfo &changeInfo)
     // 解析通知内容
     callbackWrapper.userDefineInfo_ = NotificationUtils::UnmarshalUserDefineNotify(*parcel);
     CHECK_AND_RETURN_LOG(callbackWrapper.userDefineInfo_ != nullptr, "invalid userDefinelnfo");
-    NAPI_INFO_LOG("wang do: userDefinelnfo is: %{public}s", callbackWrapper.userDefineInfo_->ToString().c_str());
+    NAPI_INFO_LOG("UserDefinelnfo is: %{public}s", callbackWrapper.userDefineInfo_->ToString().c_str());
  
     Notification::NotifyUriType infoUriType = callbackWrapper.userDefineInfo_->notifyUri_;
     callbackWrapper.observerUriType_ = infoUriType;
