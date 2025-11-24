@@ -43,14 +43,6 @@ using namespace OHOS::Security::AccessToken;
 extern "C" {
 void ConvertFileUriToMntPath(const vector<string> &uris, vector<string> &results)
 {
-    int32_t userId = 0;
-    OHOS::ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    if (errCode != OHOS::ERR_OK) {
-        MEDIA_ERR_LOG("GetForegroundOsAccountLocalId fail, code %{public}d", errCode);
-        results.clear();
-        return;
-    }
-
     vector<string> dataUris;
     auto handler = OHOS::Media::MediaLibraryHandler::GetMediaLibraryHandler();
     handler->InitMediaLibraryHandler();
@@ -66,9 +58,7 @@ void ConvertFileUriToMntPath(const vector<string> &uris, vector<string> &results
             results.clear();
             return;
         }
-        std::ostringstream oss;
-        oss << OHOS::Media::HMDFS << userId << OHOS::Media::CLOUD_MERGE_VIEW << dataUris[i];
-        results.emplace_back(oss.str());
+        results.emplace_back(dataUris[i]);
     }
 }
 }
@@ -78,6 +68,12 @@ namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryHandler::sDataShareHelper_ = nullptr;
 sptr<IRemoteObject> MediaLibraryHandler::token_ = nullptr;
 constexpr int32_t DEFAULT_USER_ID = 100;
+const std::string PHOTO_STORAGE_PATH = "storage_path";
+const std::string PHOTO_FILE_SOURCE_TYPE = "file_source_type";
+const std::string ROOT_LAKE_DIR = "/storage/media/";
+constexpr int32_t NUM_TWO = 2;
+constexpr int32_t NUM_THREE = 3;
+constexpr int32_t FILE_POS_LAKE = 3;
 
 MediaLibraryHandler *MediaLibraryHandler::GetMediaLibraryHandler()
 {
@@ -185,7 +181,7 @@ int32_t MediaLibraryHandler::GetDataUris(const vector<string> &uris, vector<stri
         return E_FAIL;
     }
 
-    vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH};
+    vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, PHOTO_STORAGE_PATH, PHOTO_FILE_SOURCE_TYPE};
     auto resultSet = GetResultSetFromPhotos(MEDIA_DATA_DB_ID, realIds, columns, sDataShareHelper_);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is nullptr");
@@ -202,6 +198,13 @@ int32_t MediaLibraryHandler::GetDataUris(const vector<string> &uris, vector<stri
 int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &resultSet,
                                               vector<string> &dataUris, vector<string> &fileIds)
 {
+    int32_t userId = 0;
+    OHOS::ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
+    if (errCode != OHOS::ERR_OK) {
+        MEDIA_ERR_LOG("GetForegroundOsAccountLocalId fail, code %{public}d", errCode);
+        return E_FAIL;
+    }
+
     int32_t row = 0;
     if (CheckResultSet(resultSet, row) != E_SUCCESS) {
         return E_FAIL;
@@ -213,6 +216,8 @@ int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &re
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         string fileId;
         string path;
+        string storagePath;
+        int32_t fileSourceType;
         if (resultSet->GetString(0, fileId) != NativeRdb::E_OK) {
             return E_FAIL;
         }
@@ -221,22 +226,35 @@ int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &re
             return E_FAIL;
         }
 
-        if (!StartWith(path, ROOT_MEDIA_DIR)) {
+        if (resultSet->GetString(NUM_TWO, storagePath) != NativeRdb::E_OK) {
+            return E_FAIL;
+        }
+
+        if (resultSet->GetInt(NUM_THREE, fileSourceType) != NativeRdb::E_OK) {
+            return E_FAIL;
+        }
+
+        string uriStr;
+        if (fileSourceType == FILE_POS_LAKE && StartWith(storagePath, ROOT_LAKE_DIR)) {
+            uriStr = ROOT_LAKE_DIR + to_string(userId) + "/" + storagePath.substr(ROOT_LAKE_DIR.length());
+        } else if (StartWith(path, ROOT_MEDIA_DIR)) {
+            uriStr = OHOS::Media::HMDFS + to_string(userId) + OHOS::Media::CLOUD_MERGE_VIEW +
+                path.substr(ROOT_MEDIA_DIR.length());
+        } else {
             MEDIA_ERR_LOG("%{private}s fails to start with: %{private}s", path.c_str(), ROOT_MEDIA_DIR.c_str());
             return E_FAIL;
         }
 
+        MEDIA_DEBUG_LOG("convert path: %{private}s", uriStr.c_str());
         for (vector<string>::size_type j = 0; j < dataUris.size(); j++) {
             if (dataUris[j].empty() && fileIds[j] == fileId) {
-                dataUris[j] = path.substr(ROOT_MEDIA_DIR.length());
+                dataUris[j] = uriStr;
                 count++;
             }
         }
     }
 
-    if (count != dataUris.size()) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET(count == dataUris.size(), E_FAIL);
     return E_SUCCESS;
 }
 

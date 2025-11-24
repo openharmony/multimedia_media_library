@@ -84,5 +84,6 @@ ohos_fuzztest("MediaLibraryPermissionFuzzTest") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "security_component_manager:libsecurity_component_sdk",
+    "dfs_service:cloudsync_kit_inner",
   ]
 }

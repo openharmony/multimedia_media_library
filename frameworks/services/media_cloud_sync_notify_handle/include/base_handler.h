@@ -24,7 +24,7 @@ namespace Media {
 
 struct CloudSyncHandleData {
     CloudSyncNotifyInfo orgInfo;
-    std::unordered_map<DataShare::DataShareObserver::ChangeType, std::list<Uri>> notifyInfo;
+    std::unordered_map<DataShare::DataShareObserver::ChangeType, std::list<std::pair<Uri, std::string>>> notifyInfo;
 };
 
 class BaseHandler {

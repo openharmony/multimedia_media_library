@@ -134,6 +134,11 @@ bool PhotoFileUtils::HasSource(bool hasEditDataCamera, int64_t editTime, int32_t
                effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
 }
 
+std::string PhotoFileUtils::GetAbsoluteLakeDir(int32_t userId)
+{
+    return "/mnt/data/" + to_string(userId) + "/HO_MEDIA/";
+}
+
 int32_t PhotoFileUtils::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
 {
     if (srcPath.empty()) {
@@ -315,5 +320,17 @@ int64_t PhotoFileUtils::NormalizeTimestamp(int64_t timestamp, int64_t fallbackVa
         return fallbackValue;
     }
     return timestamp;
+}
+
+// 提供给端云使用
+string PhotoFileUtils::GetAbsoluteLakePath(const std::string &storagePath, int32_t userId)
+{
+    string lakeDir = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/";
+    if (!MediaFileUtils::StartsWith(storagePath, lakeDir)) {
+        MEDIA_INFO_LOG("Failed to check storagePath: %{public}s", storagePath.c_str());
+        return "";
+    }
+
+    return GetAbsoluteLakeDir(userId) + storagePath.substr(lakeDir.length());
 }
 } // namespace OHOS::Media

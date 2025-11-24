@@ -62,6 +62,7 @@
 #include "get_edit_data_vo.h"
 #include "start_asset_analysis_dto.h"
 #include "start_asset_analysis_vo.h"
+#include "start_asset_change_scan_dto.h"
 #include "get_cloud_enhancement_pair_dto.h"
 #include "get_cloud_enhancement_pair_vo.h"
 #include "get_cloud_enhancement_pair_dto.h"
@@ -75,6 +76,7 @@
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
 #include "acquire_debug_database_vo.h"
+#include "get_fussion_assets_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -181,6 +183,8 @@ public:
     int32_t AcquireDebugDatabase(const std::string &betaIssueId, const std::string &betaScenario,
         AcquireDebugDatabaseRespBody &respBody);
     int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
+    int32_t StartAssetChangeScanInner(const StartAssetChangeScanDto& startAssetChangeScanDto);
+    int32_t GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

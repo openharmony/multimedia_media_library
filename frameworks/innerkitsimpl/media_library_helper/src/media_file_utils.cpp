@@ -2436,6 +2436,52 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
     return E_OK;
 }
 
+int32_t MediaFileUtils::MoveDirectory(const std::string &srcDir, const std::string &dstDir)
+{
+    CHECK_AND_RETURN_RET_LOG(!srcDir.empty() && !dstDir.empty(),
+        E_MODIFY_DATA_FAIL,
+        "Failed to copy directory, srcDir:%{public}s or newPath:%{public}s is empty!",
+        DesensitizePath(srcDir).c_str(),
+        DesensitizePath(dstDir).c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        IsFileExists(srcDir), E_NO_SUCH_FILE, "SrcDir:%{public}s is not exist", DesensitizePath(srcDir).c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        IsDirectory(srcDir), E_FAIL, "SrcDir:%{public}s is not directory", DesensitizePath(srcDir).c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        !IsFileExists(dstDir), E_FILE_EXIST, "DstDir:%{public}s exists", DesensitizePath(dstDir).c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        CreateDirectory(dstDir), E_FAIL, "Create dstDir:%{public}s failed", DesensitizePath(dstDir).c_str());
+
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(srcDir)) {
+        std::string srcFilePath = entry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (entry.is_directory()) {
+            CHECK_AND_RETURN_RET_LOG(CreateDirectory(dstFilePath),
+                E_FAIL,
+                "Create dir:%{public}s failed",
+                DesensitizePath(dstFilePath).c_str());
+        } else if (entry.is_regular_file()) {
+            if (srcFilePath.find("editdata_camera") != std::string::npos) {
+                CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath),
+                    E_FAIL, "Copy editdata_camera from %{public}s to %{public}s failed.",
+                    DesensitizePath(srcFilePath).c_str(),
+                    DesensitizePath(dstFilePath).c_str());
+                continue;
+            }
+            CHECK_AND_RETURN_RET_LOG(MoveFile(srcFilePath, dstFilePath),
+                E_FAIL,
+                "Copy file from %{public}s to %{public}s failed.",
+                DesensitizePath(srcFilePath).c_str(),
+                DesensitizePath(dstFilePath).c_str());
+        } else {
+            MEDIA_ERR_LOG("Unhandled path type, path:%{public}s", DesensitizePath(srcFilePath).c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
 bool MediaFileUtils::CheckCompositeDisplayMode(int32_t compositeDisplayMode)
 {
     return compositeDisplayMode >= static_cast<int32_t>(CompositeDisplayMode::DEFAULT) &&

@@ -23,8 +23,24 @@
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "photos_po.h"
+#include "photo_file_utils.h"
+#include "cloud_lake_utils.h"
 
 namespace OHOS::Media::CloudSync {
+
+// Anco FileSourceType
+const int32_t MEDIA_HO_LAKE_CONST = 3;
+const std::string PREFIX = "/data/service/el2/";
+const std::string SUFFIX = "/hmdfs/account/files";
+const std::string DOWNLOADDIR = "/.cloud_cache/download_cache";
+const std::string SANDBOXPREFIX = "/storage/cloud/files";
+const std::string PREFIXLCD = "/mnt/hmdfs/";
+const std::string SUFFIXLCD = "/account/device_view/local/files";
+const std::string PREFIXCLOUD = "/storage/cloud/";
+const std::string SUFFIXCLOUD = "/files";
+const std::string TMPSUFFIX = ".temp.download";
+
 std::string CloudMediaDaoUtils::ToStringWithCommaAndQuote(const std::vector<std::string> &values)
 {
     std::stringstream os;
@@ -141,5 +157,60 @@ int32_t CloudMediaDaoUtils::ExecuteSql(const std::string &sql)
     std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB, "rdbStore is nullptr");
     return rdbStore->ExecuteSql(sql);
+}
+
+std::string CloudMediaDaoUtils::GetLowerPath(const std::string &path, int32_t userId)
+{
+    size_t pos = path.find(SANDBOXPREFIX);
+    if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("invalid path");
+        return "";
+    }
+    return PREFIX + std::to_string(userId) + SUFFIX + path.substr(pos + SANDBOXPREFIX.size());
+}
+
+int32_t CloudMediaDaoUtils::GetLocalPathByPhotosVo(const CloudMdkRecordPhotosVo &photosVo, std::string &localPath,
+    int32_t userId)
+{
+    PathInfo pathInfo;
+    pathInfo.storagePath = photosVo.storagePath;
+    pathInfo.fileSourceType = photosVo.fileSourceType;
+    pathInfo.filePath = photosVo.data;
+    pathInfo.userId = userId;
+
+    if (pathInfo.fileSourceType != MEDIA_HO_LAKE_CONST) {
+        localPath = GetLowerPath(pathInfo.filePath, pathInfo.userId);
+    } else {
+        localPath = CloudLakeUtils::GetAbsoluteLakePath(pathInfo.storagePath, pathInfo.userId);
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaDaoUtils::GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath)
+{
+    PathInfo pathInfo;
+    int32_t userId = 100;
+    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
+    PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
+    pathInfo.storagePath = localPhotosPo.storagePath.value_or("");
+    pathInfo.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
+    pathInfo.filePath = localPhotosPo.data.value_or("");
+    pathInfo.userId = userId;
+    return GetLocalPathWithAnco(pathInfo, localPath);
+}
+
+int32_t CloudMediaDaoUtils::GetLocalPathWithAnco(PathInfo pathInfo, std::string &localPath)
+{
+    std::string storagePath = pathInfo.storagePath;
+    std::string filePath = pathInfo.filePath;
+    int32_t fileSourceType = pathInfo.fileSourceType;
+    if (fileSourceType != MEDIA_HO_LAKE_CONST) {
+        localPath = filePath;
+    } else {
+        localPath = storagePath;
+    }
+    MEDIA_INFO_LOG("Anco:: content storagePath: %{public}s, lowerPath: %{public}s",
+        storagePath.c_str(), localPath.c_str());
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

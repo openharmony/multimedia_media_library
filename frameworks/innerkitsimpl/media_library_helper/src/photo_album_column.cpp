@@ -53,6 +53,7 @@ const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
 const string PhotoAlbumColumns::ALBUM_CHECK_FLAG = "check_flag";
 const string PhotoAlbumColumns::COVER_URI_SOURCE = "cover_uri_source";
 const string PhotoAlbumColumns::COVER_CLOUD_ID = "cover_cloud_id";
+const string PhotoAlbumColumns::UPLOAD_STATUS = "upload_status";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -73,6 +74,11 @@ const string PhotoAlbumColumns::STYLE2_ALBUMS_ORDER = "style2_albums_order";
 const string PhotoAlbumColumns::STYLE2_ORDER_SECTION = "style2_order_section";
 const string PhotoAlbumColumns::STYLE2_ORDER_TYPE = "style2_order_type";
 const string PhotoAlbumColumns::STYLE2_ORDER_STATUS = "style2_order_status";
+
+// specified album lpath
+const std::string PhotoAlbumColumns::LPATH_CAMERA = "/DCIM/Camera";
+const std::string PhotoAlbumColumns::LPATH_SCREENSHOT = "/Pictures/Screenshots";
+const std::string PhotoAlbumColumns::LPATH_SCREENRECORD = "/Pictures/Screenrecords";
 
 const vector<std::string> PhotoAlbumColumns::ALBUM_ORDER_COLUMNS = {
     PhotoAlbumColumns::ALBUMS_ORDER, PhotoAlbumColumns::STYLE2_ALBUMS_ORDER
@@ -192,7 +198,9 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     STYLE2_ALBUMS_ORDER + " INT DEFAULT -1, " +
     STYLE2_ORDER_SECTION + " INT DEFAULT -1, " +
     STYLE2_ORDER_TYPE + " INT DEFAULT -1, " +
-    STYLE2_ORDER_STATUS + " INT DEFAULT 0)";
+    STYLE2_ORDER_STATUS + " INT DEFAULT 0, " +
+    UPLOAD_STATUS + " INT NOT NULL DEFAULT 0" +
+    ")";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -246,7 +254,7 @@ bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
         PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER, ALBUM_LPATH,
-        PhotoAlbumColumns::COVER_URI_SOURCE,
+        PhotoAlbumColumns::COVER_URI_SOURCE, PhotoAlbumColumns::UPLOAD_STATUS,
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
 }

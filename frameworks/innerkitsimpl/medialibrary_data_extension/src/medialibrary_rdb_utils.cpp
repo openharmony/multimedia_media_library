@@ -63,6 +63,7 @@
 #include "album_accurate_refresh_manager.h"
 #include "refresh_business_name.h"
 #include "accurate_common_data.h"
+#include "lake_file_operations.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -2034,6 +2035,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
+        int32_t ret = LakeFileOperations::MoveAssetsFromLake(fileAssetsIds);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "trash inner anco file error");
         assetRefresh.RefreshAlbum();
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);

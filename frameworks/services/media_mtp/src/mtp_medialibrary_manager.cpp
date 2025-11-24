@@ -96,6 +96,8 @@ std::vector<std::string> g_photoColumns = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MEDIA_DATE_MODIFIED,
     PhotoColumn::PHOTO_THUMB_SIZE,
+    PhotoColumn::PHOTO_STORAGE_PATH,
+    PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
     PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL,
@@ -685,7 +687,9 @@ int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &con
     std::string sourcePath;
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "have no row");
-    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t fileSourceType = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+    string data = fileSourceType == MTP_MEDIA_HO_LAKE ? GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet) :
+        GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (context->handle > COMMON_MOVING_OFFSET) {
         sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
     } else {
@@ -1175,7 +1179,8 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     errCode = GetFileAssetFromPhotosInfo(context, oldFileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetFileAssetFromPhotosInfo");
     CHECK_AND_RETURN_RET_LOG(oldFileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "oldFileAsset is nullptr");
-    std::string oldDataPath = oldFileAsset->GetFilePath();
+    std::string oldDataPath = oldFileAsset->GetFileSourceType() == MTP_MEDIA_HO_LAKE ? oldFileAsset->GetStoragePath() :
+        oldFileAsset->GetFilePath();
     context->name = oldFileAsset->GetDisplayName();
     MediaType mediaType;
     std::string displayName = context->name;

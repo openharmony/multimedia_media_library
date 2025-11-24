@@ -86,6 +86,11 @@ struct PhotoStatistics {
     int32_t tasksAutoPauseCount;
     int64_t tasksSuccessTotalSize;
     int64_t tasksSuccessTotalTime;
+    int32_t userAlbumCount;
+    int32_t sourceAlbumCount;
+    int32_t uploadUserAlbumCount;
+    int32_t uploadSourceAlbumCount;
+    int32_t notUploadAssetCount;
 };
 
 struct LcdAndAstcCount {
@@ -132,6 +137,33 @@ struct UpgradeExceptionInfo {
     int64_t duration = 0;
 };
 
+struct AncoCheckInfo {
+    uint64_t checkStartTime;
+    uint64_t checkEndTime;
+    int32_t checkAdd;
+    int32_t checkUpdate;
+    int32_t checkDelete;
+};
+
+struct AncoOperationChangeInfo {
+    int32_t photoOptAddCount;
+    int32_t photoOptUpdateCount;
+    int32_t photoOptDeleteCount;
+    int32_t albumOptAddCount;
+    int32_t albumOptUpdateCount;
+    int32_t albumOptDeleteCount;
+    int32_t totalOptCount;
+};
+
+struct AncoCountFormatInfo {
+    uint64_t loadStartTime;
+    uint64_t loadEndTime;
+    int32_t albumCount;
+    int32_t imageCount;
+    int32_t videoCount;
+    std::string assetFormatDistribution = "{}";
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -174,6 +206,9 @@ public:
     void ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData);
     static int32_t reportHeifAgingStatistics(const HeifAgingStatistics& heifAgingStatistics);
     static int32_t ReportUpgradeFault(const UpgradeExceptionInfo& reportData);
+    static int32_t ReportAncoCheckInfo(const AncoCheckInfo& reportData);
+    static int32_t ReportAncoOperationChangeInfo(const AncoOperationChangeInfo& reportData);
+    static int32_t ReportAncoCountFormatInfo(const AncoCountFormatInfo& reportData, bool firstLoad = false);
 };
 } // namespace Media
 } // namespace OHOS

@@ -206,10 +206,10 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
 
     backupRestoreDir_ = backupRetoreDir;
     upgradeRestoreDir_ = upgradePath;
-    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
     GetSyncSwitchOn();
     GetSourceDeviceInfo();
+    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();

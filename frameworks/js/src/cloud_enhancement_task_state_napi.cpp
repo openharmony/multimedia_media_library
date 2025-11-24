@@ -289,4 +289,4 @@ napi_value CloudEnhancementTaskStateNapi::JSGetStatusCode(napi_env env, napi_cal
 }
 
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS

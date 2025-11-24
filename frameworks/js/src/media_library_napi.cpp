@@ -8216,6 +8216,8 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
     photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
     photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
     photoAlbumData->SetCoverUriSource(get<int32_t>(ResultSetUtils::GetValFromColumn(coverUriSource, resultSet, TYPE_INT32)));
+    photoAlbumData->SetUploadStatus(get<int32_t>(ResultSetUtils::GetValFromColumn(
+        PhotoAlbumColumns::UPLOAD_STATUS, resultSet, TYPE_INT32)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead

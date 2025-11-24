@@ -84,6 +84,7 @@ int32_t PhotosCountStatistic::QueryTotalCount(SearchCondition searchCondition)
     int32_t cloudType = searchCondition.GetCloudType();
     int32_t favoriteType = searchCondition.GetFavoriteType();
     int32_t burstType = searchCondition.GetBurstType();
+    int32_t lakeType = searchCondition.GetLakeType();
     std::vector<NativeRdb::ValueObject> params = {mediaType,
         mediaType,
         hiddenType,
@@ -100,7 +101,9 @@ int32_t PhotosCountStatistic::QueryTotalCount(SearchCondition searchCondition)
         favoriteType,
         burstType,
         burstType,
-        burstType};
+        burstType,
+        lakeType,
+        lakeType};
     return this->GetCount(this->SQL_PHOTOS_ALL_TOTAL_COUNT, params);
 }
 
@@ -117,6 +120,7 @@ int32_t PhotosCountStatistic::QueryAllRestoreCount(SearchCondition searchConditi
     int32_t cloudType = searchCondition.GetCloudType();
     int32_t favoriteType = searchCondition.GetFavoriteType();
     int32_t burstType = searchCondition.GetBurstType();
+    int32_t lakeType = searchCondition.GetLakeType();
     std::vector<NativeRdb::ValueObject> params = {mediaType,
         mediaType,
         hiddenType,
@@ -133,7 +137,9 @@ int32_t PhotosCountStatistic::QueryAllRestoreCount(SearchCondition searchConditi
         favoriteType,
         burstType,
         burstType,
-        burstType};
+        burstType,
+        lakeType,
+        lakeType};
     return this->GetCount(this->SQL_PHOTOS_ALL_RESTORE_COUNT, params);
 }
 
@@ -150,6 +156,7 @@ int32_t PhotosCountStatistic::QueryPicturesTotalCount(SearchCondition searchCond
     int32_t cloudType = searchCondition.GetCloudType();
     int32_t favoriteType = searchCondition.GetFavoriteType();
     int32_t burstType = searchCondition.GetBurstType();
+    int32_t lakeType = searchCondition.GetLakeType();
     std::vector<NativeRdb::ValueObject> params = {mediaType,
         mediaType,
         hiddenType,
@@ -166,7 +173,9 @@ int32_t PhotosCountStatistic::QueryPicturesTotalCount(SearchCondition searchCond
         favoriteType,
         burstType,
         burstType,
-        burstType};
+        burstType,
+        lakeType,
+        lakeType};
     return this->GetCount(this->SQL_PHOTOS_PICTURES_TOTAL_COUNT, params);
 }
 
@@ -185,6 +194,7 @@ std::vector<AlbumStatisticInfo> PhotosCountStatistic::QueryAlbumCountByName(
     int32_t cloudType = searchCondition.GetCloudType();
     int32_t favoriteType = searchCondition.GetFavoriteType();
     int32_t burstType = searchCondition.GetBurstType();
+    int32_t lakeType = searchCondition.GetLakeType();
     std::vector<NativeRdb::ValueObject> params = {albumName,
         mediaType,
         mediaType,
@@ -202,7 +212,9 @@ std::vector<AlbumStatisticInfo> PhotosCountStatistic::QueryAlbumCountByName(
         favoriteType,
         burstType,
         burstType,
-        burstType};
+        burstType,
+        lakeType,
+        lakeType};
     auto resultSet = this->mediaLibraryRdb_->QuerySql(this->SQL_PHOTOS_COUNT_BY_ALBUM_NAME, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, {});
     std::vector<AlbumStatisticInfo> infoList;
@@ -244,6 +256,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllStatInfo()
     info.favoriteCount = this->QueryTotalCount(SearchCondition().SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount = this->QueryTotalCount(SearchCondition().SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount = this->QueryTotalCount(SearchCondition().SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount = this->QueryTotalCount(SearchCondition().SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -282,6 +295,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllImageStatInfo()
     info.burstTotalCount = this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -319,6 +334,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllVideoStatInfo()
         this->QueryTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount = 0;
     info.burstCoverCount = 0;
+    info.innerEastLakeCount =
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -352,6 +369,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllRestoreStatInfo()
     info.favoriteCount = this->QueryAllRestoreCount(SearchCondition().SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount = this->QueryAllRestoreCount(SearchCondition().SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount = this->QueryAllRestoreCount(SearchCondition().SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount = this->QueryAllRestoreCount(SearchCondition().SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -391,6 +409,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllRestoreImageStatInfo()
         this->QueryAllRestoreCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryAllRestoreCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryAllRestoreCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -428,6 +448,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetAllRestoreVideoStatInfo()
         this->QueryAllRestoreCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount = 0;
     info.burstCoverCount = 0;
+    info.innerEastLakeCount =
+        this->QueryAllRestoreCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -470,6 +492,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetImageAlbumInfo()
         this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -510,6 +534,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetVideoAlbumInfo()
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount = 0;
     info.burstCoverCount = 0;
+    info.innerEastLakeCount =
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -541,6 +567,8 @@ std::vector<AlbumMediaStatisticInfo> PhotosCountStatistic::GetAlbumInfoByName(co
         this->QueryAlbumCountByName(albumName, SearchCondition(defaultCondition).SetMediaType(SINGLE_MEDIA_TYPE_VIDEO));
     std::vector<AlbumStatisticInfo> cloudCountInfoList =
         this->QueryAlbumCountByName(albumName, SearchCondition(defaultCondition).SetCloudType(SINGLE_CLOUD_TYPE_CLOUD));
+    std::vector<AlbumStatisticInfo> lakeCountInfoList =
+        this->QueryAlbumCountByName(albumName, SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
     // Parse the statistic info.
@@ -549,7 +577,8 @@ std::vector<AlbumMediaStatisticInfo> PhotosCountStatistic::GetAlbumInfoByName(co
         .ParseTotalCount(albumInfoMap, totalCountInfoList)
         .ParseImageCount(albumInfoMap, imageCountInfoList)
         .ParseVideoCount(albumInfoMap, videoCountInfoList)
-        .ParseCloudCount(albumInfoMap, cloudCountInfoList);
+        .ParseCloudCount(albumInfoMap, cloudCountInfoList)
+        .ParseLakeCount(albumInfoMap, lakeCountInfoList);
     std::vector<AlbumMediaStatisticInfo> albumInfoList;
     for (const auto &iter : albumInfoMap) {
         AlbumMediaStatisticInfo info = iter.second;
@@ -590,6 +619,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetFavoriteAlbumStatInfo()
         this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -632,6 +663,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetTrashedAlbumStatInfo()
         this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
@@ -674,6 +707,8 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetHiddenAlbumStatInfo()
         this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
+    info.innerEastLakeCount =
+        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetLakeType(SINGLE_LAKE_TYPE_INNER));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;

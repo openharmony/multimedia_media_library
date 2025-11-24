@@ -48,6 +48,10 @@ public:
 public:
     int32_t UpdateDirty(const std::string &cloudId, int32_t dirtyType);
     int32_t UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position);
+    int32_t UpdatePosWithType(const std::vector<std::string> &cloudIds,
+        int32_t position, int32_t fileSourceType);
+    int32_t UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+        int32_t fileSourceType);
     int32_t UpdateLocalFileDirty(std::string &cloudId);
     int32_t UpdateSyncStatus(const std::string &cloudId, int32_t syncStatus);
     int32_t UpdateThmStatus(const std::string &cloudId, int32_t thmStatus);

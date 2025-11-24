@@ -237,6 +237,14 @@ public:
 
     EXPORT int32_t GetFileResourceType() const;
     EXPORT void SetFileResourceType(int32_t fileResourceType);
+    EXPORT int32_t GetFileSourceType() const;
+    EXPORT void SetFileSourceType(int32_t fileSourceType);
+
+    EXPORT std::string GetStoragePath() const;
+    EXPORT void SetStoragePath(const std::string &storagePath);
+
+    EXPORT int32_t GetIsStylePhoto() const;
+    EXPORT void SetIsStylePhoto(int32_t isStylePhoto);
 
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;

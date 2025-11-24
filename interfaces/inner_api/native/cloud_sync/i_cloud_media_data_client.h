@@ -23,11 +23,13 @@
 #include "cloud_file_data.h"
 #include "cloud_download_thum_para.h"
 #include "cloud_meta_data.h"
+#include "cloud_download_file_meta.h"
 #include "mdk_record.h"
 #include "mdk_reference.h"
 #include "mdk_database.h"
 #include "media_operate_result.h"
 #include "datashare_predicates.h"
+#include "cloud_lake_info.h"
 
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -43,6 +45,10 @@ public:
     // 核查
     virtual int32_t UpdateDirty(const std::string &cloudId, DirtyTypes dirtyType) = 0;
     virtual int32_t UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position) = 0;
+    virtual int32_t UpdatePosWithType(const std::vector<std::string> &cloudIds,
+        int32_t position, int32_t fileSourceType) = 0;
+    virtual int32_t UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+        int32_t fileSourceType) = 0;
     virtual int32_t UpdateThmStatus(const std::string &cloudId, int32_t thmStatus) = 0;
     virtual int32_t GetAgingFile(const int64_t time, int32_t mediaType, int32_t sizeLimit, int32_t offset,
         std::vector<CloudMetaData> &metaData) = 0;
@@ -51,10 +57,15 @@ public:
     // 下载
     virtual int32_t GetDownloadAsset(
         const std::vector<std::string> &uris, std::vector<CloudMetaData> &cloudMetaDataVec) = 0;
+    virtual int32_t GetDownloadLakeAsset(
+        const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec) = 0;
     virtual int32_t GetDownloadThmsByUri(
         const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) = 0;
     virtual int32_t OnDownloadAsset(
         const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) = 0;
+    virtual int32_t OnDownloadLakeAsset(
+        const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+        std::vector<MediaOperateResult> &result) = 0;
     virtual int32_t GetDownloadThms(std::vector<CloudMetaData> &cloudMetaDataVec, const DownloadThumPara &param) = 0;
     virtual int32_t OnDownloadThms(const std::unordered_map<std::string, int32_t> &resMap, int32_t &failSize) = 0;
     virtual int32_t GetDownloadThmNum(int32_t &totalNum, int32_t type) = 0;

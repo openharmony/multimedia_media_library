@@ -54,6 +54,7 @@
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "lake_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -204,6 +205,8 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     columns.push_back(MediaColumn::MEDIA_DATE_TRASHED);
     columns.push_back(MediaColumn::MEDIA_HIDDEN);
+    columns.push_back(PhotoColumn::PHOTO_STORAGE_PATH);
+    columns.push_back(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
     if (resultSet == nullptr) {
@@ -216,7 +219,10 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
         return E_ERR;
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+        int32_t sourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE) ?
+            MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
+            MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
     }
     return E_SUCCESS;
 }

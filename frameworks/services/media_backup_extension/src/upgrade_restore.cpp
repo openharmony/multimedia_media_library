@@ -168,7 +168,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     MEDIA_INFO_LOG("GetPhotosSyncSwitchStatus success, switchstatus: %{public}d",
         static_cast<int>(restoreConfig_.restoreSwitchType));
     ParseXml(xmlPath);
-    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_, BaseRestore::IsCloudRestoreSatisfied());
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);

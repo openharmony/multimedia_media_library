@@ -53,6 +53,8 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddUserDisplayLevelIntoMergeTag(store);
     this->AddHdcUniqueIdIntoGalleryMedia(store);
     this->AddColumnsOfTOcrResult(store);
+    this->AddUploadStatusIntoGalleryAlbum(store);
+    this->AddHdcUploadStatusIntoGalleryAlbum(store);
     return NativeRdb::E_OK;
 }
 
@@ -314,6 +316,42 @@ int32_t GalleryDbUpgrade::AddColumnsOfTOcrResult(NativeRdb::RdbStore &store)
         MEDIA_INFO_LOG("AddColumnsOfTOcrResult copy width height end");
     }
     return NativeRdb::E_OK;
+}
+
+/**
+ * @brief Upgrade gallery_album table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::AddUploadStatusIntoGalleryAlbum(NativeRdb::RdbStore &store)
+{
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_album", "uploadStatus");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
+    std::string sql = this->SQL_GALLERY_ALBUM_TABLE_ADD_UPLOAD_STATUS_COLUMN;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: GalleryDbUpgrade::AddUploadStatusIntoGalleryAlbum failed,"
+        "ret=%{public}d, sql=%{public}s",
+        ret,
+        sql.c_str());
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddUploadStatusIntoGalleryAlbum success");
+    return ret;
+}
+
+/**
+ * @brief Upgrade gallery_album table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::AddHdcUploadStatusIntoGalleryAlbum(NativeRdb::RdbStore &store)
+{
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_album", "hdcUploadStatus");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
+    std::string sql = this->SQL_GALLERY_ALBUM_TABLE_ADD_HDC_UPLOAD_STATUS_COLUMN;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: GalleryDbUpgrade::AddHdcUploadStatusIntoGalleryAlbum failed,"
+        "ret=%{public}d, sql=%{public}s",
+        ret,
+        sql.c_str());
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddHdcUploadStatusIntoGalleryAlbum success");
+    return ret;
 }
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

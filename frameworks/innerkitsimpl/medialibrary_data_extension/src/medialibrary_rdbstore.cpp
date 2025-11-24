@@ -1500,6 +1500,17 @@ int32_t MediaLibraryDataCallBack::InsertDirValues(const DirValuesBucket &dirValu
     return insertResult;
 }
 
+static void UpdateAlbumPlugin(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start updating album plugin");
+    const vector<string> sqls = {
+        "DROP TABLE IF EXISTS album_plugin;"
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    AlbumPluginTableEventHandler().OnCreate(store);
+    MEDIA_INFO_LOG("End updating album plugin");
+}
+
 int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
 {
     SmartAlbumValuesBucket trashAlbum = {
@@ -1959,6 +1970,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX,
     ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
     CREATE_ALBUM_ORDER_BACK_TABLE,
+    CREATE_LAKE_ALBUM_TABLE,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -4744,6 +4756,20 @@ static void AddVideoMode(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add VideoMode column end");
 }
 
+static void AddUploadStatus(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::UPLOAD_STATUS +
+            " INT NOT NULL DEFAULT 0",
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        "UPDATE PhotoAlbum SET upload_status = 1 WHERE album_type IN (0, 2048)",
+    };
+    MEDIA_INFO_LOG("Add upload status column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add upload status column end");
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4986,6 +5012,29 @@ static void ReAddInsertTrigger(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("End readd insert trigger");
+}
+
+static void AddLakeFileColumn(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add lake file column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FILE_INODE + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_STORAGE_PATH + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE +
+            " INT NOT NULL DEFAULT 0",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add lake file column");
+}
+
+static void AddLakeAlbumTable(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add lake album table");
+    const vector<string> sqls = {
+        CREATE_LAKE_ALBUM_TABLE,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add lake album table");
 }
 
 static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
@@ -5618,6 +5667,26 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         PrepareOtherShootingModeAlbum(store, VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, true);
     }
+
+    if (oldVersion < VERSION_ADD_LAKE_COLUMN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LAKE_COLUMN, true)) {
+        AddLakeFileColumn(store, VERSION_ADD_LAKE_COLUMN);
+        AddLakeAlbumTable(store, VERSION_ADD_LAKE_COLUMN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LAKE_COLUMN, true);
+    }
+
+    if (oldVersion < VERSION_FILTER_TAB_ASSET_ALBUM_OPERATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_FILTER_TAB_ASSET_ALBUM_OPERATION, true)) {
+        AddAssetAlbumOperationTableForSync(store);
+        UpdateAlbumPlugin(store, VERSION_FILTER_TAB_ASSET_ALBUM_OPERATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FILTER_TAB_ASSET_ALBUM_OPERATION, true);
+    }
+
+    if (oldVersion < VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS, true)) {
+        AddUploadStatus(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS, true);
+    }
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5735,7 +5804,6 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         AddAppLinkColumn(store, VERSION_ADD_APPLINK_VERSION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
     }
-
     if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TMP_COMPATIBLE_DUP, true)) {
         AddCreateTmpCompatibleDup(store, VERSION_CREATE_TMP_COMPATIBLE_DUP);
