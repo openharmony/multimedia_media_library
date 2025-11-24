@@ -901,7 +901,7 @@ PickerController = __decorate([Observed], PickerController);
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
 }
 
-export class UpdatablePickerOptions {    
+export class UpdatablePickerConfigs {    
 }
 
 export class BaseItemInfo {
@@ -1047,5 +1047,5 @@ export var MovingPhotoBadgeStateType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerOptions, MovingPhotoBadgeStateType };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerConfigs, MovingPhotoBadgeStateType };
 
