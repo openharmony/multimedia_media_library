@@ -20,12 +20,15 @@
 #include <memory>
 #include <string>
 
+#include "camera_character_types.h"
 #include "deferred_photo_proc_session.h"
 #include "result_set_utils.h"
 #include "medialibrary_command.h"
+#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
+using namespace Notification;
 class Picture;
 #define EXPORT __attribute__ ((visibility ("default")))
 using ProcessDoneHandler = std::function<void(bool, const std::string &)>;
@@ -57,6 +60,9 @@ private:
     EXPORT void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
         std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
     void CallProcessImageDone(bool success, const std::string &photoId);
+
+    EXPORT int32_t NotifyOnProcess(
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, MultistagesCaptureNotifyType notifyType);
 
 private:
     ProcessDoneHandler processDoneCallback_;
