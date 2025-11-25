@@ -65,6 +65,8 @@ bool GetCheckRecordsRespBodyCheckData::Unmarshalling(MessageParcel &parcel)
     parcel.ReadInt32(this->syncStatus);
     int32_t attachmentSize;
     parcel.ReadInt32(attachmentSize);
+    parcel.ReadInt32(this->fileSourceType);
+    parcel.ReadString(this->storagePath);
     for (int32_t i = 0; i < attachmentSize; ++i) {
         CloudFileDataVo vo;
         std::string key;
@@ -90,6 +92,8 @@ bool GetCheckRecordsRespBodyCheckData::Marshalling(MessageParcel &parcel) const
     parcel.WriteInt32(this->thmStatus);
     parcel.WriteInt32(this->syncStatus);
     parcel.WriteInt32(this->attachment.size());
+    parcel.WriteInt32(this->fileSourceType);
+    parcel.WriteString(this->storagePath);
     for (auto &[key, value] : attachment) {
         parcel.WriteString(key);
         value.Marshalling(parcel);
@@ -109,7 +113,9 @@ std::string GetCheckRecordsRespBodyCheckData::ToString() const
        << "\"dateModified\": " << this->dateModified << ", "
        << "\"dirty\": " << this->dirty << "\""
        << "\"thmStatus\": " << this->thmStatus << "\""
-       << "\"syncStatus\": " << this->syncStatus << "\"";
+       << "\"syncStatus\": " << this->syncStatus << "\""
+       << "\"fileSourceType\": " << this->fileSourceType << "\""
+       << "\"storagePath\": " << this->storagePath << "\"";
     ss << ",[";
     uint32_t index = 0;
     for (const auto &[key, value] : attachment) {

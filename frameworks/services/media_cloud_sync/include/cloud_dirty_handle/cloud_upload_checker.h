@@ -31,6 +31,7 @@ struct CheckedPhotoInfo {
     int64_t size;
     int32_t subtype;
     int32_t movingPhotoEffectMode;
+    int32_t fileSourceType;
 };
 
 class CloudUploadChecker {

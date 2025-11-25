@@ -105,6 +105,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   defines = []

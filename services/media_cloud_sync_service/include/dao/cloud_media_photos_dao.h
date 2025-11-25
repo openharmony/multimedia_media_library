@@ -41,6 +41,7 @@
 #include "accurate_common_data.h"
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
+#include "cloud_media_album_cache.h"
 
 namespace OHOS::Media::CloudSync {
 class CloudMediaPhotosDao {
@@ -99,7 +100,8 @@ public:
         const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t OnCopyPhotoRecord(
         const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
-    int32_t ClearCloudInfo(const std::string &cloudId);
+    int32_t ClearCloudInfo(
+        const std::string &cloudId, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t DeleteFileNotExistPhoto(
         std::string &path, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t HandleSameNameRename(
@@ -134,6 +136,8 @@ public:
     void ClearAlbumMap();
     int32_t QueryAnalysisAlbum(const std::string &cloudId, std::vector<std::string> &analysisAlbumIds);
     int32_t UpdateAlbumReplacedSignal(const std::vector<std::string> &albumIdVector);
+    int32_t FindPhotoAlbumInCache(const std::string &albumCloudId, const std::string &lPath,
+        const std::string &sourcePath, std::optional<PhotoAlbumPo> &photoAlbumPoOp);
 
 private:
     bool IsTimeChanged(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
@@ -157,7 +161,7 @@ private:
     void PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string, std::string>> &localToCloudMap,
         SafeMap<std::string, int32_t> &cloudToLocalMap,
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap, bool isUpload = true);
-    bool IsAlbumCloud(bool isUpload, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    bool IsAlbumCloud(bool isUpload, const PhotoAlbumPo &albumInfo);
     int UpdateProxy(int &changedRows, const NativeRdb::ValuesBucket &row, const NativeRdb::AbsRdbPredicates &predicates,
         const std::string &cloudId, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int UpdateProxy(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
@@ -179,6 +183,7 @@ private:
 
 private:
     CloudMediaCommonDao commonDao_;
+    CloudMediaAlbumCache albumCache_;
 
 private:
     /* photo failure records */
@@ -202,8 +207,8 @@ private:
                 dirty = 1 AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
-                LENGTH(COALESCE(user_comment,'')) <= 1024 AND \
                 date_trashed = 0 AND \
+                hidden = 0 AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
                 file_id NOT IN ({0}) \
@@ -216,8 +221,10 @@ private:
             LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         WHERE \
-            COALESCE(PhotoAlbum.dirty, 0) <> 1 \
-        LIMIT ? \
+            COALESCE(PhotoAlbum.dirty, 0) <> 1 AND \
+            COALESCE(upload_status, 1) = 1 OR \
+            LOWER(COALESCE(lpath, '')) = LOWER('/DCIM/Camera') \
+        LIMIT ?  \
         ;";
     const std::string SQL_PHOTOS_GET_COPY_RECORDS = "\
         WITH DATA AS \

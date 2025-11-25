@@ -492,6 +492,7 @@ struct AlbumInfo {
     std::string lPath;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     int64_t dateModified {0};
+    int32_t uploadStatus {0};
 };
 
 struct GalleryAlbumInfo {
@@ -558,6 +559,20 @@ struct PortraitAlbumInfo {
     std::string tagName;
     std::string relationship;
     int32_t userDisplayLevel {-1};
+};
+
+struct GroupAlbumInfo {
+    std::vector<std::string> groupTagVec;
+    std::map<std::string, std::vector<std::string>> groupTagMap;
+    std::map<std::string, std::string> tagIdMap;
+    std::vector<int32_t> fileIdVec;
+    int32_t userOperation {0};
+    int32_t renameOperation {0};
+    std::string tagId;
+    std::string groupTag;
+    std::string tagName;
+    int32_t userDisplayLevel {1};
+    int32_t fileIdCount{0};
 };
 
 struct FaceInfo {

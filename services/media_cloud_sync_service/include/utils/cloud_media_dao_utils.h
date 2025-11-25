@@ -18,10 +18,21 @@
 
 #include <string>
 #include <vector>
+#include "cloud_media_photos_dao.h"
+#include "cloud_mdkrecord_photos_vo.h"
 
 namespace OHOS::Media::CloudSync {
 #define EXPORT __attribute__ ((visibility ("default")))
 class EXPORT CloudMediaDaoUtils {
+struct PathInfo {
+    std::string filePath; // data
+    std::string storagePath;
+    int32_t fileSourceType;
+    int32_t hidden;
+    int32_t dateTrashed;
+    int32_t userId;
+};
+
 public:
     static std::string ToStringWithCommaAndQuote(const std::vector<std::string> &values);
     static std::string ToStringWithComma(const std::vector<std::string> &fileIds);
@@ -32,6 +43,11 @@ public:
     static std::string VectorToString(const std::vector<uint64_t> &vec, const std::string &sep = ", ");
     static int32_t QueryCount(const std::string &sql, const std::string &columnName, int32_t &count);
     static int32_t ExecuteSql(const std::string &sql);
+    static std::string GetLowerPath(const std::string &path, int32_t userId);
+    static int32_t GetLocalPathByPhotosVo(const CloudMdkRecordPhotosVo &photosVo, std::string &localPath,
+        int32_t userId);
+    static int32_t GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath);
+    static int32_t GetLocalPathWithAnco(PathInfo pathInfo, std::string &localPath);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_CLOUD_MEDIA_DAO_UTILS_H

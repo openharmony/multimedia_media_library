@@ -65,10 +65,10 @@ struct UpdateAlbumData {
     std::string hiddenCover;
     std::string albumCoverUri;
     uint8_t isCoverSatisfied;
-    int32_t newTotalCount { 0 };
-    bool shouldNotify { false };
+    int32_t newTotalCount {0};
+    bool shouldNotify {false};
     bool hasChanged {false};
-    bool shouldUpdateDateModified { false };
+    bool shouldUpdateDateModified {false};
     int32_t coverUriSource {0};
     int64_t coverDateTime;
     int64_t hiddenCoverDateTime;

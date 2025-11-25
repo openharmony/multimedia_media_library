@@ -180,6 +180,8 @@ private:
         std::string &currentOrientation);
     static int32_t UpdateOrientationExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &orientationUpdated, std::string &currentOrientation);
+    static int32_t HandleLakeAssetRename(AccurateRefresh::AccurateRefreshBase &refresh, MediaLibraryCommand &cmd,
+        const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t BatchSetRecentShow(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,

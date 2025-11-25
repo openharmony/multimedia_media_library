@@ -65,6 +65,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
         DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
         DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
+        DECLARE_NAPI_GETTER("uploadStatus", JSGetUploadStatus),
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
         DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
@@ -229,6 +230,11 @@ void SendablePhotoAlbumNapi::SetPhotoAlbumNapiProperties()
     photoAlbumPtr = shared_ptr<PhotoAlbum>(pAlbumData_);
 }
 
+int32_t SendablePhotoAlbumNapi::GetUploadStatus() const
+{
+    return photoAlbumPtr->GetUploadStatus();
+}
+
 // Constructor callback
 napi_value SendablePhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -377,6 +383,18 @@ napi_value SendablePhotoAlbumNapi::JSGetAlbumLPath(napi_env env, napi_callback_i
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetLPath().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value SendablePhotoAlbumNapi::JSGetUploadStatus(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, SendableMediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "GetUploadStatus permission denied: not a system app", nullptr, "GetUploadStatus failed: not a system app");
+    SendablePhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetUploadStatus(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 

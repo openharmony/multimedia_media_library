@@ -49,6 +49,8 @@ void CloudMediaDataServiceProcessor::GetPhotosDto(
         photosDto.modifiedTime = photo.editTime.value_or(0);
         photosDto.fileName = fileName;
         photosDto.originalCloudId = photo.originalAssetCloudId.value_or("");
+        photosDto.storagePath = photo.storagePath.value_or("");
+        photosDto.fileSourceType = photo.fileSourceType.value_or(0);
         photosDtos.push_back(photosDto);
     }
     return;

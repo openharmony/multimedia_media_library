@@ -257,6 +257,10 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadAsset(const std::ve
         photosDto.modifiedTime = downloadAssetData.editTime;
         photosDto.fileName = fileName;
         photosDto.originalCloudId = downloadAssetData.originalCloudId;
+        photosDto.hidden = downloadAssetData.hidden;
+        photosDto.dateTrashed = downloadAssetData.dateTrashed;
+        photosDto.fileSourceType = downloadAssetData.fileSourceType;
+        photosDto.storagePath = downloadAssetData.storagePath;
 
         CHECK_AND_RETURN_RET_LOG(
             CloudMediaAttachmentUtils::GetAttachment("content", downloadAssetData, photosDto) == E_OK,
@@ -294,6 +298,34 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &
     assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.mediaType = photosPo.mediaType.value_or(0);
     assetData.exifRotate = CloudMediaSyncUtils::GetExifRotate(assetData.mediaType, assetData.localPath);
+    return assetData;
+}
+
+OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadLakeAssetData(PhotosPo &photosPo,
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos)
+{
+    OnDownloadAssetData assetData;
+    assetData.err = E_OK;
+    assetData.errorMsg = "";
+    bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
+    bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
+    bool isLivePhoto = CloudMediaSyncUtils::IsLivePhoto(photosPo);
+    bool isInvalidCover = photosPo.coverPosition.value_or(0) == 0 && photosPo.isRectificationCover.value_or(0) == 0;
+    MEDIA_INFO_LOG("GetOnDownloadLakeAssetData %{public}d,%{public}d,%{public}d",
+        isMovingPhoto, isGraffiti, isLivePhoto);
+    assetData.fixFileType = isMovingPhoto && !isGraffiti && !isLivePhoto;
+    assetData.needSliceContent = (isMovingPhoto && !isGraffiti) && isLivePhoto;
+    assetData.needParseCover = isMovingPhoto && isInvalidCover;
+    assetData.needSliceRaw = isMovingPhoto;
+    assetData.path = photosPo.data.value_or("");
+    assetData.localPath = CloudMediaSyncUtils::GetLocalPath(assetData.path);
+    assetData.dateModified = photosPo.dateModified.value_or(0);
+    std::string extraUri = MediaFileUtils::GetExtraUri(photosPo.displayName.value_or(""), photosPo.data.value_or(""));
+    assetData.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+                                                               std::to_string(photosPo.fileId.value_or(0)), extraUri);
+    assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
+        (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
+    assetData.lakeInfo = lakeInfos.at(photosPo.cloudId.value_or(""));
     return assetData;
 }
 
@@ -488,6 +520,37 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     return E_OK;
 }
 
+int32_t CloudMediaDownloadService::OnDownloadLakeAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    std::vector<MediaOperateResultDto> &result)
+{
+    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadLakeAsset, %{public}zu", lakeInfos.size());
+    // get downloadAssetDataVec
+    std::vector<PhotosPo> photosPoVec;
+    int32_t ret = this->dao_.QueryDownloadLakeAssetByCloudIds(lakeInfos, photosPoVec);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryDownloadLakeAssetByCloudIds failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == lakeInfos.size(),
+        E_CLOUDSYNC_INVAL_ARG,
+        "QueryDownloadLakeAssetByCloudIds failed, cloudIds size:%{public}u, photosPoVec size:%{public}u",
+        lakeInfos.size(),
+        photosPoVec.size());
+    // Update
+    OnDownloadAssetData assetData;
+    for (auto &photosPo : photosPoVec) {
+        assetData = this->GetOnDownloadLakeAssetData(photosPo, lakeInfos);
+        MEDIA_DEBUG_LOG(
+            "OnDownloadLakeAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
+        HandlePhoto(photosPo, assetData);
+        // record result
+        MediaOperateResultDto mediaResult;
+        mediaResult.cloudId = photosPo.cloudId.value_or("");
+        mediaResult.errorCode = assetData.err;
+        mediaResult.errorMsg = assetData.errorMsg;
+        result.emplace_back(mediaResult);
+    }
+    return E_OK;
+}
+
 void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
 {
     int32_t ret = SliceAsset(assetData, photo);
@@ -501,7 +564,13 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     CloudMediaScanService::ScanResult scanResult;
     bool isNeedScan = assetData.needScanShootingMode || assetData.needScanSubtype;
     CHECK_AND_EXECUTE(!isNeedScan, this->scanService_.ScanDownloadedFile(assetData.path, scanResult));
-    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
+    if (assetData.lakeInfo) {
+        // lake file
+        MEDIA_INFO_LOG("the file is lake");
+        ret = this->dao_.UpdateDownloadLakeAsset(assetData.fixFileType, assetData.path, assetData.lakeInfo, scanResult);
+    } else {
+        ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
+    }
     if (scanResult.scanSuccess) {
         CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
     }

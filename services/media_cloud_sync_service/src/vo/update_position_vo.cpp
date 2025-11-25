@@ -25,12 +25,14 @@ namespace OHOS::Media::CloudSync {
 bool UpdatePositionReqBody::Unmarshalling(MessageParcel &parcel)
 {
     parcel.ReadInt32(this->position);
+    parcel.ReadInt32(this->fileSourceType);
     return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
 }
 
 bool UpdatePositionReqBody::Marshalling(MessageParcel &parcel) const
 {
     parcel.WriteInt32(this->position);
+    parcel.WriteInt32(this->fileSourceType);
     IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel);
     return true;
 }

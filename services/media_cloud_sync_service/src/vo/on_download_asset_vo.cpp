@@ -19,17 +19,21 @@
 
 #include <sstream>
 
+#include "cloud_lake_info.h"
 #include "media_itypes_utils.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDownloadAssetReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
+    IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
+    AdditionFileInfo::Unmarshalling(this->lakeInfos, parcel);
+    return true;
 }
 
 bool OnDownloadAssetReqBody::Marshalling(MessageParcel &parcel) const
 {
     IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel);
+    AdditionFileInfo::Marshalling(this->lakeInfos, parcel);
     return true;
 }
 

@@ -25,6 +25,8 @@ let __decorate = this && this.__decorate || function (e, o, t, i) {
     }
     return r > 3 && l && Object.defineProperty(o, t, l), l;
 };
+const display = requireNapi('display');
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 export class AlbumPickerComponent extends ViewPU {
     constructor(e, o, n, t = -1, i = void 0) {
         super(e, n, t);
@@ -34,6 +36,7 @@ export class AlbumPickerComponent extends ViewPU {
         this.onEmptyAreaClick = void 0;
         this.__albumPickerController = new SynchedPropertyNesedObjectPU(o.albumPickerController, this, 'albumPickerController');
         this.proxy = void 0;
+        this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.setInitiallyProvidedValue(o);
         this.declareWatch('albumPickerController', this.onChanged);
     }
@@ -44,6 +47,12 @@ export class AlbumPickerComponent extends ViewPU {
         void 0 !== e.onEmptyAreaClick && (this.onEmptyAreaClick = e.onEmptyAreaClick);
         this.__albumPickerController.set(e.albumPickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
+        const displayName = display.getDefaultDisplaySync().name;
+        console.info(`displayName = ${displayName}`);
+        if (cooperation_multi_name.includes(displayName)) {
+            this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
+            console.info(`dpiFollowStrategy = ${this.dpiFollowStrategy}`);
+        }
     }
 
     updateStateVars(e) {
@@ -90,7 +99,7 @@ export class AlbumPickerComponent extends ViewPU {
                 }
             },
             {
-                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+                dpiFollowStrategy: this.dpiFollowStrategy
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');

@@ -36,6 +36,78 @@ public:
     ~ResultSetReader() = default;
 
 private:
+    using SetValHandle = int32_t (ResultSetReader::*)(
+        const std::string &, std::shared_ptr<NativeRdb::ResultSet> &, std::shared_ptr<IObjectWriter> &);
+    int32_t SetInt32Val(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::shared_ptr<IObjectWriter> &objectWriter)
+    {
+        CHECK_AND_RETURN_RET(resultSet != nullptr, E_DATA);
+        CHECK_AND_RETURN_RET(objectWriter != nullptr, E_DATA);
+        const std::map<std::string, MediaColumnType::DataType> &columns = objectWriter->GetColumns();
+        auto it = columns.find(columnName);
+        CHECK_AND_RETURN_RET(it != columns.end(), E_DATA);
+        MediaColumnType::DataType type = it->second;
+        CHECK_AND_RETURN_RET(type == MediaColumnType::DataType::INT, E_DATA);
+        std::variant<int32_t, int64_t, double, std::string> val = GetInt32Val(columnName, resultSet);
+        return objectWriter->SetMemberVariable(columnName, val);
+    }
+
+    int32_t SetInt64Val(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::shared_ptr<IObjectWriter> &objectWriter)
+    {
+        CHECK_AND_RETURN_RET(resultSet != nullptr, E_DATA);
+        CHECK_AND_RETURN_RET(objectWriter != nullptr, E_DATA);
+        const std::map<std::string, MediaColumnType::DataType> &columns = objectWriter->GetColumns();
+        auto it = columns.find(columnName);
+        CHECK_AND_RETURN_RET(it != columns.end(), E_DATA);
+        MediaColumnType::DataType type = it->second;
+        CHECK_AND_RETURN_RET(type == MediaColumnType::DataType::LONG, E_DATA);
+        std::variant<int32_t, int64_t, double, std::string> val = GetInt64Val(columnName, resultSet);
+        return objectWriter->SetMemberVariable(columnName, val);
+    }
+
+    int32_t SetDoubleVal(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::shared_ptr<IObjectWriter> &objectWriter)
+    {
+        CHECK_AND_RETURN_RET(resultSet != nullptr, E_DATA);
+        CHECK_AND_RETURN_RET(objectWriter != nullptr, E_DATA);
+        const std::map<std::string, MediaColumnType::DataType> &columns = objectWriter->GetColumns();
+        auto it = columns.find(columnName);
+        CHECK_AND_RETURN_RET(it != columns.end(), E_DATA);
+        MediaColumnType::DataType type = it->second;
+        CHECK_AND_RETURN_RET(type == MediaColumnType::DataType::DOUBLE, E_DATA);
+        std::variant<int32_t, int64_t, double, std::string> val = GetDoubleVal(columnName, resultSet);
+        return objectWriter->SetMemberVariable(columnName, val);
+    }
+
+    int32_t SetStringVal(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::shared_ptr<IObjectWriter> &objectWriter)
+    {
+        CHECK_AND_RETURN_RET(resultSet != nullptr, E_DATA);
+        CHECK_AND_RETURN_RET(objectWriter != nullptr, E_DATA);
+        // type default is MediaColumnType::DataType::STRING
+        std::variant<int32_t, int64_t, double, std::string> val = GetStringVal(columnName, resultSet);
+        return objectWriter->SetMemberVariable(columnName, val);
+    }
+
+    int32_t SetMemberVariable(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::shared_ptr<IObjectWriter> &objectWriter)
+    {
+        CHECK_AND_RETURN_RET(resultSet != nullptr, E_DATA);
+        CHECK_AND_RETURN_RET(objectWriter != nullptr, E_DATA);
+        const std::vector<SetValHandle> setValFuncs = {
+            &ResultSetReader::SetInt32Val,
+            &ResultSetReader::SetInt64Val,
+            &ResultSetReader::SetDoubleVal,
+            &ResultSetReader::SetStringVal,
+        };
+        for (const auto &setValFunc : setValFuncs) {
+            auto ret = (this->*setValFunc)(columnName, resultSet, objectWriter);
+            CHECK_AND_RETURN_RET(ret != E_OK, E_OK);  // if set value failed, try next method
+        }
+        return E_DATA;
+    }
+
     OBJECT_TYPE ReadRecord()
     {
         OBJECT_TYPE objectPo;
@@ -44,35 +116,8 @@ private:
         CHECK_AND_RETURN_RET_LOG(!this->columnNames_.empty(), objectPo, "columnNames_ is empty");
         std::shared_ptr<IObjectWriter> objectWriter = std::make_shared<OBJECT_WRITER>(objectPo);
         // read data from resultSet into PO
-        std::map<std::string, MediaColumnType::DataType> columns = objectWriter->GetColumns();
         for (const std::string &columnName : this->columnNames_) {
-            auto it = columns.find(columnName);
-            CHECK_AND_CONTINUE_DEBUG_LOG(it != columns.end(), "column [%{public}s] not found", columnName.c_str());
-            const std::string key = it->first;
-            MediaColumnType::DataType type = it->second;
-            std::variant<int32_t, int64_t, double, std::string> val;
-            switch (type) {
-                case MediaColumnType::DataType::INT: {
-                    val = GetInt32Val(key, this->resultSet_);
-                    objectWriter->SetMemberVariable(key, val);
-                    break;
-                }
-                case MediaColumnType::DataType::LONG: {
-                    val = GetInt64Val(key, this->resultSet_);
-                    objectWriter->SetMemberVariable(key, val);
-                    break;
-                }
-                case MediaColumnType::DataType::DOUBLE: {
-                    val = GetDoubleVal(key, this->resultSet_);
-                    objectWriter->SetMemberVariable(key, val);
-                    break;
-                }
-                case MediaColumnType::DataType::STRING: {
-                    val = GetStringVal(key, this->resultSet_);
-                    objectWriter->SetMemberVariable(key, val);
-                    break;
-                }
-            }
+            this->SetMemberVariable(columnName, this->resultSet_, objectWriter);
         }
         // provide the copy of PO
         return objectPo;

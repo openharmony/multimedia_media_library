@@ -25,6 +25,7 @@
 #include "exif_rotate_utils.h"
 #include "file_ex.h"
 #include "media_log.h"
+#include "cloud_media_dao_utils.h"
 #include "cloud_media_sync_const.h"
 #include "mdk_record_photos_data.h"
 #include "media_file_utils.h"
@@ -43,6 +44,7 @@ std::string CloudFileDataConvert::suffixLCD_ = "/account/device_view/local/files
 std::string CloudFileDataConvert::suffix_ = "/hmdfs/account/files";
 const std::string CloudFileDataConvert::recordType_ = "media";
 constexpr off_t THUMB_LIMIT_SIZE = 2 * 1024 * 1024;
+constexpr int32_t USER_COMMENT_LIMIT_SIZE = 1024;
 
 CloudFileDataConvert::CloudFileDataConvert(CloudOperationType type, int32_t userId) : userId_(userId), type_(type)
 {}
@@ -228,6 +230,8 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[PhotoColumn::PHOTO_OWNER_ALBUM_ID] = MDKRecordField(upLoadRecord.ownerAlbumId);
     map[FILE_FIX_VERSION] = MDKRecordField(0);
     map["editedTime_ms"] = MDKRecordField(upLoadRecord.dateModified);
+    map[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = MDKRecordField(upLoadRecord.fileSourceType);
+    map[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(upLoadRecord.storagePath);
     int32_t ret = HandleThumbSize(map, upLoadRecord);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbSize err: %{public}d", ret);
     ret = HandleLcdSize(map, upLoadRecord);
@@ -458,7 +462,11 @@ int32_t CloudFileDataConvert::CheckContentLivePhoto(const CloudMdkRecordPhotosVo
             return E_CONTENT_COVERT_LIVE_PHOTO;
         }
     } else {
-        lowerPath = GetLowerPath(path);
+        int32_t ret = CloudMediaDaoUtils::GetLocalPathByPhotosVo(upLoadRecord, lowerPath, userId_);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("GetLocalPathByPhotosVo fail");
+            return ret;
+        }
     }
     return E_OK;
 }
@@ -469,6 +477,7 @@ int32_t CloudFileDataConvert::CheckContentFile(const CloudMdkRecordPhotosVo &upL
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
     bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
     struct stat fileStat;
+
     int err = stat(lowerPath.c_str(), &fileStat);
     if (err < 0) {
         int32_t errNum = errno;
@@ -675,7 +684,9 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     data["recycled"] = MDKRecordField(!!(upLoadRecord.dateTrashed));
     data["recycledTime"] = MDKRecordField(std::to_string(upLoadRecord.dateTrashed));
     data["favorite"] = MDKRecordField(!!(upLoadRecord.isFavorite));
-    data["description"] = MDKRecordField(upLoadRecord.userComment);
+    if (upLoadRecord.userComment.size() <= USER_COMMENT_LIMIT_SIZE) {
+        data["description"] = MDKRecordField(upLoadRecord.userComment);
+    }
     HandleFileType(data, upLoadRecord);
 
     /* gallery expand fields */
@@ -719,10 +730,10 @@ int32_t CloudFileDataConvert::SetSourceAlbum(MDKRecord &record, const CloudMdkRe
     data["isLogic"] = MDKRecordField(false);
     // pictures should be found an albumid except for hidden and recycle
     bool isRecycle = upLoadRecord.dateTrashed != 0;
-    if (!isRecycle && !hidden && albumCloudId.empty()) {
+    if (!isRecycle && !hidden && (albumLPath.empty() || albumCloudId.empty())) {
         record.SetRecordData(data);
         MEDIA_ERR_LOG("visible media, but albumid is empty");
-        return E_DB_ALBUM_NOT_FOUND;
+        return albumLPath.empty() ? E_DB_ALBUM_NOT_FOUND : E_DB_ALBUM_CLOUD_ID_IS_EMPTY;
     }
     if (!albumLPath.empty()) {
         if (data.find(FILE_PROPERTIES) == data.end()) {
@@ -776,6 +787,9 @@ int32_t CloudFileDataConvert::ConvertToMdkRecord(const CloudMdkRecordPhotosVo &u
     MEDIA_INFO_LOG("CloudFileDataConvert::ConvertToMdkRecord type:%{public}d, cloudId: %{public}s",
         static_cast<int32_t>(type_),
         upLoadRecord.cloudId.c_str());
+    // 0 空
+    MEDIA_INFO_LOG("ConvertToMdkRecord fileSourceType is %{public}d, storagePath is %{public}s",
+        upLoadRecord.fileSourceType, upLoadRecord.storagePath.c_str());
     record.SetRecordType(recordType_);
     if (type_ == CloudOperationType::FILE_CREATE) {
         record.SetNewCreate(true);
@@ -911,6 +925,8 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
     record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
     record.sourceLivePhoto = MovingPhotoFileUtils::GetSourceLivePhotoCachePath(record.path, userId_);
     record.serverErrorCode = result.GetDKError().serverErrorCode;
+    record.fileSourceType = photosData.GetFileSourceType().value_or(0);
+    record.storagePath = photosData.GetStoragePath().value_or("");
     ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
@@ -995,6 +1011,8 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.exifRotate = data.GetExifRotate().value_or(0);
     onFetchPhotoVo.supportedWatermarkType = data.GetSupportedWatermarkType().value_or(0);
     onFetchPhotoVo.strongAssociation = data.GetStrongAssociation().value_or(0);
+    onFetchPhotoVo.fileSourceType = data.GetFileSourceType().value_or(0);
+    onFetchPhotoVo.storagePath = data.GetStoragePath().value_or("");
 }
 
 void CloudFileDataConvert::ConvertSourceAlbumIds(const MDKRecord &mdkRecord, OnFetchPhotosVo &onFetchPhotoVo)

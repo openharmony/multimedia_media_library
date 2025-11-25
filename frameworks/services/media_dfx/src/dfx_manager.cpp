@@ -281,6 +281,61 @@ static void AddDownloadTaskInfo(PhotoStatistics &stats)
     resultSet->Close();
 }
 
+const std::string SQL_ALBUM_UPLOAD_STATISTICS = "\
+    SELECT \
+        COUNT(CASE WHEN album_type = 2048 THEN 1 END) AS SOURCE_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 0 THEN 1 END) AS USER_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 2048 AND upload_status = 1 THEN 1 END) AS UPLOAD_SOURCE_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 0 AND upload_status = 1 THEN 1 END) AS UPLOAD_USER_ALBUM_COUNT \
+    FROM PhotoAlbum;";
+
+const std::string SQL_NOT_UPLOAD_ASSET_COUNT = "\
+    WITH NOT_UPLOAD_ALBUM AS ( \
+        SELECT album_id \
+        FROM PhotoAlbum \
+        WHERE album_type IN (0, 2048) AND \
+            upload_status = 0 \
+    ) \
+    SELECT \
+        COUNT(CASE WHEN dirty = 1 THEN 1 END) AS NOT_UPLOAD_ASSET_COUNT \
+    FROM Photos \
+    WHERE owner_album_id IN (SELECT album_id FROM NOT_UPLOAD_ALBUM);";
+
+static void QueryAlbumCountByUpload(PhotoStatistics &stats)
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "QueryAlbumCountByUpload rdbStore is nullptr");
+    std::vector<NativeRdb::ValueObject> params = {};
+    auto resultSet = rdbStore->QuerySql(SQL_ALBUM_UPLOAD_STATISTICS, params);
+    CHECK_AND_RETURN_WARN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        stats.sourceAlbumCount = GetInt32Val("SOURCE_ALBUM_COUNT", resultSet);
+        stats.userAlbumCount = GetInt32Val("USER_ALBUM_COUNT", resultSet);
+        stats.uploadSourceAlbumCount = GetInt32Val("UPLOAD_SOURCE_ALBUM_COUNT", resultSet);
+        stats.uploadUserAlbumCount = GetInt32Val("UPLOAD_USER_ALBUM_COUNT", resultSet);
+    }
+    resultSet->Close();
+}
+
+static void QueryAssetCountByUpload(PhotoStatistics &stats)
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "QueryAssetCountByUpload rdbStore is nullptr");
+    std::vector<NativeRdb::ValueObject> params = {};
+    auto resultSet = rdbStore->QuerySql(SQL_NOT_UPLOAD_ASSET_COUNT, params);
+    CHECK_AND_RETURN_WARN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        stats.notUploadAssetCount = GetInt32Val("NOT_UPLOAD_ASSET_COUNT", resultSet);
+    }
+    resultSet->Close();
+}
+
+static void QueryAlbumAndAssetCountByUpload(PhotoStatistics &stats)
+{
+    QueryAlbumCountByUpload(stats);
+    QueryAssetCountByUpload(stats);
+}
+
 static void AddPhotoStats(PhotoStatistics &stats)
 {
     const std::vector<QueryParams> queryParamsList = {
@@ -318,6 +373,7 @@ static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
     AddPhotoStats(stats);
     AddDownloadTaskInfo(stats);
     AddSouthDeviceType(stats);
+    QueryAlbumAndAssetCountByUpload(stats);
     MEDIA_INFO_LOG("localImageCount: %{public}d, localVideoCount: %{public}d, "
                    "cloudImageCount: %{public}d, cloudVideoCount: %{public}d, "
                    "sharedImageCount: %{public}d, sharedVideoCount: %{public}d, "

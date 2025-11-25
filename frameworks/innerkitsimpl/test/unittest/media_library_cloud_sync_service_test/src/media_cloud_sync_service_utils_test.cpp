@@ -157,10 +157,10 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetThumbParentPath_Test, TestSize.Level
 
     CloudMediaSyncUtils::RemoveThmParentPath("", "");
     CloudMediaSyncUtils::RemoveThmParentPath("/user/local/test.jpg", "/user/local");
-    CloudMediaSyncUtils::RemoveEditDataParentPath("", "");
-    CloudMediaSyncUtils::RemoveEditDataParentPath("/user/local/test.jpg", "/user/local");
-    CloudMediaSyncUtils::RemoveMetaDataPath("", "");
-    CloudMediaSyncUtils::RemoveEditDataParentPath("/user/local/test.jpg", "/user/local");
+    CloudMediaSyncUtils::RemoveEditDataParentPath("");
+    CloudMediaSyncUtils::RemoveEditDataParentPath("/user/local/test.jpg");
+    CloudMediaSyncUtils::RemoveMetaDataPath("");
+    CloudMediaSyncUtils::RemoveEditDataParentPath("/user/local/test.jpg");
     CloudMediaSyncUtils::InvalidVideoCache("");
     CloudMediaSyncUtils::InvalidVideoCache("/storage/cloud/test/car");
 }

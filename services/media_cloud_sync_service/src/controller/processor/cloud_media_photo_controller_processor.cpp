@@ -39,6 +39,8 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto
         fdirtyDataVo.size = fdirtyDataDto.size;
         fdirtyDataVo.modifiedTime = fdirtyDataDto.modifiedTime;
         fdirtyDataVo.originalCloudId = fdirtyDataDto.originalCloudId;
+        fdirtyDataVo.fileSourceType = fdirtyDataDto.fileSourceType;
+        fdirtyDataVo.storagePath = fdirtyDataDto.storagePath;
         for (auto &nodePair : fdirtyDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -65,6 +67,8 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetNewDataVoFromDto(st
         newDataVo.size = newDataDto.size;
         newDataVo.modifiedTime = newDataDto.modifiedTime;
         newDataVo.originalCloudId = newDataDto.originalCloudId;
+        newDataVo.fileSourceType = newDataDto.fileSourceType;
+        newDataDto.storagePath = newDataDto.storagePath;
         for (auto &nodePair : newDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -95,6 +99,8 @@ std::unordered_map<std::string, CheckData> CloudMediaPhotoControllerProcessor::G
         checkData.dirty = photosDto.dirty;
         checkData.syncStatus = photosDto.syncStatus;
         checkData.thmStatus = photosDto.thumbStatus;
+        checkData.fileSourceType = photosDto.fileSourceType;
+        checkData.storagePath = photosDto.storagePath;
         for (auto &[key, value] : photosDto.attachment) {
             CloudFileDataVo vo;
             vo.fileName = value.fileName;
@@ -153,6 +159,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &recor
     photosVo.fileId = record.fileId.value_or(0);
     photosVo.data = record.data.value_or("");
     photosVo.ownerAlbumId = record.ownerAlbumId.value_or(0);
+    photosVo.fileSourceType = record.fileSourceType.value_or(0);
+    photosVo.storagePath = record.storagePath.value_or("");
     return true;
 }
 
@@ -249,6 +257,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesEditDataCamera = photosVo.editDataCamera;
     data.attributesSupportedWatermarkType = photosVo.supportedWatermarkType;
     data.attributesStrongAssociation = photosVo.strongAssociation;
+    data.attributesFileSourceType = photosVo.fileSourceType;
+    data.attributesStoragePath = photosVo.storagePath;
     return true;
 }
 
@@ -317,6 +327,8 @@ PhotosDto CloudMediaPhotoControllerProcessor::ConvertToPhotoDto(const OnCreateRe
     record.serverErrorCode = recordVo.serverErrorCode;
     record.livePhotoCachePath = recordVo.livePhotoCachePath;
     record.errorDetails = recordVo.errorDetails;
+    record.fileSourceType = recordVo.fileSourceType;
+    record.storagePath = recordVo.storagePath;
     return record;
 }
 

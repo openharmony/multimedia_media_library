@@ -430,6 +430,7 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_CLOUD));
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
         values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
+        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
     }
     int32_t albumId = 0;
     std::set<int32_t> albumIds;
@@ -901,6 +902,7 @@ int32_t CloudMediaPhotosDao::GetLocalKeyData(KeyData &localKeyData, std::shared_
     localKeyData.createTime = Media::GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet);
     localKeyData.modifyTime = Media::GetInt64Val(PhotoColumn::PHOTO_META_DATE_MODIFIED, resultSet);
     localKeyData.exifRotateValue = Media::GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
+    localKeyData.dateTrashed = Media::GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
     int32_t albumid = Media::GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     pair<string, string> val;
     SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap = GetAlbumLocalToCloudMap();
@@ -1591,11 +1593,10 @@ int32_t CloudMediaPhotosDao::OnCopyPhotoRecord(
     return ret;
 }
 
-int32_t CloudMediaPhotosDao::ClearCloudInfo(const std::string &cloudId)
+int32_t CloudMediaPhotosDao::ClearCloudInfo(
+    const std::string &cloudId, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("ClearCloudInfo enter");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "ClearCloudInfo Failed to get rdbStore.");
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "ClearCloudInfo Failed to get rdbStore.");
 
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
@@ -1607,7 +1608,7 @@ int32_t CloudMediaPhotosDao::ClearCloudInfo(const std::string &cloudId)
     values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
     values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
     int32_t changedRows = DEFAULT_VALUE;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     MEDIA_INFO_LOG("ClearCloudInfo Update Ret: %{public}d, ChangedRows: %{public}d", ret, changedRows);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_CLOUDSYNC_RDB_UPDATE_FAILED, "Failed to ClearCloudInfo.");
     CHECK_AND_RETURN_RET_WARN_LOG(changedRows > 0, ret, "ClearCloudInfo Check updateRows: %{public}d.", changedRows);
@@ -1630,7 +1631,6 @@ int32_t CloudMediaPhotosDao::DeleteFileNotExistPhoto(
     return ret;
 }
 
-// 资产上行失败，原因：云端有同名文件，需要本地数据库修改该文件的名称
 int32_t CloudMediaPhotosDao::HandleSameNameRename(
     const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
@@ -1653,6 +1653,20 @@ int32_t CloudMediaPhotosDao::HandleSameNameRename(
         tmpName = fileName.substr(0, len) + to_string(static_cast<int>(fileName[len]) - '0' + 1);
     } else {
         tmpName = fileName + "_1";
+    }
+    std::string storagePath = photo.storagePath;
+    if (!storagePath.empty()) {
+        auto index = storagePath.rfind('/');
+        if (index != std::string::npos) {
+            std::string newStoragePath = storagePath.substr(0, index) + "/" + tmpName + fileExtension;
+            if (rename(storagePath.c_str(), newStoragePath.c_str()) != 0) {
+                MEDIA_ERR_LOG("Failed to rename local anco file, file path: %{public}s, errno: %{public}d",
+                    storagePath.c_str(), errno);
+            } else {
+                MEDIA_INFO_LOG("the new storagePath is %{public}s", newStoragePath.c_str());
+                values.PutString(PhotoColumn::PHOTO_STORAGE_PATH, newStoragePath);
+            }
+        }
     }
     values.PutString(PhotoColumn::MEDIA_TITLE, tmpName);
     values.PutString(PhotoColumn::MEDIA_NAME, tmpName + fileExtension);
@@ -1900,6 +1914,7 @@ void CloudMediaPhotosDao::ClearAlbumMap()
     localToCloudMap_.Clear();
     cloudToLocalMap_.Clear();
     lpathToIdMap_.Clear();
+    this->albumCache_.ClearAlbumCache();
 }
 
 void CloudMediaPhotosDao::PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string, std::string>> &localToCloudMap,
@@ -1912,19 +1927,18 @@ void CloudMediaPhotosDao::PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(Media::PhotoAlbumType::USER))
         ->Or()
         ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(Media::PhotoAlbumType::SOURCE));
-    auto results = rdbStore->Query(predicates,
-        {PhotoAlbumColumns::ALBUM_CLOUD_ID,
-            PhotoAlbumColumns::ALBUM_ID,
-            PhotoAlbumColumns::ALBUM_LPATH,
-            PhotoAlbumColumns::ALBUM_DIRTY});
-    if (results == nullptr) {
-        MEDIA_ERR_LOG("PrepareAlbumMap get nullptr result");
-        return;
-    }
-    while (results->GoToNextRow() == E_OK) {
-        int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, results);
-        std::string cloudId = GetStringVal(PhotoAlbumColumns::ALBUM_CLOUD_ID, results);
-        std::string lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, results);
+    auto results = rdbStore->Query(predicates, {});
+    std::vector<PhotoAlbumPo> albumInfoList;
+    int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(results).ReadRecords(albumInfoList);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "PrepareAlbumMap read records failed");
+    this->albumCache_.SetAlbumCache(albumInfoList);
+    int32_t albumId;
+    std::string cloudId;
+    std::string lPath;
+    for (const auto &albumInfo : albumInfoList) {
+        albumId = albumInfo.albumId.value_or(0);
+        cloudId = albumInfo.cloudId.value_or("");
+        lPath = albumInfo.lpath.value_or("");
         if (cloudId == HIDDEN_ALBUM_CLOUD_ID) {
             hiddenAlbumId_ = albumId;
             localToCloudMap.EnsureInsert(albumId, std::make_pair(cloudId, lPath));
@@ -1932,7 +1946,7 @@ void CloudMediaPhotosDao::PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string
         }
         MEDIA_DEBUG_LOG(
             "FixData:path %{public}s cloudid %{public}s albumId %{public}d", lPath.c_str(), cloudId.c_str(), albumId);
-        if (!IsAlbumCloud(isUpload, results)) {
+        if (!IsAlbumCloud(isUpload, albumInfo)) {
             localToCloudMap.EnsureInsert(albumId, std::make_pair("", lPath));
         } else {
             localToCloudMap.EnsureInsert(albumId, std::make_pair(cloudId, lPath));
@@ -1968,12 +1982,12 @@ SafeMap<std::string, std::pair<int32_t, std::string>> &CloudMediaPhotosDao::GetA
     return lpathToIdMap_;
 }
 
-bool CloudMediaPhotosDao::IsAlbumCloud(bool isUpload, std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+bool CloudMediaPhotosDao::IsAlbumCloud(bool isUpload, const PhotoAlbumPo &albumInfo)
 {
     if (!isUpload) {
         return true;
     }
-    int32_t dirty = GetInt32Val(PhotoAlbumColumns::ALBUM_DIRTY, resultSet);
+    int32_t dirty = albumInfo.dirty.value_or(1);
     if (dirty == static_cast<int32_t>(DirtyType::TYPE_NEW)) {
         MEDIA_ERR_LOG("IsAlbumCloud album is uploading");
         return false;
@@ -2078,6 +2092,19 @@ int32_t CloudMediaPhotosDao::QueryAnalysisAlbum(const std::string &cloudId, std:
     }
     resultSet->Close();
     return E_OK;
+}
+
+int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloudId, const std::string &lPath,
+    const std::string &sourcePath, std::optional<PhotoAlbumPo> &photoAlbumPoOp)
+{
+    CHECK_AND_EXECUTE(!this->albumCache_.IsEmpty(), LoadAlbumMap());
+    int32_t ret = this->albumCache_.QueryAlbumByCloudId(albumCloudId, photoAlbumPoOp);
+    bool isValid = ret == E_OK && photoAlbumPoOp.has_value();
+    CHECK_AND_RETURN_RET(!isValid, ret);
+    ret = this->albumCache_.QueryAlbumBylPath(lPath, photoAlbumPoOp);
+    isValid = ret == E_OK && photoAlbumPoOp.has_value();
+    CHECK_AND_RETURN_RET(!isValid, ret);
+    return this->albumCache_.QueryAlbumBySourcePath(sourcePath, photoAlbumPoOp);
 }
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

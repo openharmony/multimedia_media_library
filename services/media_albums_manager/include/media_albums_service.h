@@ -54,6 +54,9 @@
 #include "get_photo_album_object_vo.h"
 #include "get_cloned_album_uris_dto.h"
 #include "get_cloned_album_uris_vo.h"
+#include "change_request_set_upload_status_dto.h"
+#include "media_assets_delete_service.h"
+#include "media_assets_recover_service.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -99,6 +102,7 @@ public:
     int32_t SetOrderPosition(ChangeRequestSetOrderPositionDto &setOrderPositionDto);
     int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody);
     int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
+    int32_t ChangeRequestSetUploadStatus(const ChangeRequestSetUploadStatusDto &setUploadStatusDto);
     int32_t SetPortraitRelationship(const int32_t albumId, const std::string& relationship, const int32_t isMe);
     int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
     int32_t ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto);
@@ -116,6 +120,10 @@ private:
     int32_t SetSourceAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     int32_t SetSystemAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     MediaAlbumsRdbOperations rdbOperation_;
+
+private:
+    Common::MediaAssetsDeleteService mediaAssetsDeleteService_;
+    Common::MediaAssetsRecoverService mediaAssetsRecoverService_;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ALBUMS_SERVICE_H

@@ -32,6 +32,7 @@ struct AlbumMediaStatisticInfo {
     int32_t favoriteCount{0};
     int32_t burstCoverCount{0};
     int32_t burstTotalCount{0};
+    int32_t innerEastLakeCount{0};
     // non-event data members
     std::string lPath;
     std::string ToString() const
@@ -49,7 +50,8 @@ struct AlbumMediaStatisticInfo {
             << "cloudCount: " << cloudCount << ", "
             << "favoriteCount: " << favoriteCount << ", "
             << "burstTotalCount: " << burstTotalCount << ", "
-            << "burstCoverCount: " << burstCoverCount << "]";
+            << "burstCoverCount: " << burstCoverCount << ", "
+            << "innerEastLakeCount: " << innerEastLakeCount << "]";
         return ss.str();
     }
 };
@@ -226,6 +228,8 @@ enum {
     DUAL_BURST_TYPE_SKIP = -1,
     DUAL_BURST_TYPE_ALL = 0,
     DUAL_BURST_TYPE_COVER = 1,
+    DUAL_LAKE_TYPE_SKIP = -1,
+    DUAL_LAKE_TYPE_INNER = 3,
 };
 
 enum {
@@ -249,6 +253,8 @@ enum {
     SINGLE_BURST_TYPE_SKIP = -1,
     SINGLE_BURST_TYPE_ALL = 0,
     SINGLE_BURST_TYPE_COVER = 1,
+    SINGLE_LAKE_TYPE_SKIP = -1,
+    SINGLE_LAKE_TYPE_INNER = 3,
 };
 
 class SearchCondition {
@@ -259,6 +265,7 @@ private:
     int32_t cloudType_ = DUAL_CLOUD_TYPE_SKIP;
     int32_t favoriteType_ = DUAL_FAVORITE_TYPE_SKIP;
     int32_t burstType_ = DUAL_BURST_TYPE_SKIP;
+    int32_t lakeType_ = DUAL_LAKE_TYPE_SKIP;
 
 public:
     int32_t GetMediaType()
@@ -313,6 +320,15 @@ public:
     SearchCondition &SetBurstType(int32_t burstType)
     {
         this->burstType_ = burstType;
+        return *this;
+    }
+    int32_t GetLakeType()
+    {
+        return this->lakeType_;
+    }
+    SearchCondition &SetLakeType(int32_t lakeType)
+    {
+        this->lakeType_ = lakeType;
         return *this;
     }
 };
