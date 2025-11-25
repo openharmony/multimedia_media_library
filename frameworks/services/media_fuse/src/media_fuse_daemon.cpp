@@ -214,11 +214,11 @@ static const struct fuse_operations high_ops = {
     .read       = Read,
     .write      = Write,
     .release    = Release,
-    .opendir    = OpenDir,
     .unlink     = Unlink,
+    .opendir    = OpenDir,
     .readdir    = ReadDir,
-    .create     = Create,
     .releasedir = ReleaseDir,
+    .create     = Create,
 };
 
 int32_t MediaFuseDaemon::StartFuse()
