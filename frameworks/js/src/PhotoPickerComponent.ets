@@ -239,6 +239,7 @@ export struct PhotoPickerComponent {
             pickerIndex: this.pickerOptions?.pickerIndex as number,
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
             isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
+            assetFilter: this.pickerOptions?.assetFilter,
           }
         },
         {
