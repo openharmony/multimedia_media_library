@@ -3484,7 +3484,6 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     for (auto obs : offObservers) {
         UserFileClient::UnregisterObserverExt(Uri(uri),
             static_cast<shared_ptr<DataShare::DataShareObserver>>(obs));
-        napi_delete_reference(env, obs->ref_);
     }
 }
 
