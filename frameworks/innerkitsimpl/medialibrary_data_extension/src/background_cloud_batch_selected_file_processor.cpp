@@ -527,12 +527,13 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchFilesExecut
     auto downloadFile = taskData->downloadFile_;
     std::string fileId = MediaFileUri::GetPhotoId(downloadFile.uri);
     CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
+    int64_t downloadId = GetDownloadIdByFileIdInCurrentRound(fileId);
+    CHECK_AND_RETURN_LOG(downloadId == DOWNLOAD_ID_DEFAULT, "Already add fileId: %{public}s", fileId.c_str());
     MEDIA_INFO_LOG("BatchSelectFileDownload Start to download cloud file, fileId: %{public}s", fileId.c_str());
     std::shared_ptr<BackgroundBatchSelectedFileDownloadCallback> downloadCallback =
         std::make_shared<BackgroundBatchSelectedFileDownloadCallback>();
     CHECK_AND_RETURN_LOG(downloadCallback != nullptr, "downloadCallback is null.");
-    int64_t downloadId = DOWNLOAD_ID_DEFAULT;
-    MEDIA_INFO_LOG("BatchSelectFileDownload StartFileCache Before");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload StartFileCache Before");
     int32_t ret = CloudSyncManager::GetInstance().StartFileCache({downloadFile.uri}, downloadId,
         FieldKey::FIELDKEY_CONTENT, downloadCallback);
     if (ret != E_OK) {
@@ -921,6 +922,7 @@ void BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(
 
 bool BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
 {
+    unique_lock<std::mutex> lock(mutexRunningStatus_);
     MEDIA_DEBUG_LOG("BatchSelectFileDownload BatchDownloadProcessRunningStatus: %{public}d",
         batchDownloadProcessRunningStatus_.load());
     return batchDownloadProcessRunningStatus_.load();

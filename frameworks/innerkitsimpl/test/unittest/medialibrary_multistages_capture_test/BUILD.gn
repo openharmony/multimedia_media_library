@@ -66,6 +66,7 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "relational_store:native_rdb",
     "googletest:gtest_main",
     "googletest:gmock_main",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   if (defined(global_parts_info) &&

@@ -24,6 +24,7 @@
 #include "result_set.h"
 #include "rdb_predicates.h"
 #include "dfx_const.h"
+#include "dfx_reporter.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,6 +48,7 @@ public:
     EXPORT static int32_t QueryPhotoErrorCount();
     EXPORT static void GetPhotoMimeType(std::string &photoMimeType);
     EXPORT static bool GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo);
+    EXPORT static int32_t QueryAncoPhotosFormatAndCount(AncoCountFormatInfo &reportData);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

@@ -190,6 +190,14 @@ public:
      */
     EXPORT int32_t CheckCloudDownloadPermission(uint32_t tokenId,
         const std::vector<string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags);
+
+    /**
+     * @brief send broker change operation
+     *
+     * @param columns columns
+     * @return send ok or not
+     */
+    EXPORT int32_t SendBrokerChangeOperation(string operation);
 private:
 
     int32_t userId_;

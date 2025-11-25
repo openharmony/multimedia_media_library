@@ -27,6 +27,7 @@
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "medialibrary_object_utils.h"
+#include "lake_file_utils.h"
 
 using std::string;
 
@@ -147,10 +148,11 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     const std::string& videoPath, const std::string& effectDescription, const std::string& assetPath, bool isNeedScan)
 {
     MEDIA_INFO_LOG("StartComposite, sourceVideoPath: %{public}s", DfxUtils::GetSafePath(sourceVideoPath).c_str());
+    string tmpPath = LakeFileUtils::GetAssetRealPath(sourceVideoPath);
     string absSourceVideoPath;
-    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceVideoPath, absSourceVideoPath), E_HAS_FS_ERROR,
-        "file is not real path, file path: %{private}s, errno: %{public}d", sourceVideoPath.c_str(), errno);
-    int32_t inputFileFd = open(absSourceVideoPath.c_str(), O_RDONLY);
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(tmpPath, absSourceVideoPath), E_HAS_FS_ERROR,
+        "file is not real path, file path: %{private}s, errno: %{public}d", tmpPath.c_str(), errno);
+    int32_t inputFileFd = open(tmpPath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(inputFileFd != -1, E_ERR, "Open failed for inputFileFd file, errno: %{public}d", errno);
     if (CheckDirPathReal(videoPath) != E_OK) {
         MEDIA_ERR_LOG("dirFile is not real path, file path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);

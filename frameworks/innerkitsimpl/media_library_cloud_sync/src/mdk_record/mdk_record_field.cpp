@@ -60,7 +60,7 @@ MDKRecordField::MDKRecordField(const std::string &val) : type_(MDKRecordFieldTyp
 {
     value_ = val;
 }
-MDKRecordField::MDKRecordField(const std::vector<uint8_t> &val) : type_(MDKRecordFieldType::FIELD_TYPE_BLOB)
+MDKRecordField::MDKRecordField(const std::vector<uint8_t> &val) : type_(MDKRecordFieldType::FIELD_TYPE_BYTES)
 {
     std::vector<uint8_t> blob = val;
     value_ = blob;
@@ -145,9 +145,9 @@ MDKLocalErrorCode MDKRecordField::GetString(std::string &val) const
     val = std::get<std::string>(value_);
     return MDKLocalErrorCode::NO_ERROR;
 }
-MDKLocalErrorCode MDKRecordField::GetBlob(std::vector<uint8_t> &val) const
+MDKLocalErrorCode MDKRecordField::GetBytes(std::vector<uint8_t> &val) const
 {
-    if (type_ != MDKRecordFieldType::FIELD_TYPE_BLOB) {
+    if (type_ != MDKRecordFieldType::FIELD_TYPE_BYTES) {
         return MDKLocalErrorCode::DATA_TYPE_ERROR;
     }
 
@@ -261,7 +261,7 @@ Json::Value MDKRecordField::ToJsonValue()
             jvData = std::get<bool>(value_);
             break;
         }
-        case MDKRecordFieldType::FIELD_TYPE_BLOB: {
+        case MDKRecordFieldType::FIELD_TYPE_BYTES: {
             // do not support blob to json in MDKRecordField
             break;
         }
@@ -323,7 +323,7 @@ bool MDKRecordField::ParseBoolFromJson(const Json::Value &jvData)
     return ret;
 }
 
-bool MDKRecordField::ParseBlobFromJson(const Json::Value &jvData)
+bool MDKRecordField::ParseBytesFromJson(const Json::Value &jvData)
 {
     return false;
 }
@@ -423,8 +423,8 @@ bool MDKRecordField::ParseFromJsonValue(const MDKSchemaField &schemaField, const
         case MDKRecordFieldType::FIELD_TYPE_BOOL:
             ret = ParseBoolFromJson(jvData);
             break;
-        case MDKRecordFieldType::FIELD_TYPE_BLOB:
-            ret = ParseBlobFromJson(jvData);
+        case MDKRecordFieldType::FIELD_TYPE_BYTES:
+            ret = ParseBytesFromJson(jvData);
             break;
         case MDKRecordFieldType::FIELD_TYPE_LIST:
             ret = ParseListFromJson(schemaField.listType, jvData);

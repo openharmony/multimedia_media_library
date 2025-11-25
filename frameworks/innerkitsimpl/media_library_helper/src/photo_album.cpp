@@ -373,5 +373,15 @@ int32_t PhotoAlbum::GetCoverUriSource()
     return coverUriSource_ > 0 ? static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER) :
         static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
 }
+
+void PhotoAlbum::SetUploadStatus(int32_t uploadStatus)
+{
+    uploadStatus_ = uploadStatus;
+}
+
+int32_t PhotoAlbum::GetUploadStatus() const
+{
+    return uploadStatus_;
+}
 }  // namespace Media
 }  // namespace OHOS

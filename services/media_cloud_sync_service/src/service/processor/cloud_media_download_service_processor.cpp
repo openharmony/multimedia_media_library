@@ -73,6 +73,10 @@ void CloudMediaDownloadServiceProcessor::GetDownloadAssetData(
     downloadAssetData.editTime = photosPo.editTime.value_or(0);
     downloadAssetData.effectMode = photosPo.movingPhotoEffectMode.value_or(0);
     downloadAssetData.orientation = photosPo.orientation.value_or(0);
+    downloadAssetData.fileSourceType = photosPo.fileSourceType.value_or(0);
+    downloadAssetData.storagePath = photosPo.storagePath.value_or("");
+    downloadAssetData.hidden = photosPo.hidden.value_or(0);
+    downloadAssetData.dateTrashed = photosPo.dateTrashed.value_or(0);
     return;
 }
 

@@ -33,6 +33,7 @@
 #include "medialibrary_photo_operations.h"
 #include "moving_photo_file_utils.h"
 #include "medialibrary_subscriber.h"
+#include "lake_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,7 +68,8 @@ const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_PHOTO = "SELECT"
                                                                    " data,"
                                                                    " size,"
                                                                    " subtype,"
-                                                                   " moving_photo_effect_mode "
+                                                                   " moving_photo_effect_mode, "
+                                                                   " file_source_type "
                                                                    "FROM"
                                                                    " Photos "
                                                                    "WHERE"
@@ -184,6 +186,10 @@ void CloudUploadChecker::HandlePhotoInfos(const std::vector<CheckedPhotoInfo> &p
     for (const CheckedPhotoInfo &photoInfo : photoInfos) {
         CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn(), "current status is off, break");
         curFileId = photoInfo.fileId;
+        if (photoInfo.fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE)) {
+            // do nothing in lake, delete when check;
+            continue;
+        }
         bool isMovingPhoto = IsMovingPhoto(photoInfo.subtype, photoInfo.movingPhotoEffectMode);
         if (MediaFileUtils::IsFileExists(photoInfo.path)) {
             UpdateFileSize(photoInfo, isMovingPhoto);
@@ -235,6 +241,8 @@ std::vector<CheckedPhotoInfo> CloudUploadChecker::QueryPhotoInfo(int32_t startFi
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32));
         photoInfo.movingPhotoEffectMode = get<int32_t>(
             ResultSetUtils::GetValFromColumn(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet, TYPE_INT32));
+        photoInfo.fileSourceType = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet, TYPE_INT32));
         photoInfos.push_back(photoInfo);
     } while (MedialibrarySubscriber::IsCurrentStatusOn() && resultSet->GoToNextRow() == NativeRdb::E_OK);
     return photoInfos;

@@ -47,6 +47,10 @@ const std::string SLOW_MOTION_ALBUM_TAG = "TypeSlowMotion";
 const std::string SUPER_SLOW_MOTION_ALBUM_TAG = "TypeSSlowMotion";
 const std::string CAMERA_CUSTOM_SM_PANORAMA = "8";
 const std::string CAMERA_CUSTOM_SM_PHOTO_STITCHING = "77";
+const std::string TIME_LAPSE_TAG = "TypeTimeLapse";
+const std::string TIME_LAPSE_SHOOTING_MODE = "11";
+const std::string QUICK_CAPTURE_TAG = "62";
+const std::string QUICK_CAPTURE_SHOOTING_MODE = "12";
 
 /* ShootingMode value in medialibrary */
 enum class ShootingModeAlbumType : int32_t {
@@ -65,7 +69,9 @@ enum class ShootingModeAlbumType : int32_t {
     FRONT_CAMERA_ALBUM,
     RAW_IMAGE_ALBUM,
     MP4_3DGS_ALBUM,
-    END = MP4_3DGS_ALBUM
+    TIME_LAPSE,
+    QUICK_CAPTURE_ALBUM,
+    END = QUICK_CAPTURE_ALBUM
 };
 
 class ShootingModeAlbum {

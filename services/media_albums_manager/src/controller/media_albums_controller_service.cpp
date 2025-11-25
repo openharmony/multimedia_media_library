@@ -78,6 +78,8 @@
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "get_albums_lpath_by_ids_vo.h"
+#include "change_request_set_upload_status_vo.h"
+#include "change_request_set_upload_status_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -289,6 +291,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS),
         &MediaAlbumsControllerService::MoveAssets
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS),
+        &MediaAlbumsControllerService::ChangeRequestSetUploadStatus
     },
 };
 
@@ -1366,5 +1372,23 @@ int32_t MediaAlbumsControllerService::AlbumGetSelectAssets(MessageParcel &data, 
     AlbumGetSelectedAssetsRespBody respBody;
     respBody.resultSet = resultSet;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAlbumsControllerService::ChangeRequestSetUploadStatus(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestSetUploadStatusReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetUploadStatusReqBody Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+ 
+    ChangeRequestSetUploadStatusDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().ChangeRequestSetUploadStatus(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

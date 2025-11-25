@@ -97,6 +97,7 @@ private:
         const std::string &uri, const Size &size, bool isAstc = false);
     EXPORT int GetKeyFrameThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, int32_t &beginStamp, int32_t &type);
+    EXPORT bool RecordAstcBatchTaskId(int32_t requestId);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;

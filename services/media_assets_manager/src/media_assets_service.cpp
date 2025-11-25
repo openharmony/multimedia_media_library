@@ -106,6 +106,7 @@ namespace OHOS::Media {
 
 const int32_t YES = 1;
 const int32_t NO = 0;
+const int32_t MEDIA_HO_LAKE_CONST = 3;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string COLUMN_FILE_ID = "file_id";
@@ -400,6 +401,35 @@ int32_t MediaAssetsService::CameraInnerAddImage(AddImageDto &dto)
     return E_OK;
 }
 
+int32_t MediaAssetsService::GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody)
+{
+    MEDIA_INFO_LOG("enter GetFusionAssetsInfo");
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, MEDIA_HO_LAKE_CONST);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_STORAGE_PATH, "");
+    rdbPredicate.IsNotNull(PhotoColumn::PHOTO_STORAGE_PATH);
+
+    std::vector<std::string> fetchColumn {
+        "count(*) AS count",
+        "MAX(storage_path) AS storage_path"
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, fetchColumn);
+    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+    respBody.queryResult.push_back(
+        FussionAssetsResult(0, GetInt32Val("count", resultSet), GetStringVal("storage_path", resultSet)));
+    return E_OK;
+}
+
 int32_t MediaAssetsService::SetCameraShotKey(const int32_t fileId, const std::string &cameraShotKey)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
@@ -666,6 +696,14 @@ int32_t MediaAssetsService::CheckPhotoUriPermissionInner(CheckUriPermissionInner
     checkUriPermissionInnerDto.permissionTypes = permissionTypes;
     MEDIA_INFO_LOG("MediaAssetsService::CheckPhotoUriPermissionInner ret:%{public}d", errCode);
     return errCode;
+}
+
+int32_t MediaAssetsService::StartAssetChangeScanInner(
+    const StartAssetChangeScanDto& startAssetChangeScanDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::StartAssetChangeScanInner");
+    auto resultSet = MediaLibraryDataManager::GetInstance()->ProcessBrokerChangeMsg(startAssetChangeScanDto.operation);
+    return NativeRdb::E_OK;
 }
 
 int32_t MediaAssetsService::CancelPhotoUriPermissionInner(

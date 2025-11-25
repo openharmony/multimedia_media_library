@@ -84,6 +84,8 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     parcel.WriteInt32(this->isRectificationCover);
     parcel.WriteInt32(this->exifRotate);
     parcel.WriteBool(this->isDelete);
+    parcel.WriteInt32(this->fileSourceType);
+    parcel.WriteString(this->storagePath);
     return true;
 }
 
@@ -149,6 +151,8 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     parcel.ReadInt32(this->isRectificationCover);
     parcel.ReadInt32(this->exifRotate);
     parcel.ReadBool(this->isDelete);
+    parcel.ReadInt32(this->fileSourceType);
+    parcel.ReadString(this->storagePath);
     return true;
 }
 
@@ -232,7 +236,9 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"isRecycle\": \"" << isRecycle << "\","
        << "\"description\": \"" << description << "\","
        << "\"DeviceName\": \"" << source << "\","
-       << "\"videoMode\": \"" << videoMode << "\",";
+       << "\"videoMode\": \"" << videoMode << "\","
+       << "\"fileSourceType\": \"" << fileSourceType << "\","
+       << "\"storagePath\": \"" << storagePath << "\",";
     return;
 }
 

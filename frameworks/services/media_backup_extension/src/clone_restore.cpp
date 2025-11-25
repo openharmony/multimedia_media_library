@@ -136,6 +136,8 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_METADATA_FLAGS, // meta recovery related
             PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_TRANSCODE_TIME,
             PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+            PhotoColumn::PHOTO_FILE_INODE, PhotoColumn::PHOTO_STORAGE_PATH,
+            PhotoColumn::PHOTO_FILE_SOURCE_TYPE, // east lake related
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -1093,7 +1095,9 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
     albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
     albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
     albumInfo.dateModified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
-
+    if (tableName == PhotoAlbumColumns::TABLE) {
+        albumInfo.uploadStatus = GetInt32Val(PhotoAlbumColumns::UPLOAD_STATUS, resultSet);
+    }
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
         string columnName = it->first;
@@ -1672,6 +1676,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
     if (tableName == PhotoAlbumColumns::TABLE) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
             (albumInfo.dateModified ? albumInfo.dateModified : MediaFileUtils::UTCTimeMilliSeconds()));
+        values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, this->photoAlbumClone_.FindUploadStatus(albumInfo));
     }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
@@ -1787,6 +1792,8 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
         if (HasSameAlbum(albumInfos[i], tableName)) {
             albumIds.emplace_back(to_string(albumInfos[i].albumIdNew));
             UpdateAlbumOrderColumns(albumInfos[i], tableName);
+            CHECK_AND_EXECUTE(
+                tableName != PhotoAlbumColumns::TABLE, this->photoAlbumClone_.UpdatePhotoAlbum(albumInfos[i]));
             MEDIA_WARN_LOG("Album (%{public}d, %{public}d, %{public}d, %{public}s) already exists.",
                 albumInfos[i].albumIdOld, static_cast<int32_t>(albumInfos[i].albumType),
                 static_cast<int32_t>(albumInfos[i].albumSubType), albumInfos[i].albumName.c_str());

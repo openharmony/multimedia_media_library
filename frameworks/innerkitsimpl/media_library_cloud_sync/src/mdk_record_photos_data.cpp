@@ -578,6 +578,22 @@ MDKRecordPhotosData &MDKRecordPhotosData::SetEditDataCamera(const std::string &e
     this->attributes_["editDataCamera"] = MDKRecordField(editDataCamera);
     return *this;
 }
+std::optional<int32_t> MDKRecordPhotosData::GetFileSourceType() const
+{
+    return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+}
+void MDKRecordPhotosData::SetFileSourceType(int32_t fileSourceType)
+{
+    this->attributes_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = MDKRecordField(fileSourceType);
+}
+std::optional<std::string> MDKRecordPhotosData::GetStoragePath() const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, PhotoColumn::PHOTO_STORAGE_PATH);
+}
+void MDKRecordPhotosData::SetStoragePath(const std::string &storagePath)
+{
+    this->attributes_[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(storagePath);
+}
 
 std::optional<std::string> MDKRecordPhotosData::GetSourcePath() const
 {

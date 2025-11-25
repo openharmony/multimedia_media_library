@@ -119,6 +119,22 @@ private:
     std::mutex updateMutex_;
     std::mutex batchDownloadMutex_;
     BatchDownloadResourcesTaskDao batchDownloadResourcesTaskDao_;
+
+private:
+    const std::string SQL_CLEAE_CLOUD_INFO_OF_ALBUM = "UPDATE PhotoAlbum SET dirty = 1, cloud_id = NULL;";
+    const std::string SQL_RESET_UPLOAD_STATUS = "\
+        UPDATE PhotoAlbum \
+        SET upload_status = ( \
+                CASE \
+                    WHEN LOWER(lpath) IN ( \
+                        LOWER('/DCIM/Camera'), \
+                        LOWER('/Pictures/Screenrecords'), \
+                        LOWER('/Pictures/Screenshots') \
+                    ) \
+                    THEN 1 \
+                ELSE 0 END \
+                ) \
+        WHERE album_type IN (0, 2048);";
 };
 } // namespace Media
 } // namespace OHOS

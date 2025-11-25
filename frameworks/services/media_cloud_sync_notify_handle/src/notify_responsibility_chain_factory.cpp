@@ -18,6 +18,7 @@
 #include "notify_handler.h"
 #include "analysis_handler.h"
 #include "cloud_album_handler.h"
+#include "lake_file_handler.h"
 #include "uri_convert_handler.h"
 
 using namespace std;
@@ -33,6 +34,7 @@ unordered_map<ChainType, list<shared_ptr<BaseHandler>>> NotifyResponsibilityChai
     {PHOTODELETE, {
         make_shared<AnalysisHandler>(),
         make_shared<UriConvertHandler>(),
+        // make_shared<LakeFileHandler>(),
         make_shared<NotifyHandler>()
     }},
     {ALBUM_DELETE, {
@@ -40,6 +42,8 @@ unordered_map<ChainType, list<shared_ptr<BaseHandler>>> NotifyResponsibilityChai
     }},
     {GALLERY_PHOTO_DELETE, {
         make_shared<AnalysisHandler>(),
+        make_shared<UriConvertHandler>(),
+        make_shared<LakeFileHandler>(),
     }},
 };
 

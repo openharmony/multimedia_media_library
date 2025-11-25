@@ -38,6 +38,10 @@ public:
     // 核查相关
     int32_t UpdateDirty(const std::string &cloudId, const int32_t dirtyType);
     int32_t UpdatePosition(const std::vector<std::string> &cloudIds, const int32_t position);
+    int32_t UpdatePosWithType(const std::vector<std::string> &cloudIds,
+        const int32_t position, const int32_t fileSourceType);
+    int32_t UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+        const int32_t fileSourceType);
     int32_t UpdateSyncStatus(const std::string &cloudId, const int32_t syncStatus);
     int32_t UpdateThmStatus(const std::string &cloudId, const int32_t thmStatus);
     int32_t GetAgingFile(const AgingFileQueryDto &queryDto, std::vector<PhotosDto> &photosDtos);

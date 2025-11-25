@@ -182,4 +182,20 @@ int32_t CloudMediaDownloadControllerService::OnDownloadAsset(MessageParcel &data
     respBody.result = this->processor_.GetMediaOperateResult(resultDtos);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
+
+int32_t CloudMediaDownloadControllerService::OnDownloadLakeAsset(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CloudMediaDataControllerService::OnDownloadAsset");
+    OnDownloadAssetReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    MEDIA_INFO_LOG("OnDownloadLakeAsset: %{public}s", reqBody.ToString().c_str());
+    std::vector<MediaOperateResultDto> resultDtos;
+    ret = this->service_.OnDownloadLakeAsset(reqBody.lakeInfos, resultDtos);
+    MediaOperateResultRespBody respBody;
+    respBody.result = this->processor_.GetMediaOperateResult(resultDtos);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
 }  // namespace OHOS::Media::CloudSync

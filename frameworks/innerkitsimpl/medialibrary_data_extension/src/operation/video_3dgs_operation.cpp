@@ -189,7 +189,7 @@ bool Video3DgsOperation::UpdateVideoSubtype(const CheckedVideoInfo &photoInfo)
 
     ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+    values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);

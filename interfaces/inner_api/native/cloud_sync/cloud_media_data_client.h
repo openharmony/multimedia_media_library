@@ -39,6 +39,10 @@ public:
     // 核查
     int32_t UpdateDirty(const std::string &cloudId, DirtyTypes dirtyType) override;
     int32_t UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position) override;
+    int32_t UpdatePosWithType(const std::vector<std::string> &cloudIds,
+        int32_t position, int32_t fileSourceType) override;
+    int32_t UpdateFileSourceType(const std::vector<std::string> &cloudIds,
+        int32_t fileSourceType) override;
     int32_t UpdateThmStatus(const std::string &cloudId, int32_t thmStatus) override;
     int32_t GetAgingFile(const int64_t time, int32_t mediaType, int32_t sizeLimit, int32_t offset,
         std::vector<CloudMetaData> &metaData) override;
@@ -47,9 +51,13 @@ public:
     // 下载
     int32_t GetDownloadAsset(
         const std::vector<std::string> &uris, std::vector<CloudMetaData> &cloudMetaDataVec) override;
+    int32_t GetDownloadLakeAsset(
+        const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec) override;
     int32_t GetDownloadThmsByUri(
         const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) override;
     int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) override;
+    int32_t OnDownloadLakeAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+        std::vector<MediaOperateResult> &result) override;
     int32_t GetDownloadThms(std::vector<CloudMetaData> &cloudMetaDataVec, const DownloadThumPara &param) override;
     int32_t OnDownloadThms(const std::unordered_map<std::string, int32_t> &resMap, int32_t &failSize) override;
     int32_t GetDownloadThmNum(int32_t &totalNum, int32_t type) override;

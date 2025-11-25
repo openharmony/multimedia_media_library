@@ -64,6 +64,9 @@
 #include "parameters.h"
 #include "media_album_order_back.h"
 
+#include "lake_file_operations.h"
+#include "photo_album_upload_status_operation.h"
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
@@ -340,6 +343,7 @@ static void PrepareUserAlbum(const string &albumName, ValuesBucket &values)
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, ALBUM_PRIORITY_DEFAULT);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, USER_ALBUM_LPATH_PREFIX + albumName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatus());
 }
 
 inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
@@ -1247,6 +1251,11 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "Try trans fail!, ret: %{public}d", ret);
 
+    auto assetsRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    AccurateRefreshBase &refreshBase = *assetsRefresh;
+    ret = LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(refreshBase, fileIdsInAlbum, newAlbumId);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "move inner anco asset to new album error");
+
     UpdateAnalysisIndexAfterRename(fileIdsInAlbum);
 
     auto watch = MediaLibraryNotify::GetInstance();
@@ -1680,6 +1689,8 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutInt(
+        PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath(lPath));
     int32_t ret = rdbStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
 
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Insert album failed on recover assets");
@@ -1757,6 +1768,8 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     if (changedRows < 0) {
         return changedRows;
     }
+    int32_t ret = LakeFileOperations::MoveAssetsToLake(assetRefresh, rdbPredicates.GetWhereArgs());
+    CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when recover asset");
 
     // set cloud enhancement to available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
