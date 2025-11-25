@@ -5604,6 +5604,16 @@ static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("end add analysis progress columns");
 }
 
+static void AddAnalysisProgressCheckSpaceColumn(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        ADD_CHECK_SPACE_FLAG_COLUMN,
+    };
+    MEDIA_INFO_LOG("start add tab_analysis_progress check_space_flag column");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end add tab_analysis_progress check_space_flag column");
+}
+
 static void CreateVisionVideoTotal(RdbStore& store, int32_t version)
 {
     const vector<string> sqls = {
@@ -5686,6 +5696,12 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS, true)) {
         AddUploadStatus(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN, true)) {
+        AddAnalysisProgressCheckSpaceColumn(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN, true);
     }
 }
 
