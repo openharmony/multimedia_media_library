@@ -39,6 +39,8 @@ private:
     int32_t sessionId_ = 0;
     Ace::UIContent* uiContent;
     PickerCallBack* pickerCallBack_;
+    static constexpr int INVALID_MSG_CODE = -1;
+    static constexpr int PICKER_MSG_CODE_PAGE_APPEAR = 100;
 };
 } // namespace Media
 } // namespace OHOS

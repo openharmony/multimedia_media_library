@@ -35,6 +35,7 @@
 #include "data_secondary_directory_uri.h"
 #include "dfx_deprecated_perm_usage.h"
 #include "mediatool_uri.h"
+#include "permission_whitelist_utils.h"
 
 using namespace std;
 
@@ -335,6 +336,9 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (!PermissionUtils::CheckCallerPermission(perm)) {
         perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
         if (!PermissionUtils::CheckCallerPermission(perm)) {
+            return E_PERMISSION_DENIED;
+        }
+        if (PermissionWhitelistUtils::CheckWhiteList() != E_SUCCESS) {
             return E_PERMISSION_DENIED;
         }
         DfxDeprecatedPermUsage::Record(

@@ -53,6 +53,7 @@ static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 static constexpr int32_t LIVE_PHOTO_QUERY_NUM = 3000;
 static constexpr int32_t LIVE_PHOTO_PROCESS_NUM = 200;
 static constexpr int32_t COVER_POSITION_PROCESS_NUM = 500;
+static constexpr int64_t VIDEO_SAVE_MAX_TIME = 60000; // 1 min, provided by camera framework
 
 static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFlag";
 static const string LIVE_PHOTO_COMPAT_DONE = "0";
@@ -221,6 +222,7 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::MEDIA_SIZE,
         PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_DATE_ADDED,
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, DIRTY_NOT_UPLOADING)
@@ -258,6 +260,8 @@ void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>
             ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
         std::string path = get<std::string>(
             ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+        int64_t dateAdded = get<int64_t>(
+            ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_ADDED, resultSet, TYPE_INT64));
 
         MovingPhotoData movingPhotoData;
         movingPhotoData.fileId = fileId;
@@ -265,6 +269,7 @@ void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>
         movingPhotoData.effectMode = effectMode;
         movingPhotoData.size = size;
         movingPhotoData.path = path;
+        movingPhotoData.dateAdded = dateAdded;
         dataList.movingPhotos.push_back(movingPhotoData);
     }
 }
@@ -310,8 +315,13 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
         return E_OK;
     }
 
-    if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
-        MEDIA_WARN_LOG("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
+    // skip degeneration within 1 min after adding into DB
+    int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t isVideoSaveTimeOut = (currentTime - currentData.dateAdded) > VIDEO_SAVE_MAX_TIME;
+    if (isVideoSaveTimeOut && (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0)) {
+        MEDIA_WARN_LOG("Video save time out and failed to get video of moving photo, \
+            degenerate it, id: %{public}d, dateAdded: %{public}lld",
+            currentData.fileId, static_cast<long long>(currentData.dateAdded));
         newData.size = static_cast<int64_t>(imageSize);
         newData.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
         return E_OK;

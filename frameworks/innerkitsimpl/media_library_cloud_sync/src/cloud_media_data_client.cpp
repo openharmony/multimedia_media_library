@@ -72,7 +72,7 @@ int32_t CloudMediaDataClient::UpdateDirty(const std::string &cloudId, DirtyTypes
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->UpdateDirty(cloudId, dirtyType);
 }
 
@@ -82,8 +82,30 @@ int32_t CloudMediaDataClient::UpdatePosition(const std::vector<std::string> &clo
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->UpdatePosition(cloudIds, position);
+}
+
+int32_t CloudMediaDataClient::UpdatePosWithType(const std::vector<std::string> &cloudIds,
+    int32_t position, int32_t fileSourceType)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
+    return this->dataHandler_->UpdatePosWithType(cloudIds, position, fileSourceType);
+}
+
+int32_t CloudMediaDataClient::UpdateFileSourceType(
+    const std::vector<std::string> &cloudIds, int32_t fileSourceType)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
+    return this->dataHandler_->UpdateFileSourceType(cloudIds, fileSourceType);
 }
 
 int32_t CloudMediaDataClient::UpdateSyncStatus(const std::string &cloudId, int32_t syncStatus)
@@ -92,7 +114,7 @@ int32_t CloudMediaDataClient::UpdateSyncStatus(const std::string &cloudId, int32
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->UpdateSyncStatus(cloudId, syncStatus);
 }
 
@@ -102,7 +124,7 @@ int32_t CloudMediaDataClient::UpdateThmStatus(const std::string &cloudId, int32_
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->UpdateThmStatus(cloudId, thmStatus);
 }
 
@@ -136,6 +158,16 @@ int32_t CloudMediaDataClient::GetDownloadAsset(
     return this->dataHandler_->GetDownloadAsset(uris, cloudMetaDataVec);
 }
 
+int32_t CloudMediaDataClient::GetDownloadLakeAsset(
+    const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    return this->dataHandler_->GetDownloadLakeAsset(uris, cloudMetaDataVec);
+}
+
 int32_t CloudMediaDataClient::GetDownloadThmsByUri(
     const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData)
 {
@@ -153,8 +185,19 @@ int32_t CloudMediaDataClient::OnDownloadAsset(
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    DOWNLOAD_ASSET_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->OnDownloadAsset(cloudIds, result);
+}
+
+int32_t CloudMediaDataClient::OnDownloadLakeAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos, std::vector<MediaOperateResult> &result)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
+    return this->dataHandler_->OnDownloadLakeAsset(lakeInfos, result);
 }
 
 int32_t CloudMediaDataClient::GetDownloadThms(
@@ -173,7 +216,7 @@ int32_t CloudMediaDataClient::OnDownloadThms(const std::unordered_map<std::strin
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->OnDownloadThms(resMap, failSize);
 }
 
@@ -228,7 +271,7 @@ int32_t CloudMediaDataClient::UpdateLocalFileDirty(std::vector<MDKRecord> &recor
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
     return this->dataHandler_->UpdateLocalFileDirty(records);
 }
 

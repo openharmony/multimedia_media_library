@@ -921,6 +921,8 @@ function parsePhotoPickerSelectOption(args) {
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
     }
+    config.parameters.maxPhotoSelectNumber = option.maxPhotoSelectNumber;
+    config.parameters.maxVideoSelectNumber = option.maxVideoSelectNumber;
     config.parameters.isSearchSupported = option.isSearchSupported === undefined || option.isSearchSupported;
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
@@ -941,6 +943,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
+    config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
   }
 
   return config;
@@ -1072,6 +1075,8 @@ function FileSizeFilterArray() {
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
+  this.maxPhotoSelectNumber = -1;
+  this.maxVideoSelectNumber = -1;
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
@@ -1088,6 +1093,7 @@ function PhotoSelectOptions() {
   this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
   this.userId = -1;
+  this.isDestroyedWithNavigation = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {

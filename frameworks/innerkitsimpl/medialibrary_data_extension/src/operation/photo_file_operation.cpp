@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "PhotoFileOperation"
+#define MLOG_TAG "Media_Operation"
 
 #include "photo_file_operation.h"
 
@@ -28,6 +28,9 @@
 #include "moving_photo_file_utils.h"
 #include "media_column.h"
 #include "result_set_utils.h"
+#include "lake_file_utils.h"
+#include "media_column.h"
+#include "thumbnail_service.h"
 
 namespace OHOS::Media {
 // LCOV_EXCL_START
@@ -113,6 +116,40 @@ int32_t PhotoFileOperation::CopyThumbnail(
     std::string dateTaken = to_string(GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
     std::string oldAssetId = to_string(GetInt64Val(MediaColumn::MEDIA_ID, resultSet));
     return HandleThumbnailAstcData(dateTaken, oldAssetId, to_string(newAssetId));
+}
+
+int32_t PhotoFileOperation::CopyThumbnail(
+    const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo, bool withAstcData)
+{
+    bool isValid = sourcePhotosPo.data.has_value();
+    isValid = isValid && targetPhotosPo.data.has_value();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVALID_ARGUMENTS, "Invalid arguments");
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.filePath = sourcePhotosPo.data.value_or("");
+    sourcePhotoInfo.thumbnailFolder = this->FindThumbnailFolder(sourcePhotoInfo);
+    CHECK_AND_RETURN_RET_LOG(!sourcePhotoInfo.thumbnailFolder.empty(),
+        E_FAIL,
+        "Source thumbnail is empty, skip copy. thumbnailFolder:%{public}s",
+        sourcePhotoInfo.thumbnailFolder.c_str());
+
+    // copy folder
+    PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
+    targetPhotoInfo.filePath = targetPhotosPo.data.value_or("");
+    targetPhotoInfo.thumbnailFolder = this->BuildThumbnailFolder(targetPhotoInfo);
+    int32_t opRet = this->CopyPhotoRelatedThumbnail(sourcePhotoInfo, targetPhotoInfo);
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+
+    CHECK_AND_RETURN_RET(withAstcData, E_OK);
+    isValid = sourcePhotosPo.fileId.has_value();
+    isValid = isValid && targetPhotosPo.fileId.has_value();
+    isValid = isValid && sourcePhotosPo.dateTaken.has_value();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVALID_ARGUMENTS, "Invalid arguments, fileId is empty");
+    std::string dateTaken = std::to_string(sourcePhotosPo.dateTaken.value_or(0));
+    std::string oldAssetId = std::to_string(sourcePhotosPo.fileId.value_or(0));
+    std::string targetAssetId = std::to_string(targetPhotosPo.fileId.value_or(0));
+    return HandleThumbnailAstcData(dateTaken, oldAssetId, targetAssetId);
 }
 
 int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
@@ -302,7 +339,8 @@ std::string PhotoFileOperation::FindThumbnailFolder(const PhotoFileOperation::Ph
 {
     std::string thumbnailFolderPath = this->BuildThumbnailFolder(photoInfo);
     if (!thumbnailFolderPath.empty() && !MediaFileUtils::IsFileExists(thumbnailFolderPath)) {
-        MEDIA_INFO_LOG("Media_Operation: thumbnailFolder not exists, Object: %{public}s.",
+        MEDIA_INFO_LOG("Media_Operation: thumbnailFolder: %{public}s, not exists, Object: %{public}s.",
+            thumbnailFolderPath.c_str(),
             this->ToString(photoInfo).c_str());
         return "";
     }
@@ -398,13 +436,15 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
 {
     bool cond = (srcFolder.empty() || targetFolder.empty());
     CHECK_AND_RETURN_RET(!cond, E_OK);
-    
+
     if (!MediaFileUtils::IsFileExists(srcFolder)) {
         MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{public}s",
             srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
         return E_NO_SUCH_FILE;
     }
     int32_t opRet = MediaFileUtils::CopyDirectory(srcFolder, targetFolder);
+    this->AuditLog(srcFolder, TAG_COPY_SOURCE, opRet);
+    this->AuditLog(targetFolder, TAG_COPY_TARGET, opRet);
     CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
         "Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
         this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
@@ -457,19 +497,14 @@ int32_t PhotoFileOperation::CopyPhotoRelatedThumbnail(const PhotoFileOperation::
  */
 int32_t PhotoFileOperation::CopyFile(const std::string &srcPath, std::string &targetPath)
 {
-    if (srcPath.empty() || !MediaFileUtils::IsFileExists((srcPath)) || !MediaFileUtils::IsFileValid(srcPath)) {
-        MEDIA_ERR_LOG("Media_Operation: source file invalid! srcPath: %{public}s", srcPath.c_str());
-        return E_INVALID_PATH;
-    }
-    if (targetPath.empty()) {
-        MEDIA_ERR_LOG("Media_Operation: target file invalid! targetPath: %{public}s", targetPath.c_str());
-        return E_INVALID_PATH;
-    }
-    bool opRet = MediaFileUtils::CopyFileUtil(srcPath, targetPath);
+    bool opRet = LakeFileUtils::CopyFile(srcPath, targetPath);
     opRet = opRet && MediaFileUtils::IsFileExists(targetPath);
+    this->AuditLog(srcPath, TAG_COPY_SOURCE, opRet ? E_OK : E_ERR);
+    this->AuditLog(targetPath, TAG_COPY_TARGET, opRet ? E_OK : E_ERR);
     if (!opRet) {
-        MEDIA_ERR_LOG("Media_Operation: CopyFile failed, filePath: %{public}s, errmsg: %{public}s",
+        MEDIA_ERR_LOG("Media_Operation: CopyFile failed, filePath: %{public}s, errno: %{public}d, errmsg: %{public}s",
             srcPath.c_str(),
+            errno,
             strerror(errno));
         return E_FILE_OPER_FAIL;
     }
@@ -551,21 +586,22 @@ int32_t PhotoFileOperation::ConvertFormatFile(const std::string &srcFilePath, co
     const int64_t dateModified, const std::string &extension)
 {
     // If File Path is empty, return E_INVALID_PATH.
-    if (srcFilePath.empty() || dstFilePath.empty() || !MediaFileUtils::IsFileExists(srcFilePath) ||
-        !MediaFileUtils::IsFileValid(srcFilePath)) {
+    std::string tmpPath = LakeFileUtils::GetAssetRealPath(srcFilePath);
+    if (tmpPath.empty() || dstFilePath.empty() || !MediaFileUtils::IsFileExists(tmpPath) ||
+        !MediaFileUtils::IsFileValid(tmpPath)) {
         MEDIA_ERR_LOG("Media_Operation: check srcPath or targetPath failed");
         return E_INVALID_PATH;
     }
 
     bool ret = false;
     if (!extension.empty()) {
-        ret = MediaFileUtils::ConvertFormatCopy(srcFilePath, dstFilePath, extension);
+        ret = MediaFileUtils::ConvertFormatCopy(tmpPath, dstFilePath, extension);
     } else {
-        ret = MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath);
+        ret = MediaFileUtils::CopyFileUtil(tmpPath, dstFilePath);
     }
     if (!ret || !MediaFileUtils::IsFileExists(dstFilePath)) {
-        MEDIA_INFO_LOG("Media_Operation: ConvertFormatFile failed, srcFilePath: %{public}s, dstFilePath: %{public}s, "
-            "extension: %{public}s", srcFilePath.c_str(), dstFilePath.c_str(), extension.c_str());
+        MEDIA_INFO_LOG("Media_Operation: ConvertFormatFile failed, tmpPath: %{public}s, dstFilePath: %{public}s, "
+            "extension: %{public}s", tmpPath.c_str(), dstFilePath.c_str(), extension.c_str());
         return E_FILE_OPER_FAIL;
     }
 
@@ -631,6 +667,410 @@ int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, s
     CHECK_AND_RETURN_RET(MediaFileUtils::GetFileSize(targetPath, size),
         DoTranscodeFailedDfx("GetFileSize fail", INNER_FAILED, E_INNER_FAIL));
     return E_OK;
+}
+
+/**
+ * @brief Move File.
+ * @return E_OK if success,
+ *         E_INVALID_PATH if the source file or target file is invalid,
+ *         E_FILE_OPER_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::MoveFile(const std::string &srcPath, std::string &targetPath)
+{
+    if (srcPath.empty() || !MediaFileUtils::IsFileExists((srcPath)) || !MediaFileUtils::IsFileValid(srcPath)) {
+        MEDIA_ERR_LOG("Media_Operation: source file invalid! srcPath: %{public}s", srcPath.c_str());
+        this->AuditLog(srcPath, TAG_MOVE_OUT, E_INVALID_PATH);
+        return E_INVALID_PATH;
+    }
+    if (targetPath.empty()) {
+        MEDIA_ERR_LOG("Media_Operation: target file invalid! targetPath: %{public}s", targetPath.c_str());
+        this->AuditLog(targetPath, TAG_MOVE_IN, E_INVALID_PATH);
+        return E_INVALID_PATH;
+    }
+    bool opRet = MediaFileUtils::MoveFile(srcPath, targetPath);
+    if (!opRet) {
+        MEDIA_WARN_LOG("Media_Operation: MoveFile failed, try CrossPolicy mode.");
+        opRet = MediaFileUtils::MoveFile(srcPath, targetPath, true);
+    }
+    opRet = opRet && MediaFileUtils::IsFileExists(targetPath);
+    this->AuditLog(srcPath, TAG_MOVE_OUT, opRet ? E_OK : E_ERR);
+    this->AuditLog(targetPath, TAG_MOVE_IN, opRet ? E_OK : E_ERR);
+    if (!opRet) {
+        MEDIA_ERR_LOG("Media_Operation: MoveFile failed, filePath: %{public}s, errno: %{public}d, errmsg: %{public}s",
+            srcPath.c_str(),
+            errno,
+            strerror(errno));
+        return E_FILE_OPER_FAIL;
+    }
+    return E_OK;
+}
+
+/**
+ * @brief Copy Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::CopyPhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo)
+{
+    bool isValid = sourcePhotosPo.data.has_value();
+    isValid = isValid && sourcePhotosPo.displayName.has_value();
+    isValid = isValid && sourcePhotosPo.subtype.has_value();
+    isValid = isValid && sourcePhotosPo.originalSubtype.has_value();
+    isValid = isValid && sourcePhotosPo.movingPhotoEffectMode.has_value();
+    isValid = isValid && sourcePhotosPo.dateModified.has_value();
+    isValid = isValid && targetPhotosPo.data.has_value();
+    isValid = isValid && targetPhotosPo.displayName.has_value();
+    isValid = isValid && targetPhotosPo.subtype.has_value();
+    isValid = isValid && targetPhotosPo.dateModified.has_value();
+    isValid = isValid && !targetPhotosPo.data.value_or("").empty();
+    CHECK_AND_RETURN_RET_LOG(isValid,
+        E_INVALID_ARGUMENTS,
+        "Media_Operation: CopyPhoto failed, sourcePhotosPo is null or targetPath is empty");
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.displayName = sourcePhotosPo.displayName.value_or("");
+    sourcePhotoInfo.filePath = sourcePhotosPo.data.value_or("");
+    sourcePhotoInfo.subtype = sourcePhotosPo.subtype.value_or(0);
+    int32_t originalSubtype = sourcePhotosPo.originalSubtype.value_or(0);
+    int32_t effectMode = sourcePhotosPo.movingPhotoEffectMode.value_or(0);
+    sourcePhotoInfo.isMovingPhoto =
+        MovingPhotoFileUtils::IsMovingPhoto(sourcePhotoInfo.subtype, effectMode, originalSubtype);
+    sourcePhotoInfo.dateModified = sourcePhotosPo.dateModified.value_or(0);
+    sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
+    sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+    // Build the Target Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
+    targetPhotoInfo.displayName = targetPhotosPo.displayName.value_or("");
+    targetPhotoInfo.filePath = targetPhotosPo.data.value_or("");
+    targetPhotoInfo.subtype = targetPhotosPo.subtype.value_or(0);
+    targetPhotoInfo.dateModified = targetPhotosPo.dateModified.value_or(0);
+    // No need to copy video file if the Original Photo is not a moving photo.
+    if (!sourcePhotoInfo.videoFilePath.empty()) {
+        targetPhotoInfo.videoFilePath = this->GetVideoFilePath(targetPhotoInfo);
+    }
+    // No need to copy edit data folder if the Original Photo is not edited.
+    if (!sourcePhotoInfo.editDataFolder.empty()) {
+        targetPhotoInfo.editDataFolder = this->BuildEditDataFolder(targetPhotoInfo);
+    }
+    MEDIA_INFO_LOG("Media_Operation: sourcePhotoInfo: %{public}s, targetPhotoInfo: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(),
+        this->ToString(targetPhotoInfo).c_str());
+    return this->CopyPhoto(sourcePhotoInfo, targetPhotoInfo);
+}
+
+/**
+ * @brief Copy Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::MovePhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo)
+{
+    bool isValid = sourcePhotosPo.data.has_value();
+    isValid = isValid && sourcePhotosPo.displayName.has_value();
+    isValid = isValid && sourcePhotosPo.subtype.has_value();
+    isValid = isValid && sourcePhotosPo.originalSubtype.has_value();
+    isValid = isValid && sourcePhotosPo.movingPhotoEffectMode.has_value();
+    isValid = isValid && sourcePhotosPo.dateModified.has_value();
+    isValid = isValid && targetPhotosPo.data.has_value();
+    isValid = isValid && targetPhotosPo.displayName.has_value();
+    isValid = isValid && targetPhotosPo.subtype.has_value();
+    isValid = isValid && targetPhotosPo.dateModified.has_value();
+    isValid = isValid && !targetPhotosPo.data.value_or("").empty();
+    CHECK_AND_RETURN_RET_LOG(isValid,
+        E_INVALID_ARGUMENTS,
+        "Media_Operation: MovePhoto failed, sourcePhotosPo is null or targetPath is empty");
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.displayName = sourcePhotosPo.displayName.value_or("");
+    sourcePhotoInfo.filePath = sourcePhotosPo.data.value_or("");
+    sourcePhotoInfo.subtype = sourcePhotosPo.subtype.value_or(0);
+    int32_t originalSubtype = sourcePhotosPo.originalSubtype.value_or(0);
+    int32_t effectMode = sourcePhotosPo.movingPhotoEffectMode.value_or(0);
+    sourcePhotoInfo.isMovingPhoto =
+        MovingPhotoFileUtils::IsMovingPhoto(sourcePhotoInfo.subtype, effectMode, originalSubtype);
+    sourcePhotoInfo.dateModified = sourcePhotosPo.dateModified.value_or(0);
+    sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
+    sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+    // Build the Target Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
+    targetPhotoInfo.displayName = targetPhotosPo.displayName.value_or("");
+    targetPhotoInfo.filePath = targetPhotosPo.data.value_or("");
+    targetPhotoInfo.subtype = targetPhotosPo.subtype.value_or(0);
+    targetPhotoInfo.dateModified = targetPhotosPo.dateModified.value_or(0);
+    // No need to copy video file if the Original Photo is not a moving photo.
+    if (!sourcePhotoInfo.videoFilePath.empty()) {
+        targetPhotoInfo.videoFilePath = this->GetVideoFilePath(targetPhotoInfo);
+    }
+    // No need to copy edit data folder if the Original Photo is not edited.
+    if (!sourcePhotoInfo.editDataFolder.empty()) {
+        targetPhotoInfo.editDataFolder = this->BuildEditDataFolder(targetPhotoInfo);
+    }
+    MEDIA_INFO_LOG("Media_Operation: sourcePhotoInfo: %{public}s, targetPhotoInfo: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(),
+        this->ToString(targetPhotoInfo).c_str());
+    return this->MovePhoto(sourcePhotoInfo, targetPhotoInfo);
+}
+
+/**
+ * @brief Move Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::MovePhoto(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    int32_t opRet = this->MovePhotoFile(sourcePhotoInfo, targetPhotoInfo);
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    opRet = this->MovePhotoRelatedVideoFile(sourcePhotoInfo, targetPhotoInfo);
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    opRet = this->MovePhotoRelatedExtraData(sourcePhotoInfo, targetPhotoInfo);
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    return opRet;
+}
+
+/**
+ * @brief Move Photo File, only include the photo file defined in the Photos table.
+ * @return E_OK if success,
+ *         E_INVALID_PATH if the source file or target file is invalid,
+ *         E_FILE_OPER_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::MovePhotoFile(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    std::string srcPath = sourcePhotoInfo.filePath;
+    std::string targetPath = targetPhotoInfo.filePath;
+    int64_t dateModified = targetPhotoInfo.dateModified;
+    // If File Path is empty, return E_INVALID_PATH.
+    CHECK_AND_RETURN_RET_LOG(!srcPath.empty() && !targetPath.empty(),
+        E_INVALID_PATH,
+        "Media_Operation: MovePhotoFile failed, srcPath or targetPath is empty. "
+        "Source Object: %{public}s, Target Object: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(),
+        this->ToString(targetPhotoInfo).c_str());
+    int32_t opRet = this->MoveFile(srcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK,
+        opRet,
+        "Media_Operation: MovePhotoFile failed, srcPath: %{public}s, targetPath: %{public}s",
+        srcPath.c_str(),
+        targetPath.c_str());
+    MediaFileUtils::ModifyFile(targetPath, dateModified / MSEC_TO_SEC);
+    MEDIA_INFO_LOG("Media_Operation: MovePhotoFile success, srcPath: %{public}s, targetPath: %{public}s",
+        srcPath.c_str(),
+        targetPath.c_str());
+    return E_OK;
+}
+
+/**
+ * @brief Move Photo File, only include the vide file related to the photo file defined in the Photos table.
+ * @return E_OK if success or not MOVING_PHOTO or video file empty,
+ *         E_INVALID_PATH if the source file or target file is invalid,
+ *         E_FILE_OPER_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::MovePhotoRelatedVideoFile(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    // If photoSubtype is MOVING_PHOTO, copy video file.
+    CHECK_AND_RETURN_RET(sourcePhotoInfo.isMovingPhoto, E_OK);
+    std::string srcVideoPath = sourcePhotoInfo.videoFilePath;
+    std::string targetVideoPath = targetPhotoInfo.videoFilePath;
+    int64_t dateModified = targetPhotoInfo.dateModified;
+    // If video file is empty, return E_OK. Trace log will be printed in FindVideoFilePath.
+    bool cond = (srcVideoPath.empty() || targetVideoPath.empty());
+    CHECK_AND_RETURN_RET(!cond, E_OK);
+
+    int32_t opRet = this->MoveFile(srcVideoPath, targetVideoPath);
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK,
+        opRet,
+        "Media_Operation: MovePhoto Video failed, srcPath: %{public}s, targetPath: %{public}s",
+        srcVideoPath.c_str(),
+        targetVideoPath.c_str());
+    MediaFileUtils::ModifyFile(targetVideoPath, dateModified / MSEC_TO_SEC);
+    MEDIA_INFO_LOG("Media_Operation: MovePhotoRelatedVideoFile success, srcPath: %{public}s, targetPath: %{public}s",
+        srcVideoPath.c_str(),
+        targetVideoPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoFileOperation::MovePhotoRelatedData(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo, const std::string &srcFolder,
+    const std::string &targetFolder)
+{
+    bool cond = (srcFolder.empty() || targetFolder.empty());
+    CHECK_AND_RETURN_RET(!cond, E_OK);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcFolder),
+        E_NO_SUCH_FILE,
+        "Media_Operation: %{public}s doesn't exist. %{public}s",
+        srcFolder.c_str(),
+        this->ToString(sourcePhotoInfo).c_str());
+    int32_t opRet = MediaFileUtils::MoveDirectory(srcFolder, targetFolder);
+    this->AuditLog(srcFolder, TAG_MOVE_OUT, opRet);
+    this->AuditLog(targetFolder, TAG_MOVE_IN, opRet);
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK,
+        opRet,
+        "Media_Operation: MovePhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(),
+        this->ToString(targetPhotoInfo).c_str());
+    MEDIA_INFO_LOG("Media_Operation: MovePhotoRelatedData success, sourceInfo:%{public}s, targetInfo:%{public}s",
+        this->ToString(sourcePhotoInfo).c_str(),
+        this->ToString(targetPhotoInfo).c_str());
+    return E_OK;
+}
+
+/**
+ * @brief Move the Edit Data.
+ * @return E_OK if success or not edited photo.
+ *         E_NO_SUCH_FILE if the source Edit Data Folder not exits.
+ *         E_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::MovePhotoRelatedExtraData(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    std::string srcEditDataFolder = sourcePhotoInfo.editDataFolder;
+    std::string targetEditDataFolder = targetPhotoInfo.editDataFolder;
+    return MovePhotoRelatedData(sourcePhotoInfo, targetPhotoInfo, srcEditDataFolder, targetEditDataFolder);
+}
+
+int32_t PhotoFileOperation::DeletePhoto(const PhotosPo &sourcePhotosPo)
+{
+    bool isValid = sourcePhotosPo.data.has_value();
+    isValid = isValid && sourcePhotosPo.displayName.has_value();
+    isValid = isValid && sourcePhotosPo.subtype.has_value();
+    isValid = isValid && sourcePhotosPo.originalSubtype.has_value();
+    isValid = isValid && sourcePhotosPo.movingPhotoEffectMode.has_value();
+    isValid = isValid && sourcePhotosPo.dateModified.has_value();
+    CHECK_AND_RETURN_RET_LOG(isValid,
+        E_INVALID_ARGUMENTS,
+        "Media_Operation: DeletePhoto failed, sourcePhotosPo is null or targetPath is empty");
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.displayName = sourcePhotosPo.displayName.value_or("");
+    sourcePhotoInfo.filePath = sourcePhotosPo.data.value_or("");
+    sourcePhotoInfo.subtype = sourcePhotosPo.subtype.value_or(0);
+    int32_t originalSubtype = sourcePhotosPo.originalSubtype.value_or(0);
+    int32_t effectMode = sourcePhotosPo.movingPhotoEffectMode.value_or(0);
+    sourcePhotoInfo.isMovingPhoto =
+        MovingPhotoFileUtils::IsMovingPhoto(sourcePhotoInfo.subtype, effectMode, originalSubtype);
+    sourcePhotoInfo.dateModified = sourcePhotosPo.dateModified.value_or(0);
+    sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
+    sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+    MEDIA_INFO_LOG("Media_Operation: sourcePhotoInfo: %{public}s", this->ToString(sourcePhotoInfo).c_str());
+    return this->DeletePhoto(sourcePhotoInfo);
+}
+
+/**
+ * @brief Delete Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::DeletePhoto(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo)
+{
+    int32_t opRet = this->DeletePhotoFile(sourcePhotoInfo);
+    opRet = this->DeletePhotoRelatedVideoFile(sourcePhotoInfo);
+    opRet = this->DeletePhotoRelatedExtraData(sourcePhotoInfo);
+    return opRet;
+}
+
+/**
+ * @brief Delete Photo File, only include the photo file defined in the Photos table.
+ * @return E_OK if success,
+ *         E_INVALID_PATH if the source file or target file is invalid,
+ *         E_FILE_OPER_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::DeletePhotoFile(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo)
+{
+    std::string srcPath = sourcePhotoInfo.filePath;
+    // If File Path is empty, return E_INVALID_PATH.
+    CHECK_AND_RETURN_RET_LOG(!srcPath.empty(),
+        E_INVALID_PATH,
+        "Media_Operation: DeletePhotoFile failed, srcPath is empty. Source Object: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str());
+    bool opRet = MediaFileUtils::DeleteFile(srcPath);
+    this->AuditLog(srcPath, TAG_DELETE, opRet ? E_OK : E_ERR);
+    MEDIA_INFO_LOG(
+        "Media_Operation: DeletePhotoFile success, opRet: %{public}d, srcPath: %{public}s", opRet, srcPath.c_str());
+    return E_OK;
+}
+
+/**
+ * @brief Move Photo File, only include the vide file related to the photo file defined in the Photos table.
+ * @return E_OK if success or not MOVING_PHOTO or video file empty,
+ *         E_INVALID_PATH if the source file or target file is invalid,
+ *         E_FILE_OPER_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::DeletePhotoRelatedVideoFile(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo)
+{
+    // If photoSubtype is MOVING_PHOTO, copy video file.
+    CHECK_AND_RETURN_RET(sourcePhotoInfo.isMovingPhoto, E_OK);
+    std::string srcVideoPath = sourcePhotoInfo.videoFilePath;
+    // If video file is empty, return E_OK. Trace log will be printed in FindVideoFilePath.
+    bool cond = srcVideoPath.empty();
+    CHECK_AND_RETURN_RET(!cond, E_OK);
+    bool opRet = MediaFileUtils::DeleteFile(srcVideoPath);
+    this->AuditLog(srcVideoPath, TAG_DELETE, opRet ? E_OK : E_ERR);
+    MEDIA_INFO_LOG("Media_Operation: MovePhotoRelatedVideoFile success, opRet: %{public}d, srcPath: %{public}s",
+        opRet,
+        srcVideoPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoFileOperation::DeletePhotoRelatedData(
+    const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo, const std::string &srcFolder)
+{
+    bool isValid = !srcFolder.empty() && MediaFileUtils::IsFileExists(srcFolder);
+    CHECK_AND_RETURN_RET(isValid, E_OK);
+    bool opRet = MediaFileUtils::DeleteDir(srcFolder);
+    this->AuditLog(srcFolder, TAG_DELETE, opRet ? E_OK : E_ERR);
+    MEDIA_INFO_LOG("Media_Operation: DeletePhotoRelatedData success, opRet: %{public}d, sourceInfo: %{public}s",
+        opRet,
+        this->ToString(sourcePhotoInfo).c_str());
+    return E_OK;
+}
+
+/**
+ * @brief Delete the Edit Data.
+ * @return E_OK if success or not edited photo.
+ *         E_NO_SUCH_FILE if the source Edit Data Folder not exits.
+ *         E_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::DeletePhotoRelatedExtraData(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo)
+{
+    return DeletePhotoRelatedData(sourcePhotoInfo, sourcePhotoInfo.editDataFolder);
+}
+
+/**
+ * @brief Delete thumbnail, include folder and astc data.
+ */
+int32_t PhotoFileOperation::DeleteThumbnail(const PhotosPo &photoInfo)
+{
+    bool isValid = photoInfo.data.has_value();
+    isValid = isValid && photoInfo.dateTaken.has_value();
+    isValid = isValid && photoInfo.fileId.has_value();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVALID_ARGUMENTS, "DeleteThumbnail failed, photoInfo is invalid");
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.filePath = photoInfo.data.value_or("");
+    sourcePhotoInfo.thumbnailFolder = this->FindThumbnailFolder(sourcePhotoInfo);
+    CHECK_AND_RETURN_RET_INFO_LOG(!sourcePhotoInfo.thumbnailFolder.empty(), E_OK, "No need to delete thumbnail folder");
+    // Use ThumbnailService to delete thumbnail.
+    auto thumbnailService = ThumbnailService::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(thumbnailService != nullptr, E_OK, "DeleteThumbnail failed, thumbnailService is null");
+    bool ret = thumbnailService->DeleteThumbnailDirAndAstc(std::to_string(photoInfo.fileId.value_or(0)),
+        PhotoColumn::PHOTOS_TABLE,
+        photoInfo.data.value_or(""),
+        std::to_string(photoInfo.dateTaken.value_or(0)));
+    this->AuditLog(sourcePhotoInfo.thumbnailFolder, TAG_DELETE, ret ? E_OK : E_ERR);
+    return ret ? E_OK : E_ERR;
+}
+
+void PhotoFileOperation::AuditLog(const std::string &path, const std::string &action, const int32_t result)
+{
+    std::string resultMsg = (result == E_OK) ? "SUCCESS" : "FAILED";
+    std::string logInfo =
+        std::to_string(MediaFileUtils::UTCTimeMilliSeconds()) + " # " + action + " # " + resultMsg + " # " + path;
+    this->opStats_.emplace_back(logInfo);
+}
+
+std::string PhotoFileOperation::GetAuditLog() const
+{
+    std::stringstream ss;
+    for (const auto &item : this->opStats_) {
+        ss << item << ", ";
+    }
+    return ss.str();
 }
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media

@@ -21,12 +21,15 @@
 #include <sstream>
 
 #include "i_media_parcelable.h"
+#include "cloud_media_download_dao.h"
 #include "cloud_media_define.h"
+#include "cloud_lake_info.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT OnDownloadAssetReqBody : public IPC::IMediaParcelable {
 public:
     std::vector<std::string> cloudIds;
+    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
 
 public:  // functions of Parcelable.
     virtual ~OnDownloadAssetReqBody() = default;

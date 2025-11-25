@@ -51,6 +51,7 @@ int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Me
         MEDIA_ERR_LOG("OnFetchRecords Read Req Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
+    // 获取端云请求中传递过来的数据
     std::vector<OnFetchPhotosVo> onFetchPhotoDatas = reqBody.GetOnFetchPhotoData();
     std::vector<std::string> cloudIds;
     std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
@@ -61,6 +62,7 @@ int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Me
     MEDIA_INFO_LOG("OnFetchRecords onFetchPhotoDatas size: %{public}zu", onFetchPhotoDatas.size());
     for (auto onFetchPhotoData : onFetchPhotoDatas) {
         cloudIds.emplace_back(onFetchPhotoData.cloudId);
+        // 从vo对象转成数据库的dto对象 在dto中增加attributesFileSourceType 和 attributesStoragePath 两个属性
         CloudMediaPullDataDto pullData = this->processor_.ConvertToCloudMediaPullData(onFetchPhotoData);
         cloudIdRelativeMap[onFetchPhotoData.cloudId] = pullData;
         MEDIA_DEBUG_LOG("OnFetchRecords CloudMediaPullData: %{public}s", pullData.ToString().c_str());

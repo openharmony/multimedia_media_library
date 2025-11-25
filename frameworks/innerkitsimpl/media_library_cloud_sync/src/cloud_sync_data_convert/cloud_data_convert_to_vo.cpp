@@ -16,6 +16,7 @@
 
 #include "cloud_data_convert_to_vo.h"
 #include "cloud_meta_data.h"
+#include "cloud_download_file_meta.h"
 
 #include <string>
 #include "media_log.h"
@@ -24,7 +25,7 @@
 namespace OHOS::Media::CloudSync {
 CloudMetaData CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(const PhotosVo &photosVo)
 {
-    MEDIA_INFO_LOG("ConvertPhotosVoToCloudMetaData, photosVo: %{public}s.", photosVo.ToString().c_str());
+    MEDIA_DEBUG_LOG("photosVo: %{public}s", photosVo.ToString().c_str());
     CloudMetaData cloudMetaData;
     cloudMetaData.fileId = photosVo.fileId;
     cloudMetaData.cloudId = photosVo.cloudId;
@@ -34,6 +35,34 @@ CloudMetaData CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(const PhotosV
     cloudMetaData.type = photosVo.type;
     cloudMetaData.modifiedTime = photosVo.modifiedTime;
     cloudMetaData.originalCloudId = photosVo.originalCloudId;
+    cloudMetaData.fileSourceType = photosVo.fileSourceType;
+    cloudMetaData.storagePath = photosVo.storagePath;
+    for (auto &nodePair : photosVo.attachment) {
+        CloudFileData fileData;
+        fileData.filePath = nodePair.second.filePath;
+        fileData.fileName = nodePair.second.fileName;
+        fileData.size = nodePair.second.size;
+        cloudMetaData.attachment[nodePair.first] = fileData;
+    }
+    return cloudMetaData;
+}
+
+CloudDlFileMeta CloudDataConvertToVo::ConvertPhotosVoToLakeCloudMetaData(const PhotosVo &photosVo)
+{
+    MEDIA_INFO_LOG("ConvertPhotosVoToCloudMetaData, photosVo: %{public}s.", photosVo.ToString().c_str());
+    CloudDlFileMeta cloudMetaData;
+    cloudMetaData.fileId = photosVo.fileId;
+    cloudMetaData.cloudId = photosVo.cloudId;
+    cloudMetaData.size = photosVo.size;
+    cloudMetaData.path = photosVo.path;
+    cloudMetaData.fileName = photosVo.fileName;
+    cloudMetaData.type = photosVo.type;
+    cloudMetaData.modifiedTime = photosVo.modifiedTime;
+    cloudMetaData.originalCloudId = photosVo.originalCloudId;
+    cloudMetaData.fileSourceType = photosVo.fileSourceType;
+    cloudMetaData.storagePath = photosVo.storagePath;
+    cloudMetaData.hidden = photosVo.hidden;
+    cloudMetaData.dateTrashed = photosVo.dateTrashed;
     for (auto &nodePair : photosVo.attachment) {
         CloudFileData fileData;
         fileData.filePath = nodePair.second.filePath;

@@ -97,6 +97,7 @@
 #include "media_old_photos_column.h"
 #include "cloud_media_asset_manager.h"
 #include "heif_transcoding_check_utils.h"
+#include "database_adapter.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -105,6 +106,7 @@ namespace OHOS::Media {
 
 const int32_t YES = 1;
 const int32_t NO = 0;
+const int32_t MEDIA_HO_LAKE_CONST = 3;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string COLUMN_FILE_ID = "file_id";
@@ -112,6 +114,8 @@ const std::string COLUMN_DATA = "data";
 const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
+const std::string HEIF_MIME_TYPE = "image/heif";
+const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
@@ -397,6 +401,35 @@ int32_t MediaAssetsService::CameraInnerAddImage(AddImageDto &dto)
     return E_OK;
 }
 
+int32_t MediaAssetsService::GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody)
+{
+    MEDIA_INFO_LOG("enter GetFusionAssetsInfo");
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, MEDIA_HO_LAKE_CONST);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_STORAGE_PATH, "");
+    rdbPredicate.IsNotNull(PhotoColumn::PHOTO_STORAGE_PATH);
+
+    std::vector<std::string> fetchColumn {
+        "count(*) AS count",
+        "MAX(storage_path) AS storage_path"
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, fetchColumn);
+    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+    respBody.queryResult.push_back(
+        FussionAssetsResult(0, GetInt32Val("count", resultSet), GetStringVal("storage_path", resultSet)));
+    return E_OK;
+}
+
 int32_t MediaAssetsService::SetCameraShotKey(const int32_t fileId, const std::string &cameraShotKey)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
@@ -663,6 +696,14 @@ int32_t MediaAssetsService::CheckPhotoUriPermissionInner(CheckUriPermissionInner
     checkUriPermissionInnerDto.permissionTypes = permissionTypes;
     MEDIA_INFO_LOG("MediaAssetsService::CheckPhotoUriPermissionInner ret:%{public}d", errCode);
     return errCode;
+}
+
+int32_t MediaAssetsService::StartAssetChangeScanInner(
+    const StartAssetChangeScanDto& startAssetChangeScanDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::StartAssetChangeScanInner");
+    auto resultSet = MediaLibraryDataManager::GetInstance()->ProcessBrokerChangeMsg(startAssetChangeScanDto.operation);
+    return NativeRdb::E_OK;
 }
 
 int32_t MediaAssetsService::CancelPhotoUriPermissionInner(
@@ -1119,6 +1160,26 @@ shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::ConvertFormat(cons
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to ConvertFormatAsset");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+}
+
+bool MediaAssetsService::CheckMimeType(const int32_t fileId)
+{
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, false,
+        "Invalid parameters for CheckMimeType, fileId: %{public}d", fileId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    vector<string> columns {MediaColumn::MEDIA_ID, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE};
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return false;
+    }
+    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    if (mimeType != HEIF_MIME_TYPE && mimeType != HEIC_MIME_TYPE) {
+        MEDIA_ERR_LOG("mimeType : %{public}s, The requested asset must be heif|heic", mimeType.c_str());
+        return false;
+    }
+    return true;
 }
 
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)

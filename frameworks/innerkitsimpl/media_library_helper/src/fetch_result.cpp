@@ -112,6 +112,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, TYPE_INT32 },
         { PhotoColumn::PHOTO_EXIF_ROTATE, TYPE_INT32 },
         { PhotoColumn::PHOTO_VIDEO_MODE, TYPE_INT32 },
+        { PhotoColumn::PHOTO_STORAGE_PATH, TYPE_STRING },
+        { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }
@@ -651,6 +653,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         
     photoAlbumData->SetLatitude(latitude);
     photoAlbumData->SetLongitude(longitude);
+    photoAlbumData->SetUploadStatus(get<int32_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::UPLOAD_STATUS, TYPE_INT32, resultSet)));
 }
 
 template<class T>

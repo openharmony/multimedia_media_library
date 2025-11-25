@@ -46,6 +46,7 @@
 #include "medialibrary_uripermission_operations.h"
 #include "multistages_capture_manager.h"
 #include "heif_transcoding_check_utils.h"
+#include "permission_whitelist_utils.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -85,6 +86,8 @@
 #include "media_permission_check.h"
 #include "user_define_ipc.h"
 #include "medialibrary_tracer.h"
+#include "media_file_change_manager.h"
+#include "product_info.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -294,6 +297,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     OnStartSub(want);
     Media::MedialibrarySubscriber::SubscribeAsync();
     Media::HeifTranscodingCheckUtils::InitCheckList();
+    PermissionWhitelistUtils::SubscribeCloudUpdatedEvent();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
@@ -307,6 +311,7 @@ void MediaDataShareExtAbility::OnStop()
     CHECK_AND_EXECUTE(scannerManager == nullptr, scannerManager->Stop());
 
     Media::HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+    PermissionWhitelistUtils::UnsubscribeCloudUpdatedEvent();
     MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();

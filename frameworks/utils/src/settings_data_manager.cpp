@@ -33,6 +33,8 @@ inline static const std::string SETTING_DATA_QUERY_URI = "datashareproxy://";
 inline static const std::string SETTING_DATA_COMMON_URI =
     "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
 inline static const std::string PHOTOS_SYNC_SWITCH_KEY = "photos_sync_options";
+inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD = "photos_all_album_upload";
+inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_OFF = "0";
 
 class MediaSettingDataHelper {
 public:
@@ -102,6 +104,7 @@ int32_t SettingsDataManager::QueryParamInSettingData(const std::string &key, std
 {
     MediaSettingDataHelper dataShareHelper;
     if (!dataShareHelper) {
+        MEDIA_ERR_LOG("failed to init dataShareHelper");
         return E_DB_FAIL;
     }
 
@@ -142,5 +145,75 @@ bool SettingsDataManager::GetHdcDeviceId(std::string& deviceId)
         deviceId = "";
         return false;
     #endif
+}
+
+static AlbumUploadSwitchStatus StringToAlbumUploadSwitchStatus(const std::string& value)
+{
+    static const std::unordered_map<std::string, AlbumUploadSwitchStatus> STRING_ALBUM_UPLOAD_MAP = {
+        { std::to_string(static_cast<int>(AlbumUploadSwitchStatus::CLOSE)), AlbumUploadSwitchStatus::CLOSE },
+        { std::to_string(static_cast<int>(AlbumUploadSwitchStatus::OPEN)), AlbumUploadSwitchStatus::OPEN },
+    };
+    CHECK_AND_RETURN_RET_LOG(STRING_ALBUM_UPLOAD_MAP.count(value), AlbumUploadSwitchStatus::NONE,
+        "invalid AlbumUploadSwitchStatus: %{public}s", value.c_str());
+    return STRING_ALBUM_UPLOAD_MAP.at(value);
+}
+
+AlbumUploadSwitchStatus SettingsDataManager::GetAllAlbumUploadStatus()
+{
+    std::string value;
+    auto ret = QueryParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, value);
+    if (ret != E_OK) {
+        return AlbumUploadSwitchStatus::NONE;
+    }
+    return StringToAlbumUploadSwitchStatus(value);
+}
+
+int32_t SettingsDataManager::UpdateParamInSettingData(const std::string &key, const std::string &value)
+{
+    MediaSettingDataHelper dataShareHelper;
+    if (!dataShareHelper) {
+        return E_DB_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Update key: %{public}s", key.c_str());
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("KEYWORD", key);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put("VALUE", value); // static_cast<int32_t>(value)
+
+    std::string updateUri = SETTING_DATA_COMMON_URI + "&key=" + key;
+    Uri uri(updateUri);
+    auto ret = dataShareHelper->UpdateEx(uri, predicates, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(ret.first == DataShare::E_OK, ret.first, "update failed, err: %{public}d", ret.first);
+    return ret.first;
+}
+
+int32_t SettingsDataManager::InsertParamInSettingData(const std::string &key, const std::string &value)
+{
+    MediaSettingDataHelper dataShareHelper;
+    if (!dataShareHelper) {
+        return E_DB_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Insert key: %{public}s", key.c_str());
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put("KEYWORD", key);
+    valuesBucket.Put("VALUE", value); // static_cast<int32_t>(value)
+
+    std::string insertUri = SETTING_DATA_COMMON_URI + "&key=" + key;
+    Uri uri(insertUri);
+    std::string result;
+    auto ret = dataShareHelper->InsertEx(uri, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(ret.first == DataShare::E_OK, ret.first, "insert failed, return: %{public}d", ret.first);
+    return ret.first;
+}
+
+int32_t SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload()
+{
+    AlbumUploadSwitchStatus ret = GetAllAlbumUploadStatus();
+    if (ret != AlbumUploadSwitchStatus::NONE) {
+        return UpdateParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+    }
+    return InsertParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
 }
 }

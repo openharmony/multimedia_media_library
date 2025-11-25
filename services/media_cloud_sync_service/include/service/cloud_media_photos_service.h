@@ -33,6 +33,7 @@
 #include "accurate_common_data.h"
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
+#include "cloud_media_photos_delete_service.h"
 #include "media_operate_result.h"
 #include "cloud_map_code_dao.h"
 
@@ -75,7 +76,7 @@ private:
     int32_t HandleRecord(const std::vector<std::string> &cloudIds,
         std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap, std::vector<PhotosDto> &newData,
         std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
-    int32_t PullUpdate(const CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
+    int32_t PullUpdate(CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
         std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t IsMtimeChanged(const CloudMediaPullDataDto &cloudMediaPullData, bool &changed);
@@ -124,15 +125,22 @@ private:
     void RefreshAnalysisAlbum(const std::string &cloudId);
     int32_t RemoveLocalFile(const CloudMediaPullDataDto &pullData);
     void HandleRecordStepTwo(std::set<std::string> &refreshAlbums);
+    void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const PhotosPo &photo);
+    int32_t FindPhotoAlbum(CloudMediaPullDataDto &pullData);
+    int32_t PullRecycleUpdate(
+        CloudMediaPullDataDto &pullData, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
 
     int32_t MapUpdate(const CloudMediaPullDataDto &pullData);
     int32_t MapDelete(const CloudMediaPullDataDto &pullData);
     int32_t MapInsert(const std::vector<CloudMediaPullDataDto> &pullData, std::vector<std::string> &failedRecords);
+    bool IsIgnoreMatch(
+        const CloudMediaPullDataDto &mergeData, const KeyData &cloudKeyData, const KeyData &localKeyData);
 private:
     CloudMediaPhotoServiceProcessor processor_;
     CloudMediaPhotosDao photosDao_;
     CloudMediaCommonDao commonDao_;
     CloudMapCodeDao     mapCodeDao_;
+    CloudMediaPhotosDeleteService photosDeleteService_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTOS_SERVICE_H

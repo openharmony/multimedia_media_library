@@ -30,6 +30,7 @@
 #include "vision_db_sqls_more.h"
 #include "smart_album_column.h"
 #include "media_album_order_back.h"
+#include "media_lake_album.h"
 
 namespace OHOS {
 namespace Media {
@@ -337,6 +338,11 @@ const std::string CREATE_ALBUM_ORDER_BACK_TABLE = "CREATE TABLE IF NOT EXISTS " 
     STYLE2_ALBUMS_ORDER + " INT, " +
     STYLE2_ORDERS_TYPE + " INT, " +
     STYLE2_ORDERS_SECTION + " INT) ";
+
+const std::string CREATE_LAKE_ALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + LAKE_ALBUM_TABLE + " (" +
+    LAKE_ALBUM_ID + " INTEGER PRIMARY KEY, " +
+    LAKE_ALBUM_LPATH + " TEXT, " +
+    LAKE_FOLDER_MODIFIED + " BIGINT DEFAULT 0) ";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIALIBRARY_DB_CONST_SQLS_H

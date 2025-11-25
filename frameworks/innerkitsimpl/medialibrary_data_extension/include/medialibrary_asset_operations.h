@@ -36,7 +36,7 @@
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
 #include "asset_accurate_refresh.h"
-#include "batch_download_resources_task_dao.h"
+#include "cloud_sync_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -124,6 +124,8 @@ public:
     EXPORT static int32_t DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
+    EXPORT static FileManagement::CloudSync::CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr);
+
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");

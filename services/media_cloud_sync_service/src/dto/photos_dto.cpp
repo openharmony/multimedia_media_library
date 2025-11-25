@@ -41,6 +41,7 @@ void PhotosDto::GetBasicInfo(std::stringstream &ss) const
        << "\"dateModified\": " << this->dateModified << ", "
        << "\"dirty\": " << this->dirty << ", "
        << "\"dateTrashed\": " << this->dateTrashed << ", "
+       << "\"hidden\": " << this->hidden << ", "
        << "\"localId\": " << this->localId << ", "
        << "\"dkRecordId\": \"" << this->dkRecordId << "\", "
        << "\"cloudVersion\": " << this->cloudVersion << ", "
@@ -65,6 +66,8 @@ void PhotosDto::GetAttributesInfo(std::stringstream &ss) const
        << "\"cloudAlbumId\": " << this->cloudAlbumId << ", "
        << "\"rotation\": " << this->rotation << ", "
        << "\"version\": " << this->version << ", "
+       << "\"fileSourceType\": " << this->fileSourceType << ", "
+       << "\"storagePath\": " << this->storagePath << ", "
        << "\"errorType\": " << this->errorType << ", ";
 }
 

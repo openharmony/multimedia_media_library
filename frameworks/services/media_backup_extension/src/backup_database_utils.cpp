@@ -24,6 +24,9 @@
 #include "backup_const_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "vision_video_total_column.h"
+#include "vision_image_face_column.h"
+#include "vision_column_comm.h"
 
 namespace OHOS {
 namespace Media {
@@ -1352,6 +1355,115 @@ bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbSt
         "fail to clear ConfigInfo, sql: %{private}s, ret:%{public}d", sqlStr.c_str(), ret);
     MEDIA_INFO_LOG("succeed to clear ConfigInfo");
     return true;
+}
+
+void BackupDatabaseUtils::UpdateLabelAndFaceToAnalysisVideoTotalTable
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    std::string UpdateLabelAndFace_sql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        STATUS + " = (SELECT " + STATUS + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
+        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "), " +
+        LABEL  + " = (SELECT " + LABEL  + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
+        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "), " +
+        FACE   + " = (SELECT " + FACE   + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
+        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ")" +
+        "WHERE EXISTS (SELECT 1 FROM " + VISION_TOTAL_TABLE + " WHERE " + FILE_ID + " = "
+        + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ")" +
+        "AND EXISTS (SELECT 1 FROM " + PHOTOS_TABLE + " WHERE " + FILE_ID + " = "
+        + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + " AND media_type = 2);";
+
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace UpdateLabelAndFaceToAnalysisVideoTotalTable \
+        sql = %{public}s", UpdateLabelAndFace_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateLabelAndFace_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateLabelAndFaceToAnalysisVideoTotalTable \
+        failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to UpdateLabelAndFaceToAnalysisVideoTotalTable");
+}
+
+void BackupDatabaseUtils::UpdateFaceToAnalysisVideoTotalTable
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    const string UpdateFace_sql =
+        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " + FACE + " = 2 WHERE " + FACE + " = 1";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace UpdateFaceToAnalysisVideoTotalTable \
+        sql = %{public}s", UpdateFace_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateFace_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateFaceToAnalysisVideoTotalTable \
+        failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to UpdateFaceToAnalysisVideoTotalTable");
+}
+
+void BackupDatabaseUtils::UpdateStatusToAnalysisTable
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    const string UpdateStatus_sql = "UPDATE " + VISION_TOTAL_TABLE +
+        " SET " + STATUS + " = 0 WHERE " + FILE_ID +" IN (SELECT " +
+        FILE_ID + " FROM " + PHOTOS_TABLE + " WHERE media_type = 2) AND " + STATUS + " = 1";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace UpdateStatusToAnalysisTable \
+        sql = %{public}s", UpdateStatus_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateStatus_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateStatusToAnalysisTable \
+        failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to UpdateStatusToAnalysisTable");
+}
+
+void BackupDatabaseUtils::DeleteDirtytagIdFromFaceTagTable
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    const string DeleteDirtytagId_sql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
+        " WHERE " + TAG_ID + " IN ( SELECT DISTINCT " + VISION_FACE_TAG_TABLE + "." + TAG_ID + " FROM " +
+        VISION_FACE_TAG_TABLE + " WHERE EXISTS ( SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " +
+        VISION_FACE_TAG_TABLE + "." + TAG_ID + " = " + VISION_VIDEO_FACE_TABLE + "." + TAG_ID +
+        " ) AND NOT EXISTS ( SELECT 1 FROM " + VISION_IMAGE_FACE_TABLE + " WHERE " + VISION_FACE_TAG_TABLE + "." +
+        TAG_ID + " = " + VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " ) )";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId \
+        DeleteDirtytagIdFromFaceTagTable sql = %{public}s", DeleteDirtytagId_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, DeleteDirtytagId_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute DeleteDirtytagIdFromFaceTagTable \
+        failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to DeleteDirtytagIdFromFaceTagTable");
+}
+
+void BackupDatabaseUtils::UpdateVideoFaceTagId
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    std::string UpdateVideoFaceTagId_sql =
+        "UPDATE " + VISION_VIDEO_FACE_TABLE + " SET " + TAG_ID +
+        " = -1 WHERE " + TAG_ID + " IN ( SELECT DISTINCT " +
+        VISION_VIDEO_FACE_TABLE + "." + TAG_ID + " FROM " + VISION_VIDEO_FACE_TABLE +
+        " WHERE NOT EXISTS ( SELECT 1 FROM " + VISION_FACE_TAG_TABLE +
+        " WHERE " + VISION_FACE_TAG_TABLE + "." +
+        TAG_ID + " = " + VISION_VIDEO_FACE_TABLE + "." + TAG_ID + " ) ) OR " + TAG_ID + " = -2";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId \
+        UpdateVideoFaceTagId sql = %{public}s", UpdateVideoFaceTagId_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateVideoFaceTagId_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateVideoFaceTagId failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to UpdateVideoFaceTagId");
+}
+
+void BackupDatabaseUtils::UpdateVideoTotalFaceId
+    (const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+    std::string UpdateVideoTotalFaceId_sql =
+        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " + FACE + " = ( SELECT CASE WHEN ser_info.has_ser > 0 AND " +
+        " ser_info.no_ser = 0 THEN 3 WHEN ser_info.has_ser > 0 AND ser_info.no_ser > 0 THEN 4 ELSE 2 END FROM " +
+        " ( SELECT " + VISION_VIDEO_FACE_TABLE + "." + FILE_ID + ", COUNT(CASE WHEN " + TAG_ID +
+        " LIKE 'ser%' THEN 1 END) AS has_ser, " + " COUNT(CASE WHEN " + TAG_ID +
+        " NOT LIKE 'ser%' THEN 1 END) AS no_ser FROM " + VISION_VIDEO_FACE_TABLE + " GROUP BY " + FILE_ID +
+        ") AS ser_info WHERE ser_info." + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + " ) WHERE " +
+        " EXISTS (SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + VISION_VIDEO_FACE_TABLE + "." + FILE_ID +
+        " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ") AND " + VISION_VIDEO_TOTAL_TABLE + "." + FACE + " = 2";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId \
+        UpdateVideoTotalFaceId sql = %{public}s", UpdateVideoTotalFaceId_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateVideoTotalFaceId_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateVideoTotalFaceId failed, ret=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("succeed to UpdateVideoTotalFaceId");
 }
 
 } // namespace Media

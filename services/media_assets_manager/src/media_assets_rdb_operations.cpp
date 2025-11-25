@@ -501,8 +501,10 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
     MediaColumn::MEDIA_DATE_TAKEN,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+    PhotoColumn::PHOTO_STORAGE_PATH,
 };
 
+// 图库编辑还原
 int32_t MediaAssetsRdbOperations::RevertToOrigin(const int32_t &fileId)
 {
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,

@@ -261,6 +261,16 @@ enum HiddenPhotosDisplayMode {
     ALBUMS_MODE = 1
 };
 
+enum FusionAssetType {
+    COMPATIBLE_ASSET = 0
+};
+ 
+struct FusionAssetsInfo {
+    FusionAssetType assetsType;
+    int32_t assetsCount;
+    std::string assetsPath;
+};
+
 struct JSAsyncContextOutput {
     napi_value error;
     napi_value data;

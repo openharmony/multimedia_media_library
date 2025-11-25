@@ -541,6 +541,7 @@ static void AddPhotoAlbumTypeFilter(DataShare::DataSharePredicates &predicates,
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC),
         }));
     }
 }
@@ -810,7 +811,7 @@ int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBod
         columns = { SEARCH_FINISH_CNT, LOCATION_FINISH_CNT, FACE_FINISH_CNT, OBJECT_FINISH_CNT, AESTHETIC_FINISH_CNT,
             OCR_FINISH_CNT, POSE_FINISH_CNT, SALIENCY_FINISH_CNT, RECOMMENDATION_FINISH_CNT, SEGMENTATION_FINISH_CNT,
             BEAUTY_AESTHETIC_FINISH_CNT, HEAD_DETECT_FINISH_CNT, LABEL_DETECT_FINISH_CNT, TOTAL_IMAGE_CNT,
-            FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS };
+            FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS, CHECK_SPACE_FLAG };
     } else if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_LABEL)) {
         tableName = VISION_TOTAL_TABLE;
         columns = {
@@ -1028,8 +1029,13 @@ int32_t MediaAlbumsService::RemoveAssets(
 
 int32_t MediaAlbumsService::RecoverAssets(ChangeRequestRecoverAssetsDto &recoverAssetsDto)
 {
+    // Get all recoverable fileIds
+    std::vector<std::string> targetFileIds;
+    int32_t ret =
+        this->mediaAssetsRecoverService_.BatchMoveOutTrashAndMergeWithSameAsset(recoverAssetsDto.assets, targetFileIds);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchMoveOutTrashAndMergeWithSameAsset failed, ret: %{public}d", ret);
     DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, recoverAssetsDto.assets);
+    predicates.In(PhotoColumn::MEDIA_ID, targetFileIds);
     return MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
 }
 
@@ -1237,5 +1243,26 @@ int32_t MediaAlbumsService::ChangeRequestSetHighlightAttribute(ChangeRequestSetH
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
         "ChangeRequestSetHighlightAttribute failed, error id: %{public}d", ret);
     return E_OK;
+}
+
+int32_t MediaAlbumsService::ChangeRequestSetUploadStatus(const ChangeRequestSetUploadStatusDto &setUploadStatusDto)
+{
+    vector<string> albumIds;
+    for (size_t i = 0; i < setUploadStatusDto.albumIds.size(); i++) {
+        PhotoAlbumType photoAlbumType = static_cast<PhotoAlbumType>(setUploadStatusDto.photoAlbumTypes[i]);
+        PhotoAlbumSubType photoAlbumSubType = static_cast<PhotoAlbumSubType>(setUploadStatusDto.photoAlbumSubtypes[i]);
+        if (PhotoAlbum::IsUserPhotoAlbum(photoAlbumType, photoAlbumSubType) ||
+            PhotoAlbum::IsSourceAlbum(photoAlbumType, photoAlbumSubType)) {
+            albumIds.emplace_back(setUploadStatusDto.albumIds[i]);
+        }
+    }
+    if (albumIds.size() == 0) {
+        MEDIA_INFO_LOG("No userPhotoAlbum and IsourceAlbum");
+        return E_OK;
+    }
+    int32_t changedRows = this->rdbOperation_.SetUploadStatus(albumIds, setUploadStatusDto.allowUpload);
+    CHECK_AND_RETURN_RET_LOG(changedRows >= 0, E_HAS_DB_ERROR,
+        "setUploadStatus failed, changedRows is %{private}d", changedRows);
+    return changedRows;
 }
 } // namespace OHOS::Media

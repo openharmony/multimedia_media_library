@@ -255,7 +255,7 @@ HWTEST_F(QueryAlbumsTest, QueryAlbums_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start QueryAlbums_Test_002");
     ASSERT_EQ(GetAlbumsCount(PhotoAlbumType::SOURCE, PhotoAlbumSubType::SOURCE_GENERIC), 0);
-    ASSERT_EQ(CreateAlbumTest(PhotoAlbumType::SOURCE, PhotoAlbumSubType::SOURCE_GENERIC), 0);
+    ASSERT_EQ(CreateAlbumTest(PhotoAlbumType::SOURCE, PhotoAlbumSubType::SOURCE_GENERIC), 1);
 }
 
 HWTEST_F(QueryAlbumsTest, QueryAlbums_Test_003, TestSize.Level0)

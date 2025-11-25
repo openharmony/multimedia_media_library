@@ -18,5 +18,5 @@
 
 namespace OHOS::Media::CloudSync {
 std::shared_mutex CloudMediaThreadLimiter::READ_WRITE_MUTEX_;
-std::shared_mutex CloudMediaThreadLimiter::DOWNLOAD_ASSET_MUTEX_;
+std::shared_mutex CloudMediaThreadLimiter::DATA_CLIENT_READ_WRITE_MUTEX_;
 }  // namespace OHOS::Media::CloudSync

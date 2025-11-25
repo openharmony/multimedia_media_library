@@ -17,12 +17,15 @@
 #include "thumbnail_service.h"
 
 #include "cloud_sync_helper.h"
+#include "file_parser.h"
+
 #include "display_manager.h"
 #include "dfx_utils.h"
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "folder_scanner.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -712,6 +715,7 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         return E_INVALID_VALUES;
     }
     CancelAstcBatchTask(requestId - 1);
+    CHECK_AND_RETURN_RET_LOG(RecordAstcBatchTaskId(requestId), E_ERR, "RecordAstcBatchTaskId failed");
     if (GetCurrentTemperatureLevel() >= READY_TEMPERATURE_LEVEL) {
         isTemperatureHighForReady_ = true;
         currentRequestId_ = requestId;
@@ -724,6 +728,18 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         .table = PhotoColumn::PHOTOS_TABLE
     };
     return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
+}
+
+bool ThumbnailService::RecordAstcBatchTaskId(int32_t requestId)
+{
+    CHECK_AND_RETURN_RET_LOG(requestId > 0, false,
+        "RecordAstcBatchTaskId failed, invalid request id:%{public}d", requestId);
+
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
+    CHECK_AND_RETURN_RET_LOG(thumbnailWorker != nullptr, false, "ThumbnailWorker is nullptr");
+    thumbnailWorker->RecordCurrentTaskId(requestId);
+    return true;
 }
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)

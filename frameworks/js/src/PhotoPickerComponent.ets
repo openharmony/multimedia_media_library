@@ -18,7 +18,8 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { LengthMetrics, LengthUnit } from '@kit.ArkUI';
-
+import { display } from @ohos.display;
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
@@ -51,6 +52,7 @@ export struct PhotoPickerComponent {
   maxBadgeConfigSize: number = 200000;
   batchPreselectedInfos: number = 200;
   preselectedInfos = undefined;
+  dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
@@ -120,7 +122,7 @@ export struct PhotoPickerComponent {
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
-    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerOptions });
+    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerConfigs });
     console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
   }
 
@@ -237,11 +239,12 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
+            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
+            isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
           }
         },
         {
-          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+          dpiFollowStategy: this.dpiFollowStrategy
         })
           .height('100%')
           .width('100%')
@@ -720,7 +723,7 @@ export class PickerController {
     }
   }
 
-  updatePickerOptions(updateConfig: UpdatablePickerOptions): Promise<void> {
+  updatePickerOptions(updateConfig: UpdatablePickerConfigs): Promise<void> {
     return new Promise((resolve, reject) => {
       if (e !== undefined) {
         this.data = new Map([['UPDATE_CONFIG', updateConfig]]);
@@ -904,8 +907,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
-export class UpdatablePickerOptions {
-  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+export class UpdatablePickerConfigs {
+  mimeType?: photoAccessHelper.PhotoViewMIMETypes;
   mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
   maxSelectNumber?: number;
   maxPhotoSelectNumber?: number;
@@ -917,7 +920,8 @@ export class UpdatablePickerOptions {
   checkBoxColor?: string;
   checkboxTextColor?: string;
   backgroundColor?: string;
-  photoBrowserBackgroundColorMode?: PickerColorMode
+  photoBrowserBackgroundColorMode?: PickerColorMode,
+  uiComponentColorMode?: PickerColorMode
 }
 
 export class BaseItemInfo {
