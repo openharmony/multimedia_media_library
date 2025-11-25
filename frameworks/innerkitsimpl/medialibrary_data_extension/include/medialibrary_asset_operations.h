@@ -125,6 +125,13 @@ public:
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     EXPORT static FileManagement::CloudSync::CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr);
+    EXPORT static void ClearDeletedFile(const std::vector<std::string> &ids, const std::string &table);
+    EXPORT static void SaveDeletedFile(const std::vector<std::string> &ids,
+        const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
+        std::vector<int32_t> &subTypes);
+    EXPORT static void TaskDataFileProcess(const std::vector<std::string> &ids,
+        const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
+        std::vector<int32_t> &subTypes);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
@@ -222,40 +229,23 @@ private:
     };
 };
 
-class DeleteFilesTask : public AsyncTaskData {
+class DeleteFilesData : public AsyncTaskData {
 public:
-    DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
-        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateTakens,
-        const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows,
-        std::string bundleName, bool containsHidden)
-        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateTakens_(dateTakens), subTypes_(subTypes),
+    DeleteFilesData(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
+        const std::vector<std::string> &dateTakens, const std::vector<int32_t> &subTypes, const std::string &table,
+        int32_t deleteRows, std::string bundleName, bool containsHidden)
+        : ids_(ids), paths_(paths), dateTakens_(dateTakens), subTypes_(subTypes),
         table_(table), deleteRows_(deleteRows), bundleName_(bundleName), containsHidden_(containsHidden) {}
-    virtual ~DeleteFilesTask() override = default;
-    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
-        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
-    {
-        displayNames_ = displayNames;
-        albumNames_ = albumNames;
-        ownerAlbumIds_ = ownerAlbumIds;
-    }
-    void SetAssetAccurateRefresh(std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
-    {
-        refresh_ = refresh;
-    }
+    virtual ~DeleteFilesData() override = default;
     std::vector<std::string> ids_;
     std::vector<std::string> paths_;
     std::vector<std::string> notifyUris_;
     std::vector<std::string> dateTakens_;
     std::vector<int32_t> subTypes_;
-    std::vector<int32_t> isTemps_;
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;
-    std::map<std::string, std::string> displayNames_;
-    std::map<std::string, std::string> albumNames_;
-    std::map<std::string, std::string> ownerAlbumIds_;
     bool containsHidden_ = false;
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh_ = nullptr;
 };
 
 class DeleteNotifyAsyncTaskData : public AsyncTaskData {
