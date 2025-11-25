@@ -3757,33 +3757,16 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
-        // erase sticker field
-        VideoCompositionCallbackImpl::EraseWatermarkTag(editData);
-
-        auto index = editData.find(FRAME_STICKER);
-        CHECK_AND_EXECUTE(index == std::string::npos,
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false));
-
-        index = editData.find(INPLACE_STICKER);
-        CHECK_AND_EXECUTE(index == std::string::npos,
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false));
-
-        index = editData.find(TIMING_STICKER);
-        CHECK_AND_EXECUTE(index == std::string::npos,
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index, true));
-    
-        index = editData.find(FESTIVAL_STICKER);
-        CHECK_AND_EXECUTE(index == std::string::npos,
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false));
-
-        index = editData.find(FILTERS_FIELD);
-        CHECK_AND_RETURN_RET_LOG(index != std::string::npos, E_ERR, "can not find Video filters field.");
-        if (editData[index + START_DISTANCE] == FILTERS_END && isSaveVideo) {
+        bool isFiltersFieldEmpty = false;
+        // erase watermark tag and sticker field
+        int32_t errCode = VideoCompositionCallbackImpl::EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to erase watermark tag and sticker field");
+        if (isFiltersFieldEmpty && isSaveVideo) {
             MEDIA_ERR_LOG("MovingPhoto video only supports filter now.");
             CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
                 "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
             return CopyVideoFile(assetPath, true);
-        } else if (editData[index + START_DISTANCE] == FILTERS_END && !isSaveVideo) {
+        } else if (isFiltersFieldEmpty && !isSaveVideo) {
             return CopyVideoFile(assetPath, false);
         }
         MEDIA_ERR_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
