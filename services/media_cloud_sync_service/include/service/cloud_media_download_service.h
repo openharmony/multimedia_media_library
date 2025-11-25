@@ -28,9 +28,18 @@
 #include "cloud_media_define.h"
 #include "on_download_asset_data_dto.h"
 #include "cloud_media_scan_service.h"
+#include "cloud_media_download_dao.h"
+#include "cloud_lake_info.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDownloadService {
+struct RenameFileInfo {
+    operator bool() const { return isRename; }
+    bool isRename{false};
+    std::string storagePath;
+    std::string title;
+    std::string displayName;
+};
 public:
     std::string GetDisplayName(const PhotosPo &photosPo);
     int32_t GetFileId(const PhotosPo &photosPo);
@@ -42,6 +51,8 @@ public:
         std::vector<MediaOperateResultDto> &result);
     std::vector<PhotosDto> GetDownloadAsset(const std::vector<int32_t> &fileIds);
     int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result);
+    int32_t OnDownloadLakeAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+        std::vector<MediaOperateResultDto> &result);
 
 private:
     bool IsCloudInsertTaskPriorityHigh();
@@ -50,6 +61,8 @@ private:
     int32_t OnDownloadLcd(const std::vector<std::string> &lcdVector, std::vector<MediaOperateResultDto> &result);
     int32_t OnDownloadThmAndLcd(const std::vector<std::string> &bothVector, std::vector<MediaOperateResultDto> &result);
     OnDownloadAssetData GetOnDownloadAssetData(PhotosPo &photosPo);
+    OnDownloadAssetData GetOnDownloadLakeAssetData(PhotosPo &photosPo,
+        const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos);
     void UnlinkAsset(OnDownloadAssetData &assetData);
     void ResetAssetModifyTime(OnDownloadAssetData &assetData);
     int32_t SliceAssetFile(const std::string &originalFile, const std::string &path,
@@ -64,6 +77,8 @@ private:
 private:
     const uint32_t TYPE_THM_MASK = 0x1;
     const uint32_t TYPE_LCD_MASK = 0x2;
+    const int32_t NOT_IN_TRASH = 0;
+    const int32_t NOT_HIDDEN = 0;
     enum {
         // Index of Download Thumbnail Type Statistic Info.
         TYPE_THM = 1,

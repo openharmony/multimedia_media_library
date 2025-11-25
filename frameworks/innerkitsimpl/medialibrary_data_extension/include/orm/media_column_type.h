@@ -114,6 +114,8 @@ static const std::map<std::string, DataType> PHOTOS_COLUMNS = {
     {"album_cloud_id", DataType::STRING},
     {"lpath", DataType::STRING},
     {PhotoColumn::PHOTO_VIDEO_MODE, DataType::INT},
+    {PhotoColumn::PHOTO_FILE_SOURCE_TYPE, DataType::INT},
+    {PhotoColumn::PHOTO_STORAGE_PATH, DataType::STRING},
 };
 
 static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
@@ -142,6 +144,7 @@ static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
     {PhotoAlbumColumns::ALBUM_CHECK_FLAG, DataType::INT},
     {PhotoAlbumColumns::COVER_URI_SOURCE, DataType::INT},
     {PhotoAlbumColumns::COVER_CLOUD_ID, DataType::STRING},
+    {PhotoAlbumColumns::UPLOAD_STATUS, DataType::INT},
 };
 }  // namespace MediaColumnType
 }  // namespace OHOS::Media::ORM

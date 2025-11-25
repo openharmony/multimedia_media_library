@@ -294,6 +294,18 @@ const std::string DELETED_SOURCE_ALBUM_BY_LPATH_WHERE_CLAUSE =
 const std::string REMOVE_DELETED_SOURCE_ALBUM =
     " DELETE FROM " + PhotoAlbumColumns::TABLE + DELETED_SOURCE_ALBUM_BY_LPATH_WHERE_CLAUSE;
 
+const std::string GET_UPLOAD_STATUS = " CASE \
+        WHEN NEW.owner_package IN ( \
+            'com.huawei.hmos.camera', \
+            'com.huawei.hmos.screenrecorder', \
+            'com.huawei.hmos.screenshot' \
+            ) THEN 1 \
+        WHEN NOT EXISTS (SELECT 1 FROM PhotoAlbum WHERE album_type IN (0, 2048) AND dirty <> 4) THEN 0 \
+        WHEN EXISTS \
+            (SELECT 1 FROM PhotoAlbum WHERE album_type IN (0, 2048) AND dirty <> 4 AND upload_status = 0) THEN 0 \
+        ELSE 1 \
+    END";
+
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + " = 0 AND NEW.owner_album_id = 0 " +
@@ -306,7 +318,8 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     PhotoAlbumColumns::ALBUM_LPATH + " , " +
     PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
     PhotoAlbumColumns::ALBUM_DATE_MODIFIED + " , " +
-    PhotoAlbumColumns::ALBUM_DATE_ADDED +
+    PhotoAlbumColumns::ALBUM_DATE_ADDED + " , " +
+    PhotoAlbumColumns::UPLOAD_STATUS +
     " ) VALUES ( " +
     std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
     std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
@@ -314,9 +327,9 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
     SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME + " , " +
     "1, "
-    "strftime('%s000', 'now'), strftime('%s000', 'now')" +
-    ");" + UPDATE_PHOTO_OWNER_ALBUM_ID + "; " + PHOTO_ALBUM_NOTIFY_FUNC +
-    " END;";
+    "strftime('%s000', 'now'), strftime('%s000', 'now'), " +
+    GET_UPLOAD_STATUS +
+    ");" + UPDATE_PHOTO_OWNER_ALBUM_ID + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
 
 } // namespace Media
 } // namespace OHOS

@@ -690,6 +690,26 @@ void FileAsset::SetFileResourceType(int32_t fileResourceType)
     member_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = fileResourceType;
 }
 
+int32_t FileAsset::GetFileSourceType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+}
+ 
+void FileAsset::SetFileSourceType(int32_t fileSourceType)
+{
+    member_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = fileSourceType;
+}
+ 
+std::string FileAsset::GetStoragePath() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_STORAGE_PATH);
+}
+ 
+void FileAsset::SetStoragePath(const std::string &storagePath)
+{
+    member_[PhotoColumn::PHOTO_STORAGE_PATH] = storagePath;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

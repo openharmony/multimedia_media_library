@@ -262,7 +262,12 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
         "SUCC_COUNT", stats.tasksSuccessCount,
         "AUTO_PAUSE_COUNT", stats.tasksAutoPauseCount,
         "SUCC_TOTAL_SIZE", stats.tasksSuccessTotalSize,
-        "SUCC_TOTAL_TIME", stats.tasksSuccessTotalTime);
+        "SUCC_TOTAL_TIME", stats.tasksSuccessTotalTime,
+        "USER_ALBUM_COUNT", stats.userAlbumCount,
+        "SOURCE_ALBUM_COUNT", stats.sourceAlbumCount,
+        "UPLOAD_USER_ALBUM_COUNT", stats.uploadUserAlbumCount,
+        "UPLOAD_SOURCE_ALBUM_COUNT", stats.uploadSourceAlbumCount,
+        "NOT_UPLOAD_ASSET_COUNT", stats.notUploadAssetCount);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
     }
@@ -791,5 +796,73 @@ int32_t DfxReporter::ReportUpgradeFault(const UpgradeExceptionInfo& reportData)
     }
     return ret;
 }
+
+int32_t DfxReporter::ReportAncoCheckInfo(const AncoCheckInfo& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ANCO_CHECK_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "CHECK_START_TIME", reportData.checkStartTime,
+        "CHECK_END_TIME", reportData.checkEndTime,
+        "CHECK_ADD", reportData.checkAdd,
+        "CHECK_UPDATE", reportData.checkUpdate,
+        "CHECK_DELETE", reportData.checkDelete);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report AncoCheckInfo error: %{public}d", ret);
+    }
+    return ret;
+}
+ 
+int32_t DfxReporter::ReportAncoOperationChangeInfo(const AncoOperationChangeInfo& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ANCO_OPRN_CHANGE_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "PHOTO_OPT_ADD_COUNT", reportData.photoOptAddCount,
+        "PHOTO_OPT_UPDATE_COUNT", reportData.photoOptUpdateCount,
+        "PHOTO_OPT_DELETE_COUNT", reportData.photoOptDeleteCount,
+        "ALBUM_OPT_ADD_COUNT", reportData.albumOptAddCount,
+        "ALBUM_OPT_UPDATE_COUNT", reportData.albumOptUpdateCount,
+        "ALBUM_OPT_DELETE_COUNT", reportData.albumOptDeleteCount,
+        "TOTAL_OPT_COUNT", reportData.totalOptCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report AncoOperationChangeInfo error: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t DfxReporter::ReportAncoCountFormatInfo(const AncoCountFormatInfo& reportData, bool firstLoad)
+{
+    int ret = -1;
+    if (firstLoad) {
+        ret = HiSysEventWrite(
+            MEDIA_LIBRARY,
+            "MEDIALIB_ANCO_COUNT_FORMAT_INFO",
+            HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "LOAD_START_TIME", reportData.loadStartTime,
+            "LOAD_END_TIME", reportData.loadEndTime,
+            "ALBUM_COUNT", reportData.albumCount,
+            "IMAGE_COUNT", reportData.imageCount,
+            "VIDEO_COUNT", reportData.videoCount,
+            "ASSET_FORMAT_DISTRIBUTION", reportData.assetFormatDistribution);
+        MEDIA_INFO_LOG("Report AncoFirstLoadInfo ret: %{public}d", ret);
+    } else {
+        ret = HiSysEventWrite(
+            MEDIA_LIBRARY,
+            "MEDIALIB_ANCO_COUNT_FORMAT_INFO",
+            HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "ALBUM_COUNT", reportData.albumCount,
+            "IMAGE_COUNT", reportData.imageCount,
+            "VIDEO_COUNT", reportData.videoCount,
+            "ASSET_FORMAT_DISTRIBUTION", reportData.assetFormatDistribution);
+    }
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report AncoCountFormatInfo error: %{public}d", ret);
+    }
+    return ret;
+}
+ 
 } // namespace Media
 } // namespace OHOS

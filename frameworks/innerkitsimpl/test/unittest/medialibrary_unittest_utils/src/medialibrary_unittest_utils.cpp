@@ -419,5 +419,5 @@ bool MediaLibraryUnitTestUtils::CleanTestTables(
     }
     return true;
 }
-}
-}
+}  // namespace Media
+}  // namespace OHOS

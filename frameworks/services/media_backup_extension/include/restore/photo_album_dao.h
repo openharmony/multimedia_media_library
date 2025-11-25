@@ -35,6 +35,7 @@ public:
         std::string lPath;
         std::string bundleName;
         int32_t priority;
+        int32_t uploadStatus;
         PhotoAlbumRowData();
         bool IsValidSourceAlbum();
     };
@@ -60,6 +61,7 @@ public:
     }
     void LoadPhotoAlbums();
     std::vector<int32_t> GetAlbumIdsFromCache();
+    int32_t UpdateUploadStatus(const std::string &lPath, const int32_t uploadStatus);
 
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);
@@ -85,6 +87,7 @@ private:
     const std::string FIELD_NAME_BUNDLE_NAME = "bundle_name";
     const std::string FIELD_NAME_LPATH = "lpath";
     const std::string FIELD_NAME_PRIORITY = "priority";
+    const std::string FIELD_UPLOAD_STATUS = "upload_status";
     const std::string SQL_PHOTO_ALBUM_SELECT = "\
         SELECT album_id, \
             album_type, \
@@ -94,7 +97,8 @@ private:
             lpath, \
             cloud_id, \
             relative_path, \
-            priority \
+            priority, \
+            upload_status \
         FROM PhotoAlbum \
         WHERE album_type != 1024 \
         ORDER BY album_id \
@@ -108,7 +112,8 @@ private:
             lpath, \
             cloud_id, \
             relative_path, \
-            priority \
+            priority, \
+            upload_status \
         FROM PhotoAlbum \
         WHERE LOWER(lpath) = LOWER(?) \
         ORDER BY album_id DESC \
@@ -133,7 +138,8 @@ private:
             lpath, \
             priority, \
             date_modified, \
-            date_added \
+            date_added, \
+            upload_status \
         ) \
         SELECT \
             INPUT.album_type, \
@@ -156,7 +162,8 @@ private:
                 ELSE album_plugin.priority \
             END AS priority, \
             strftime('%s000', 'now') AS date_modified, \
-            strftime('%s000', 'now') AS date_added \
+            strftime('%s000', 'now') AS date_added, \
+            INPUT.upload_status \
         FROM \
         ( \
             SELECT \
@@ -165,7 +172,8 @@ private:
                 ? AS album_name, \
                 ? AS bundle_name, \
                 ? AS lpath, \
-                ? AS priority \
+                ? AS priority, \
+                ? AS upload_status \
         ) AS INPUT \
         LEFT JOIN album_plugin \
             ON LOWER(INPUT.lpath)=LOWER(album_plugin.lpath) \
@@ -184,6 +192,8 @@ private:
         R"(^(/storage/emulated/[^/]+/storage/emulated/[^/]+/|/storage/[^/]+/storage/emulated/[^/]+/))";
     const std::string NON_NESTED_ROOT_PATTERN =
         R"(^(/storage/emulated/[^/]+/|/storage/[^/]+/))";
+    const std::string SQL_PHOTO_ALBUM_UPDATE_UPLOAD_STATUS =
+        "UPDATE PhotoAlbum SET upload_status = ? WHERE LOWER(lpath) = LOWER(?)";
 };
 
 class StringUtils {

@@ -130,6 +130,9 @@ public:
     EXPORT int32_t AcquireDebugDatabase(const std::string &betaIssueId, const std::string &betaScenario,
         std::string &fileName, std::string &fileSzie);
     EXPORT int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
+    EXPORT void ScanLakeAsset();
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> ProcessBrokerChangeMsg(const std::string &operation);
+
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
@@ -166,6 +169,13 @@ private:
     void SubscriberPowerConsumptionDetection();
     int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
+    bool IsLakeAssetScanned();
+    void CheckCleanLakeAsset();
+    bool IsDirectoryEmpty();
+    bool ReadSupportHmos();
+    void SetIsLakeAssetScanned(bool isScanned);
+    bool IsSupportHmos();
+
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};
@@ -180,6 +190,8 @@ private:
     std::shared_ptr<CloudSyncObserver> cloudGalleryPhotoObserver_;
     std::shared_ptr<CloudSyncObserver> cloudGalleryDownloadObserver_;
     std::atomic_bool isAgingDup_ {false};
+    std::string supportHmos_ {""};
+    std::string scanStatus_ {""};
 };
 
 // Scanner callback objects

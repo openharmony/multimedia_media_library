@@ -42,5 +42,23 @@ public:
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
+class MimeTypeReqBody : public IPC::IMediaParcelable {
+public:
+    int32_t fileId {-1};
+
+public:  // functions of Parcelable.
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+
+public:  // basic functions
+    std::string ToString() const;
+};
+class MimeTypeRespBody : public IPC::IMediaParcelable {
+public:
+    bool result;
+
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_CONVERT_FORMAT_VO_H

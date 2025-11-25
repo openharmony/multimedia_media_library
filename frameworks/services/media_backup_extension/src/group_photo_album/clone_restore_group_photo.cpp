@@ -390,7 +390,7 @@ int32_t CloneRestoreGroupPhoto::RestoreMaps()
         RestoreMapsBatch();
     }
     int64_t endCloneTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_DEBUG_LOG("Restore maps timecost of group photo album is %{public}" PRId64 "ms",
+    MEDIA_INFO_LOG("Restore maps timecost of group photo album is %{public}" PRId64 "ms",
         endCloneTime - startCloneTime);
     return E_OK;
 }

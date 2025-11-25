@@ -26,6 +26,7 @@
 #include "photos_dto.h"
 #include "media_column.h"
 #include "download_thumbnail_query_dto.h"
+#include "cloud_lake_info.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;
@@ -45,6 +46,10 @@ public:
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
         const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail);
     int32_t UpdateTransCodeInfo(const std::string &path);
+    int32_t UpdateDownloadLakeAsset(const bool fixFileType, const std::string &path,
+        AdditionFileInfo &lakeInfo, const CloudMediaScanService::ScanResult& scanResult);
+    int32_t QueryDownloadLakeAssetByCloudIds(
+        const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos, std::vector<PhotosPo> &result);
 
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
@@ -61,6 +66,10 @@ private:
         PhotoColumn::PHOTO_CLOUD_ID,
         PhotoColumn::PHOTO_THUMB_STATUS,
         PhotoColumn::PHOTO_ORIENTATION,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        PhotoColumn::PHOTO_STORAGE_PATH,
+        MediaColumn::MEDIA_HIDDEN,
+        MediaColumn::MEDIA_DATE_TRASHED,
     };
     const std::vector<std::string> COLUMNS_DOWNLOAD_ASSET_QUERY_BY_FILE_ID = {
         PhotoColumn::MEDIA_ID,
@@ -72,6 +81,10 @@ private:
         PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIENTATION,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        PhotoColumn::PHOTO_STORAGE_PATH,
+        MediaColumn::MEDIA_HIDDEN,
+        MediaColumn::MEDIA_DATE_TRASHED,
     };
     const uint32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;

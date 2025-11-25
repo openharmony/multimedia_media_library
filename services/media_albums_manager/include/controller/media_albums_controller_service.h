@@ -68,6 +68,7 @@ public:
     EXPORT int32_t GetRelationship(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetHighlightAttribute(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetClonedAlbumUris(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t ChangeRequestSetUploadStatus(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAlbumsControllerService() = default;

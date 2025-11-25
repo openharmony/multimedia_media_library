@@ -120,6 +120,9 @@ public:
 
     EXPORT void SetCoverUriSource(int32_t coverUriSource);
     EXPORT int32_t GetCoverUriSource();
+
+    EXPORT void SetUploadStatus(int32_t uploadStatus);
+    EXPORT int32_t GetUploadStatus() const;
 private:
     int32_t albumId_;
     PhotoAlbumType type_;
@@ -149,6 +152,7 @@ private:
     bool locationOnly_ = false;
     int32_t targetUserId_;
     int32_t coverUriSource_ = static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
+    int32_t uploadStatus_ = 1;
 };
 } // namespace Media
 } // namespace OHOS

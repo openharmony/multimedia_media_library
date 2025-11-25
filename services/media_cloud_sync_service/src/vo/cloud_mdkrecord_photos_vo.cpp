@@ -85,6 +85,8 @@ bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     parcel.WriteString(albumLPath);
     parcel.WriteString(recordType);
     parcel.WriteString(recordId);
+    parcel.WriteInt32(fileSourceType);
+    parcel.WriteString(storagePath);
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
@@ -149,6 +151,8 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(Parcel &parcel)
     parcel.ReadString(albumLPath);
     parcel.ReadString(recordType);
     parcel.ReadString(recordId);
+    parcel.ReadInt32(fileSourceType);
+    parcel.ReadString(storagePath);
     return true;
 }
 bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const

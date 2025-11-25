@@ -32,7 +32,11 @@ void NotifyHandler::Handle(const CloudSyncHandleData &handleData)
         return;
     }
     for (auto &notifyInfo : handleData.notifyInfo) {
-        obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(notifyInfo.first), notifyInfo.second});
+        list<Uri> uris;
+        for (auto &uriRemarkPair : notifyInfo.second) {
+            uris.push_back(uriRemarkPair.first);
+        }
+        obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(notifyInfo.first), uris});
     }
 
     if (nextHandler_ != nullptr) {

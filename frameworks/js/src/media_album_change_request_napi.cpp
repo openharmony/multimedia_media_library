@@ -52,6 +52,7 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
+#include "change_request_set_upload_status_vo.h"
 #include "change_request_set_relationship_vo.h"
 #include "change_request_set_highlight_attribute_vo.h"
 
@@ -99,6 +100,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
+            DECLARE_NAPI_STATIC_FUNCTION("setUploadStatus", JSSetUploadStatus),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -1354,6 +1356,120 @@ napi_value MediaAlbumChangeRequestNapi::JSSetHighlightAttribute(napi_env env, na
     asyncContext->objectInfo->highlightAlbumChangeAttributePair_ = make_pair(highlightAlbumChangeAttribute, value);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE);
     RETURN_NAPI_UNDEFINED(env);
+}
+
+static napi_value ParseArgsSetUploadStatus(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    constexpr size_t jsArgs = ARGS_THREE;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, jsArgs, jsArgs) == napi_ok, JS_E_PARAM_INVALID,
+        "Failed to get args");
+    CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_E_INNER_FAIL);
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_object) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "invalid context");
+        return nullptr;
+    }
+
+    vector<napi_value> napiValues;
+    valueType = napi_undefined;
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues),
+        JS_E_PARAM_INVALID, "Failed to get array");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !napiValues.empty(), JS_E_PARAM_INVALID, "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, valueType == napi_object, JS_E_PARAM_INVALID, "Argument must be array of album");
+ 
+    constexpr size_t sizeOfArray = 0;
+    constexpr size_t kBatchSetMaxNumber = 500;
+    if (napiValues.size() > kBatchSetMaxNumber || napiValues.size() == sizeOfArray) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of albums is 0 or over 500.");
+        return nullptr;
+    }
+    for (const auto& napiValue : napiValues) {
+        PhotoAlbumNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_E_PARAM_INVALID);
+        CHECK_COND_WITH_ERR_MESSAGE(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get album napi object");
+
+        if (PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType())) {
+            context->deleteIds.push_back(to_string(obj->GetAlbumId()));
+            context->photoAlbumTypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumType()));
+            context->photoAlbumSubtypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumSubType()));
+        }
+    }
+
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[PARAM2],
+        context->allowUpload) == napi_ok, JS_E_PARAM_INVALID, "Failed to get allowUpload");
+    RETURN_NAPI_TRUE(env);
+}
+
+static void SetUploadStatusExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetUploadStatusExecute");
+
+    auto *context = static_cast<MediaAlbumChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->deleteIds.empty(), "deleteIds is empty");
+
+    NAPI_INFO_LOG("enter SetUploadStatusExecute, allowUpload: %{public}d.", context->allowUpload);
+    ChangeRequestSetUploadStatusReqBody reqBody;
+    reqBody.allowUpload = static_cast<int>(context->allowUpload);
+    reqBody.albumIds = context->deleteIds;
+    reqBody.photoAlbumTypes = context->photoAlbumTypes;
+    reqBody.photoAlbumSubtypes = context->photoAlbumSubtypes;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED || ret == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(ret);
+        } else {
+            context->error = JS_E_INNER_FAIL;
+        }
+        NAPI_ERR_LOG("Failed to set uploadStatus, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void SetUploadStatusCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetUploadStatusCallback");
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSSetUploadStatus(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSSetUploadStatus.");
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    if (!ParseArgsSetUploadStatus(env, info, asyncContext)) {
+        NAPI_ERR_LOG("Failed to parse args");
+        return nullptr;
+    }
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestSetUploadStatus",
+        SetUploadStatusExecute, SetUploadStatusCallback);
 }
 
 static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)

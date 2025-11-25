@@ -84,7 +84,7 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
     }
     // query permission data before insert
     int queryFlag = ERROR;
-    shared_ptr<ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
     // Update the permissionType
     if (queryFlag > 0) {
         return UpdatePermissionType(resultSet, permissionTypeParam);
@@ -251,7 +251,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
     fetchColumns.push_back(AppUriPermissionColumn::ID);
     fetchColumns.push_back(AppUriPermissionColumn::PERMISSION_TYPE);
 
-    shared_ptr<ResultSet> resultSet = QueryOperation(permissionPredicates, fetchColumns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryOperation(permissionPredicates, fetchColumns);
     resultFlag = (resultSet == nullptr ? NO_DATA_EXIST : ALREADY_EXIST);
     return resultSet;
 }
@@ -269,7 +269,7 @@ bool MediaLibraryAppUriPermissionOperations::GetIntFromValuesBucket(
     return true;
 }
 
-int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<ResultSet> &resultSetDB,
+int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<NativeRdb::ResultSet> &resultSetDB,
     int &permissionTypeParam, std::shared_ptr<TransactionOperations> trans)
 {
     int32_t permissionTypeDB =

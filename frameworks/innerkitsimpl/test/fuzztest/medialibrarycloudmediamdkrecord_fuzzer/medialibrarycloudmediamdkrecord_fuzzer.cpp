@@ -173,7 +173,7 @@ static void MdkRecordFieldComplexTypeParseFromJsonValueFuzzer()
     MDKSchemaField schemaField;
     Json::Value jvData;
 
-    schemaField.type = MDKRecordFieldType::FIELD_TYPE_BLOB;
+    schemaField.type = MDKRecordFieldType::FIELD_TYPE_BYTES;
     std::vector<uint8_t> blobData =
         provider->ConsumeBytes<uint8_t>(provider->ConsumeIntegralInRange<size_t>(0, DATA_BYTES));
     jvData = Json::Value(Json::arrayValue);
@@ -242,9 +242,9 @@ static void MdkRecordFieldToJsonValueFuzzer()
     recordField.ToJsonValue();
 
     std::vector<uint8_t> blobVal;
-    recordField.type_ = MDKRecordFieldType::FIELD_TYPE_BLOB;
+    recordField.type_ = MDKRecordFieldType::FIELD_TYPE_BYTES;
     recordField.value_ = provider->ConsumeBytes<uint8_t>(provider->ConsumeIntegralInRange<size_t>(0, DATA_BYTES));
-    recordField.GetBlob(blobVal);
+    recordField.GetBytes(blobVal);
     recordField.ToJsonValue();
 }
 

@@ -210,6 +210,7 @@ const std::string MTP_FORMAT_ABSTRACT_MESSAGE = "";
 const std::string MTP_FORMAT_UNDEFINED_CONTACT = "";
 const std::string MTP_FORMAT_ABSTRACT_CONTACT = "";
 const std::string MTP_FORMAT_VCARD_2 = "";
+constexpr int32_t MTP_MEDIA_HO_LAKE = 3;
 
 class MtpDataUtils {
 public:

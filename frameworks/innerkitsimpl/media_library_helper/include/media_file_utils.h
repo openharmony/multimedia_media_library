@@ -193,6 +193,7 @@ public:
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
+    EXPORT static int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir);
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
     EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
     EXPORT static bool CheckCompositeDisplayMode(int32_t compositeDisplayMode);

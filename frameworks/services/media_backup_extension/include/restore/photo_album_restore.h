@@ -32,16 +32,19 @@ public:
         std::string bundleName;
         std::string lPath;
         int32_t priority = 1;
+        int32_t uploadStatus = 0;
     };
 
     /**
      * @brief Restore Start Event Handler.
      */
-    void OnStart(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+    void OnStart(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
+        bool isAccountValidAndSwitchOn = false)
     {
         this->mediaLibraryRdb_ = mediaLibraryRdb;
         this->galleryRdb_ = galleryRdb;
         this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryRdb);
+        this->isAccountValidAndSwitchOn_ = isAccountValidAndSwitchOn;
     }
 
     void TRACE_LOG(std::vector<GalleryAlbumRowData> &galleryAlbumInfos)
@@ -54,13 +57,15 @@ public:
                 albumName = %{public}s, \
                 bundleName = %{public}s, \
                 lPath = %{public}s, \
-                priority = %{public}d",
+                priority = %{public}d, \
+                uploadStatus = %{public}d",
                 info.albumId.c_str(),
                 info.relativeBucketId.c_str(),
                 info.albumName.c_str(),
                 info.bundleName.c_str(),
                 info.lPath.c_str(),
-                info.priority);
+                info.priority,
+                info.uploadStatus);
         }
     }
 
@@ -74,14 +79,16 @@ public:
                 albumSubType = %{public}d, \
                 lPath = %{public}s, \
                 bundleName = %{public}s, \
-                priority = %{public}d",
+                priority = %{public}d, \
+                uploadStatus = %{public}d",
                 info.albumId,
                 info.albumName.c_str(),
                 info.albumType,
                 info.albumSubType,
                 info.lPath.c_str(),
                 info.bundleName.c_str(),
-                info.priority);
+                info.priority,
+                info.uploadStatus);
         }
     }
 
@@ -94,6 +101,10 @@ public:
         // fetch all albums from mediaLibraryRdb
         std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
         TRACE_LOG(albumInfos);
+        // compare albums to find the album that need to be updated
+        std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfoToUpdate =
+            this->GetAlbumInfoToUpdate(albumInfos, galleryAlbumInfos);
+        this->UpdateAlbums(albumInfoToUpdate);
         // compare albums to find the album that need to be restored
         std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
             this->GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
@@ -110,12 +121,19 @@ public:
 private:
     std::vector<GalleryAlbumRowData> GetGalleryAlbums();
     int32_t QueryMaxAlbumId(const std::string &tableName, const std::string &idName);
+    std::vector<PhotoAlbumDao::PhotoAlbumRowData> GetAlbumInfoToUpdate(
+        const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums,
+        const std::vector<GalleryAlbumRowData> &galleryAlbums);
+    int32_t UpdateAlbums(const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos);
+    GalleryAlbumRowData BuildAlbumInfoOfGalleryRecorders(const int32_t uploadStatus);
+    int32_t ReadResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, GalleryAlbumRowData &albumInfo);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     PhotoAlbumDao photoAlbumDao_;
     int32_t maxAlbumId_ = 0;
+    bool isAccountValidAndSwitchOn_ = false;
 
 private:
     const std::string GALLERY_ALBUM_ID = "albumId";
@@ -124,6 +142,8 @@ private:
     const std::string GALLERY_ALBUM_lPATH = "lPath";
     const std::string GALLERY_BUNDLE_NAME = "bundleName";
     const std::string GALLERY_PRIORITY = "priority";
+    const std::string GALLERY_UPLOAD_STATUS = "uploadStatus";
+    const std::string GALLERY_HDC_UPLOAD_STATUS = "hdcUploadStatus";
 
     const std::string SQL_GALLERY_ALBUM_SELECT = "\
         SELECT \
@@ -140,7 +160,9 @@ private:
             relativeBucketId, \
             gallery_album.lPath AS lPath, \
             COALESCE(album_plugin.bundle_name, '') AS bundleName, \
-            COALESCE(priority, 1) AS priority \
+            COALESCE(priority, 1) AS priority, \
+            COALESCE(uploadStatus, 0) AS uploadStatus, \
+            COALESCE(hdcUploadStatus, 0) AS hdcUploadStatus \
         FROM gallery_album \
         LEFT JOIN garbage_album \
             ON gallery_album.lPath = garbage_album.nick_dir \
@@ -152,5 +174,4 @@ private:
         LIMIT ?, ? ;";
 };
 }  // namespace OHOS::Media
-
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_RESTORE
