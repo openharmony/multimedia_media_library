@@ -147,7 +147,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, E_ERR, "imageSource is nullptr err: %{public}d", errorCode);
 
     // 修改 exif 字段
-    ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_CLOUD_ENHANCE_MODE, to_string(1));
+    ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_CLOUD_ENHANCE_MODE, to_string(1), primarySourcePath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "modify image property longitude fail %{public}d", ret);
 
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
