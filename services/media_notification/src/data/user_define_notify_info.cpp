@@ -113,7 +113,8 @@ std::string UserDefineNotifyInfo::ToString() const
     std::stringstream ss;
     ss << "{"
         << "\"notifyUri\": \"" << std::to_string(static_cast<int32_t>(this->notifyUri_)) << "\","
-        << "\"NotifyForUserDefineType\": \"" << std::to_string(static_cast<int32_t>(this->notifyUserDefineType_)) << "\","
+        << "\"NotifyForUserDefineType\": \""
+        << std::to_string(static_cast<int32_t>(this->notifyUserDefineType_)) << "\","
         << "\"readOnly\": \"" << std::to_string(static_cast<int32_t>(this->readOnly_)) << "\","
         << "\"notifyBody\": \"" << notifyBody_->ToString().c_str()
         << "}";
