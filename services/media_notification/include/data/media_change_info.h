@@ -61,7 +61,8 @@ enum NotifyUriType {
     TRASH_ALBUM_URI,
     ANALYSIS_ALBUM_URI,
     INVALID,
-    BATCH_DOWNLOAD_PROGRESS_URI
+    BATCH_DOWNLOAD_PROGRESS_URI,
+    USER_DEFINE_NOTIFY_URI,
 };
 
 class NotifyDetailInfo : public Parcelable {
