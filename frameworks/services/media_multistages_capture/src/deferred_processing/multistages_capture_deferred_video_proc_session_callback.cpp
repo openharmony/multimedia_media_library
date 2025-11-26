@@ -61,7 +61,8 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::NotifyOnProcess(
     notifyBody->uri_ = notifyUri;
     notifyBody->notifyType_ = notifyType;
  
-    UserDefineNotifyInfo notifyInfo(NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    UserDefineNotifyInfo notifyInfo(
+        NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
     notifyInfo.SetUserDefineNotifyBody(notifyBody);
  
     Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
