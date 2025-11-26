@@ -152,15 +152,7 @@ public:
         const std::vector<int32_t>& oldFileIds);
     static void UpdateNewNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
         const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
-    static void UpdateVideoNewNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
-        const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
-    static void UpdateAnalysisVideoTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
-        std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
-    static void UpdateVideoNewStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
-        const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
     static void UpdateAnalysisTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
-        std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
-    static void UpdateAnalysisVideoTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
         std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
     static bool isTableExist(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::string &tableName, bool& result);
@@ -170,6 +162,7 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType);
     static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void CheckLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateStatusToAnalysisTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void DeleteDirtytagIdFromFaceTagTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
