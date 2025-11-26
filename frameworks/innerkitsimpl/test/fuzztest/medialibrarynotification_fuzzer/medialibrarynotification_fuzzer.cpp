@@ -83,7 +83,7 @@ FuzzedDataProvider *provider = nullptr;
 static inline Notification::AccurateNotifyType FuzzNotifyType()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, NOTIFY_TYPE_MAX);
-    return static_cast<AccurateNotifyType::NotifyType>(value);
+    return static_cast<Notification::AccurateNotifyType>(value);
 }
 
 static inline Notification::NotifyUriType FuzzNotifyUriType()
