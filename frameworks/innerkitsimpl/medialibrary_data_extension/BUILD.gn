@@ -189,6 +189,8 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_albums_manager
   include_dirs += include_notification
   include_dirs += include_accurate_refresh
+  include_dirs += include_media_camera_character
+  
   include_dirs += include_backround_task
 
   if (media_library_feature_cloud_enhancement) {
