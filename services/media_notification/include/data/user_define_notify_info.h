@@ -58,7 +58,7 @@ public:
     }
  
 public:
-    const NotifyUriType notifyUri_{NotifyUriType::USER_DEFINE_NOTIFY_URI};
+    NotifyUriType notifyUri_{NotifyUriType::USER_DEFINE_NOTIFY_URI};
     NotifyForUserDefineType notifyUserDefineType_{NotifyForUserDefineType::UNDEFINED};
 
 private:
