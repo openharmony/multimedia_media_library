@@ -3729,7 +3729,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersForSourcePicture(std::shared_ptr<
     string editData;
     MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
     ParseCloudEnhancementEditData(editData);
-    return AddFiltersToPicture(picture, assetPath, editData, mimeType, true, fileId);
+    return AddFiltersToPicture(picture, assetPath, editData, mimeType, true, fileId,
+        false, "", {});
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
