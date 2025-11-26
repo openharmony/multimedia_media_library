@@ -20,10 +20,8 @@
 #include <memory>
 #include <string>
 
-#include "camera_character_types.h"
 #include "deferred_video_proc_session.h"
 #include "medialibrary_async_worker.h"
-#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,8 +37,6 @@ public:
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
 private:
-    static int32_t NotifyOnProcess(
-        const std::shared_ptr<FileAsset> &fileAsset, MultistagesCaptureNotifyType observerType);
     static int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate = false);
     static void AsyncOnErrorProc(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode);
     static void VideoFaileProcAsync(AsyncTaskData *data);
