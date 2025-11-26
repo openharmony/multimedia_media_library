@@ -134,7 +134,8 @@ std::vector<UserDefineNotifyInfo> NotifyTaskWorker::GetCurrentUserDefineNotifyVe
     std::vector<UserDefineNotifyInfo> notifyTaskInfos = userDefineTaskInfos_;
     userDefineTaskInfos_.clear();
     
-    MEDIA_INFO_LOG("NotifyTaskInfos size: %{public}d, userDefineTaskInfos_: %{public}d", (int32_t)notifyTaskInfos.size(), (int32_t)userDefineTaskInfos_.size());
+    MEDIA_INFO_LOG("NotifyTaskInfos size: %{public}d, userDefineTaskInfos_: %{public}d",
+        (int32_t)notifyTaskInfos.size(), (int32_t)userDefineTaskInfos_.size());
     return notifyTaskInfos;
 }
 
