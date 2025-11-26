@@ -275,7 +275,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
         HighQualityScanFileCallback::Create(fileId));
-    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
+    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
