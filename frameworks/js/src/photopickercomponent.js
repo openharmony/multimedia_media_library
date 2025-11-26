@@ -693,6 +693,7 @@ let PickerController = class {
         this.replaceCallbackMap = new Map();
         this.saveCallbackMap = new Map();
         this.createCallbackMap = new Map();
+        this.saveCallbackPromises = new Map();
     }
     setData(e, o) {
         if (o === undefined) {
@@ -851,6 +852,21 @@ let PickerController = class {
         });
     }
 
+    async saveTrustedPhotoAssetsEx(e, settings, saveMode) {
+        return new Promise((resolve, reject) => {
+            if (!e || e.length === 0) {
+                reject({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+                return;
+            }
+            this.getAppName().then((appName) => {
+                let date = Math.random();
+                this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, settings, saveMode, appName, date]]]);
+                this.saveCallbackPromises.set(date, [resolve, reject]);
+                console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS_EX');
+            });
+        });
+    }
+
     actionCreateCallback(grantUri, date, code, message) {
         if (this.createCallbackMap.has(date)) {
             let callback = this.createCallbackMap.get(date);
@@ -877,6 +893,17 @@ let PickerController = class {
             if (callback) {
                 callback(err, data);
                 this.saveCallbackMap.delete(date);
+            }
+        }
+        if (this.saveCallbackPromises.has(date)) {
+            let promiseFunc = this.saveCallbackMap.get(date);
+            if (promiseFunc) {
+              if (err) {
+                promiseFunc[1](err);
+              } else {
+                promiseFunc[0](data);
+              }
+              this.saveCallbackPromises.delete(date);
             }
         }
     }

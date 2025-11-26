@@ -654,6 +654,7 @@ export class PickerController {
   replaceCallbackMap: Map<number, Object> = new Map<number, Object>();
   saveCallbackMap: Map<number, Object> = new Map<number, Object>();
   createCallbackMap: Map<number, Object> = new Map<number, Object>();
+  saveCallbackPromises: Map<number, Object> = new Map<number, Object>();
 
   setData(type: DataType, data: Object) {
     if (data === undefined) {
@@ -819,6 +820,22 @@ export class PickerController {
     console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS ');
   }
 
+  saveTrustedPhotoAssetsEx(selectedMediaUris: Array<string>, settings?: Array<photoAccessHelper.CreationSetting>,
+    saveMode?: SaveMode): Promise<Array<string>> {
+    return new Promise((resolve, reject) => {
+      if (!selectedMediaUris || selectedMediaUris.length === 0) {
+        reject({ 'code': 14000002, 'message': 'Invalid URI', name: '' });
+        return;
+      }
+      this.getAppName().then((appName: string) => {
+        let date = Math.random();
+        this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, settings, saveMode, appName, date]]]);
+        this.saveCallbackPromises.set(date, [resolve, reject]);
+      });
+      console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS_EX');
+    });
+  }
+
   actionCreateCallback(grantUri: string, date: number, code: number, message: string) {
     if (this.createCallbackMap.has(date)) {
       let callback = this.createCallbackMap.get(date) as Function;
@@ -847,6 +864,17 @@ export class PickerController {
         this.saveCallbackMap.delete(date);
       }
     }
+    if (this.saveCallbackPromises.has(date)) {
+      let promiseFunc = this.saveCallbackMap.get(date) as [Function, Function];
+      if (promiseFunc) {
+        if (err) {
+          promiseFunc[1](err);
+        } else {
+          promiseFunc[0](data);
+        }
+        this.saveCallbackPromises.delete(date);
+      }
+    }  
   }
 
   encrypt(data) {
