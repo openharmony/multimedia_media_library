@@ -22,15 +22,12 @@
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_manager.h"
-#include "multistages_capture_notify_info.h"
-#include "medialibrary_notify_new.h"
 #include "medialibrary_object_utils.h"
 #include "result_set_utils.h"
 #include "multistages_capture_request_task_manager.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
-using namespace OHOS::Media::Notification;
 
 namespace OHOS {
 namespace Media {
@@ -39,36 +36,6 @@ MultiStagesCaptureDeferredVideoProcSessionCallback::MultiStagesCaptureDeferredVi
  
 MultiStagesCaptureDeferredVideoProcSessionCallback::~MultiStagesCaptureDeferredVideoProcSessionCallback()
 {}
-
-int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::NotifyOnProcess(
-    const std::shared_ptr<FileAsset> &fileAsset, MultistagesCaptureNotifyType notifyType)
-{
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr.");
-        return E_ERR;
-    }
-    std::string displayName = fileAsset->GetDisplayName();
-    std::string filePath = fileAsset->GetFilePath();
-    int32_t fileId = fileAsset->GetId();
- 
-    std::string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
-        MediaType::MEDIA_TYPE_VIDEO, MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
- 
-    auto notifyBody = std::make_shared<MultistagesCaptureNotifyServerInfo>();
-    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
-    notifyBody->uri_ = notifyUri;
-    notifyBody->notifyType_ = notifyType;
- 
-    UserDefineNotifyInfo notifyInfo(
-        NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
-    notifyInfo.SetUserDefineNotifyBody(notifyBody);
- 
-    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
-    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
-    return E_OK;
-}
 
 int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
     const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate)
