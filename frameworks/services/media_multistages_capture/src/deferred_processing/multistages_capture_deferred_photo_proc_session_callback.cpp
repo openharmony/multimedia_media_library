@@ -258,7 +258,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     bool isTakeEffect = false;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
-        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect,
+        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect, imageId,
         [this, resultSet]() -> int32_t {
             return this->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::YUV_READY);
         });
