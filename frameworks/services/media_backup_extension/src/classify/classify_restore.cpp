@@ -116,7 +116,6 @@ void ClassifyRestore::ProcessCategoryAlbums()
     MEDIA_INFO_LOG("ProcessCategoryAlbums Time cost: %{public}" PRId64, end - start);
 }
 
-
 std::vector<int32_t> ClassifyRestore::ParseSubLabel(const std::string &subLabel) const
 {
     std::vector<int32_t> labels;
@@ -390,7 +389,7 @@ void ClassifyRestore::HandleOcrHelper(const std::vector<int32_t> &fileIds)
         for (size_t i = 0; i < ocrTexts.size(); i++) {
             subOcrSql += "tab_analysis_ocr.ocr_text LIKE '%" + ocrTexts[i] + "%'";
             if (i != ocrTexts.size() - 1) {
-                subOcrSql += " OR ";
+                subOcrSql += " AND ";
             }
         }
 
