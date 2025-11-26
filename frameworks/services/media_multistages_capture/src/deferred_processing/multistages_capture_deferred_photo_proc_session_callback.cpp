@@ -122,7 +122,8 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyOnProcess(
     notifyBody->uri_ = notifyUri;
     notifyBody->notifyType_ = notifyType;
  
-    UserDefineNotifyInfo notifyInfo(NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    UserDefineNotifyInfo notifyInfo(
+        NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
     notifyInfo.SetUserDefineNotifyBody(notifyBody);
  
     Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
@@ -417,8 +418,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         "this photo was delete or err photoId: %{public}s", imageId.c_str());
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone with addr " + imageId);
-
-    // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_ERR_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), bytes, cloudImageEnhanceFlag);
     tracer.Start("Query");
@@ -427,7 +426,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         tracer.Finish();
         MEDIA_ERR_LOG("result set is empty");
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
-        // When subTyoe query failed, default mediaType is Image
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
             static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
         return;
@@ -451,26 +449,19 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
-
     UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
-
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto,
         nullptr, HighQualityScanFileCallback::Create(fileId));
     NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
-
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
-
-    // delete raw file
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
     CallProcessImageDone(true, imageId);
-    MEDIA_ERR_LOG("success photoid: %{public}s", imageId.c_str());
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnStateChanged(const DpsStatusCode state)
