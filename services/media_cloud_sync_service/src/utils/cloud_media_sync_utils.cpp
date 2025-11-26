@@ -42,6 +42,8 @@
 using namespace std;
 
 namespace OHOS::Media::CloudSync {
+static const string HMDFS_PATH_PREFIX = "/mnt/hmdfs/100";
+static const string PHOTOS_PATH = "com.huawei.hmos.photos";
 int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
     const int32_t exifRotate, const int32_t &thumbState)
@@ -178,14 +180,17 @@ static std::string GetVideoCachePath(const std::string &filePath)
 {
     std::string result = "";
     const std::string sandboxPrefix = "/storage/cloud";
-    const std::string cachePathPrefix = "/data/service/el2/hmdfs/cache/cloud_cache/pread_cache";
+    const std::string cachePathPrefix = "/account/device_view/local/data";
+    const std:;string cachepathSuffix = "/.video_cache";
     size_t pos = filePath.find(sandboxPrefix);
     if (pos != 0 || pos == std::string::npos) {
         MEDIA_ERR_LOG(
             "GetVideoCachePath Invalid filePath, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return result;
     }
-    std::string cachePath = cachePathPrefix + filePath.substr(sandboxPrefix.length());
+    std::string cachePath = HMDFS_PATH_PREFIX + cachePathPrefix + PHOTOS_PATH +
+        cachepathSuffix + filePath.substr(sandboxPrefix.length());
+    MEDIA_INFO_LOG("The cachePath is: %{public}s", cachePath.c_str());
     auto resolvedPath = realpath(cachePath.c_str(), nullptr);
     if (resolvedPath == nullptr) {
         if (errno != ENOENT) {
