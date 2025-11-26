@@ -831,6 +831,23 @@ const FilterOperator = {
   BETWEEN: 6,
 };
 
+const OperationType = {
+  EQUAL_TO : 1,
+  NOT_EQUAL_TO : 2,
+  GREATER_THAN : 3,
+  LESS_THAN : 4,
+  GREATER_THAN_OR_EQUAL_TO : 5,
+  LESS_THAN_OR_EQUAL_TO : 6,
+  AND : 7,
+  OR : 8,
+  IN : 9,
+  NOT_IN : 10,
+  BEGIN_WARP : 11,
+  END_WRAP : 12,
+  BETWEEN : 13,
+  NOT_BETWEEN : 14
+}
+
 const SingleSelectionMode = {
   BROWSER_MODE: 0,
   SELECT_MODE: 1,
@@ -943,6 +960,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
+    config.parameters.assetFilter = option.assetFilter;
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
   }
 
@@ -1072,6 +1090,10 @@ function FileSizeFilterArray() {
   this.photoViewMimeTypeFileSizeFilters = [];
 }
 
+function OperationItem() {
+  this.operationType = -1;
+}
+
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
@@ -1191,6 +1213,8 @@ export default {
   VideoDurationFilter: VideoDurationFilter,
   PhotoViewMimeTypeFileSizeFilters: FileSizeFilterArray,
   FilterOperator: FilterOperator,
+  OperationItem: OperationItem,
+  OperationType: OperationType,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,
