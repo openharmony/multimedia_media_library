@@ -315,13 +315,8 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
         return E_OK;
     }
 
-    // skip degeneration within 1 min after adding into DB
-    int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t isVideoSaveTimeOut = (currentTime - currentData.dateAdded) > VIDEO_SAVE_MAX_TIME;
-    if (isVideoSaveTimeOut && (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0)) {
-        MEDIA_WARN_LOG("Video save time out and failed to get video of moving photo, \
-            degenerate it, id: %{public}d, dateAdded: %{public}lld",
-            currentData.fileId, static_cast<long long>(currentData.dateAdded));
+    if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
+        MEDIA_WARN_LOG("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
         newData.size = static_cast<int64_t>(imageSize);
         newData.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
         return E_OK;
@@ -350,6 +345,14 @@ void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList
     int32_t count = 0;
     for (const auto& movingPhoto : dataList.movingPhotos) {
         CHECK_AND_RETURN_LOG(isProcessing_, "stop compating moving photo");
+        // skip process within 1 min after adding into DB
+        int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+        if (currentTime > movingPhoto.dateAdded) {
+            bool isVideoSaveTimeOut = (currentTime - movingPhoto.dateAdded) > VIDEO_SAVE_MAX_TIME;
+            CHECK_AND_CONTINUE_INFO_LOG(isVideoSaveTimeOut,
+                "skip process moving photo, id: %{public}d, dateAdded: %{public}" PRId64,
+                movingPhoto.fileId, movingPhoto.dateAdded);
+        }
         MovingPhotoData newData;
         if (GetUpdatedMovingPhotoData(movingPhoto, newData) != E_OK) {
             MEDIA_INFO_LOG("Failed to get updated data of moving photo, id: %{public}d", movingPhoto.fileId);
