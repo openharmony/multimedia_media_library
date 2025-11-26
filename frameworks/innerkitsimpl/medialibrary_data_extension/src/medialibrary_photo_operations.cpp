@@ -4110,7 +4110,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
     std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
     std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect,
-    std::function<int32_t()> notifyOnProcessCallback)
+    std::string imageId, std::function<int32_t()> notifyOnProcessCallback)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
@@ -4123,6 +4123,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+            MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
+                imageId, picture, isEdited, isTakeEffect);
             // 添加YUV_READY通知
             auto assetRefresh =
                 make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::YUV_READY_BUSSINESS_NAME);
@@ -4144,7 +4146,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
             CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type, true, fileId,
-                notifyOnProcessCallback) == E_OK, E_FAIL, "Failed to add filters to photo");
+                isTakeEffect, imageId, notifyOnProcessCallback) == E_OK, E_FAIL, "Failed to add filters to photo");
             resultPicture = picture;
             isTakeEffect = true;
             return E_OK;
@@ -4197,7 +4199,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
     const std::string &outputPath, string &editdata, const std::string &mime_type,
-    bool isHighQualityPicture, const int32_t fileId, std::function<int32_t()> notifyOnProcessCallback)
+    bool isHighQualityPicture, const int32_t fileId, bool isTakeEffect,
+    std::string imageId, std::function<int32_t()> notifyOnProcessCallback)
 {
     (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
     MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
@@ -4206,6 +4209,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
+        imageId, inPicture, false, isTakeEffect);
     // 添加YUV_READY通知
     auto assetRefresh =
         make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::YUV_READY_BUSSINESS_NAME);
