@@ -25,7 +25,6 @@
 
 namespace OHOS {
 namespace Media {
-using namespace Notification;
 #define EXPORT __attribute__ ((visibility ("default")))
 class MultiStagesCaptureDeferredVideoProcSessionCallback : public CameraStandard::IDeferredVideoProcSessionCallback {
 public:
