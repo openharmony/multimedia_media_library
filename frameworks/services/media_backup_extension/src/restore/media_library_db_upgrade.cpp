@@ -207,7 +207,7 @@ void MediaLibraryDbUpgrade::ProcessOcrClassifyAlbum(const std::string &newAlbumN
     for (size_t i = 0; i < ocrText.size(); i++) {
         subOcrSql += "tab_analysis_ocr.ocr_text LIKE '%" + ocrText[i] + "%'";
         if (i != ocrText.size() - 1) {
-            subOcrSql += " OR ";
+            subOcrSql += " AND ";
         }
     }
     std::string selectOcrSql = SQL_SELECT_CLASSIFY_OCR + subOcrSql + ")) ";
