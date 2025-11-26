@@ -44,6 +44,7 @@ public:
     static const std::string HIDDEN_ALBUM_CHANGE EXPORT;
     static const std::string TRASHED_ALBUM_CHANGE EXPORT;
     static const std::string BATCH_DOWNLOAD_PROGRESS_CHANGE EXPORT;
+    static const std::string USER_CLIENT_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
