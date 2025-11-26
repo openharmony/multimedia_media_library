@@ -920,8 +920,7 @@ void CloneRestorePortrait::UpdateAnalysisTotalTblNoFaceStatus()
         return;
     }
 
-    std::vector<int32_t> OtherFileIds = getOtherFileIds(newNoFaceFileIds, mediaLibraryRdb_);
-    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(OtherFileIds, ", ") + ")";
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newNoFaceFileIds, ", ") + ")";
     std::string updateSql =
         "UPDATE tab_analysis_total "
         "SET face = -2 "
@@ -941,8 +940,7 @@ void CloneRestorePortrait::UpdateAnalysisTotalTblStatus()
 
     auto fileIdPairs = CollectFileIdPairs(photoInfoMap_);
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPairs);
-    std::vector<int32_t> OtherFileIds = getOtherFileIds(newFileIds, mediaLibraryRdb_);
-    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(OtherFileIds, ", ") + ")";
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
 
     std::string updateSql =
         "UPDATE tab_analysis_total "
@@ -972,6 +970,7 @@ void CloneRestorePortrait::UpdateAnalysisVideoTotalTblLabelAndFace()
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
 
     BackupDatabaseUtils::UpdateLabelAndFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
+    BackupDatabaseUtils::CheckLabelAndFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateStatusToAnalysisTable(mediaLibraryRdb_);
 
