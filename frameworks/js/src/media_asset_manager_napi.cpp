@@ -781,8 +781,6 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
  
     if (observerType == ObserverType::REQUEST_IMAGE || observerType == ObserverType::REQUEST_QUICK_IMAGE) {
         MediaAssetManagerNapi::ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->deliveryMode));
-    } else if (observerType == ObserverType::REQUEST_VIDEO) {
-        MediaAssetManagerNapi::ProcessVideo(asyncContext);
     }
     NAPI_INFO_LOG("RegisterTaskNewObserver success.");
 }
