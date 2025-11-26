@@ -233,7 +233,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 {
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
     CHECK_AND_RETURN_LOG(!cond, "resultset is empty.");
-
     MediaLibraryTracer tracer;
     tracer.Start("ProcessAndSaveHighQualityImage " + imageId);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -253,8 +252,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
             "imageSourceOrientation value is invalid.");
         metadata->SetValue(PHOTO_DATA_IMAGE_ORIENTATION, std::to_string(imageSourceOrientation->second));
     }
-
-    // 裸picture落盘处理
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     bool isTakeEffect = false;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
@@ -268,7 +265,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
-
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
         imageId, std::move(picture), isEdited, isTakeEffect);
     UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
@@ -277,15 +273,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
         HighQualityScanFileCallback::Create(fileId));
     NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
-
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
-    MEDIA_ERR_LOG("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
-        imageId.c_str(), fileId);
 }
 
 std::shared_ptr<Media::Picture> GetPictureFromPictureIntf(std::shared_ptr<CameraStandard::PictureIntf> pictureIntf)
