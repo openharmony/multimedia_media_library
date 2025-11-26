@@ -111,7 +111,6 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyOnProcess(
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    // resultSet->Close();
  
     string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
     auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
