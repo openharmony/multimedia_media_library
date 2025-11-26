@@ -41,6 +41,8 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto
         fdirtyDataVo.originalCloudId = fdirtyDataDto.originalCloudId;
         fdirtyDataVo.fileSourceType = fdirtyDataDto.fileSourceType;
         fdirtyDataVo.storagePath = fdirtyDataDto.storagePath;
+        fdirtyDataVo.localPath = fdirtyDataDto.localPath;
+        fdirtyDataVo.attributesMediaType = fdirtyDataDto.attributesMediaType;
         for (auto &nodePair : fdirtyDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;

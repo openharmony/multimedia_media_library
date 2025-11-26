@@ -38,6 +38,7 @@
 #include "failed_size_resp_vo.h"
 #include "get_check_records_vo.h"
 #include "media_operate_result_vo.h"
+#include "cloud_media_sync_utils.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPhotoHandler::SetUserId(const int32_t &userId)
@@ -89,6 +90,13 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
         .Post(operationCode, reqBody, respBody);
+    for (auto data : respBody.fdirtyDatas) {
+        if (data.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            MEDIA_INFO_LOG("Need clear VideoCache, fileid: %{public}d, attributesMediaType: %{public}d, localPath: %{public}s",
+            data.fileId, data.attributesMediaType, data.localPath.c_str());
+            CloudMediaSyncUtils::InvalidVideoCache(data.localPath);
+        }
+    }
     failedRecords = respBody.failedRecords;
     stats = respBody.stats;
     newData = this->processor_.GetCloudNewData(respBody.newDatas);

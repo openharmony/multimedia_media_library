@@ -177,6 +177,8 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
     dto.mediaType = pullData.localMediaType;
     dto.modifiedTime = pullData.modifiedTime;
     dto.originalCloudId = pullData.localOriginalAssetCloudId;
+    dto.localPath = pullData.localPath;
+    dto.attributesMediaType = pullData.attributesMediaType;
     CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), false, "localPhotosPoOp has no value");
     PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
     dto.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
@@ -196,9 +198,6 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         }
         CloudMediaSyncUtils::RemoveEditDataSourcePath(pullData.localPath);
         CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
-        if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-            CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
-        }
     }
     return E_OK;
 }
