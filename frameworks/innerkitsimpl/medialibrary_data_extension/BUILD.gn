@@ -148,6 +148,7 @@ config("media_data_extension_public_config") {
   ]
 
   include_media_camera_character = [
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
   ]
 
