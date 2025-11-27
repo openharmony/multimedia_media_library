@@ -32,6 +32,7 @@ public:
     int64_t size{0};
     std::string path;
     std::string fileName;
+    std::string localPath;
     std::string originalCloudId;  // 复制体还未上行的下载
     int32_t type;
     int32_t orientation;
@@ -41,6 +42,7 @@ public:
     std::string storagePath;
     int32_t hidden;
     int64_t dateTrashed;
+    int32_t attributesMediaType;
 
 public:  // functions of Parcelable.
     virtual ~PhotosVo() = default;
