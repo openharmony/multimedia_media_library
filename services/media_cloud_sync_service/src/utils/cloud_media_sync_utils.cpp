@@ -180,8 +180,8 @@ static std::string GetVideoCachePath(const std::string &filePath)
 {
     std::string result = "";
     const std::string sandboxPrefix = "/storage/cloud";
-    const std::string cachePathPrefix = "/account/device_view/local/data";
-    const std:;string cachepathSuffix = "/.video_cache";
+    const std::string cachePathPrefix = "/account/device_view/local/data/";
+    const std::string cachepathSuffix = "/.video_cache";
     size_t pos = filePath.find(sandboxPrefix);
     if (pos != 0 || pos == std::string::npos) {
         MEDIA_ERR_LOG(
