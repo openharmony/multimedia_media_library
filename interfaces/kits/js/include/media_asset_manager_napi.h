@@ -168,7 +168,6 @@ private:
     static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
-    static void OnHandleRequestEfficientImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnHandleRequestVideo(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnHandleProgress(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void SendFile(napi_env env, int srcFd, int destFd, napi_value &result, off_t fileSize);
@@ -183,7 +182,6 @@ private:
     static napi_status CreateOnProgressThreadSafeFunc(napi_env env,
         unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &progressFunc);
     static void JSRequestExecute(napi_env env, void *data);
-    static void JSRequestEfficientExecute(napi_env env, void *data);
     static void JSRequestVideoFileExecute(napi_env env, void *data);
     static void JSRequestComplete(napi_env env, napi_status, void *data);
     static void JSCancelRequestExecute(napi_env env, void *data);
