@@ -218,6 +218,8 @@ public:
     EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
     EXPORT NativeRdb::ValuesBucket rdbUpdateCache;
     EXPORT SourceState lastLoadSource {SourceState::BEGIN};
+    EXPORT std::string taskCreatedInfo = "sync task";
+    EXPORT GenThumbScene genThumbScene {GenThumbScene::UNDEFINED_SCENE};
 };
 
 struct ThumbnailDataBatch {

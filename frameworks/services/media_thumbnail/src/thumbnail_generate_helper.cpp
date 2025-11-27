@@ -69,7 +69,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     MEDIA_INFO_LOG("Delete THM_EX directory successsfully:%{public}d, id: %{public}s, path: %{public}s",
         ThumbnailFileUtils::DeleteThumbExDir(thumbnailData), thumbnailData.id.c_str(),
         DfxUtils::GetSafePath(thumbnailData.path).c_str());
-
+    thumbnailData.genThumbScene = GenThumbScene::ADD_OR_UPDATE_MEDIA;
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
@@ -94,7 +94,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
     MEDIA_INFO_LOG("Delete THM_EX directory successsfully:%{public}d, originalPhotoPicture exists:%{public}d, "
         "path: %{public}s, id: %{public}s", ThumbnailFileUtils::DeleteThumbExDir(thumbnailData),
         originalPhotoPicture != nullptr, DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.id.c_str());
-
+    thumbnailData.genThumbScene = GenThumbScene::FILM_MEDIA_GEN_THUMB_BY_PICTURE;
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
@@ -137,6 +137,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
     };
 
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::NO_THUMB_AND_GEN_IT_BACKGROUND;
         opts.row = infos[i].id;
         infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
             SourceLoader::CLOUD_SOURCE_LOADING_STATES;
@@ -192,6 +193,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
 
     MEDIA_INFO_LOG("no astc data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::NO_THUMB_AND_GEN_IT_BACKGROUND;
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
             LoadSourceType::LOCAL_PHOTO);
@@ -225,6 +227,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     data.needGenerateExThumbnail = false;
     data.loaderOpts.loadingStates = ThumbnailUtils::IsExCloudThumbnail(data) ?
         SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+    data.genThumbScene = GenThumbScene::CLOUD_DOWNLOAD_THUMB;
     if (isCloudInsertTaskPriorityHigh) {
         IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailUtils::IsExCloudThumbnail(data) ?
             IThumbnailHelper::CreateAstcEx : IThumbnailHelper::CreateAstc,
@@ -266,6 +269,7 @@ int32_t ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(ThumbRdbOpt &opts)
     data.isRegenerateStage = true;
     data.createLowQulityLcd = true;
     data.loaderOpts.loadingStates = SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES;
+    data.genThumbScene = GenThumbScene::CLOUD_HAS_NO_ANY_THUMB;
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
@@ -284,6 +288,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
     data.loaderOpts.loadingStates = data.isLocalFile ?
         SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     data.needGenerateExThumbnail = false;
+    data.genThumbScene = GenThumbScene::NO_AVAILABLE_MTH_AND_YEAR_THUMB;
     if (!IThumbnailHelper::DoCreateAstcMthAndYear(opts, data)) {
         return E_ERR;
     }
@@ -354,6 +359,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
 
     MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
     for (auto& info : infos) {
+        info.genThumbScene = GenThumbScene::NEED_MORE_THUMB_READY;
         opts.row = info.id;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
         if (info.isLocalFile) {
@@ -420,6 +426,7 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
 
     MEDIA_INFO_LOG("No lcd data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::NO_LCD_AND_GEN_IT_BACKGROUND;
         opts.row = infos[i].id;
 
         // Check whether LCD exists or is over upload limit, if it does, just update the database
@@ -535,6 +542,7 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
 
 bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
+    data.genThumbScene = GenThumbScene::NO_AVAILABLE_THUMB;
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     if (thumbType == ThumbnailType::LCD) {
         CHECK_AND_RETURN_RET_LOG(IThumbnailHelper::DoCreateLcd(opts, data), false,
@@ -548,6 +556,7 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
 
 bool GenerateKeyFrameLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType)
 {
+    data.genThumbScene = GenThumbScene::NO_AVAILABLE_HIGHLIGHT_THUMB;
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     if (thumbType == KEY_FRAME_LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Get key frame lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
@@ -845,6 +854,7 @@ int32_t ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(ThumbRdbOp
     }
 
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::NO_HIGHLIGHT_THUMB_AND_GEN_IT_BACKGROUND;
         opts.row = infos[i].id;
         infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -907,6 +917,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
     }
     MEDIA_INFO_LOG("Will upgrade %{public}zu photo thumbnails, wifi: %{public}d.", infos.size(), isWifiConnected);
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::THUMB_IS_OBSOLETE;
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
         infos[i].loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
@@ -1012,6 +1023,7 @@ int32_t ThumbnailGenerateHelper::RepairExifRotateBackground(ThumbRdbOpt &opts)
 
     MEDIA_INFO_LOG("Will repair %{public}zu no exif photos", infos.size());
     for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::REPAIR_EXIFROTATE;
         opts.row = infos[i].id;
         IThumbnailHelper::AddThumbnailGenerateTask(RepairExifRotateBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
@@ -1038,6 +1050,7 @@ int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbR
     bool needDeleteFromVisionTables)
 {
     ThumbnailData data;
+    data.genThumbScene = GenThumbScene::CLOUD_DOWNLOAD_ORIGINAL_MEDIA_FIX_EXIF_ROTATE;
     data.id = opts.fileId;
     opts.row = data.id;
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;

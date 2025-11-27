@@ -293,6 +293,7 @@ int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fil
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     data.isLocalFile = true;
+    data.genThumbScene = GenThumbScene::UPLOAD_TO_CLOUD_NEED_THUMB;
     IThumbnailHelper::AddThumbnailGenerateTask(
         IThumbnailHelper::CreateThumbnail, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
@@ -314,6 +315,7 @@ int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId)
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     data.isLocalFile = true;
+    data.genThumbScene = GenThumbScene::UPLOAD_TO_CLOUD_NEED_LCD;
     IThumbnailHelper::AddThumbnailGenerateTask(
         IThumbnailHelper::CreateLcd, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
