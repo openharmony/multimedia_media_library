@@ -365,7 +365,7 @@ static void ThumbnailGenerateHelperTest()
     Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);
     Media::ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    std::string id = to_string(provider->ConsumeIntegral<int32_t>());
+    std::string id = to_string(provider->ConsumeIntegral<int64_t>());
     std::string tracks = provider->ConsumeBytesAsString(NUM_BYTES);
     std::string trigger = provider->ConsumeBytesAsString(NUM_BYTES);
     std::string gentype = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -419,7 +419,7 @@ static void ThumbnailGenerationPostProcessTest()
 
 static void ThumbnailRestoreManagerTest()
 {
-    auto& restoreManager = Media::ThumbnailRestoreManager::Getinstance();
+    auto& restoreManager = Media::ThumbnailRestoreManager::GetInstance();
     restoreManager.InitializeRestore(provider->ConsumeIntegral<int64_t>());
     restoreManager.AddCompletedTasks(provider->ConsumeIntegral<int64_t>());
     restoreManager.StartProgressReporting(provider->ConsumeIntegral<int32_t>());
@@ -431,7 +431,7 @@ static void ThumbnailRestoreManagerTest()
     Media::ThumbnailData thumbnailData = FuzzThumbnailData();
     std::shared_ptr<Media::ThumbnailTaskData> taskData =
         std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, provider->ConsumeIntegral<int32_t>());
-    Media::ThumbnaiRestoreManager::RestoreAstcDualFrameTask(taskData);
+    Media::ThumbnailRestoreManager::RestoreAstcDualFrameTask(taskData);
     restoreManager.RestoreAstcDualFrame(opts, provider->ConsumeIntegral<int32_t>());
     restoreManager.Reset();
 }
