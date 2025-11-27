@@ -139,8 +139,7 @@ public:
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
-    static void RegisterTaskNewObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext,
-        const ObserverType &observerType);
+    static void RegisterTaskNewObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
