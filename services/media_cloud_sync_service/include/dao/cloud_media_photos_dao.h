@@ -61,6 +61,8 @@ public:
         int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues);
     int32_t BatchInsertAssetMaps(std::map<std::string, std::set<int32_t>> &recordAlbumMaps);
     int32_t UpdateAssetInPhotoMap(const int32_t &fileId, std::set<int> cloudMapIds);
+    void UpdateRecordToDatabasePrepare(const CloudMediaPullDataDto &pullData, bool isLocal,
+        bool mtimeChanged, NativeRdb::ValuesBucket &values);
     int32_t UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal, bool mtimeChanged,
         std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
@@ -173,7 +175,10 @@ private:
     int32_t GetFieldIntValue(
         const NativeRdb::ValuesBucket &values, const std::string &fieldName, const int32_t &defaultFieldValue);
     void GetUpdateRecordValues(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values);
-    NativeRdb::AbsRdbPredicates GetUpdateRecordCondition(const std::string &cloudId);
+    void GetUpdateRecordCondition(const std::string &cloudId,
+        NativeRdb::AbsRdbPredicates &predicates);
+    void GetUpdateRecordConditionForRecycleUpdate(const std::string &cloudId,
+        NativeRdb::AbsRdbPredicates &predicates);
     int32_t UpdatePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs,
         NativeRdb::ValuesBucket &values, int32_t &changeRows);
     void IsCoverContentChange(int32_t changedRows, bool mtimeChanged, int32_t fileId);
