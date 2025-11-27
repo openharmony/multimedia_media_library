@@ -81,7 +81,7 @@ bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
 bool UserDefineNotifyInfo::WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(notifyBody_ != nullptr && parcel != nullptr, false, "notifyBody or parcel is nullptr.");
-    parcel->WriteBool(static_cast<uint16_t>(this->readOnly_));
+    parcel->WriteBool(this->readOnly_);
     return this->notifyBody_->WriteToParcel(parcel);
 }
  
