@@ -779,8 +779,6 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
     if (asyncContext->observerType == ObserverType::REQUEST_IMAGE
         || asyncContext->observerType == ObserverType::REQUEST_QUICK_IMAGE) {
         MediaAssetManagerNapi::ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->deliveryMode));
-    } else if (asyncContext->observerType == ObserverType::REQUEST_VIDEO) {
-        MediaAssetManagerNapi::ProcessVideo(asyncContext);
     }
     NAPI_INFO_LOG("RegisterTaskNewObserver success.");
 }
@@ -948,6 +946,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
     asyncContext->requestId = GenerateRequestId();
     asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
+    asyncContext->observerType = ObserverType::REQUEST_IMAGE;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestImageData", JSRequestExecute,
         JSRequestComplete);
@@ -990,6 +989,7 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
 
     asyncContext->requestId = GenerateRequestId();
     asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
+    asyncContext->observerType = ObserverType::REQUEST_IMAGE;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestImage", JSRequestExecute,
         JSRequestComplete);
@@ -1113,6 +1113,7 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
     }
 
     asyncContext->requestId = GenerateRequestId();
+    asyncContext->observerType = ObserverType::REQUEST_VIDEO;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestVideoFile",
         JSRequestVideoFileExecute, JSRequestComplete);
 }
@@ -1832,6 +1833,7 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
         return nullptr;
     }
     asyncContext->requestId = GenerateRequestId();
+    asyncContext->observerType = ObserverType::REQUEST_IMAGE;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestMovingPhoto", JSRequestExecute,
         JSRequestComplete);
