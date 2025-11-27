@@ -33,8 +33,10 @@
 #include "multistages_capture_manager.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
+#include "multistages_capture_notify_info.h"
 #include "multistages_capture_request_task_manager.h"
 #include "multistages_moving_photo_capture_manager.h"
+#include "medialibrary_notify_new.h"
 #include "result_set_utils.h"
 #include "media_change_effect.h"
 #include "exif_metadata.h"
@@ -46,6 +48,7 @@
 
 using namespace std;
 using namespace OHOS::CameraStandard;
+using namespace OHOS::Media::Notification;
 
 constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
@@ -93,6 +96,39 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     }
     MEDIA_DEBUG_LOG("MultistagesCapture notify: %{public}s", notifyUri.c_str());
     watch->Notify(notifyUri, NOTIFY_UPDATE);
+}
+
+int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyOnProcess(
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, MultistagesCaptureNotifyType notifyType)
+{
+    MEDIA_INFO_LOG("NotifyOnProcess begin: %{public}d.", static_cast<int32_t>(notifyType));
+    if (resultSet == nullptr || notifyType == MultistagesCaptureNotifyType::UNDEFINED) {
+        MEDIA_ERR_LOG("resultSet is nullptr or Invalid observer type.");
+        return E_ERR;
+    }
+ 
+    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+ 
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
+ 
+    auto notifyBody = std::make_shared<MultistagesCaptureNotifyServerInfo>();
+    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
+    notifyBody->uri_ = notifyUri;
+    notifyBody->notifyType_ = notifyType;
+ 
+    UserDefineNotifyInfo notifyInfo(
+        NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    notifyInfo.SetUserDefineNotifyBody(notifyBody);
+ 
+    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
+    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
+    return E_OK;
 }
 
 int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId)
@@ -171,6 +207,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
                 MEDIA_ERR_LOG("result set is empty.");
                 return;
             }
+            NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
             NotifyIfTempFile(resultSet, true);
             MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(imageId);
             break;
@@ -196,7 +233,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 {
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
     CHECK_AND_RETURN_LOG(!cond, "resultset is empty.");
-
     MediaLibraryTracer tracer;
     tracer.Start("ProcessAndSaveHighQualityImage " + imageId);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -216,35 +252,33 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
             "imageSourceOrientation value is invalid.");
         metadata->SetValue(PHOTO_DATA_IMAGE_ORIENTATION, std::to_string(imageSourceOrientation->second));
     }
-
-    // 裸picture落盘处理
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     bool isTakeEffect = false;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
-        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect);
+        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect, imageId,
+        [this, resultSet]() -> int32_t {
+            return this->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::YUV_READY);
+        });
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
-
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
         imageId, std::move(picture), isEdited, isTakeEffect);
     UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
         HighQualityScanFileCallback::Create(fileId));
+    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
-
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
-    MEDIA_ERR_LOG("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
-        imageId.c_str(), fileId);
 }
 
 std::shared_ptr<Media::Picture> GetPictureFromPictureIntf(std::shared_ptr<CameraStandard::PictureIntf> pictureIntf)
@@ -384,8 +418,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         "this photo was delete or err photoId: %{public}s", imageId.c_str());
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone with addr " + imageId);
-
-    // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_ERR_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), bytes, cloudImageEnhanceFlag);
     tracer.Start("Query");
@@ -394,7 +426,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         tracer.Finish();
         MEDIA_ERR_LOG("result set is empty");
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
-        // When subTyoe query failed, default mediaType is Image
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
             static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
         return;
@@ -418,25 +449,19 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
-
     UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
-
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto,
         nullptr, HighQualityScanFileCallback::Create(fileId));
+    NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(resultSet);
-
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
-
-    // delete raw file
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
     CallProcessImageDone(true, imageId);
-    MEDIA_ERR_LOG("success photoid: %{public}s", imageId.c_str());
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnStateChanged(const DpsStatusCode state)

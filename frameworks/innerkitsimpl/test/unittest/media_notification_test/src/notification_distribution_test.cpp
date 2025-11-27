@@ -32,6 +32,7 @@
 #include "observer_info.h"
 #include "data_ability_observer_stub.h"
 #include "notify_task_worker.h"
+#include "user_define_notify_info.h"
 
 #include <string>
 #include <unordered_set>
@@ -40,6 +41,7 @@
 using namespace testing::ext;
 using namespace OHOS::AbilityRuntime;
 using namespace OHOS::AAFwk;
+using namespace OHOS::Media::Notification;
 
 namespace OHOS {
 namespace Media {
@@ -333,5 +335,70 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test013, TestSize.L
     MEDIA_INFO_LOG("end medialib_distribution_test013");
 }
 
+/**
+ * @tc.name: medialib_ProcessUserDefineNotifyInfo_test01
+ * @tc.desc: 该接口仅支持 USER_DEFINE_NOTIFY_URI，否则失败
+ */
+HWTEST_F(NotificationDistributionTest, medialib_ProcessUserDefineNotifyInfo_test01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_ProcessUserDefineNotifyInfo_test01");
+    UserDefineNotifyInfo notifyInfo;
+    notifyInfo.notifyUri_ = NotifyUriType::PHOTO_URI;
+    int32_t ret = NotificationDistribution::ProcessUserDefineNotifyInfo(notifyInfo);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end medialib_ProcessUserDefineNotifyInfo_test01");
+}
+ 
+/**
+ * @tc.name: medialib_ProcessUserDefineNotifyInfo_test02
+ * @tc.desc: 该接口必须定义body部分的类型，否则失败
+ */
+HWTEST_F(NotificationDistributionTest, medialib_ProcessUserDefineNotifyInfo_test02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_ProcessUserDefineNotifyInfo_test02");
+    UserDefineNotifyInfo notifyInfo;
+    notifyInfo.notifyUri_ = NotifyUriType::USER_DEFINE_NOTIFY_URI;
+    int32_t ret = NotificationDistribution::ProcessUserDefineNotifyInfo(notifyInfo);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end medialib_ProcessUserDefineNotifyInfo_test02");
+}
+ 
+/**
+ * @tc.name: medialib_ProcessUserDefineNotifyInfo_test03
+ * @tc.desc: 该接口需要在客户端注册之后才可使用，否则失败
+ */
+HWTEST_F(NotificationDistributionTest, medialib_ProcessUserDefineNotifyInfo_test03, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_ProcessUserDefineNotifyInfo_test03");
+    UserDefineNotifyInfo notifyInfo;
+    notifyInfo.notifyUri_ = NotifyUriType::USER_DEFINE_NOTIFY_URI;
+    notifyInfo.notifyUserDefineType_ = NotifyForUserDefineType::MULTISTAGES_CAPTURE;
+    int32_t ret = NotificationDistribution::ProcessUserDefineNotifyInfo(notifyInfo);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end medialib_ProcessUserDefineNotifyInfo_test03");
+}
+ 
+/**
+ * @tc.name: medialib_ProcessUserDefineNotifyInfo_test04
+ * @tc.desc: mock客户端注册 ，服务端可以正常发送通知
+ */
+HWTEST_F(NotificationDistributionTest, medialib_ProcessUserDefineNotifyInfo_test04, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_ProcessUserDefineNotifyInfo_test04");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType userDefineUri = Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    EXPECT_NE(observerManager, nullptr);
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    EXPECT_NE(dataObserver, nullptr);
+    observerManager->AddObserver(userDefineUri, dataObserver);
+ 
+    UserDefineNotifyInfo notifyInfo;
+    notifyInfo.notifyUri_ = NotifyUriType::USER_DEFINE_NOTIFY_URI;
+    notifyInfo.notifyUserDefineType_ = NotifyForUserDefineType::MULTISTAGES_CAPTURE;
+    int32_t ret = Media::Notification::NotificationDistribution::ProcessUserDefineNotifyInfo(notifyInfo);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end medialib_ProcessUserDefineNotifyInfo_test04");
+}
 } // namespace Media
 } // namespace OHOS

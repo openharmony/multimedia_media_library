@@ -37,7 +37,7 @@ public:
     EXPORT static void AddAlbum(const std::string &albumId);
 private:
     static MediaChangeInfo BuildMediaChangeInfo(NotifyInfoInner &notifyInfoInner,
-        bool isForRecheck, NotifyType notifyType, NotifyUriType notifyUriType);
+        bool isForRecheck, AccurateNotifyType notifyType, NotifyUriType notifyUriType);
     static std::vector<MediaChangeInfo> HandleAssetAdd(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAssetAddHidden(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAssetAddTrash(NotifyInfoInner &notifyInfoInner);

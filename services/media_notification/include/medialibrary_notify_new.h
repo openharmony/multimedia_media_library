@@ -20,6 +20,7 @@
 #include <mutex>
 
 #include "notify_info_inner.h"
+#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,7 @@ public:
     EXPORT static void AddItem(NotifyInfoInner &notifyInfoInner);
     EXPORT static void DeleteItem(NotifyInfoInner notifyInfoInner);
     EXPORT static void AddAlbum(const std::string &albumId);
+    EXPORT static void AddUserDefineItem(const UserDefineNotifyInfo &notifyInfoInner);
 };
 } // namespace Notification
 } // namespace Media

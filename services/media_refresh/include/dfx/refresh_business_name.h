@@ -92,6 +92,8 @@ static const std::string DEAL_ALBUMS_BUSSINESS_NAME = "getAlbums";
 
 static const std::string DELETE_PHOTOS_COMPLETED_BUSSINESS_NAME = "DeletePhotosCompleted";
 
+static const std::string YUV_READY_BUSSINESS_NAME = "YuvReady";
+
 } // namespace Media
 } // namespace OHOS
 

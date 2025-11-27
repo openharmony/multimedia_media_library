@@ -198,9 +198,9 @@ void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
     recheckChangeInfo->notifyUri = registerUri;
     recheckChangeInfo->isForRecheck = true;
     if (registerUri == PHOTO_URI || registerUri == HIDDEN_PHOTO_URI || registerUri == TRASH_PHOTO_URI) {
-        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ASSET_ADD;
+        recheckChangeInfo->notifyType = Notification::AccurateNotifyType::NOTIFY_ASSET_ADD;
     } else {
-        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ALBUM_ADD;
+        recheckChangeInfo->notifyType = Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD;
     }
     NotificationUtils::SendNotification(dataObserver, recheckChangeInfo);
     MEDIA_WARN_LOG("reconnect server and send recheck for uriType[%{public}d]", registerUri);

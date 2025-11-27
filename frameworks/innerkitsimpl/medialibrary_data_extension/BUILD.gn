@@ -151,6 +151,11 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
   ]
 
+  include_media_camera_character = [
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+  ]
+
   include_backround_task = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/background",
   ]
@@ -195,6 +200,8 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_albums_manager
   include_dirs += include_notification
   include_dirs += include_accurate_refresh
+  include_dirs += include_media_camera_character
+  
   include_dirs += include_backround_task
   include_dirs += include_media_lake_monitor
 
@@ -815,6 +822,7 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_notification_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/data/user_define_notify_info.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/media_observer_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/notify_register_permission.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/observer_callback_recipient.cpp",
