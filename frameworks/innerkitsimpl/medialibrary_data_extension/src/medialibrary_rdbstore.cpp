@@ -5573,9 +5573,9 @@ static void AddImageFaceAndFaceTagAgeGender(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("start to add age and gender for image face and face tag");
     const vector<string> sqls = {
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " DOUBLE",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
-        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " DOUBLE",
         "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
     };
     ExecSqlsWithDfx(sqls, store, version);
