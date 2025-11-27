@@ -1042,7 +1042,9 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     PhotoDayMonthYearOperation::RepairDateTime();
     MapCodeUploadChecker::RepairNoMapCodePhoto();
     backgroundTaskFactory_.Execute();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName();
+#endif
 }
 
 static void PauseBackgroundDownloadCloudMedia()
