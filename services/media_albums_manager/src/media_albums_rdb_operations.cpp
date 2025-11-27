@@ -197,6 +197,7 @@ double MediaAlbumsRdbOperations::GetAssetScore(const AlbumGetSelectedAssetsDto &
     CHECK_AND_RETURN_RET_LOG(!cond, 0, "fail to query asset score");
     std::string column = "total_score";
     double score = GetDoubleVal(column, resultSet);
+    resultSet->Close();
     return score;
 }
  
@@ -231,7 +232,6 @@ int32_t MediaAlbumsRdbOperations::SetUploadStatus(const std::vector<std::string>
     int32_t result = rdbStore->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "SetUploadStatus failed, result: %{public}d, changedRows: %{public}d", result, changedRows);
-    resultSet->Close();
     return changedRows;
 }
 } // namespace OHOS::Media
