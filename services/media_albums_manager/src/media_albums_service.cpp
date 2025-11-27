@@ -423,14 +423,16 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelectedAssets(
     AlbumGetSelectedAssetsDto &dto)
 {
-    int curFileId;
+    int curFileId = 0;
     double maxScore = 250;
     double minScore = 0;
     if (!dto.filter.empty()) {
-        CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(dto.filter), nullptr,
-            "failed to verify the filter format");
-        nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str());
-        std::string fileId = filterJson["currentFileId"];
+        nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str(), nullptr, false);
+        std::string fileIdField = "currentFileId";
+        bool cond =
+            (filterJson.is_discarded() || !filterJson.contains(fileIdField) || !filterJson[fileIdField].is_string());
+        CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "failed to verify the filter format");
+        std::string fileId = filterJson["currentFileId"].get<std::string>();
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), nullptr,
             "AlbumGetSelectedAssets get score fail");
         curFileId = std::stoi(fileId);

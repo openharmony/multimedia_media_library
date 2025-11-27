@@ -1870,7 +1870,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     return jsFileArray;
 }
 
-static napi_value checkArgsGetSelectedPhotoAssets(
+static napi_value CheckArgsGetSelectedPhotoAssets(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context)
 {
     napi_value result = nullptr;
@@ -1904,8 +1904,9 @@ static napi_value checkArgsGetSelectedPhotoAssets(
             bool cond = filterJson.size() == sizeLimit && filterJson.contains(key);
             CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId");
             std::string value = filterJson[key];
-            bool isVaildInteger = !value.empty() && std::all_of(value.begin(), value.end(), ::isdigit);
-            CHECK_COND_RET(isVaildInteger, nullptr, "key : currentFileId must be a integer");
+            bool isValidInteger = !value.empty() &&
+                                  std::all_of(value.begin(), value.end(), [](char c) { return c >= '0' && c <= '9'; });
+            CHECK_COND_RET(isValidInteger, nullptr, "key : currentFileId must be a integer");
         }
     }
  
@@ -1973,7 +1974,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSelectedPhotoAssets(napi_env env, nap
         return nullptr;
     }
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    CHECK_COND(env, checkArgsGetSelectedPhotoAssets(env, info, asyncContext) != nullptr, NAPI_INVALID_PARAMETER_ERROR);
+    CHECK_COND(env, CheckArgsGetSelectedPhotoAssets(env, info, asyncContext) != nullptr, NAPI_INVALID_PARAMETER_ERROR);
  
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSelectedPhotoAssets",
         JSPhotoAccessGetSelectedPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);
