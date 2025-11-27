@@ -750,7 +750,6 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
     std::string uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
-    NAPI_ERR_LOG("MultistagesCapture, uri: %{public}s, %{public}s.", asyncContext->photoUri.c_str(), uriLocal.c_str());
 
     auto observerBodyBase = std::make_shared<MultistagesCaptureOnProcessObserver>(uriLocal, asyncContext->observerType);
     auto dataObserver = std::make_shared<MediaOnNotifyUserDefineObserver>(
@@ -774,8 +773,6 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         observerMap.insert(std::make_pair(asyncContext->observerType, dataObserver));
     }
-    NAPI_ERR_LOG("MultiStagesObserverNewMap, size: %{public}d, size: %{public}d.",
-        static_cast<int32_t>(multiStagesObserverNewMap.size()), static_cast<int32_t>(observerMap.size()));
     registerLock.unlock();
     InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext, asyncContext->observerType);
 
@@ -785,7 +782,7 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
     } else if (asyncContext->observerType == ObserverType::REQUEST_VIDEO) {
         MediaAssetManagerNapi::ProcessVideo(asyncContext);
     }
-    NAPI_ERR_LOG("RegisterTaskNewObserver success.");
+    NAPI_INFO_LOG("RegisterTaskNewObserver success.");
 }
 
 napi_status MediaAssetManagerNapi::ParseRequestMediaArgs(napi_env env, napi_callback_info info,
