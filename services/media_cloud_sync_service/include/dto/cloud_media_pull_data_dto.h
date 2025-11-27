@@ -128,13 +128,15 @@ public:  // basic function
     bool IsVideoAsset();
     bool FindAlbumCloudId(std::string &albumCloudId);
     bool FindAlbumUploadStatus() const;
-
+    bool GetIsRecycleUpdated() const;
+    void SetIsRecycleUpdated(bool isRecycleUpdated);
 private:
     void GetBasicInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;
     void GetPropertiesInfo(std::stringstream &ss) const;
     void GetCloudInfo(std::stringstream &ss) const;
     void GetAlbumIds(std::stringstream &ss) const;
+    bool isRecycleUpdated{false};
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUDSYNC_CLOUD_MEDIA_PULL_DATA_H

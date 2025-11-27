@@ -386,16 +386,21 @@ void CloudMediaPhotosDao::GetUpdateRecordValues(const CloudMediaPullDataDto &pul
     return;
 }
 
-NativeRdb::AbsRdbPredicates CloudMediaPhotosDao::GetUpdateRecordCondition(const std::string &cloudId)
+void CloudMediaPhotosDao::GetUpdateRecordCondition(const std::string &cloudId,
+    NativeRdb::AbsRdbPredicates &predicates)
 {
-    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     predicates.Or()->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SDIRTY));
     predicates.Or()->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_RETRY));
     predicates.EndWrap();
-    return predicates;
+}
+
+void CloudMediaPhotosDao::GetUpdateRecordConditionForRecycleUpdate(const std::string &cloudId,
+    NativeRdb::AbsRdbPredicates &predicates)
+{
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
 }
 
 void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values, bool mtimeChanged)
@@ -415,12 +420,9 @@ void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBuc
     return;
 }
 
-int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,
-    bool mtimeChanged, std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullDataDto &pullData, bool isLocal,
+    bool mtimeChanged, NativeRdb::ValuesBucket &values)
 {
-    NativeRdb::ValuesBucket values;
-    this->GetUpdateRecordValues(pullData, values);
     if (mtimeChanged) {
         HandleExifRotateDownloadAsset(pullData, values);
     } else {
@@ -432,6 +434,15 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
         values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
     }
+}
+
+int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,
+    bool mtimeChanged, std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+{
+    NativeRdb::ValuesBucket values;
+    this->GetUpdateRecordValues(pullData, values);
+    this->UpdateRecordToDatabasePrepare(pullData, isLocal, mtimeChanged, values);
     int32_t albumId = 0;
     std::set<int32_t> albumIds;
     UpdateFixDB(pullData, values, albumId, albumIds, refreshAlbums);
@@ -451,12 +462,17 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
     UpdateTransCode(pullData, values, mtimeChanged);
-    NativeRdb::AbsRdbPredicates predicates = this->GetUpdateRecordCondition(pullData.cloudId);
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    if (pullData.GetIsRecycleUpdated()) {
+        this->GetUpdateRecordConditionForRecycleUpdate(pullData.cloudId, predicates);
+    } else {
+        this->GetUpdateRecordCondition(pullData.cloudId, predicates);
+    }
     int32_t changedRows = DEFAULT_VALUE;
     int32_t ret = this->UpdateProxy(changedRows, values, predicates, pullData.cloudId, photoRefresh);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateRecordToDatabase, ret: %{public}d", ret);
     NotifyDateTakenChanged(pullData);
-    MEDIA_INFO_LOG("changedRows %{public}d", changedRows);
+    MEDIA_INFO_LOG("changedRows %{public}d, IsRecycleUpdated %{public}d", changedRows, pullData.GetIsRecycleUpdated());
     if (changedRows > 0) {
         if (mtimeChanged) {  // 文件修改与元数据同时修改，算文件修改
             stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT]++;

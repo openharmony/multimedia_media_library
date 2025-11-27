@@ -1377,8 +1377,10 @@ int32_t CloudMediaPhotosService::PullRecycleUpdate(
 {
     int32_t ret = E_OK;
     if (this->photosDeleteService_.IsMoveOnlyCloudAssetIntoTrash(pullData)) {
+        pullData.SetIsRecycleUpdated(true);
         ret = this->photosDeleteService_.CopyAndMoveCloudAssetToTrash(pullData, photoRefresh);
     } else if (this->photosDeleteService_.IsMoveOutFromTrash(pullData)) {
+        pullData.SetIsRecycleUpdated(true);
         ret = this->photosDeleteService_.MoveOutTrashAndMergeWithSameAsset(photoRefresh, pullData);
     }
     return ret;
