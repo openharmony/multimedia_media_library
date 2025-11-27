@@ -15,13 +15,17 @@
 
 #include "thumbnail_generate_worker.h"
 
+#include <iostream>
 #include <pthread.h>
+#include <sstream>
+#include <thread>
 
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
 #endif
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
