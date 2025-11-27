@@ -65,7 +65,7 @@ std::vector<NotifyInfo> NotificationMerging::ProcessNotifyInfos(const std::vecto
     auto manager = MediaObserverManager::GetObserverManager();
     CHECK_AND_RETURN_RET_LOG(manager != nullptr, {}, "manager is null");
 
-    std::map<std::pair<NotifyUriType, NotifyType>, MediaChangeInfo> mergedChanges;
+    std::map<std::pair<NotifyUriType, AccurateNotifyType>, MediaChangeInfo> mergedChanges;
     std::vector<NotifyInfo> notifyInfos;
     // 对notifyUri和notifyType相同的进行合并
     for (const auto &info : mediaChangeInfos) {

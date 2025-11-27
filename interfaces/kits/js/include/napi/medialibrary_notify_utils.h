@@ -44,6 +44,7 @@ public:
     static const std::string HIDDEN_ALBUM_CHANGE EXPORT;
     static const std::string TRASHED_ALBUM_CHANGE EXPORT;
     static const std::string BATCH_DOWNLOAD_PROGRESS_CHANGE EXPORT;
+    static const std::string USER_CLIENT_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
@@ -55,14 +56,19 @@ public:
     static const std::map<std::string, Notification::NotifyUriType> REGISTER_NOTIFY_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_URI_MAP;
-    static const std::map<Notification::NotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
+    static const std::map<Notification::AccurateNotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
+
+    static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_USER_DEFINE_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, std::string> REGISTER_USER_DEFINE_URI_MAP;
 
     static int32_t GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
+    static int32_t GetUserDefineNotifyTypeAndUri(const Notification::NotifyUriType type,
+        Notification::NotifyUriType &uriType, string &uri);
     static int32_t GetRegisterNotifyType(const std::string &type, Notification::NotifyUriType &uriType);
     static int32_t GetNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
-    static int32_t GetNotifyChangeType(const Notification::NotifyType &notifyType);
+    static int32_t GetNotifyChangeType(const Notification::AccurateNotifyType &notifyType);
 
     static napi_status SetValueInt32(const napi_env& env, const char* name, const int32_t intValue, napi_value& result);
     static napi_status SetValueInt64(const napi_env& env, const char* name, const int64_t intValue, napi_value& result);

@@ -20,6 +20,7 @@
 #include <vector>
 #include <map>
 
+#include "camera_character_types.h"
 #include "data_ability_helper.h"
 #include "data_ability_observer_stub.h"
 #include "data_ability_predicates.h"
@@ -55,6 +56,7 @@ struct AssetHandler {
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
     bool isError = false;
+    ObserverType observerType{ObserverType::UNDEFINED};
 
     AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
@@ -114,15 +116,7 @@ struct MediaAssetManagerAsyncContext : NapiError {
     CompatibleMode compatibleMode;
     napi_value mediaAssetProgressHandler;
     ProgressHandler *progressHandler = nullptr;
-};
-
-class MultiStagesTaskObserver : public DataShare::DataShareObserver {
-public:
-    MultiStagesTaskObserver(int fileId)
-        : fileId_(fileId) {};
-    void OnChange(const ChangeInfo &changelnfo) override;
-private:
-    int fileId_;
+    ObserverType observerType{ObserverType::UNDEFINED};
 };
 
 struct WriteData {
@@ -145,7 +139,7 @@ public:
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
-    static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
+    static void RegisterTaskNewObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
@@ -186,7 +180,7 @@ private:
     static napi_status CreateOnDataPreparedThreadSafeFunc(napi_env env,
         const unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &threadSafeFunc);
     static napi_status CreateOnProgressThreadSafeFunc(napi_env env,
-         unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &progressFunc);
+        unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &progressFunc);
     static void JSRequestExecute(napi_env env, void *data);
     static void JSRequestVideoFileExecute(napi_env env, void *data);
     static void JSRequestComplete(napi_env env, napi_status, void *data);

@@ -34,7 +34,8 @@ std::unordered_map<std::string, Notification::NotifyUriType> NOTIFY_URI_MAP = {
     {"photoAlbumChange", Notification::NotifyUriType::PHOTO_ALBUM_URI},
     {"hiddenAlbumChange", Notification::NotifyUriType::HIDDEN_ALBUM_URI},
     {"trashedAlbumChange", Notification::NotifyUriType::TRASH_ALBUM_URI},
-    {"downloadProgressChange", Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI}
+    {"downloadProgressChange", Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI},
+    {"userDefineChange", Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI},
 };
 
 std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
@@ -177,7 +178,7 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
 int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isDescendants, RegisterOption option)
 {
-    MEDIA_INFO_LOG("enter MediaDataShareStubImpl::RegisterObserver, uri:%{public}s", uri.ToString().c_str());
+    MEDIA_INFO_LOG("Enter MediaDataShareStubImpl::RegisterObserver, uri:%{public}s", uri.ToString().c_str());
     std::string uriType = uri.ToString();
     if (NOTIFY_URI_MAP.find(uriType) == NOTIFY_URI_MAP.end()) {
         MEDIA_ERR_LOG("registerType is invalid");
@@ -194,7 +195,7 @@ int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
 int MediaDataShareStubImpl::UnregisterObserverExtProvider(const Uri &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
-    MEDIA_INFO_LOG("enter MediaDataShareStubImpl::UnregisterObserver, uri:%{public}s", uri.ToString().c_str());
+    MEDIA_INFO_LOG("Enter MediaDataShareStubImpl::UnregisterObserver, uri:%{public}s", uri.ToString().c_str());
     std::string uriType = uri.ToString();
     if (NOTIFY_URI_MAP.find(uriType) == NOTIFY_URI_MAP.end()) {
         MEDIA_ERR_LOG("registerType is invalid");

@@ -23,6 +23,8 @@
  
 #include "notify_info.h"
 #include "media_change_info.h"
+#include "observer_info.h"
+#include "user_define_notify_info.h"
  
 namespace OHOS {
 namespace Media {
@@ -33,6 +35,7 @@ public:
     EXPORT NotificationDistribution();
     EXPORT ~NotificationDistribution();
     EXPORT static int32_t DistributeNotifyInfo(const std::vector<NotifyInfo>& notifyInfos);
+    EXPORT static int32_t DistributeUserDefineNotifyInfo(const std::vector<UserDefineNotifyInfo>& notifyInfos);
 private:
     static MediaChangeInfo FilterNotifyInfoByPermission(const MediaChangeInfo& changeInfo, NotifyUriType notifyUriType);
     static int32_t SendNotificationWithRecheckChangeInfo(const MediaChangeInfo& changeInfo,
@@ -40,6 +43,9 @@ private:
     static int32_t ProcessMediaChangeInfos(const std::vector<Notification::MediaChangeInfo>& mediaChangeInfos,
         Notification::NotifyUriType notifyUriType, const ObserverInfo& observerInfo);
     static int32_t ProcessNotifyInfo(const NotifyInfo& notifyInfo);
+
+    static int32_t ProcessUserDefineNotifyInfo(const UserDefineNotifyInfo &notifyInfo);
+    static std::vector<ObserverInfo> findObservers(NotifyUriType notifyUriType);
 };
 } // namespace Notification
 } // namespace Media
