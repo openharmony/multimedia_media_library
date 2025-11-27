@@ -92,8 +92,8 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
         .Post(operationCode, reqBody, respBody);
     for (auto data : respBody.fdirtyDatas) {
         if (data.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-            MEDIA_INFO_LOG("Need clear VideoCache, fileid: %{public}d, attributesMediaType: %{public}d, localPath: %{public}s",
-            data.fileId, data.attributesMediaType, data.localPath.c_str());
+            MEDIA_INFO_LOG("Need clear VideoCache, attributesMediaType: %{public}d, localPath: %{public}s",
+                data.attributesMediaType, data.localPath.c_str());
             CloudMediaSyncUtils::InvalidVideoCache(data.localPath);
         }
     }
