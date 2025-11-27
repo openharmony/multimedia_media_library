@@ -116,6 +116,7 @@ struct MediaAssetManagerAsyncContext : NapiError {
     CompatibleMode compatibleMode;
     napi_value mediaAssetProgressHandler;
     ProgressHandler *progressHandler = nullptr;
+    ObserverType observerType{ObserverType::UNDEFINED};
 };
 
 struct WriteData {
