@@ -14,14 +14,12 @@
  */
  
 #define MLOG_TAG "AccurateRefresh::UserDefineNotifyExecution"
- 
-#include "user_define_notify_execution.h"
- 
+
 namespace OHOS {
 namespace Media::AccurateRefresh {
 using namespace std;
 using namespace OHOS::Media::Notification;
- 
+
 void UserDefineNotifyExecution::Notify(const UserDefineNotifyInfo &notifyInfoInner)
 {
     // 调用发送通知接口
