@@ -134,6 +134,7 @@
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
 #include "vision_image_face_column.h"
+#include "register_unregister_handler_functions.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -266,6 +267,9 @@ thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullp
 thread_local napi_ref MediaLibraryNapi::sAuthorizationModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
+using ClientObserverListMap = std::map<std::string, std::vector<std::shared_ptr<ClientObserver>>>;
+using GlobalObserverMap = std::map<Notification::NotifyUriType, ClientObserverListMap>;
+using ClientObserverListMapIter = ClientObserverListMap::iterator;
 
 thread_local napi_ref MediaLibraryNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::photoAccessHelperConstructor_ = nullptr;
@@ -477,6 +481,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("isCompatibleDuplicateSupported", CanSupportedCompatibleDuplicate),
             DECLARE_NAPI_FUNCTION("acquireDebugDatabase", PhotoAccessAcquireDebugDatabase),
             DECLARE_NAPI_FUNCTION("releaseDebugDatabase", PhotoAccessReleaseDebugDatabase),
+            DECLARE_NAPI_FUNCTION("onSinglePhotoChange", SinglePhotoAccessRegisterCallback),
+            DECLARE_NAPI_FUNCTION("onSinglePhotoAlbumChange", SinglePhotoAlbumRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offSinglePhotoChange", SinglePhotoAccessUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("offSinglePhotoAlbumChange", SinglePhotoAlbumUnregisterCallback),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -10885,6 +10893,279 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
     return undefinedResult;
 }
 
+std::string MediaLibraryNapiUtils::GetUriFromNapiAssets(
+    napi_env env, const napi_value &napiAsset)
+{
+    FileAssetNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiAsset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+        return "";
+    }
+    if (obj->IsHidden() || obj->IsTrash()) {
+        NAPI_ERR_LOG("Skip invalid asset (hidden or trash), assetId: %{public}d", obj->GetFileId());
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Check Whether It Is A Hidden Or Recycled Asset");
+        return "";
+    }
+    if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+        NAPI_ERR_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,
+            "Check Whether It Is Not A MEDIA_TYPE_IMAGE Or MEDIA_TYPE_VIDEO");
+        return "";
+    }
+    std::string assetUri = RegisterUnregisterHandlerFunctions::NapiGetUriFromAsset(obj);
+    if (assetUri.empty()) {
+        NAPI_ERR_LOG("Got empty asset URI from asset object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary assets invalid");
+    } else {
+        NAPI_INFO_LOG("Successfully extracted album URI: %{private}s", assetUri.c_str());
+    }
+    return assetUri;
+}
+
+std::string MediaLibraryNapiUtils::GetUriFromNapiPhotoAlbum(
+    napi_env env, const napi_value &napiPhotoAlbum)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiPhotoAlbum, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get album napi object");
+        return "";
+    }
+
+    PhotoAlbumSubType albumSubType = obj->GetPhotoAlbumSubType();
+    if (albumSubType == PhotoAlbumSubType::TRASH || albumSubType == PhotoAlbumSubType::HIDDEN) {
+        NAPI_ERR_LOG("Skip invalid album (trash or hidden), albumId: %{public}d, subType: %{public}d",
+            obj->GetAlbumId(), static_cast<int32_t>(albumSubType));
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Check Whether It Is A Hidden Or Recycled Hide");
+        return "";
+    }
+
+    std::string albumUri = obj->GetAlbumUri();
+    if (albumUri.empty()) {
+        NAPI_ERR_LOG("Got empty album URI from photo album object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary Album invalid");
+    }
+    return albumUri;
+}
+
+int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref, 
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+        const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri)
+{
+    auto& uriMap = observer->singleClientObservers_[uriType];
+    auto uriIter = uriMap.find(assetOrAlbumUri);
+
+    if (uriIter == uriMap.end()) {
+        return HandleNewUriRegistration(env, ref, observer, uriType, assetOrAlbumUri);
+    }
+
+    return HandleExistingUriCheck(env, ref, uriIter->second, uriType, assetOrAlbumUri);
+}
+
+int32_t MediaLibraryNapi::HandleNewUriRegistration(napi_env env, napi_ref ref,
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+        const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+
+    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
+        return JS_E_PARAM_INVALID;
+    }
+    std::vector<std::shared_ptr<ClientObserver>> newObservers;
+    auto clientObserver = std::make_shared<ClientObserver>(uriType, ref);
+
+    if (clientObserver == nullptr) {
+        NAPI_ERR_LOG("Failed to create ClientObserver");
+        return JS_E_PARAM_INVALID;
+    }
+
+    auto ret = UserFileClient::RegisterObserverExtProvider(Uri(registerUri + assetOrAlbumUri),
+        static_cast<std::shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to register observer, ret: %{public}d, uri: %{private}s", ret, assetOrAlbumUri.c_str());
+        return ret;
+    }
+    std::lock_guard<std::mutex> lock(ChangeListenerNapi::trashMutex_);
+    newObservers.push_back(clientObserver);
+    observer->singleClientObservers_[uriType][assetOrAlbumUri] = newObservers;
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::HandleExistingUriCheck(napi_env env, napi_ref ref,
+        std::vector<std::shared_ptr<ClientObserver>> &existingObservers,
+        const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri)
+{
+    napi_value callback = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &callback);
+
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_get_reference_value failed, status: %{public}d", status);
+        return OHOS_INVALID_PARAM_CODE;
+    }
+    bool hasRegister = false;
+    for (auto &obs : existingObservers) {
+        napi_value onCallback = nullptr;
+        status = napi_get_reference_value(env, obs->ref_, &onCallback);
+        if (status == napi_ok) {
+            napi_strict_equals(env, callback, onCallback, &hasRegister);
+        }
+        if (hasRegister) {
+            NAPI_ERR_LOG("clientObserver hasRegister");
+            return JS_E_PARAM_INVALID;
+        }
+    }
+    if (!hasRegister) {
+        auto clientObserver = std::make_shared<ClientObserver>(uriType, ref);
+        if (clientObserver == nullptr) {
+            NAPI_ERR_LOG("Failed to create ClientObserver");
+            return JS_E_PARAM_INVALID;
+        }
+        std::lock_guard<std::mutex> lock(ChangeListenerNapi::trashMutex_);
+        existingObservers.push_back(clientObserver);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, 
+    ChangeListenerNapi &listObj, const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
+        return JS_E_PARAM_INVALID;
+    }
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); it++) {
+        Notification::NotifyUriType observerUri = (*it)->uriType_;
+        if (observerUri == registerUriType) {
+            NAPI_INFO_LOG("Found existing observer for registerUriType: %{public}d, adding client observer with uriType: %{public}d", 
+                         registerUriType, uriType);
+            return AddSingleClientObserver(env, ref, *it, uriType, assetOrAlbumUri);
+        }
+    }
+    shared_ptr<MediaOnNotifyNewObserver> observer =
+        make_shared<MediaOnNotifyNewObserver>(registerUriType, registerUri, env);
+    Uri notifyUri(registerUri);
+    int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to register observer, ret: %{public}d, uri: %{private}s", ret, registerUri.c_str());
+        return ret;
+    }
+    ret = AddSingleClientObserver(env, ref, observer, uriType, assetOrAlbumUri);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("Failed to add client observer, ret: %{public}d", ret);
+        return ret;
+    }
+    listObj.newObservers_.push_back(observer);
+    RegisterUnregisterHandlerFunctions::SyncUpdateNormalListener(listObj, registerUriType, observer);
+    NAPI_INFO_LOG("success to register observer, uriType: %{public}d,"
+        "registerUriType: %{public}d, assetOrAlbumUri: %{public}s", uriType, registerUriType, assetOrAlbumUri.c_str());
+    return ret;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAccessRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAccessRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAccessRegisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckRegisterCallbackArgs(env, info, context) == nullptr) {
+        NAPI_ERR_LOG("Parameter validation failed");
+        return undefinedResult;
+    }
+    
+    int32_t ret = E_OK;
+    std::string assetUri;
+    assetUri = MediaLibraryNapiUtils::GetUriFromNapiAssets(env, context->argv[PARAM0]);
+    if (assetUri.empty()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get URI from photo asset");
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAccessRegisterCallback got assetUri: %{public}s", assetUri.c_str());
+
+    string type = RegisterNotifyType::SINGLE_PHOTO_CHANGE;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
+        return undefinedResult;
+    }
+    if (!RegisterUnregisterHandlerFunctions::checkSingleRegisterCount(*g_listObj, uriType)) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Registration has reached the limit.");
+        return undefinedResult;
+    }
+    const int32_t refCount = 1;
+    napi_ref cbOnRef = nullptr;
+    if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        return undefinedResult;
+    }
+
+    ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType, assetUri);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        napi_delete_reference(env, cbOnRef);
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAccessRegisterCallback success for uri: %{public}s", assetUri.c_str());
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAlbumRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAlbumRegisterCallback");
+    MediaLibraryTracer tracer;
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckRegisterCallbackArgs(env, info, context) == nullptr) {
+        NAPI_ERR_LOG("Parameter validation failed");
+        return undefinedResult;
+    }
+    int32_t ret = E_OK;
+    std::string albumUri;
+    albumUri = MediaLibraryNapiUtils::GetUriFromNapiPhotoAlbum(env, context->argv[PARAM0]);
+    if (albumUri.empty()) {
+        NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback 8");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get URI from photo album");
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback got albumUri: %{public}s", albumUri.c_str());
+
+    string type = RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
+        return undefinedResult;
+    }
+    if (!RegisterUnregisterHandlerFunctions::checkSingleRegisterCount(*g_listObj, uriType)) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Registration has reached the limit.");
+        return undefinedResult;
+    }
+    const int32_t refCount = 1;
+    napi_ref cbOnRef = nullptr;
+    if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        return undefinedResult;
+    }
+
+    ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType, albumUri);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        napi_delete_reference(env, cbOnRef);
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback success for album uri: %{public}s", albumUri.c_str());
+    return undefinedResult;
+}
+
 int32_t MediaLibraryNapi::AddClientObserver(napi_env env, napi_ref ref,
     std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> &clientObservers,
     const Notification::NotifyUriType uriType)
@@ -10955,6 +11236,7 @@ int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, Ch
 
     shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
     observer->clientObservers_[uriType].push_back(clientObserver);
+    RegisterUnregisterHandlerFunctions::SyncUpdateSingleListener(listObj, registerUriType, observer);
     listObj.newObservers_.push_back(observer);
     NAPI_INFO_LOG("success to register observer, ret: %{public}d, uri: %{public}s", ret, registerUri.c_str());
     return ret;
@@ -11164,6 +11446,66 @@ napi_value MediaLibraryNapi::PhotoAccessUnregisterCallback(napi_env env, napi_ca
     }
     if (cbOffRef != nullptr) {
         napi_delete_reference(env, cbOffRef);
+    }
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAccessUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAccessUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAccessUnregisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    if (g_listObj == nullptr) {
+        return undefinedResult;
+    }
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckSingleUnregisterCallbackArgs(env, info, context) == nullptr) {
+        return undefinedResult;
+    }
+
+    napi_ref cbOffRef = nullptr;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::SINGLE_PHOTO_URI;
+    
+    UnregisterContext singleContext(env, uriType, "", *g_listObj);
+    singleContext.cbRef = cbOffRef;
+    int32_t ret = RegisterUnregisterHandlerFunctions::HandleSingleUriScenario(singleContext, context);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+    }
+    if (singleContext.cbRef != nullptr) {
+        napi_delete_reference(env, singleContext.cbRef);
+    }
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAlbumUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAlbumUnregisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    if (g_listObj == nullptr) {
+        return undefinedResult;
+    }
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckSingleUnregisterCallbackArgs(env, info, context) == nullptr) {
+        return undefinedResult;
+    }
+
+    napi_ref cbOffRef = nullptr;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI;
+    
+    UnregisterContext singleContext(env, uriType, "", *g_listObj);
+    singleContext.cbRef = cbOffRef;
+    int32_t ret = RegisterUnregisterHandlerFunctions::HandleSingleUriScenario(singleContext, context);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+    }
+    if (singleContext.cbRef != nullptr) {
+        napi_delete_reference(env, singleContext.cbRef);
     }
     return undefinedResult;
 }

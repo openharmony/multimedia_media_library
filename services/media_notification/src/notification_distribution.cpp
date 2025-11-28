@@ -46,8 +46,11 @@ MediaChangeInfo NotificationDistribution::FilterNotifyInfoByPermission(
 {
     const NotifyUriType changeUri = changeInfo.notifyUri;
 
-    if ((notifyUriType == NotifyUriType::PHOTO_URI || notifyUriType == NotifyUriType::PHOTO_ALBUM_URI) &&
-        changeUri == notifyUriType) {
+    if ((notifyUriType == NotifyUriType::PHOTO_URI ||
+         notifyUriType == NotifyUriType::PHOTO_ALBUM_URI ||
+         notifyUriType == NotifyUriType::SINGLE_PHOTO_URI ||
+         notifyUriType == NotifyUriType::SINGLE_PHOTO_ALBUM_URI) &&
+         changeUri == notifyUriType) {
         return changeInfo;
     }
 
