@@ -47,6 +47,10 @@
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
 #include "start_asset_change_scan_vo.h"
+#include "get_asset_compress_version_vo.h"
+#include "notify_asset_sended_vo.h"
+#include "open_asset_compress_vo.h"
+#include "open_asset_compress_dto.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -59,6 +63,7 @@ constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 constexpr int32_t DEFUALT_USER_ID = 100;
 constexpr int32_t DATASHARE_ERR = -1;
+constexpr int64_t SHARE_UID = 5520;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -745,6 +750,77 @@ int32_t MediaLibraryExtendManager::CheckCloudDownloadPermission(uint32_t tokenId
     CHECK_AND_RETURN_RET_LOG(TokenIdKit::IsSystemAppByFullTokenID(tokenIdEx),
         E_ERR, "only invoke by systemapp");
     return CheckPhotoUriPermission(tokenId, uris, result, flags);
+}
+
+int32_t MediaLibraryExtendManager::OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version)
+{
+    MEDIA_INFO_LOG("OpenAssetCompress begin");
+
+    CHECK_AND_RETURN_RET_LOG(IPCSkeleton::GetCallingUid() == SHARE_UID, E_ERR, "only support share");
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "Invalid uri");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "Failed to open Asset, datashareHelper is nullptr");
+
+    OpenAssetCompressReqBody reqBody;
+    reqBody.uri = uri;
+    reqBody.version = version;
+    reqBody.type = static_cast<int32_t>(type);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_OPEN_ASSET_COMPRESS);
+    OpenAssetCompressRespBody respBody;
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "OpenAssetCompress failed, errCode: %{public}d", errCode);
+    }
+    return respBody.fileDescriptor;
+}
+
+int32_t MediaLibraryExtendManager::GetAssetCompressVersion()
+{
+    MEDIA_INFO_LOG("GetAssetCompressVersion begin");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+
+    GetAssetCompressVersionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSET_COMPRESS_VERSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Get(businessCode, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Get(businessCode, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+            "GetAssetCompressVersion failed, errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("GetAssetCompressVersion end, version=%{public}d", respBody.version);
+    return respBody.version;
+}
+
+int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
+{
+    MEDIA_INFO_LOG("NotifyAssetSended begin, uri:%{private}s", uri.c_str());
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "invalid uri");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+
+    NotifyAssetSendedReqBody reqBody;
+    reqBody.uri = uri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_NOTIFY_ASSET_SENDED);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "NotifyAssetSended failed, errCode: %{public}d", errCode);
+    }
+    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

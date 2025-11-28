@@ -102,6 +102,10 @@
 #include "release_debug_database_vo.h"
 #include "get_fussion_assets_vo.h"
 #include "photo_album.h"
+#include "get_asset_compress_version_vo.h"
+#include "notify_asset_sended_vo.h"
+#include "open_asset_compress_vo.h"
+#include "open_asset_compress_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -571,6 +575,18 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_DELETE_CLOUD_ASSETS_WITH_URI),
         &MediaAssetsControllerService::DeleteCloudAssetsWithUri
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_OPEN_ASSET_COMPRESS),
+        &MediaAssetsControllerService::OpenAssetCompress
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_NOTIFY_ASSET_SENDED),
+        &MediaAssetsControllerService::NotifyAssetSended
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSET_COMPRESS_VERSION),
+        &MediaAssetsControllerService::GetAssetCompressVersion
     },
 };
 
@@ -2765,5 +2781,54 @@ int32_t MediaAssetsControllerService::DeleteCloudAssetsWithUri(MessageParcel &da
     }
     ret = this->mediaAssetsDeleteService_.DeleteCloudAssets(reqBody.fileIds);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::OpenAssetCompress(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::OpenAssetCompress start");
+    OpenAssetCompressReqBody reqBody;
+    OpenAssetCompressRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("OpenAssetCompress Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    OpenAssetCompressDto dto;
+    reqBody.Convert2Dto(dto);
+    ret = MediaAssetsService::GetInstance().OpenAssetCompress(dto, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::OpenAssetCompress fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::NotifyAssetSended(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::NotifyAssetSended start");
+    NotifyAssetSendedReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("NotifyAssetSended Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().NotifyAssetSended(reqBody.uri);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::NotifyAssetSended fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetAssetCompressVersion(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetAssetCompressVersion start");
+    GetAssetCompressVersionRespBody respBody;
+    int32_t ret = MediaAssetsService::GetInstance().GetAssetCompressVersion(respBody.version);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetAssetCompressVersion fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

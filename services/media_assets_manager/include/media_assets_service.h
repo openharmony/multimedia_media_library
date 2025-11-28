@@ -77,6 +77,8 @@
 #include "get_batch_download_cloud_resources_count_vo.h"
 #include "acquire_debug_database_vo.h"
 #include "get_fussion_assets_vo.h"
+#include "open_asset_compress_vo.h"
+#include "open_asset_compress_dto.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -185,6 +187,9 @@ public:
     int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
     int32_t StartAssetChangeScanInner(const StartAssetChangeScanDto& startAssetChangeScanDto);
     int32_t GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody);
+    int32_t OpenAssetCompress(const OpenAssetCompressDto &dto, OpenAssetCompressRespBody &respBody);
+    int32_t NotifyAssetSended(const std::string &uri);
+    int32_t GetAssetCompressVersion(int32_t &version);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

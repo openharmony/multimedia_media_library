@@ -417,6 +417,16 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
     return E_OK;
 }
 
+string MovingPhotoFileUtils::GetSourceBackMovingPhotoImagePath(const string& imagePath, int32_t userId)
+{
+    return GetEditDataSourceBackPath(imagePath, userId);
+}
+
+string MovingPhotoFileUtils::GetSourceBackMovingPhotoVideoPath(const string& imagePath, int32_t userId)
+{
+    return GetMovingPhotoVideoPath(GetSourceBackMovingPhotoImagePath(imagePath, userId));
+}
+
 int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhotoImagePath,
     string& sourceLivePhotoPath, int32_t userId)
 {
