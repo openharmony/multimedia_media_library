@@ -17,7 +17,7 @@
 #define  INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_PEER_INFO_H_
 
 #include <cstdint>
-#ifdef  DM_DEVICE_INFO_ENABLE
+#ifdef DEVICE_MANAGER_SUPPORT
 #include "dm_device_info.h"
 #endif
 
@@ -26,7 +26,9 @@ namespace Media {
 typedef struct PeerInfo {
     std::string deviceName;
     std::string networkId;
+#ifdef DEVICE_MANAGER_SUPPORT
     DistributedHardware::DmDeviceType deviceTypeId;
+#endif
     bool isOnline;
 } PeerInfo;
 } // namespace Media

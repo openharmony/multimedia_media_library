@@ -4827,7 +4827,9 @@ static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerI
     napi_create_object(env, &result);
     SetValueUtf8String(env, "deviceName", info->deviceName.c_str(), result);
     SetValueUtf8String(env, "networkId", info->networkId.c_str(), result);
+#ifdef DEVICE_MANAGER_SUPPORT
     SetValueInt32(env, "deviceTypeId", (int) info->deviceTypeId, result);
+#endif
     SetValueBool(env, "isOnline", info->isOnline, result);
 
     napi_status status = napi_set_element(env, arrayResult, idx, result);
@@ -4877,8 +4879,10 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
                 TYPE_STRING));
             peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
                 TYPE_STRING));
+        #ifdef DEVICE_MANAGER_SUPPORT
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
                 (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+        #endif
             peerInfo->isOnline = true;
             peerInfoArray.push_back(move(peerInfo));
         }
@@ -4927,8 +4931,10 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
                 TYPE_STRING));
             peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
                 TYPE_STRING));
+        #ifdef DEVICE_MANAGER_SUPPORT
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
                 (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+        #endif
             peerInfo->isOnline = (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_DATE_MODIFIED, resultSet,
                 TYPE_INT32)) == 0);
             peerInfoArray.push_back(move(peerInfo));
