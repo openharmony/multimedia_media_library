@@ -23,6 +23,7 @@
 
 #include "abs_predicates.h"
 #include "abs_shared_result_set.h"
+#include "asset_compress_version_manager.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
@@ -32,6 +33,7 @@
 #include "medialibrary_command.h"
 #include "photo_album.h"
 #include "picture.h"
+#include "tlv_util.h"
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
@@ -104,6 +106,7 @@ public:
     EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
+    EXPORT static std::string GetEditDataSourceBackPath(const string& path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);
     EXPORT static int32_t CheckExist(const std::string &path);
@@ -194,6 +197,8 @@ protected:
     EXPORT static std::string GetEditDataPath(const std::string &path);
     EXPORT static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
+    static std::string GetAssetCompressCachePath(const std::string &path);
+    static std::string GetAssetCompressJsonPath(const std::string &path);
     static int32_t AddOtherBurstIdsToFileIds(std::vector<std::string> &fileIds);
 
 private:
