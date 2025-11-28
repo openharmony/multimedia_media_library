@@ -44,6 +44,8 @@ public:
     static const std::string HIDDEN_ALBUM_CHANGE EXPORT;
     static const std::string TRASHED_ALBUM_CHANGE EXPORT;
     static const std::string BATCH_DOWNLOAD_PROGRESS_CHANGE EXPORT;
+    static const std::string SINGLE_PHOTO_CHANGE EXPORT;
+    static const std::string SINGLE_PHOTO_ALBUM_CHANGE EXPORT;
     static const std::string USER_CLIENT_CHANGE EXPORT;
 };
 
@@ -105,6 +107,18 @@ public:
         const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
     static napi_status BuildPauseReasonSubInfos(napi_env env,
         const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
+    static napi_value BuildSingleAssetNapi(napi_env env,
+        const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo);
+    static napi_value BuildSinglePhotoAssetChangeInfos(napi_env env,
+        const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo,
+        const shared_ptr<Notification::MediaChangeInfo> &changeInfos);
+    static napi_value BuildSingleAlbumNapi(napi_env env,
+        const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo);
+    static napi_value BuildSingleAlbumChangeInfos(napi_env env,
+        const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo,
+        const shared_ptr<Notification::MediaChangeInfo> &changeInfos);
+    static napi_value BuildSinglePhotoAssetRecheckChangeInfos(napi_env env);
+    static napi_value BuildSingleAlbumRecheckChangeInfos(napi_env env);
 };
 }
 }

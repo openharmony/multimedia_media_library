@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_OBSERVER_INFO_H
 
 #include "data_ability_observer_stub.h"
+#include <unordered_set>
 
 namespace OHOS {
 namespace Media {
@@ -26,6 +27,7 @@ class ObserverInfo {
 public:
     sptr<AAFwk::IDataAbilityObserver> observer;
     bool isSystem;
+    std::unordered_set<std::string> observerUris;
 };
 
 }
