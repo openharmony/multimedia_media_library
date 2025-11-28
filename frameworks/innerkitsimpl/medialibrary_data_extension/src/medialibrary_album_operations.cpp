@@ -1018,7 +1018,7 @@ static int32_t CheckIsSpecialSourceAlbum(const shared_ptr<MediaLibraryRdbStore>&
         "SELECT lpath FROM PhotoAlbum WHERE album_id = "+ std::to_string(oldAlbumId);
     std::string albumLPath = "";
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_LPATH_TO_RENAME);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, "resultSet is nullptr! failed query lpath");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_OK, "resultSet is nullptr! failed query lpath");
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, albumLPath);
     }
@@ -1035,7 +1035,7 @@ static int32_t CheckConflictsWithAlbumPlugin(const string &newAlbumName, int32_t
         MEDIA_INFO_LOG("CheckConflictsWithAlbumPlugin not source album, no need to check album plugin");
         return E_OK;
     }
-    const std::string newLPath = oldAlbumType == PhotoAlbumType::Source ?
+    const std::string newLPath = oldAlbumType == PhotoAlbumType::SOURCE ?
         SOURCE_ALBUM_LPATH_PREFIX + newAlbumName : USER_ALBUM_LPATH_PREFIX + newAlbumName;
     int32_t rowCount = 0;
     std::string albumPluginlPathSql = "SELECT * FROM album_plugin WHERE LOWER(lpath) = LOWER(?)";
@@ -1104,13 +1104,6 @@ static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
             return E_ERR;
         }
     }
-
-    if (oldAlbumType != PhotoAlbumType::SOURCE) {
-        MEDIA_INFO_LOG("CheckConflictsWithExistingAlbum not source album, no need to check album plugin");
-        return E_OK;
-    }
-    CHECK_AND_RETURN_RET_LOG(CheckConflictsWithAlbumPlugin(newAlbumName, newLPath, rdbStore) == NativeRdb::E_OK, E_ERR,
-        "same lpath or name in album plugin");
     return E_OK;
 }
 
