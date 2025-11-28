@@ -473,7 +473,7 @@ static void ThumbnailRdbUtilsTest()
     int err;
     Media::ThumbnailRdbUtils::QueryThumbnailDataInfos(resultSet, columns, outdatas, err);
     outdatas.clear();
-    Media::ThumbnailRdbUtils::QueryThumbnailDataInfo(g_rdbStore, rdb, columns, thumbnailData);
+    Media::ThumbnailRdbUtils::QueryThumbnailDataInfo(g_rdbStore, rdbPredicates, columns, thumbnailData);
     Media::ThumbnailRdbUtils::QueryThumbnailDataInfo(resultSet, columns, thumbnailData, err);
     Media::ThumbnailRdbUtils::CheckResultSetCount(resultSet, err);
     Media::ThumbnailRdbUtils::ParseQueryResult(resultSet, thumbnailData, err, columns);
