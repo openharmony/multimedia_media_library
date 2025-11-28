@@ -67,6 +67,7 @@ public:
     void NotifyAlbumsCoverChange(string &fileId, vector<int32_t> &albumIds);
     vector<AlbumChangeData> GetAlbumChangeDatas();
     void ClearChangeInfos();
+    void DeleteEmptySourceAlbum();
 
 protected:
     int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates) override;
