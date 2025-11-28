@@ -543,6 +543,8 @@ public:
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+    static std::string GetUriFromNapiAssets(napi_env env, const napi_value &napiAsset);
+    static std::string GetUriFromNapiPhotoAlbum(napi_env env, const napi_value &napiPhotoAlbum);
     static napi_value GetIdArrayFromAssets(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static napi_value GetStringArray(

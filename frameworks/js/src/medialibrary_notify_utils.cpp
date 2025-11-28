@@ -35,6 +35,8 @@ const std::string RegisterNotifyType::PHOTO_ALBUM_CHANGE = "photoAlbumChange";
 const std::string RegisterNotifyType::HIDDEN_ALBUM_CHANGE = "hiddenAlbumChange";
 const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange";
 const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
+const std::string RegisterNotifyType::SINGLE_PHOTO_CHANGE = "singlePhotoChange";
+const std::string RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE = "singlePhotoAlbumChange";
 const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
@@ -63,6 +65,8 @@ const std::map<std::string, Notification::NotifyUriType> MediaLibraryNotifyUtils
     { RegisterNotifyType::PHOTO_ALBUM_CHANGE, Notification::NotifyUriType::PHOTO_ALBUM_URI },
     { RegisterNotifyType::HIDDEN_ALBUM_CHANGE, Notification::NotifyUriType::HIDDEN_ALBUM_URI },
     { RegisterNotifyType::TRASHED_ALBUM_CHANGE, Notification::NotifyUriType::TRASH_ALBUM_URI },
+    { RegisterNotifyType::SINGLE_PHOTO_CHANGE, Notification::NotifyUriType::SINGLE_PHOTO_URI },
+    { RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE, Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI },
 };
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType> MediaLibraryNotifyUtils::REGISTER_TYPE_MAP = {
@@ -72,6 +76,8 @@ const std::map<Notification::NotifyUriType, Notification::NotifyUriType> MediaLi
     { Notification::NotifyUriType::PHOTO_ALBUM_URI, Notification::NotifyUriType::PHOTO_ALBUM_URI },
     { Notification::NotifyUriType::HIDDEN_ALBUM_URI, Notification::NotifyUriType::HIDDEN_ALBUM_URI },
     { Notification::NotifyUriType::TRASH_ALBUM_URI, Notification::NotifyUriType::TRASH_ALBUM_URI },
+    { Notification::NotifyUriType::SINGLE_PHOTO_URI, Notification::NotifyUriType::SINGLE_PHOTO_URI },
+    { Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI, Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI },
 };
 
 const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_URI_MAP = {
@@ -81,6 +87,8 @@ const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils
     { Notification::NotifyUriType::PHOTO_ALBUM_URI, RegisterNotifyType::PHOTO_ALBUM_CHANGE },
     { Notification::NotifyUriType::HIDDEN_ALBUM_URI, RegisterNotifyType::HIDDEN_ALBUM_CHANGE },
     { Notification::NotifyUriType::TRASH_ALBUM_URI, RegisterNotifyType::TRASHED_ALBUM_CHANGE },
+    { Notification::NotifyUriType::SINGLE_PHOTO_URI, RegisterNotifyType::SINGLE_PHOTO_CHANGE },
+    { Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI, RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE },
 };
 
 const std::map<Notification::AccurateNotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
@@ -734,6 +742,178 @@ napi_value MediaLibraryNotifyUtils::BuildBatchDownloadProgressInfos(napi_env env
     }
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAssetNapi(napi_env env,
+    const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAssetNapi");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAssetNapi");
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, ARGS_ONE, &result);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create error!");
+    size_t resultIndex = 0;
+    napi_value assetValue = BuildPhotoAssetChangeData(env, *changeInfo);
+    if ((assetValue == nullptr) || (napi_set_element(env, result, resultIndex++, assetValue) != napi_ok)) {
+        NAPI_ERR_LOG("failed to add element");
+        return tmpValue;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos(napi_env env,
+    const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo,
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfos)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildPhotoAssetChangeInfos");
+    if (changeInfo == nullptr) {
+        NAPI_ERR_LOG("Invalid changeInfo");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfos->notifyType), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    MEDIA_INFO_LOG("photoAssetData %{public}s", changeInfo->ToString().c_str());
+    napi_value assetResults = BuildSingleAssetNapi(env, changeInfo);
+    if (assetResults == nullptr) {
+        NAPI_ERR_LOG("Failed to build assetResults");
+        return nullptr;
+    }
+    status = napi_set_named_property(env, result, "AssetChangeDatas", assetResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: AssetChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", changeInfos->isForRecheck, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumNapi(napi_env env,
+    const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumNapi");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumNapi");
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, ARGS_ONE, &result);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    size_t resultIndex = 0;
+    napi_value assetValue = BuildAlbumChangeData(env, *changeInfo);
+    if ((assetValue == nullptr) || (napi_set_element(env, result, resultIndex++, assetValue) != napi_ok)) {
+        NAPI_ERR_LOG("failed to add element");
+        return tmpValue;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumChangeInfos(napi_env env,
+    const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo,
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfos)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumChangeInfos");
+    if (changeInfo == nullptr) {
+        NAPI_ERR_LOG("Invalid changeInfo");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfos->notifyType), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    MEDIA_INFO_LOG("photoAlbumData %{public}s", changeInfo->ToString().c_str());
+    napi_value albumResults = BuildSingleAlbumNapi(env, changeInfo);
+    if (albumResults == nullptr) {
+        NAPI_ERR_LOG("Failed to build albumResults");
+        return nullptr;
+    }
+    status = napi_set_named_property(env, result, "albumChangeDatas", albumResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: albumChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", changeInfos->isForRecheck, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos(napi_env env)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSinglePhotoAssetRecheckChangeInfos");
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    status = SetValueNull(env, "AssetChangeData", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: assetChangeData");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumRecheckChangeInfos(napi_env env)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumRecheckChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumRecheckChangeInfos");
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    status = SetValueNull(env, "albumChangeDatas", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: albumChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
         return nullptr;
     }
     return result;

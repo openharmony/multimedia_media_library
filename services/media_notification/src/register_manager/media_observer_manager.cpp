@@ -206,4 +206,67 @@ void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
     MEDIA_WARN_LOG("reconnect server and send recheck for uriType[%{public}d]", registerUri);
 }
 
+int32_t MediaObserverManager::ProcessSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri, const UriOperation& operation)
+{
+    NotifyRegisterPermission permissionHandle;
+    int32_t ret = permissionHandle.ExecuteCheckPermission(registerUri);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
+    auto uriIter = observers_.find(registerUri);
+    if (uriIter == observers_.end()) {
+        MEDIA_ERR_LOG("the registerUri not registered");
+        return E_URI_NOT_EXIST;
+    }
+    auto& observerList = uriIter->second;
+    auto obsIter = std::find_if(observerList.begin(), observerList.end(),
+        [&dataObserver](const ObserverInfo& obsInfo) {
+            return obsInfo.observer->AsObject() == dataObserver->AsObject();
+        });
+    if (obsIter == observerList.end()) {
+        MEDIA_ERR_LOG("registerUri has not been registered by the same observer");
+        return E_DATAOBSERVER_IS_NULL;
+    }
+    operation(obsIter->observerUris, uri);
+    return E_OK;
+}
+
+int32_t MediaObserverManager::AddSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+{
+    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
+        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            uris.insert(targetUri);
+        });
+}
+
+int32_t MediaObserverManager::RemoveSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+{
+    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
+        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            uris.erase(targetUri);
+        });
+}
+
+int32_t MediaObserverManager::RemoveSingleObserverUris(ObserverInfo& singleObserverInfo, const std::string& uri)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    singleObserverInfo.observerUris.erase(uri);
+    MEDIA_INFO_LOG("RemoveSingleObserverUris success: uri %{public}s", uri.c_str());
+    return E_OK;
+}
+
+bool MediaObserverManager::isUriDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
+    const std::string& uri)
+{
+    auto constIt = observedUris.find(uri);
+    if (constIt != observedUris.end()) {
+        MEDIA_INFO_LOG("isUriDataPresentInSingleObserver: uri %{public}s exists in observed", uri.c_str());
+        return true;
+    }
+    MEDIA_INFO_LOG("The target singleObserverInfo does not exist");
+    return false;
+}
 } // OHOS::Media
