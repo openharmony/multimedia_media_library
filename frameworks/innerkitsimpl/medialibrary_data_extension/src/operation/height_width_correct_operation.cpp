@@ -122,7 +122,7 @@ void HeightWidthCorrectOperation::UpdateHeightAndWidth()
     RemoveInvalidFromFailIds(failIds);
     std::vector<int32_t> tempFailIds(failIds.begin(), failIds.end());
     int32_t length = static_cast<int32_t>(tempFailIds.size());
-    while (tempFailIds.size() > 0 && MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
+    while (length > 0 && MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
         std::vector<CheckPhotoInfo> checkFailPhotoInfos = QueryCheckFailPhotoInfo(tempFailIds);
         HandlePhotoInfos(checkFailPhotoInfos, curFileId, failIds, length);
     }
@@ -249,7 +249,7 @@ std::vector<CheckPhotoInfo> HeightWidthCorrectOperation::QueryNoCheckPhotoInfo(i
 std::vector<CheckPhotoInfo> HeightWidthCorrectOperation::QueryCheckFailPhotoInfo(std::vector<int32_t> &failIds)
 {
     std::vector<CheckPhotoInfo> photoInfos;
-    CHECK_AND_RETURN_RET_LOG(failIds.size() == 0, photoInfos, "failIds is empty");
+    CHECK_AND_RETURN_RET_LOG(failIds.size() > 0, photoInfos, "failIds is empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, photoInfos, "Failed to get rdbstore!");
 
