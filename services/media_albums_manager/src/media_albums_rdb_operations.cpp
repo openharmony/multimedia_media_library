@@ -197,6 +197,7 @@ double MediaAlbumsRdbOperations::GetAssetScore(const AlbumGetSelectedAssetsDto &
     CHECK_AND_RETURN_RET_LOG(!cond, 0, "fail to query asset score");
     std::string column = "total_score";
     double score = GetDoubleVal(column, resultSet);
+    resultSet->Close();
     return score;
 }
  
@@ -214,6 +215,7 @@ double MediaAlbumsRdbOperations::GetLimitScore(const AlbumGetSelectedAssetsDto &
     CHECK_AND_RETURN_RET_LOG(!cond, maxScore, "fail to query asset score");
     std::string column = "total_score";
     double score = GetDoubleVal(column, resultSet);
+    resultSet->Close();
     return score;
 }
 

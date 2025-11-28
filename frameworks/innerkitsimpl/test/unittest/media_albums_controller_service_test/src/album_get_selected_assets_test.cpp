@@ -296,9 +296,9 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_001, TestSize.Level0
     int32_t count = AlbumGetSelectedAssets(albumId);
     EXPECT_GT(count, 0);
 
-    // invaild
-    int invaildId = albumId + 1;
-    count = AlbumGetSelectedAssets(invaildId);
+    // invalid
+    int invalidId = albumId + 1;
+    count = AlbumGetSelectedAssets(invalidId);
     EXPECT_EQ(count, 0);
 
     MEDIA_INFO_LOG("end GetSelectedAssets_Test_001");
@@ -323,7 +323,7 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_003, TestSize.Level0
     std::string invaildWhereClause = "WHERE Photos.sync_status = 0; Photos.clean_flag = 0";
     reqBody.predicates.SetWhereClause(invaildWhereClause);
     MessageParcel data;
-    int32_t ret1 = reqBody.Marshalling(data);
+    bool ret1 = reqBody.Marshalling(data);
     EXPECT_EQ(ret1, true);
 
     auto service = make_shared<MediaAlbumsControllerService>();
