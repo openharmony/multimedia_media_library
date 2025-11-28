@@ -276,7 +276,7 @@ void AlbumAccurateRefresh::DeleteEmptySourceAlbum()
         AlbumPlugin::LPATH_SCREEN_SHOTS,
         AlbumPlugin::LPATH_HIDDEN_ALBUM,
         AlbumPlugin::LPATH_CAMERA
-    }
+    };
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_COUNT, 0);
