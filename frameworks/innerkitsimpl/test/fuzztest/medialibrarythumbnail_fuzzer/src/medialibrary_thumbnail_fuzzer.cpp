@@ -95,7 +95,7 @@ static inline Media::NotifyType FuzzNotifyType()
     return static_cast<Media::NotifyType>(value);
 }
 
-static inline Media::NotifyType FuzzDirtyType()
+static inline Media::DirtyType FuzzDirtyType()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DIRTY_TYPE);
     return static_cast<Media::DirtyType>(value);
