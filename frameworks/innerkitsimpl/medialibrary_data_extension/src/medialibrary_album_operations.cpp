@@ -113,7 +113,7 @@ const vector<string> NOT_CHANGEABLE_ALBUM = {
     AlbumPlugin::LPATH_SCREEN_SHOTS,
     AlbumPlugin::LPATH_HIDDEN_ALBUM,
     AlbumPlugin::LPATH_CAMERA
-}
+};
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -1222,7 +1222,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
     int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
-    CHECK_AND_RETURN_RET_LOG(CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_INVALID_ARGS,
+    CHECK_AND_RETURN_RET_LOG(CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_HAS_DB_ERROR,
         "Check album name renameable failed");
 
     bool argInvalid { false };
