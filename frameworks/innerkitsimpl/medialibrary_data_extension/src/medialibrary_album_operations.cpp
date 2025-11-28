@@ -1014,24 +1014,17 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryC
 
 static int32_t CheckIsSpecialSourceAlbum(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t oldAlbumId)
 {
-    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
-    for (const auto &albumLPath : NOT_CHANGEABLE_ALBUM) {
-        queryPredicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, albumLPath);
+    const std::string QUERY_ALBUM_LPATH_TO_RENAME =
+        "SELECT lpath FROM PhotoAlbum WHERE album_id = "+ std::to_string(oldAlbumId);
+    std::string albumLPath = "";
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_LPATH_TO_RENAME);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, "resultSet is nullptr! failed query lpath");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, albumLPath);
     }
-    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
-    shared_ptr<ResultSet> resultSet = rdbStore->Query(queryPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "queryResultSet is null");
-
-    int32_t rowCount = -1;
-    int32_t ret = resultSet->GetRowCount(rowCount);
-    resultSet->Close();
-    if (ret != 0 || rowCount < 0) {
-        MEDIA_ERR_LOG("CheckIsSpecialSourceAlbum result set get row count err %{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(
+        std::find(NOT_CHANGEABLE_ALBUM.begin(), NOT_CHANGEABLE_ALBUM.end(), albumLPath) == NOT_CHANGEABLE_ALBUM.end(),
+        E_HAS_DB_ERROR, "Conflict with not changeable album");
     return E_OK;
 }
 
@@ -1229,6 +1222,8 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
     int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
+    CHECK_AND_RETURN_RET_LOG(CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_INVALID_ARGS,
+        "Check album name renameable failed");
 
     bool argInvalid { false };
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
