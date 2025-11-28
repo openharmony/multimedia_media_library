@@ -218,6 +218,7 @@ private:
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
     void RestoreAnalysisPortrait();
+    void RestoreAnalysisPet();
     void RestoreAnalysisGeo();
     void RestoreGroupPhoto();
     void PopulateAnalysisAlbumIdMap();

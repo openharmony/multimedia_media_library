@@ -212,6 +212,40 @@ const std::string ASSET_MAP_COL_OLD_FILE_ID = "old_file_id";
 const std::string ASSET_MAP_COL_OLD_DATA = "old_data";
 const std::string ASSET_MAP_COL_CLONE_SEQUENCE = "clone_sequence";
 
+//  analysis_pet_tag TBL COL_NAME
+const std::string ANALYSIS_PET_TAG_TABLE = "tab_analysis_pet_tag";
+const std::string PET_TAG_COL_ID = "id";
+const std::string PET_TAG_COL_TAG_ID = "tag_id";
+const std::string PET_TAG_COL_PET_LABEL = "pet_label";
+const std::string PET_TAG_COL_CENTER_FEATURES = "center_features";
+const std::string PET_TAG_COL_TAG_VERSION = "tag_version";
+const std::string PET_TAG_COL_COUNT = "count";
+const std::string PET_TAG_COL_DATE_MODIFIED = "date_modified";
+const std::string PET_TAG_COL_ANALYSIS_VERSION = "analysis_version";
+
+//  analysis_pet_face TBL COL_NAME
+const std::string ANALYSIS_PET_FACE_TABLE = "tab_analysis_pet_face";
+const std::string PET_FACE_COL_ID = "id";
+const std::string PET_FACE_COL_FILE_ID = "file_id";
+const std::string PET_FACE_COL_PET_ID = "pet_id";
+const std::string PET_FACE_COL_PROB = "prob";
+const std::string PET_FACE_COL_PET_LABEL = "pet_label";
+const std::string PET_FACE_COL_PET_TOTAL_FACES = "pet_total_faces";
+const std::string PET_FACE_COL_FEATURES = "features";
+const std::string PET_FACE_COL_PET_TAG_ID = "pet_tag_id";
+const std::string PET_FACE_COL_SCALE_X = "scale_x";
+const std::string PET_FACE_COL_SCALE_Y = "scale_y";
+const std::string PET_FACE_COL_SCALE_WIDTH = "scale_width";
+const std::string PET_FACE_COL_SCALE_HEIGHT = "scale_height";
+const std::string PET_FACE_COL_HEAD_VERSION = "head_version";
+const std::string PET_FACE_COL_PET_FEATURE_VERSION = "feature_version";
+const std::string PET_FACE_COL_TAG_VERSION = "tag_version";
+const std::string PET_FACE_COL_ANALYSIS_VERSION = "analysis_version";
+const std::string PET_FACE_COL_BEAUTY_BOUNDER_X = "beauty_bounder_x";
+const std::string PET_FACE_COL_BEAUTY_BOUNDER_Y = "beauty_bounder_y";
+const std::string PET_FACE_COL_BEAUTY_BOUNDER_WIDTH = "beauty_bounder_width";
+const std::string PET_FACE_COL_BEAUTY_BOUNDER_HEIGHT = "beauty_bounder_height";
+const std::string PET_FACE_COL_DATE_MODIFIED = "date_modified";
 
 // Relationship
 enum RelationshipIndex {
@@ -280,9 +314,13 @@ const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISI
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
 const std::string QUERY_VIDEO_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_VIDEO_FACE_TABLE;
 const std::string QUERY_BEAUTY_SCORE_COUNT = "SELECT count(1) AS count FROM " + VISION_AESTHETICS_TABLE;
+const std::string QUERY_PET_TAG_COUNT = "SELECT count(1) AS count FROM " + ANALYSIS_PET_TAG_TABLE;
+const std::string QUERY_PET_FACE_COUNT = "SELECT count(1) AS count FROM " + ANALYSIS_PET_FACE_TABLE;
 
 const std::string CREATE_FACE_TAG_INDEX =
     "CREATE INDEX IF NOT EXISTS face_clone_tag_index ON tab_analysis_face_tag (tag_id)";
+const std::string CREATE_PET_TAG_INDEX =
+    "CREATE INDEX IF NOT EXISTS pet_clone_tag_index ON tab_analysis_pet_tag (tag_id)";
 
 const std::string GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY = GALLERY_TAG_NAME + " IS NOT NULL AND " + GALLERY_TAG_NAME +
     " != ''";

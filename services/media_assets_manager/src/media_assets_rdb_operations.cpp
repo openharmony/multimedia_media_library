@@ -87,6 +87,7 @@ static const string RECOMMENDATION = "recommendation";
 static const string SEGMENTATION = "segmentation";
 static const string HEAD = "head";
 static const string POSE = "pose";
+static const string PET_STATUS = "pet";
 
 static vector<int> NEED_UPDATE_TYPE = {
     PhotoAlbumSubType::CLASSIFY, PhotoAlbumSubType::PORTRAIT

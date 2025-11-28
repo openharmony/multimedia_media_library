@@ -109,6 +109,7 @@ public:
     EXPORT static bool IsSmartGroupPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsPetAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSystemAlbum(const PhotoAlbumType albumType);
     EXPORT static bool IsHiddenAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);

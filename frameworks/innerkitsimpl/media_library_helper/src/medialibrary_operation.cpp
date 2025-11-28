@@ -132,6 +132,10 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_AFFECTIVE, OperationObject::VISION_AFFECTIVE },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
         { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
+        { VISION_PET_FACE_TABLE, OperationObject::VISION_PET_FACE },
+        { PAH_ANA_PET, OperationObject::VISION_PET_FACE },
+        { VISION_PET_TAG_TABLE, OperationObject::VISION_PET_TAG },
+        { PAH_ANA_PET_TAG, OperationObject::VISION_PET_TAG },
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -222,6 +226,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_VIDEO_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_TOTAL_TABLE } } },
         { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
         { OperationObject::VISION_VIDEO_FACE, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_FACE_TABLE } } },
+        { OperationObject::VISION_PET_FACE, { { OperationType::UNKNOWN_TYPE, VISION_PET_FACE_TABLE } } },
+        { OperationObject::VISION_PET_TAG, { { OperationType::UNKNOWN_TYPE, VISION_PET_TAG_TABLE } } },
         { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
