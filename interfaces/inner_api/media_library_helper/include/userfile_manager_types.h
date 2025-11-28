@@ -73,7 +73,9 @@ enum AnalysisType : int32_t {
     ANALYSIS_HIGHLIGHT,
     ANALYSIS_MULTI_CROP,
     ANALYSIS_SEARCH_INDEX,
-    ANALYSIS_VIDEO_AESTHETICS
+    ANALYSIS_VIDEO_AESTHETICS,
+    ANALYSIS_PET_TAG,
+    ANALYSIS_PET_FACE
 };
 
 enum HighlightAlbumInfoType : int32_t {
@@ -135,7 +137,8 @@ enum PhotoAlbumSubType : int32_t {
     GROUP_PHOTO = 4103,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
-    ANALYSIS_END = HIGHLIGHT_SUGGESTIONS,
+    PET = 4106,
+    ANALYSIS_END = PET,
     ANY = std::numeric_limits<int32_t>::max()
 };
 

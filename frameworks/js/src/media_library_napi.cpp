@@ -8624,6 +8624,8 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
         { "ANALYSIS_HIGHLIGHT", AnalysisType::ANALYSIS_HIGHLIGHT },
         { "ANALYSIS_SEARCH_INDEX", AnalysisType::ANALYSIS_SEARCH_INDEX },
+        { "ANALYSIS_PET_FACE", AnalysisType::ANALYSIS_PET_FACE },
+        { "ANALYSIS_PET_TAG", AnalysisType::ANALYSIS_PET_TAG },
     };
 
     napi_value result = nullptr;

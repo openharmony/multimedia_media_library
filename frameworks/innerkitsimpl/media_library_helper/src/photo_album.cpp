@@ -312,6 +312,11 @@ bool PhotoAlbum::IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumS
     return (albumType == PhotoAlbumType::SOURCE) && (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
 }
 
+bool PhotoAlbum::IsPetAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::PET);
+}
+
 bool PhotoAlbum::IsSystemAlbum(const PhotoAlbumType albumType)
 {
     return albumType == PhotoAlbumType::SYSTEM;

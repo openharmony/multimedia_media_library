@@ -189,6 +189,7 @@ int32_t MediaAlbumsService::ChangeRequestSetAlbumName(const ChangeRequestSetAlbu
 {
     switch (dto.albumSubtype) {
         case PhotoAlbumSubType::PORTRAIT:
+        case PhotoAlbumSubType::PET:
             return SetPortraitAlbumName(dto);
         case PhotoAlbumSubType::GROUP_PHOTO:
             return SetGroupAlbumName(dto);
@@ -262,6 +263,7 @@ int32_t MediaAlbumsService::ChangeRequestSetCoverUri(const ChangeRequestSetCover
 {
     switch (dto.albumSubtype) {
         case PhotoAlbumSubType::PORTRAIT:
+        case PhotoAlbumSubType::PET:
             return SetPortraitCoverUri(dto);
         case PhotoAlbumSubType::GROUP_PHOTO:
             return SetGroupAlbumCoverUri(dto);
@@ -1060,7 +1062,8 @@ int32_t MediaAlbumsService::DismissAssets(ChangeRequestDismissAssetsDto &dismiss
         MEDIA_ERR_LOG("DismissAssets Error, ret: %{public}d", ret);
         return ret;
     }
-    if (dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT) {
+    if (dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT ||
+        dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PET) {
         DataShare::DataShareValuesBucket updateValues;
         const int32_t PORTRAIT_REMOVED = -3;
         const std::string TAG_ID = "tag_id";
@@ -1097,7 +1100,7 @@ int32_t MediaAlbumsService::MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto
         MEDIA_ERR_LOG("MergeAlbum:Input parameter is invalid ");
         return E_INVALID_VALUES;
     }
-    return MediaLibraryAlbumOperations::MergePortraitAlbums(value);
+    return MediaLibraryAlbumOperations::MergeAlbums(value);
 }
 
 int32_t MediaAlbumsService::PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto)

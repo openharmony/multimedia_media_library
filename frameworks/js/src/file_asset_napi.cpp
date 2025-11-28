@@ -75,6 +75,7 @@
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
@@ -2215,6 +2216,11 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_BONE_POSE, { POSE, PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
+    { ANALYSIS_PET_FACE, { PET_STATUS, PAH_QUERY_ANA_PET, { PET_ID, PET_TAG_ID, PET_TOTAL_FACES, PET_LABEL,
+        FEATURES, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, DATE_MODIFIED } } },
+    { ANALYSIS_PET_TAG, { PET_TAG, PAH_QUERY_ANA_PET_TAG, { VISION_PET_TAG_TABLE + "." + TAG_ID, PET_LABEL,
+        CENTER_FEATURES, COUNT } } },
 };
 
 static DataShare::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext *context)
@@ -2223,6 +2229,10 @@ static DataShare::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext 
     if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
         string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
         predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
+    }
+    if (context->analysisType == ANALYSIS_PET_TAG) {
+        string onClause = VISION_PET_FACE_TABLE + "." + PET_TAG_ID + " = " + VISION_PET_TAG_TABLE + "." + TAG_ID;
+        predicates.InnerJoin(VISION_PET_FACE_TABLE)->On({ onClause });
     }
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {

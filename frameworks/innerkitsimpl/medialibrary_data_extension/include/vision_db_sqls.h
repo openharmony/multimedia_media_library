@@ -32,6 +32,7 @@
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_affective_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
@@ -259,7 +260,8 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     GEO + " INT DEFAULT 0, " +
     AESTHETICS_SCORE_ALL_STATUS + " INT NOT NULL DEFAULT 0, " +
     PRIORITY + " INT NOT NULL DEFAULT 1, " +
-    AFFECTIVE + " INT NOT NULL DEFAULT 0) ";
+    AFFECTIVE + " INT NOT NULL DEFAULT 0, " +
+    PET_STATUS + " INT NOT NULL DEFAULT 0) ";
 
 const std::string CREATE_TAB_ANALYSIS_VIDEO_TOTAL = "CREATE TABLE IF NOT EXISTS " +
     VISION_VIDEO_TOTAL_TABLE + " (" +
@@ -364,6 +366,39 @@ const std::string CREATE_ANALYSIS_ALBUM_MAP = "CREATE TABLE IF NOT EXISTS " + AN
     MAP_ASSET + " INT, " +
     ORDER_POSITION + " INT, " +
     "PRIMARY KEY (" + MAP_ALBUM + "," + MAP_ASSET + ")) ";
+
+const std::string CREATE_TAB_ANALYSIS_PET_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_PET_FACE_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    PET_ID + " INT, " +
+    PET_TAG_ID + " TEXT, " +
+    PET_TOTAL_FACES + " INT, " +
+    PET_LABEL + " INT, " +
+    FEATURES + " BLOB, " +
+    PROB + " REAL, " +
+    SCALE_X + " REAL DEFAULT 0, " +
+    SCALE_Y + " REAL DEFAULT 0, " +
+    SCALE_WIDTH + " REAL DEFAULT 0, " +
+    SCALE_HEIGHT + " REAL DEFAULT 0, " +
+    HEAD_VERSION + " TEXT, " +
+    PET_FEATURE_VERSION + " TEXT, " +
+    TAG_VERSION + " TEXT, " +
+    ANALYSIS_VERSION + " TEXT, " +
+    BEAUTY_BOUNDER_X + " REAL, " +
+    BEAUTY_BOUNDER_Y + " REAL, " +
+    BEAUTY_BOUNDER_WIDTH + " REAL, " +
+    BEAUTY_BOUNDER_HEIGHT + " REAL, " +
+    DATE_MODIFIED + " BIGINT) ";
+
+const std::string CREATE_TAB_ANALYSIS_PET_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_PET_TAG_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    TAG_ID + " TEXT UNIQUE, " +
+    CENTER_FEATURES + " BLOB, " +
+    PET_LABEL + " INTEGER, " +
+    COUNT + " INTEGER, " +
+    TAG_VERSION + " TEXT, " +
+    ANALYSIS_VERSION + " TEXT, " +
+    DATE_MODIFIED + " BIGINT)";
 
 const std::string CREATE_TAB_ANALYSIS_ALBUM_TOTAL = "CREATE TABLE IF NOT EXISTS " +
     VISION_ANALYSIS_ALBUM_TOTAL_TABLE + " (" +
@@ -744,6 +779,20 @@ const std::string ADD_BASE_QUOTA_MODIFY_TIME_COLUMN = "ALTER TABLE " + TAB_ANALY
     " ADD COLUMN " + BASE_QUOTA_MODIFY_TIME + " BIGINT NOT NULL DEFAULT 0";
 const std::string ADD_CHECK_SPACE_FLAG_COLUMN = "ALTER TABLE " + TAB_ANALYSIS_PROGRESS_TABLE +
     " ADD COLUMN " + CHECK_SPACE_FLAG + " INT NOT NULL DEFAULT 1";
+
+const std::string ADD_PET_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
+    PET_STATUS + " INT NOT NULL DEFAULT 0";
+const std::string PET_INDEX = "pet_index";
+const std::string CREATE_PET_INDEX = "CREATE UNIQUE INDEX " + PET_INDEX + " ON " + VISION_PET_FACE_TABLE + " (" +
+    FILE_ID + "," + PET_ID + ")";
+
+const std::string PET_TAG_ID_INDEX = "pet_tag_id_index";
+const std::string CREATE_PET_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " + PET_TAG_ID_INDEX + " ON " +
+    VISION_PET_FACE_TABLE + " (" + PET_TAG_ID + ")" + " WHERE " + PET_TAG_ID + " LIKE " + "'ser%'";
+const std::string UPDATE_PET_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " + PET_STATUS +
+    " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE media_type = 1)";
+
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H

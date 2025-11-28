@@ -1741,6 +1741,7 @@ export namespace photoAccessHelper {
     GROUP_PHOTO,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
+    PET = 4106,
     ANY = 2147483647
   }
 
