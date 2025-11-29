@@ -38,12 +38,6 @@ public:
     void RestoreImageFaceInfo();
     void UpdateAnalysisTotalTblNoFaceStatus();
     void UpdateAnalysisTotalTblStatus();
-    void WriteDataToAnaVideoTotalTab(std::unordered_map<int32_t, int32_t>& oldAnaVideoFaceMap,
-    std::unordered_map<int32_t, int32_t>& oldAnaVideoLableMap,
-    std::unordered_map<int32_t, int32_t>& oldAnaVideoStatusMap);
-    bool CopyAnalysisVideoTotalTab();
-    void UpdateAnalysisVideoTotalTblLabelAndFace();
-    void UpdateAnalysisVideoTotalTblFaceAndTagId();
     int32_t RestoreMaps();
 
 protected:

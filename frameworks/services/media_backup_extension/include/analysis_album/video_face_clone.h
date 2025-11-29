@@ -26,6 +26,7 @@
 
 #include "backup_const.h"
 #include "rdb_store.h"
+#include "backup_database_utils.h"
 
 
 namespace OHOS {
@@ -79,6 +80,12 @@ private:
     void DeleteExistingVideoFaceData(const std::vector<int32_t>& newFileIds);
     void UpdateAnalysisTotalTblVideoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     std::vector<int32_t> newFileIds);
+    bool CopyAnalysisVideoTotalTab(const std::string &tableName, std::vector<int32_t> &oldFileIds);
+    void UpdateAnalysisVideoTotalTblLabelAndFace(std::vector<int32_t> &oldFileIds);
+    void UpdateAnalysisVideoTotalTblFaceAndTagId();
+    void WriteDataToAnaVideoTotalTab(std::vector<CloneVideoInfo> &updateDataList);
+    void WriteDataToAnaVideoTotalTabSub(std::vector<CloneVideoInfo> &updateDataList);
+    void StartCloneAnalysisVideoTotalTab(std::vector<int32_t> &oldFileIds);
 
     template<typename T>
     void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,

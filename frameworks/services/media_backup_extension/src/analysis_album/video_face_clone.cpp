@@ -64,7 +64,6 @@ bool VideoFaceClone::CloneVideoFaceInfo()
     }
 
     std::string fileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(oldFileIds, ", ") + ")";
-
     std::string querySql = QUERY_VIDEO_FACE_COUNT;
     querySql += " WHERE " + VIDEO_FACE_COL_FILE_ID + " IN " + fileIdOldInClause;
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(sourceRdb_, querySql, CUSTOM_COUNT);
@@ -74,17 +73,14 @@ bool VideoFaceClone::CloneVideoFaceInfo()
         migrateVideoFaceTotalTimeCost_ += end - start;
         return true;
     }
-
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(sourceRdb_, destRdb_,
         VISION_VIDEO_FACE_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_VIDEO_FACE_COLUMNS);
-
     CHECK_AND_RETURN_RET_LOG(!commonColumns.empty(),
         false, "No common columns found for video face table after exclusion.");
 
     DeleteExistingVideoFaceData(newFileIds);
-
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<VideoFaceTbl> videoFaceTbls = QueryVideoFaceTbl(offset, fileIdOldInClause, commonColumns);
 
@@ -92,16 +88,14 @@ bool VideoFaceClone::CloneVideoFaceInfo()
             MEDIA_WARN_LOG("Query returned empty result for offset %{public}d", offset);
             continue;
         }
-
         std::vector<VideoFaceTbl> processedVideoFaces = ProcessVideoFaceTbls(videoFaceTbls);
         BatchInsertVideoFaces(processedVideoFaces);
     }
+    StartCloneAnalysisVideoTotalTab(oldFileIds);
     UpdateAnalysisTotalTblVideoFaceStatus(destRdb_, newFileIds);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migrateVideoFaceTotalTimeCost_ += end - start;
     MEDIA_INFO_LOG("VideoFaceClone::CloneVideoFaceInfo completed. Migrated %{public}lld records. "
-        "Total time: %{public}lld ms",
-        (long long)migrateVideoFaceNum_, (long long)migrateVideoFaceTotalTimeCost_);
+        "Total time: %{public}lld ms", (long long)migrateVideoFaceNum_, (long long)migrateVideoFaceTotalTimeCost_);
     return true;
 }
 
@@ -289,5 +283,142 @@ void VideoFaceClone::UpdateAnalysisTotalTblVideoFaceStatus(std::shared_ptr<Nativ
 
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis total failed, ret=%{public}d", errCode);
+}
+
+void VideoFaceClone::StartCloneAnalysisVideoTotalTab(std::vector<int32_t> &oldFileIds)
+{
+    BackupDatabaseUtils::ClearAnalysisVideoTotalTable(destRdb_);
+    bool isTableExist = false;
+    CHECK_AND_RETURN_LOG(BackupDatabaseUtils::isTableExist(sourceRdb_, VISION_VIDEO_TOTAL_TABLE, isTableExist),
+        "fail to check whether tableName exists");
+    if (isTableExist) {
+        CopyAnalysisVideoTotalTab(VISION_VIDEO_TOTAL_TABLE, oldFileIds);
+    } else {
+        UpdateAnalysisVideoTotalTblLabelAndFace(oldFileIds);
+        UpdateAnalysisVideoTotalTblFaceAndTagId();
+    }
+}
+
+void VideoFaceClone::UpdateAnalysisVideoTotalTblLabelAndFace(std::vector<int32_t> &oldFileIds)
+{
+    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
+    CopyAnalysisVideoTotalTab(VISION_TOTAL_TABLE, oldFileIds);
+    BackupDatabaseUtils::UpdateFaceToAnalysisVideoTotalTable(destRdb_);
+    BackupDatabaseUtils::UpdateStatusToAnalysisTable(destRdb_);
+
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace cost %{public}lld", static_cast<long long>(end - start));
+}
+
+void VideoFaceClone::UpdateAnalysisVideoTotalTblFaceAndTagId()
+{
+    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
+    BackupDatabaseUtils::DeleteDirtytagIdFromFaceTagTable(destRdb_);
+    BackupDatabaseUtils::UpdateVideoFaceTagId(destRdb_);
+    BackupDatabaseUtils::UpdateVideoTotalFaceId(destRdb_);
+    BackupDatabaseUtils::CheckLabelAndFaceToAnalysisVideoTotalTable(destRdb_);
+
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId cost %{public}lld", static_cast<long long>(end - start));
+}
+
+static std::vector<int32_t> getVideoFileIds(std::vector<int32_t> FileIds,
+    std::shared_ptr<NativeRdb::RdbStore> RdbStore)
+{
+    std::string fileIdInClause = "(" + BackupDatabaseUtils::JoinValues<int>(FileIds, ", ") + ")";
+    std::string queryVideoFileIdSql =
+        "SELECT file_id FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE media_type = 2 AND file_id IN " + fileIdInClause;
+    std::vector<int32_t> VideoFileIds =
+        BackupDatabaseUtils::QueryIntVec(RdbStore, queryVideoFileIdSql, "file_id");
+    return VideoFileIds;
+}
+
+static std::unordered_map<int32_t, int32_t> buildFileIdMap(const std::unordered_map<int32_t, PhotoInfo>& fileIdPairs)
+{
+    std::unordered_map<int32_t, int32_t> idMap;
+    for (const auto& pair : fileIdPairs) {
+        idMap[pair.first] = pair.second.fileIdNew;
+    }
+    return idMap;
+}
+
+static int32_t getNewFileId(std::unordered_map<int32_t, int32_t> idMap, int32_t oldid)
+{
+    auto it = idMap.find(oldid);
+    if (it != idMap.end()) {
+        return it->second;
+    }
+    return -1;
+}
+
+void VideoFaceClone::WriteDataToAnaVideoTotalTabSub(std::vector<CloneVideoInfo> &updateDataList)
+{
+    std::unordered_map<int32_t, int32_t> idMap = buildFileIdMap(photoInfoMap_);
+    std::string updateSql = "UPDATE tab_analysis_video_total SET ";
+    std::string faceCase = "face = CASE file_id ";
+    std::string labelCase = ", label = CASE file_id ";
+    std::string whereClause = " WHERE file_id IN (";
+    for (size_t i = 0; i < updateDataList.size(); ++i) {
+        const auto& data = updateDataList[i];
+        int32_t newFileId = getNewFileId(idMap, data.file_id);
+        int32_t face = data.face;
+        int32_t label = data.label;
+        int32_t status = data.status;
+
+        faceCase += " WHEN " + std::to_string(newFileId) + " THEN " + std::to_string(face) + " ";
+        labelCase += " WHEN " + std::to_string(newFileId) + " THEN " + std::to_string(label) + " ";
+        whereClause += std::to_string(newFileId);
+        if (i != updateDataList.size() - 1) {
+            whereClause += ", ";
+        }
+    }
+
+    faceCase += " END";
+    labelCase += " END";
+    whereClause += ")";
+
+    updateSql += faceCase + labelCase + whereClause + ";";
+
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(destRdb_, updateSql);
+    CHECK_AND_PRINT_LOG(errCode >= 0,
+        "execute batch update analysis total failed, ret=%{public}d", errCode);
+}
+
+void VideoFaceClone::WriteDataToAnaVideoTotalTab(std::vector<CloneVideoInfo> &updateDataList)
+{
+    if (updateDataList.empty()) {
+        return;
+    }
+    size_t chunkSize = 200;
+    size_t totalSize = updateDataList.size();
+    size_t totalChunks = (totalSize + chunkSize - 1) / chunkSize;
+
+    for (size_t i = 0; i < totalChunks; ++i) {
+        size_t start = i * chunkSize;
+        size_t end = std::min(start + chunkSize, totalSize);
+        std::vector<CloneVideoInfo> currentBatch(updateDataList.begin() + start, updateDataList.begin() + end);
+        WriteDataToAnaVideoTotalTabSub(currentBatch);
+    }
+}
+
+bool VideoFaceClone::CopyAnalysisVideoTotalTab(const std::string &tableName, std::vector<int32_t> &oldFileIds)
+{
+    MEDIA_INFO_LOG("CopyAnalysisVideoTotalTab");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
+    std::vector<int32_t> VideoFileIds = getVideoFileIds(oldFileIds, sourceRdb_);
+    std::string VideofileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(VideoFileIds, ", ") + ")";
+
+    std::vector<CloneVideoInfo> updateDataList;
+    updateDataList = BackupDatabaseUtils::QueryVideoInfo(tableName, VideofileIdOldInClause, sourceRdb_);
+    WriteDataToAnaVideoTotalTab(updateDataList);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("CopyAnalysisVideoTotalTab Cost %{public}lld", (long long)(end - start));
+    return true;
 }
 } // namespace OHOS::Media
