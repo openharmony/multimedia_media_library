@@ -47,8 +47,12 @@
 #include "vision_db_sqls.h"
 #include "vision_db_sqls_more.h"
 #include "story_db_sqls.h"
+#include "classify_restore.h"
+#include "values_bucket.h"
+#include "classify_aggregate_types.h"
 #undef protected
 #undef private
+#include <random>
 #include "parameters.h"
 #include "media_config_info_column.h"
 
@@ -4171,6 +4175,299 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_hdc_device_id_001, TestSi
     bool ret = SettingsDataManager::GetHdcDeviceId(deviceId);
     bool flag = ((ret && !deviceId.empty()) || (!ret && deviceId.empty()));
     EXPECT_TRUE(flag);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_deleteExistMapping_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_deleteExistMapping_test_001");
+    ClassifyRestore classifyRestore;
+
+    // Test case 1: Empty fileIds vector
+    std::vector<int32_t> fileIds;
+    classifyRestore.DeleteExistMapping(fileIds);
+
+    // Test case 2: Non-empty fileIds vector, successful SQL execution
+    fileIds = {1, 2, 3};
+    classifyRestore.DeleteExistMapping(fileIds);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_processCategoryAlbum_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_processCategoryAlbum_test_001");
+    ClassifyRestore classifyRestore;
+
+    // Test case 1: Normal execution of ProcessCategoryAlbums
+    classifyRestore.ProcessCategoryAlbums();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_parseSubLabel_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_parseSubLabel_test_001");
+    ClassifyRestore classifyRestore;
+    // Test case 1: Empty subLabel
+    std::vector<int32_t> labels = classifyRestore.ParseSubLabel("");
+    EXPECT_TRUE(labels.empty());
+
+    // Test case 2: subLabel with no brackets
+    labels = classifyRestore.ParseSubLabel("1, 2, 3");
+    ASSERT_EQ(labels.size(), 3);
+    EXPECT_EQ(labels[0], 1);
+    EXPECT_EQ(labels[1], 2);
+    EXPECT_EQ(labels[2], 3);
+
+    // Test case 3: subLabel with brackets
+    labels = classifyRestore.ParseSubLabel("[1, 2, 3]");
+    ASSERT_EQ(labels.size(), 3);
+    EXPECT_EQ(labels[0], 1);
+    EXPECT_EQ(labels[1], 2);
+    EXPECT_EQ(labels[2], 3);
+
+    // Test case 4: subLabel with leading and trailing spaces
+    labels = classifyRestore.ParseSubLabel(" 1, 2 , 3 ");
+    ASSERT_EQ(labels.size(), 3);
+    EXPECT_EQ(labels[0], 1);
+    EXPECT_EQ(labels[1], 2);
+    EXPECT_EQ(labels[2], 3);
+
+    // Test case 5: subLabel with non-numeric content
+    labels = classifyRestore.ParseSubLabel("1, two, 3");
+    ASSERT_EQ(labels.size(), 2);
+    EXPECT_EQ(labels[0], 1);
+    EXPECT_EQ(labels[1], 3);
+
+    // Test case 6: subLabel with only spaces and commas
+    labels = classifyRestore.ParseSubLabel(" , , ");
+    EXPECT_TRUE(labels.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_getAggregateTypes_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_getAggregateTypes_test_001");
+    // Test case 1: labels are empty
+    ClassifyRestore classifyRestore;
+    std::unordered_set<int32_t> aggregates = classifyRestore.GetAggregateTypes({});
+    EXPECT_TRUE(aggregates.empty());
+
+    // Test case 2: labels are not empty, and the variable is in AGGREGATE_MAPPING_TABLE
+    aggregates = classifyRestore.GetAggregateTypes({4});
+    EXPECT_FALSE(aggregates.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_collectAlbumInfo_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_collectAlbumInfo_test_001");
+    ClassifyRestore classifyRestore;
+    // Test case 3: fileIdNew is greater than 0, categoryId is not INVALID_LABEL, and labels are not empty and non-valid
+    classifyRestore.albumAssetMap_.clear();
+    classifyRestore.CollectAlbumInfo(1, 1, {1, 2, 3});
+    EXPECT_EQ(classifyRestore.albumAssetMap_.size(), 4);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["1"].size(), 1);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["2"].size(), 1);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["3"].size(), 1);
+
+    // Test case 4: fileIdNew is greater than 0, categoryId is INVALID_LABEL, and labels are not empty but valid
+    classifyRestore.albumAssetMap_.clear();
+    classifyRestore.CollectAlbumInfo(1, -2, {4, 5, 6});
+    EXPECT_EQ(classifyRestore.albumAssetMap_.size(), 4);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["4"].size(), 1);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["5"].size(), 1);
+    EXPECT_EQ(classifyRestore.albumAssetMap_["6"].size(), 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_ensureClassifyAlbumId_test_001, TestSize.Level2) {
+    MEDIA_INFO_LOG("Start medialibrary_ensureClassifyAlbumId_test_001");
+    ClassifyRestore classifyRestore;
+    CloneSource cloneSource;
+    
+    // Test case 1: albumName is not in the cache and mediaLibraryRdb_ is nullptr
+    classifyRestore.albumIdCache_.clear();
+    classifyRestore.mediaLibraryRdb_ = nullptr;
+    int32_t albumId = classifyRestore.EnsureClassifyAlbumId("testAlbum");
+    EXPECT_FALSE(albumId == 123);
+
+    // Test case 2: albumName is in the cache and mediaLibraryRdb_ is nullptr
+    classifyRestore.albumIdCache_.clear();
+    classifyRestore.albumIdCache_["testAlbum"] = 123;
+    classifyRestore.mediaLibraryRdb_ = nullptr;
+    albumId = classifyRestore.EnsureClassifyAlbumId("testAlbum");
+    EXPECT_EQ(albumId, 123);
+
+    // Test case 3: albumName is not in the cache and mediaLibraryRdb_ is not nullptr
+    classifyRestore.albumIdCache_.clear();
+    classifyRestore.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    albumId = classifyRestore.EnsureClassifyAlbumId("testAlbum");
+    EXPECT_FALSE(albumId == 123);
+
+    classifyRestore.albumIdCache_.clear();
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore.mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    albumId = classifyRestore.EnsureClassifyAlbumId("testAlbum");
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    EXPECT_FALSE(albumId == 123);
+
+    // Test case 4: albumName is in the cache and mediaLibraryRdb_ is not nullptr
+    classifyRestore.albumIdCache_.clear();
+    classifyRestore.albumIdCache_["testAlbum"] = 123;
+    albumId = classifyRestore.EnsureClassifyAlbumId("testAlbum");
+    EXPECT_EQ(albumId, 123);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, InsertAlbumMappings_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start InsertAlbumMappings_Test_001");
+    ClassifyRestore classifyRestore;
+ 
+    // Test case 1: value is empty
+    std::vector<NativeRdb::ValuesBucket> emptyValues;
+    classifyRestore.InsertAlbumMappings(emptyValues);
+ 
+    // Test case 2: value is not empty
+    NativeRdb::ValuesBucket someValues;
+    std::vector<NativeRdb::ValuesBucket> Values{someValues};
+    classifyRestore.InsertAlbumMappings(Values);
+}
+ 
+HWTEST_F(MediaLibraryBackupCloneTest, CreateOrUpdateCategoryAlbums_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start CreateOrUpdateCategoryAlbums_Test_001");
+    ClassifyRestore classifyRestore;
+ 
+    // Test case 1: albumAssetMap_ is empty
+    classifyRestore.albumAssetMap_.clear();
+    classifyRestore.CreateOrUpdateCategoryAlbums();
+    
+    // Test case 2: albumAssetMap_ is not empty, but all entries have empty asset lists
+    classifyRestore.albumAssetMap_ = { { "category1", {} }, { "category2", {} } };
+    classifyRestore.CreateOrUpdateCategoryAlbums();
+    EXPECT_TRUE(classifyRestore.albumAssetMap_.empty());
+ 
+    // Test case 3: albumAssetMap_ is not empty, and some entries have non-empty asset lists
+    classifyRestore.albumIdCache_["category1"] = 1;
+    classifyRestore.albumIdCache_["category2"] = -4;
+    classifyRestore.albumAssetMap_ = { { "category1", { 1, 2, 3 } }, { "category2", { -4, -5 } } };
+    classifyRestore.CreateOrUpdateCategoryAlbums();
+    EXPECT_TRUE(classifyRestore.albumAssetMap_.empty());
+
+    // Test case 4: albumAssetMap_ is not empty, and some entries have large asset lists
+    std::unordered_set<int32_t> assetList;
+    assetList.reserve(500);
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> dist(0, 1000);
+    std::generate_n(std::inserter(assetList, assetList.end()), 500, [&]() {
+        return dist(rng);
+    });
+    classifyRestore.albumAssetMap_ = { { "category1", assetList}, { "category2", assetList} };
+    classifyRestore.CreateOrUpdateCategoryAlbums();
+    EXPECT_TRUE(classifyRestore.albumAssetMap_.empty());
+}
+ 
+HWTEST_F(MediaLibraryBackupCloneTest, EnsureSpecialAlbums_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start EnsureSpecialAlbums_Test_001");
+    ClassifyRestore classifyRestore;
+ 
+    // Test case 1: Normal execution of EnsureSpecialAlbums
+    classifyRestore.EnsureSpecialAlbums();
+}
+ 
+HWTEST_F(MediaLibraryBackupCloneTest, EnsureSelfieAlbum_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start EnsureSelfieAlbum_Test_001");
+    ClassifyRestore classifyRestore;
+    CloneSource cloneSource;
+ 
+    // Test case 1: mediaLibraryRdb_ is nullptr
+    classifyRestore.mediaLibraryRdb_ = nullptr;
+    classifyRestore.EnsureSelfieAlbum();
+    
+    // Test case 2: mediaLibraryRdb_ is not nullptr
+    classifyRestore.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    classifyRestore.EnsureSelfieAlbum();
+ 
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore.mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    classifyRestore.EnsureSelfieAlbum();
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, EnsureUserCommentAlbum_Test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start EnsureUserCommentAlbum_Test_001");
+    ClassifyRestore classifyRestore;
+    CloneSource cloneSource;
+
+    // Test case 1: mediaLibraryRdb_ is nullptr
+    classifyRestore.EnsureUserCommentAlbum();
+
+    classifyRestore.mediaLibraryRdb_ = nullptr;
+    classifyRestore.EnsureUserCommentAlbum();
+
+    // Test case 2: mediaLibraryRdb_ is not nullptr
+    classifyRestore.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    classifyRestore.EnsureUserCommentAlbum();
+
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore.mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    classifyRestore.EnsureUserCommentAlbum();
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_handle_ocr_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_handle_ocr_test_001");
+    ClassifyRestore classifyRestore;
+    CloneSource cloneSource;
+
+    // Test case 1: unordered_map is not empty
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+
+    // Test case 2: subLabelMap contains entries but none with PhotoLabel::ID_CARD
+    std::unordered_map<int32_t, std::vector<int32_t>> subLabelMapWithoutIdCard = {
+        {1, {10, 20}},
+        {2, {30, 40}}
+    };
+    classifyRestore.HandleOcr(subLabelMapWithoutIdCard);
+
+    // Test case 2: subLabelMap contains entries with PhotoLabel::ID_CARD
+    std::unordered_map<int32_t, std::vector<int32_t>> subLabelMapWithIdCard = {
+        {1, {static_cast<int32_t>(PhotoLabel::ID_CARD), 20}},
+        {2, {30, static_cast<int32_t>(PhotoLabel::ID_CARD)}}
+    };
+    classifyRestore.HandleOcr(subLabelMapWithIdCard);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_handle_ocr_helper_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_handle_ocr_helper_test_001");
+    ClassifyRestore classifyRestore_;
+ 
+    // Test case 1: vector is not empty
+    std::vector<int32_t> vec(100);
+    CloneSource cloneSource;
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore_.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    classifyRestore_.HandleOcrHelper(vec);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_add_id_card_album_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_add_id_card_album_test_001");
+    std::string query_sql = "SELECT count(1) AS count FROM AnalysisAlbum WHERE album_name 5004";
+    std::unordered_set<int32_t> file_id_test_set;
+    ClassifyRestore classifyRestore;
+    CloneSource cloneSource;
+
+    // Test case 1: mediaLibraryRdb_ is not nullptr
+    classifyRestore.mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    classifyRestore.AddIdCardAlbum(OcrAggregateType::BACK_CARD, file_id_test_set);
+
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    classifyRestore.mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    classifyRestore.AddIdCardAlbum(OcrAggregateType::BACK_CARD, file_id_test_set);
+    auto result = classifyRestore.mediaLibraryRdb_->QuerySql(query_sql);
+    EXPECT_FALSE(GetInt32Val("count", result) > 0);
 }
 } // namespace Media
 } // namespace OHOS
