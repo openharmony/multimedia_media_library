@@ -55,6 +55,7 @@ const std::string FILE_TITLE_DEFAULT = "";
 const std::string FILE_ARTIST_DEFAULT = "";
 const int32_t FILE_HEIGHT_DEFAULT = 0;
 const int32_t FILE_WIDTH_DEFAULT = 0;
+const double FILE_ASPECT_RATIO_DEFAULT = -2;
 const int32_t FILE_ALBUM_ID_DEFAULT = 0;
 const std::string FILE_ALBUM_NAME_DEFAULT = "";
 const int32_t FILE_ORIENTATION_DEFAULT = 0;

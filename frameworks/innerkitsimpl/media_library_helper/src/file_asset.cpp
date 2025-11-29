@@ -226,6 +226,16 @@ void FileAsset::SetHeight(int32_t height)
     member_[MEDIA_DATA_DB_HEIGHT] = height;
 }
 
+double FileAsset::GetAspectRatio()
+{
+    return GetDoubleMember(MEDIA_DATA_DB_ASPECT_RATIO);
+}
+
+void FileAsset::SetAspectRatio(double aspectRatio)
+{
+    member_[MEDIA_DATA_DB_ASPECT_RATIO] = aspectRatio;
+}
+
 int32_t FileAsset::GetDuration() const
 {
     return GetInt32Member(MEDIA_DATA_DB_DURATION);

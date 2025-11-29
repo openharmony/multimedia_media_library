@@ -337,6 +337,14 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
     return E_OK;
 }
 
+int32_t CloudSyncConvert::CompensatePropAspectRatio(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(data.propertiesHeight, data.propertiesWidth);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
+    return E_OK;
+}
+
 void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int64_t dateAdded = 0;
@@ -612,6 +620,7 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
     CompensatePropPosition(data, values);
     CompensatePropHeight(data, values);
     CompensatePropWidth(data, values);
+    CompensatePropAspectRatio(data, values);
     CompensatePropSourcePath(data, values);
     return E_OK;
 }

@@ -79,6 +79,9 @@ public:
     EXPORT void SetFileWidth(const VariantData &width);
     EXPORT int32_t GetFileWidth() const;
 
+    EXPORT void SetFileAspectRatio(const VariantData &aspectRatio);
+    EXPORT double GetFileAspectRatio() const;
+
     EXPORT void SetOrientation(const VariantData &orientation);
     EXPORT int32_t GetOrientation() const;
 
@@ -233,6 +236,7 @@ private:
     int64_t lastVisitTime_;
     int32_t dynamicRangeType_;
     int32_t hdrMode_;
+    double aspectRatio_;
 
     // video, audio, image
     int64_t dateTaken_ {0};

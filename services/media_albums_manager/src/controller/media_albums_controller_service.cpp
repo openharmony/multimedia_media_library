@@ -80,6 +80,7 @@
 #include "get_albums_lpath_by_ids_vo.h"
 #include "change_request_set_upload_status_vo.h"
 #include "change_request_set_upload_status_dto.h"
+#include  "get_albumid_by_lpath_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -295,6 +296,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS),
         &MediaAlbumsControllerService::ChangeRequestSetUploadStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH),
+        &MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME),
+        &MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName
     },
 };
 
@@ -1393,5 +1402,28 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetUploadStatus(MessageParcel
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().ChangeRequestSetUploadStatus(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("GetAlbumIdByLpathOrBundleName start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    GetAlbumIdByLpathDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().GetAlbumIdByLpathOrBundleName(dto, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

@@ -3310,6 +3310,8 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
         napi_create_int32(env, get<int32_t>(m), &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
         napi_create_int64(env, GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
+    } else if (m.index() == MEMBER_TYPE_INT64) {
+        napi_create_double(env, get<double>(m), &jsResult);
     } else {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;

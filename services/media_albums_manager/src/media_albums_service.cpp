@@ -1270,4 +1270,43 @@ int32_t MediaAlbumsService::ChangeRequestSetUploadStatus(const ChangeRequestSetU
         "setUploadStatus failed, changedRows is %{private}d", changedRows);
     return changedRows;
 }
+
+int32_t MediaAlbumsService::GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &getAlbumIdByLpathDto,
+    GetAlbumIdByLpathRespBody &respBody)
+{
+    std::vector<std::string> columns = getAlbumIdByLpathDto.columns;
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(getAlbumIdByLpathDto.predicates, PhotoAlbumColumns::TABLE);
+    auto rdbResultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (rdbResultSet == nullptr) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpath Service rdbresultSet nullptr");
+        return E_ERR;
+    }
+    auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(rdbResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    if (resultSet == nullptr) {
+        MEDIA_DEBUG_LOG("GetAlbumIdByLpath Service resultSet nullptr");
+        return E_INNER_FAIL;
+    }
+    int albumId = -1;
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int32_t columnIndex;
+        if (resultSet->GetColumnIndex("album_id", columnIndex) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("GetColumnIndex  album_id failed");
+            resultSet->Close();
+            return E_INNER_FAIL;
+        }
+        if (resultSet->GetInt(columnIndex, albumId) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("GetInt for albumId failed");
+            resultSet->Close();
+            return E_INNER_FAIL;
+        }
+    } else {
+        MEDIA_INFO_LOG("album_id column not found");
+        albumId = -1;
+    }
+    resultSet->Close();
+    respBody.albumId = albumId;
+    return E_OK;
+}
 } // namespace OHOS::Media
