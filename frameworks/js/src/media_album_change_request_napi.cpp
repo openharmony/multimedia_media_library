@@ -2028,15 +2028,21 @@ static bool SetIsMeExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetIsMeExecute");
-    bool result = MediaLibraryNapiUtils::ClearAllRelationship();
-    if (!result) {
-        NAPI_WARN_LOG("Failed to clear all relationship after set is me");
-    }
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    int32_t isMe = 0;
+    bool isMeExist = false;
+    GetIsMeInfo(isMe, isMeExist, photoAlbum->GetAlbumId());
+    // 存在“我”相册且“我”相册不是当前相册
+    if (isMeExist && isMe == 0) {
+        bool result = MediaLibraryNapiUtils::ClearAllRelationship();
+        if (!result) {
+            NAPI_WARN_LOG("Failed to clear all relationship after set is me");
+        }
+    }
     ChangeRequestSetIsMeReqBody reqBody;
     reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
     reqBody.isMe = VALUE_IS_ME;
