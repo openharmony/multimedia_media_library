@@ -266,5 +266,6 @@ int32_t AlbumAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates 
 {
     return dataManager_.AddAlbumIdForMoveOperation(predicates);
 }
+
 } // namespace Media
 } // namespace OHOS
