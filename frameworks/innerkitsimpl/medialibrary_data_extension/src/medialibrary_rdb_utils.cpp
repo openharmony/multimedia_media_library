@@ -2317,17 +2317,21 @@ int32_t MediaLibraryRdbUtils::ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
     ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
+    if (newCover != base.albumCoverUri &&
+        (base.albumSubtype == PhotoAlbumSubType::PORTRAIT || base.albumSubtype == PhotoAlbumSubType::GROUP_PHOTO)) {
+        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING));
+    }
     MEDIA_INFO_LOG("ApplyAlbumRefreshInfo album=%{public}d, beforeCount: %{public}d, afterCount: %{public}d, "
         "beforeCover:%{public}s, afterCover:%{public}s", base.albumId, base.albumCount, newCount,
         base.albumCoverUri.c_str(), newCover.c_str());
 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, std::to_string(base.albumId));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, std::to_string(base.albumSubtype));
 
     int32_t changedRows = 0;
     int ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
-        "Update failed: album=%{public}d", base.albumId);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update failed: album: %{public}d", base.albumId);
 
     return E_OK;
 }
