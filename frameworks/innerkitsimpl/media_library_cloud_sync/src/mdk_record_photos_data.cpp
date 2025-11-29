@@ -688,4 +688,9 @@ bool MDKRecordPhotosData::hasProperties()
 {
     return !this->properties_.empty();
 }
+
+std::optional<std::string> MDKRecordPhotosData::GetAttributeFieldValue(const std::string &fieldName) const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, fieldName);
+}
 }  // namespace OHOS::Media::CloudSync

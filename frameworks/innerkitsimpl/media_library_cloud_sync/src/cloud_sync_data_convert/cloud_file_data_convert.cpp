@@ -232,6 +232,7 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map["editedTime_ms"] = MDKRecordField(upLoadRecord.dateModified);
     map[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = MDKRecordField(upLoadRecord.fileSourceType);
     map[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(upLoadRecord.storagePath);
+    HandleAttributesHashMap(map, upLoadRecord);
     int32_t ret = HandleThumbSize(map, upLoadRecord);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbSize err: %{public}d", ret);
     ret = HandleLcdSize(map, upLoadRecord);
@@ -1067,6 +1068,29 @@ int32_t CloudFileDataConvert::ConverMDKRecordToOnFetchPhotosVo(
     ConvertSourceAlbumIds(mdkRecord, onFetchPhotoVo);
     ConvertAttributes(photosData, onFetchPhotoVo);
     ConvertProperties(photosData, onFetchPhotoVo);
+    ConvertAttributesHashMap(photosData, onFetchPhotoVo);
     return E_OK;
 }
-}  // namespace OHOS::Media::CloudSync
+
+int32_t CloudFileDataConvert::HandleAttributesHashMap(
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &uploadRecord)
+{
+    for (const auto &node : uploadRecord.stringfields)
+    {
+        data[node.first] = MDKRecordField(node.second);
+    }
+    return E_OK;
+}
+
+void CloudFileDataConvert::ConvertAttributesHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
+{
+    std::optional<std::string> valueStrOp;
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING)
+    {
+        valueStrOp = data.GetAttributeFieldValue(fieldName);
+        CHECK_AND_CONTINUE(valueStrOp.has_value());
+        onFetchPhotoVo.stringfields[fieldName] = valueStrOp.value();
+    }
+    return;
+}
+} // namespace OHOS::Media::CloudSync

@@ -175,6 +175,7 @@ public:  // attributes getter & setter
     void SetFileSourceType(int32_t fileSourceType);
     std::optional<std::string> GetStoragePath() const;
     void SetStoragePath(const std::string &storagePath);
+    std::optional<std::string> GetAttributeFieldValue(const std::string &fieldName) const;
 
 public:  // properties getter & setter - gallery expand fields
     std::optional<std::string> GetSourcePath() const;
