@@ -394,7 +394,28 @@ bool CloneRestore::BackupPreprocess()
     if (!dstDeviceBackupInfo_.hdcEnabled && (!srcCloneRestoreConfigInfo_.isValid ||
         srcCloneRestoreConfigInfo_.switchStatus == SwitchStatus::HDC)) {
         MEDIA_INFO_LOG("dst device does not support hdc while current hdc sync is on");
-        bool ret = InvalidateHdcCloudData();
+        MEDIA_INFO_LOG("Start BackupDb");
+        // create temp DB path
+        CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, false, "mediaLibraryRdb_ is nullptr!");
+        std::string tmpDir = backupRestoreDir_ + "/storage/media/local/files/.backup/backup/media_temp_rdb";
+        tmpDbPath_ = tmpDir + "/media_library_temp.db";
+        CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(tmpDir),
+            MediaFileUtils::DeleteDir(tmpDir));
+        CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(tmpDbPath_) == E_OK,
+            false, "Prepare backup dir failed");
+        int32_t errCode = mediaLibraryRdb_->Backup(tmpDbPath_);
+        CHECK_AND_RETURN_RET_LOG(errCode == 0, E_FAIL, "rdb backup fail: %{public}d", errCode);
+        MEDIA_INFO_LOG("End BackupDb");
+        auto context = AbilityRuntime::Context::GetApplicationContext();
+        CHECK_AND_RETURN_RET_LOG(context != nullptr, E_FAIL, "Failed to get context");
+        std::shared_ptr<NativeRdb::RdbStore> backupRdb;
+        int32_t err = BackupDatabaseUtils::InitDb(backupRdb, MEDIA_DATA_ABILITY_DB_NAME, tmpDbPath_, BUNDLE_NAME, true,
+            context->GetArea());
+        CHECK_AND_RETURN_RET_LOG(backupRdb != nullptr, E_FAIL, "Init remote medialibrary rdb fail, err = %{public}d",
+            err);
+        bool ret = InvalidateHdcCloudData(backupRdb);
+        MEDIA_INFO_LOG("add restore dir");
+        dirMappingList_.push_back("/data/storage/el2/database/rdb");
         if (!ret) {
             MEDIA_ERR_LOG("fail to delete hdc data");
             SetErrorCode(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED);
@@ -407,9 +428,9 @@ bool CloneRestore::BackupPreprocess()
     return true;
 }
 
-bool CloneRestore::InvalidateHdcCloudData()
+bool CloneRestore::InvalidateHdcCloudData(std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_, false, "mediaLibraryRdb_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "backupRdb is nullptr");
 
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         std::make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
@@ -417,7 +438,7 @@ bool CloneRestore::InvalidateHdcCloudData()
     NativeRdb::ValuesBucket updateBucket;
     updateBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::INVALID));
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, updateBucket,
+    CHECK_AND_RETURN_RET_LOG(BackupDatabaseUtils::Update(rdbStore, changedRows, updateBucket,
         predicates) == NativeRdb::E_OK, false, "fail to invalid hdc cloud data");
     MEDIA_INFO_LOG("InvalidateHdcCloudData %{public}d rows updated", changedRows);
     return true;
@@ -2922,7 +2943,6 @@ bool CloneRestore::HasExThumbnail(const FileInfo &info)
 
 void CloneRestore::BackupRelease()
 {
-    BackupFileUtils::RestoreInvalidHDCCloudDataPos();
     StopParameterForBackup();
 }
 
