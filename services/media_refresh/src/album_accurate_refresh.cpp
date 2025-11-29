@@ -20,7 +20,6 @@
     #include "cloud_sync_helper.h"
 #endif
 
-#include "album_plugin_config.h"
 #include "medialibrary_errno.h"
 #include "album_accurate_refresh.h"
 #include "medialibrary_notify_new.h"
@@ -267,32 +266,5 @@ int32_t AlbumAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates 
 {
     return dataManager_.AddAlbumIdForMoveOperation(predicates);
 }
-
-void AlbumAccurateRefresh::DeleteEmptySourceAlbum()
-{
-    ACCURATE_DEBUG("DeleteEmptySourceAlbum in");
-    const vector<string> NOT_CHANGEABLE_ALBUM = {
-        AlbumPlugin::LPATH_SCREEN_RECORDS,
-        AlbumPlugin::LPATH_SCREEN_SHOTS,
-        AlbumPlugin::LPATH_HIDDEN_ALBUM,
-        AlbumPlugin::LPATH_CAMERA
-    };
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_COUNT, 0);
-    predicates.EqualTo(PhotoAlbumColumns::HIDDEN_COUNT, 0);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
-    for (const auto &albumLPath : NOT_CHANGEABLE_ALBUM) {
-        predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, albumLPath);
-    }
-    int32_t deleteRows = -1;
-    LogicalDeleteReplaceByUpdate(predicates, deleteRows);
-    if (deleteRows > 0) {
-        ACCURATE_DEBUG("DeleteEmptySourceAlbum deleteRows: %{public}d", deleteRows);
-        Notify();
-    }
-}
-
 } // namespace Media
 } // namespace OHOS
