@@ -31,6 +31,7 @@ group("test") {
     "unittest/media_library_asset_manager_test:unittest",
     "unittest/media_library_cloud_sync_test:unittest",
     "unittest/media_library_manager_test:unittest",
+    "unittest/media_library_share_test:unittest",
     "unittest/media_notification_register_manager_test:unittest",
     "unittest/media_notification_test:unittest",
     "unittest/media_permission_check_test:unittest",

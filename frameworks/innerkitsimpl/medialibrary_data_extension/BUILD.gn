@@ -569,6 +569,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/acquire_debug_database_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/release_debug_database_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_fussion_assets_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/notify_asset_sended_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/open_asset_compress_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_asset_compress_version_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -728,6 +731,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
+    "src/asset_compress_version_manager.cpp",
     "src/background_cloud_batch_selected_file_download_callback.cpp",
     "src/background_cloud_file_download_callback.cpp",
     "src/background_cloud_file_processor.cpp",
@@ -767,6 +771,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_file_operations.cpp",
     "src/medialibrary_formmap_operations.cpp",
     "src/medialibrary_inotify.cpp",
+    "src/medialibrary_json_operation.cpp",
     "src/medialibrary_location_operations.cpp",
     "src/medialibrary_meta_recovery.cpp",
     "src/medialibrary_notify.cpp",
@@ -816,6 +821,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/picture_data_operations.cpp",
     "src/picture_handle_service.cpp",
     "src/picture_manager_thread.cpp",
+    "src/tlv_util.cpp",
     "src/trash_async_worker.cpp",
     "src/video_composition_callback_imp.cpp",
     "src/zip_util.cpp",
