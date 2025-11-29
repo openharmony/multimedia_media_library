@@ -198,6 +198,31 @@ public:
      * @return send ok or not
      */
     EXPORT int32_t SendBrokerChangeOperation(string operation);
+
+    /**
+     * @brief Open photo or video compress with edit data
+     *
+     * @param uri uri of the asset
+     * @param type force sensitive type
+     * @param version compress version
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version);
+
+    /**
+     * @brief notify asset compress sended
+     *
+     * @param uri uri of the asset
+     * @return notify ok or not
+     */
+    EXPORT int32_t NotifyAssetSended(const string &uri);
+
+    /**
+     * @brief get asset compress version
+     *
+     * @return asset compress version
+     */
+    EXPORT int32_t GetAssetCompressVersion();
 private:
 
     int32_t userId_;

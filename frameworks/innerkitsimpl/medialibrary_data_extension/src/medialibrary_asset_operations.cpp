@@ -227,6 +227,7 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_FILE_INODE, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_STORAGE_PATH, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, MEMBER_TYPE_INT32 },
 };
 
 const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
@@ -1892,6 +1893,15 @@ string MediaLibraryAssetOperations::GetEditDataSourcePath(const string &path)
     return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(path);
 }
 
+string MediaLibraryAssetOperations::GetEditDataSourceBackPath(const string& path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source_back." + MediaFileUtils::GetExtensionFromPath(path);
+}
+
 string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
 {
     string parentPath = GetEditDataDirPath(path);
@@ -1917,6 +1927,25 @@ string MediaLibraryAssetOperations::GetAssetCacheDir()
         cacheOwner = "common"; // Create cache file in common dir if there is no bundleName.
     }
     return MEDIA_CACHE_DIR + cacheOwner;
+}
+
+string MediaLibraryAssetOperations::GetAssetCompressCachePath(const string &path)
+{
+    string fileName = MediaFileUtils::GetFileName(path);
+    CHECK_AND_RETURN_RET(!fileName.empty(), "");
+    string cacheDir = GetAssetCacheDir() + "/compressCache/";
+    string titleName = MediaFileUtils::GetTitleFromDisplayName(fileName);
+    int64_t timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    return cacheDir + titleName + "_" + std::to_string(timestamp) + ".tlv";
+}
+
+string MediaLibraryAssetOperations::GetAssetCompressJsonPath(const string &path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/editdata.json";
 }
 
 static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)

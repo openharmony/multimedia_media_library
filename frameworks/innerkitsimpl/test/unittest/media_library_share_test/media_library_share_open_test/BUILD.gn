@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (C) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,43 +14,55 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryPhotoCustomRestoreOperationFuzzTest") {
-  module_out_path = "media_library/media_library"
-  fuzz_config_file = "."
-
-  defines = []
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.resourceschedule_efficiency_manager)) {
-    defines += [ "EFFICIENCY_MANAGER_ENABLE" ]
-  }
-
+ohos_unittest("media_library_share_open_test") {
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
-    "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "./include",
+    "../../get_self_permissions/include",
+    "../../medialibrary_unittest_utils/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/include/",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_SERVICES_PATH}/media_library/include",
   ]
 
   sources = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/restore_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager/media_library_custom_restore.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager/src/medialibrary_custom_restore_observer_manager.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/asset_compress_version_manager.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_json_operation.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_rdb_utils.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_custom_restore_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
-    "./photocustomrestoreoperation_fuzzer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
+    "../../get_self_permissions/src/get_self_permissions.cpp",
+    "../../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
+    "../../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/media_library_share_open_test.cpp",
   ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_extend_manager",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
   external_deps = [
     "ability_base:configuration",
+    "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
@@ -60,25 +72,51 @@ ohos_fuzztest("MediaLibraryPhotoCustomRestoreOperationFuzzTest") {
     "ability_runtime:runtime",
     "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken",
+    "access_token:libnativetoken_shared",
+    "access_token:libtokensetproc_shared",
     "access_token:libprivacy_sdk",
     "access_token:libtoken_setproc",
+    "app_file_service:fileuri_native",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "ipc:ipc_napi",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
+    "os_account:os_account_innerkits",
     "player_framework:media_client",
     "preferences:native_preferences",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+
+  defines = []
 }

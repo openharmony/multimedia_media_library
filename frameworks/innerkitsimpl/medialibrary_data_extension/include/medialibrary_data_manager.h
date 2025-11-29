@@ -132,6 +132,10 @@ public:
     EXPORT int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
     EXPORT void ScanLakeAsset();
     EXPORT std::shared_ptr<NativeRdb::ResultSet> ProcessBrokerChangeMsg(const std::string &operation);
+    EXPORT static int32_t OpenAssetCompress(const std::string &uri, const int32_t type, const int32_t version,
+        int32_t &fd);
+    EXPORT static int32_t NotifyAssetSended(const std::string &uri);
+    EXPORT static int32_t GetAssetCompressVersion();
 
 private:
     int32_t InitMediaLibraryRdbStore();
@@ -175,6 +179,7 @@ private:
     bool ReadSupportHmos();
     void SetIsLakeAssetScanned(bool isScanned);
     bool IsSupportHmos();
+    static void SaveCompressTempFile(const std::string &uri, const std::string &tempFilePath);
 
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
@@ -192,6 +197,7 @@ private:
     std::atomic_bool isAgingDup_ {false};
     std::string supportHmos_ {""};
     std::string scanStatus_ {""};
+    static std::unordered_map<std::string, std::string> compressAssetTempFiles_;
 };
 
 // Scanner callback objects
