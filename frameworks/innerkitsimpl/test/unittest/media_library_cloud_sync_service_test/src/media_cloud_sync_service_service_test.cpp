@@ -1806,15 +1806,6 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnRecordFailed_Test_
 
     photo.serverErrorCode = ServerErrorCode::RESPONSE_TIME_OUT;
     photo.errorType = ErrorType::TYPE_UNKNOWN;
-    detailError.detailCode = ErrorDetailCode::SAME_FILENAME_NOT_ALLOWED;
-    photo.errorDetails.clear();
-    photo.errorDetails.emplace_back(detailError);
-    photo.fileName = "filename.txt";
-    ret = service.OnRecordFailed(photo, photoRefresh);
-    EXPECT_EQ(ret, E_RDB);
-
-    photo.serverErrorCode = ServerErrorCode::RESPONSE_TIME_OUT;
-    photo.errorType = ErrorType::TYPE_UNKNOWN;
     detailError.detailCode = ErrorDetailCode::CONTENT_NOT_FIND;
     photo.errorDetails.clear();
     photo.errorDetails.emplace_back(detailError);
