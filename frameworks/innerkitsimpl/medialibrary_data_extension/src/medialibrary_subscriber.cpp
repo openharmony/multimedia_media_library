@@ -96,6 +96,7 @@
 #include "map_code_upload_checker.h"
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "product_info.h"
+#include "permission_whitelist_utils.h"
 
 using namespace OHOS::AAFwk;
 
@@ -150,6 +151,9 @@ std::mutex uploadDBMutex;
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
 const int64_t TWELVE_HOUR_MS = static_cast<int64_t>(12 * 3600 * 1000);
 constexpr int32_t SUBSCRIBE_TASK_TIMEOUT_SECOND = 2;
+const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
+const string CLOUD_EVENT_INFO_TYPE = "type";
+const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -164,6 +168,7 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
     EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT,
     EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
+    CLOUD_UPDATE_EVENT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -570,6 +575,11 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
+
+    std::string type = want.GetStringParam(CLOUD_EVENT_INFO_TYPE);
+    if (action == CLOUD_UPDATE_EVENT && type == CLOUD_EVENT_INFO_TYPE_VALUE) {
+        PermissionWhitelistUtils::OnReceiveEvent();
+    }
 }
 
 void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
