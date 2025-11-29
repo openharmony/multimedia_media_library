@@ -79,6 +79,9 @@ static inline void SetRemainFileMetadataApi9(const Metadata &metadata, ValuesBuc
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
     values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
     values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
@@ -97,6 +100,9 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
         } else {
             values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
             values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+            double aspectRatio =
+                MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+            values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
             values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
             values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
             values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
@@ -233,6 +239,9 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(metadata.GetFileName()));
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
     values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
     values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, metadata.GetExifRotate());
     if (fabs(metadata.GetLongitude()) > DOUBLE_EPSILON || fabs(metadata.GetLatitude()) > DOUBLE_EPSILON) {

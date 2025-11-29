@@ -135,6 +135,7 @@
 #include "vision_label_column.h"
 #include "vision_image_face_column.h"
 #include "register_unregister_handler_functions.h"
+#include "get_albumid_by_lpath_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -439,6 +440,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAlbumsByOldUris", PhotoAcessGetAlbumsByOldUris),
             DECLARE_NAPI_FUNCTION("getClonedAlbumUris", PhotoAcessGetAlbumsByOldUris),
             DECLARE_NAPI_FUNCTION("getAlbumsByIds", PhotoAccessGetPhotoAlbumsByIds),
+            DECLARE_NAPI_FUNCTION("getAlbumIdByLpath", PhotoAccessGetAlbumIdByLpath),
+            DECLARE_NAPI_FUNCTION("getAlbumIdByBundleName", PhotoAccessGetAlbumIdByBundleName),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("getIndexConstructProgress", PhotoAccessGetIndexConstructProgress),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
@@ -13647,13 +13650,192 @@ napi_value MediaLibraryNapi::PhotoAccessReleaseDebugDatabase(napi_env env, napi_
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-
     CHECK_NULLPTR_RET(ParseArgsReleaseDebugDatabase(env, info, asyncContext));
     asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE);
 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ReleaseDebugDatabase", 
         JSReleaseDebugDatabaseExecute, JSReleaseDebugDatabaseCallbackComplete);
+}
+
+static napi_value HandleOneArgGetAlbumByLpath(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string lpath;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], lpath),
+        JS_E_PARAM_INVALID);
+    NAPI_DEBUG_LOG("lpath: %{public}s", lpath.c_str());
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lpath);
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+        NAPI_DEBUG_LOG("Created new PhotoAlbum object");
+    }
+    context->photoAlbumData->SetLPath(lpath);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetAlbumIdByLpath(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+    switch (context->argc) {
+        case ARGS_ONE:
+            CHECK_NULLPTR_RET(HandleOneArgGetAlbumByLpath(env, context));
+            break;
+        default:
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+            return nullptr;
+    }
+    CHECK_NULLPTR_RET(context->photoAlbumData);
+    string lpath = context->photoAlbumData->GetLPath();
+    static const std::unordered_set<std::string> MEDIA_DIRS = {
+        "/DCIM/Camera",
+        "/Pictures/Screenshots", 
+        "/Pictures/Screenrecords"
+    };
+    bool isValidLpath = MEDIA_DIRS.find(lpath) == MEDIA_DIRS.end();
+    if (isValidLpath) {
+        NAPI_ERR_LOG("lpath is Invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+    return result;
+}
+
+static void GetAlbumIdByLpathOrBundleNameExecute(napi_env env, void *data)
+{
+    NAPI_DEBUG_LOG("enter GetAlbumIdByLpathOrBundleNameExecute");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->photoAlbumData, "photoAlbumData is null");
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    int32_t ret = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody); 
+    if (ret != 0) {
+        MEDIA_ERR_LOG("UserDefineIPCClient().Call is failed");
+        context->SaveError(ret);
+        return;
+    }
+    int32_t albumId = respBody.albumId;
+    context->photoAlbumData->SetAlbumId(albumId);
+}
+
+static void GetAlbumIdByLpathOrBundleNameCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    if (status != napi_ok || context->error != ERR_DEFAULT) {
+        NAPI_ERR_LOG("GetAlbumIdByLpath failed, status: %{public}d, error: %{public}d", status, context->error);
+        context->HandleError(env, jsContext->error);
+    } else {
+        int albumId = context->photoAlbumData->GetAlbumId();
+        napi_status napiStatus = napi_create_int32(env, albumId, &jsContext->data);
+        if (napiStatus == napi_ok) {
+            jsContext->status = true;
+        } else {
+            NAPI_ERR_LOG("Failed to create albumId value");
+            context->HandleError(env, jsContext->error);
+        }
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    NAPI_DEBUG_LOG("MediaLibraryNapi::GetAlbumIdByLpathOrBundleNameCompleteCallback end");
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetAlbumIdByLpath");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetAlbumIdByLpath(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAlbumIdByLpath",
+        GetAlbumIdByLpathOrBundleNameExecute, GetAlbumIdByLpathOrBundleNameCompleteCallback);
+}
+
+static napi_value HandleOneArgGetAlbumIdByBundleName(napi_env env, 
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string bundle_name;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundle_name),
+     JS_E_PARAM_INVALID);
+    NAPI_DEBUG_LOG("bundle_name: %{public}s", bundle_name.c_str());
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_PRIORITY, to_string(1));
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+    }
+    context->photoAlbumData->SetAlbumName(bundle_name);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetAlbumIdByBundleName(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+    switch (context->argc) {
+        case ARGS_ONE:
+            CHECK_NULLPTR_RET(HandleOneArgGetAlbumIdByBundleName(env, context));
+            break;
+        default:
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+            return nullptr;
+    }
+    if (context->photoAlbumData->GetAlbumName().empty()) {
+        NAPI_ERR_LOG("bundle_name is empty");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+    return result;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetAlbumIdByBundleName");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetAlbumIdByBundleName(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAlbumIdByBundleName",
+       GetAlbumIdByLpathOrBundleNameExecute, GetAlbumIdByLpathOrBundleNameCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS
