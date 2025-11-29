@@ -103,8 +103,9 @@ int32_t CloudMediaAlbumDao::QuerySameNameAlbum(PhotoAlbumDto &record, int32_t &a
     while (tryTime <= MAX_TRY_TIMES) {
         std::string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_ID +
                                " FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_NAME +
-                               " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
-                               std::to_string(PhotoAlbumType::USER) + " AND (" + PhotoAlbumColumns::ALBUM_CLOUD_ID +
+                               " = ? AND (" + PhotoAlbumColumns::ALBUM_TYPE + " = " +
+                               std::to_string(PhotoAlbumType::USER) + " OR " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
+                               std::to_string(PhotoAlbumType::SOURCE) + ") AND (" + PhotoAlbumColumns::ALBUM_CLOUD_ID +
                                " ISNULL OR " + PhotoAlbumColumns::ALBUM_CLOUD_ID + " != ?) AND ( " +
                                PhotoAlbumColumns::ALBUM_LPATH + " IS NOT NULL  AND " + PhotoAlbumColumns::ALBUM_LPATH +
                                " != '' AND LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") != LOWER(?))";
