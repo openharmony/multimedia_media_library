@@ -1246,8 +1246,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(DeleteBehaviorAsync, taskData);
     asyncWorker->AddTask(asyncTask, false);
 
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.DeleteEmptySourceAlbum();
     return updatedRows;
 }
 
