@@ -1172,6 +1172,33 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryIntMap(std::share
     return results;
 }
 
+std::vector<CloneVideoInfo> BackupDatabaseUtils::QueryVideoInfo(
+    std::string tableName, std::string VideofileIdOldInClause, std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    std::vector<CloneVideoInfo> results;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is null");
+        return results;
+    }
+    std::string sql =
+        "SELECT file_id,status,label,face FROM " + tableName +
+        " WHERE file_id IN " + VideofileIdOldInClause;
+    auto resultSet = rdbStore->QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query SQL or resultSet is null (SQL: %s)", sql.c_str());
+        return results;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t file_id = GetInt32Val("file_id", resultSet);
+        int32_t status = GetInt32Val("status", resultSet);
+        int32_t label = GetInt32Val("label", resultSet);
+        int32_t face = GetInt32Val("face", resultSet);
+        results.push_back({file_id, face, label, status});
+    }
+    resultSet->Close();
+    return results;
+}
 
 std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryOldNoFaceStatus(
     std::shared_ptr<NativeRdb::RdbStore> oldRdbStore,
@@ -1320,49 +1347,62 @@ bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbSt
     return true;
 }
 
-void BackupDatabaseUtils::UpdateLabelAndFaceToAnalysisVideoTotalTable(
+void BackupDatabaseUtils::ClearAnalysisVideoTotalTable(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
-    std::string UpdateLabelAndFace_sql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
-        STATUS + " = (SELECT " + STATUS + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "), " +
-        LABEL  + " = (SELECT " + LABEL  + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "), " +
-        FACE   + " = (SELECT " + FACE   + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ")" +
-        " WHERE EXISTS (SELECT 1 FROM " + VISION_TOTAL_TABLE + " WHERE " + FILE_ID + " = "
-        + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ")" +
-        " AND EXISTS (SELECT 1 FROM " + PHOTOS_TABLE + " WHERE " + FILE_ID + " = "
-        + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + " AND media_type = " + MEDIA_TYPE_VIDEO_VALUE + " );";
-
-    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace UpdateLabelAndFaceToAnalysisVideoTotalTable \
-        sql = %{public}s", UpdateLabelAndFace_sql.c_str());
-    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, UpdateLabelAndFace_sql);
-    CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateLabelAndFaceToAnalysisVideoTotalTable \
+    std::string updateFace_sql =
+        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " " +
+        " SET face = " + FACE_DEFAULT_VALUE + " ;";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace ClearAnalysisVideoTotalTable \
+        sql = %{public}s", updateFace_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateFace_sql);
+    CHECK_AND_RETURN_LOG(errCode >= 0, "execute ClearAnalysisVideoTotalTable updateFace_sql\
         failed, ret=%{public}d", errCode);
-    MEDIA_DEBUG_LOG("succeed to UpdateLabelAndFaceToAnalysisVideoTotalTable");
+    std::string updateStatus_sql =
+        "UPDATE " + VISION_VIDEO_TOTAL_TABLE +
+        " SET status = " + STATUS_DEFAULT_VALUE +
+        " WHERE status = 1 ;";
+    MEDIA_DEBUG_LOG("UpdateAnalysisVideoTotalTblLabelAndFace ClearAnalysisVideoTotalTable \
+        sql = %{public}s", updateStatus_sql.c_str());
+    int32_t errCode_status = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateStatus_sql);
+    CHECK_AND_RETURN_LOG(errCode_status >= 0, "execute ClearAnalysisVideoTotalTable updateStatus_sql \
+        failed, ret=%{public}d", errCode_status);
+    MEDIA_DEBUG_LOG("succeed to ClearAnalysisVideoTotalTable");
 }
+
 
 void BackupDatabaseUtils::CheckLabelAndFaceToAnalysisVideoTotalTable(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
-    std::string Check_sql =
+    std::string checkFace_sql =
         "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
-        STATUS + " = " + STATUS_DEFAULT_VALUE + ", " +
-        LABEL  + " = " + LABEL_DEFAULT_VALUE + ", " +
-        FACE   + " = " + FACE_DEFAULT_VALUE +
-        " WHERE (NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE +
-        " WHERE " + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ") " +
-        "OR NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "));";
-
+        FACE + " = 0, " +
+        STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END "
+        "WHERE NOT EXISTS ("
+            "SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE +
+            " WHERE " + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID +
+        ");";
     MEDIA_DEBUG_LOG("CheckLabelAndFaceToAnalysisVideoTotalTable \
-        Check_sql sql = %{public}s", Check_sql.c_str());
-    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, Check_sql);
+        checkFace_sql sql = %{public}s", checkFace_sql.c_str());
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, checkFace_sql);
     CHECK_AND_RETURN_LOG(errCode >= 0, "execute \
-        CheckLabelAndFaceToAnalysisVideoTotalTable failed, ret=%{public}d", errCode);
+        CheckLabelAndFaceToAnalysisVideoTotalTable checkFace_sql failed, ret=%{public}d", errCode);
+
+    std::string checkLabel_sql =
+        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        LABEL + " = 0, " +
+        STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END "
+        "WHERE NOT EXISTS ("
+            "SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE +
+            " WHERE " + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID +
+        ");";
+    MEDIA_DEBUG_LOG("CheckLabelAndFaceToAnalysisVideoTotalTable \
+        checkLabel_sql sql = %{public}s", checkLabel_sql.c_str());
+    int32_t errCode_label = BackupDatabaseUtils::ExecuteSQL(rdbStore, checkLabel_sql);
+    CHECK_AND_RETURN_LOG(errCode_label >= 0, "execute \
+        CheckLabelAndFaceToAnalysisVideoTotalTable checkLabel_sql failed, ret=%{public}d", errCode_label);
     MEDIA_DEBUG_LOG("succeed to CheckLabelAndFaceToAnalysisVideoTotalTable");
 }
 
