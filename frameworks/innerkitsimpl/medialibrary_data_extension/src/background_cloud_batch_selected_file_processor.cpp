@@ -690,15 +690,6 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallba
         progress.batchDownloadSize, progress.batchTotalSize,
         progress.batchSuccNum, progress.batchFailNum,
         progress.batchTotalNum, static_cast<int32_t>(progress.batchState));
-    unique_lock<mutex> downloadLock(downloadResultMutex_);
-    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
-        downloadResult_.find(fileId) == downloadResult_.end());
-    CHECK_AND_RETURN_WARN_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
-        fileId.c_str(), to_string(progress.downloadId).c_str());
-    downloadResult_[fileId] = BatchDownloadStatus::SUCCESS;
-    downloadFileIdAndCount_.erase(fileId);
-    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
-    downloadLock.unlock();
     MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback download success, fileId: %{public}s.", fileId.c_str());
     // 更新任务表
     int32_t ret = UpdateDBProgressInfoForFileId(fileId, 100, MediaFileUtils::UTCTimeSeconds(), // 100 finish
@@ -709,6 +700,15 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallba
     ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
         std::stoi(fileId), 100); // 100 finish
     MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+    unique_lock<mutex> downloadLock(downloadResultMutex_);
+    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
+        downloadResult_.find(fileId) == downloadResult_.end());
+    CHECK_AND_PRINT_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
+        fileId.c_str(), to_string(progress.downloadId).c_str());
+    downloadResult_[fileId] = BatchDownloadStatus::SUCCESS;
+    downloadFileIdAndCount_.erase(fileId);
+    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
+    downloadLock.unlock();
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallback(const DownloadProgressObj& progress)
@@ -727,14 +727,6 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         progress.batchSuccNum, progress.batchFailNum,
         progress.batchTotalNum, static_cast<int32_t>(progress.batchState)
         );
-    unique_lock<mutex> downloadLock(downloadResultMutex_);
-    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
-        downloadResult_.find(fileId) == downloadResult_.end());
-    CHECK_AND_RETURN_WARN_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
-        fileId.c_str(), to_string(progress.downloadId).c_str());
-    downloadResult_.erase(fileId);
-    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
-    downloadLock.unlock();
     MEDIA_ERR_LOG("download failed, error type: %{public}d, uri: %{public}s.", progress.downloadErrorType,
         MediaFileUtils::DesensitizePath(progress.path).c_str());
     if (GetDownloadFileIdCnt(fileId) > DOWNLOAD_FAIL_MAX_TIMES) {
@@ -746,9 +738,9 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
             static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback UpdateDBProgress, ret: %{public}d", ret);
-        downloadLock.lock();
+        unique_lock<mutex> downloadLockInside(downloadResultMutex_);
         downloadFileIdAndCount_.erase(fileId);
-        downloadLock.unlock();
+        downloadLockInside.unlock();
         // 检查点 批量下载 通知应用 notify type 2 失败
         CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
             fileId.c_str());
@@ -756,6 +748,14 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
             std::stoi(fileId), percent);
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
     }
+    unique_lock<mutex> downloadLock(downloadResultMutex_);
+    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
+        downloadResult_.find(fileId) == downloadResult_.end());
+    CHECK_AND_PRINT_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
+        fileId.c_str(), to_string(progress.downloadId).c_str());
+    downloadResult_.erase(fileId);
+    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
+    downloadLock.unlock();
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallback(const DownloadProgressObj& progress)
@@ -773,16 +773,6 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
         progress.batchDownloadSize, progress.batchTotalSize,
         progress.batchSuccNum, progress.batchFailNum,
         progress.batchTotalNum, static_cast<int32_t>(progress.batchState));
-    unique_lock<mutex> downloadLock(downloadResultMutex_);
-    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
-        downloadResult_.find(fileId) == downloadResult_.end());
-    CHECK_AND_RETURN_WARN_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
-        fileId.c_str(), to_string(progress.downloadId).c_str());
-    downloadResult_[fileId] = BatchDownloadStatus::STOPPED;
-    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
-    downloadFileIdAndCount_.erase(fileId);
-    downloadResult_.erase(fileId);
-    downloadLock.unlock();
     MEDIA_ERR_LOG("download stopped, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
     // 更新任务表
     CHECK_AND_RETURN_WARN_LOG(progress.totalSize != 0, "invaild fileId: %{public}s, "
@@ -796,6 +786,16 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
     CHECK_AND_RETURN_LOG(percentDB <= percent, "skip write percent fileId: %{public}s", fileId.c_str());
     int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1, -1);
     MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback UpdateDBProgress, ret: %{public}d", ret);
+    unique_lock<mutex> downloadLock(downloadResultMutex_);
+    bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
+        downloadResult_.find(fileId) == downloadResult_.end());
+    CHECK_AND_PRINT_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
+        fileId.c_str(), to_string(progress.downloadId).c_str());
+    downloadResult_[fileId] = BatchDownloadStatus::STOPPED;
+    currentDownloadIdFileInfoMap_.erase(progress.downloadId);
+    downloadFileIdAndCount_.erase(fileId);
+    downloadResult_.erase(fileId);
+    downloadLock.unlock();
 }
 
 int32_t BackgroundCloudBatchSelectedFileProcessor::QueryBatchSelectedResourceFilesNum()
