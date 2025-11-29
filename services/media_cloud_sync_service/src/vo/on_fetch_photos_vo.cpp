@@ -267,8 +267,7 @@ std::string OnFetchPhotosVo::ToString() const
 void OnFetchPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
 {
     ss << "\"stringfields\": {";
-    for (const auto &node : this->stringfields)
-    {
+    for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
     }

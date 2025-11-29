@@ -178,8 +178,7 @@ void CloudMediaPullDataDto::SetIsRecycleUpdated(bool isUpdated)
 void CloudMediaPullDataDto::GetAttributesHashMap(std::stringstream &ss) const
 {
     ss << "\"stringfields\": {";
-    for (const auto &node : this->stringfields)
-    {
+    for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
     }

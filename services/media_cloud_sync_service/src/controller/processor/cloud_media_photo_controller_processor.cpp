@@ -391,8 +391,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &re
     PhotosPo photosInfo = record;
     PhotosPoWriter writer = PhotosPoWriter(photosInfo);
     std::unordered_map<std::string, std::string> stringfieldsMap = writer.ToMap(false);
-    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING)
-    {
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING) {
         auto it = stringfieldsMap.find(fieldName);
         CHECK_AND_CONTINUE(it != stringfieldsMap.end());
         photosVo.stringfields[fieldName] = it->second;
@@ -400,7 +399,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &re
     return true;
 }
 
-bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(
+    const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
 {
     data.stringfields = photosVo.stringfields;
     return true;
