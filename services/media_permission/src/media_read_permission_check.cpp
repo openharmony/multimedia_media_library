@@ -24,7 +24,6 @@
 #endif
 #include "parameters.h"
 #include "media_app_uri_permission_column.h"
-#include "permission_whitelist_utils.h"
 
 namespace OHOS::Media {
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
@@ -140,10 +139,7 @@ int32_t DeprecatedReadPermCheck::CheckPermission(uint32_t businessCode, const Pe
         return E_PERMISSION_DENIED;
     }
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA);
-    if (ret) {
-        DfxDeprecatedPermUsage::Record(businessCode, 0);
-        return PermissionWhitelistUtils::CheckWhiteList();
-    }
+    CHECK_AND_EXECUTE(!ret, DfxDeprecatedPermUsage::Record(businessCode, 0));
     return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 

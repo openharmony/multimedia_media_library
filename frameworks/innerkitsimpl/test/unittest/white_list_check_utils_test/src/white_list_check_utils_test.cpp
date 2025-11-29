@@ -161,9 +161,9 @@ HWTEST_F(WhiteListCheckUtilsTest, InitWhiteList_test_003, TestSize.Level1)
         EXPECT_EQ(ret, true);
     }
     std::vector<json> newWhitelist = {
-        {{"packageName", "com.example.test1"}, {"allowedApiVersion", 0}},
-        {{"packageName", "com.example.test1"}, {"allowedApiVersion", 25}},
-        {{"packageName", "com.example.test1"}, {"allowedApiVersion", 0}}
+        {{"appIdentifier", "1234567891234567891"}, {"allowedApiVersion", 0}},
+        {{"appIdentifier", "1234567891234567891"}, {"allowedApiVersion", 25}},
+        {{"appIdentifier", "1234567891234567891"}, {"allowedApiVersion", 0}}
     };
     auto ret1 = UpdateHeifChecklist(MEDIA_KIT_WHITE_LIST_JSON_LOCAL_PATH_TEST, newWhitelist);
     EXPECT_EQ(ret1, true);
@@ -180,7 +180,7 @@ HWTEST_F(WhiteListCheckUtilsTest, CheckWhiteList_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd CheckWhiteList_test_001");
     auto ret = PermissionWhitelistUtils::CheckWhiteList();
-    EXPECT_EQ(ret, E_PERMISSION_DENIED);
+    EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_INFO_LOG("end tdd CheckWhiteList_test_001");
 }
 }

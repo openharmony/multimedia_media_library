@@ -32,6 +32,7 @@
 #include "bundle_mgr_proxy.h"
 #include "bundle_info.h"
 #include "parameters.h"
+#include "permission_whitelist_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -457,9 +458,14 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     MediaLibraryTracer tracer;
     tracer.Start("CheckCallerPermission");
 
+    bool isInWhitelist = true;
+    if (permission == PERMISSION_NAME_READ_MEDIA || permission == PERMISSION_NAME_WRITE_MEDIA) {
+        isInWhitelist = PermissionWhitelistUtils::CheckWhiteList() == E_SUCCESS;
+    }
+
     AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
-    if (res != PermissionState::PERMISSION_GRANTED) {
+    if (res != PermissionState::PERMISSION_GRANTED || !isInWhitelist) {
         MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
         AddPermissionRecord(tokenCaller, permission, false);
         return false;
