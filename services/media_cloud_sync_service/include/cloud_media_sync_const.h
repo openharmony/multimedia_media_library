@@ -233,6 +233,10 @@ const std::vector<std::string> ON_UPLOAD_COLUMNS = {
     Media::PhotoColumn::PHOTO_DIRTY,
 };
 
+const std::vector<std::string> PHOTOS_SYNC_COLUMN_STRING = {
+    PhotoColumn::PHOTO_MEDIA_SUFFIX,
+};
+
 enum CheckFlag : int32_t {
     CHECKED,
     NEED_CHECK,
