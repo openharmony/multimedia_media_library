@@ -1075,8 +1075,7 @@ int32_t CloudFileDataConvert::ConverMDKRecordToOnFetchPhotosVo(
 int32_t CloudFileDataConvert::HandleAttributesHashMap(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &uploadRecord)
 {
-    for (const auto &node : uploadRecord.stringfields)
-    {
+    for (const auto &node : uploadRecord.stringfields) {
         data[node.first] = MDKRecordField(node.second);
     }
     return E_OK;
@@ -1085,8 +1084,7 @@ int32_t CloudFileDataConvert::HandleAttributesHashMap(
 void CloudFileDataConvert::ConvertAttributesHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
 {
     std::optional<std::string> valueStrOp;
-    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING)
-    {
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING) {
         valueStrOp = data.GetAttributeFieldValue(fieldName);
         CHECK_AND_CONTINUE(valueStrOp.has_value());
         onFetchPhotoVo.stringfields[fieldName] = valueStrOp.value();

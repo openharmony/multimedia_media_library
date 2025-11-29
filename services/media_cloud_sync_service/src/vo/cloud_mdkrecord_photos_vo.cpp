@@ -355,8 +355,7 @@ std::string CloudMdkRecordPhotosRespBody::ToString() const
 void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
 {
     ss << "\"stringfields\": {";
-    for (const auto &node : this->stringfields)
-    {
+    for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
     }
