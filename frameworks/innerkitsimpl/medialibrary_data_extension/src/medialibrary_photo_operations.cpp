@@ -1201,6 +1201,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
     std::shared_ptr<AlbumData> albumData = std::make_shared<AlbumData>();
     vector<string> fileIds = rdbPredicate.GetWhereArgs();
+    MEDIA_INFO_LOG("Start trash %{public}zu photos", fileIds.size());
     HandleQualityAndHidden(rdbPredicate, fileIds, albumData);
 
     // 1、AssetRefresh -> Init(rdbPredicate)

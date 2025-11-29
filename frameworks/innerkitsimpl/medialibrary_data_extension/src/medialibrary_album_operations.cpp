@@ -1756,6 +1756,8 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     vector<string> whereArgs = rdbPredicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
+    MEDIA_INFO_LOG("Start recover %{public}d assets from trash",
+        static_cast<int32_t>(whereArgs.size()) - THAN_AGR_SIZE);
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
