@@ -361,7 +361,7 @@ MediaLibraryTracer tracer;
     auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(imageId, columns);
     tracer.Finish();
     if (fileAsset == nullptr) {
-        HandleForNullData();
+        HandleForNullData(imageId, picture);
         return;
     }
     if (fileAsset->GetPhotoIsTemp()) {
