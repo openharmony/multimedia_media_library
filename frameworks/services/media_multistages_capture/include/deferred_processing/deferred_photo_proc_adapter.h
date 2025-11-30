@@ -46,6 +46,7 @@ public:
     EXPORT void RestoreImage(const std::string &imageId);
     EXPORT void ProcessImage(const std::string &appName, const std::string &imageId);
     EXPORT bool CancelProcessImage(const std::string &imageId);
+    EXPORT void NotifyProcessImage();
 private:
 #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProcSession> deferredPhotoProcSession_;
