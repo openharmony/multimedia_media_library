@@ -1537,7 +1537,7 @@ int32_t CloudMediaPhotosDao::UpdateFdirtyVersion(
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, record.version);
     valuesBucket.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED));
-    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    this->OnFdirtyHandlePosition(record, valuesBucket);
     /**
      * fdirty -> synced: only if no change in meta_date_modified.
      * Fix me: if date_modified unchanged, update fdirty -> mdirty
@@ -1547,8 +1547,9 @@ int32_t CloudMediaPhotosDao::UpdateFdirtyVersion(
         valuesBucket,
         PhotoColumn::PHOTO_CLOUD_ID + " = ? AND " + PhotoColumn::PHOTO_META_DATE_MODIFIED + " = ?",
         {record.cloudId, std::to_string(record.metaDateModified)});
-    MEDIA_INFO_LOG(
-        "UpdateFdirtyVersion Update MetaDateModified Update Rows: %{public}d, Ret: %{public}d", changedRows, ret);
+    MEDIA_INFO_LOG("UpdateFdirtyVersion completed, "
+                   "rows: %{public}d, ret: %{public}d, IsLocalFileExists: %{public}d",
+                   changedRows, ret, this->IsLocalFileExists(record));
     if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
         MEDIA_ERR_LOG("UpdateFdirtyVersion update synced err %{public}d", ret);
         /* update record version anyway */
@@ -2121,6 +2122,22 @@ int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloud
     isValid = ret == E_OK && photoAlbumPoOp.has_value();
     CHECK_AND_RETURN_RET(!isValid, ret);
     return this->albumCache_.QueryAlbumBySourcePath(sourcePath, photoAlbumPoOp);
+}
+
+bool CloudMediaPhotosDao::IsLocalFileExists(const PhotosDto &record)
+{
+    std::string cloudFilePath = record.path;
+    bool isValid = !cloudFilePath.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, false, "cloudFilePath empty, record: %{public}s", record.ToString().c_str());
+    std::string localFilePath = CloudMediaSyncUtils::GetLocalPath(cloudFilePath);
+    return MediaFileUtils::IsFileExists(localFilePath);
+}
+
+int32_t CloudMediaPhotosDao::OnFdirtyHandlePosition(const PhotosDto &record, NativeRdb::ValuesBucket &valuesBucket)
+{
+    CHECK_AND_RETURN_RET(this->IsLocalFileExists(record), E_OK);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync
