@@ -154,6 +154,7 @@ config("media_data_extension_public_config") {
   include_media_camera_character = [
     "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/notify",
   ]
 
   include_backround_task = [
@@ -864,6 +865,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/multi_thread_asset_change_info_mgr.cpp",
   ]
 
+  media_camera_character_service_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/src/notify/multistages_capture_notify.cpp",
+  ]
+
   accurate_refresh_server_source = [
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/dfx/dfx_refresh_manager.cpp",
@@ -897,6 +902,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_notification_source
   sources += media_mtp_service
   sources += accurate_refresh_source
+  sources += media_camera_character_service_source
   sources += accurate_refresh_server_source
   sources += sources_backround_task
   sources += media_orm_source

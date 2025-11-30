@@ -65,7 +65,11 @@ void MediaOnNotifyUserDefineObserver::OnChange(const ChangeInfo &changeInfo)
         NAPI_ERR_LOG("observerBody is nullptr.");
         return;
     }
-    observerBody_->OnChange(callbackWrapper);
+    std::thread(
+        [this, callbackWrapper]() {
+            observerBody_->OnChange(callbackWrapper);
+        }
+    ).detach();
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_helper_container.h"
 #include "media_log.h"

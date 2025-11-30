@@ -26,11 +26,9 @@
 #include "data_ability_observer_stub.h"
 #include "datashare_helper.h"
 #include "media_change_info.h"
-#include "medialibrary_napi_utils.h"
-#include "medialibrary_notify_utils.h"
-#include "medialibrary_notify_new_observer.h"
-#include "multistages_capture_notify_info.h"
+#include "medialibrary_notify_callback_wrapper.h"
 #include "medialibrary_notify_user_define_observer.h"
+#include "multistages_capture_notify_info.h"
  
 namespace OHOS {
 namespace Media {

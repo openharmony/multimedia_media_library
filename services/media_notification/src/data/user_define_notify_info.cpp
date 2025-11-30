@@ -17,16 +17,18 @@
  
 #include <map>
 #include <string>
- 
+
+#include "low_quality_memory_num_notify_info.h"
 #include "multistages_capture_notify_info.h"
- 
+
 namespace OHOS {
 namespace Media {
 namespace Notification {
 const std::map<NotifyForUserDefineType, std::shared_ptr<UserDefineNotifyBase>> USER_DEFINE_NOTIFY_BODY_MAP = {
     { NotifyForUserDefineType::MULTISTAGES_CAPTURE, std::make_shared<MultistagesCaptureNotifyServerInfo>() },
+    { NotifyForUserDefineType::LOW_QUALITY_MEMORY, std::make_shared<LowQualityMemoryNumNotifyInfo>() },
 };
- 
+
 bool UserDefineNotifyInfo::ReadHeadFromParcel(Parcel &parcel)
 {
     MEDIA_INFO_LOG("ReadHeadFromParcel begin");
@@ -44,7 +46,7 @@ bool UserDefineNotifyInfo::ReadHeadFromParcel(Parcel &parcel)
         static_cast<int32_t>(this->notifyUri_), static_cast<int32_t>(this->notifyUserDefineType_));
     return true;
 }
- 
+
 bool UserDefineNotifyInfo::WriteHeadFromParcel(std::shared_ptr<Parcel> &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(parcel != nullptr, false, "notifyBody or parcel is nullptr.");
@@ -57,7 +59,7 @@ bool UserDefineNotifyInfo::WriteHeadFromParcel(std::shared_ptr<Parcel> &parcel) 
     parcel->WriteUint16(static_cast<uint16_t>(this->notifyUserDefineType_));
     return true;
 }
- 
+
 bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
 {
     MEDIA_INFO_LOG("ReadBodyFromParcel begin");
@@ -77,14 +79,14 @@ bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
     this->notifyBody_->UnMarshalling(parcel);
     return true;
 }
- 
+
 bool UserDefineNotifyInfo::WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(notifyBody_ != nullptr && parcel != nullptr, false, "notifyBody or parcel is nullptr.");
     parcel->WriteBool(this->readOnly_);
     return this->notifyBody_->WriteToParcel(parcel);
 }
- 
+
 void UserDefineNotifyInfo::SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody)
 {
     if (this->readOnly_) {
@@ -98,7 +100,7 @@ void UserDefineNotifyInfo::SetUserDefineNotifyBody(const std::shared_ptr<UserDef
     this->notifyBody_ = move(notifyBody);
     this->readOnly_ = true;
 }
- 
+
 std::shared_ptr<UserDefineNotifyBase> UserDefineNotifyInfo::GetUserDefineNotifyBody() const
 {
     if (!this->readOnly_) {
@@ -107,7 +109,7 @@ std::shared_ptr<UserDefineNotifyBase> UserDefineNotifyInfo::GetUserDefineNotifyB
     }
     return this->notifyBody_;
 }
- 
+
 std::string UserDefineNotifyInfo::ToString() const
 {
     std::stringstream ss;

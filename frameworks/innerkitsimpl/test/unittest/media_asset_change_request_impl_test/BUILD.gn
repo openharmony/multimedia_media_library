@@ -46,7 +46,7 @@ ohos_unittest("media_asset_change_request_impl_test") {
   sources = [
     "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_impl.cpp",
     "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/media_asset_change_request_impl.cpp",
-    "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/media_userfile_client.cpp",
+    "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/userfile_client.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/change_request_impl_test.cpp",
