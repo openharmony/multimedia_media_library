@@ -149,6 +149,8 @@ config("public_napi_config") {
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
+    "${MEDIALIB_INNERIMPL_PATH}/camera/include",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
   ]
 }
 
@@ -185,7 +187,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_new_observer.cpp",
-    "${MEDIALIB_JS_PATH}/src/medialibrary_notify_user_define_observer.cpp",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/src/medialibrary_notify_user_define_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_utils.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/data/user_define_notify_info.cpp",
     "${MEDIALIB_JS_PATH}/src/modal_ui_callback.cpp",
@@ -196,7 +198,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_manager_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/picture_handle_client.cpp",
     "${MEDIALIB_JS_PATH}/src/request_photo_uris_read_permission_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/short_term_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
@@ -206,6 +207,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
+    "${MEDIALIB_INNER_PATH}/camera/src/picture_handle_client.cpp",
   ]
 
   media_asset_service_vo_source = [

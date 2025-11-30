@@ -50,7 +50,6 @@ using namespace OHOS::CameraStandard;
 namespace OHOS {
 namespace Media {
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
-const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
 
 MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
 {
@@ -306,28 +305,30 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
 }
 
 void MultiStagesPhotoCaptureManager::AddImageInternal(int32_t fileId, const string &photoId, int32_t deferredProcType,
-    bool discardable)
+    bool discardable, const std::string &packageName)
 {
+    MEDIA_INFO_LOG("AddImageInternal, file_id: %{public}d, photoId: %{public}s, deferredProcType: %{public}d, "
+        "discardable: %{public}d, packageName: %{public}s",
+        fileId, photoId.c_str(), deferredProcType, discardable, packageName.c_str());
     MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, discardable);
 
 #ifdef ABILITY_CAMERA_SUPPORT
     DpsMetadata metadata;
     metadata.Set(CameraStandard::DEFERRED_PROCESSING_TYPE_KEY, deferredProcType);
-    deferredProcSession_->AddImage(photoId, metadata, discardable);
+    deferredProcSession_->AddImage(photoId, metadata, discardable, packageName);
 #endif
 }
 
-void MultiStagesPhotoCaptureManager::AddImage(int32_t fileId, const string &photoId, int32_t deferredProcType)
+void MultiStagesPhotoCaptureManager::AddImage(int32_t fileId, const string &photoId, int32_t deferredProcType,
+    const std::string &packageName)
 {
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photo is empty");
         return;
     }
-    MEDIA_INFO_LOG("enter AddImage, fileId: %{public}d, photoId: %{public}s, deferredProcType: %{public}d", fileId,
-        photoId.c_str(), deferredProcType);
 
     // called when camera low quality photo saved, isTrashed must be false.
-    AddImageInternal(fileId, photoId, deferredProcType, false);
+    AddImageInternal(fileId, photoId, deferredProcType, false, packageName);
 }
 
 void MultiStagesPhotoCaptureManager::AddImage(AddImageDto &dto)
@@ -342,7 +343,7 @@ void MultiStagesPhotoCaptureManager::AddImage(AddImageDto &dto)
         UpdatePictureQualityByFileId(dto.fileId);
         return;
     }
-    AddImage(dto.fileId, dto.photoId, dto.deferredProcType);
+    AddImage(dto.fileId, dto.photoId, dto.deferredProcType, dto.packageName);
     MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(dto.photoId);
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
 }
@@ -442,7 +443,7 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
         to_string(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     vector<string> columns { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_DATE_TRASHED,
-        MEDIA_DATA_DB_DEFERRED_PROC_TYPE };
+        PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, MediaColumn::MEDIA_OWNER_PACKAGE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
     CHECK_AND_RETURN_LOG(!cond, "result set is empty");
@@ -454,14 +455,15 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
         int32_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
         string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
         bool isTrashed = GetInt32Val(MEDIA_DATA_DB_DATE_TRASHED, resultSet) > 0;
+        std::string packageName = GetStringVal(MediaColumn::MEDIA_OWNER_PACKAGE, resultSet);
         if (setOfDeleted_.find(fileId) != setOfDeleted_.end()) {
             MEDIA_INFO_LOG("remove image, fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
             deferredProcSession_->RemoveImage(photoId);
             continue;
         }
         MEDIA_INFO_LOG("AddImage fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
-        int32_t deferredProcType = GetInt32Val(MEDIA_DATA_DB_DEFERRED_PROC_TYPE, resultSet);
-        AddImageInternal(fileId, photoId, deferredProcType, isTrashed);
+        int32_t deferredProcType = GetInt32Val(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, resultSet);
+        AddImageInternal(fileId, photoId, deferredProcType, isTrashed, packageName);
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
     deferredProcSession_->EndSynchronize();

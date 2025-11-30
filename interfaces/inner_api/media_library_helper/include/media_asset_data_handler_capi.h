@@ -140,6 +140,7 @@ public:
     NativeOnDataPrepared onDataPreparedHandler_ = nullptr;
     OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_ = nullptr;
     OH_MediaLibrary_OnMovingPhotoDataPrepared onRequestMovingPhotoDataPreparedHandler_ = nullptr;
+    OH_MediaLibrary_OnQuickImageDataPrepared onRequestQuickImageDataPreparedHandler_ = nullptr;
     int32_t GetPhotoQuality();
     void SetPhotoQuality(int32_t photoQuality);
 

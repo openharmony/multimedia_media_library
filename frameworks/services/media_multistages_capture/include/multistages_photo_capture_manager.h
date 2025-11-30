@@ -47,13 +47,14 @@ public:
     EXPORT bool CancelProcessRequest(const std::string &photoId);
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RestoreImage(const std::string &photoId);
-    EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
+    EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
+        const std::string &packageName = "");
     void AddImage(AddImageDto &dto);
     void AddImage(MediaLibraryCommand &cmd);
     void ProcessImage(int fileId, int deliveryMode);
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
-        bool discardable = false);
+        bool discardable = false, const std::string &packageName = "");
     bool IsHighQualityPhotoExist(const std::string &uri);
     void DealHighQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
         bool isEdited = false, bool isTakeEffect = false);

@@ -29,7 +29,7 @@ namespace Media::AccurateRefresh {
 const int32_t OPERATION_HIDDEN_FLAG = 0x1;
 const int32_t OPERATION_TRASH_FLAG = 0x2;
 const int32_t OPERATION_NONE_FLAG = 0x100;
-enum AssetType {
+enum NotifyAssetType {
     ASSET_NORMAL = 0,
     ASSET_HIDDEN = OPERATION_HIDDEN_FLAG,
     ASSET_TRASH = OPERATION_TRASH_FLAG,

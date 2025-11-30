@@ -26,7 +26,7 @@
 #include "file_uri.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 
 using namespace OHOS::Media;
 using UniqueFd = OHOS::UniqueFd;

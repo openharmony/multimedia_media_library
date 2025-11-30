@@ -38,7 +38,8 @@ public:
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
 #ifdef ABILITY_CAMERA_SUPPORT
-    void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
+    void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false,
+        const std::string &packageName = "");
     void SetProcessImageDoneCallback(const OHOS::Media::ProcessDoneHandler &func);
 #endif
     EXPORT virtual void RemoveImage(const std::string &imageId, const bool isRestorable = true);
