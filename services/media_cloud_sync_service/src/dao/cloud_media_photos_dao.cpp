@@ -53,6 +53,7 @@
 #include "cloud_media_context.h"
 #include "hi_audit.h"
 #include "photo_owner_album_id_operation.h"
+#include "lake_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -2126,7 +2127,7 @@ int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloud
 
 bool CloudMediaPhotosDao::IsLocalFileExists(const PhotosDto &record)
 {
-    std::string cloudFilePath = record.path;
+    std::string cloudFilePath = LakeFileUtils::GetAssetRealPath(record.path);
     bool isValid = !cloudFilePath.empty();
     CHECK_AND_RETURN_RET_LOG(isValid, false, "cloudFilePath empty, record: %{public}s", record.ToString().c_str());
     std::string localFilePath = CloudMediaSyncUtils::GetLocalPath(cloudFilePath);
