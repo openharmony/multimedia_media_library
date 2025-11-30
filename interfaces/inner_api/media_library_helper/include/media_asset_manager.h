@@ -48,6 +48,7 @@ struct RequestSourceAsyncContext {
     ReturnDataType returnDataType;
     OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler;
     OH_MediaLibrary_OnMovingPhotoDataPrepared onRequestMovingPhotoDataPreparedHandler;
+    OH_MediaLibrary_OnQuickImageDataPrepared onRequestQuickImageDataPreparedHandler;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo;
 };
@@ -94,6 +95,9 @@ public:
     virtual MediaLibrary_ErrorCode NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnMovingPhotoDataPrepared callback) = 0;
+    virtual MediaLibrary_ErrorCode NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnQuickImageDataPrepared callback) = 0;
 };
 
 class __attribute__((visibility("default"))) MediaAssetManagerFactory {

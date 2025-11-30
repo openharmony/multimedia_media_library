@@ -18,7 +18,7 @@
 #include <charconv>
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"

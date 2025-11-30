@@ -229,8 +229,8 @@ public:
      * @param userId a parameter for input, indicates user id
      * @return if obtain success, return PhotoAssetProxy; Otherwise return nullptr
      */
-    EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(CameraShotType cameraShotType, uint32_t callingUid,
-        int32_t userId, uint32_t callingTokenId = 0);
+    EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(
+        const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType);
     EXPORT static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc);
     EXPORT static void GetUriIdPrefix(std::string &fileUri);
     EXPORT static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize);

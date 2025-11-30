@@ -34,6 +34,10 @@ ohos_unittest("media_library_manager_test") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   cflags = [ "-fno-access-control" ]

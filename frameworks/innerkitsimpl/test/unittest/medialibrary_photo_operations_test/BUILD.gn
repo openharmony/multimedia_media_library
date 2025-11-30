@@ -35,6 +35,10 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   sources = [
