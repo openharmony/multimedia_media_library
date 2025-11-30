@@ -692,7 +692,7 @@ void MediaAssetManagerImpl::GetPictureNativeObject(const std::string requestId, 
 
     auto picture = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
     if (picture == nullptr) {
-        NAPI_INFO_LOG("picture is null");
+        MEDIA_INFO_LOG("picture is null");
         isPicture = false;
         imageSourceNative = CreateImageSource(requestId, fileUri);
         return;
@@ -701,7 +701,7 @@ void MediaAssetManagerImpl::GetPictureNativeObject(const std::string requestId, 
     MEDIA_INFO_LOG("picture is not null.");
     pictureNative = new OH_PictureNative(picture);
     if (pictureNative == nullptr) {
-        MEDIA_ERROR_LOG("pictureNative is null.");
+        MEDIA_ERR_LOG("pictureNative is null.");
         return;
     }
 }
@@ -935,7 +935,7 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAs
     asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
     asyncContext->returnDataType = ReturnDataType::TYPE_PICTURE;
     asyncContext->needsExtraInfo = true;
-    asyncContext->onRequestImageDataPreparedHandler = callback;
+    asyncContext->onRequestQuickImageDataPreparedHandler = callback;
 
     if (sDataShareHelper_ == nullptr) {
         CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);

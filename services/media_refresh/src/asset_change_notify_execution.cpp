@@ -29,7 +29,7 @@ using namespace OHOS::Media::Notification;
 const std::vector<std::pair<std::function<bool(std::pair<NotifyAssetType, NotifyAssetType>)>,
     Notification::AssetRefreshOperation>> NORMAL_ASSET_OPERATION_CALS = {
     {
-        [](std::pair<NotifyAssetType, AsNotifyAssetTypesetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first != ASSET_NORMAL && info.second == ASSET_NORMAL;
         },
         Notification::ASSET_OPERATION_UPDATE_ADD_NORMAL

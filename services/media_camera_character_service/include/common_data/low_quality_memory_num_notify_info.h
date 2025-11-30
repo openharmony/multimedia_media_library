@@ -47,7 +47,7 @@ public:
     {
         std::stringstream ss;
         ss << "{"
-            << "\"uri\": \"" << std::to_string(this->count_)
+            << "\"count\": \"" << std::to_string(this->count_)
             << "}";
         return ss.str();
     }
