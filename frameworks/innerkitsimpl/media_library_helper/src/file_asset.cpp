@@ -854,7 +854,7 @@ void FileAsset::SetPhotoIsTemp(int32_t isTemp)
     member_[PhotoColumn::PHOTO_IS_TEMP] = isTemp;
 }
 
-int32_t FileAsset::GetPhotoIsTemp()
+int32_t FileAsset::GetPhotoIsTemp() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_IS_TEMP);
 }

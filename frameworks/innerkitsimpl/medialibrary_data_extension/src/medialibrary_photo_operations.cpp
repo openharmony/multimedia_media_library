@@ -4183,7 +4183,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(const std::shared_p
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std::shared_ptr<FileAsset> &fileAsset,
-        std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect)
+    std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect)
 {
     if (fileAsset == nullptr || picture == nullptr) {
         MEDIA_ERR_LOG("fileAsset or picture is nullptr");
@@ -4243,7 +4243,7 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
         return E_ERR;
     }
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
-                imageId, picture, isEdited, isTakeEffect);
+        imageId, picture, isEdited, isTakeEffect);
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::YUV_READY_BUSSINESS_NAME);
     assetRefresh->NotifyYuvReady(fileId);
