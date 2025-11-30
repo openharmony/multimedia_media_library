@@ -57,7 +57,7 @@ private:
     void HandleOnProcessImageDone(const string &imageId, const uint8_t *addr,
         const long bytes, uint32_t cloudImageEnhanceFlag);
     void HandleOnProcessImageDone(
-        const std::string &imageId, std:;shared_ptr<CameraStandard::PictureIntf> pictureIntf,
+        const std::string &imageId, std::shared_ptr<CameraStandard::PictureIntf> pictureIntf,
         uint32_t cloudImageEnhanceFlag);
     EXPORT int32_t UpdatePhotoQuality(const int32_t &fileId);
     EXPORT void UpdatePhotoQuality(const int32_t &fileId, NativeRdb::ValuesBucket &updateValues);
