@@ -633,7 +633,7 @@ bool CloudSyncConvert::RecordToValueBucket(const CloudMediaPullDataDto &data, Na
     return E_OK;
 }
 
-int32_t CompensateAttributesHashMap(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+int32_t CloudSyncConvert::CompensateAttributesHashMap(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     CHECK_AND_RETURN_RET(!data.stringfields.empty(), E_OK);
     // compensate attributes HashMap here.
