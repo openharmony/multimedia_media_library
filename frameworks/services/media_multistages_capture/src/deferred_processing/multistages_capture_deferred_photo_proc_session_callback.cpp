@@ -365,7 +365,7 @@ MediaLibraryTracer tracer;
         return;
     }
     if (fileAsset->GetPhotoIsTemp()) {
-        HandleForIsTemp();
+        HandleForIsTemp(fileAsset, picture, cloudImageEnhanceFlag);
         return;
     }
     tracer.Start("ProcessAndSaveHighQualityImage");
