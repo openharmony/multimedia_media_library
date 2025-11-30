@@ -403,8 +403,8 @@ ohos_shared_library("medialibrary_nutils") {
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
   }
 
-  if (media_library_device_manager_enabled) {
-    defines += [ "DM_DEVICE_INFO_ENABLE" ]
+  if (media_library_feature_device_manager) {
+    defines += [ "DEVICE_MANAGER_SUPPORT" ]
     external_deps += [ "device_manager:devicemanagersdk" ]
   }
 
