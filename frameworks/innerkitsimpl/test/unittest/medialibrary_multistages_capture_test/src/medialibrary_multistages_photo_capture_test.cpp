@@ -275,6 +275,41 @@ int32_t PrepareForFirstVisit()
 }
 } // namespace
 
+unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
+{
+    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHRE " +
+        columnName + "='" + value + "';";
+
+    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("g_rdbStore is nullptr");
+        return nullptr;
+    }
+    auto resultSet = g_rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Get resultSet failed");
+        return nullptr;
+    }
+
+    int32_t resultSetCount = 0;
+    int32_t ret = resultSet->GetRowCount(resultSetCount);
+    if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
+        MEDIA_ERR_LOG("resultSet row count is 0");
+        return nullptr;
+    }
+
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    if (fetchFileResult == nullptr) {
+        MEDIA_ERR_LOG("Get fetchFileResult failed");
+        return nullptr;
+    }
+    auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
+    if (fileAsset == nullptr || fileAsset->GetId() < 0) {
+        return nullptr;
+    }
+    return fileAsset;
+}
+
 void MediaLibraryMultiStagesPhotoCaptureTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -633,16 +668,9 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_002,
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_ABNORMAL);
 
-    vector<string> columns = { PhotoColumn::PHOTO_QUALITY };
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    ASSERT_NE(g_rdbStore, nullptr);
-
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
-
-    callback->NotifyIfTempFile(resultSet, true);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    callback->NotifyIfTempFile(fileAsset, true);
     delete callback;
     MEDIA_INFO_LOG("session_callback_on_error_002 End");
 }
@@ -761,14 +789,10 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateCEAvailable_test, TestSi
 
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    vector<string> columns = { PhotoColumn::MEDIA_NAME, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE };
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
 
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-
-    callback->NotifyIfTempFile(resultSet);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    callback->NotifyIfTempFile(fileAsset);
 
     NativeRdb::ValuesBucket updateValues;
     callback->UpdateCEAvailable(fileId, 1, updateValues, 0);

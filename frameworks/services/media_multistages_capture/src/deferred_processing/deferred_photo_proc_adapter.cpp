@@ -138,5 +138,17 @@ void DeferredPhotoProcessingAdapter::SetProcessImageDoneCallback(const ProcessDo
     photoProcCallback_->SetProcessImageDoneCallback(func);
 }
 #endif
+
+void DeferredPhotoProcessingAdapter::NotifyProcessImage()
+{
+    MEDIA_INFO_LOG("DeferredPhotoProcessingAdapter::NotifyProcessImage");
+#ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredPhotoProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("NotifyProcessImage deferredPhotoProcSession_ is nullptr");
+        return;
+    }
+    deferredPhotoProcSession_->NotifyProcessImage();
+#endif
+}
 } // namespace Media
 } // namespace OHOS

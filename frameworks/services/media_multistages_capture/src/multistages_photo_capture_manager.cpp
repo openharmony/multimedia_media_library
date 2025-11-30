@@ -556,5 +556,11 @@ bool MultiStagesPhotoCaptureManager::IsPhotoDeleted(const std::string &photoId)
 
     return true;
 }
+
+void MultiStagesPhotoCaptureManager::NotifyProcessImage()
+{
+    CHECK_AND_RETURN_LOG(deferredProcSession_ != nullptr, "deferredProcSession is nullptr.");
+    deferredProcSession_->NotifyProcessImage();
+}
 } // namespace Media
 } // namespace OHOS

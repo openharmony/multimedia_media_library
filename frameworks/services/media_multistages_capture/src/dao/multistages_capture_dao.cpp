@@ -65,13 +65,11 @@ std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
     return DatabaseAdapter::Query(cmd, columns);
 }
 
-std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryVideoDataById(const std::string &videoId)
+std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryDataByPhotoId(const std::string &videoId,
+    const std::vector<std::string> &columns)
 {
     int32_t fileId = -1;
     int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(videoId, fileId);
-    std::vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP};
     std::shared_ptr<FileAsset> fileAsset;
     if (ret == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
