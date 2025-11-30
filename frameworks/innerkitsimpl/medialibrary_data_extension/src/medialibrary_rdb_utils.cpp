@@ -1232,6 +1232,7 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 "
+        "AND tab_analysis_image_face.tag_id LIKE 'ser%' "
         "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
         "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
