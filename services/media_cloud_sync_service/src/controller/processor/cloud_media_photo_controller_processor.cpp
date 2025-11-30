@@ -22,8 +22,11 @@
 #include "cloud_file_data_dto.h"
 #include "photos_vo.h"
 #include "photos_dto.h"
+#include "photos_po_writer.h"
+#include "cloud_media_sync_const.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto(std::vector<PhotosDto> &fdirtyDataDtos)
 {
     std::vector<PhotosVo> fdirtyDatas;
@@ -202,6 +205,7 @@ CloudMdkRecordPhotosVo CloudMediaPhotoControllerProcessor::ConvertRecordPoToVo(c
     this->GetAttributesInfo(record, photosVo);
     this->GetPropertiesInfo(record, photosVo);
     this->GetCloudInfo(record, photosVo);
+    this->GetAttributesHashMap(record, photosVo);
     return photosVo;
 }
 
@@ -304,6 +308,7 @@ CloudMediaPullDataDto CloudMediaPhotoControllerProcessor::ConvertToCloudMediaPul
     this->GetPropertiesInfo(photosVo, data);
     this->GetCloudInfo(photosVo, data);
     this->GetAlbumInfo(photosVo, data);
+    this->GetAttributesHashMap(photosVo, data);
     return data;
 }
 
@@ -379,5 +384,25 @@ ReportFailureDto CloudMediaPhotoControllerProcessor::GetReportFailureDto(const R
     reportFailureDto.fileId = reqBody.fileId;
     reportFailureDto.cloudId = reqBody.cloudId;
     return reportFailureDto;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
+{
+    PhotosPo photosInfo = record;
+    PhotosPoWriter writer = PhotosPoWriter(photosInfo);
+    std::unordered_map<std::string, std::string> stringfieldsMap = writer.ToMap(false);
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING) {
+        auto it = stringfieldsMap.find(fieldName);
+        CHECK_AND_CONTINUE(it != stringfieldsMap.end());
+        photosVo.stringfields[fieldName] = it->second;
+    }
+    return true;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(
+    const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
+{
+    data.stringfields = photosVo.stringfields;
+    return true;
 }
 }  // namespace OHOS::Media::CloudSync

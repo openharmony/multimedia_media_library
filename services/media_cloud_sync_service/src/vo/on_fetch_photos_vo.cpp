@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "itypes_util.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnFetchPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
@@ -165,6 +166,7 @@ bool OnFetchPhotosVo::Unmarshalling(MessageParcel &parcel)
     parcel.ReadBool(this->isFavorite);
     parcel.ReadBool(this->isRecycle);
     IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->sourceAlbumIds, parcel);
+    ITypesUtil::Unmarshalling(stringfields, parcel);
     return true;
 }
 
@@ -177,6 +179,7 @@ bool OnFetchPhotosVo::Marshalling(MessageParcel &parcel) const
     parcel.WriteBool(this->isFavorite);
     parcel.WriteBool(this->isRecycle);
     IPC::ITypeMediaUtil::Marshalling<std::string>(this->sourceAlbumIds, parcel);
+    ITypesUtil::Marshalling(stringfields, parcel);
     return true;
 }
 
@@ -248,6 +251,7 @@ std::string OnFetchPhotosVo::ToString() const
     ss << "{";
     this->GetBasicInfo(ss);
     this->GetAttributesInfo(ss);
+    this->GetAttributesHashMap(ss);
     ss << "AlbumIds:[";
     for (uint32_t i = 0; i < sourceAlbumIds.size(); i++) {
         if (i != sourceAlbumIds.size() - 1) {
@@ -258,5 +262,16 @@ std::string OnFetchPhotosVo::ToString() const
     }
     ss << "]}";
     return ss.str();
+}
+
+void OnFetchPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
+{
+    ss << "\"stringfields\": {";
+    for (const auto &node : this->stringfields) {
+        ss << "\"" << node.first << "\": ";
+        ss << "\"" << node.second << "\", ";
+    }
+    ss << "}";
+    return;
 }
 }  // namespace OHOS::Media::CloudSync

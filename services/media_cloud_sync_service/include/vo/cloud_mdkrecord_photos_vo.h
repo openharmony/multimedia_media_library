@@ -93,6 +93,9 @@ public:
     // Photo Map
     std::vector<std::string> removeAlbumCloudId;
 
+    // Hash Map for attributes
+    std::map<std::string, std::string> stringfields;
+
 public:
     virtual ~CloudMdkRecordPhotosVo() = default;
     bool Marshalling(MessageParcel &parcel) const override;
@@ -105,12 +108,13 @@ private:
     void GetPropertiesInfo(std::stringstream &ss) const;
     void GetCloudInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;
+    void GetAttributesHashMap(std::stringstream &ss) const;
     void GetRemoveAlbumInfo(std::stringstream &ss) const;
     // functions for Marshalling
     bool MarshallingBasicInfo(Parcel &parcel) const;
-    bool MarshallingAttributesInfo(Parcel &parcel) const;
+    bool MarshallingAttributesInfo(MessageParcel &parcel) const;
     bool ReadBasicInfo(Parcel &parcel);
-    bool ReadAttributesInfo(Parcel &parcel);
+    bool ReadAttributesInfo(MessageParcel &parcel);
 
 public:  // basic functions
     std::string ToString();

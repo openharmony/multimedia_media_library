@@ -589,6 +589,8 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CompensateAttMovingPhotoEffectMode(data, values);
     CompensateAttSupportedWatermarkType(data, values);
     CompensateAttStrongAssociation(data, values);
+    // attributes HashMap
+    CompensateAttributesHashMap(data, values);
     return E_OK;
 }
 
@@ -628,6 +630,14 @@ bool CloudSyncConvert::RecordToValueBucket(const CloudMediaPullDataDto &data, Na
         CHECK_AND_RETURN_RET_LOG(CompensatePropTitle(data, values) == E_OK, E_ERR, "CompensatePropTitle Error");
     }
     CHECK_AND_RETURN_RET_LOG(ExtractCompatibleValue(data, values) == E_OK, E_ERR, "ExtractCompatibleValue Error");
+    return E_OK;
+}
+
+int32_t CloudSyncConvert::CompensateAttributesHashMap(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    CHECK_AND_RETURN_RET(!data.stringfields.empty(), E_OK);
+    // compensate attributes HashMap here.
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
