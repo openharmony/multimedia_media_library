@@ -234,7 +234,7 @@ const std::vector<std::string> ON_UPLOAD_COLUMNS = {
 };
 
 const std::vector<std::string> PHOTOS_SYNC_COLUMN_STRING = {
-    PhotoColumn::PHOTO_MEDIA_SUFFIX,
+    // Add Photos fields here. such as PhotoColumn::PHOTO_MEDIA_SUFFIX,
 };
 
 enum CheckFlag : int32_t {
