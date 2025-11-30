@@ -65,7 +65,7 @@ static LowQualityMemoryNumHandler g_handler;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
-PhotoAssetProxy::PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper, 
+PhotoAssetProxy::PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper,
     const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType)
 {
     dataShareHelper_ = dataShareHelper;
@@ -530,7 +530,7 @@ void PhotoAssetProxy::RegisterPhotoStateCallback(const LowQualityMemoryNumHandle
 {
     MEDIA_INFO_LOG("RegisterPhotoStateCallback begin.");
     if (dataShareHelper_ == nullptr || func == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper or func is nullptr.");
+        MEDIA_ERR_LOG("Failed to RegisterPhotoStateCallback, dataShareHelper or func is nullptr.");
         return;
     }
 
@@ -558,17 +558,17 @@ void PhotoAssetProxy::UnregisterPhotoStateCallback()
     MEDIA_INFO_LOG("UnregisterPhotoStateCallback end, %{public}d.", static_cast<int32_t>(g_observerVec.size()));
 }
 
-int32_t PhotoAssetProxy::RegisterLowQualityMemoryNumObserver(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+int32_t PhotoAssetProxy::RegisterLowQualityMemoryNumObserver(
+    std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("dataShareHelper is nullptr.");
         return E_ERR;
     }
-
     auto observerBodyBase = std::make_shared<LowQualityMemoryNumObserver>();
     auto dataObserver = std::make_shared<MediaOnNotifyUserDefineObserver>(
         NotifyUriType::USER_DEFINE_NOTIFY_URI, observerBodyBase);
-    
+
     std::unique_lock<std::mutex> registerLock(g_observerVecLock);
     dataShareHelper->RegisterObserverExtProvider(Uri(USER_CLIENT_CHANGE),
         static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
@@ -577,7 +577,8 @@ int32_t PhotoAssetProxy::RegisterLowQualityMemoryNumObserver(std::shared_ptr<Dat
     return E_OK;
 }
 
-int32_t PhotoAssetProxy::UnregisterLowQualityMemoryNumObserver(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+int32_t PhotoAssetProxy::UnregisterLowQualityMemoryNumObserver(
+    std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("dataShareHelper is nullptr.");
@@ -586,7 +587,7 @@ int32_t PhotoAssetProxy::UnregisterLowQualityMemoryNumObserver(std::shared_ptr<D
 
     std::unique_lock<std::mutex> registerLock(g_observerVecLock);
     for (auto &dataObserver : g_observerVec) {
-        dataShareHelper->UnregisterObserverExtProvider(Uri(uriLocal),
+        dataShareHelper->UnregisterObserverExtProvider(Uri(USER_CLIENT_CHANGE),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver));
     }
     g_observerVec.clear();
@@ -599,19 +600,19 @@ std::shared_ptr<LowQualityMemoryNumNotifyInfo> LowQualityMemoryNumObserver::Conv
 {
     if (wrapper.userDefineInfo_ == nullptr ||
         wrapper.userDefineInfo_->notifyUserDefineType_ != NotifyForUserDefineType::LOW_QUALITY_MEMORY) {
-        NAPI_WARN_LOG("Wrapper is invalid.");
+        MEDIA_WARN_LOG("Wrapper is invalid.");
         return nullptr;
     }
 
     auto notifyBody = wrapper.userDefineInfo_->GetUserDefineNotifyBody();
     if (notifyBody == nullptr) {
-        NAPI_ERR_LOG("NotifyBody is nullptr.");
+        MEDIA_ERR_LOG("NotifyBody is nullptr.");
         return nullptr;
     }
  
-    auto notifyInfo = static_pointer_cast<MultistagesCaptureNotifyServerInfo>(notifyBody);
+    auto notifyInfo = static_pointer_cast<LowQualityMemoryNumNotifyInfo>(notifyBody);
     if (notifyInfo == nullptr) {
-        NAPI_ERR_LOG("NotifyInfo is nullptr.");
+        MEDIA_ERR_LOG("NotifyInfo is nullptr.");
         return nullptr;
     }
     MEDIA_INFO_LOG("LowQualityMemoryNumObserver count: %{public}d.", notifyInfo->count_);
@@ -620,7 +621,7 @@ std::shared_ptr<LowQualityMemoryNumNotifyInfo> LowQualityMemoryNumObserver::Conv
 
 void LowQualityMemoryNumObserver::OnChange(const NewJsOnChangeCallbackWrapper &wrapper)
 {
-    NAPI_INFO_LOG("LowQualityMemoryNumObserver, OnChange called, %{public}s.", ToString().c_str());
+    MEDIA_INFO_LOG("LowQualityMemoryNumObserver, OnChange called, %{public}s.", ToString().c_str());
     std::shared_ptr<LowQualityMemoryNumNotifyInfo> notifyInfo = ConvertWrapperToNotifyInfo(wrapper);
     if (notifyInfo == nullptr) {
         return;

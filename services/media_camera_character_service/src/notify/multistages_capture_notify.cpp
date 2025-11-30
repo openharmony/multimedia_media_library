@@ -26,7 +26,7 @@
 
 namespace OHOS {
 namespace Media::Notification {
-int32_t MultistagesCaptureNotify::SyncNotifyLowQualityMemoryCount(int32_t count)
+int32_t MultistagesCaptureNotify::NotifyLowQualityMemoryCount(int32_t count)
 {
     MEDIA_INFO_LOG("count: %{public}d.", count);
     auto notifyBody = std::make_shared<LowQualityMemoryNumNotifyInfo>();

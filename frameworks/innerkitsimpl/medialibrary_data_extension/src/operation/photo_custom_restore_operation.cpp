@@ -20,6 +20,7 @@
 #include <dlfcn.h>
 #include <thread>
 
+#include "asset_compress_version_manager.h"
 #include "custom_restore_const.h"
 #include "dfx_reporter.h"
 #include "directory_ex.h"
@@ -32,6 +33,7 @@
 #include "media_unique_number_column.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_bundle_manager.h"
+#include "medialibrary_json_operation.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -297,7 +299,12 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(const unordered_map<str
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
     UniqueNumber uniqueNumber;
-    int32_t errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, true, uniqueNumber);
+    int32_t errCode = E_OK;
+    if (!subFiles.empty() && TlvUtil::ValidateTlvFile(subFiles[0]) == E_OK) {
+        errCode = HandleTlvRestore(timeInfoMap, restoreTaskInfo, subFiles, true, uniqueNumber);
+    } else {
+        errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, true, uniqueNumber);
+    }
     bool isFirstRestoreSuccess = errCode == E_OK;
     int32_t lastIndex = static_cast<int32_t>(files.size() - 1);
     if (!isFirstRestoreSuccess && index == lastIndex) {
@@ -321,7 +328,12 @@ void PhotoCustomRestoreOperation::HandleBatchCustomRestore(const unordered_map<s
     }
     int32_t fileNum = static_cast<int32_t>(subFiles.size());
     UniqueNumber uniqueNumber;
-    int32_t errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
+    int32_t errCode = E_OK;
+    if (!subFiles.empty() && TlvUtil::ValidateTlvFile(subFiles[0]) == E_OK) {
+        errCode = HandleTlvRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
+    } else {
+        errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
+    }
     SendNotifyMessage(restoreTaskInfo, notifyType, errCode, fileNum, uniqueNumber);
 }
 
@@ -416,6 +428,274 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(const unordered_map<str
     failNum_.fetch_add(totalFileNum - successFileNum - sameFileNum);
     MEDIA_DEBUG_LOG("HandleCustomRestore success.");
     return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleTlvRestore(const unordered_map<string, TimeInfo> &timeInfoMap,
+    RestoreTaskInfo &restoreTaskInfo, const vector<string> &filePathVector, bool isFirst, UniqueNumber &uniqueNumber)
+{
+    MEDIA_INFO_LOG("HandleTlvRestore begin. size: %{public}d, isFirst: %{public}d",
+        static_cast<int32_t>(filePathVector.size()), isFirst ? 1 : 0);
+    CHECK_AND_RETURN_RET_LOG(!filePathVector.empty(), E_ERR, "filePathVector is empty");
+    int32_t totalSuccess = 0;
+    int32_t sameFileNum = 0;
+    int32_t ret = E_OK;
+    std::string decodeTlvDir = "";
+    std::unordered_map<TlvTag, std::string> decodeTlvPathMap;
+    for (const auto &tlvPath : filePathVector) {
+        decodeTlvPathMap.clear();
+        decodeTlvDir = "";
+        decodeTlvDir = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvPath);
+        ret = TlvUtil::ExtractTlv(tlvPath, decodeTlvDir, decodeTlvPathMap);
+        MediaFileUtils::DeleteFile(tlvPath);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("ExtractTlv failed, ret: %{public}d", ret);
+            MediaFileUtils::DeleteDir(decodeTlvDir);
+            continue;
+        }
+        ret = HandleTlvSingleRestore(decodeTlvPathMap, timeInfoMap, restoreTaskInfo, isFirst, uniqueNumber);
+        MediaFileUtils::DeleteDir(decodeTlvDir);
+        if (ret == E_OK) {
+            totalSuccess++;
+        } else if (ret == E_FILE_EXIST) {
+            sameFileNum++;
+        } else {
+            MEDIA_ERR_LOG("HandleTlvSingleRestore failed, ret: %{public}d", ret);
+            continue;
+        }
+    }
+    int32_t totalFileNum = static_cast<int32_t>(filePathVector.size());
+    successNum_.fetch_add(totalSuccess);
+    failNum_.fetch_add(totalFileNum - totalSuccess - sameFileNum);
+    MEDIA_INFO_LOG("HandleTlvRestore end, totalNum: %{public}d, totalSuccess: %{public}d",
+        totalFileNum, totalSuccess);
+    return E_OK;
+}
+
+std::string PhotoCustomRestoreOperation::GetUniqueTempDir(const std::string &tlvPath)
+{
+    std::string fileName = MediaFileUtils::GetFileName(tlvPath);
+    std::string baseTempDir = MediaFileUtils::GetParentPath(tlvPath) + "/temp_" + ScannerUtils::GetFileTitle(fileName);
+    std::string uniqueTempDir = baseTempDir;
+    int32_t attempt = 0;
+    const int32_t maxAttempts = 100;
+    while (MediaFileUtils::IsDirExists(uniqueTempDir) && attempt < maxAttempts) {
+        uniqueTempDir = baseTempDir + "_" + std::to_string(attempt);
+        attempt++;
+    }
+    CHECK_AND_RETURN_RET_LOG(!MediaFileUtils::IsDirExists(uniqueTempDir) &&
+        MediaFileUtils::CreateDirectory(uniqueTempDir), "", "Create unique temp dir failed: %{private}s",
+        uniqueTempDir.c_str());
+    return uniqueTempDir;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleTlvSingleRestore(const std::unordered_map<TlvTag, std::string> &editFileMap,
+    const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo, bool isFirst,
+    UniqueNumber &uniqueNumber)
+{
+    MEDIA_INFO_LOG("HandleTlvSingleRestore begin.");
+
+    CHECK_AND_RETURN_RET_LOG(editFileMap.count(TlvTag::TLV_TAG_ORIGIN) > 0, E_ERR, "Not find TLV_TAG_ORIGIN in tlv");
+    vector<string> effectPaths = {editFileMap.at(TlvTag::TLV_TAG_ORIGIN)};
+    vector<FileInfo> restoreFiles = GetFileInfos(effectPaths, uniqueNumber);
+    int32_t ret = UpdateUniqueNumber(uniqueNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateUniqueNumber failed. ret: %{public}d", ret);
+
+    vector<FileInfo> destRestoreFiles = SetDestinationPath(restoreFiles, uniqueNumber);
+    CHECK_AND_RETURN_RET_LOG(!destRestoreFiles.empty(), E_ERR, "restore file number is zero.");
+
+    int32_t sameFileNum = 0;
+    vector<FileInfo> insertRestoreFiles =
+        BatchInsert(timeInfoMap, restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
+    CHECK_AND_RETURN_RET_INFO_LOG(sameFileNum == 0, E_FILE_EXIST, "tlv single restore has same file.");
+    int32_t successFileNum = RenameFiles(insertRestoreFiles);
+    CHECK_AND_RETURN_RET_LOG(successFileNum > 0, E_ERR, "RenameFiles failed.");
+
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
+    ret = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchUpdateTimePending failed. ret: %{public}d", ret);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
+    UpdateAndNotifyShootingModeAlbumIfNeeded(insertRestoreFiles);
+    if (isFirst && !insertRestoreFiles.empty()) {
+        CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
+            ret, "UpdatePhotoAlbum failed.");
+    }
+    std::string assetPath = insertRestoreFiles[0].filePath;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(assetPath), E_ERR, "Restored asset file not exists");
+    ret = HandleAllEditData(editFileMap, assetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleAllEditData failed");
+    return E_OK;
+}
+
+void PhotoCustomRestoreOperation::RestoreTlvRollback(const std::string &assetPath)
+{
+    MEDIA_INFO_LOG("RestoreTlvRollback begin");
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(assetPath), MediaFileUtils::DeleteFile(assetPath));
+    DeleteDatabaseRecord(assetPath);
+
+    string sourcePhotoPath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(sourcePhotoPath), MediaFileUtils::DeleteFile(sourcePhotoPath));
+
+    string sourceBackPhotoPath = PhotoFileUtils::GetEditDataSourceBackPath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(sourceBackPhotoPath),
+        MediaFileUtils::DeleteFile(sourceBackPhotoPath));
+ 
+    string editDataPath = PhotoFileUtils::GetEditDataPath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(editDataPath),
+        MediaFileUtils::DeleteFile(editDataPath));
+
+    string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(editDataCameraPath),
+        MediaFileUtils::DeleteFile(editDataCameraPath));
+
+    string movingPhotoVideoSourcePath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(movingPhotoVideoSourcePath),
+        MediaFileUtils::DeleteFile(movingPhotoVideoSourcePath));
+
+    string movingPhotoVideoSourceBackPath = MovingPhotoFileUtils::GetSourceBackMovingPhotoVideoPath(assetPath);
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(movingPhotoVideoSourceBackPath),
+        MediaFileUtils::DeleteFile(movingPhotoVideoSourceBackPath));
+}
+
+int32_t PhotoCustomRestoreOperation::HandlePhotoSourceRestore(const string &originalSrcPath,
+    const std::string &assetPath)
+{
+    MEDIA_INFO_LOG("HandlePhotoSourceRestore start");
+    string targetPath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
+    int32_t ret = MoveFile(originalSrcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move photo source file failed to %{public}s",
+        targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleMovingPhotoVideoSourceRestore(const string &srcPath,
+    const std::string &assetPath)
+{
+    string targetPath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(assetPath);
+    int32_t ret = MoveFile(srcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move moving photo video source file failed to %{public}s",
+        targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleMovingPhotoVideoSourceBackRestore(const string &srcPath,
+    const std::string &assetPath)
+{
+    string targetPath = MovingPhotoFileUtils::GetSourceBackMovingPhotoVideoPath(assetPath);
+    int32_t ret = MoveFile(srcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move moving photo video source back file failed to %{public}s",
+        targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::MoveFile(const std::string &srcPath, const std::string &destPath)
+{
+    CHECK_AND_RETURN_RET_LOG(!destPath.empty(), E_INVALID_PATH, "MoveFile destPath is empty");
+    std::string dir = MediaFileUtils::GetParentPath(destPath);
+    if (!MediaFileUtils::IsDirExists(dir)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dir), E_HAS_FS_ERROR,
+            "Create dir failed: %{public}s", dir.c_str());
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(srcPath, destPath, true), E_HAS_FS_ERROR,
+        "MoveFile failed to %{public}s", destPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandlePhotoSourceBackRestore(const std::string &sourceBackSrcPath,
+    const std::string &assetPath)
+{
+    std::string targetPath = PhotoFileUtils::GetEditDataSourceBackPath(assetPath);
+    int32_t ret = MoveFile(sourceBackSrcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move source back file failed to %{public}s", targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleEditDataRestore(const string &editDataSrcPath, const std::string &assetPath)
+{
+    string targetPath = PhotoFileUtils::GetEditDataPath(assetPath);
+    int32_t ret = MoveFile(editDataSrcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move edit data file failed to %{public}s",
+        targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleEditDataCameraRestore(const string &editDataCameraSrcPath,
+    const std::string &assetPath)
+{
+    string targetPath = PhotoFileUtils::GetEditDataCameraPath(assetPath);
+    int32_t ret = MoveFile(editDataCameraSrcPath, targetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Move edit camera file failed to %{public}s",
+        targetPath.c_str());
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleDbFieldsFromJsonRestore(const std::string &jsonPath,
+    const std::string &assetPath)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(jsonPath), E_INVALID_VALUES, "json file not exists");
+    int32_t version = AssetCompressVersionManager::GetAssetCompressVersion();
+    AssetCompressSpec assetCompressSpec = AssetCompressVersionManager::GetAssetCompressSpec(version);
+    NativeRdb::ValuesBucket values = MediaJsonOperation::ReadJsonToValuesBucket(jsonPath,
+        assetCompressSpec.editedDataColumns);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "rdbStore is nullptr.");
+
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, assetPath);
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK && changedRows > 0, E_ERR, "Failed to update edit data for file");
+
+    MEDIA_INFO_LOG("Successfully updated edit data.");
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::HandleAllEditData(const std::unordered_map<TlvTag, std::string> &decodeTlvPathMap,
+    const std::string &assetPath)
+{
+    MEDIA_INFO_LOG("HandleAllEditData begin.");
+    CHECK_AND_RETURN_RET_LOG(!decodeTlvPathMap.empty(), E_ERR, "decodeTlvPathMap is empty.");
+    int32_t ret = E_OK;
+    for (const auto& [tag, path] : decodeTlvPathMap) {
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::IsFileExists(path), "File not exist for tag %{public}d: ",
+            static_cast<int32_t>(tag));
+        switch (tag) {
+            case TlvTag::TLV_TAG_ORIGIN:
+                break;
+            case TlvTag::TLV_TAG_EDITDATA:
+                ret = HandleEditDataRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_CAMERA:
+                ret = HandleEditDataCameraRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_SOURCE:
+                ret = HandlePhotoSourceRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_SOURCE_BACK:
+                ret = HandlePhotoSourceBackRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_JSON:
+                ret = HandleDbFieldsFromJsonRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_MOVING_PHOTO_VIDEO_SOURCE:
+                ret = HandleMovingPhotoVideoSourceRestore(path, assetPath);
+                break;
+            case TlvTag::TLV_TAG_MOVING_PHOTO_VIDEO_SOURCE_BACK:
+                ret = HandleMovingPhotoVideoSourceBackRestore(path, assetPath);
+                break;
+            default:
+                MEDIA_WARN_LOG("Unknown TLV tag ignored: %{public}d", static_cast<int32_t>(tag));
+                break;
+        }
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Handle file failed with tag: %{public}d.", static_cast<int32_t>(tag));
+            RestoreTlvRollback(assetPath);
+            return E_ERR;
+        }
+    }
+    return ret;
 }
 
 int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(const vector<FileInfo> &restoreFiles,

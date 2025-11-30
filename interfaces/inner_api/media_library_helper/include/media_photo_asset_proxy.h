@@ -45,7 +45,7 @@ struct PhotoAssetProxyCallerInfo {
 
     std::string ToString() const
     {
-        std::string ss;
+        std::stringstream ss;
         ss << "{"
            << "\"callingUid\": \"" << std::to_string(this->callingUid) << "\","
            << "\"userId\": \"" << std::to_string(this->userId) << "\","
@@ -66,7 +66,7 @@ public:
 class PhotoAssetProxy {
 public:
     PhotoAssetProxy();
-    PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper, 
+    PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper,
         const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType);
     ~PhotoAssetProxy();
 

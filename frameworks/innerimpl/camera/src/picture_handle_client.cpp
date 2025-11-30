@@ -85,7 +85,7 @@ void PictureHandlerClient::FinishRequestPicture(const int32_t &fileId)
 {
     MEDIA_DEBUG_LOG("PictureHandlerClient::FinishRequestPicture fileId: %{public}d", fileId);
     std::string uri = PAH_FINISH_REQUEST_PICTURE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
     Uri finishRequestPictureUri(uri);
 
     DataShare::DataShareValuesBucket valuesBucket;

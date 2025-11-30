@@ -207,7 +207,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
-    "${MEDIALIB_INNER_PATH}/camera/src/picture_handle_client.cpp",
+    "${MEDIALIB_INNERIMPL_PATH}/camera/src/picture_handle_client.cpp",
   ]
 
   media_asset_service_vo_source = [

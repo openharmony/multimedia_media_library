@@ -67,7 +67,7 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
     MEDIA_INFO_LOG("enter CleanPictureMapData, pictureMap size: %{public}d, pictureType: %{public}d",
         static_cast<int32_t>(pictureMap.size()), static_cast<int32_t>(pictureType));
 
-    int32_t lowqualityMemoryCount = static_cast<int32_t>(pictureMap.size());
+    int32_t lowQualityMemoryCount = static_cast<int32_t>(pictureMap.size());
     auto iter = pictureMap.begin();
     while (iter != pictureMap.end()) {
         time_t now = time(nullptr);
@@ -90,8 +90,8 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         }
     }
     if (pictureType == PictureType::LOW_QUALITY_PICTURE &&
-        lowqualityMemoryCount != static_cast<int32_t>(pictureMap.size())) {
-        MultistagesCaptureNotify::SyncNotifyLowQualityMemoryCount(static_cast<int32_t>(pictureMap.size()));
+        lowQualityMemoryCount != static_cast<int32_t>(pictureMap.size())) {
+        MultistagesCaptureNotify::NotifyLowQualityMemoryCount(static_cast<int32_t>(pictureMap.size()));
     }
     MEDIA_INFO_LOG("end CleanPictureMapData, pictureMap size: %{public}d, pictureType: %{public}d",
         static_cast<int32_t>(pictureMap.size()), static_cast<int32_t>(pictureType));
@@ -132,7 +132,7 @@ void PictureDataOperations::InsertPictureData(const std::string& imageId, sptr<P
                 lowQualityPictureMap_.erase(iter);
             }
             lowQualityPictureMap_[imageId] = picturePair;
-            MultistagesCaptureNotify::SyncNotifyLowQualityMemoryCount(static_cast<int32_t>(pictureMap.size()));
+            MultistagesCaptureNotify::NotifyLowQualityMemoryCount(static_cast<int32_t>(lowQualityPictureMap_.size()));
             }
             break;
         case HIGH_QUALITY_PICTURE:
@@ -160,7 +160,7 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
     auto iterPicture = lowQualityPictureMap_.find(imageId);
     if (iterPicture != lowQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
         lowQualityPictureMap_.erase(iterPicture);
-        MultistagesCaptureNotify::SyncNotifyLowQualityMemoryCount(static_cast<int32_t>(pictureMap.size()));
+        MultistagesCaptureNotify::NotifyLowQualityMemoryCount(static_cast<int32_t>(lowQualityPictureMap_.size()));
     }
     // 存储高质量图
     iterPicture = highQualityPictureMap_.find(imageId);
@@ -393,7 +393,7 @@ void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, Pi
                 (iter->second)->picture_ = nullptr;
                 lowQualityPictureMap_.erase(iter);
             }
-            MultistagesCaptureNotify::SyncNotifyLowQualityMemoryCount(static_cast<int32_t>(pictureMap.size()));
+            MultistagesCaptureNotify::NotifyLowQualityMemoryCount(static_cast<int32_t>(lowQualityPictureMap_.size()));
             break;
         case HIGH_QUALITY_PICTURE:
             iter = highQualityPictureMap_.find(imageId);

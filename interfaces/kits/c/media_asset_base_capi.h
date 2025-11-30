@@ -49,6 +49,7 @@
 #include <stdint.h>
 
 #include "image_source_native.h"
+#include "picture_native.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -157,7 +158,7 @@ typedef enum MediaLibrary_ErrorCode {
     MEDIA_LIBRARY_INVALID_PHOTO_KEY = 23800104,
 
     /**
-     * @error The scenario parameter verification fails..
+     * @error The scenario parameter verification fails.
      * It is recommended to retry and check the logs.
      * Possible causes:
      * 1. The type is not fixed at 'hiddenPhotoChange'.
