@@ -18,6 +18,8 @@
 #define USERID "100"
 
 #include "datashare_helper.h"
+#include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "unique_fd.h"
 
 namespace OHOS {
@@ -25,30 +27,6 @@ namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
-/**
- * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
- *
- * @since 1.0
- * @version 1.0
- */
-enum class PhotoPermissionType : int32_t {
-    TEMPORARY_READ_IMAGEVIDEO = 0,
-    PERSIST_READ_IMAGEVIDEO,
-    TEMPORARY_WRITE_IMAGEVIDEO,
-    TEMPORARY_READWRITE_IMAGEVIDEO,
-    PERSIST_READWRITE_IMAGEVIDEO, // Internal reserved value, not open to the public
-    PERSIST_WRITE_IMAGEVIDEO,
-    GRANT_PERSIST_READWRITE_IMAGEVIDEO,
-};
-
-enum class HideSensitiveType : int32_t {
-    ALL_DESENSITIZE = 0,
-    GEOGRAPHIC_LOCATION_DESENSITIZE,
-    SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE,
-    DEFAULT
-};
-
 enum class OperationMode : uint32_t {
     READ_MODE = 0b01,
     WRITE_MODE = 0b10,

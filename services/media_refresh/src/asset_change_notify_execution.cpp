@@ -26,64 +26,64 @@ namespace Media::AccurateRefresh {
 using namespace std;
 using namespace OHOS::Media::Notification;
 
-const std::vector<std::pair<std::function<bool(std::pair<AssetType, AssetType>)>, Notification::AssetRefreshOperation>>
-    NORMAL_ASSET_OPERATION_CALS = {
+const std::vector<std::pair<std::function<bool(std::pair<NotifyAssetType, NotifyAssetType>)>,
+    Notification::AssetRefreshOperation>> NORMAL_ASSET_OPERATION_CALS = {
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, AsNotifyAssetTypesetType> info) -> bool {
             return info.first != ASSET_NORMAL && info.second == ASSET_NORMAL;
         },
         Notification::ASSET_OPERATION_UPDATE_ADD_NORMAL
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first == ASSET_NORMAL && info.second != ASSET_NORMAL;
         },
         Notification::ASSET_OPERATION_UPDATE_REMOVE_NORMAL
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first == ASSET_NORMAL && info.second == ASSET_NORMAL;
         },
         Notification::ASSET_OPERATION_UPDATE_NORMAL
     },
 };
-const std::vector<std::pair<std::function<bool(std::pair<AssetType, AssetType>)>, Notification::AssetRefreshOperation>>
-    HIDDEN_ASSET_OPERATION_CALS = {
+const std::vector<std::pair<std::function<bool(std::pair<NotifyAssetType, NotifyAssetType>)>,
+    Notification::AssetRefreshOperation>> HIDDEN_ASSET_OPERATION_CALS = {
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first != ASSET_HIDDEN && info.second == ASSET_HIDDEN;
         },
         Notification::ASSET_OPERATION_UPDATE_ADD_HIDDEN
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first == ASSET_HIDDEN && info.second != ASSET_HIDDEN;
         },
         Notification::ASSET_OPERATION_UPDATE_REMOVE_HIDDEN
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return info.first == ASSET_HIDDEN && info.second == ASSET_HIDDEN;
         },
         Notification::ASSET_OPERATION_UPDATE_HIDDEN
     },
 };
-const std::vector<std::pair<std::function<bool(std::pair<AssetType, AssetType>)>, Notification::AssetRefreshOperation>>
-    TRASH_ASSET_OPERATION_CALS = {
+const std::vector<std::pair<std::function<bool(std::pair<NotifyAssetType, NotifyAssetType>)>,
+    Notification::AssetRefreshOperation>> TRASH_ASSET_OPERATION_CALS = {
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return (info.first & ASSET_TRASH) != ASSET_TRASH && (info.second & ASSET_TRASH) == ASSET_TRASH;
         },
         Notification::ASSET_OPERATION_UPDATE_ADD_TRASH
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return (info.first & ASSET_TRASH) == ASSET_TRASH && (info.second & ASSET_TRASH) != ASSET_TRASH;
         },
         Notification::ASSET_OPERATION_UPDATE_REMOVE_TRASH
     },
     {
-        [](std::pair<AssetType, AssetType> info) -> bool {
+        [](std::pair<NotifyAssetType, NotifyAssetType> info) -> bool {
             return (info.first & ASSET_TRASH) == ASSET_TRASH && (info.second & ASSET_TRASH) == ASSET_TRASH;
         },
         Notification::ASSET_OPERATION_UPDATE_TRASH
@@ -218,9 +218,9 @@ AssetRefreshOperation AssetChangeNotifyExecution::GetRemoveOperation(const Photo
 
 void AssetChangeNotifyExecution::InsertNormalAssetOperation(const PhotoAssetChangeData &changeData)
 {
-    AssetType before =
+    NotifyAssetType before =
         AlbumAssetHelper::IsCommonSystemAsset(changeData.infoBeforeChange_) ? ASSET_NORMAL : ASSET_INVALID;
-    AssetType after =
+    NotifyAssetType after =
         AlbumAssetHelper::IsCommonSystemAsset(changeData.infoAfterChange_) ? ASSET_NORMAL : ASSET_INVALID;
     MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
@@ -235,8 +235,8 @@ void AssetChangeNotifyExecution::InsertNormalAssetOperation(const PhotoAssetChan
 
 void AssetChangeNotifyExecution::InsertTrashAssetOperation(const PhotoAssetChangeData &changeData)
 {
-    AssetType before = TrashAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_TRASH : ASSET_INVALID;
-    AssetType after = TrashAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_TRASH : ASSET_INVALID;
+    NotifyAssetType before = TrashAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_TRASH : ASSET_INVALID;
+    NotifyAssetType after = TrashAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_TRASH : ASSET_INVALID;
     MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
     for (auto &operationCal : TRASH_ASSET_OPERATION_CALS) {
@@ -250,8 +250,8 @@ void AssetChangeNotifyExecution::InsertTrashAssetOperation(const PhotoAssetChang
 
 void AssetChangeNotifyExecution::InsertHiddenlAssetOperation(const PhotoAssetChangeData &changeData)
 {
-    AssetType before = HiddenAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_HIDDEN : ASSET_INVALID;
-    AssetType after = HiddenAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_HIDDEN : ASSET_INVALID;
+    NotifyAssetType before = HiddenAssetHelper::IsAsset(changeData.infoBeforeChange_) ? ASSET_HIDDEN : ASSET_INVALID;
+    NotifyAssetType after = HiddenAssetHelper::IsAsset(changeData.infoAfterChange_) ? ASSET_HIDDEN : ASSET_INVALID;
     MEDIA_DEBUG_LOG("before: 0x%{public}x, after: 0x%{public}x", static_cast<int32_t>(before),
         static_cast<int32_t>(after));
     for (auto &operationCal : HIDDEN_ASSET_OPERATION_CALS) {

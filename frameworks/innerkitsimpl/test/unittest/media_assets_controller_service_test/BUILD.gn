@@ -38,6 +38,10 @@ ohos_unittest("media_assets_controller_service_test") {
     "../medialibrary_unittest_utils/include",
     "./include",
     "../get_self_permissions/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   include_media_ipc = [

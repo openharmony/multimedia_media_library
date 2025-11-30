@@ -32,7 +32,6 @@
 #include "media_column.h"
 #include "medialibrary_appstate_observer.h"
 #include "medialibrary_rdb_transaction.h"
-#include "media_library_manager.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
 #include "rdb_utils.h"

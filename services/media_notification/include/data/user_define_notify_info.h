@@ -29,6 +29,7 @@ using namespace Media::AccurateRefresh;
 enum class NotifyForUserDefineType {
     UNDEFINED = 0,
     MULTISTAGES_CAPTURE = 1,
+    LOW_QUALITY_MEMORY = 2,
 };
  
 class EXPORT UserDefineNotifyBase : public Parcelable {
