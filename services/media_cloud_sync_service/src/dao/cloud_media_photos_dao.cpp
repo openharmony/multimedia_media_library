@@ -431,9 +431,9 @@ void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullData
     if (isLocal && mtimeChanged) {
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_CLOUD));
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
-        values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
         values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
     }
+    this->FillThumbStatus(values, mtimeChanged);
 }
 
 int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,
@@ -2121,6 +2121,13 @@ int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloud
     isValid = ret == E_OK && photoAlbumPoOp.has_value();
     CHECK_AND_RETURN_RET(!isValid, ret);
     return this->albumCache_.QueryAlbumBySourcePath(sourcePath, photoAlbumPoOp);
+}
+
+int32_t CloudMediaPhotosDao::FillThumbStatus(NativeRdb::ValuesBucket &values, const bool mtimeChanged)
+{
+    CHECK_AND_RETURN_RET(mtimeChanged, E_OK);
+    values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

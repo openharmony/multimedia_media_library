@@ -185,6 +185,7 @@ private:
     int32_t FixAlbumIdToBeOtherAlbumId(int32_t &albumId);
     bool IsHiddenAsset(const CloudMediaPullDataDto &pullData);
     int32_t FixEmptyAlbumId(const CloudMediaPullDataDto &data, int32_t &albumId);
+    int32_t FillThumbStatus(NativeRdb::ValuesBucket &values, const bool mtimeChanged);
 
 private:
     CloudMediaCommonDao commonDao_;
