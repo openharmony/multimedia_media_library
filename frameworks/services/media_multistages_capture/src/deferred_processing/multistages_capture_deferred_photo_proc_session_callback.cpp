@@ -333,7 +333,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleForIsTemp(
     uint32_t cloudImageEnhanceFlag)
 {
     MEDIA_ERR_LOG("MultistagesCapture, this picture is temp.");
-    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(fileAsset->GetPhotoId(), 
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(fileAsset->GetPhotoId(),
         std::move(picture));
     bool isEdited = fileAsset->GetPhotoEditTime() > 0;
     bool isTrashed = fileAsset->GetIsTrash() > 0;
@@ -468,7 +468,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
     tracer.Start("OnProcessImageDone with addr " + imageId);
     MEDIA_ERR_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), bytes, cloudImageEnhanceFlag);
-    const std::vector<std::sting> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+    const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_ID,
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_DATE_TRASHED };
