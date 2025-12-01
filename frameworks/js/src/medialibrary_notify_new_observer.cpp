@@ -288,6 +288,29 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
     return buildResult;
 }
 
+static bool ProcessSceneSpecificNotifications(napi_env env, napi_handle_scope scope,
+    NewJsOnChangeCallbackWrapper* wrapper, const std::shared_ptr<Notification::MediaChangeInfo>& mediaChangeInfo)
+{
+    if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothPhotoAndSinglePhoto) {
+        napi_value buildResult = ProcessSinglePhotoUriNotifications(env, scope, wrapper, mediaChangeInfo);
+        if (buildResult == nullptr) {
+            NAPI_ERR_LOG("Failed to build result");
+            napi_close_handle_scope(env, scope);
+            return false;
+        }
+        return true;
+    } else if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothAlbumAndSingleAlbum) {
+        napi_value buildResult = ProcessSingleAlbumUriNotifications(env, scope, wrapper, mediaChangeInfo);
+        if (buildResult == nullptr) {
+            NAPI_ERR_LOG("Failed to build result");
+            napi_close_handle_scope(env, scope);
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
 static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
 {
     MediaLibraryTracer tracer;
@@ -299,16 +322,8 @@ static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
     CHECK_AND_RETURN_LOG(status == napi_ok && scope != nullptr,
         "Failed to open handle scope, napi status: %{public}d", static_cast<int>(status));
     napi_value buildResult = nullptr;
-    if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothPhotoAndSinglePhoto) {
-        buildResult = ProcessSinglePhotoUriNotifications(env, scope, wrapper, mediaChangeInfo);
-    } else if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothAlbumAndSingleAlbum) {
-        buildResult = ProcessSingleAlbumUriNotifications(env, scope, wrapper, mediaChangeInfo);
-    }
-    if (buildResult == nullptr) {
-        NAPI_ERR_LOG("Failed to build result");
-        napi_close_handle_scope(env, scope);
-        return;
-    }
+    auto ret = ProcessSceneSpecificNotifications(env, scope, wrapper, mediaChangeInfo);
+    CHECK_AND_RETURN(ret);
     buildResult = HandleObserverUriType(env, scope, wrapper, mediaChangeInfo);
     if (buildResult == nullptr) {
         NAPI_ERR_LOG("Failed to build result");
