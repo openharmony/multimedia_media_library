@@ -1357,6 +1357,7 @@ export namespace photoAccessHelper {
     MEDIA_SUFFIX = 'media_suffix',
     SUM_SIZE = 'sum(size)',
     VIDEO_MODE = 'video_mode',
+    ASPECT_RATIO = 'aspect_ratio',
   }
 
   export enum AlbumKeys {

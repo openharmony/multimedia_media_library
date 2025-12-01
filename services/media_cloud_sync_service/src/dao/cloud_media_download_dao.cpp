@@ -25,6 +25,7 @@
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dao_utils.h"
 #include "cloud_media_sync_utils.h"
@@ -364,6 +365,9 @@ static bool UpdateHeightAndWidth(const int32_t fileId, const int32_t exifRotate)
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(height, width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,

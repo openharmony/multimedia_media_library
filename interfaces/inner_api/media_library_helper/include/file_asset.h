@@ -100,6 +100,9 @@ public:
     EXPORT int32_t GetHeight() const;
     EXPORT void SetHeight(int32_t height);
 
+    EXPORT double GetAspectRatio();
+    EXPORT void SetAspectRatio(double aspectRatio);
+
     EXPORT int32_t GetDuration() const;
     EXPORT void SetDuration(int32_t duration);
 

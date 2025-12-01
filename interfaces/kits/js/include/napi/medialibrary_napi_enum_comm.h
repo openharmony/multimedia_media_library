@@ -311,6 +311,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("VIDEO_MODE",                PhotoColumn::PHOTO_VIDEO_MODE),
     std::make_pair("FUSION_ASSET_STORAGE_PATH", PhotoColumn::PHOTO_STORAGE_PATH),
     std::make_pair("ASSET_SOURCE_TYPE",         PhotoColumn::PHOTO_FILE_SOURCE_TYPE),
+    std::make_pair("ASPECT_RATIO",              PhotoColumn::PHOTO_ASPECT_RATIO),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

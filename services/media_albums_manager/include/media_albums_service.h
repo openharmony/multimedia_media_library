@@ -57,6 +57,8 @@
 #include "change_request_set_upload_status_dto.h"
 #include "media_assets_delete_service.h"
 #include "media_assets_recover_service.h"
+#include "get_albumid_by_lpath_dto.h"
+#include "get_albumid_by_lpath_vo.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -107,6 +109,7 @@ public:
     int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
     int32_t ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
+    int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

@@ -1059,6 +1059,9 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(fileInfo.height, fileInfo.width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
     std::string package_name = fileInfo.packageName;
     if (package_name != "") {
