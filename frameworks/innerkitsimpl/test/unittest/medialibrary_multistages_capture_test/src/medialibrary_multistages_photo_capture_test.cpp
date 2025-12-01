@@ -1090,8 +1090,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test01, TestSi
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     ASSERT_NE(callback, nullptr);
  
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    int32_t ret = callback->NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     ASSERT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("end NotifyOnProcess_test01");
 }
@@ -1109,11 +1109,14 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test02, TestSi
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     ASSERT_NE(callback, nullptr);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
+        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
  
-    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
-    ASSERT_NE(resultSet, nullptr);
+    auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
+    ASSERT_NE(fileAsset, nullptr);
  
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::UNDEFINED);
+    int32_t ret = callback->NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::UNDEFINED);
     ASSERT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("end NotifyOnProcess_test02");
 }
@@ -1132,10 +1135,14 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test03, TestSi
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     ASSERT_NE(callback, nullptr);
  
-    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
-    ASSERT_NE(resultSet, nullptr);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
+        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
  
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
+    ASSERT_NE(fileAsset, nullptr);
+ 
+    int32_t ret = callback->NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     ASSERT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end NotifyOnProcess_test03");
 }
