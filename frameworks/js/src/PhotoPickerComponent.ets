@@ -866,7 +866,7 @@ export class PickerController {
       }
     }
     if (this.saveCallbackPromises.has(date)) {
-      let promiseFunc = this.saveCallbackMap.get(date) as [Function, Function];
+      let promiseFunc = this.saveCallbackPromises.get(date) as [Function, Function];
       if (promiseFunc) {
         if (err) {
           promiseFunc[1](err);
