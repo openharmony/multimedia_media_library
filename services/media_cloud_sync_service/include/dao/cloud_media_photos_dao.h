@@ -187,6 +187,7 @@ private:
     int32_t FixEmptyAlbumId(const CloudMediaPullDataDto &data, int32_t &albumId);
     int32_t OnFdirtyHandlePosition(const PhotosDto &record, NativeRdb::ValuesBucket &valuesBucket);
     bool IsLocalFileExists(const PhotosDto &record);
+    int32_t FillThumbStatus(NativeRdb::ValuesBucket &values, const bool mtimeChanged);
 
 private:
     CloudMediaCommonDao commonDao_;
