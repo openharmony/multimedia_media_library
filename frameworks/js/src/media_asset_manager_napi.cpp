@@ -223,7 +223,7 @@ static void DeleteRecordNoLock(const std::string &requestUri, const std::string 
         return;
     }
 
-    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[uriLocal];
+    std::map<std::string, AssetHandler*> &assetHandlers = inProcessUriMap[uriLocal];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
@@ -233,27 +233,21 @@ static void DeleteRecordNoLock(const std::string &requestUri, const std::string 
     }
     ObserverType observerType = handler->observerType;
     assetHandlers.erase(requestId);
-    if (!assetHandlers.empty()) {
-        inProcessUriMap[uriLocal] = assetHandlers;
-        return;
+    if (assetHandlers.empty()) {
+        inProcessUriMap.erase(uriLocal);
     }
-
-    inProcessUriMap.erase(uriLocal);
 
     if (multiStagesObserverNewMap.find(uriLocal) == multiStagesObserverNewMap.end()) {
         return;
     }
-    
     auto &observerMap = multiStagesObserverNewMap[uriLocal];
     if (observerMap.find(observerType) != observerMap.end()) {
         UserFileClient::UnregisterObserverExtProvider(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(observerMap[observerType]));
     }
     observerMap.erase(observerType);
-    NAPI_INFO_LOG("DeleteRecordNoLock size1: %{public}d.", static_cast<int32_t>(observerMap.size()));
     if (observerMap.empty()) {
         multiStagesObserverNewMap.erase(uriLocal);
-        NAPI_INFO_LOG("DeleteRecordNoLock size2: %{public}d.", static_cast<int32_t>(multiStagesObserverNewMap.size()));
     }
 }
 
@@ -275,7 +269,7 @@ static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler
 }
 
 static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
-    MediaAssetManagerAsyncContext *asyncContext, const ObserverType &observerType = ObserverType::UNDEFINED)
+    MediaAssetManagerAsyncContext *asyncContext)
 {
     napi_ref dataHandlerRef;
     napi_threadsafe_function threadSafeFunc;
@@ -300,7 +294,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
-    assetHandler->observerType = observerType;
+    assetHandler->observerType = asyncContext->observerType;
     NAPI_ERR_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode,
         MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
 
@@ -749,6 +743,8 @@ static std::string GenerateRequestId()
 void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
+    CHECK_IF_EQUAL(asyncContext->observerType != ObserverType::UNDEFINED,
+        "In asyncContext, observerType is undefined, RegisterTaskNewObserver failed.");
     std::string uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
 
     auto observerBodyBase = std::make_shared<MultistagesCaptureOnProcessObserver>(uriLocal, asyncContext->observerType);
@@ -763,18 +759,18 @@ void MediaAssetManagerNapi::RegisterTaskNewObserver(napi_env env, MediaAssetMana
     }
 
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
-    if (!multiStagesObserverNewMap.count(uriLocal)) {
+    if (multiStagesObserverNewMap.find(uriLocal) == multiStagesObserverNewMap.end()) {
         multiStagesObserverNewMap.insert(std::make_pair(
             uriLocal, std::map<ObserverType, std::shared_ptr<MediaOnNotifyUserDefineObserver>>{}));
     }
     auto &observerMap = multiStagesObserverNewMap.at(uriLocal);
-    if (!observerMap.count(asyncContext->observerType)) {
+    if (observerMap.find(asyncContext->observerType) == observerMap.end()) {
         UserFileClient::RegisterObserverExtProvider(Uri(registerUri),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         observerMap.insert(std::make_pair(asyncContext->observerType, dataObserver));
     }
     registerLock.unlock();
-    InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext, asyncContext->observerType);
+    InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext);
 
     if (asyncContext->observerType == ObserverType::REQUEST_IMAGE
         || asyncContext->observerType == ObserverType::REQUEST_QUICK_IMAGE) {
@@ -1558,13 +1554,10 @@ void MultistagesCaptureOnProcessObserver::OnChange(const NewJsOnChangeCallbackWr
 
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     if (inProcessUriMap.find(notifyInfo->uri_) == inProcessUriMap.end()) {
-        NAPI_INFO_LOG("current uri does not in process, uri: %{public}s", uri_.c_str());
+        NAPI_ERR_LOG("Current uri does not in process, uri: %{public}s", uri_.c_str());
         return;
     }
     std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[notifyInfo->uri_];
-    for (auto handler : assetHandlers) {
-        DeleteRecordNoLock(handler.second->requestUri, handler.second->requestId);
-    }
     for (auto handler : assetHandlers) {
         auto assetHandler = handler.second;
         if (!MatchNotifyToObserver(notifyInfo->notifyType_, assetHandler->observerType)) {
@@ -1577,6 +1570,7 @@ void MultistagesCaptureOnProcessObserver::OnChange(const NewJsOnChangeCallbackWr
             assetHandler->isError = true;
         }
         MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
+        DeleteRecordNoLock(handler.second->requestUri, handler.second->requestId);
     }
 }
 

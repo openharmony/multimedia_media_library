@@ -13,21 +13,20 @@
  * limitations under the License.
  */
  
-#define MLOG_TAG "AccurateRefresh::UserDefineNotifyExecution"
-
-#include "user_define_notify_execution.h"
+#ifndef OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H
+#define OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H
  
-#include "medialibrary_notify_new.h"
-
+#include "user_define_notify_info.h"
+ 
 namespace OHOS {
 namespace Media::AccurateRefresh {
 using namespace std;
 using namespace OHOS::Media::Notification;
-
-void UserDefineNotifyExecution::Notify(const UserDefineNotifyInfo &notifyInfoInner)
-{
-    // 调用发送通知接口
-    Notification::MediaLibraryNotifyNew::AddUserDefineItem(NotifyInfoInner);
-}
+ 
+class UserDefineNotifyExecution {
+public:
+    void Notify(const UserDefineNotifyInfo &notifyInfoInner);
+};
 } // namespace Media
 } // namespace OHOS
+#endif // OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H

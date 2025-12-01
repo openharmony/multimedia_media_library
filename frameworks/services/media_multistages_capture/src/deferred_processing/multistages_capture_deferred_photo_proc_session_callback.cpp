@@ -238,7 +238,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
     bool isMovingPhoto = (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
         static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
@@ -254,11 +253,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     }
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     bool isTakeEffect = false;
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
-        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect, imageId,
-        [this, resultSet]() -> int32_t {
-            return this->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::YUV_READY);
-        });
+    int ret = MediaLibraryPhotoOperations::ProcessMultiStagesPhotoForPicture(
+        resultSet, picture, resultPicture, isTakeEffect, imageId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
