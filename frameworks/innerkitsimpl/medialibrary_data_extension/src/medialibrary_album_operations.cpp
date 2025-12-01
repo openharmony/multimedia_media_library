@@ -2452,6 +2452,7 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
         updateAlbumInfo.albumName + "'," + IS_COVER_SATISFIED + " = " + to_string(updateAlbumInfo.isCoverSatisfied) +
+        "," + ALBUM_RELATIONSHIP + " = '" + updateAlbumInfo.relationship + "'" +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId) + ")";
     vector<string> updateSqls = { updateForMergeAlbums};
@@ -2468,8 +2469,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     const std::string queryAlbumInfo = "SELECT " + ALBUM_ID + "," + GROUP_TAG + "," + COUNT + "," + IS_ME + "," +
         COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + "," +
-        ALBUM_NAME + "," + IS_COVER_SATISFIED + "," + ALBUM_TYPE + "," + ALBUM_SUBTYPE +
-        " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
+        ALBUM_NAME + "," + IS_COVER_SATISFIED + "," + ALBUM_TYPE + "," + ALBUM_SUBTYPE + "," +
+        ALBUM_RELATIONSHIP + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
         to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
@@ -2484,15 +2485,16 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetStringValueFromResultSet(resultSet, GROUP_TAG, albumInfo.groupTag) != E_OK ||
             GetIntValueFromResultSet(resultSet, COUNT, albumInfo.count) != E_OK ||
             GetIntValueFromResultSet(resultSet, IS_ME, albumInfo.isMe) != E_OK ||
-            GetStringValueFromResultSet(resultSet, GROUP_TAG, albumInfo.groupTag) != E_OK ||
             GetStringValueFromResultSet(resultSet, COVER_URI, albumInfo.coverUri) != E_OK ||
             GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, albumInfo.userDisplayLevel) != E_OK ||
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
+            GetIntValueFromResultSet(resultSet, USER_OPERATION, albumInfo.userOperation) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
             GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK ||
             GetIntValueFromResultSet(resultSet, ALBUM_TYPE, albumInfo.albumType) != E_OK ||
-            GetIntValueFromResultSet(resultSet, ALBUM_SUBTYPE, albumInfo.albumSubtype) != E_OK) {
+            GetIntValueFromResultSet(resultSet, ALBUM_SUBTYPE, albumInfo.albumSubtype) != E_OK ||
+            GetStringValueFromResultSet(resultSet, ALBUM_RELATIONSHIP, albumInfo.relationship) != E_OK) {
                 MEDIA_ERR_LOG("Failed to get values from result set");
                 return E_HAS_DB_ERROR;
             }
@@ -2609,6 +2611,51 @@ static string MergeAlbumInfoToString(const MergeAlbumInfo& mergeAlbumInfo)
     return info;
 }
 
+static int32_t GetMergedAlbumInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo,
+    MergeAlbumInfo &updateAlbumInfo)
+{
+    DataShare::DataSharePredicates predicatesPortrait;
+    DataShare::DataSharePredicates predicates;
+    int albumId = -1;
+    std::vector<int32_t> PAGE_POSITION = { FAVORITE_PAGE, FIRST_PAGE, SECOND_PAGE };
+    for (int32_t page : PAGE_POSITION) {
+        GetDisplayLevelAlbumPredicates(page, predicates);
+        std::string whereClause = predicates.GetWhereClause();
+        CHECK_AND_CONTINUE(!whereClause.empty());
+        whereClause = "(" + ALBUM_ID + " = " + std::to_string(mergeAlbumInfo[0].albumId) + " OR "
+            + ALBUM_ID + " = " + std::to_string(mergeAlbumInfo[1].albumId) + ") AND " + whereClause + " Limit 1";
+        predicatesPortrait.SetWhereClause(whereClause);
+        CHECK_AND_CONTINUE(!whereClause.empty());
+        auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
+        vector<string> columns = { ALBUM_ID };
+        auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK &&
+            GetIntValueFromResultSet(resultSet, ALBUM_ID, albumId) == E_OK) {
+            MEDIA_INFO_LOG("current page: %{public}d, select albumId: %{public}d", page, albumId);
+            resultSet->Close();
+            break;
+        }
+        resultSet->Close();
+    }
+    CHECK_AND_RETURN_RET_LOG(albumId != -1, E_HAS_DB_ERROR, "selectAlbumId invalid");
+    updateAlbumInfo.albumName =
+        mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
+    updateAlbumInfo.relationship =
+        mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[0].relationship : mergeAlbumInfo[1].relationship;
+    updateAlbumInfo.userDisplayLevel =
+        mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[0].userDisplayLevel : mergeAlbumInfo[1].userDisplayLevel;
+    if (updateAlbumInfo.albumName == "") {
+        updateAlbumInfo.albumName =
+            mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[1].albumName : mergeAlbumInfo[0].albumName;
+    }
+    if (updateAlbumInfo.relationship == "") {
+        updateAlbumInfo.relationship =
+            mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[1].relationship : mergeAlbumInfo[0].relationship;
+    }
+    return E_OK;
+}
+
 static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
@@ -2619,35 +2666,18 @@ static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInf
     updateAlbumInfo.groupTag = "'" + mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag + "'";
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
     updateAlbumInfo.userOperation = 1;
-    updateAlbumInfo.albumName =
-        mergeAlbumInfo[0].albumId == currentAlbumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
-    if (updateAlbumInfo.albumName == "") {
-        updateAlbumInfo.albumName =
-            mergeAlbumInfo[0].albumId != currentAlbumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
-    }
+    CHECK_AND_RETURN_RET(GetMergedAlbumInfo(mergeAlbumInfo, updateAlbumInfo) == E_OK, E_HAS_DB_ERROR);
     updateAlbumInfo.renameOperation =
         (mergeAlbumInfo[0].albumName != "" || mergeAlbumInfo[1].albumName != "") ? 1 : 0;
-    int currentLevel = mergeAlbumInfo[0].userDisplayLevel;
-    int targetLevel = mergeAlbumInfo[1].userDisplayLevel;
-    if ((currentLevel == targetLevel) && (currentLevel == FIRST_PAGE || currentLevel == SECOND_PAGE ||
-        currentLevel == UNFAVORITE_PAGE)) {
-        updateAlbumInfo.userDisplayLevel = currentLevel;
-        updateAlbumInfo.rank = 0;
-    } else if ((currentLevel == targetLevel) && (currentLevel == FAVORITE_PAGE)) {
-        updateAlbumInfo.userDisplayLevel = currentLevel;
-        updateAlbumInfo.rank = min(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank);
-        if (UpdateForReduceOneOrder(max(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank)) != E_OK) {
-            return E_HAS_DB_ERROR;
+    CHECK_AND_EXECUTE(updateAlbumInfo.userDisplayLevel == FAVORITE_PAGE, updateAlbumInfo.rank = 0);
+    if (updateAlbumInfo.userDisplayLevel == FAVORITE_PAGE) {
+        if (mergeAlbumInfo[0].userDisplayLevel == mergeAlbumInfo[1].userDisplayLevel) {
+            updateAlbumInfo.rank = min(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank);
+            CHECK_AND_RETURN_RET(UpdateForReduceOneOrder(max(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank)) == E_OK,
+                E_HAS_DB_ERROR);
+        } else {
+            updateAlbumInfo.rank = max(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank);
         }
-    } else if (currentLevel == FAVORITE_PAGE || targetLevel == FAVORITE_PAGE) {
-        updateAlbumInfo.userDisplayLevel = FAVORITE_PAGE;
-        updateAlbumInfo.rank = max(mergeAlbumInfo[0].rank, mergeAlbumInfo[1].rank);
-    } else if (currentLevel == FIRST_PAGE || targetLevel == FIRST_PAGE) {
-        updateAlbumInfo.userDisplayLevel = FIRST_PAGE;
-        updateAlbumInfo.rank = 0;
-    } else {
-        updateAlbumInfo.userDisplayLevel = SECOND_PAGE;
-        updateAlbumInfo.rank = 0;
     }
     MEDIA_INFO_LOG("After merge: %{public}s", MergeAlbumInfoToString(updateAlbumInfo).c_str());
     return UpdateForMergeAlbums(updateAlbumInfo, mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
