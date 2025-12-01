@@ -139,6 +139,7 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
+    value.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, data->GetFileAspectRatio());
     value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());

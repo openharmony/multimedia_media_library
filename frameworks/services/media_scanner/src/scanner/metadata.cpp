@@ -48,6 +48,7 @@ Metadata::Metadata()
     lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
     dynamicRangeType_(FILE_DYNAMIC_RANGE_TYPE_DEFAULT),
     hdrMode_(FILE_HDR_MODE_DEFAULT),
+    aspectRatio_(FILE_ASPECT_RATIO_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
@@ -296,6 +297,16 @@ void Metadata::SetFileWidth(const VariantData &width)
 int32_t Metadata::GetFileWidth() const
 {
     return width_;
+}
+
+void Metadata::SetFileAspectRatio(const VariantData &aspectRatio)
+{
+    aspectRatio_ = std::get<double>(aspectRatio);
+}
+
+double Metadata::GetFileAspectRatio() const
+{
+    return aspectRatio_;
 }
 
 void Metadata::SetFileDuration(const VariantData &duration)

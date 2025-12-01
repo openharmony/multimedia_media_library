@@ -400,6 +400,9 @@ bool HeightWidthCorrectOperation::UpdatePhotoHeightWidth(const CheckPhotoInfo &p
     ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(height, width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
