@@ -15,37 +15,18 @@
 
 #include "medialibrary_asset_operations.h"
 
-#include <algorithm>
-#include <dirent.h>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <sys/stat.h>
-
 #include "cloud_media_asset_manager.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
-#include "file_asset.h"
 #include "heif_transcoding_check_utils.h"
 #include "map_operation_flag.h"
 #include "media_app_uri_permission_column.h"
-#include "media_column.h"
 #include "media_exif.h"
-#include "media_file_utils.h"
-#include "media_file_uri.h"
-#include "media_log.h"
 #include "media_scanner_manager.h"
 #include "media_unique_number_column.h"
-#include "medialibrary_album_operations.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
-#include "medialibrary_command.h"
-#include "medialibrary_common_utils.h"
-#include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_inotify.h"
 #ifdef META_RECOVERY_SUPPORT
@@ -53,12 +34,7 @@
 #endif
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
-#include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
@@ -67,25 +43,13 @@
 #include "enhancement_manager.h"
 #endif
 #include "permission_utils.h"
-#include "photo_album_column.h"
-#include "rdb_errno.h"
-#include "rdb_predicates.h"
-#include "rdb_store.h"
-#include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
-#include "uri_permission_manager_client.h"
-#include "userfile_manager_types.h"
-#include "value_object.h"
-#include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
-#include "dfx_const.h"
 #include "moving_photo_file_utils.h"
-#include "userfilemgr_uri.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "unique_fd.h"
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"

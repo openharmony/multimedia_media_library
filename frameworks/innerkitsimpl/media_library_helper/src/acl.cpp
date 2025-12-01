@@ -14,11 +14,8 @@
  */
 #include "acl.h"
 
-#include <cerrno>
 #include <dirent.h>
 #include <list>
-#include <new>
-#include <type_traits>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 

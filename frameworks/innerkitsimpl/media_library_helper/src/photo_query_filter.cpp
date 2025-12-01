@@ -15,7 +15,6 @@
 
 #include "photo_query_filter.h"
 
-#include "base_column.h"
 #include "datashare_predicates.h"
 #include "media_log.h"
 

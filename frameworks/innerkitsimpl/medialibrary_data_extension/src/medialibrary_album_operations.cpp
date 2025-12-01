@@ -17,46 +17,25 @@
 
 #include "medialibrary_album_operations.h"
 
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-
 #include "album_plugin_config.h"
 #include "dfx_utils.h"
-#include "directory_ex.h"
 #include "media_analysis_helper.h"
-#include "media_file_utils.h"
-#include "media_log.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_analysis_album_operations.h"
-#include "medialibrary_asset_operations.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_unistore_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
 #include "multistages_capture_manager.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
 
 #include "result_set_utils.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
-#include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "vision_album_column.h"
-#include "vision_column.h"
 #include "vision_face_tag_column.h"
-#include "vision_photo_map_column.h"
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"

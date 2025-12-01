@@ -12,35 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "image_type.h"
 
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
 
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "accesstoken_kit.h"
-#include "album_asset.h"
-#include "datashare_abs_result_set.h"
-#include "datashare_predicates.h"
 #include "directory_ex.h"
-#include "fetch_result.h"
-#include "file_asset.h"
-#include "file_uri.h"
-#include "image_source.h"
 #include "iservice_registry.h"
 #include "media_asset_rdbstore.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
 #include "media_library_tab_old_photos_client.h"
@@ -48,10 +36,8 @@
 #include "post_proc.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
-#include "string_ex.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
-#include "unique_fd.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_business_code.h"
@@ -74,6 +60,7 @@
 #include "delete_photos_vo.h"
 #include "change_request_move_assets_vo.h"
 #include "album_get_assets_vo.h"
+#include "image_source.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"

@@ -17,14 +17,12 @@
 #include "fetch_file_result_napi.h"
 
 #include "album_napi.h"
-#include "hitrace_meter.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
-#include "photo_album_napi.h"
 #include "smart_album_napi.h"
 #include "media_file_utils.h"
 #include "album_order_napi.h"
+#include "photo_album_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

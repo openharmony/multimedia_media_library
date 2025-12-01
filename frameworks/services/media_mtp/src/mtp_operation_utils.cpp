@@ -14,15 +14,8 @@
 */
 #define MLOG_TAG "MtpOperationUtils"
 #include "mtp_operation_utils.h"
-#include <fstream>
-#include <cstdint>
 #include <cinttypes>
-#include <iremote_object.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/time.h>
-#include <unistd.h>
-#include "application_context.h"
 #include "ability_manager_client.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -38,11 +31,9 @@
 #include "mtp_ptp_proxy.h"
 #include "mtp_storage_manager.h"
 #include "mtp_store_observer.h"
-#include "payload_data.h"
 #include "payload_data/resp_common_data.h"
 #include "payload_data/close_session_data.h"
 #include "payload_data/copy_object_data.h"
-#include "payload_data/delete_object_data.h"
 #include "payload_data/get_device_info_data.h"
 #include "payload_data/get_device_prop_desc_data.h"
 #include "payload_data/get_device_prop_value_data.h"
@@ -59,17 +50,11 @@
 #include "payload_data/get_storage_info_data.h"
 #include "payload_data/get_storage_ids_data.h"
 #include "payload_data/get_thumb_data.h"
-#include "payload_data/move_object_data.h"
 #include "payload_data/object_event_data.h"
 #include "payload_data/open_session_data.h"
-#include "payload_data/send_object_data.h"
 #include "payload_data/send_object_info_data.h"
-#include "payload_data/set_device_prop_value_data.h"
-#include "payload_data/set_object_prop_value_data.h"
 #include "payload_data/set_object_references_data.h"
 #include "parameters.h"
-#include "storage.h"
-#include "system_ability_definition.h"
 using namespace std;
 namespace OHOS {
 namespace Media {

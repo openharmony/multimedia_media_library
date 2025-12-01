@@ -17,32 +17,19 @@
 
 #include "media_asset_manager_napi.h"
 
-#include <fcntl.h>
 #include <string>
 #include <sys/sendfile.h>
-#include <unordered_map>
 #include <uuid/uuid.h>
 
-#include "access_token.h"
 #include "accesstoken_kit.h"
 #include "adapted_vo.h"
 #include "camera_character_types.h"
-#include "dataobs_mgr_client.h"
 #include "directory_ex.h"
-#include "file_asset_napi.h"
 #include "file_uri.h"
-#include "image_source.h"
 #include "image_source_napi.h"
-#include "ipc_skeleton.h"
-#include "media_column.h"
-#include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_business_code.h"
 #include "medialibrary_client_errno.h"
-#include "media_library_napi.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_notify_utils.h"
 #include "medialibrary_tracer.h"

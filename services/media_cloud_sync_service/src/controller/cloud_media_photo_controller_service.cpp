@@ -17,7 +17,6 @@
 
 #include "cloud_media_photo_controller_service.h"
 
-#include "media_log.h"
 #include "media_column.h"
 #include "cloud_media_data_controller_processor.h"
 #include "user_define_ipc.h"

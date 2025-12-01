@@ -15,9 +15,6 @@
 
 #include "photo_asset_custom_record.h"
 
-#include "media_file_utils.h"
-#include "medialibrary_type_const.h"
-
 namespace OHOS {
 namespace Media {
 PhotoAssetCustomRecord::PhotoAssetCustomRecord()

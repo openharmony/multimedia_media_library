@@ -16,45 +16,17 @@
 #define MLOG_TAG "CloudMediaAssetOperations"
 
 #include "cloud_media_asset_download_operation.h"
-
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <vector>
-#include <atomic>
-#include <memory>
-#include <chrono>
-#include <algorithm>
-#include <map>
 #include <sys/statvfs.h>
 
 #include "common_event_utils.h"
-#include "cloud_sync_common.h"
-#include "cloud_sync_constants.h"
-#include "cloud_sync_manager.h"
 #include "cloud_sync_utils.h"
-#include "datashare_helper.h"
 #include "iservice_registry.h"
-#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
-#include "media_log.h"
-#include "medialibrary_command.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_operation.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
-#include "rdb_store.h"
 #include "result_set_utils.h"
-#include "wifi_device.h"
-#include "thermal_mgr_client.h"
-#include "userfile_manager_types.h"
 #include "net_conn_client.h"
 
 using namespace std;
