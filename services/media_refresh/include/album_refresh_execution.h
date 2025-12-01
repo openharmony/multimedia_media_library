@@ -125,6 +125,9 @@ private:
     std::set<int32_t> forceRefreshAlbums_;
     std::set<int32_t> forceRefreshHiddenAlbums_;
 
+    // 记录已发送旧通知的相册信息
+    std::unordered_map<int32_t, bool> hasSentOldNotifications_;
+
     static std::mutex albumRefreshMtx_;
 
     bool isRefreshWithDateModified_ = true;
