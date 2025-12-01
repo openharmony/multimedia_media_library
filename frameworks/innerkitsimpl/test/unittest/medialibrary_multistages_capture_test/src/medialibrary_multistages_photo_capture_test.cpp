@@ -1109,11 +1109,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test02, TestSi
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     ASSERT_NE(callback, nullptr);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
+    const std::vector<std::string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+    PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE,
+    PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_ORIENTATION,
+    PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
  
-    auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
+    std::shared_ptr<FileAsset> fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
     ASSERT_NE(fileAsset, nullptr);
  
     int32_t ret = callback->NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::UNDEFINED);
@@ -1135,11 +1136,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test03, TestSi
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     ASSERT_NE(callback, nullptr);
  
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
+    const std::vector<std::string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+    PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE,
+    PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_ORIENTATION,
+    PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
  
-    auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
+    std::shared_ptr<FileAsset> fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(PHOTO_ID_FOR_TEST, columns);
     ASSERT_NE(fileAsset, nullptr);
  
     int32_t ret = callback->NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
