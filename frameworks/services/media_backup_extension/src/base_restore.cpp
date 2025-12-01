@@ -2259,7 +2259,8 @@ nlohmann::json BaseRestore::GetBackupErrorInfoJson()
     nlohmann::json errorInfoJson = {
         { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
         { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
-        { STAT_KEY_ERROR_INFO, errorInfo_ }
+        { STAT_KEY_ERROR_INFO, errorInfo_ },
+        { STAT_KEY_COMPATIBLE_DIR_MAPPING, dirMappingList_ }
     };
     return errorInfoJson;
 }
