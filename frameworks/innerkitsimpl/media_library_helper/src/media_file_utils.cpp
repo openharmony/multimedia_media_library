@@ -2465,7 +2465,8 @@ int32_t MediaFileUtils::MoveDirectory(const std::string &srcDir, const std::stri
                 "Create dir:%{public}s failed",
                 DesensitizePath(dstFilePath).c_str());
         } else if (entry.is_regular_file()) {
-            if (srcFilePath.find("editdata_camera") != std::string::npos) {
+            if (srcFilePath.find("editdata_camera") != std::string::npos ||
+                srcFilePath.find("source_back") != std::string::npos) {
                 CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath),
                     E_FAIL, "Copy editdata_camera from %{public}s to %{public}s failed.",
                     DesensitizePath(srcFilePath).c_str(),
