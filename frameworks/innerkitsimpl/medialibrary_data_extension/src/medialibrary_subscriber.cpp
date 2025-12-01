@@ -95,6 +95,8 @@
 #endif
 #include "map_code_upload_checker.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "medialibrary_aspect_ratio_operation.h"
+#include "database_adapter.h"
 #include "product_info.h"
 
 using namespace OHOS::AAFwk;
@@ -1041,6 +1043,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
     MapCodeUploadChecker::RepairNoMapCodePhoto();
+    MediaLibraryAspectRatioOperation::UpdateAspectRatioValue();
     backgroundTaskFactory_.Execute();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName();
@@ -1073,6 +1076,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
     HeightWidthCorrectOperation::Stop();
     Video3DgsOperation::Stop();
+    MediaLibraryAspectRatioOperation::Stop();
     ShootingModeAlbumOperation::Stop();
     AgingTmpCompatibleDuplicates(false);
 }

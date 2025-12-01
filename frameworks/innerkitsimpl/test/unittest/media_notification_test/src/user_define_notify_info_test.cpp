@@ -91,8 +91,8 @@ HWTEST_F(UserDefineNotifyInfoTest, medialib_SetUserDefineNotifyBody_test03, Test
     auto notifyBody = std::make_shared<NotifyBodyTest>();
     EXPECT_NE(notifyBody, nullptr);
     notifyInfo.readOnly_ = true;
-    notifyInfo.SetUserDefineNotifyBody(notifyBody);
-    EXPECT_EQ(notifyInfo.readOnly_, false);
+    bool ret = notifyInfo.SetUserDefineNotifyBody(notifyBody);
+    EXPECT_EQ(ret, false);
     EXPECT_EQ(notifyInfo.notifyBody_, nullptr);
     MEDIA_INFO_LOG("end medialib_SetUserDefineNotifyBody_test03");
 }
@@ -332,6 +332,7 @@ HWTEST_F(UserDefineNotifyInfoTest, medialib_ReadBodyFromParcel_test03, TestSize.
     EXPECT_NE(notifyBody, nullptr);
     notifyInfo.SetUserDefineNotifyBody(notifyBody);
     EXPECT_EQ(notifyInfo.readOnly_, true);
+    notifyInfo.WriteBodyFromParcel(parcel);
  
     UserDefineNotifyInfo* info = new (std::nothrow)UserDefineNotifyInfo();
     bool ret = info->ReadHeadFromParcel(*parcel);

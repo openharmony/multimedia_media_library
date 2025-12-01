@@ -26,6 +26,7 @@ public:
     int32_t deferredProcType;
     int32_t photoQuality;
     int32_t subType;
+    std::string packageName;
 
 public:
     static AddImageDto Create(const AddImageReqBody &req);

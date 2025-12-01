@@ -15,6 +15,10 @@
  
 #define MLOG_TAG "AccurateRefresh::UserDefineNotifyExecution"
 
+#include "user_define_notify_execution.h"
+ 
+#include "medialibrary_notify_new.h"
+
 namespace OHOS {
 namespace Media::AccurateRefresh {
 using namespace std;

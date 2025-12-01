@@ -5351,6 +5351,17 @@ static void AddFileSourceType(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("AddFileSourceType end");
 }
 
+static void AddAspectRatio(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2 ",
+    };
+    MEDIA_INFO_LOG("AddAspectRatio start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("AddAspectRatio end");
+}
+
 static void AddTempFileAssetsCreateAlbum(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5684,6 +5695,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, true)) {
         AddPetFaceTable(store, VERSION_ADD_PET_TABLES);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ASPECT_RATIO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ASPECT_RATIO, true)) {
+        AddAspectRatio(store, VERSION_ADD_ASPECT_RATIO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ASPECT_RATIO, true);
     }
 }
 

@@ -32,7 +32,7 @@
 #include "ipc_skeleton.h"
 #include "image_packer.h"
 #include "permission_utils.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 #include "userfilemgr_uri.h"
 
 using namespace std;

@@ -33,6 +33,11 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/include/vo",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
   ]
 
   user_ipc_client_include_dirs = [
@@ -90,7 +95,10 @@ ohos_shared_library("media_library") {
     "src/smart_album_asset.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/src/medialibrary_notify_user_define_observer.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/src/vo/add_image_vo.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/data/user_define_notify_info.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/utils/media_notification_utils.cpp",
   ]
 
   user_ipc_client_source = [

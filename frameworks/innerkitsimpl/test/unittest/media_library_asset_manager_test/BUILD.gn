@@ -37,6 +37,10 @@ ohos_unittest("media_library_asset_manager_test") {
     "${MEDIALIB_INTERFACES_PATH}/kits/c/",
     "${MEDIALIB_INTERFACES_PATH}/kits/native/include",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   sources = [

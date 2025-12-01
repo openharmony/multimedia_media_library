@@ -68,6 +68,7 @@ public:
     static int32_t CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropWidth(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
+    static int32_t CompensatePropAspectRatio(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropSourcePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
 
     // basic
