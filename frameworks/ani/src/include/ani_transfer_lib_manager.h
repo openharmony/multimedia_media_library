@@ -28,6 +28,15 @@ class LibHandle {
 public:
     explicit LibHandle(const std::string& lib_name) : lib_name_(lib_name)
     {
+        if (lib_name.empty() || lib_name.find("..") != std::string::npos) {
+            ANI_ERR_LOG("%{public}s invalid lib_name: %{public}s", __func__, lib_name.c_str());
+            return;
+        }
+        char realPath[PATH_MAX] = {0};
+        if (realpath(lib_name.c_str(), realPath) == nullptr) {
+            ANI_ERR_LOG("%{public}s canonicalize path failed: %{public}s", __func__, lib_name.c_str());
+            return;
+        }
         handle_ = dlopen(lib_name.c_str(), RTLD_LAZY | RTLD_LOCAL);
         if (!handle_) {
             ANI_ERR_LOG("%{public}s dlopen failed, lib: %{public}s, error: %{public}s", __func__,
