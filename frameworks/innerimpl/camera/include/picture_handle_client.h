@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_PICTURE_HANDLE_CLIENT_H
-#define INTERFACES_INNERKITS_NATIVE_INCLUDE_PICTURE_HANDLE_CLIENT_H
+#ifndef MEDIALIBRARY_INNERIMPL_PICTURE_HANDLE_CLIENT_H
+#define MEDIALIBRARY_INNERIMPL_PICTURE_HANDLE_CLIENT_H
 
+#include "datashare_helper.h"
 #include "message_parcel.h"
 #include "picture.h"
 #include "surface_buffer.h"
@@ -28,6 +29,8 @@ static const int UINT32_LEN = sizeof(uint32_t);
 class PictureHandlerClient {
 public:
     static std::shared_ptr<Media::Picture> RequestPicture(const int32_t &fileId);
+    static std::shared_ptr<Media::Picture> RequestPicture(
+        std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, const int32_t &fileId);
 
 private:
     static void FinishRequestPicture(const int32_t &fileId);
@@ -43,6 +46,6 @@ private:
     static bool ReadMaintenanceData(MessageParcel &data, std::unique_ptr<Media::Picture> &picture);
     static int32_t RequestBufferHandlerFd(const int32_t &fd);
 };
-}
-}
-#endif
+} // Media
+} // OHOS
+#endif // MEDIALIBRARY_INNERIMPL_PICTURE_HANDLE_CLIENT_H

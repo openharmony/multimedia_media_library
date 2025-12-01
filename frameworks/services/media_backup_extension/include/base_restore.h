@@ -269,6 +269,7 @@ protected:
     size_t totalFailCount_{0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
     bool isRestore_ = false;
+    std::vector<std::string> dirMappingList_ = {};
 };
 } // namespace Media
 } // namespace OHOS

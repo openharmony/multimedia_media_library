@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 390;
+const int32_t MEDIA_RDB_VERSION = 391;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -280,6 +280,7 @@ enum {
     VERSION_PHOTO_ALBUM_ADD_UPLOAD_STATUS = 388,
     VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN = 389,
     VERSION_ADD_PET_TABLES = 390,
+    VERSION_ADD_ASPECT_RATIO = 391,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -374,6 +375,7 @@ const std::string MEDIA_DATA_DB_MEDIA_TYPE = "media_type";
 
 const std::string MEDIA_DATA_DB_HEIGHT = "height";
 const std::string MEDIA_DATA_DB_WIDTH = "width";
+const std::string MEDIA_DATA_DB_ASPECT_RATIO = "aspect_ratio";
 const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
 const std::string MEDIA_DATA_DB_OWNER_APPID = "owner_appid";
 const std::string MEDIA_DATA_DB_PACKAGE_NAME = "package_name";

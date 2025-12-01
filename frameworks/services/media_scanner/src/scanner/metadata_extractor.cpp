@@ -411,6 +411,9 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         data->SetFileWidth(imageInfo.size.width);
         data->SetFileHeight(imageInfo.size.height);
         data->SetFileMimeType(imageInfo.encodedFormat);
+        double aspectRatio =
+            MediaFileUtils::CalculateAspectRatio(imageInfo.size.height, imageInfo.size.width);
+        data->SetFileAspectRatio(aspectRatio);
     } else {
         MEDIA_ERR_LOG("Failed to get image info, err = %{public}d", err);
     }
@@ -487,6 +490,10 @@ void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::strin
         intTempMeta = stringToNum<int32_t>(strTemp);
         data->SetFileWidth(intTempMeta);
     }
+
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(data->GetFileHeight(), data->GetFileWidth());
+    data->SetFileAspectRatio(aspectRatio);
 
     strTemp = resultMap.at(AV_KEY_MIME_TYPE);
     if (strTemp != "") {

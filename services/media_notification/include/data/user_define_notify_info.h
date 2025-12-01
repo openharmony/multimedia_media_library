@@ -29,6 +29,7 @@ using namespace Media::AccurateRefresh;
 enum class NotifyForUserDefineType {
     UNDEFINED = 0,
     MULTISTAGES_CAPTURE = 1,
+    LOW_QUALITY_MEMORY = 2,
 };
  
 class EXPORT UserDefineNotifyBase : public Parcelable {
@@ -49,7 +50,7 @@ public:
     bool WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) const;
     std::string ToString() const;
  
-    void SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody);
+    bool SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody);
     std::shared_ptr<UserDefineNotifyBase> GetUserDefineNotifyBody() const;
  
     bool Marshalling(Parcel &parcel) const override

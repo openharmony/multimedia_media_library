@@ -157,6 +157,29 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_RequestMovingPhoto(OH_MediaAssetMana
  */
 MediaLibrary_ErrorCode OH_MediaAssetManager_Release(OH_MediaAssetManager* manager);
 
+/**
+ * @brief Request picture object.
+ *
+ * @permission ohos.permission.READ_IMAGEVIDEO
+ * @param manager the pointer to {@link OH_MediaAssetManager} instance.
+ * @param mediaAsset the {@link OH_MediaAsset} instance of media file object to be requested.
+ * @param requestOptions the {@link MediaLibrary_RequestOptions} for image request strategy mode.
+ * @param requestId indicates the {@link MediaLibrary_RequestId} of the request, which is an output parameter.
+ * @param callback the {@link OH_MediaLibrary_OnQuickImageDataPrepared} that will be called
+ *                 when the requested picture is prepared.
+ * @return {@link #MEDIA_LIBRARY_OK} if the method call succeeds.
+ *         {@link #MEDIA_LIBRARY_PERMISSION_DENIED} if permission is denied.
+ *         {@link #MEDIA_LIBRARY_INVALID_PARAMETER_ERROR} Parameter error. Possible causes:
+ *                                                1. Asset type are unsupported.
+ *                                                2. No local files.
+ *                                                3. The file is a temporary file or is currently being edited.
+ *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
+ * @since 23
+ */
+MediaLibrary_ErrorCode OH_MediaAssetManager_RequestQuickImage(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
+    MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnQuickImageDataPrepared callback);
+
 #ifdef __cplusplus
 }
 #endif

@@ -539,6 +539,8 @@ NativeRdb::ValuesBucket FileParser::GetAssetCommonValues()
     values.Put(PhotoColumn::PHOTO_ORIENTATION, fileInfo_.orientation);
     values.Put(PhotoColumn::PHOTO_HEIGHT, fileInfo_.height);
     values.Put(PhotoColumn::PHOTO_WIDTH, fileInfo_.width);
+    double aspectRatio = MediaFileUtils::CalculateAspectRatio(fileInfo_.height, fileInfo_.width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.Put(PhotoColumn::PHOTO_SUBTYPE, fileInfo_.subtype);
     PutStringVal(values, PhotoColumn::PHOTO_USER_COMMENT, fileInfo_.userComment);
     values.Put(PhotoColumn::PHOTO_ALL_EXIF, fileInfo_.allExif);

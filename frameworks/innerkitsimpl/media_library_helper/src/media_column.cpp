@@ -134,6 +134,7 @@ const std::string PhotoColumn::PHOTO_APPLINK = "applink";
 const std::string PhotoColumn::PHOTO_TRANSCODE_TIME = "transcode_time";
 const std::string PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE = "trans_code_file_size";
 const std::string PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE = "exist_compatible_duplicate";
+const std::string PhotoColumn::PHOTO_ASPECT_RATIO = "aspect_ratio";
 
 const std::string PhotoColumn::PHOTO_FILE_INODE = "inode";
 const std::string PhotoColumn::PHOTO_STORAGE_PATH = "storage_path";
@@ -319,7 +320,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_STORAGE_PATH + " TEXT, " +
     PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1 " +
+    PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1, " +
+    PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -676,7 +678,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
     PhotoColumn::PHOTO_HDR_MODE,
-    PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+    PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_ASPECT_RATIO,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

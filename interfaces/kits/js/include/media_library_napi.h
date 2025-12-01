@@ -372,6 +372,8 @@ private:
     EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessQuery(napi_env env, napi_callback_info info);
     EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
