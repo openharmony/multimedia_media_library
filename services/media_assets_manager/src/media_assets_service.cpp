@@ -17,25 +17,11 @@
 
 #include "media_assets_service.h"
 
-#include <string>
 #include <unordered_set>
 
-#include "media_assets_rdb_operations.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_bundle_manager.h"
-#include "medialibrary_facard_operations.h"
-#include "media_facard_photos_column.h"
-#include "commit_edited_asset_dto.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_vision_operations.h"
-#include "medialibrary_rdb_utils.h"
-#include "media_analysis_helper.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
 #include "media_visit_count_manager.h"
-#include "medialibrary_tracer.h"
-#include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "dfx_manager.h"
 #include "multistages_capture_request_task_manager.h"
@@ -43,13 +29,7 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#include "story_album_column.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_photo_operations.h"
-#include "permission_utils.h"
-#include "medialibrary_notify.h"
-#include "medialibrary_command.h"
-#include "uri.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "rdb_utils.h"
@@ -763,7 +743,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplicateAssets(GetAssetsDto &dto)
 {
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
-    RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetAllDuplicateAssets(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
@@ -773,7 +754,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplica
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetDuplicateAssetsToDelete(GetAssetsDto &dto)
 {
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
-    RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetDuplicateAssetsToDelete(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets for delete");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
@@ -1231,7 +1213,7 @@ int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertTo
         Uri uri(fileUri);
         MediaLibraryCommand cmdEditCommit(uri);
         cmdEditCommit.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-        ValuesBucket values;
+        NativeRdb::ValuesBucket values;
         values.Put(PhotoColumn::MEDIA_ID, fileId);
         cmdEditCommit.SetValueBucket(values);
         MediaLibraryVisionOperations::EditCommitOperation(cmdEditCommit);
@@ -1419,7 +1401,7 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, req.fileId);
     using namespace RdbDataShareAdapter;
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     std::vector<std::string> columns { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID };
 
     shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
@@ -1524,7 +1506,7 @@ int32_t MediaAssetsService::GetMovingPhotoDateModified(const string &fileId, Get
 int32_t MediaAssetsService::CloseAsset(const CloseAssetReqBody &req)
 {
     MEDIA_INFO_LOG("enter CloseAsset, req.uri=%{public}s", req.uri.c_str());
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, req.uri);
     MediaLibraryCommand cmd(valuesBucket);
     return MediaLibraryObjectUtils::CloseFile(cmd);

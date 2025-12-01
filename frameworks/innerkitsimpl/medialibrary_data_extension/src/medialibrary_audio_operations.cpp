@@ -15,25 +15,10 @@
 
 #include "medialibrary_audio_operations.h"
 
-#include "abs_shared_result_set.h"
-#include "file_asset.h"
-#include "media_column.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_command.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_uripermission_operations.h"
 #include "thumbnail_const.h"
-#include "userfile_manager_types.h"
-#include "value_object.h"
 #include "hi_audit.h"
 
 using namespace std;

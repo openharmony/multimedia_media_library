@@ -16,7 +16,6 @@
 #include "form_map.h"
 
 #include "medialibrary_db_const.h"
-#include "photo_album_column.h"
 
 using namespace std;
 

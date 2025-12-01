@@ -15,26 +15,14 @@
 
 #define MLOG_TAG "HighlightAlbumNapi"
 
-#include <unordered_map>
-#include <unordered_set>
-
 #include "highlight_album_napi.h"
-#include "file_asset_napi.h"
-#include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "media_album_change_request_napi.h"
-#include "photo_album.h"
-#include "photo_album_napi.h"
-#include "photo_map_column.h"
 #include "result_set_utils.h"
-#include "userfile_client.h"
-#include "vision_column.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
-#include "user_photography_info_column.h"
 #include "vision_photo_map_column.h"
 #include "highlight_column.h"
 #include "album_operation_uri.h"
@@ -47,6 +35,7 @@
 #include "get_highlight_album_info_vo.h"
 #include "get_relationship_vo.h"
 #include "query_result_vo.h"
+#include "photo_album_napi.h"
 
 using namespace std;
 

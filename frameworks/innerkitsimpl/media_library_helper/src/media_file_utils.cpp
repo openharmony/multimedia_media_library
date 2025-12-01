@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 
 #include "media_file_utils.h"
 
-#include <algorithm>
 #include <stack>
 #include <dirent.h>
 #include <fcntl.h>
@@ -24,10 +23,7 @@
 #include <fstream>
 #include <ftw.h>
 #include <regex>
-#include <securec.h>
-#include <sstream>
 #include <sys/sendfile.h>
-#include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -39,12 +35,9 @@
 #include "directory_ex.h"
 #include "hmdfs.h"
 #include "ipc_skeleton.h"
-#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_log.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
 #include "ptp_medialibrary_manager_uri.h"

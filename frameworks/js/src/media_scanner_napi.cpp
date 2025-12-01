@@ -15,10 +15,6 @@
 #define MLOG_TAG "ScannerNapi"
 
 #include "media_scanner_napi.h"
-#include "media_library_napi.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
 #include "userfile_client.h"
 #include "medialibrary_client_errno.h"
 

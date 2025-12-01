@@ -16,12 +16,7 @@
 
 #include "medialibrary_napi_utils.h"
 
-#include <cctype>
 #include <charconv>
-#include "basic/result_set.h"
-#include "datashare_predicates.h"
-#include "location_column.h"
-#include "ipc_skeleton.h"
 #include "js_proxy.h"
 #include "cloud_enhancement_napi.h"
 #include "cloud_media_asset_manager_napi.h"
@@ -33,32 +28,24 @@
 #include "media_asset_manager_napi.h"
 #include "media_device_column.h"
 #include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_enum_comm.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
 #include "moving_photo_napi.h"
-#include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
 #include "tokenid_kit.h"
 #include "userfile_client.h"
-#include "vision_album_column.h"
-#include "vision_column.h"
-#include "vision_face_tag_column.h"
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
-#include "userfilemgr_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "photo_asset_custom_record_manager_napi.h"
 #include "vision_ocr_column.h"
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
+#include "photo_album_napi.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

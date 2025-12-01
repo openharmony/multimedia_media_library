@@ -16,12 +16,9 @@
 #define MLOG_TAG "MediaCallTranscode"
 #include "moving_photo_call_transcoder.h"
 
-#include "js_native_api_types.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "moving_photo_transcoder_observer.h"
-#include "native_event.h"
-#include "unique_fd.h"
 
 namespace OHOS {
 namespace Media {

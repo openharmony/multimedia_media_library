@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,21 +18,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "datashare_business_error.h"
-#include "datashare_predicates.h"
-#include "datashare_result_set.h"
-#include "directory_ex.h"
-#include "media_column.h"
 #include "media_exif.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_helper_container.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_type_const.h"
 #include "sandbox_helper.h"
-#include "uri.h"
-#include "values_bucket.h"
 
 using namespace std;
 

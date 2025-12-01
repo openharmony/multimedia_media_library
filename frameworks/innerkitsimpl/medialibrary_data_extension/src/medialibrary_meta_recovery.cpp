@@ -16,51 +16,27 @@
 
 #include "medialibrary_meta_recovery.h"
 
-#include <cerrno>
-#include <dirent.h>
-#include <fcntl.h>
-
 #include "acl.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
 #endif
 #include "cloud_sync_helper.h"
-#include "dfx_database_utils.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "hisysevent.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "media_log.h"
-#include "media_scanner_const.h"
-#include "media_scanner_db.h"
 #include "media_scanner_manager.h"
-#include "metadata.h"
-#include "metadata_extractor.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_data_manager.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
-#include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_unistore_manager.h"
-#include "mimetype_utils.h"
-#include "parameter.h"
-#include "photo_album_column.h"
 #include "photo_file_utils.h"
-#include "photo_map_column.h"
 #include "post_event_utils.h"
-#include "preferences.h"
 #include "preferences_helper.h"
 #include "result_set_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
-#include "vision_column.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -96,7 +72,7 @@ static void SetStartupParam()
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = "multimedia.medialibrary.startup." + to_string(uid);
     string value = "true";
-    int ret = SetParameter(key.c_str(), value.c_str());
+    int ret = system::SetParameter(key.c_str(), value.c_str());
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to set startup, result: %{public}d", ret);
     } else {

@@ -23,8 +23,6 @@
 #include "photo_album_column.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
-#include "media_column.h"
-#include "medialibrary_db_const.h"
 
 using namespace std;
 namespace OHOS {

@@ -15,20 +15,14 @@
 
 #include "medialibrary_operation.h"
 
-#include "abs_rdb_predicates.h"
-#include "datashare_predicates.h"
-#include "dir_asset.h"
 #include "form_map.h"
 #include "location_column.h"
 #include "media_analysis_progress_column.h"
 #include "media_app_uri_permission_column.h"
-#include "media_column.h"
 #include "media_old_photos_column.h"
 #include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "medialibrary_db_const.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
 #include "ptp_medialibrary_manager_uri.h"
 #include "delete_permanently_operations_uri.h"
 #include "search_column.h"
@@ -36,16 +30,12 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
-#include "uri.h"
-#include "values_bucket.h"
-#include "vision_column.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "mediatool_uri.h"
 #include "cloud_enhancement_uri.h"
 #include "smart_album_column.h"
 #include "custom_record_uri.h"
-#include "custom_records_column.h"
 
 namespace OHOS {
 namespace Media {

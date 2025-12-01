@@ -16,45 +16,21 @@
 #define MLOG_TAG "CloudMediaAssetManager"
 
 #include "cloud_media_asset_manager.h"
-
-#include <iostream>
-#include <chrono>
-#include <mutex>
 #include <cinttypes>
-
-#include "abs_rdb_predicates.h"
 #include "album_accurate_refresh.h"
 #include "asset_accurate_refresh.h"
-#include "cloud_media_asset_download_operation.h"
-#include "cloud_media_asset_types.h"
 #include "cloud_sync_notify_handler.h"
 #include "cloud_sync_helper.h"
-#include "cloud_sync_utils.h"
-#include "media_column.h"
-#include "media_file_utils.h"
-#include "media_log.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_async_worker.h"
-#include "medialibrary_command.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
 #endif
-#include "medialibrary_operation.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_notify.h"
 #include "parameters.h"
-#include "photo_album_column.h"
-#include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
-#include "cloud_media_asset_uri.h"
 #include "dfx_const.h"
 #include "medialibrary_subscriber.h"
 #include "background_cloud_batch_selected_file_processor.h"
