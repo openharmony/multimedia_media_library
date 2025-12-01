@@ -99,6 +99,7 @@ const std::string DATA_PATH = "/data/storage/el2/base";
 const std::string MEDIA_DATA_DEVICE_PATH = "local";
 const int32_t ASPECT_RATIO_UNSUPPORT = -1;
 const int32_t ASPECT_RATIO_MAX = 1000;
+const double ASPECT_RATIO_MIN = 0.001;
 const double ASPECT_RATIO_PRECISION = 1000.0;
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
@@ -2726,6 +2727,8 @@ double MediaFileUtils::CalculateAspectRatio(int32_t height, int32_t width)
     double aspect_ratio = static_cast<double>(width) / height;
     if (aspect_ratio > ASPECT_RATIO_MAX) {
         return ASPECT_RATIO_MAX;
+    } else if (aspect_ratio < ASPECT_RATIO_MIN) {
+        return ASPECT_RATIO_MIN;
     } else {
         return std::round(aspect_ratio * ASPECT_RATIO_PRECISION) / ASPECT_RATIO_PRECISION;
     }
