@@ -106,6 +106,9 @@
 #include "lake_file_utils.h"
 #include "tlv_util.h"
 
+#include "multistages_capture_notify_info.h"
+#include "medialibrary_notify_new.h"
+
 using namespace OHOS::DataShare;
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -3791,8 +3794,12 @@ int32_t MediaLibraryPhotoOperations::AddFiltersForSourcePicture(std::shared_ptr<
     string editData;
     MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
     ParseCloudEnhancementEditData(editData);
-    return AddFiltersToPicture(picture, assetPath, editData, mimeType, true, fileId,
-        false, "", {});
+    int32_t ret = AddFiltersToPicture(picture, assetPath, editData);
+    if (ret != E_OK) {
+        return ret;
+    }
+    FileUtils::DealPicture(mimeType, assetPath, picture, true);
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
@@ -4169,13 +4176,16 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
     }
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
-    std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
-    std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect,
-    std::string imageId, std::function<int32_t()> notifyOnProcessCallback)
+int32_t MediaLibraryPhotoOperations::ProcessMultiStagesPhotoForPicture(
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<Media::Picture> &picture,
+    std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect, const std::string &imageId)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
+    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture");
+    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
     string editDataSourcePath = GetEditDataSourcePath(path);
     string editDataCameraPath = GetEditDataCameraPath(path);
 
@@ -4185,13 +4195,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
-            MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
-                imageId, picture, isEdited, isTakeEffect);
-            // 添加YUV_READY通知
-            auto assetRefresh =
-                make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::YUV_READY_BUSSINESS_NAME);
-            assetRefresh->NotifyYuvReady(fileId);
-            notifyOnProcessCallback();
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+                imageId, fileId) == E_OK, "Enable YUV failed.");
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
             resultPicture = picture;
             return FileUtils::SavePicture(path, picture, mime_type, isEdited);
@@ -4207,13 +4212,62 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type, true, fileId,
-                isTakeEffect, imageId, notifyOnProcessCallback) == E_OK, E_FAIL, "Failed to add filters to photo");
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData) == E_OK, E_FAIL,
+                "Failed to add filters to photo");
             resultPicture = picture;
             isTakeEffect = true;
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+                imageId, fileId) == E_OK, "Enable YUV failed.");
+            FileUtils::DealPicture(mime_type, path, picture, true);
             return E_OK;
         }
     }
+}
+
+int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<Media::Picture> &picture,
+    bool isEdited, bool isTakeEffect, const std::string imageId, const int32_t fileId)
+{
+    if ("" == imageId) {
+        return E_ERR;
+    }
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
+        imageId, picture, isEdited, isTakeEffect);
+    NotifyOnProcessYuv(resultSet);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::YUV_READY_BUSSINESS_NAME);
+    return assetRefresh->NotifyYuvReady(fileId);
+}
+ 
+int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(std::shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr.");
+        return E_ERR;
+    }
+ 
+    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+ 
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
+ 
+    auto notifyBody = std::make_shared<Notification::MultistagesCaptureNotifyServerInfo>();
+    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
+    notifyBody->uri_ = notifyUri;
+    notifyBody->notifyType_ = MultistagesCaptureNotifyType::YUV_READY;
+ 
+    Notification::UserDefineNotifyInfo notifyInfo(Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI,
+        Notification::NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    notifyInfo.SetUserDefineNotifyBody(notifyBody);
+ 
+    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
+    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
@@ -4260,9 +4314,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
-    const std::string &outputPath, string &editdata, const std::string &mime_type,
-    bool isHighQualityPicture, const int32_t fileId, bool isTakeEffect,
-    std::string imageId, std::function<int32_t()> notifyOnProcessCallback)
+    const std::string &outputPath, string &editdata)
 {
     (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
     MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
@@ -4271,14 +4323,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
-    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
-        imageId, inPicture, false, isTakeEffect);
-    // 添加YUV_READY通知
-    auto assetRefresh =
-        make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::YUV_READY_BUSSINESS_NAME);
-    assetRefresh->NotifyYuvReady(fileId);
-    notifyOnProcessCallback();
-    FileUtils::DealPicture(mime_type, outputPath, inPicture, isHighQualityPicture);
     return E_OK;
 }
 

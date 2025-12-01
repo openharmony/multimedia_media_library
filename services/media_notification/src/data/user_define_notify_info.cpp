@@ -87,18 +87,19 @@ bool UserDefineNotifyInfo::WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) 
     return this->notifyBody_->WriteToParcel(parcel);
 }
 
-void UserDefineNotifyInfo::SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody)
+bool UserDefineNotifyInfo::SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody)
 {
     if (this->readOnly_) {
         MEDIA_ERR_LOG("NotifyBody not support to write twice!");
-        return;
+        return false;
     }
     if (notifyBody == nullptr) {
         MEDIA_ERR_LOG("NotifyBody is empty!");
-        return;
+        return false;
     }
     this->notifyBody_ = move(notifyBody);
     this->readOnly_ = true;
+    return true;
 }
 
 std::shared_ptr<UserDefineNotifyBase> UserDefineNotifyInfo::GetUserDefineNotifyBody() const
@@ -118,7 +119,7 @@ std::string UserDefineNotifyInfo::ToString() const
         << "\"NotifyForUserDefineType\": \""
         << std::to_string(static_cast<int32_t>(this->notifyUserDefineType_)) << "\","
         << "\"readOnly\": \"" << std::to_string(static_cast<int32_t>(this->readOnly_)) << "\","
-        << "\"notifyBody\": \"" << notifyBody_->ToString().c_str()
+        << "\"notifyBody\": \"" << (notifyBody_ ? notifyBody_->ToString().c_str() : "nullptr")
         << "}";
     return ss.str();
 }
