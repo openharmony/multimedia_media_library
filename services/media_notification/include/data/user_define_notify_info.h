@@ -50,7 +50,7 @@ public:
     bool WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) const;
     std::string ToString() const;
  
-    void SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody);
+    bool SetUserDefineNotifyBody(const std::shared_ptr<UserDefineNotifyBase> &notifyBody);
     std::shared_ptr<UserDefineNotifyBase> GetUserDefineNotifyBody() const;
  
     bool Marshalling(Parcel &parcel) const override
