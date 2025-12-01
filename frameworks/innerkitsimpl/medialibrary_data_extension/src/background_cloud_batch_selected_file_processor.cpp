@@ -1342,10 +1342,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::IsNetValidated()
 bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownloadAutoPauseReasonType &autoPauseReason)
 {
     bool netValidated = IsNetValidated();
-    bool isNetworkAvailable = netValidated && (IsWifiConnected() ||
-        (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool inCellNet = IsCellularNetConnected();
+    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
+        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
     if (!isNetworkAvailable) {
-        autoPauseReason = (netValidated && (IsWifiConnected() || IsCellularNetConnected())) ?
+        autoPauseReason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
             BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
         return true;
@@ -1387,10 +1388,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()
     // 自动恢复 网络 电量50+ rom 可用20以上 全满足
     bool netValidated = IsNetValidated();
     vector<int32_t> currentNotRestoreReasons;
-    bool isNetworkAvailable = netValidated && (IsWifiConnected() ||
-        (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool inCellNet = IsCellularNetConnected();
+    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
+        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
     if (!isNetworkAvailable) {
-        BatchDownloadAutoPauseReasonType reason = (netValidated && (IsWifiConnected() || IsCellularNetConnected())) ?
+        BatchDownloadAutoPauseReasonType reason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
             BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
         currentNotRestoreReasons.push_back(static_cast<int32_t>(reason));
