@@ -4183,8 +4183,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(const std::shared_p
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std::shared_ptr<FileAsset> &fileAsset,
-    std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect,
-    std::function<int32_t()> notifyOnProcessCallback)
+    std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect)
 {
     if (fileAsset == nullptr || picture == nullptr) {
         MEDIA_ERR_LOG("fileAsset or picture is nullptr");
@@ -4236,6 +4235,52 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std
     }
 }
 
+int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
+    const std::shared_ptr<FileAsset> &fileAsset, std::shared_ptr<Media::Picture> &picture,
+    bool isEdited, bool isTakeEffect, const std::string imageId, const int32_t fileId)
+{
+    if ("" == imageId) {
+        return E_ERR;
+    }
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
+        imageId, picture, isEdited, isTakeEffect);
+    NotifyOnProcessYuv(fileAsset);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::YUV_READY_BUSSINESS_NAME);
+    return assetRefresh->NotifyYuvReady(fileId);
+}
+ 
+int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset)
+{
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr.");
+        return E_ERR;
+    }
+ 
+    string displayName =fileAsset->GetDisplayName();
+    string filePath = fileAsset->GetFilePath();
+    int32_t mediaType = fileAsset->GetMediaType();
+    int32_t fileId = fileAsset->GetId();
+ 
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
+ 
+    auto notifyBody = std::make_shared<Notification::MultistagesCaptureNotifyServerInfo>();
+    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
+    notifyBody->uri_ = notifyUri;
+    notifyBody->notifyType_ = MultistagesCaptureNotifyType::YUV_READY;
+ 
+    Notification::UserDefineNotifyInfo notifyInfo(Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI,
+        Notification::NotifyForUserDefineType::MULTISTAGES_CAPTURE);
+    notifyInfo.SetUserDefineNotifyBody(notifyBody);
+ 
+    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
+    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
     const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
 {
@@ -4280,9 +4325,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
-    const std::string &outputPath, string &editdata, const std::string &mime_type,
-    bool isHighQualityPicture, const int32_t fileId, bool isTakeEffect,
-    std::string imageId, std::function<int32_t()> notifyOnProcessCallback)
+    const std::string &outputPath, string &editdata)
 {
     (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
     MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
@@ -4291,14 +4334,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
-    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
-        imageId, inPicture, false, isTakeEffect);
-    // 添加YUV_READY通知
-    auto assetRefresh =
-        make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::YUV_READY_BUSSINESS_NAME);
-    assetRefresh->NotifyYuvReady(fileId);
-    notifyOnProcessCallback();
-    FileUtils::DealPicture(mime_type, outputPath, inPicture, isHighQualityPicture);
     return E_OK;
 }
 
