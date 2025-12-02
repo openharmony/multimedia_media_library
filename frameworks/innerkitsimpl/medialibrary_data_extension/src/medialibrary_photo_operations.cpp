@@ -4206,7 +4206,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
-            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(fileAsset, picture, isEdited, isTakeEffect,
                 imageId, fileId) == E_OK, "Enable YUV failed.");
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
             resultPicture = picture;
@@ -4227,7 +4227,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std
                 "Failed to add filters to photo");
             resultPicture = picture;
             isTakeEffect = true;
-            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(fileAsset, picture, isEdited, isTakeEffect,
                 imageId, fileId) == E_OK, "Enable YUV failed.");
             FileUtils::DealPicture(mime_type, path, picture, true);
             return E_OK;
@@ -4252,8 +4252,8 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
  
 int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr.");
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr.");
         return E_ERR;
     }
  
