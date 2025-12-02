@@ -231,7 +231,7 @@ int32_t CloudMediaAssetManager::CheckDownloadTypeOfTask(const CloudMediaDownload
 {
     if (static_cast<int32_t>(type) < static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE) ||
         static_cast<int32_t>(type) > static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE)) {
-        MEDIA_ERR_LOG("CloudMediaDownloadType invalid input. downloadType: %{public}d", static_cast<int32_t>(type));
+        MEDIA_ERR_LOG("Invalid CloudMediaDownloadType. but received: %{public}d", static_cast<int32_t>(type));
         return E_ERR;
     }
     return OHOS::Media::E_OK;
