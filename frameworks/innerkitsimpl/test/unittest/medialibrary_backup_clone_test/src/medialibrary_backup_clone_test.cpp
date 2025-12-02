@@ -4142,17 +4142,15 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_is_table_exist_001, TestSize.
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_invalidate_hdc_cloud_data_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_invalidate_hdc_cloud_data_001");
-    auto rdbStore = g_rdbStore->GetRaw();
-    EXPECT_TRUE(rdbStore != nullptr);
 
     restoreService->mediaLibraryRdb_ = nullptr;
-    EXPECT_FALSE(restoreService->InvalidateHdcCloudData(rdbStore));
+    EXPECT_FALSE(restoreService->InvalidateHdcCloudData(restoreService->mediaLibraryRdb_));
 
     CloneSource cloneSource;
     std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
-    EXPECT_TRUE(restoreService->InvalidateHdcCloudData(rdbStore));
+    EXPECT_TRUE(restoreService->InvalidateHdcCloudData(restoreService->mediaLibraryRdb_));
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
