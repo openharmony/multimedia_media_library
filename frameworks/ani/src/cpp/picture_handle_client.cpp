@@ -52,7 +52,6 @@ std::shared_ptr<Media::Picture> PictureHandlerClient::RequestPicture(const int32
     std::shared_ptr<Media::Picture> picture = nullptr;
     ReadPicture(fd, fileId, picture);
     FinishRequestPicture(fileId);
-    close(fd);
     return picture;
 }
 
@@ -77,7 +76,14 @@ int32_t GetMessageLength(const int32_t &fd, uint32_t &msgLen)
         return E_ERR;
     }
 
-    msgLen = *static_cast<uint32_t*>(msgLenAddr);
+    uint32_t* pMsgLen = static_cast<uint32_t*>(msgLenAddr);
+    if (pMsgLen == nullptr) {
+        ANI_ERR_LOG("GetMessageLength failed, mmap return nullptr");
+        munmap(msgLenAddr, UINT32_LEN);
+        close(fd);
+        return E_ERR;
+    }
+    msgLen = *pMsgLen;
     munmap(msgLenAddr, UINT32_LEN);
     ANI_DEBUG_LOG("msgLen: %{public}u", msgLen);
     return E_OK;
@@ -96,6 +102,10 @@ int32_t MapMessageData(const int32_t &fd, uint32_t msgLen, uint8_t*& addr)
 
 uint32_t ReadDataSize(const uint8_t* addr, uint32_t& offset)
 {
+    if (addr == nullptr) {
+        ANI_ERR_LOG("ReadDataSize failed, aadr is nullptr!");
+        return 0;
+    }
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + offset);
     offset += UINT32_LEN;
     ANI_DEBUG_LOG("dataSize: %{public}u", dataSize);
@@ -153,6 +163,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     if (MapMessageData(fd, msgLen, addr) != E_OK) {
         return E_ERR;
     }
+    close(fd);
     uint32_t readOffset = UINT32_LEN;
 
     uint32_t dataSize = ReadDataSize(addr, readOffset);
@@ -274,7 +285,7 @@ bool PictureHandlerClient::ReadAuxiliaryPictureInfo(MessageParcel &data, Auxilia
     ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo pixelFormat: %{public}d",
         auxiliaryPictureInfo.pixelFormat);
 
-    auxiliaryPictureInfo.rowStride = data.ReadInt32();
+    auxiliaryPictureInfo.rowStride = static_cast<uint32_t>(data.ReadInt32());
     ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo rowStride: %{public}d",
         auxiliaryPictureInfo.rowStride);
 
