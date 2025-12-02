@@ -51,6 +51,7 @@ struct MergeAlbumInfo {
     uint8_t isCoverSatisfied;
     std::string tagId;
     std::vector<string> repeatedAlbumIds;
+    std::string relationship;
 };
 
 struct SetCoverUriAlbumInfo {
