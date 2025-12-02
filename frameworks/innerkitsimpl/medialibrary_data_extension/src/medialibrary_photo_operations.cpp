@@ -4257,7 +4257,7 @@ int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(const std::shared_ptr<Fi
         return E_ERR;
     }
  
-    string displayName =fileAsset->GetDisplayName();
+    string displayName = fileAsset->GetDisplayName();
     string filePath = fileAsset->GetFilePath();
     int32_t mediaType = fileAsset->GetMediaType();
     int32_t fileId = fileAsset->GetId();
