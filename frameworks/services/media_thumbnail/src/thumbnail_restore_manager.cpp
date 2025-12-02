@@ -166,7 +166,8 @@ void ThumbnailRestoreManager::ReportProgressBegin()
         MEDIA_ERR_LOG("Error thumbnail number");
         return;
     }
-    float totalTime = total * SINGLE_THREAD_RUNTIME_MS / FFRT_MAX_RESTORE_ASTC_THREADS / MILLIS_PER_MINUTE;
+    float totalTime = total * static_cast<float>(SINGLE_THREAD_RUNTIME_MS) /
+        static_cast<float>(FFRT_MAX_RESTORE_ASTC_THREADS) / MILLIS_PER_MINUTE;
     std::unordered_map<std::string, std::string> payload = {
         {BUNDLENAME, MEDIALIBRARYBUNDLENAME},
         {RELEASETIME, std::to_string(totalTime)},
