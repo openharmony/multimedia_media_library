@@ -2274,7 +2274,6 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
     // 3. 查询
     NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.SetWhereClause(whereClause);
-
     std::vector<std::string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_SUBTYPE,
