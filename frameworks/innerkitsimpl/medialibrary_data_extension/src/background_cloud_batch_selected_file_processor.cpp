@@ -859,7 +859,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()
 
 bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadResourcesTask()
 {
-    MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask START");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask START");
     CHECK_AND_RETURN_RET_INFO_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(), false,
         "Cloud sync switch off, skip BatchSelectFileDownload");
     CHECK_AND_RETURN_RET_INFO_LOG(batchDownloadTaskAdded_, false, "no batch download start trigger");
@@ -874,7 +874,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadResourcesTask()
 
 bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTask()
 {
-    MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask START");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask START");
     CHECK_AND_RETURN_RET_INFO_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(), false,
         "Cloud sync switch off, skip BatchSelectFileDownload");
     CHECK_AND_RETURN_RET_INFO_LOG(batchDownloadTaskAdded_, false, "no batch download start trigger");
@@ -889,7 +889,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTa
 
 bool BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()
 {
-    MEDIA_INFO_LOG("BatchSelectFileDownload IsStartTimerRunning IN");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload IsStartTimerRunning IN");
     return batchDownloadResourcesStartTimerId_ > 0;
 }
 
@@ -1116,7 +1116,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadRe
         BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
     if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
         && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()) { // 停止且有添加任务且可恢复状态
-        MEDIA_INFO_LOG("BatchSelectFileDownload Timely Check AutoResume Processor");
+        MEDIA_DEBUG_LOG("BatchSelectFileDownload Timely Check AutoResume Processor");
         BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
     }
 }
@@ -1342,10 +1342,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::IsNetValidated()
 bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownloadAutoPauseReasonType &autoPauseReason)
 {
     bool netValidated = IsNetValidated();
-    bool isNetworkAvailable = netValidated && (IsWifiConnected() ||
-        (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool inCellNet = IsCellularNetConnected();
+    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
+        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
     if (!isNetworkAvailable) {
-        autoPauseReason = (netValidated && (IsWifiConnected() || IsCellularNetConnected())) ?
+        autoPauseReason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
             BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
         return true;
@@ -1387,10 +1388,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()
     // 自动恢复 网络 电量50+ rom 可用20以上 全满足
     bool netValidated = IsNetValidated();
     vector<int32_t> currentNotRestoreReasons;
-    bool isNetworkAvailable = netValidated && (IsWifiConnected() ||
-        (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool inCellNet = IsCellularNetConnected();
+    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
+        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
     if (!isNetworkAvailable) {
-        BatchDownloadAutoPauseReasonType reason = (netValidated && (IsWifiConnected() || IsCellularNetConnected())) ?
+        BatchDownloadAutoPauseReasonType reason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
             BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
         currentNotRestoreReasons.push_back(static_cast<int32_t>(reason));
