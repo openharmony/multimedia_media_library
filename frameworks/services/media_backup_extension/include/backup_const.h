@@ -601,8 +601,6 @@ struct AnalysisAlbumTbl {
     std::optional<std::string> relationship;
     std::optional<int32_t> albumIdOld;
     std::optional<int32_t> albumIdNew;
-    std::optional<double> age;
-    std::optional<int32_t> gender;
 };
 
 struct PortraitAlbumDfx {
@@ -645,6 +643,8 @@ struct FaceTagTbl {
     std::optional<int32_t> albumType;
     std::optional<int32_t> isRemoved;
     std::optional<std::string> analysisVersion;
+    std::optional<double> age;
+    std::optional<int32_t> gender;
 };
 
 struct ImageFaceTbl {

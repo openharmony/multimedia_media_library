@@ -494,6 +494,8 @@ void CloneRestorePortrait::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb
     faceTagTbl.tagVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_VERSION);
     faceTagTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         FACE_TAG_COL_ANALYSIS_VERSION);
+    faceTagTbl.age = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, FACE_TAG_COL_AGE);
+    faceTagTbl.gender = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, FACE_TAG_COL_GENDER);
 }
 
 void CloneRestorePortrait::BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls)
@@ -518,6 +520,8 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromFaceTagTbl(c
     BackupDatabaseUtils::PutIfPresent(values, FACE_TAG_COL_CENTER_FEATURES, faceTagTbl.centerFeatures);
     BackupDatabaseUtils::PutIfPresent(values, FACE_TAG_COL_TAG_VERSION, faceTagTbl.tagVersion);
     BackupDatabaseUtils::PutIfPresent(values, FACE_TAG_COL_ANALYSIS_VERSION, faceTagTbl.analysisVersion);
+    BackupDatabaseUtils::PutIfPresent(values, FACE_TAG_COL_AGE, faceTagTbl.age);
+    BackupDatabaseUtils::PutIfPresent(values, FACE_TAG_COL_GENDER, faceTagTbl.gender);
 
     return values;
 }
