@@ -694,7 +694,7 @@ static bool DeleteContainsOtherAlbum(RdbPredicates &predicates, const shared_ptr
     vector<string> albumIds = predicates.GetWhereArgs();
     RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
     queryPredicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它")；
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它");
 
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
     shared_ptr<ResultSet> resultSet = rdbStore->Query(queryPredicates, columns);
@@ -712,7 +712,8 @@ static bool DeleteContainsOtherAlbum(RdbPredicates &predicates, const shared_ptr
 
 static int32_t RecreateOtherAlbum(AlbumAccurateRefresh *albumRefresh)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "RecreateOtherAlbum failed. rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_HAS_DB_ERROR,
+        "RecreateOtherAlbum failed. albumRefresh is null");
     int32_t ret = albumRefresh->ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
         AccurateRefresh::RDB_OPERATION_ADD);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR,
@@ -743,7 +744,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
         if (isOthers) {
-            ret = RecreateOtherAlbum(rdbStore);
+            ret = RecreateOtherAlbum(&albumRefresh);
         }
         albumRefresh.Notify();
     }
