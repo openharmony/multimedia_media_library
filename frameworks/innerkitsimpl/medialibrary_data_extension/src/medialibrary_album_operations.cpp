@@ -688,9 +688,9 @@ int32_t IsAllUserOrSourcePhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     return E_OK;
 }
 
-static bool DeleteContainsOthersAlbum(RdbPredicates &predicates, const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+static bool DeleteContainsOtherAlbum(RdbPredicates &predicates, const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "DeleteContainsOthersAlbum failed. rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "DeleteContainsOtherAlbum failed. rdbStore is null");
     vector<string> albumIds = predicates.GetWhereArgs();
     RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
     queryPredicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
@@ -710,9 +710,9 @@ static bool DeleteContainsOthersAlbum(RdbPredicates &predicates, const shared_pt
     return rowCount == 1;
 }
 
-static int32_t RecreateOthersAlbum(AlbumAccurateRefresh *albumRefresh)
+static int32_t RecreateOtherAlbum(AlbumAccurateRefresh *albumRefresh)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "DeleteContainsOthersAlbum failed. rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "RecreateOtherAlbum failed. rdbStore is null");
     int32_t ret = albumRefresh->ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
         AccurateRefresh::RDB_OPERATION_ADD);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR,
@@ -737,13 +737,13 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
     }
-    bool isOthers = DeleteContainsOthersAlbum(predicates, rdbStore);
+    bool isOthers = DeleteContainsOtherAlbum(predicates, rdbStore);
     AlbumAccurateRefresh albumRefresh(AccurateRefresh::DELETE_PHOTO_ALBUMS_BUSSINESS_NAME);
     int deleteRow = -1;
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
         if (isOthers) {
-            ret = RecreateOthersAlbum(rdbStore);
+            ret = RecreateOtherAlbum(rdbStore);
         }
         albumRefresh.Notify();
     }
