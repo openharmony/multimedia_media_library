@@ -112,6 +112,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_STORAGE_PATH, TYPE_STRING },
         { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, TYPE_INT32 },
         { PhotoColumn::PHOTO_ASPECT_RATIO, TYPE_DOUBLE },
+        { PhotoColumn::PHOTO_CHANGE_TIME, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
 }
