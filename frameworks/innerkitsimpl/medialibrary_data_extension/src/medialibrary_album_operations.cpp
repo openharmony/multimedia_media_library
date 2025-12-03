@@ -688,6 +688,38 @@ int32_t IsAllUserOrSourcePhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     return E_OK;
 }
 
+static bool DeleteContainsOthersAlbum(RdbPredicates &predicates, const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "DeleteContainsOthersAlbum failed. rdbStore is null");
+    vector<string> albumIds = predicates.GetWhereArgs();
+    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
+    queryPredicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它")；
+
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+    shared_ptr<ResultSet> resultSet = rdbStore->Query(queryPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "queryResultSet is null!");
+
+    int32_t rowCount = -1;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    if (ret != 0 || rowCount < 0) {
+        MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
+        return false;
+    }
+    resultSet->Close();
+    return rowCount == 1;
+}
+
+static int32_t RecreateOthersAlbum(AlbumAccurateRefresh *albumRefresh)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "DeleteContainsOthersAlbum failed. rdbStore is null");
+    int32_t ret = albumRefresh->ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
+        AccurateRefresh::RDB_OPERATION_ADD);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR,
+        "Cannot insert new othersAlbum into PhotoAlbum table, ret: %{public}d", ret);
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 {
     // Only user generic albums can be deleted
@@ -705,10 +737,14 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
     }
+    bool isOthers = DeleteContainsOthersAlbum(predicates, rdbStore);
     AlbumAccurateRefresh albumRefresh(AccurateRefresh::DELETE_PHOTO_ALBUMS_BUSSINESS_NAME);
     int deleteRow = -1;
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
+        if (isOthers) {
+            ret = RecreateOthersAlbum(rdbStore);
+        }
         albumRefresh.Notify();
     }
     auto watch = MediaLibraryNotify::GetInstance();
@@ -1062,6 +1098,29 @@ static int32_t CheckConflictsWithAlbumPlugin(const string &newAlbumName, int32_t
     return E_OK;
 }
 
+static int32_t HasSameEmptySourceAlbum(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    const string &newAlbumName, const string &newLPath)
+{
+    std::string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
+                            " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = ? AND " +
+                            PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) + " AND " +
+                            PhotoAlbumColumns::ALBUM_LPATH + " = ? AND " +
+                            PhotoAlbumColumns::ALBUM_COUNT + " = 0 AND " + PhotoAlbumColumns::HIDDEN_COUNT + " = 0";
+    int32_t rowCount = 0;
+    shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QueryByStep(querySql, { newAlbumName, newLPath });
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum != nullptr, E_ERR, "Query same empty source album failed");
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum->GetRowCount(rowCount) == NativeRdb::E_OK, E_ERR,
+        "Get same empty source album row count failed");
+    if (rowCount <= 0) {
+        return E_ERR;
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum->GoToFirstRow() == NativeRdb::E_OK, E_ERR,
+        "Same empty source album go to first row failed, row count is %{public}d", rowCount);
+    int32_t emptyAlbumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSetAlbum);
+    MEDIA_INFO_LOG("Find empty source album with same name and lpath, id: %{public}d", emptyAlbumId);
+    return emptyAlbumId;
+}
+
 /*
  * Check for conflicts with existing albums when setting album name
  * returns:
@@ -1074,7 +1133,12 @@ static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
 {
     const std::string newLPath = oldAlbumType == PhotoAlbumType::SOURCE ?
         SOURCE_ALBUM_LPATH_PREFIX + newAlbumName : USER_ALBUM_LPATH_PREFIX + newAlbumName;
-
+    if (oldAlbumType == PhotoAlbumType::SOURCE) {
+        int32_t emptyAlbumId = HasSameEmptySourceAlbum(rdbStore, newAlbumName, newLPath);
+        if (emptyAlbumId > 0) {
+            return emptyAlbumId;
+        }
+    }
     // Check if non-deleted album with same name exists
     std::string sql = "SELECT * FROM PhotoAlbum WHERE album_name = ? AND dirty <> ?";
     shared_ptr<NativeRdb::ResultSet> resultSetAlbum =
@@ -1261,7 +1325,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     };
     int ret = trans->RetryTrans(trySetUserAlbumName);
     if (argInvalid) {
-        return E_INVALID_ARGS;
+        return E_INVALID_ARGUMENTS;
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "Try trans fail!, ret: %{public}d", ret);
 
