@@ -163,17 +163,12 @@ void CloneRestorePortrait::Restore()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     RestoreImageFaceInfo();
-    if (!CopyAnalysisVideoTotalTab()) {
-        UpdateAnalysisVideoTotalTblLabelAndFace();
-        UpdateAnalysisVideoTotalTblFaceAndTagId();
-    }
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     int32_t ret = RestoreMaps();
     CHECK_AND_RETURN_LOG(ret == E_OK, "fail to update analysis photo map status");
     RestoreAnalysisTotalFaceStatus();
     ReportPortraitCloneStat(sceneCode_);
-    
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }
@@ -762,121 +757,6 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromImageFaceTbl
     return values;
 }
 
-static std::vector<int32_t> getVideoFileIds(std::vector<int32_t> FileIds,
-    std::shared_ptr<NativeRdb::RdbStore> RdbStore)
-{
-    std::string fileIdInClause = "(" + BackupDatabaseUtils::JoinValues<int>(FileIds, ", ") + ")";
-    std::string queryVideoFileIdSql =
-        "SELECT file_id FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE media_type = 2 AND file_id IN " + fileIdInClause;
-    std::vector<int32_t> VideoFileIds =
-        BackupDatabaseUtils::QueryIntVec(RdbStore, queryVideoFileIdSql, "file_id");
-    return VideoFileIds;
-}
-
-static std::vector<int32_t> getOtherFileIds(std::vector<int32_t> FileIds,
-    std::shared_ptr<NativeRdb::RdbStore> RdbStore)
-{
-    std::string fileIdInClause = "(" + BackupDatabaseUtils::JoinValues<int>(FileIds, ", ") + ")";
-    std::string queryOtherFileIdSql =
-        "SELECT file_id FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE media_type != 2 AND file_id IN " + fileIdInClause;
-    std::vector<int32_t> OtherFileIds =
-        BackupDatabaseUtils::QueryIntVec(RdbStore, queryOtherFileIdSql, "file_id");
-    return OtherFileIds;
-}
-
-static std::unordered_map<int32_t, int32_t> buildFileIdMap(std::vector<FileIdPair>& fileIdPairs)
-{
-    std::unordered_map<int32_t, int32_t> idMap;
-    for (const auto& pair : fileIdPairs) {
-        idMap[pair.first] = pair.second;
-    }
-    return idMap;
-}
-
-static int32_t getNewFileId(std::unordered_map<int32_t, int32_t> idMap, int32_t oldid)
-{
-    auto it = idMap.find(oldid);
-    if (it != idMap.end()) {
-        return it->second;
-    }
-    return -1;
-}
-
-void CloneRestorePortrait::WriteDataToAnaVideoTotalTab(
-    std::unordered_map<int32_t, int32_t>& oldAnaVideoFaceMap, std::unordered_map<int32_t, int32_t>& oldAnaVideoLableMap,
-    std::unordered_map<int32_t, int32_t>& oldAnaVideoStatusMap)
-{
-    std::vector<FileIdPair> fileIdPairs = CollectFileIdPairs(photoInfoMap_);
-    std::unordered_map<int32_t, int32_t> idMap = buildFileIdMap(fileIdPairs);
-    for (const auto& pair : oldAnaVideoFaceMap) {
-        int32_t Fileid = pair.first;
-        int32_t NewFileid = getNewFileId(idMap, Fileid);
-        int32_t Face = pair.second;
-        auto it = oldAnaVideoLableMap.find(Fileid);
-        if (it != oldAnaVideoLableMap.end()) {
-            auto status_it = oldAnaVideoStatusMap.find(Fileid);
-            if (status_it != oldAnaVideoStatusMap.end()) {
-                std::string updateSql =
-                    "UPDATE tab_analysis_video_total"
-                    " SET face = " + std::to_string(Face) +
-                    ", label = " + std::to_string(it->second) +
-                    ", status = " + std::to_string(status_it->second) +
-                    " WHERE file_id = " + std::to_string(NewFileid) + ";";
-                int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
-                CHECK_AND_PRINT_LOG(errCode >= 0,
-                    "execute update analysis total for no face failed, ret=%{public}d", errCode);
-            }
-        }
-    }
-}
-
-bool CloneRestorePortrait::CopyAnalysisVideoTotalTab()
-{
-    MEDIA_INFO_LOG("InsertAnalysisVideoTotalTab");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-
-    auto fileIdPairs = CollectFileIdPairs(photoInfoMap_);
-    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPairs);
-
-    std::vector<int32_t> VideoFileIds = getVideoFileIds(oldFileIds, mediaRdb_);
-    std::string VideofileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(VideoFileIds, ", ") + ")";
-    std::string queryOldFaceSql =
-        "SELECT file_id,face FROM tab_analysis_video_total "
-        "WHERE file_id IN " + VideofileIdOldInClause;
-    std::unordered_map<int32_t, int32_t> oldAnaVideoFaceMap =
-        BackupDatabaseUtils::QueryIntMap(mediaRdb_, queryOldFaceSql, "file_id", "face");
-    if (oldAnaVideoFaceMap.empty()) {
-        MEDIA_ERR_LOG("get oldAnaVideoFace fail");
-        return false;
-    }
-    std::string queryOldLableSql =
-        "SELECT file_id,label FROM tab_analysis_video_total "
-        "WHERE file_id IN " + VideofileIdOldInClause;
-    std::unordered_map<int32_t, int32_t> oldAnaVideoLableMap =
-        BackupDatabaseUtils::QueryIntMap(mediaRdb_, queryOldLableSql, "file_id", "label");
-    if (oldAnaVideoLableMap.empty() || oldAnaVideoFaceMap.size() != oldAnaVideoLableMap.size()) {
-        MEDIA_ERR_LOG("get oldAnaVideoLable fail");
-        return false;
-    }
-    std::string queryOldStatusSql =
-        "SELECT file_id,status FROM tab_analysis_video_total "
-        "WHERE file_id IN " + VideofileIdOldInClause;
-    std::unordered_map<int32_t, int32_t> oldAnaVideoStatusMap =
-        BackupDatabaseUtils::QueryIntMap(mediaRdb_, queryOldStatusSql, "file_id", "status");
-    if (oldAnaVideoStatusMap.empty() || oldAnaVideoFaceMap.size() != oldAnaVideoStatusMap.size()) {
-        MEDIA_ERR_LOG("get oldAnaVideoStatus fail");
-        return false;
-    }
-
-    WriteDataToAnaVideoTotalTab(oldAnaVideoFaceMap, oldAnaVideoFaceMap, oldAnaVideoStatusMap);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("InsertAnalysisVideoTotalTab Cost %{public}lld", (long long)(end - start));
-    return true;
-}
-
-
 void CloneRestorePortrait::UpdateAnalysisTotalTblNoFaceStatus()
 {
     MEDIA_INFO_LOG("UpdateAnalysisTotalTblNoFaceStatus");
@@ -962,33 +842,6 @@ void CloneRestorePortrait::UpdateAnalysisTotalTblStatus()
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("UpdateAnalysisTotalTblStatus cost %{public}lld", (long long)(end - start));
-}
-
-void CloneRestorePortrait::UpdateAnalysisVideoTotalTblLabelAndFace()
-{
-    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-
-    BackupDatabaseUtils::UpdateLabelAndFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
-    BackupDatabaseUtils::CheckLabelAndFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateFaceToAnalysisVideoTotalTable(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateStatusToAnalysisTable(mediaLibraryRdb_);
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace cost %{public}lld", static_cast<long long>(end - start));
-}
-
-void CloneRestorePortrait::UpdateAnalysisVideoTotalTblFaceAndTagId()
-{
-    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-
-    BackupDatabaseUtils::DeleteDirtytagIdFromFaceTagTable(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateVideoFaceTagId(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateVideoTotalFaceId(mediaLibraryRdb_);
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId cost %{public}lld", static_cast<long long>(end - start));
 }
 
 int32_t CloneRestorePortrait::RestoreMaps()
