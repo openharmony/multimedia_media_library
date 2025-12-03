@@ -201,7 +201,7 @@ static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index"
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
 static const std::string BETA_DEBUG_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
-static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 3LL * 1024 * 1024 * 1024;
+static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 1LL * 1024 * 1024 * 1024;
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
 static const std::string BROKER_ADD_MSG = "broker_add";
@@ -3789,7 +3789,7 @@ static int32_t DropAnalysisTables(shared_ptr<NativeRdb::RdbStore> &store)
     int32_t err = store->ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
     CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute drop vision_trigger");
     for (const auto &tableName : VISION_HIGHLIGHT_TABLES) {
-        string sql = "DROP TABLE IF EXISTS" + tableName;
+        string sql = "DROP TABLE IF EXISTS " + tableName;
         err = store->ExecuteSql(sql);
         CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute: %{private}s", sql.c_str());
     }
