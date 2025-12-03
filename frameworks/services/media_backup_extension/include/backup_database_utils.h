@@ -35,6 +35,12 @@ using FileIdPair = std::pair<int32_t, int32_t>;
 using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 constexpr int32_t TOTAL_TBL_FACE_ANALYSED = 2;
 constexpr int32_t TOTAL_TBL_PET_ANALYSED = 1;
+struct CloneVideoInfo {
+    int32_t file_id;
+    int32_t face;
+    int32_t label;
+    int32_t status;
+};
 class BackupDatabaseUtils {
 public:
     using ConfigInfoType = std::unordered_map<ConfigInfoSceneId, std::unordered_map<std::string, std::string>>;
@@ -152,6 +158,8 @@ public:
         const std::string& sql, const std::string& columnName);
     static std::unordered_map<int32_t, int32_t> QueryIntMap(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::string& sql, const std::string& keyColumnName, const std::string& valueColumnName);
+    static std::vector<CloneVideoInfo> QueryVideoInfo(std::string tableName,
+        std::string VideofileIdOldInClause, std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::unordered_map<int32_t, int32_t> QueryOldNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> oldRdbStore,
         const std::vector<int32_t>& oldFileIds);
     static void UpdateNewNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
@@ -165,7 +173,7 @@ public:
     static bool QueryPhotoUniqueSouthDeviceType(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType);
     static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static void UpdateLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void ClearAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void CheckLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateStatusToAnalysisTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
