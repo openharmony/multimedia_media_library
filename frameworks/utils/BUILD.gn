@@ -44,7 +44,10 @@ ohos_static_library("medialibrary_common_utils") {
 }
 
 ohos_static_library("permission_utils") {
-  sources = [ "src/permission_utils.cpp" ]
+  sources = [
+    "src/permission_utils.cpp",
+    "src/permission_whitelist_utils.cpp",
+  ]
   include_dirs = [
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",

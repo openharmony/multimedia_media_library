@@ -31,14 +31,17 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "bundle_constants.h"
+#include "parameter.h"
+#include "ipc_skeleton.h"
+#include "accesstoken_kit.h"
 
-#include "medialibrary_bundle_manager.h"
 #include "permission_utils.h"
 
 using std::string;
 using std::unordered_map;
 using std::mutex;
 using namespace nlohmann;
+using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 namespace Media {
 const std::string MEDIA_KIT_WHITE_LIST_NAME = "medialibrary_kit_whitelist.json";
@@ -47,16 +50,10 @@ const std::string MEDIA_KIT_WHITE_LIST_JSON_LOCAL_PATH =
 const string DUE_INSTALL_DIR =
     "/data/service/el1/public/update/param_service/install/system/etc/"
     "com.ohos.medialibrary.medialibrarydata/medialibrary_kit_whitelist/";
-const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
-const string RECEIVE_UPDATE_MESSAGE = "ohos.permission.RECEIVE_UPDATE_MESSAGE";
-const string CLOUD_EVENT_INFO_TYPE = "type";
-const string CLOUD_EVENT_INFO_SUBTYPE = "subtype";
-const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
 const string LIST_VERSION = "version";
 const string LIST_APPLICATIONS = "applications";
-const string LIST_PACKAGENAME = "packageName";
+const string LIST_APPIDENTIFIER = "appIdentifier";
 const string LIST_ALLOW_API_VERSION = "allowedApiVersion";
-const int MODULO_APIVERSION = 1000;
 
 using WhiteList = std::unordered_map<std::string, int>;
 
@@ -65,59 +62,11 @@ mutex PermissionWhitelistUtils::bundleMgrMutex_;
 mutex PermissionWhitelistUtils::whiteListMutex_;
 WhiteList PermissionWhitelistUtils::whiteList_;
 std::atomic_bool PermissionWhitelistUtils::isLoadWhiteList_{false};
-std::shared_ptr<EventFwk::CommonEventSubscriber> PermissionWhitelistUtils::cloudUpdateSubscriber_{};
-class PermissionWhitelistUtils::CloudUpdateReceiver : public EventFwk::CommonEventSubscriber {
-public:
-    explicit CloudUpdateReceiver(const EventFwk::CommonEventSubscribeInfo &subscribeInfo);
-    ~CloudUpdateReceiver() {}
-    void OnReceiveEvent(const EventFwk::CommonEventData &data) override;
-};
 
-PermissionWhitelistUtils::CloudUpdateReceiver::CloudUpdateReceiver(
-    const EventFwk::CommonEventSubscribeInfo &subscribeInfo)
-    : EventFwk::CommonEventSubscriber(subscribeInfo)
+void PermissionWhitelistUtils::OnReceiveEvent()
 {
-}
-
-void PermissionWhitelistUtils::CloudUpdateReceiver::OnReceiveEvent(const EventFwk::CommonEventData &data)
-{
-    const AAFwk::Want &want = data.GetWant();
-    std::string action = want.GetAction();
-    std::string type = want.GetStringParam(CLOUD_EVENT_INFO_TYPE);
-    std::string subtype = want.GetStringParam(CLOUD_EVENT_INFO_SUBTYPE);
-    MEDIA_INFO_LOG("CloudUpdateReceiver: action[%{public}s], type[%{public}s], subType[%{public}s]", action.c_str(),
-        type.c_str(), subtype.c_str());
-
-    CHECK_AND_RETURN_LOG((action == CLOUD_UPDATE_EVENT && type == CLOUD_EVENT_INFO_TYPE_VALUE),
-        "other action, ignore.");
     CHECK_AND_RETURN_INFO_LOG(isLoadWhiteList_.load(), "Not LoadWhiteList");
     PermissionWhitelistUtils::LoadWhiteList();
-}
-
-int32_t PermissionWhitelistUtils::SubscribeCloudUpdatedEvent()
-{
-    CHECK_AND_RETURN_RET_WARN_LOG(cloudUpdateSubscriber_ == nullptr, E_OK, "cota update event already subscribed.");
-
-    EventFwk::MatchingSkills matchingSkills;
-    matchingSkills.AddEvent(CLOUD_UPDATE_EVENT);
-    EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
-    subscribeInfo.SetPermission(RECEIVE_UPDATE_MESSAGE);
-    cloudUpdateSubscriber_ = std::make_shared<CloudUpdateReceiver>(subscribeInfo);
-    CHECK_AND_RETURN_RET_LOG(cloudUpdateSubscriber_ != nullptr, E_FAIL, "cota update cloudUpdateSubscriber_ nullptr.");
-
-    CHECK_AND_RETURN_RET_INFO_LOG(EventFwk::CommonEventManager::SubscribeCommonEvent(cloudUpdateSubscriber_), E_FAIL,
-        "Subscribe cota update event fail");
-    MEDIA_ERR_LOG("Subscribe cota update event succeed");
-    return E_OK;
-}
-
-void PermissionWhitelistUtils::UnsubscribeCloudUpdatedEvent()
-{
-    CHECK_AND_RETURN_WARN_LOG(cloudUpdateSubscriber_ != nullptr, "cota update event not subscribed.");
-
-    bool subscribeResult = EventFwk::CommonEventManager::UnSubscribeCommonEvent(cloudUpdateSubscriber_);
-    MEDIA_INFO_LOG("subscribeResult = %{public}d", subscribeResult);
-    cloudUpdateSubscriber_ = nullptr;
 }
 
 static std::vector<int> SplitApiVersion(const std::string &version)
@@ -174,6 +123,15 @@ static nlohmann::json LoadJsonFile(const std::string &jsonPath, bool &isLoad)
     return jsonFile;
 }
 
+static std::string GetClientBundleName()
+{
+    std::string bundleName;
+    int32_t uid = IPCSkeleton::GetCallingUid();
+    PermissionUtils::GetClientBundle(uid, bundleName);
+    CHECK_AND_WARN_LOG(!bundleName.empty(), "bundleName is empty");
+    return bundleName;
+}
+
 int32_t PermissionWhitelistUtils::InitWhiteList()
 {
     MediaLibraryTracer tracer;
@@ -211,22 +169,19 @@ int32_t PermissionWhitelistUtils::ParseWhiteList(const nlohmann::json &higherVer
 {
     std::unordered_map<std::string, int> tmpWhiteList;
     for (const auto &app : higherVerFile[LIST_APPLICATIONS]) {
-        CHECK_AND_CONTINUE_ERR_LOG((app.contains(LIST_PACKAGENAME) && app.contains(LIST_ALLOW_API_VERSION)),
-            "Missing packageName or allowedApiVersion");
+        CHECK_AND_CONTINUE_ERR_LOG((app.contains(LIST_APPIDENTIFIER) && app.contains(LIST_ALLOW_API_VERSION)),
+            "Missing appIdentifier or allowedApiVersion");
 
-        std::string packageName = app[LIST_PACKAGENAME].get<std::string>();
+        std::string appIdentifier = app[LIST_APPIDENTIFIER].get<std::string>();
         int allowedApiVersion = app[LIST_ALLOW_API_VERSION].get<int>();
 
-        MEDIA_DEBUG_LOG("Package %{public}s with allowedApiVersion %{public}d added to whiteList",
-            packageName.c_str(), allowedApiVersion);
-
-        auto [it, inserted] = tmpWhiteList.emplace(packageName, allowedApiVersion);
+        auto [it, inserted] = tmpWhiteList.emplace(appIdentifier, allowedApiVersion);
         if (!inserted && allowedApiVersion > it->second) {
-            MEDIA_DEBUG_LOG("Package %{public}s allowedApiVersion updated from %{public}d to %{public}d",
-                packageName.c_str(), it->second, allowedApiVersion);
+            MEDIA_DEBUG_LOG("appIdentifier's allowedApiVersion updated from %{public}d to %{public}d",
+                it->second, allowedApiVersion);
             it->second = allowedApiVersion;
         } else if (!inserted) {
-            MEDIA_DEBUG_LOG("packageName %{public}s is already in whiteList", packageName.c_str());
+            MEDIA_DEBUG_LOG("appIdentifier is already in whiteList");
         }
     }
     tmpWhiteList.swap(whiteList_);
@@ -253,6 +208,12 @@ sptr<AppExecFwk::IBundleMgr> PermissionWhitelistUtils::GetSysBundleManager()
 
 int32_t PermissionWhitelistUtils::CheckWhiteList()
 {
+    CHECK_AND_RETURN_RET_WARN_LOG(!PermissionUtils::IsSystemApp(), E_SUCCESS, "current is system app, no need check");
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_WARN_LOG(tokenType == ATokenTypeEnum::TOKEN_HAP, E_SUCCESS,
+        "current is not normal hap, no need check");
+
     static std::once_flag loadFlag;
     std::call_once(loadFlag, []() {
         if (InitWhiteList() != E_OK) {
@@ -260,33 +221,32 @@ int32_t PermissionWhitelistUtils::CheckWhiteList()
         }
     });
 
-    CHECK_AND_RETURN_RET_INFO_LOG(!whiteList_.empty(), E_SUCCESS, "whiteList_ is empty");
+    CHECK_AND_RETURN_RET_WARN_LOG(!whiteList_.empty(), E_SUCCESS, "whiteList_ is empty");
 
-    auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_PERMISSION_DENIED,
-        "MediaLibraryBundleManager::GetInstance() returned nullptr");
-    std::string hapBundleName = mediaLibraryBundleManager->GetClientBundleName();
+    std::string hapBundleName = GetClientBundleName();
     CHECK_AND_RETURN_RET_LOG(!hapBundleName.empty(), E_PERMISSION_DENIED, "get caller hapBundleName name fail");
 
-    auto it = whiteList_.find(hapBundleName);
-    CHECK_AND_RETURN_RET_LOG((it != whiteList_.end()), E_PERMISSION_DENIED,
-        "hapBundleName %{public}s not in whiteList", hapBundleName.c_str());
-
-    const int32_t whiteListApiVersion = it->second;
-    CHECK_AND_RETURN_RET_INFO_LOG(whiteListApiVersion != 0, E_SUCCESS,
-        "the whiteListApiVersion of hapBundleName %{public}s is 0", hapBundleName.c_str());
+    auto bundleManager = GetSysBundleManager();
+    CHECK_AND_RETURN_RET_LOG(bundleManager != nullptr, E_PERMISSION_DENIED, "GetSysBundleManager() returned nullptr");
 
     AppExecFwk::BundleInfo bundleInfo;
-    ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+    ErrCode state = bundleManager->GetBundleInfoV9(
         hapBundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
         bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
     CHECK_AND_RETURN_RET_LOG(state == 0, E_PERMISSION_DENIED,
         "Failed to get bundle info for %{public}s, Error: %{public}d", hapBundleName.c_str(), state);
 
-    const int32_t hapApiVersion = bundleInfo.compatibleVersion % MODULO_APIVERSION;
-    CHECK_AND_RETURN_RET_LOG(!(whiteListApiVersion > 0 && hapApiVersion > whiteListApiVersion), E_PERMISSION_DENIED,
-        "hapBundleName=%{public}s hapApiVersion=%{public}d > whiteListApiVersion=%{public}d, reject",
-        hapBundleName.c_str(), hapApiVersion, whiteListApiVersion);
+    std::string appIdentifier = bundleInfo.signatureInfo.appIdentifier;
+    auto it = whiteList_.find(appIdentifier);
+    CHECK_AND_RETURN_RET_LOG((it != whiteList_.end()), E_PERMISSION_DENIED, "appIdentifier not in whiteList");
+
+    const int32_t whiteListApiVersion = it->second;
+    CHECK_AND_RETURN_RET_WARN_LOG(whiteListApiVersion != 0, E_SUCCESS, "the whiteListApiVersion of appIdentifier is 0");
+
+    int32_t systemApiVersion = GetSdkApiVersion();
+    CHECK_AND_RETURN_RET_LOG(systemApiVersion > 0, E_PERMISSION_DENIED, "systemApiVersion <= 0");
+    CHECK_AND_RETURN_RET_LOG(!(whiteListApiVersion > 0 && systemApiVersion > whiteListApiVersion), E_PERMISSION_DENIED,
+        "systemApiVersion=%{public}d > whiteListApiVersion=%{public}d", systemApiVersion, whiteListApiVersion);
     return E_SUCCESS;
 }
 }
