@@ -202,6 +202,14 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessGetSupportedPhotoFormats)},
     ani_native_function {"startAssetAnalysisInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::StartAssetAnalysis)},
+    ani_native_function {"onSinglePhotoAlbumChangeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoAlbumChangeOnCallback)},
+    ani_native_function {"offSinglePhotoAlbumChangeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoAlbumChangeOffCallback)},
+    ani_native_function {"onSinglePhotoChangeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOnCallback)},
+    ani_native_function {"offSinglePhotoChangeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOffCallback)},
 };
 } // namespace
 
@@ -2339,6 +2347,46 @@ ani_object MediaLibraryAni::GetAlbumsByIds(ani_env *env, ani_object object, ani_
     SetUserIdFromObjectInfo(asyncContext);
     GetAlbumsByIdsExecute(env, asyncContext);
     return GetAlbumsByIdsComplete(env, asyncContext);
+}
+
+void MediaLibraryAni::SinglePhotoAlbumChangeOnCallback(ani_env *env, ani_object object, ani_object album,
+    ani_object onCallback)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAlbumChangeOnCallback");
+    ANI_INFO_LOG("SinglePhotoAlbumChangeOnCallback Start");
+    ANI_INFO_LOG("SinglePhotoAlbumChangeOnCallback End");
+}
+
+void MediaLibraryAni::SinglePhotoAlbumChangeOffCallback(ani_env *env, ani_object object, ani_object album,
+    ani_object offCallback)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAlbumChangeOffCallback");
+    ANI_INFO_LOG("SinglePhotoAlbumChangeOffCallback Start");
+    ANI_INFO_LOG("SinglePhotoAlbumChangeOffCallback End");
+}
+
+void MediaLibraryAni::SinglePhotoChangeOnCallback(ani_env *env, ani_object object, ani_object photoAsset,
+    ani_object onCallback)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoChangeOnCallback");
+    ANI_INFO_LOG("SinglePhotoChangeOnCallback Start");
+    ANI_INFO_LOG("SinglePhotoChangeOnCallback End");
+}
+
+void MediaLibraryAni::SinglePhotoChangeOffCallback(ani_env *env, ani_object object, ani_object photoAsset,
+    ani_object offCallback)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoChangeOffCallback");
+    ANI_INFO_LOG("SinglePhotoChangeOffCallback Start");
+    ANI_INFO_LOG("SinglePhotoChangeOffCallback End");
 }
 
 static ani_status ParseArgsGetHiddenAlbums(ani_env *env, ani_enum_item albumModeAni,
