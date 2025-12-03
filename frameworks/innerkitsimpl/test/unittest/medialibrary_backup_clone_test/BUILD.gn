@@ -52,6 +52,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./include/highlight",
     "./include/group_photo",
     "./include/portrait_album",
+    "./include/pet_album",
   ]
 
   sources = [
@@ -127,6 +128,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/group_photo/clone_restore_group_photo_test.cpp",
     "./src/portrait_album/portrait_album_clone_test.cpp",
     "./src/portrait_album/portrait_album_source.cpp",
+    "./src/pet_album/pet_album_clone_test.cpp",
+    "./src/pet_album/pet_album_source.cpp",
 
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore_map_code_utils.cpp",
