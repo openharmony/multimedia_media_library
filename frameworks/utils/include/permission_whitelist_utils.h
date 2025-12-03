@@ -36,8 +36,7 @@ public:
     EXPORT PermissionWhitelistUtils& operator=(PermissionWhitelistUtils&&) = delete;
     EXPORT static int32_t InitWhiteList();
     EXPORT static int32_t CheckWhiteList();
-    EXPORT static int32_t SubscribeCloudUpdatedEvent();
-    EXPORT static void UnsubscribeCloudUpdatedEvent();
+    EXPORT static void OnReceiveEvent();
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
@@ -49,7 +48,6 @@ private:
     static std::mutex whiteListMutex_;
     // key: bundleName, value: version
     static std::unordered_map<std::string, int> whiteList_;
-    static std::shared_ptr<EventFwk::CommonEventSubscriber> cloudUpdateSubscriber_;
     class CloudUpdateReceiver;
 };
 }
