@@ -253,6 +253,14 @@ public:
     static ani_object PhotoAccessHelperAgentCreateAssetsWithAlbum(ani_env *env, ani_object object,
     ani_object source, ani_string albumUri, ani_boolean isAuthorized, ani_object photoCreationConfigs);
     static ani_object GetAlbumsByIds(ani_env *env, ani_object object, ani_object albumIds);
+    static void SinglePhotoAlbumChangeOnCallback(ani_env *env, ani_object object, ani_object album,
+        ani_object onCallback);
+    static void SinglePhotoAlbumChangeOffCallback(ani_env *env, ani_object object, ani_object album,
+        ani_object offCallback);
+    static void SinglePhotoChangeOnCallback(ani_env *env, ani_object object, ani_object photoAsset,
+        ani_object onCallback);
+    static void SinglePhotoChangeOffCallback(ani_env *env, ani_object object, ani_object photoAsset,
+        ani_object offCallback);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
