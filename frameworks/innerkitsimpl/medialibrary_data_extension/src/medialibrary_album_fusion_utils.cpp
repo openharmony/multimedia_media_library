@@ -1595,7 +1595,7 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
     }
 }
 
-static bool IsDeleteOthersAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
+static bool IsDeleteOtherAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
     int32_t oldAlbumId)
 {
     CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
@@ -1603,7 +1603,7 @@ static bool IsDeleteOthersAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& exe
     auto resultSet = executeObject.trans->QueryByStep(querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Is delete other album, find album resultSet null");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("IsDeleteOthersAlbum first row empty");
+        MEDIA_ERR_LOG("IsDeleteOtherAlbum first row empty");
         resultSet->Close();
         return false;
     }
@@ -1615,7 +1615,7 @@ static bool IsDeleteOthersAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& exe
     return false;
 }
 
-static int32_t RecreateOthersAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject)
+static int32_t RecreateOtherAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject)
 {
     CHECK_AND_RETURN_RET_LOG(executeObject.albumRefresh != nullptr, E_HAS_DB_ERROR, "albumRefresh is null");
     int32_t ret = executeObject.albumRefresh->ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
@@ -1630,7 +1630,7 @@ static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::E
 {
     CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
 
-    bool isOthers = IsDeleteOthersAlbum(executeObject, oldAlbumId);
+    bool isOthers = IsDeleteOtherAlbum(executeObject, oldAlbumId);
     int32_t ret = DeleteOldAlbum(executeObject, oldAlbumId, isCloudAblum);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
@@ -1648,7 +1648,7 @@ static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::E
         "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
         ret, oldAlbumId);
     if (isOthers) {
-        ret = RecreateOthersAlbum(executeObject);
+        ret = RecreateOtherAlbum(executeObject);
     }
     return E_OK;
 }
