@@ -648,23 +648,30 @@ static void InsertLabelAndFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLi
     MEDIA_INFO_LOG("End insert face and label to vision");
 }
 
-static void CheckLabelAndFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static void CheckFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
     int32_t version, int32_t upgradedIndex)
 {
-    const std::string sql =
-        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
-        STATUS + " = 0, " +
-        LABEL  + " = 0, " +
-        FACE   + " = 0 " +
-        "WHERE (NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE +
-        " WHERE " + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ") " +
-        "OR NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "));";
-
-    int ret = store->ExecuteSql(sql);
+    const std::string checkFaceSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        FACE + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
+        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + FILE_ID + " = " +
+        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
+    int ret = store->ExecuteSql(checkFaceSql);
     RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End check face and label");
+    MEDIA_INFO_LOG("End check face to vision");
+}
+
+static void CheckLabelToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+    int32_t version, int32_t upgradedIndex)
+{
+    const std::string checkLabelSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        LABEL + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
+        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " + FILE_ID + " = " +
+        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
+    int ret = store->ExecuteSql(checkLabelSql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End check label to vision");
 }
 
 static void UpdateFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
@@ -883,7 +890,8 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, false)) {
         int32_t upgradedIndex = 0;
         InsertLabelAndFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        CheckLabelAndFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+        CheckFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+        CheckLabelToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateLabelAndFaceToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateStatusToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
