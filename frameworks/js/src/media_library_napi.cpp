@@ -7673,8 +7673,8 @@ static bool CheckGetAnalysisDataPermission(MediaLibraryAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
         auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-        context->analysisDatas.push_back("");
         if (!err) {
+            context->SaveError(E_PERMISSION_DENIED);
             return false;
         }
     }
