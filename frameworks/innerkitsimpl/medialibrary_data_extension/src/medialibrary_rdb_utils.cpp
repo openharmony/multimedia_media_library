@@ -2158,8 +2158,7 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(const vector<string>&
 }
 
 int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
-    std::unordered_map<int32_t, std::set<std::string>>& fileToAlbums,
-    std::set<std::string>& allAlbumIds)
+    std::unordered_map<int32_t, std::set<int32_t>>& fileToAlbums, std::set<int32_t>& allAlbumIds)
 {
     // Step 1. 获取数据库连接
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -2187,11 +2186,10 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
             MEDIA_WARN_LOG("Invalid record, fileId=%{public}d, albumId=%{public}d", fileId, albumId);
             continue;
         }
-        std::string albumIdStr = std::to_string(albumId);
-        CHECK_AND_CONTINUE_ERR_LOG(!albumIdStr.empty(), "Not valid albumIdStr");
-        auto &albumSet = fileToAlbums.try_emplace(fileId, std::set<std::string>{}).first->second;
-        albumSet.insert(albumIdStr);
-        allAlbumIds.insert(albumIdStr);
+        CHECK_AND_CONTINUE_ERR_LOG(albumId > 0, "Not valid albumId");
+        auto &albumSet = fileToAlbums.try_emplace(fileId, std::set<int32_t>{}).first->second;
+        albumSet.insert(albumId);
+        allAlbumIds.insert(albumId);
     }
 
     MEDIA_INFO_LOG("QueryAnalysisAlbumMapByAssets done. total files: %{public}zu, total albums: %{public}zu",
@@ -2199,11 +2197,11 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
     return E_OK;
 }
 
-static std::string JoinIds(const std::vector<std::string> &ids)
+static std::string JoinIds(const std::vector<int32_t> &ids)
 {
     std::ostringstream ss;
     for (size_t i = 0; i < ids.size(); i++) {
-        ss << ids[i];
+        ss << to_string(ids[i]);
         if (i + 1 < ids.size()) {
             ss << ",";
         }
@@ -2258,7 +2256,7 @@ static void ParseAnalysisAlbumRowsForAccurateRefresh(
 }
 
 int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
-    const std::vector<std::string> &affectedAlbumIds,
+    const std::vector<int32_t> &affectedAlbumIds,
     std::vector<UpdateAlbumData> &albumDatas,
     std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap)
 {
@@ -2307,11 +2305,12 @@ int32_t MediaLibraryRdbUtils::ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
     }
 
     if (newCover == "" && newCount != 0) {
+        MEDIA_INFO_LOG("Cover not changed, amend former cover, album: %{public}d", base.albumId);
         newCover = base.albumCoverUri;
     }
 
     if (newCount == base.albumCount && newCover == base.albumCoverUri) {
-        MEDIA_INFO_LOG("ApplyAlbumRefreshInfo: nothing changed: album=%{public}d", base.albumId);
+        MEDIA_INFO_LOG("ApplyAlbumRefreshInfo: nothing changed: album: %{public}d", base.albumId);
         return E_OK;
     }
 
