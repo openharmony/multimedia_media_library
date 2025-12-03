@@ -69,16 +69,15 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> ScanMovingPhoto(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     EXPORT static int32_t AddFilters(MediaLibraryCommand &cmd);
-    EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
-        const uint8_t *addr, const long bytes, int32_t fileId);
+    EXPORT static int32_t ProcessMultistagesPhoto(const std::shared_ptr<FileAsset> &fileAsset,
+        const uint8_t *addr, const long bytes);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static void StoreThumbnailAndEditSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static bool BatchDropThumbnailSize(const std::vector<std::string>& photoIds);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
-    EXPORT static int32_t ProcessMultiStagesPhotoForPicture(
-        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<Media::Picture> &picture,
-        std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect, const std::string &imageId = "");
+    EXPORT static int32_t ProcessMultistagesPhotoForPicture(const std::shared_ptr<FileAsset> &fileAsset,
+        std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect);
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
@@ -204,10 +203,10 @@ private:
     static int32_t GetTakeEffect(std::shared_ptr<Media::Picture> &picture, std::string &photoId);
     static int32_t DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &path, const std::string &sourcePath);
-    static int32_t EnableYuvAndNotify(std::shared_ptr<NativeRdb::ResultSet> resultSet,
+    static int32_t EnableYuvAndNotify(const std::shared_ptr<FileAsset> &fileAsset,
         std::shared_ptr<Media::Picture> &picture, bool isEdited, bool isTakeEffect,
         const std::string imageId, const int32_t fileId);
-    static int32_t NotifyOnProcessYuv(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    static int32_t NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset);
 private:
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
