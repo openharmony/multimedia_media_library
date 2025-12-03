@@ -155,6 +155,7 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
 const int32_t MAX_CREATE_ASSET_LIMIT = 500;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
+const int32_t MAX_LPATH_BUNDLENAME_LENGTH = 255;
 const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
@@ -13669,6 +13670,11 @@ static napi_value HandleOneArgGetAlbumByLpath(napi_env env, unique_ptr<MediaLibr
     string lpath;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], lpath),
         JS_E_PARAM_INVALID);
+    if (lpath.empty() || lpath.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        NAPI_ERR_LOG("lpath is invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
     NAPI_DEBUG_LOG("lpath: %{public}s", lpath.c_str());
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lpath);
     if (context->photoAlbumData == nullptr) {
@@ -13792,6 +13798,11 @@ static napi_value HandleOneArgGetAlbumIdByBundleName(napi_env env,
     string bundle_name;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundle_name),
      JS_E_PARAM_INVALID);
+    if (bundle_name.empty() || bundle_name.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        NAPI_ERR_LOG("bundle_name is invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
     NAPI_DEBUG_LOG("bundle_name: %{public}s", bundle_name.c_str());
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_PRIORITY, to_string(1));
@@ -13820,11 +13831,6 @@ static napi_value ParseArgsGetAlbumIdByBundleName(napi_env env, napi_callback_in
         default:
             NapiError::ThrowError(env, JS_E_PARAM_INVALID);
             return nullptr;
-    }
-    if (context->photoAlbumData->GetAlbumName().empty()) {
-        NAPI_ERR_LOG("bundle_name is empty");
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
-        return nullptr;
     }
     context->fetchColumn.clear();
     context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
