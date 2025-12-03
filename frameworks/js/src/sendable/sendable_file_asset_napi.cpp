@@ -909,8 +909,8 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
         auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-        context->analysisData = "";
         if (!err) {
+            context->SaveError(E_PERMISSION_DENIED);
             return;
         }
     }
