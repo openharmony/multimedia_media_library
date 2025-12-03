@@ -5641,6 +5641,19 @@ static void CreateVisionVideoTotal(RdbStore& store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void CreateChangeTime(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("start add change_time column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end add change_time column");
+}
+
 static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("create batchdownload records begin");
@@ -5708,6 +5721,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true)) {
         AddPhotoAlbumHidden(store, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true);
+    }
+
+    if (oldVersion < VERSION_ADD_CHANGE_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, true)) {
+        CreateChangeTime(store, VERSION_ADD_CHANGE_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, true);
     }
 }
 

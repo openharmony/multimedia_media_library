@@ -249,6 +249,9 @@ public:
     EXPORT int32_t GetIsStylePhoto() const;
     EXPORT void SetIsStylePhoto(int32_t isStylePhoto);
 
+    EXPORT void SetChangeTime(const int64_t changeTime);
+    EXPORT int64_t GetChangeTime() const;
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;

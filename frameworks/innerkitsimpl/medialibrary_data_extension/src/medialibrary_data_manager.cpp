@@ -817,6 +817,34 @@ static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRd
     MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
 }
 
+static void UpdatePhotoChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
+    int32_t index)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    MEDIA_INFO_LOG("Start updating photo change time");
+    const string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET " + PhotoColumn::PHOTO_CHANGE_TIME + " = " + PhotoColumn::MEDIA_DATE_MODIFIED;
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End updating photo change time");
+}
+
+static void UpdatePhotoAlbumChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
+    int32_t index)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    MEDIA_INFO_LOG("Start updating photo album change time");
+    const string sql = "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::CHANGE_TIME + " = " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED;
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End updating photo album change time");
+}
+
 static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
 {
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
@@ -853,6 +881,18 @@ static void UpdatePhotoAlbumHidden(const shared_ptr<MediaLibraryRdbStore>& rdbSt
     RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
     MEDIA_INFO_LOG("End Update photoalbum hidden column");
+}
+
+void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_CHANGE_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, false)) {
+        int32_t index = 0;
+        UpdatePhotoChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
+        UpdatePhotoAlbumChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
+        rdbStore->SetOldVersion(VERSION_ADD_CHANGE_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -907,6 +947,8 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_PHOTO_ALBUM_HIDDEN);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false);
     }
+    HandleUpgradeRdbAsyncPart6(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)

@@ -379,6 +379,16 @@ int32_t PhotoAlbum::GetCoverUriSource()
         static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
 }
 
+void PhotoAlbum::SetChangeTime(const int64_t changeTime)
+{
+    changeTime_ = changeTime;
+}
+
+int64_t PhotoAlbum::GetChangeTime() const
+{
+    return changeTime_;
+}
+
 void PhotoAlbum::SetUploadStatus(int32_t uploadStatus)
 {
     uploadStatus_ = uploadStatus;
