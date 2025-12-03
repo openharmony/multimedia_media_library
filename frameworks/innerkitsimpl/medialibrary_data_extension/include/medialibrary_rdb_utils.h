@@ -136,9 +136,9 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbumCover(
         const std::shared_ptr<MediaLibraryRdbStore>& rdbStore, const std::string &albumId);
     EXPORT static int32_t QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
-        std::unordered_map<int32_t, std::set<std::string>>& fileToAlbums, std::set<std::string>& allAlbumIds);
+        std::unordered_map<int32_t, std::set<int32_t>>& fileToAlbums, std::set<int32_t>& allAlbumIds);
     EXPORT static int32_t QueryAnalysisAlbumsForAccurateRefresh(
-        const std::vector<std::string> &affectedAlbumIds,
+        const std::vector<int32_t> &affectedAlbumIds,
         std::vector<UpdateAlbumData> &albumDatas,
         std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap);
     EXPORT static int32_t ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
