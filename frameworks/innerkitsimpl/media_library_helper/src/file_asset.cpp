@@ -849,6 +849,16 @@ int32_t FileAsset::GetStageVideoTaskStatus() const
     return GetInt32Member(PhotoColumn::STAGE_VIDEO_TASK_STATUS);
 }
 
+void FileAsset::SetPhotoIsTemp(int32_t isTemp)
+{
+    member_[PhotoColumn::PHOTO_IS_TEMP] = isTemp;
+}
+
+int32_t FileAsset::GetPhotoIsTemp() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_TEMP);
+}
+
 void FileAsset::SetExifRotate(int32_t exifRotate)
 {
     member_[PhotoColumn::PHOTO_EXIF_ROTATE] = exifRotate;

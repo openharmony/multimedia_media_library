@@ -268,6 +268,9 @@ public:
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;
 
+    EXPORT void SetPhotoIsTemp(int32_t isTemp);
+    EXPORT int32_t GetPhotoIsTemp() const;
+
     EXPORT void SetExifRotate(int32_t exifRotate);
     EXPORT int32_t GetExifRotate() const;
 

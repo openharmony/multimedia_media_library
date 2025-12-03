@@ -4140,14 +4140,20 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     return id;
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
-    const uint8_t *addr, const long bytes, int32_t fileId)
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(const std::shared_ptr<FileAsset> &fileAsset,
+    const uint8_t *addr, const long bytes)
 {
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr");
+        return E_ERR;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
+    std::string path = fileAsset->GetFilePath();
     string editDataSourcePath = GetEditDataSourcePath(path);
     string editDataCameraPath = GetEditDataCameraPath(path);
 
+    bool isEdited = fileAsset->GetPhotoEditTime() > 0;
     if (isEdited) {
         // 图片编辑过了只替换低质量裸图
         return FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
@@ -4170,32 +4176,37 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
             CHECK_AND_RETURN_RET_LOG(
                 AddFiltersToPhoto(editDataSourcePath, path, editData, HIGH_QUALITY_PHOTO_STATUS) == E_OK,
                 E_FAIL, "Failed to add filters to photo");
-            MediaLibraryObjectUtils::ScanFileAsync(path, to_string(fileId), MediaLibraryApi::API_10);
+            MediaLibraryObjectUtils::ScanFileAsync(path, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
             return E_OK;
         }
     }
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultiStagesPhotoForPicture(
-    std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<Media::Picture> &picture,
-    std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect, const std::string &imageId)
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(const std::shared_ptr<FileAsset> &fileAsset,
+    std::shared_ptr<Media::Picture> &picture, std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture");
-    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    string editDataSourcePath = GetEditDataSourcePath(path);
-    string editDataCameraPath = GetEditDataCameraPath(path);
+    if (fileAsset == nullptr || picture == nullptr) {
+        MEDIA_ERR_LOG("fileAsset or picture is nullptr");
+        return E_ERR;
+    }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
+    std::string path = fileAsset->GetFilePath();
+    int32_t fileId = fileAsset->GetId();
+    std::string imageId = fileAsset->GetPhotoId();
+    std::string mime_type = fileAsset->GetMimeType();
+    std::string editDataSourcePath = GetEditDataSourcePath(path);
+    std::string editDataCameraPath = GetEditDataCameraPath(path);
+
+    bool isEdited = fileAsset->GetPhotoEditTime() > 0;
     if (isEdited) {
         // 图片编辑过了只替换低质量裸图
         resultPicture = nullptr;
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
-            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(fileAsset, picture, isEdited, isTakeEffect,
                 imageId, fileId) == E_OK, "Enable YUV failed.");
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
             resultPicture = picture;
@@ -4216,7 +4227,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultiStagesPhotoForPicture(
                 "Failed to add filters to photo");
             resultPicture = picture;
             isTakeEffect = true;
-            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(resultSet, picture, isEdited, isTakeEffect,
+            CHECK_AND_PRINT_LOG(EnableYuvAndNotify(fileAsset, picture, isEdited, isTakeEffect,
                 imageId, fileId) == E_OK, "Enable YUV failed.");
             FileUtils::DealPicture(mime_type, path, picture, true);
             return E_OK;
@@ -4225,7 +4236,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultiStagesPhotoForPicture(
 }
 
 int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
-    std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<Media::Picture> &picture,
+    const std::shared_ptr<FileAsset> &fileAsset, std::shared_ptr<Media::Picture> &picture,
     bool isEdited, bool isTakeEffect, const std::string imageId, const int32_t fileId)
 {
     if ("" == imageId) {
@@ -4233,23 +4244,23 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
     }
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
         imageId, picture, isEdited, isTakeEffect);
-    NotifyOnProcessYuv(resultSet);
+    NotifyOnProcessYuv(fileAsset);
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::YUV_READY_BUSSINESS_NAME);
     return assetRefresh->NotifyYuvReady(fileId);
 }
  
-int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(std::shared_ptr<NativeRdb::ResultSet> resultSet)
+int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr.");
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr.");
         return E_ERR;
     }
  
-    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string displayName = fileAsset->GetDisplayName();
+    string filePath = fileAsset->GetFilePath();
+    int32_t mediaType = fileAsset->GetMediaType();
+    int32_t fileId = fileAsset->GetId();
  
     string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
     auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(

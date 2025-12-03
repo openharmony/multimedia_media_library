@@ -67,6 +67,7 @@ public:
 
     EXPORT void SyncWithDeferredProcSession();
     EXPORT void SyncWithDeferredProcSessionInternal();
+    void NotifyProcessImage();
 #ifdef ABILITY_CAMERA_SUPPORT
     void SetProcessImageDoneCallback(const OHOS::Media::ProcessDoneHandler &func);
 #endif
