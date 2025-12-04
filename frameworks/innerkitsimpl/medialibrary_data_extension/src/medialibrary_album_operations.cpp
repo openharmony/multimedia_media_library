@@ -707,7 +707,7 @@ static bool DeleteContainsOtherAlbum(RdbPredicates &predicates, const shared_ptr
         return false;
     }
     resultSet->Close();
-    return rowCount == 1;
+    return rowCount > 0;
 }
 
 static int32_t RecreateOtherAlbum(AlbumAccurateRefresh *albumRefresh)
@@ -1103,9 +1103,9 @@ static int32_t HasSameEmptySourceAlbum(const shared_ptr<MediaLibraryRdbStore>& r
     const string &newAlbumName, const string &newLPath)
 {
     std::string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-                            " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = ? AND " +
+                            " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = ? OR " +
+                            PhotoAlbumColumns::ALBUM_LPATH + " = ?) AND" +
                             PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) + " AND " +
-                            PhotoAlbumColumns::ALBUM_LPATH + " = ? AND " +
                             PhotoAlbumColumns::ALBUM_COUNT + " = 0 AND " + PhotoAlbumColumns::HIDDEN_COUNT + " = 0";
     int32_t rowCount = 0;
     shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QueryByStep(querySql, { newAlbumName, newLPath });
