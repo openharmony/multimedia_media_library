@@ -65,7 +65,8 @@ public:
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
     EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId,
-        const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags);
+        const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags,
+        bool readWriteIsolation = false);
 
     /**
      * @brief Grant PhotoUri Permission
