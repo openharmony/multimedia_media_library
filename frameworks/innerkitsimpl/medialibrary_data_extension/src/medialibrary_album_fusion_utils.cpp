@@ -1598,9 +1598,9 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
 static bool IsDeleteOtherAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
     int32_t oldAlbumId)
 {
-    CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
+    CHECK_AND_RETURN_RET_LOG(executeObject.rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
     const std::string querySql = "SELECT lpath from PhotoAlbum WHERE album_id = " + std::to_string(oldAlbumId);
-    auto resultSet = executeObject.trans->QueryByStep(querySql);
+    auto resultSet = executeObject.rdbStore->QueryByStep(querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Is delete other album, find album resultSet null");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("IsDeleteOtherAlbum first row empty");
