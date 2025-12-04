@@ -61,6 +61,8 @@ export class PhotoPickerComponent extends ViewPU {
         this.maxBadgeConfigSize = 200000;
         this.badgeConfigIsSending = void 0;
         this.preselectedInfos = void 0;
+        this.onScrollStopAtStart = void 0;
+        this.onScrollStopAtEnd = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
@@ -85,6 +87,8 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onMovingPhotoBadgeStateChanged && (this.onMovingPhotoBadgeStateChanged = e.onMovingPhotoBadgeStateChanged);
         void 0 !== e.pickerOptions?.badgeConfig && (this.badgeConfig = e.pickerOptions?.badgeConfig);
         void 0 !== e.pickerOptions?.preselectedInfos && (this.preselectedInfos = e.pickerOptions?.preselectedInfos);
+        void 0 !== e.onScrollStopAtStart && (this.onScrollStopAtStart = e.onScrollStopAtStart);
+        void 0 !== e.onScrollStopAtEnd && (this.onScrollStopAtEnd = e.onScrollStopAtEnd);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
             console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
@@ -326,6 +330,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
                     isSlidingSupported:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSlidingSupported,
                     assetFilter:  null === (predicate = this.pickerOptions) || void 0 === predicate ? void 0 : predicate.assetFilter,
+                    edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
                 }
             }
             ,{
@@ -442,6 +447,14 @@ export class PhotoPickerComponent extends ViewPU {
             console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
             this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
                 index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
+        } else if ('onScrollStopAtStart' === o) {
+            if (this.onScrollStopAtStart) {
+                this.onScrollStopAtStart();
+            }
+        } else if ('onScrollStopAtEnd' === o) {
+            if (this.onScrollStopAtEnd) {
+                this.onScrollStopAtEnd();
+            }
         } else {
             console.info('PhotoPickerComponent onReceive: other case');
         }
