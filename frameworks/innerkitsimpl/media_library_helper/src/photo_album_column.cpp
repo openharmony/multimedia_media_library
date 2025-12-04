@@ -15,15 +15,11 @@
 
 #include "photo_album_column.h"
 
-#include <string>
 #include <unordered_map>
 #include "location_column.h"
-#include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
-#include "vision_column.h"
-#include "vision_face_tag_column.h"
 
 namespace OHOS::Media {
 using namespace std;

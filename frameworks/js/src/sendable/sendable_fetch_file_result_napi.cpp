@@ -17,10 +17,7 @@
 #include "sendable_fetch_file_result_napi.h"
 
 #include "album_napi.h"
-#include "hitrace_meter.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
 #include "sendable_photo_album_napi.h"
 #include "sendable_medialibrary_napi_utils.h"

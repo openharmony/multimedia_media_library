@@ -15,25 +15,16 @@
 
 #define MLOG_TAG "PhotoAssetProxy"
 
-#include <cstdint>
-#include <string>
-#include <sstream>
-
 #include "media_photo_asset_proxy.h"
 
-#include "datashare_abs_result_set.h"
-#include "datashare_predicates.h"
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "image_packer.h"
-#include "media_column.h"
-#include "datashare_values_bucket.h"
 #include "media_file_uri.h"
 #include "medialibrary_tracer.h"
 #include "userfilemgr_uri.h"
-#include "datashare_helper.h"
 #include "media_exif.h"
 #include "medialibrary_business_code.h"
 #include "user_inner_ipc_client.h"

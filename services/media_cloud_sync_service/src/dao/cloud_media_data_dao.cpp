@@ -17,37 +17,13 @@
 
 #include "cloud_media_data_dao.h"
 
-#include <string>
-#include <utime.h>
-#include <vector>
-
-#include "abs_rdb_predicates.h"
-#include "media_column.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
-#include "media_log.h"
-#include "medialibrary_rdbstore.h"
 #include "media_file_utils.h"
 #include "cloud_media_file_utils.h"
-#include "cloud_media_sync_utils.h"
 #include "cloud_media_dao_utils.h"
-#include "cloud_media_operation_code.h"
 #include "medialibrary_unistore_manager.h"
-#include "moving_photo_file_utils.h"
-#include "result_set.h"
-#include "result_set_utils.h"
-#include "thumbnail_const.h"
-#include "userfile_manager_types.h"
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "photo_album_po_writer.h"
-#include "cloud_sync_convert.h"
-#include "photo_map_column.h"
-#include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdb_utils.h"
-#include "scanner_utils.h"
-#include "media_refresh_album_column.h"
-#include "cloud_media_dao_const.h"
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
 #include "rdb_utils.h"

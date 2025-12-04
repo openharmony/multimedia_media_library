@@ -17,43 +17,20 @@
 
 #include "media_asset_change_request_napi.h"
 #include "media_library_napi.h"
-
-#include <fcntl.h>
-#include <functional>
 #include <sys/sendfile.h>
-#include <sys/stat.h>
-#include <unordered_map>
-#include <unordered_set>
-
 #include "ability_context.h"
-#include "access_token.h"
 #include "accesstoken_kit.h"
 #include "delete_callback.h"
 #include "directory_ex.h"
-#include "delete_permanently_operations_uri.h"
 #include "file_uri.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
-#include "js_native_api.h"
-#include "js_native_api_types.h"
 #include "media_asset_edit_data_napi.h"
-#include "media_column.h"
-#include "media_file_utils.h"
-#include "medialibrary_client_errno.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
-#include "modal_ui_extension_config.h"
 #include "permission_utils.h"
 #include "photo_proxy_napi.h"
-#include "securec.h"
 #ifdef HAS_ACE_ENGINE_PART
-#include "ui_content.h"
 #endif
-#include "unique_fd.h"
-#include "userfile_client.h"
-#include "userfile_manager_types.h"
-#include "want.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "delete_photos_completed_vo.h"

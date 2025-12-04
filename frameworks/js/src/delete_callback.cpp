@@ -13,10 +13,6 @@
  * limitations under the License.
  */
 #include "delete_callback.h"
-
-#include "media_library_napi.h"
-#include "medialibrary_napi_utils.h"
-#include "medialibrary_napi_log.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
 #include "user_define_ipc_client.h"

@@ -15,38 +15,16 @@
 
 #include "medialibrary_formmap_operations.h"
 
-#include <memory>
-#include <mutex>
-#include <string>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "abs_shared_result_set.h"
-#include "file_ex.h"
 #include "map_operation_flag.h"
-#include "media_column.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdbstore.h"
-#include "rdb_predicates.h"
 #include "result_set_utils.h"
-#include "string_ex.h"
-#include "thumbnail_const.h"
-#include "uri.h"
-#include "userfile_manager_types.h"
-#include "value_object.h"
-#include "values_bucket.h"
-#include "image_type.h"
-#include "datashare_helper.h"
-#include "unique_fd.h"
 #include "medialibrary_data_manager.h"
-#include "thumbnail_utils.h"
 #include "ithumbnail_helper.h"
 #include "form_map.h"
-#include "nlohmann/json.hpp"
 
 using namespace OHOS::DataShare;
 using namespace std;
