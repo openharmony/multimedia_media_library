@@ -272,9 +272,9 @@ function checkIsPhotoCreationConfigValid(config) {
   return true;
 }
 
-function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
+function checkConfirmBoxParams(srcFileUris, photoCreationConfigs, isImageFullyDisplayed) {
   // check param number
-  if (arguments.length > ARGS_TWO) {
+  if (arguments.length > ARGS_THREE) {
     return false;
   }
 
@@ -302,6 +302,10 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
     if (!checkIsPhotoCreationConfigValid(photoCreateConfig)) {
       return false;
     }
+  }
+
+  if (isImageFullyDisplayed !== undefined && typeof isImageFullyDisplayed !== 'boolean') {
+    return false;
   }
 
   return true;
@@ -336,7 +340,7 @@ function showAssetsCreationDialogResult(result, reject, resolve) {
   resolve(result.data);
 }
 
-async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs) {
+async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs, isImageFullyDisplayed = false) {
   let bundleInfo = getBundleInfo();
   if (bundleInfo === undefined) {
     return new Promise((resolve, reject) => {
@@ -369,7 +373,7 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
         appName, appId, result => {
           showAssetsCreationDialogResult(result, reject, resolve);
-      });
+      }, isImageFullyDisplayed);
     });
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), null);
