@@ -223,8 +223,8 @@ static int32_t ClassifyUri(const vector<string> &urisSource, vector<string> &pho
     return E_SUCCESS;
 }
 
-static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &photoIds, const vector<string> &audioIds,
-    map<string, pair<bool, bool>> &photoPermissionMap, map<string, pair<bool, bool>> &audioPermissionMap)
+static void CheckPhotoAccessTokenPermission(uint32_t tokenId, const vector<string> &photoIds,
+    map<string, pair<bool, bool>> &photoPermissionMap, bool readWriteIsolation)
 {
     if (photoIds.size() > 0) {
         bool haveReadPermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_IMAGEVIDEO) == 0;
@@ -233,12 +233,20 @@ static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &p
             if (haveReadPermission) {
                 photoPermissionMap[fileId].first = true;
             }
-            if (haveWritePermission) {
+            if (haveWritePermission && !readWriteIsolation) {
                 photoPermissionMap[fileId].first = true;
+                photoPermissionMap[fileId].second = true;
+            }
+            if (haveWritePermission && readWriteIsolation) {
                 photoPermissionMap[fileId].second = true;
             }
         }
     }
+}
+
+static void CheckAudioAccessTokenPermission(uint32_t tokenId, const vector<string> &audioIds,
+    map<string, pair<bool, bool>> &audioPermissionMap, bool readWriteIsolation)
+{
     if (audioIds.size() > 0) {
         bool haveReadPermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_AUDIO) == 0;
         bool haveWritePermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_WRITE_AUDIO) == 0;
@@ -246,8 +254,11 @@ static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &p
             if (haveReadPermission) {
                 audioPermissionMap[fileId].first = true;
             }
-            if (haveWritePermission) {
+            if (haveWritePermission && !readWriteIsolation) {
                 audioPermissionMap[fileId].first = true;
+                audioPermissionMap[fileId].second = true;
+            }
+            if (haveWritePermission && readWriteIsolation) {
                 audioPermissionMap[fileId].second = true;
             }
         }
@@ -275,7 +286,8 @@ static bool CheckPermissionByMap(const string &fileId, uint32_t flag,
 }
 
 int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
-    const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags)
+    const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags,
+    bool readWriteIsolation)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryExtendManager::CheckPhotoUriPermission");
@@ -287,13 +299,14 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     vector<string> audioIds;
     ret = ClassifyUri(urisSource, photoIds, audioIds);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "invalid uri");
-    CheckAccessTokenPermission(tokenId, photoIds, audioIds, photoPermissionMap, audioPermissionMap);
     if (photoIds.size() > 0) {
+        CheckPhotoAccessTokenPermission(tokenId, photoIds, photoPermissionMap, readWriteIsolation);
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION);
         ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_PHOTOS)),
             photoIds, photoPermissionMap, businessCode);
     }
     if (audioIds.size() > 0) {
+        CheckAudioAccessTokenPermission(tokenId, audioIds, audioPermissionMap, readWriteIsolation);
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION);
         ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_AUDIOS)),
             audioIds, audioPermissionMap, businessCode);
@@ -749,7 +762,7 @@ int32_t MediaLibraryExtendManager::CheckCloudDownloadPermission(uint32_t tokenId
     uint64_t tokenIdEx = IPCSkeleton::GetCallingFullTokenID();
     CHECK_AND_RETURN_RET_LOG(TokenIdKit::IsSystemAppByFullTokenID(tokenIdEx),
         E_ERR, "only invoke by systemapp");
-    return CheckPhotoUriPermission(tokenId, uris, result, flags);
+    return CheckPhotoUriPermission(tokenId, uris, result, flags, true);
 }
 
 int32_t MediaLibraryExtendManager::OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version)
