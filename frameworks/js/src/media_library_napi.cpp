@@ -213,6 +213,7 @@ const std::string CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY = "photoSubTypeArray";
 const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
 const std::string CONFIRM_BOX_APP_NAME = "appName";
 const std::string CONFIRM_BOX_APP_ID = "appId";
+const std::string CONFIRM_BOX_IMAGE_FULLY_DISPLAYED = "isImageFullyDisplayed";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 
@@ -12056,15 +12057,16 @@ static bool ParseAndSetConfigArray(const napi_env &env, OHOS::AAFwk::Want &want,
 }
 
 static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallback> &callback,
-                               napi_env env, napi_value args[], size_t argsLen)
+                               napi_env env, napi_value args[], size_t argsLen, bool isImageFullyDisplayed = false)
 {
-    if (argsLen < ARGS_SEVEN) {
+    if (argsLen < ARGS_EIGHT) {
         return false;
     }
 
     want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
     want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
     want.AddFlags(Want::FLAG_AUTH_READ_URI_PERMISSION);
+    want.SetParam(CONFIRM_BOX_IMAGE_FULLY_DISPLAYED, isImageFullyDisplayed);
 
     // second param: Array<string>
     if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
@@ -12104,15 +12106,27 @@ static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallba
 }
 #endif
 
+static bool IsNullValue(napi_env env, napi_value value)
+{
+    napi_valuetype type;
+    napi_typeof(env, value, &type);
+    return type == napi_null || type == napi_undefined;
+}
+
 napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callback_info info)
 {
 #ifdef HAS_ACE_ENGINE_PART
-    size_t argc = ARGS_SEVEN;
-    napi_value args[ARGS_SEVEN] = {nullptr};
+    size_t argc = ARGS_EIGHT;
+    napi_value args[ARGS_EIGHT] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
     napi_create_object(env, &result);
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), OHOS_INVALID_PARAM_CODE);
+
+    bool isImageFullyDisplayed = false;
+    if (argc >= ARGS_EIGHT && !IsNullValue(env, args[ARGS_SEVEN])) {
+        napi_get_value_bool(env, args[ARGS_SEVEN], &isImageFullyDisplayed);
+    }
 
     // first param: context, check whether context is abilityContext from stage mode
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
@@ -12129,7 +12143,7 @@ napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callbac
     // set want
     OHOS::AAFwk::Want want;
     auto callback = std::make_shared<ConfirmCallback>(env, uiContent);
-    NAPI_ASSERT(env, InitConfirmRequest(want, callback, env, args, sizeof(args)), "Parse input fail.");
+    NAPI_ASSERT(env, InitConfirmRequest(want, callback, env, args, sizeof(args), isImageFullyDisplayed), "Parse input fail.");
 
     // regist callback and config
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
