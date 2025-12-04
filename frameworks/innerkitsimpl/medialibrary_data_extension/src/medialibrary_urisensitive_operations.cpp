@@ -15,26 +15,12 @@
 
 #include "medialibrary_urisensitive_operations.h"
 
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <cstdint>
-
-#include "common_func.h"
-#include "ipc_skeleton.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_type_const.h"
 #include "media_file_utils.h"
-#include "media_log.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
-#include "media_column.h"
-#include "medialibrary_appstate_observer.h"
-#include "medialibrary_rdb_transaction.h"
-#include "permission_utils.h"
 #include "result_set_utils.h"
-#include "rdb_utils.h"
+#include "medialibrary_appstate_observer.h"
 
 namespace OHOS {
 namespace Media {

@@ -16,32 +16,17 @@
 
 #include "medialibrary_analysis_album_operations.h"
 
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <sstream>
-
-#include "media_log.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_rdb_transaction.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "result_set_utils.h"
-#include "values_bucket.h"
 #include "photo_album_column.h"
-#include "photo_map_column.h"
 #include "story_album_column.h"
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "vision_total_column.h"
 #include "medialibrary_rdb_utils.h"
 
 using namespace std;

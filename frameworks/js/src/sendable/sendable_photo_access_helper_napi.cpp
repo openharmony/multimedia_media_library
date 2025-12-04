@@ -17,48 +17,16 @@
 
 #include "sendable_photo_access_helper_napi.h"
 
-#include <fcntl.h>
-#include <functional>
-#include <sys/sendfile.h>
-
-#include "ability_context.h"
-#include "context.h"
-#include "directory_ex.h"
-#include "file_ex.h"
-#include "hitrace_meter.h"
-#include "location_column.h"
-#include "media_device_column.h"
-#include "media_directory_type_column.h"
-#include "media_file_asset_columns.h"
-#include "media_change_request_napi.h"
-#include "media_column.h"
-#include "media_app_uri_permission_column.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_smart_album_column.h"
-#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_napi_enum_comm.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
-#include "napi_base_context.h"
-#include "photo_album_column.h"
-#include "photo_album_napi.h"
 #include "result_set_utils.h"
-#include "safe_map.h"
-#include "search_column.h"
 #include "sendable_medialibrary_napi_utils.h"
-#include "sendable_photo_album_napi.h"
-#include "smart_album_napi.h"
 #include "story_album_column.h"
-#include "string_ex.h"
-#include "string_wrapper.h"
 #include "userfile_client.h"
-#include "form_map.h"
 #include "album_operation_uri.h"
 
 using namespace std;

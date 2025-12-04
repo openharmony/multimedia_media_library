@@ -17,25 +17,19 @@
 #include "medialibrary_subscriber.h"
 
 #include <chrono>
-#include <memory>
-#include "appexecfwk_errors.h"
 #include "background_cloud_file_processor.h"
 #include "background_cloud_batch_selected_file_processor.h"
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
 #endif
-#include "bundle_info.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_upload_checker.h"
-#include "common_event_manager.h"
-#include "common_event_support.h"
 #include "common_event_utils.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_moving_photo.h"
 
-#include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
 #include "power_mgr_client.h"
@@ -48,7 +42,6 @@
 #include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_facard_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_kvstore_manager.h"
@@ -57,25 +50,16 @@
 #endif
 #include "medialibrary_restore.h"
 #include "medialibrary_subscriber_database_utils.h"
-#include "media_file_utils.h"
 #include "media_lake_check_manager.h"
-#include "media_log.h"
-#include "media_scanner_manager.h"
-#include "application_context.h"
 #include "ability_manager_client.h"
 #include "resource_type.h"
 #include "dfx_manager.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_update_dirty_data_task_data.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_type_const.h"
 #include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
-#include "userfilemgr_uri.h"
 #include "shooting_mode_album_operation.h"
 #include "video_3dgs_operation.h"
-#include "common_timer_errors.h"
 #include "parameters.h"
 #include "height_width_correct_operation.h"
 #ifdef HAS_WIFI_MANAGER_PART
@@ -86,7 +70,6 @@
 #include "photo_album_lpath_operation.h"
 #include "photo_day_month_year_operation.h"
 #include "photo_mimetype_operation.h"
-#include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_astc_stat.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT

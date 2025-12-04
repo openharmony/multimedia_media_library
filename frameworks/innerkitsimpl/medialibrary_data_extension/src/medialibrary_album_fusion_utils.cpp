@@ -15,32 +15,17 @@
 
 #include "medialibrary_album_fusion_utils.h"
 
-#include <cerrno>
-#include <functional>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "map_operation_flag.h"
-#include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
-#include "medialibrary_rdbstore.h"
-#include "metadata.h"
-#include "media_file_utils.h"
-#include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_tracer.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
-#include "result_set_utils.h"
 #include "thumbnail_service.h"
-#include "userfile_manager_types.h"
 #include "photo_source_path_operation.h"
-#include "medialibrary_rdb_transaction.h"
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_album_copy_meta_data_operation.h"

@@ -13,11 +13,6 @@
  * limitations under the License.
  */
 #include "default_album_name_callback.h"
-
-#include "media_library_napi.h"
-#include "medialibrary_napi_utils.h"
-#include "medialibrary_napi_log.h"
-#include "media_file_utils.h"
 #include "userfile_client.h"
 
 using namespace std;

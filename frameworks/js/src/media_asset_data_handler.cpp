@@ -16,7 +16,6 @@
 #include "media_asset_data_handler.h"
 
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_utils.h"
 #include "napi_error.h"
 
 namespace OHOS {

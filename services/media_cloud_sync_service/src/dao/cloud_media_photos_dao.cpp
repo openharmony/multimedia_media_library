@@ -17,26 +17,11 @@
 
 #include "cloud_media_photos_dao.h"
 
-#include <string>
-#include <utime.h>
-#include <vector>
-
-#include "abs_rdb_predicates.h"
-#include "media_column.h"
-#include "photo_album_column.h"
 #include "photo_map_column.h"
-#include "media_log.h"
-#include "medialibrary_rdbstore.h"
-#include "cloud_media_file_utils.h"
 #include "cloud_media_sync_utils.h"
 #include "cloud_media_operation_code.h"
 #include "exif_rotate_utils.h"
 #include "medialibrary_unistore_manager.h"
-#include "moving_photo_file_utils.h"
-#include "result_set.h"
-#include "result_set_utils.h"
-#include "thumbnail_const.h"
-#include "userfile_manager_types.h"
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "photo_album_po_writer.h"
@@ -45,9 +30,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "scanner_utils.h"
-#include "cloud_media_dao_const.h"
 #include "media_gallery_sync_notify.h"
-#include "cloud_media_sync_const.h"
 #include "cloud_media_dao_utils.h"
 #include "media_file_utils.h"
 #include "cloud_media_context.h"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,10 +15,7 @@
 #define MLOG_TAG "Album"
 
 #include "album_asset.h"
-
-#include "media_file_utils.h"
 #include "medialibrary_type_const.h"
-#include "media_log.h"
 
 using namespace std;
 

@@ -15,13 +15,8 @@
 
 #include "media_column.h"
 
-#include <string>
-#include <vector>
-
 #include "base_column.h"
 #include "medialibrary_db_const.h"
-#include "media_log.h"
-#include "userfile_manager_types.h"
 #include "highlight_column.h"
 
 namespace OHOS {

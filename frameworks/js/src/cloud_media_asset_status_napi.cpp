@@ -14,19 +14,7 @@
  */
 
 #include "cloud_media_asset_status_napi.h"
-
-#include <fcntl.h>
-#include <unistd.h>
-
-#include "directory_ex.h"
-#include "file_uri.h"
-#include "media_file_utils.h"
-#include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_utils.h"
-#include "userfile_client.h"
-#include "cloud_media_asset_types.h"
 
 using namespace std;
 namespace OHOS::Media {
