@@ -187,15 +187,6 @@ int32_t MediaAssetsService::DeletePhotosCompleted(const std::vector<std::string>
 
 static std::string GetLocalDeviceName()
 {
-#ifdef DISTRIBUTED
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    int32_t ret = deviceManager.GetLocalDeviceInfo(BUNDLE_NAME, deviceInfo);
-    if (ret == 0) {
-        return deviceInfo.deviceName;
-    }
-    MEDIA_ERR_LOG("GetLocalDeviceInfo ret = %{public}d", ret);
-#endif
     return "";
 }
 
