@@ -137,11 +137,22 @@ int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pul
         return E_OK;
     }
 
+    if (pullData.localDirty == static_cast<int32_t>(DirtyType::TYPE_SDIRTY) &&
+        pullData.basicSize == pullData.localSize) {
+        changed = false;
+        MEDIA_INFO_LOG("file %{public}s in cloud and local with same size: %{public}" PRId64,
+            pullData.cloudId.c_str(), pullData.basicSize);
+        return E_OK;
+    }
+
     if (pullData.localDateAdded.empty()) {
         MEDIA_INFO_LOG("CloudMediaPhotosService::IsMtimeChanged pullData.localDateAdded empty");
         return E_CLOUDSYNC_INVAL_ARG;
     }
 
+    // Note. basicCreatedTime and localDateAdded should not be compared to identify file changes.
+    // basicCreatedTime means date_taken, the file created time.
+    // localDateAdded means the db record created time.
     std::string createTime = std::to_string(pullData.basicCreatedTime);
     MEDIA_INFO_LOG(
         "localDateAdded: %{public}s, cloudDateAdded: %{public}s", pullData.localDateAdded.c_str(), createTime.c_str());
