@@ -78,12 +78,23 @@ const std::string INSERT_PHOTO_MAP =
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + ")," +
     " NEW." + MediaColumn::MEDIA_ID + " );";
 
+const std::string SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME =
+    " COALESCE(\
+        (SELECT lpath FROM album_plugin WHERE \
+        ((bundle_name = NEW.owner_package AND COALESCE(NEW.owner_package, '') != '') \
+        OR album_name = NEW.package_name) AND priority = 1), '/Pictures/' || NEW.package_name)";
+
+const std::string SOURCE_ALBUM_WHERE_BY_LPATH =
+    " WHERE LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") = LOWER(" + SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME +
+    ") AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    " AND dirty != 4";
+
 const std::string UPDATE_ALBUM_BUNDLENAME =
     " UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " = NEW." + MediaColumn::MEDIA_OWNER_PACKAGE +
-    " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
-    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    SOURCE_ALBUM_WHERE_BY_LPATH +
     " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL;";
 
 const std::string SOURCE_ALBUM_WHERE =
@@ -106,9 +117,9 @@ const std::string WHEN_SOURCE_PHOTO_COUNT =
 
 const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_BUNDLENAME =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." +  MediaColumn::MEDIA_PACKAGE_NAME +
-    " != '' AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    " != '' AND COALESCE(NEW.owner_package, '') != '' AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
     to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) + " AND ( SELECT COUNT(1) FROM " +
-    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
+    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE_BY_LPATH + " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
     " IS NULL" + " )";
 
 const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL " +
@@ -244,19 +255,6 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + Ph
 
 const std::string ADD_PHOTO_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + " INT";
-
-const std::string SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME =
-    " COALESCE(\
-        (SELECT lpath FROM album_plugin WHERE \
-        ((bundle_name = NEW.owner_package AND COALESCE(NEW.owner_package, '') != '') \
-        OR album_name = NEW.package_name) AND priority = 1), '/Pictures/' || NEW.package_name)";
-
-const std::string SOURCE_ALBUM_WHERE_BY_LPATH =
-    " WHERE LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") = LOWER(" + SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME +
-    ") AND " +
-    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
-    " AND dirty != 4";
 
 const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." + MediaColumn::MEDIA_PACKAGE_NAME +

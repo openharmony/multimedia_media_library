@@ -5662,6 +5662,17 @@ static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t ver
     MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
 }
 
+static void UpdateSourceAlbumBundleNameTriggerUseLpath(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update source album bundle name trigger use lpath");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end update source album bundle name trigger use lpath");
+}
+
 static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PET_TABLES &&
@@ -5674,6 +5685,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ASPECT_RATIO, true)) {
         AddAspectRatio(store, VERSION_ADD_ASPECT_RATIO);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ASPECT_RATIO, true);
+    }
+
+    if (oldVersion < VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true)) {
+        UpdateSourceAlbumBundleNameTriggerUseLpath(store, VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true);
     }
 }
 
