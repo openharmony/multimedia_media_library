@@ -92,7 +92,8 @@ int32_t CloudMediaAlbumDao::HandleLPathAndAlbumType(PhotoAlbumDto &record)
     return E_OK;
 }
 
-int32_t CloudMediaAlbumDao::QuerySameNameAlbum(PhotoAlbumDto &record, int32_t &albumId, std::string &newAlbumName)
+int32_t CloudMediaAlbumDao::QuerySameNameAlbum(PhotoAlbumDto &record, int32_t &albumId, std::string &newAlbumName,
+    int32_t &albumType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Query Same Name Album Failed to get rdbStore.");
@@ -128,6 +129,7 @@ int32_t CloudMediaAlbumDao::QuerySameNameAlbum(PhotoAlbumDto &record, int32_t &a
         resultSet->GoToNextRow();
         albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         loaclAlbumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
+        albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
         newAlbumName = loaclAlbumName + " " + std::to_string(tryTime);
         ++tryTime;
     }
@@ -143,7 +145,8 @@ int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record,
 {
     int32_t albumId = -1;
     std::string newAlbumName;
-    int ret = QuerySameNameAlbum(record, albumId, newAlbumName);
+    int32_t albumType = -1;
+    int ret = QuerySameNameAlbum(record, albumId, newAlbumName, albumType);
     if (ret != 0) {
         return ret;
     }
@@ -154,7 +157,11 @@ int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record,
     int32_t changedRows;
     NativeRdb::ValuesBucket values;
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
-    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/Users/" + newAlbumName);
+    if (albumType == PhotoAlbumType::SOURCE) {
+        values.PutString(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/" + newAlbumName);
+    } else {
+        values.PutString(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/Users/" + newAlbumName);
+    }
     ret = albumRefreshHandle->Update(
         changedRows, PhotoAlbumColumns::TABLE, values, PhotoAlbumColumns::ALBUM_ID + " = ?", {std::to_string(albumId)});
     if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {

@@ -97,7 +97,7 @@ private:
     int32_t ConflictWithPhysicalAlbum(PhotoAlbumDto& record,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);
     std::unordered_map<std::string, MediaAlbumPluginRowData> QueryWhiteList();
-    int32_t QuerySameNameAlbum(PhotoAlbumDto& record, int32_t &albumId, std::string &newAlbumName);
+    int32_t QuerySameNameAlbum(PhotoAlbumDto& record, int32_t &albumId, std::string &newAlbumName, int32_t &albumType);
     std::unordered_map<std::string, std::string> GetLocalAlbumMap();
     int32_t UpdateCloudAlbumSynced(const std::string &field, const std::string &value,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);
