@@ -84,10 +84,6 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -143,10 +139,6 @@ ohos_unittest("media_library_cloud_sync_service_dao_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -198,10 +190,6 @@ ohos_unittest("media_library_cloud_sync_service_dto_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
-
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
 
   sanitize = {
     cfi = true
@@ -258,10 +246,6 @@ ohos_unittest("media_library_cloud_sync_service_controller_service_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -313,10 +297,6 @@ ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
-
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
 
   sanitize = {
     cfi = true
@@ -398,10 +378,6 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
     "e2fsprogs:libext2_uuid",
   ]
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -455,10 +431,6 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
-
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
 
   sanitize = {
     cfi = true
