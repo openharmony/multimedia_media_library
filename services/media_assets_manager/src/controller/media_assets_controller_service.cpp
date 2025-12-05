@@ -2181,6 +2181,7 @@ int32_t MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &
     StartThumbnailCreationTaskDto startCreationTaskDto;
     startCreationTaskDto.predicates = reqBody.predicates;
     startCreationTaskDto.requestId = reqBody.requestId;
+    startCreationTaskDto.pid = reqBody.pid;
     ret = MediaAssetsService::GetInstance().StartThumbnailCreationTask(startCreationTaskDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
@@ -2200,6 +2201,7 @@ int32_t MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &d
     }
     StopThumbnailCreationTaskDto stopCreationTaskDto;
     stopCreationTaskDto.requestId = reqBody.requestId;
+    stopCreationTaskDto.pid = reqBody.pid;
     ret = MediaAssetsService::GetInstance().StopThumbnailCreationTask(stopCreationTaskDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }

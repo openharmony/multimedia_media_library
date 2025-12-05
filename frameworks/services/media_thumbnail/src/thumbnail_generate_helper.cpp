@@ -338,49 +338,6 @@ int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
-    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
-{
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return E_ERR;
-    }
-
-    vector<ThumbnailData> infos;
-    int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
-        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
-        return err;
-    }
-    if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Astc.");
-        return E_THUMBNAIL_ASTC_ALL_EXIST;
-    }
-
-    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
-    for (auto& info : infos) {
-        info.genThumbScene = GenThumbScene::NEED_MORE_THUMB_READY;
-        opts.row = info.id;
-        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile) {
-            info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
-            continue;
-        }
-
-        info.needGenerateExThumbnail = false;
-        if (ThumbnailUtils::IsExCloudThumbnail(info)) {
-            info.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstcEx, opts, info, requestId);
-        } else {
-            info.loaderOpts.loadingStates = info.mediaType == MEDIA_TYPE_VIDEO ?
-                SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
-        }
-    }
-    return E_OK;
-}
-
 bool NeedGenerateLocalLcd(ThumbnailData &data)
 {
     std::string lcdLocalPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);

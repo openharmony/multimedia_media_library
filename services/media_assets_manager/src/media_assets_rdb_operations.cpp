@@ -523,16 +523,17 @@ int32_t MediaAssetsRdbOperations::CancelPhotoUriPermission(NativeRdb::RdbPredica
     return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
 }
 
-int32_t MediaAssetsRdbOperations::StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
+int32_t MediaAssetsRdbOperations::StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId,
+    pid_t pid)
 {
     MEDIA_INFO_LOG("MediaAssetsRdbOperations::StartThumbnailCreationTask requestId:%{public}d", requestId);
-    return ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, requestId);
+    return ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, requestId, pid);
 }
 
-int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId)
+int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId, pid_t pid)
 {
     MEDIA_INFO_LOG("MediaAssetsRdbOperations::StopThumbnailCreationTask requestId:%{public}d", requestId);
-    ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId);
+    ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId, pid);
     return E_OK;
 }
 
