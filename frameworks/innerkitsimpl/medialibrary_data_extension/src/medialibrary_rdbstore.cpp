@@ -5673,6 +5673,17 @@ static void UpdateSourceAlbumBundleNameTriggerUseLpath(RdbStore &store, int32_t 
     MEDIA_INFO_LOG("end update source album bundle name trigger use lpath");
 }
 
+static void AddPhotoAlbumHidden(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_HIDDEN + " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add photoalbum hidden column start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add photoalbum hidden column end");
+}
+
 static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PET_TABLES &&
@@ -5691,6 +5702,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true)) {
         UpdateSourceAlbumBundleNameTriggerUseLpath(store, VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_HIDDEN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true)) {
+        AddPhotoAlbumHidden(store, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true);
     }
 }
 

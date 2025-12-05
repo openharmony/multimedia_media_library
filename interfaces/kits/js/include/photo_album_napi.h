@@ -56,6 +56,7 @@ public:
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     int32_t GetUploadStatus() const;
+    int32_t GetHidden() const;
 
     void SetHiddenOnly(const bool hiddenOnly);
     bool GetHiddenOnly() const;
@@ -111,6 +112,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFusionAssetsInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetPhotoAlbumtHidden(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;

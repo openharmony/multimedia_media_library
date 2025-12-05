@@ -605,8 +605,7 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
-    photoAlbumData->SetLPath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, TYPE_STRING,
-        resultSet)));
+    photoAlbumData->SetLPath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, TYPE_STRING, resultSet)));
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
         resultSet)));
     photoAlbumData->SetDateAdded(get<int64_t>(GetRowValFromColumn(
@@ -630,8 +629,7 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     }
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(countColumn, TYPE_INT32, resultSet)));
-    photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(coverColumn, TYPE_STRING,
-        resultSet)));
+    photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(coverColumn, TYPE_STRING, resultSet)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead
@@ -653,6 +651,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     photoAlbumData->SetLongitude(longitude);
     photoAlbumData->SetUploadStatus(get<int32_t>(GetRowValFromColumn(
         PhotoAlbumColumns::UPLOAD_STATUS, TYPE_INT32, resultSet)));
+    photoAlbumData->SetHidden(get<int32_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::ALBUM_HIDDEN, TYPE_INT32, resultSet)));
 }
 
 template<class T>
