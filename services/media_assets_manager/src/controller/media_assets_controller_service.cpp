@@ -106,6 +106,7 @@
 #include "notify_asset_sended_vo.h"
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
+#include "get_compress_asset_size_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -587,6 +588,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSET_COMPRESS_VERSION),
         &MediaAssetsControllerService::GetAssetCompressVersion
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE),
+        &MediaAssetsControllerService::GetCompressAssetSize
     },
 };
 
@@ -2828,6 +2833,25 @@ int32_t MediaAssetsControllerService::GetAssetCompressVersion(MessageParcel &dat
     int32_t ret = MediaAssetsService::GetInstance().GetAssetCompressVersion(respBody.version);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaAssetsControllerService::GetAssetCompressVersion fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::GetCompressAssetSize(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetCompressAssetSize start");
+    GetCompressAssetSizeReqBody reqBody;
+    GetCompressAssetSizeRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetCompressAssetSize Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().GetCompressAssetSize(reqBody.uris, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetCompressAssetSize fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
