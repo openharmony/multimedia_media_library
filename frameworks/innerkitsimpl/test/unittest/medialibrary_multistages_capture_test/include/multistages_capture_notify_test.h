@@ -12,21 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-#ifndef OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H
-#define OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H
- 
-#include "user_define_notify_info.h"
- 
+
+#ifndef UNIT_TEST_MULTISTAGES_CAPTURE_NOTIFY_H
+#define UNIT_TEST_MULTISTAGES_CAPTURE_NOTIFY_H
+
+#include <gtest/gtest.h>
+
 namespace OHOS {
-namespace Media::AccurateRefresh {
-using namespace std;
-using namespace OHOS::Media::Notification;
- 
-class UserDefineNotifyExecution {
+namespace Media {
+class MultiStagesCaptureNotifyTest : public testing::Test {
 public:
-    void Notify(const UserDefineNotifyInfo &notifyInfoInner);
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+
+struct PhotoAsset {
+    int64_t fileId{-1};
+    std::string path;
+    std::string displayName;
+    int32_t mediaType;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIA_USER_DEFINE_NOTIFY_EXECUTION_H
+#endif  // UNIT_TEST_MULTISTAGES_CAPTURE_NOTIFY_H

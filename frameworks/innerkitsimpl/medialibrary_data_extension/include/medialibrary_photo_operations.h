@@ -206,7 +206,7 @@ private:
     static int32_t EnableYuvAndNotify(const std::shared_ptr<FileAsset> &fileAsset,
         std::shared_ptr<Media::Picture> &picture, bool isEdited, bool isTakeEffect,
         const std::string imageId, const int32_t fileId);
-    static int32_t NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset);
+
 private:
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
