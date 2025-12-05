@@ -2161,6 +2161,18 @@ string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
     return imagePath.substr(0, splitIndex) + ".mp4";
 }
 
+string MediaFileUtils::GetOriMovingPhotoVideoPath(const string &imagePath)
+{
+    return MEDIA_EDIT_DATA_DIR + imagePath.substr(ROOT_MEDIA_DIR.length())+ "/source.mp4";
+}
+
+string MediaFileUtils::GetTempOriMovingPhotoVideoPath(const string &imagePath)
+{
+    string outPath = MEDIA_EDIT_DATA_DIR + imagePath.substr(ROOT_MEDIA_DIR.length()) + "/source.mp4";
+    size_t lastSlashIndex = outPath.find_last_of('/');
+    return outPath.substr(0, lastSlashIndex + 1) + "temp_" + outPath.substr(lastSlashIndex + 1);
+}
+
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
 {
     return IsMovingPhotoMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP));

@@ -1033,8 +1033,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryMovingPhotoVideoRead
 
     string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     size_t fileSize;
+    size_t oriFileSize;
     auto videoPath = MediaFileUtils::GetMovingPhotoVideoPath(photoPath);
-    cond = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0);
+    auto oriVideoPath = MediaFileUtils::GetOriMovingPhotoVideoPath(photoPath);
+    cond = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0) &&
+        MediaFileUtils::GetFileSize(oriVideoPath, oriFileSize) && (oriFileSize > 0);
     MEDIA_DEBUG_LOG("photoPath:%{public}s, videoPath:%{public}s, video size:%zu",
         DfxUtils::GetSafePath(photoPath).c_str(), DfxUtils::GetSafePath(videoPath).c_str(), fileSize);
     CHECK_AND_RETURN_RET(!cond, MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS movingPhotoVideoReady"));
