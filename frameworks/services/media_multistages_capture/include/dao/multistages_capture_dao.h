@@ -25,7 +25,6 @@ namespace OHOS::Media {
 class MultiStagesCaptureDao {
 public:
     int32_t UpdatePhotoDirtyNew(const int32_t fileId);
-    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryPhotoDataById(const std::string &imageId);
     EXPORT std::shared_ptr<FileAsset> QueryDataByPhotoId(const std::string &videoId,
         const std::vector<std::string> &columns);
 };

@@ -62,8 +62,10 @@
 #include "lake_file_utils.h"
 #include "tlv_util.h"
 
+#include "camera_character_types.h"
 #include "multistages_capture_notify_info.h"
 #include "medialibrary_notify_new.h"
+#include "multistages_capture_notify.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -2419,8 +2421,10 @@ int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd,
 }
 
 const static vector<string> EDITED_COLUMN_VECTOR = {
-    PhotoColumn::MEDIA_FILE_PATH,
+    MediaColumn::MEDIA_ID,
+    MediaColumn::MEDIA_FILE_PATH,
     MediaColumn::MEDIA_NAME,
+    MediaColumn::MEDIA_TYPE,
     PhotoColumn::PHOTO_EDIT_TIME,
     PhotoColumn::MEDIA_TIME_PENDING,
     PhotoColumn::MEDIA_DATE_TRASHED,
@@ -3585,8 +3589,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
     MEDIA_ERR_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
-    CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST,
-        "Failed to get picture");
+    CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST, "Failed get picture");
 
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
@@ -3621,6 +3624,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         int32_t updatedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         CHECK_AND_PRINT_LOG(updatedRows >= 0, "update photo quality fail.");
+        MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     }
 
     resultPicture = (picture == nullptr) ? photoExtInfo.picture : picture;
@@ -4200,41 +4204,10 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
     }
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
         imageId, picture, isEdited, isTakeEffect);
-    NotifyOnProcessYuv(fileAsset);
+    MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::YUV_READY);
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::YUV_READY_BUSSINESS_NAME);
     return assetRefresh->NotifyYuvReady(fileId);
-}
- 
-int32_t MediaLibraryPhotoOperations::NotifyOnProcessYuv(const std::shared_ptr<FileAsset> &fileAsset)
-{
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr.");
-        return E_ERR;
-    }
- 
-    string displayName = fileAsset->GetDisplayName();
-    string filePath = fileAsset->GetFilePath();
-    int32_t mediaType = fileAsset->GetMediaType();
-    int32_t fileId = fileAsset->GetId();
- 
-    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
-        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
- 
-    auto notifyBody = std::make_shared<Notification::MultistagesCaptureNotifyServerInfo>();
-    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
-    notifyBody->uri_ = notifyUri;
-    notifyBody->notifyType_ = MultistagesCaptureNotifyType::YUV_READY;
- 
-    Notification::UserDefineNotifyInfo notifyInfo(Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI,
-        Notification::NotifyForUserDefineType::MULTISTAGES_CAPTURE);
-    notifyInfo.SetUserDefineNotifyBody(notifyBody);
- 
-    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
-    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
-    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
