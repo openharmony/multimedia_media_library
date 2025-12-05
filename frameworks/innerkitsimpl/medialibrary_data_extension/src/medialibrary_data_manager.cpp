@@ -840,6 +840,21 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
+static void UpdatePhotoAlbumHidden(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
+{
+    MEDIA_INFO_LOG("Start to Update photoalbum hidden column");
+    std::string sql =
+        "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_HIDDEN + " = 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) +
+        " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+        " AND " + PhotoAlbumColumns::ALBUM_COUNT + " = 0";
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End Update photoalbum hidden column");
+}
+
 void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX &&
@@ -884,6 +899,13 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MediaLibraryRdbStore::AddPetTagIdIndex(rdbStore, VERSION_ADD_PET_TABLES);
         rdbStore->SetOldVersion(VERSION_ADD_PET_TABLES);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, false);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_HIDDEN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false)) {
+        UpdatePhotoAlbumHidden(rdbStore, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false);
     }
 }
 

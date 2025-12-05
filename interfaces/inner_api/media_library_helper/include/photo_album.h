@@ -124,6 +124,9 @@ public:
 
     EXPORT void SetUploadStatus(int32_t uploadStatus);
     EXPORT int32_t GetUploadStatus() const;
+
+    EXPORT void SetHidden(const int32_t hidden);
+    EXPORT int32_t GetHidden() const;
 private:
     int32_t albumId_;
     PhotoAlbumType type_;
@@ -154,6 +157,7 @@ private:
     int32_t targetUserId_;
     int32_t coverUriSource_ = static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
     int32_t uploadStatus_ = 1;
+    int32_t hidden_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

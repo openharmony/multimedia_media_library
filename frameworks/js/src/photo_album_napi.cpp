@@ -122,6 +122,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("dateAdded", JSGetDateAdded),
             DECLARE_NAPI_GETTER("coverUriSource", JSGetCoverUriSource),
             DECLARE_NAPI_GETTER("uploadStatus", JSGetUploadStatus),
+            DECLARE_NAPI_GETTER("hidden", JSPhotoAccessGetPhotoAlbumtHidden),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -293,6 +294,11 @@ int32_t PhotoAlbumNapi::GetUploadStatus() const
     return photoAlbumPtr->GetUploadStatus();
 }
 
+int32_t PhotoAlbumNapi::GetHidden() const
+{
+    return photoAlbumPtr->GetHidden();
+}
+
 void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
 {
     photoAlbumPtr = shared_ptr<PhotoAlbum>(pAlbumData_);
@@ -455,6 +461,16 @@ napi_value PhotoAlbumNapi::JSGetPhotoAlbumSubType(napi_env env, napi_callback_in
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int32(env, obj->GetPhotoAlbumSubType(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetPhotoAlbumtHidden(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetHidden(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
