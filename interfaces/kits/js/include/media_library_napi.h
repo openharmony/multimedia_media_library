@@ -512,6 +512,7 @@ private:
     static thread_local napi_ref sVideoModeRef_;
 
     static std::mutex sOnOffMutex_;
+    static std::mutex thumbnailMutex_;
 };
 
 struct PickerCallBack {
@@ -532,6 +533,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
+    napi_ref responseRef;
     bool status;
     bool isDelete;
     bool isCreateByComponent;
@@ -608,6 +610,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t photoAlbumType;
     int32_t photoAlbumSubType;
     int32_t orderStyle = 0;
+    int32_t requestId;
     std::string bundleName;
     bool canSupportedCompatibleDuplicate = false;
     std::unordered_map<std::string, std::string> debugDatabaseMap;

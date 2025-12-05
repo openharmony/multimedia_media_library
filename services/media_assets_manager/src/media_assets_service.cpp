@@ -1333,7 +1333,8 @@ int32_t MediaAssetsService::StartThumbnailCreationTask(
     NativeRdb::RdbPredicates rdbPredicate = OHOS::RdbDataShareAdapter::RdbUtils::ToPredicates(
         startThumbnailCreationTaskDto.predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t errCode =
-        this->rdbOperation_.StartThumbnailCreationTask(rdbPredicate, startThumbnailCreationTaskDto.requestId);
+        this->rdbOperation_.StartThumbnailCreationTask(rdbPredicate, startThumbnailCreationTaskDto.requestId,
+            startThumbnailCreationTaskDto.pid);
     MEDIA_INFO_LOG("MediaAssetsService::startThumbnailCreationTaskDto ret:%{public}d", errCode);
     return errCode;
 }
@@ -1341,7 +1342,8 @@ int32_t MediaAssetsService::StartThumbnailCreationTask(
 int32_t MediaAssetsService::StopThumbnailCreationTask(const StopThumbnailCreationTaskDto &stopThumbnailCreationTaskDto)
 {
     MEDIA_INFO_LOG("enter MediaAssetsService::StopThumbnailCreationTask");
-    int32_t errCode = this->rdbOperation_.StopThumbnailCreationTask(stopThumbnailCreationTaskDto.requestId);
+    int32_t errCode = this->rdbOperation_.StopThumbnailCreationTask(stopThumbnailCreationTaskDto.requestId,
+        stopThumbnailCreationTaskDto.pid);
     MEDIA_INFO_LOG("MediaAssetsService::StopThumbnailCreationTask ret:%{public}d", errCode);
     return errCode;
 }
