@@ -91,8 +91,6 @@ const std::string ANALYSIS_COL_RENAME_OPERATION = "rename_operation";
 const std::string ANALYSIS_COL_IS_LOCAL = "is_local";
 const std::string ANALYSIS_COL_IS_COVER_SATISFIED = "is_cover_satisfied";
 const std::string ANALYSIS_COL_RELATIONSHIP = "relationship";
-const std::string ANALYSIS_COL_AGE = "age";
-const std::string ANALYSIS_COL_GENDER = "gender";
 
 /* FaceTag TBL COL_NAME */
 const std::string FACE_TAG_COL_ID = "id";
@@ -112,6 +110,8 @@ const std::string FACE_TAG_COL_DATE_MODIFY = "date_modify";
 const std::string FACE_TAG_COL_ALBUM_TYPE = "album_type";
 const std::string FACE_TAG_COL_IS_REMOVED = "is_removed";
 const std::string FACE_TAG_COL_ANALYSIS_VERSION = "analysis_version";
+const std::string FACE_TAG_COL_AGE = "age";
+const std::string FACE_TAG_COL_GENDER = "gender";
 
 // image_face_tbl COL_NAME
 const std::string IMAGE_FACE_COL_ID = "id";
