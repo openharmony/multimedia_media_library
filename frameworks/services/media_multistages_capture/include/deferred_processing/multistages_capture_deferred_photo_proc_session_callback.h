@@ -71,9 +71,6 @@ private:
         std::shared_ptr<Media::Picture> picture, uint32_t cloudImageEnhanceFlag);
     void CallProcessImageDone(bool success, const std::string &photoId);
 
-    EXPORT int32_t NotifyOnProcess(
-        const std::shared_ptr<FileAsset> &fileAsset, MultistagesCaptureNotifyType notifyType);
-
 private:
     ProcessDoneHandler processDoneCallback_;
 };

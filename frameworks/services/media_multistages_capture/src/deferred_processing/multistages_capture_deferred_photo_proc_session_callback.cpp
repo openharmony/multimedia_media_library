@@ -31,6 +31,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "multistages_capture_manager.h"
+#include "multistages_capture_notify.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_notify_info.h"
@@ -97,39 +98,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     watch->Notify(notifyUri, NOTIFY_UPDATE);
 }
 
-int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyOnProcess(
-    const std::shared_ptr<FileAsset> &fileAsset, MultistagesCaptureNotifyType notifyType)
-{
-    MEDIA_INFO_LOG("NotifyOnProcess begin: %{public}d.", static_cast<int32_t>(notifyType));
-    if (fileAsset == nullptr || notifyType == MultistagesCaptureNotifyType::UNDEFINED) {
-        MEDIA_ERR_LOG("fileAsset is nullptr or Invalid observer type.");
-        return E_ERR;
-    }
- 
-    string displayName = fileAsset->GetDisplayName();
-    string filePath = fileAsset->GetFilePath();
-    int32_t mediaType = fileAsset->GetMediaType();
-    int32_t fileId = fileAsset->GetId();
- 
-    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
-        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
- 
-    auto notifyBody = std::make_shared<MultistagesCaptureNotifyServerInfo>();
-    CHECK_AND_RETURN_RET_LOG(notifyBody != nullptr, E_ERR, "notifyBody is nullptr");
-    notifyBody->uri_ = notifyUri;
-    notifyBody->notifyType_ = notifyType;
- 
-    UserDefineNotifyInfo notifyInfo(
-        NotifyUriType::USER_DEFINE_NOTIFY_URI, NotifyForUserDefineType::MULTISTAGES_CAPTURE);
-    notifyInfo.SetUserDefineNotifyBody(notifyBody);
- 
-    Notification::MediaLibraryNotifyNew::AddUserDefineItem(notifyInfo);
-    MEDIA_INFO_LOG("MultistagesCapture notify: %{public}s.", notifyUri.c_str());
-    return E_OK;
-}
-
 int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId)
 {
     MediaLibraryTracer tracer;
@@ -189,15 +157,16 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnError(
             break;
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
         case ERROR_IMAGE_PROC_FAILED: {
-            auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
-            if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-                MEDIA_ERR_LOG("result set is empty.");
+            const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+                PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_NAME };
+            auto fileAsset = MultiStagesCaptureDao().QueryDataByPhotoId(imageId, columns);
+            MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
+            if (fileAsset == nullptr) {
+                MEDIA_ERR_LOG("fileAsset set is empty.");
                 return;
             }
-            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-            MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-            UpdatePhotoQuality(fileId);
-            MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
+            UpdatePhotoQuality(fileAsset->GetId());
+            MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileAsset->GetId());
             MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
         }
@@ -209,7 +178,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnError(
                 MEDIA_ERR_LOG("fileAsset set is empty.");
                 return;
             }
-            NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
+            MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_ERROR_IMAGE);
             NotifyIfTempFile(fileAsset, true);
             MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(imageId);
             break;
@@ -290,8 +259,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
         HighQualityScanFileCallback::Create(fileId));
-    NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(fileAsset);
+
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
@@ -494,7 +464,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
     UpdateHighQualityPictureInfo(fileAsset->GetId(), cloudImageEnhanceFlag, modifyType);
     MediaLibraryObjectUtils::ScanFileAsync(fileAsset->GetPath(), to_string(fileAsset->GetId()),
         MediaLibraryApi::API_10, isMovingPhoto, nullptr, HighQualityScanFileCallback::Create(fileAsset->GetId()));
-    NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
+    MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     NotifyIfTempFile(fileAsset);
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
