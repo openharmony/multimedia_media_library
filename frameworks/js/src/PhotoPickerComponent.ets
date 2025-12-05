@@ -52,6 +52,8 @@ export struct PhotoPickerComponent {
   maxBadgeConfigSize: number = 200000;
   batchPreselectedInfos: number = 200;
   preselectedInfos = undefined;
+  onScrollStopAtStart: onScrollStopAtStartCallback;
+  onScrollStopAtEnd: onScrollStopAtEndCallback;
   dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
@@ -242,6 +244,7 @@ export struct PhotoPickerComponent {
             isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
             isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
             assetFilter: this.pickerOptions?.assetFilter,
+            edgeEffect: this.pickerOptions?.edgeEffect,
           }
         },
         {
@@ -360,6 +363,14 @@ export struct PhotoPickerComponent {
       console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
       this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
           index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
+    } else if (dataType === 'onScrollStopAtStart') {
+      if (this.onScrollStopAtStart) {
+        this.onScrollStopAtStart();
+      }
+    } else if (dataType === 'onScrollStopAtEnd') {
+      if (this.onScrollStopAtEnd) {
+        this.onScrollStopAtEnd();
+      }
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
@@ -648,6 +659,10 @@ export type ExceedMaxSelectedCallback = (exceedMaxCountType: MaxCountType) => vo
 export type CurrentAlbumDeletedCallback = () => void;
 
 export type VideoPlayStateChanged = (state: VideoPlayerState) => {} void;
+
+export type onScrollStopAtStartCallback = () => void;
+
+export type onScrollStopAtEndCallback = () => void;
 
 @Observed
 export class PickerController {
