@@ -48,6 +48,7 @@
 #include "check_photo_uri_permission_inner_vo.h"
 #include "start_asset_change_scan_vo.h"
 #include "get_asset_compress_version_vo.h"
+#include "get_compress_asset_size_vo.h"
 #include "notify_asset_sended_vo.h"
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
@@ -64,6 +65,9 @@ constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 constexpr int32_t DEFUALT_USER_ID = 100;
 constexpr int32_t DATASHARE_ERR = -1;
 constexpr int64_t SHARE_UID = 5520;
+constexpr int32_t COMPRESS_URI_MAX_SIZE = 500;
+constexpr uint64_t BYTES_PER_KIB = 1024;
+constexpr uint64_t KIB_ROUND_UP_MASK = BYTES_PER_KIB - 1;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -767,6 +771,8 @@ int32_t MediaLibraryExtendManager::CheckCloudDownloadPermission(uint32_t tokenId
 
 int32_t MediaLibraryExtendManager::OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryExtendManager::OpenAssetCompress");
     MEDIA_INFO_LOG("OpenAssetCompress begin");
 
     CHECK_AND_RETURN_RET_LOG(IPCSkeleton::GetCallingUid() == SHARE_UID, E_ERR, "only support share");
@@ -834,6 +840,36 @@ int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
         CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "NotifyAssetSended failed, errCode: %{public}d", errCode);
     }
     return E_SUCCESS;
+}
+
+int32_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::string> &uris)
+{
+    MEDIA_INFO_LOG("GetCompressAssetSize begin, count: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+    CHECK_AND_RETURN_RET_LOG(uris.size() > 0 && uris.size() <= COMPRESS_URI_MAX_SIZE, E_ERR, "invalid uris size");
+    GetCompressAssetSizeReqBody reqBody;
+    reqBody.uris = uris;
+    GetCompressAssetSizeRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "GetCompressAssetSize failed, errCode: %{public}d", errCode);
+
+    uint64_t totalBytes = respBody.totalSize;
+    uint64_t totalKiB = (totalBytes + KIB_ROUND_UP_MASK) / BYTES_PER_KIB;
+    CHECK_AND_RETURN_RET_LOG(totalKiB <= static_cast<uint64_t>(INT32_MAX), E_ERR,
+        "Total size in KiB overflow: %{public}" PRIu64 " KiB", totalKiB);
+    int32_t resultKiB = static_cast<int32_t>(totalKiB);
+    MEDIA_INFO_LOG("GetCompressAssetSize success, total bytes: %{public}" PRIu64 ", estimated KiB: %{public}d",
+        totalBytes, resultKiB);
+    return resultKiB;
 }
 } // namespace Media
 } // namespace OHOS

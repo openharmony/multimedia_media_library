@@ -197,6 +197,14 @@ public:
     EXPORT int32_t NotifyAssetSended(const string &uri);
 
     /**
+     * @brief Get total compressed size of assets
+     *
+     * @param uris list of asset URIs (max 500)
+     * @return total size in bytes on success, error code otherwise
+     */
+    EXPORT int32_t GetCompressAssetSize(const std::vector<std::string> &uris);
+
+    /**
      * @brief get asset compress version
      *
      * @return asset compress version

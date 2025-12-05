@@ -177,6 +177,8 @@ private:
     int32_t HandlePhotoSourceRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
     int32_t HandleEditDataRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
     int32_t HandleEditDataCameraRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
+    int32_t HandleExtraDataRestore(const string &editDataCameraSrcPath, const std::string &assetPath);
+    int32_t HandleMovingPhotoVideoRestore(const string &originalSrcPath, const std::string &assetPath);
     int32_t HandleDbFieldsFromJsonRestore(const std::string &jsonPath, const std::string &assetPath);
     int32_t HandleAllEditData(const std::unordered_map<TlvTag, std::string> &decodeTlvPathMap,
         const std::string &assetPath);

@@ -134,6 +134,7 @@ public:
     EXPORT int32_t OpenAssetCompress(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t NotifyAssetSended(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAssetCompressVersion(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetCompressAssetSize(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAssetsControllerService() = default;
