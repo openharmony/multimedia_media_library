@@ -682,6 +682,33 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value CheckPhotoAlbumType(napi_env env, ParameterType parameterType,
+    shared_ptr<PhotoAlbum> targetAlbum,
+    napi_value arg, vector<string> &assetUriArray)
+{
+    CHECK_NULLPTR_RET(targetAlbum);
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source and Portrait albums can be set as target album.");
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, arg, assetUriArray),
+            "Failed to parse uri");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source albums and Portrait can be set as target album.");
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, arg, assetUriArray),
+            "Failed to parse assets");
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi_callback_info info,
     ParameterType parameterType)
 {
@@ -706,21 +733,9 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_ARGS_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source albums can be set as target album.");
-        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
-            "Failed to parse assets");
-    } else {
-        CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source albums can be set as target album.");
-        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-            "Failed to parse assets");
-    }
+    CHECK_ARGS_WITH_MESSAGE(env,
+        CheckPhotoAlbumType(env, parameterType, targetAlbum, asyncContext->argv[PARAM0], assetUriArray),
+        "checkAlbumType error");
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
@@ -730,6 +745,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
         }
     }
     changeRequest->RecordMoveAssets(assetUriArray, targetAlbum);
+
+    if (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+        targetAlbum->GetPhotoAlbumSubType())) {
+        changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SMART_MOVE_ASSETS);
+        RETURN_NAPI_UNDEFINED(env);
+    }
+
     if (parameterType == ParameterType::ASSET_URI) {
         changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS_WITH_URI);
     } else {
@@ -1713,6 +1735,51 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SmartMoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    NAPI_INFO_LOG("MediaAlbumChangeRequestNapi::SmartMoveAssetsExecute start ");
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is null");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
+    int32_t albumId = photoAlbum->GetAlbumId();
+    auto moveMap = changeRequest->GetMoveMap();
+    changeRequest->ClearMoveMap();
+    ChangeRequestMoveAssetsReqBody reqBody;
+    ChangeRequestMoveAssetsRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS);
+    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
+        auto targetPhotoAlbum = iter->first;
+        CHECK_COND_RET(targetPhotoAlbum != nullptr, false, "targetPhotoAlbum is nullptr");
+        bool isTargetHiddenOnly = targetPhotoAlbum->GetHiddenOnly();
+        int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
+        vector<string> moveAssetArray = iter->second;
+        reqBody.albumId = albumId;
+        reqBody.targetAlbumId = targetAlbumId;
+        for (const auto& asset : moveAssetArray) {
+            reqBody.assets.push_back(asset);
+        }
+        int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+        if (ret < 0) {
+            context.SaveError(ret);
+            NAPI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
+            return false;
+        }
+        NAPI_ERR_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
+        targetPhotoAlbum->SetVideoCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumVideoCount);
+        targetPhotoAlbum->SetImageCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumImageCount);
+        targetPhotoAlbum->SetCount(respBody.targetAlbumCount);
+    }
+    bool isHiddenOnly = photoAlbum->GetHiddenOnly();
+    photoAlbum->SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
+    photoAlbum->SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
+    photoAlbum->SetCount(respBody.albumCount);
+    NAPI_ERR_LOG("origin album video count: %{public}d, image count: %{public}d, count: %{public}d",
+        respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
+    return true;
+}
+
+
 static bool RecoverAssetsExecuteWithUri(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2188,6 +2255,7 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
     { AlbumChangeOperation::SET_RELATIONSHIP, SetRelationshipExecute },
     { AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE, SetHighlightAttributeExecute },
+    { AlbumChangeOperation::SMART_MOVE_ASSETS, SmartMoveAssetsExecute },
 };
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)

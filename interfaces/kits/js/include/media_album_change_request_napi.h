@@ -50,6 +50,7 @@ enum class AlbumChangeOperation {
     RESET_COVER_URI,
     SET_HIGHLIGHT_ATTRIBUTE,
     SET_UPLOAD_STATUS,
+    SMART_MOVE_ASSETS,
 };
 
 enum class ParameterType {
