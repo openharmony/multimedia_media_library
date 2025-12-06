@@ -94,10 +94,6 @@ ohos_unittest("medialibrary_rdb_test") {
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
   }
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
