@@ -36,6 +36,8 @@
 #include "story_cover_info_column.h"
 #include "medialibrary_formmap_operations.h"
 #include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_photo_map_column.h"
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"
@@ -80,6 +82,9 @@ constexpr int32_t STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT = 5;
 constexpr int32_t STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT = 1;
 constexpr int32_t ANALYSIS_STATUS_TO_REFRESH = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT = -2;
+constexpr int32_t DISPLAY_LEVEL_NUMBER = 1;
+constexpr int32_t LOCAL_NUMBER = 1;
+constexpr int32_t RENAME_OPERATION_NUMBER = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL = 2;
 const std::string USER_ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_ALBUM_LPATH_PREFIX = "/Pictures/";
@@ -94,6 +99,7 @@ const vector<string> NOT_CHANGEABLE_ALBUM = {
     AlbumPlugin::LPATH_HIDDEN_ALBUM,
     AlbumPlugin::LPATH_CAMERA
 };
+const std::string MINUS_5_SOMETHING = "-5_";
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -330,6 +336,20 @@ static void PrepareUserAlbum(const string &albumName, ValuesBucket &values)
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, USER_ALBUM_LPATH_PREFIX + albumName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatus());
+}
+
+static void PrepareSmartAlbum(const string &albumName, ValuesBucket &values)
+{
+    int64_t timestamp = MediaFileUtils::UTCTimeNanoSeconds();  // 统一时间戳
+    string current_time = MINUS_5_SOMETHING + to_string(timestamp);
+    values.PutString(ALBUM_NAME, albumName);
+    values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
+    values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    values.PutString(TAG_ID, current_time);
+    values.PutString(GROUP_TAG, current_time);
+    values.PutInt(USER_DISPLAY_LEVEL, DISPLAY_LEVEL_NUMBER);
+    values.PutInt(IS_LOCAL, LOCAL_NUMBER); // local album is 1.
+    values.PutInt(RENAME_OPERATION, RENAME_OPERATION_NUMBER);
 }
 
 inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
@@ -601,11 +621,54 @@ int CreatePhotoAlbum(const string &albumName)
     return DoCreatePhotoAlbum(albumName, "", albumValues);
 }
 
+static int CreatePortraitAlbum(const string &albumName)
+{
+    int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+    if (err < 0) {
+        MEDIA_ERR_LOG("Check album name failed, album name: %{private}s", albumName.c_str());
+        return err;
+    }
+
+    ValuesBucket albumValues;
+    PrepareSmartAlbum(albumName, albumValues);
+
+    // Build insert sql
+    string insertsql;
+    vector<ValueObject> bindArgs;
+    insertsql.append("INSERT").append(" OR ROLLBACK").append(" INTO ").append("AnalysisAlbum").append(" ");
+
+    MediaLibraryRdbStore::BuildValuesSql(albumValues, bindArgs, insertsql);
+
+    RdbPredicates wherePredicates("AnalysisAlbum");
+    wherePredicates.EqualTo(ALBUM_NAME, albumName);
+    wherePredicates.EqualTo(ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
+    wherePredicates.EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT));
+    insertsql.append(" WHERE NOT EXISTS (");
+
+    MediaLibraryRdbStore::BuildQuerySql(wherePredicates, { ALBUM_ID }, bindArgs, insertsql);
+    insertsql.append(")");
+    MEDIA_DEBUG_LOG("CreatePortraitAlbum InsertSql: %{private}s", insertsql.c_str());
+
+    int64_t lastInsertRowId = 0;
+    AlbumAccurateRefresh albumRefresh(AccurateRefresh::CREATE_PHOTO_TABLE_BUSSINESS_NAME);
+    albumRefresh.Init();
+    lastInsertRowId = albumRefresh.ExecuteForLastInsertedRowId(insertsql, bindArgs, RdbOperation::RDB_OPERATION_ADD);
+    CHECK_AND_RETURN_RET_LOG(lastInsertRowId >= 0, lastInsertRowId, "insert fail and rollback");
+    MEDIA_INFO_LOG("Create photo album success, id: %{public}" PRId64, lastInsertRowId);
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
+        std::to_string(lastInsertRowId)), NotifyType::NOTIFY_ADD);
+    return lastInsertRowId;
+}
+
 int CreatePhotoAlbum(MediaLibraryCommand &cmd)
 {
     string albumName;
+    string type;
     string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
+    GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_TYPE, type);
     GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
     if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO) && subtype != to_string(PET)) {
         return err;
@@ -618,6 +681,8 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         auto ret = rdbStore->Insert(cmd, outRowId);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, outRowId, "insert fail, ret: %{public}d", ret);
         rowId = outRowId;
+    } else if (type == to_string(SMART) && subtype == to_string(PORTRAIT)) {
+        rowId = CreatePortraitAlbum(albumName);
     } else {
         rowId = CreatePhotoAlbum(albumName);
     }

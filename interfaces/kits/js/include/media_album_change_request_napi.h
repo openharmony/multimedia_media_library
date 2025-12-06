@@ -176,6 +176,8 @@ struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     std::vector<std::string> deleteIds;
     std::vector<int32_t> photoAlbumTypes;
     std::vector<int32_t> photoAlbumSubtypes;
+    int32_t photoAlbumType = -1;
+    int32_t photoAlbumSubType = -1;
     bool allowUpload = false;
 };
 } // namespace Media
