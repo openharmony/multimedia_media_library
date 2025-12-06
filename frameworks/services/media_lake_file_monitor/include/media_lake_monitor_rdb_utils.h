@@ -70,6 +70,7 @@ public:
         int32_t *delNum = nullptr);
     static void DeleteRelatedResource(const std::string &photoPath, const std::string &fileId,
         const std::string &dateTaken);
+    static void NotifyAnalysisAlbum(const std::vector<std::string>& albumIds);
 
 private:
     template <typename T>

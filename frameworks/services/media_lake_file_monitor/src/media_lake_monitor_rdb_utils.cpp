@@ -166,7 +166,6 @@ bool MediaLakeMonitorRdbUtils::UpdateAlbumInfo(std::shared_ptr<MediaLibraryRdbSt
     }
     MediaLibraryRdbUtils::UpdateCommonAlbumInternal(rdbStore, targetAlbumIdList, true, true);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {}, true);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {});
     return true;
 }
 
@@ -345,6 +344,15 @@ inline int32_t DeleteEditdata(const std::string &path)
     return E_OK;
 }
 
+void HandleAnalysisAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbStore, std::set<std::string>& analysisAlbumIds)
+{
+    std::vector<std::string> albumIds(analysisAlbumIds.begin(), analysisAlbumIds.end());
+    if (!albumIds.empty() && rdbStore != nullptr) {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds);
+        MediaLakeMonitorRdbUtils::NotifyAnalysisAlbum(albumIds);
+    }
+}
+
 bool MediaLakeMonitorRdbUtils::DeleteDirByLakePath(const std::string &path,
     std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t *delNum)
 {
@@ -363,24 +371,33 @@ bool MediaLakeMonitorRdbUtils::DeleteDirByLakePath(const std::string &path,
     CHECK_AND_RETURN_RET_LOG(QueryDataListByAlbumIds(rdbStore, albumIds, dataList),
         false, "QueryDataListByAlbumIds failed, lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
 
-    // 4. 批量删除资产
+    // 4. 查出湖内资产对应的智慧相册
+    std::vector<std::string> fileIds;
+    std::set<std::string> analysisAlbumIds;
+    for (auto data : dataList) {
+        fileIds.emplace_back(std::to_string(data.fileId));
+    }
+    MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(fileIds, analysisAlbumIds);
+
+    // 5. 批量删除资产
     CHECK_AND_PRINT_LOG(DeleteAssetsByOwnerAlbumIds(rdbStore, albumIds), "DeleteAssetsByOwnerAlbumIds failed");
 
-    // 5. 删除该图片对应湖外资源
+    // 6. 删除该图片对应湖外资源
     for (auto data : dataList) {
         DeleteRelatedResource(data.photoPath, std::to_string(data.fileId), std::to_string(data.dateTaken));
     }
     if (delNum != nullptr) {
         *delNum = static_cast<int32_t>(dataList.size());
     }
-    // 6. 刷新相册并发送相册通知
+    // 7. 刷新相册并发送相册通知
     UpdateAlbumInfo(rdbStore);
+    HandleAnalysisAlbum(rdbStore, analysisAlbumIds);
 
-    // 7. 删除空相册
+    // 8. 删除空相册
     CHECK_AND_RETURN_RET_LOG(DeleteEmptyAlbumsByLPath(rdbStore, lPath),
         false, "DeleteEmptyAlbumsByLPath failed");
 
-    // 8. 发送资产变更通知
+    // 9. 发送资产变更通知
     for (auto data : dataList) {
         NotifyAssetChange(data.fileId);
     }
@@ -393,5 +410,18 @@ void MediaLakeMonitorRdbUtils::DeleteRelatedResource(const std::string &photoPat
     ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(fileId,
         PhotoColumn::PHOTOS_TABLE, photoPath, dateTaken);
     CHECK_AND_PRINT_LOG(DeleteEditdata(photoPath) == E_OK, "DeleteEditdata failed.");
+}
+
+void MediaLakeMonitorRdbUtils::NotifyAnalysisAlbum(const std::vector<std::string>& albumIds)
+{
+    if (albumIds.empty()) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (const auto& albumId : albumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    }
 }
 } // namespace OHOS::Media
