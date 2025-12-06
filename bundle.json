@@ -91,7 +91,6 @@
           "netmanager_base",
           "openssl",
           "jsoncpp",
-          "user_file_service",
           "image_framework",
           "media_foundation",
           "qos_manager"

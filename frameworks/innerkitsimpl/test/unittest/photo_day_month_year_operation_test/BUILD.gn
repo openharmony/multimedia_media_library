@@ -67,10 +67,6 @@ ohos_unittest("photo_day_month_year_operation_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
