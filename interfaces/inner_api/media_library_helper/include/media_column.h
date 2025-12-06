@@ -173,6 +173,7 @@ public:
     static const std::string PHOTO_FILE_INODE EXPORT;
     static const std::string PHOTO_STORAGE_PATH EXPORT;
     static const std::string PHOTO_ASPECT_RATIO EXPORT;
+    static const std::string PHOTO_CHANGE_TIME EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
