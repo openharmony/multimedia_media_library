@@ -388,5 +388,15 @@ int32_t PhotoAlbum::GetUploadStatus() const
 {
     return uploadStatus_;
 }
+
+void PhotoAlbum::SetHidden(const int32_t hidden)
+{
+    hidden_ = hidden;
+}
+
+int32_t PhotoAlbum::GetHidden() const
+{
+    return hidden_;
+}
 }  // namespace Media
 }  // namespace OHOS

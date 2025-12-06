@@ -69,6 +69,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoAlbum_SetGet_Test_001, TestSize.Level1
 
     photoAlbum.SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     EXPECT_EQ(photoAlbum.GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
+
+    photoAlbum.SetHidden(TEST_ALBUM_ID);
+    EXPECT_EQ(photoAlbum.GetHidden(), TEST_ALBUM_ID);
 }
 } // namespace Media
 } // namespace OHOS
