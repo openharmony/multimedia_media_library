@@ -245,6 +245,8 @@ export struct PhotoPickerComponent {
             isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
             assetFilter: this.pickerOptions?.assetFilter,
             edgeEffect: this.pickerOptions?.edgeEffect,
+            isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
+            isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
           }
         },
         {
