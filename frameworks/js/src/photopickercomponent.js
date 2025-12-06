@@ -331,6 +331,8 @@ export class PhotoPickerComponent extends ViewPU {
                     isSlidingSupported:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSlidingSupported,
                     assetFilter:  null === (predicate = this.pickerOptions) || void 0 === predicate ? void 0 : predicate.assetFilter,
                     edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
+                    isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
+                    isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                 }
             }
             ,{
