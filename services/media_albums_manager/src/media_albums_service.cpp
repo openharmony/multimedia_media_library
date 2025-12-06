@@ -57,6 +57,7 @@
 #include "media_file_utils.h"
 #include "refresh_business_name.h"
 #include "media_old_albums_column.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -933,6 +934,28 @@ int32_t MediaAlbumsService::UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto &s
 
     int32_t changedRows = MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(valuesBuckets, predicatesArray);
     return changedRows;
+}
+
+int32_t MediaAlbumsService::SmartMoveAssets(ChangeRequestMoveAssetsDto &smartMoveAssetsDto)
+{
+    MEDIA_INFO_LOG("MediaAlbumsService::SmartMoveAssets");
+    CHECK_AND_RETURN_RET_LOG(!smartMoveAssetsDto.assets.empty(), E_INNER_FAIL,
+        "SmartMoveAssets assets is empery");
+
+    vector<std::string> assets;
+    for (const string asset : smartMoveAssetsDto.assets) {
+        size_t pos = asset.find(PhotoColumn::PHOTO_URI_PREFIX);
+        if (pos != string::npos) {
+            string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(asset);
+            CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(fileId));
+            assets.push_back(fileId);
+        }
+    }
+
+    string albumId = to_string(smartMoveAssetsDto.albumId);
+    string targetAlbumId = to_string(smartMoveAssetsDto.targetAlbumId);
+    int32_t ret = PhotoMapOperations::SmartMoveAssets(albumId, targetAlbumId, assets);
+    return ret;
 }
 
 int32_t MediaAlbumsService::MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto)
