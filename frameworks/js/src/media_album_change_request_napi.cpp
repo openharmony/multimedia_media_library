@@ -433,6 +433,45 @@ napi_value MediaAlbumChangeRequestNapi::JSGetAlbum(napi_env env, napi_callback_i
     return nullValue;
 }
 
+static bool CheckCreateAlbumArgs(unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("conext is nullptr");
+        return false;
+    }
+    if (context->argc < ARGS_TWO) {
+        NAPI_ERR_LOG("No arguments to parse");
+        return false;
+    }
+    switch (context->argc) {
+        case ARGS_TWO:{
+            break;
+        }
+        case ARGS_THREE: {
+            PhotoAlbumType albumType = static_cast<PhotoAlbumType>(context->photoAlbumType);
+            if (albumType != USER) {
+                NAPI_ERR_LOG("error photoAlbumType arguments to parse");
+                return false;
+            }
+            break;
+        }
+        case ARGS_FOUR: {
+            PhotoAlbumType albumType = static_cast<PhotoAlbumType>(context->photoAlbumType);
+            PhotoAlbumSubType albumSubtype = static_cast<PhotoAlbumSubType>(context->photoAlbumSubType);
+            if ((albumType == USER && albumSubtype == USER_GENERIC) ||
+                (albumType == SMART && albumSubtype == PORTRAIT)) {
+                break;
+            } else {
+                NAPI_ERR_LOG("error albumSubtype arguments to parse");
+                return false;
+            }
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 static napi_value ParseArgsCreateAlbum(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
 {
@@ -442,7 +481,7 @@ static napi_value ParseArgsCreateAlbum(
     }
 
     CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_TWO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_FOUR) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
@@ -450,8 +489,23 @@ static napi_value ParseArgsCreateAlbum(
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM1], albumName) == napi_ok,
         "Failed to get album name");
+    NAPI_DEBUG_LOG("ParseArgsCreateAlbum %{private}s", albumName.c_str());
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid album name");
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    context->photoAlbumType = USER;
+    context->photoAlbumSubType = USER_GENERIC;
+
+     // 参数3：相册类型（可选）
+    if (context->argc >= ARGS_THREE) {
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM2],
+            context->photoAlbumType) != nullptr, "Failed to get album type");
+    }
+    // 参数4：相册子类型（可选）
+    if (context->argc >= ARGS_FOUR) {
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM3],
+            context->photoAlbumSubType) != nullptr, "Failed to get album subtype");
+    }
+    CHECK_COND_WITH_MESSAGE(env, CheckCreateAlbumArgs(context), "error arguments to parse");
     RETURN_NAPI_TRUE(env);
 }
 
@@ -464,8 +518,8 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAlbumRequest(napi_env env, napi_
     string albumName = asyncContext->valuesBucket.Get(PhotoAlbumColumns::ALBUM_NAME, isValid);
     auto photoAlbum = make_unique<PhotoAlbum>();
     photoAlbum->SetAlbumName(albumName);
-    photoAlbum->SetPhotoAlbumType(USER);
-    photoAlbum->SetPhotoAlbumSubType(USER_GENERIC);
+    photoAlbum->SetPhotoAlbumType(static_cast<PhotoAlbumType>(asyncContext->photoAlbumType));
+    photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(asyncContext->photoAlbumSubType));
     photoAlbum->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value photoAlbumNapi = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
     CHECK_COND(env, photoAlbumNapi != nullptr, JS_INNER_FAIL);
@@ -1491,6 +1545,8 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     Uri createAlbumUri(PAH_CREATE_PHOTO_ALBUM);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, photoAlbum->GetPhotoAlbumType());
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbum->GetPhotoAlbumSubType());
     int32_t ret = UserFileClient::Insert(createAlbumUri, valuesBucket);
     if (ret == -1) {
         context.SaveError(-EEXIST);
