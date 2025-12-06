@@ -206,6 +206,13 @@ static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &value
         MEDIA_DEBUG_LOG("video of moving photo cannot upload");
         return;
     }
+
+    string oriVideoPath = MediaFileUtils::GetOriMovingPhotoVideoPath(metadata.GetFilePath());
+    size_t oriVideoSize = 0;
+    if (!MediaFileUtils::GetFileSize(oriVideoPath, oriVideoSize) || oriVideoSize == 0) {
+        MEDIA_DEBUG_LOG("origin video of moving photo cannot upload");
+        return;
+    }
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
 }
 
