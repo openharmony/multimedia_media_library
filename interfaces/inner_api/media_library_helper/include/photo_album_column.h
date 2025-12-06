@@ -53,6 +53,7 @@ public:
     static const std::string COVER_URI_SOURCE EXPORT;
     static const std::string COVER_CLOUD_ID EXPORT;
     static const std::string UPLOAD_STATUS EXPORT;
+    static const std::string ALBUM_HIDDEN EXPORT;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;

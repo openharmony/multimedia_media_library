@@ -324,6 +324,7 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("BUNDLE_NAME",               PhotoAlbumColumns::ALBUM_BUNDLE_NAME),
     std::make_pair("COVER_URI_SOURCE",          PhotoAlbumColumns::COVER_URI_SOURCE),
     std::make_pair("UPLOAD_STATUS",             PhotoAlbumColumns::UPLOAD_STATUS),
+    std::make_pair("HIDDEN",                    PhotoAlbumColumns::ALBUM_HIDDEN),
 };
 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {
