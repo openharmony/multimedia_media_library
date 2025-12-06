@@ -794,6 +794,16 @@ void FileAsset::SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate)
     member_[PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE] = existCompatibleDuplicate;
 }
 
+void FileAsset::SetChangeTime(const int64_t changeTime)
+{
+    member_[PhotoColumn::PHOTO_CHANGE_TIME] = changeTime;
+}
+
+int64_t FileAsset::GetChangeTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
     lock_guard<mutex> lock(resultTypeMapMutex_);
