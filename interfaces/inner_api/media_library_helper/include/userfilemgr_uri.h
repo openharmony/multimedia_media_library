@@ -437,6 +437,7 @@ const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FA
 
 const std::string ASSET_ALBUM_OPERATION = "tab_asset_and_album_operation";
 
+const std::string VIDEO_TYPE_KEYWORD = "type_for_cinematic_video";
 } // namespace Media
 } // namespace OHOS
 

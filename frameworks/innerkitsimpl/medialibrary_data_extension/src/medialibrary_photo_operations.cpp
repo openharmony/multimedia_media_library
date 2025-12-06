@@ -87,6 +87,8 @@ constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
+constexpr int32_t XT_ORIGIN_VIDEO = 1;
+constexpr int32_t XT_EFFECT_VIDEO = 2;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
@@ -458,6 +460,32 @@ static void RefreshLivePhotoCache(const string &movingPhotoImagePath, int64_t mo
     }
 }
 
+int32_t GetMovingPhotoVideoInputPath(MediaLibraryCommand &cmd, string &inputPath, const string &imagePath, bool isTemp)
+{
+    string videoTypeStr = cmd.GetQuerySetParam(VIDEO_TYPE_KEYWORD);
+    int32_t videoTypeNum = 0;
+
+    if (videoTypeStr != "") {
+        videoTypeNum = std::stoul(videoTypeStr);
+    }
+
+    if (videoTypeNum == XT_ORIGIN_VIDEO) {
+        inputPath = isTemp ? MediaFileUtils::GetTempOriMovingPhotoVideoPath(imagePath)
+            : MediaFileUtils::GetOriMovingPhotoVideoPath(imagePath);
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(
+            MediaLibraryAssetOperations::GetEditDataDirPath(imagePath)), E_HAS_FS_ERROR,
+                "Can not create dir %{private}s", inputPath.c_str());
+    } else {
+        inputPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(imagePath)
+            : MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+        MEDIA_INFO_LOG("GetMovingPhotoVideoInputPath inputPath %{public}s, videoType %{public}d", inputPath.c_str(),
+            cmd.GetVideoType());
+    }
+    MEDIA_INFO_LOG("GetMovingPhotoVideoInputPath inputPath %{public}s, videoType %{public}d",
+        inputPath.c_str(), videoTypeNum);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd,
     shared_ptr<FileAsset>& fileAsset, const string& id, bool& isMovingPhotoVideo)
 {
@@ -472,8 +500,9 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
         string imagePath = fileAsset->GetPath();
-        string inputPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(imagePath)
-            : MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+        string inputPath;
+        CHECK_AND_RETURN_RET_LOG(GetMovingPhotoVideoInputPath(cmd, inputPath, imagePath, isTemp) == E_OK,
+            E_HAS_FS_ERROR, "Can not create dir for xtstle origin photo");
         fileAsset->SetPath(inputPath);
         isMovingPhotoVideo = true;
         if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD && fileAsset->GetPosition() == POSITION_CLOUD) {
@@ -3531,8 +3560,11 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
 {
     // moving photo video save and add filters
     const ValuesBucket& values = cmd.GetValueBucket();
+    int32_t videoType = 0;
+    GetInt32FromValuesBucket(values, VIDEO_TYPE_KEYWORD, videoType);
     string videoSaveFinishedUri;
-    if (GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) {
+    if ((GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) &&
+        (videoType != XT_EFFECT_VIDEO)) {
         int32_t id = -1;
         CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
             E_INVALID_VALUES, "Failed to get fileId");
@@ -3548,7 +3580,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
             MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(id);
         }
-        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true);
+        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true, videoType);
     }
 
     if (IsCameraEditData(cmd)) {
@@ -3681,10 +3713,16 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     return ret;
 }
 
-int32_t SaveTempMovingPhotoVideo(const string &assetPath)
+int32_t SaveTempMovingPhotoVideo(const string &assetPath, int32_t videoType)
 {
     string assetTempPath = MediaFileUtils::GetTempMovingPhotoVideoPath(assetPath);
     string assetSavePath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    if (videoType == 1) {
+        assetTempPath = MediaFileUtils::GetTempOriMovingPhotoVideoPath(assetPath);
+        assetSavePath = MediaFileUtils::GetOriMovingPhotoVideoPath(assetPath);
+    }
+    MEDIA_INFO_LOG("SaveTempMovingPhotoVideo assetTempPath %{public}s", assetTempPath.c_str());
+    MEDIA_INFO_LOG("SaveTempMovingPhotoVideo assetSavePath %{public}s", assetSavePath.c_str());
     if (!MediaFileUtils::IsFileExists(assetSavePath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(assetTempPath, assetSavePath) == E_SUCCESS,
             E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
@@ -3716,10 +3754,10 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string &assetPath,
-    bool isSaveVideo, bool isNeedScan)
+    bool isSaveVideo, bool isNeedScan, int32_t videoType)
 {
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
-    if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
+    if ((MediaFileUtils::IsFileExists(editDataCameraPath)) && (videoType == 0)) {
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
@@ -3729,7 +3767,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to erase watermark tag and sticker field");
         if (isFiltersFieldEmpty && isSaveVideo) {
             MEDIA_ERR_LOG("MovingPhoto video only supports filter now.");
-            CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
+            CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath, videoType) == E_OK, E_HAS_FS_ERROR,
                 "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
             return CopyVideoFile(assetPath, true);
         } else if (isFiltersFieldEmpty && !isSaveVideo) {
@@ -3740,7 +3778,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData, isNeedScan);
     } else {
-        int32_t ret = SaveTempMovingPhotoVideo(assetPath);
+        int32_t ret = SaveTempMovingPhotoVideo(assetPath, videoType);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
             "Failed to save temp video, path = %{private}s", assetPath.c_str());
         MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath, true);
