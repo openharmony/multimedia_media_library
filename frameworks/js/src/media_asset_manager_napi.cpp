@@ -1485,7 +1485,7 @@ void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
 }
 
 std::shared_ptr<MultistagesCaptureNotifyServerInfo> MultistagesCaptureOnProcessObserver::ConvertWrapperToNotifyInfo(
-    const NewJsOnChangeCallbackWrapper &wrapper)
+    const UserDefineCallbackWrapper &wrapper)
 {
     if (wrapper.userDefineInfo_ == nullptr ||
         wrapper.userDefineInfo_->notifyUserDefineType_ != NotifyForUserDefineType::MULTISTAGES_CAPTURE) {
@@ -1530,8 +1530,8 @@ bool MultistagesCaptureOnProcessObserver::MatchNotifyToObserver(
     }
     return false;
 }
- 
-void MultistagesCaptureOnProcessObserver::OnChange(const NewJsOnChangeCallbackWrapper &wrapper)
+
+void MultistagesCaptureOnProcessObserver::OnChange(const UserDefineCallbackWrapper &wrapper)
 {
     NAPI_INFO_LOG("MultistagesCapture, OnChange called, %{public}s.", ToString().c_str());
     std::shared_ptr<MultistagesCaptureNotifyServerInfo> notifyInfo = ConvertWrapperToNotifyInfo(wrapper);

@@ -242,6 +242,11 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
             asyncContext->onRequestMovingPhotoDataPreparedHandler, asyncContext->returnDataType,
             asyncContext->requestUri, asyncContext->destUri, asyncContext->requestOptions.sourceMode);
         mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
+    } else if (asyncContext->returnDataType == ReturnDataType::TYPE_PICTURE) {
+        mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
+            asyncContext->onRequestQuickImageDataPreparedHandler, asyncContext->returnDataType,
+            asyncContext->requestUri, asyncContext->destUri, asyncContext->requestOptions.sourceMode);
+        mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
     } else {
         mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
         asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
@@ -376,7 +381,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
             OH_PictureNative* pictureNative = nullptr;
             OH_ImageSourceNative* imageSourceNative = nullptr;
             GetPictureNativeObject(
-                assetHandler->requestId, dataHandler->GetRequestUri(), pictureNative, imageSourceNative, isPicture);
+                assetHandler->requestId, dataHandler->GetRequestUri(), &pictureNative, &imageSourceNative, isPicture);
             
             MediaLibrary_ErrorCode status;
             if (isPicture) {
@@ -683,7 +688,7 @@ OH_ImageSourceNative* MediaAssetManagerImpl::CreateImageSource(const std::string
 }
 
 void MediaAssetManagerImpl::GetPictureNativeObject(const std::string requestId, const std::string fileUri,
-    OH_PictureNative* pictureNative, OH_ImageSourceNative* imageSourceNative, bool &isPicture)
+    OH_PictureNative** pictureNative, OH_ImageSourceNative** imageSourceNative, bool &isPicture)
 {
     MEDIA_INFO_LOG("GetPictureNativeObject");
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
@@ -694,14 +699,14 @@ void MediaAssetManagerImpl::GetPictureNativeObject(const std::string requestId, 
     if (picture == nullptr) {
         MEDIA_INFO_LOG("picture is null");
         isPicture = false;
-        imageSourceNative = CreateImageSource(requestId, fileUri);
+        *imageSourceNative = CreateImageSource(requestId, fileUri);
         return;
     }
 
     MEDIA_INFO_LOG("picture is not null.");
-    pictureNative = new OH_PictureNative(picture);
-    if (pictureNative == nullptr) {
-        MEDIA_ERR_LOG("pictureNative is null.");
+    *pictureNative = new OH_PictureNative(picture);
+    if (*pictureNative == nullptr) {
+        MEDIA_ERR_LOG("Failed to create OH_PictureNative.");
         return;
     }
 }
