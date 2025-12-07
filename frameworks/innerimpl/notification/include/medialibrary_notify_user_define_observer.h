@@ -36,7 +36,7 @@ public:
     MediaOnNotifyUserDefineObserverBodyBase() {}
     ~MediaOnNotifyUserDefineObserverBodyBase() {}
 
-    virtual void OnChange(const NewJsOnChangeCallbackWrapper &callbackWrapper) = 0;
+    virtual void OnChange(const UserDefineCallbackWrapper &callbackWrapper) = 0;
     virtual std::string ToString() const = 0;
 };
 

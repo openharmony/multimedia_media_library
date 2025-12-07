@@ -12,23 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #define MLOG_TAG "MediaOnNotifyMultistagesObserver"
 #include "medialibrary_notify_user_define_observer.h"
- 
+
 #include "media_file_utils.h"
 #include "media_notification_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "multistages_capture_on_process_observer.h"
- 
+
 using namespace std;
- 
+
 namespace OHOS {
 namespace Media {
 static const uint32_t MAX_PARCEL_SIZE = 200 * 1024;
- 
+
 void MediaOnNotifyUserDefineObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MediaLibraryTracer tracer;
@@ -52,15 +52,15 @@ void MediaOnNotifyUserDefineObserver::OnChange(const ChangeInfo &changeInfo)
         free(parcelData);
         return;
     }
-    NewJsOnChangeCallbackWrapper callbackWrapper;
+    UserDefineCallbackWrapper callbackWrapper;
     // 解析通知内容
     callbackWrapper.userDefineInfo_ = NotificationUtils::UnmarshalUserDefineNotify(*parcel);
     CHECK_AND_RETURN_LOG(callbackWrapper.userDefineInfo_ != nullptr, "invalid userDefinelnfo");
     NAPI_INFO_LOG("UserDefinelnfo is: %{public}s", callbackWrapper.userDefineInfo_->ToString().c_str());
- 
+
     Notification::NotifyUriType infoUriType = callbackWrapper.userDefineInfo_->notifyUri_;
     callbackWrapper.observerUriType_ = infoUriType;
- 
+
     if (observerBody_ == nullptr) {
         NAPI_ERR_LOG("observerBody is nullptr.");
         return;

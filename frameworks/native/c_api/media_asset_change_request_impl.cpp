@@ -106,7 +106,9 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::SaveCameraPhoto(MediaLibrary
 
     MediaType mediaType = fileAsset->GetMediaType();
     if ((mediaType == MEDIA_TYPE_IMAGE && imageFileType == MEDIA_LIBRARY_IMAGE_JPEG) ||
+        (mediaType == MEDIA_TYPE_IMAGE && imageFileType == MEDIA_LIBRARY_IMAGE_HEIF) ||
         (mediaType == MEDIA_TYPE_VIDEO && imageFileType == MEDIA_LIBRARY_FILE_VIDEO)) {
+        imageFileType_ = imageFileType;
         RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
         return MEDIA_LIBRARY_OK;
     }
@@ -361,8 +363,8 @@ bool MediaAssetChangeRequestImpl::SaveCameraPhotoExecute()
     MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
-        to_string(fileAsset->GetPhotoSubType()));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE, to_string(fileAsset->GetPhotoSubType()));
+    MediaFileUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE, to_string(static_cast<int32_t>(imageFileType_)));
     Uri uri(uriStr);
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);

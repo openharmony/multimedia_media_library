@@ -587,7 +587,7 @@ int32_t PhotoAssetProxy::UnregisterLowQualityMemoryNumObserver(
 }
 
 std::shared_ptr<LowQualityMemoryNumNotifyInfo> LowQualityMemoryNumObserver::ConvertWrapperToNotifyInfo(
-    const NewJsOnChangeCallbackWrapper &wrapper)
+    const UserDefineCallbackWrapper &wrapper)
 {
     if (wrapper.userDefineInfo_ == nullptr ||
         wrapper.userDefineInfo_->notifyUserDefineType_ != NotifyForUserDefineType::LOW_QUALITY_MEMORY) {
@@ -610,7 +610,7 @@ std::shared_ptr<LowQualityMemoryNumNotifyInfo> LowQualityMemoryNumObserver::Conv
     return notifyInfo;
 }
 
-void LowQualityMemoryNumObserver::OnChange(const NewJsOnChangeCallbackWrapper &wrapper)
+void LowQualityMemoryNumObserver::OnChange(const UserDefineCallbackWrapper &wrapper)
 {
     MEDIA_INFO_LOG("LowQualityMemoryNumObserver, OnChange called, %{public}s.", ToString().c_str());
     std::shared_ptr<LowQualityMemoryNumNotifyInfo> notifyInfo = ConvertWrapperToNotifyInfo(wrapper);
