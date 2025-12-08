@@ -879,10 +879,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTa
         "Cloud sync switch off, skip BatchSelectFileDownload");
     CHECK_AND_RETURN_RET_INFO_LOG(batchDownloadTaskAdded_, false, "no batch download start trigger");
     int32_t num = QueryBatchSelectedFilesNumForAutoResume(); // 查询是否有需要下载 或处理的任务
-    MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask END count num: %{public}d", num);
     if (num == 0) {
         downloadLatestFinished_.store(true); // 之前下载已完成
-        MEDIA_INFO_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadResourcesTask change to true");
+        MEDIA_DEBUG_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadResourcesTask change to true");
+    } else {
+        MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask END count num: %{public}d", num);
     }
     return (num > 0);
 }
@@ -1372,11 +1373,13 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
     MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition ableAutoStopDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoStopDownload, isNetworkAvailable, isPowerSufficient, isDiskEnough, isCloudSyncOn);
-    if (!ableAutoStopDownload) { // 如果有自动暂停的任务，新增任务都保持同样的自动暂停状态
+    if (!ableAutoStopDownload && HaveBatchDownloadResourcesTask()) { // 如果有自动暂停的任务，新增任务都保持同样的自动暂停状态
         int32_t autoStopReason = -1;
         QueryAutoPauseReason(autoStopReason);
-        if (autoStopReason != -1) {
+        if (autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW) ||
+            autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_ROM_LOW)) {
             autoPauseReason = static_cast<BatchDownloadAutoPauseReasonType>(autoStopReason);
+            MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition Keep Reason: %{public}d", autoStopReason);
             return true;
         }
     }
