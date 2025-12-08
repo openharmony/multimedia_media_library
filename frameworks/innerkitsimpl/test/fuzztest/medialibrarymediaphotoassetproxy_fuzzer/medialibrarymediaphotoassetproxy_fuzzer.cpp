@@ -225,7 +225,7 @@ std::vector<OHOS::Security::AccessToken::PermissionStateFull> DefinePermissionSt
             .resDeviceID = { "local" },
             .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
             .grantFlags = { 1 }
-        }
+        },
         {
             .permissionName = "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED",
             .isGeneral = true,
