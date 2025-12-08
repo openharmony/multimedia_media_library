@@ -522,8 +522,8 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
                 action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK;
     CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
-        HandleBatchDownloadWhenNetChange();
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
+        HandleBatchDownloadWhenNetChange();
         UpdateBackgroundTimer();
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         int netType = want.GetIntParam("NetType", -1);
@@ -569,7 +569,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 
 void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
 {
-    if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
+    if (!isWifiConnected_ && BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
         MEDIA_INFO_LOG("BatchSelectFileDownload COMMON_EVENT_WIFI_CONN_STATE Change");
         BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
     }
