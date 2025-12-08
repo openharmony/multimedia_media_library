@@ -1379,6 +1379,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
         if (autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW) ||
             autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_ROM_LOW)) {
             autoPauseReason = static_cast<BatchDownloadAutoPauseReasonType>(autoStopReason);
+            MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition Keep Reason: %{public}d", autoStopReason);
             return true;
         }
     }
