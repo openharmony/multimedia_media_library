@@ -1372,10 +1372,11 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
     MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition ableAutoStopDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoStopDownload, isNetworkAvailable, isPowerSufficient, isDiskEnough, isCloudSyncOn);
-    if (!ableAutoStopDownload) { // 如果有自动暂停的任务，新增任务都保持同样的自动暂停状态
+    if (!ableAutoStopDownload && HaveBatchDownloadResourcesTask()) { // 如果有自动暂停的任务，新增任务都保持同样的自动暂停状态
         int32_t autoStopReason = -1;
         QueryAutoPauseReason(autoStopReason);
-        if (autoStopReason != -1) {
+        if (autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW) ||
+            autoStopReason == static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_ROM_LOW)) {
             autoPauseReason = static_cast<BatchDownloadAutoPauseReasonType>(autoStopReason);
             return true;
         }
