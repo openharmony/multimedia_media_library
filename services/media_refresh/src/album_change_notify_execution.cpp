@@ -111,7 +111,7 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
 {
     AlbumChangeData albumChangeData = changeData;
-    if (AccurateRefresh::accurateDebugLevel >= 3) {
+    if (AccurateRefresh::accurateDebugLevel >= AccurateRefresh::accurateDebugLevelHigh) {
         HILOG_COMM_INFO("origin data: %{public}s", changeData.ToString(true).c_str());
     }
     // screenshot do not need to send notify
