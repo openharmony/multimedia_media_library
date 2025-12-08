@@ -1984,6 +1984,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
 int32_t MediaLibraryAlbumOperations::DeletePhotoAssets(const DataSharePredicates &predicates,
     const bool isAging, const bool compatible)
 {
+    MEDIA_INFO_LOG("DeletePhotoAssets start.");
     DealWithHighlightSdTable(predicates);
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
@@ -1991,6 +1992,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAssets(const DataSharePredicates
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
     }
+    MEDIA_INFO_LOG("DeletePhotoAssets end.");
     return deletedRows;
 }
 
