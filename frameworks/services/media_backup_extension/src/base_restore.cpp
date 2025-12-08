@@ -63,6 +63,7 @@ const int32_t APP_MAIN_DATA_USER_ID = 0;
 const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
 const int32_t SINGLE_LEN_EXTRADATA = 20;
+const int32_t MAX_FILE_PATH_LENGTH = 256;
 const double DOUBLE_EPSILON = 1e-15;
 
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
@@ -375,6 +376,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     int64_t duplicateCost = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
+        if (fileInfos[i].filePath.length() >= MAX_FILE_PATH_LENGTH) {
+            MEDIA_WARN_LOG("abnormal filePath: %{private}s", fileInfos[i].filePath.c_str());
+        }
         NativeRdb::ValuesBucket value;
         CHECK_AND_CONTINUE(PrepareInsertValue(sceneCode, fileInfos[i], sourceType, value));
         int64_t startMetaData = MediaFileUtils::UTCTimeMilliSeconds();

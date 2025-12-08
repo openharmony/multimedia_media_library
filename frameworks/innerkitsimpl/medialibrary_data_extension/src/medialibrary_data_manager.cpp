@@ -1599,6 +1599,7 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
 int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    MEDIA_INFO_LOG("MediaLibraryDataManager Insert enter");
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
