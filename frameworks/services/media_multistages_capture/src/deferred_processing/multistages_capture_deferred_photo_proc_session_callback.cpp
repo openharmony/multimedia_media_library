@@ -472,6 +472,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileAsset->GetId());
+        MEDIA_INFO_LOG("AddVideoFromMovingPhoto finish");
     }
     CallProcessImageDone(true, imageId);
 }
