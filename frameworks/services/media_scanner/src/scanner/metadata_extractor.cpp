@@ -850,6 +850,8 @@ int32_t MetadataExtractor::BuildMetaData(
         if (IsMovingPhoto(data)) {
             FillFrameIndex(avMetadataHelper, data);
         }
+    } else {
+        MEDIA_ERR_LOG("resultMap is empty, file path: %{private}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     }
     int32_t fileId = data->GetFileId();
     if (fileId != FILE_ID_DEFAULT) {
