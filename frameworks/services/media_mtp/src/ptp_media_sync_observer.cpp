@@ -410,7 +410,6 @@ int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
 
 void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
 {
-    MEDIA_INFO_LOG("SendPhotoRemoveEvent start.");
     vector<string> allDeletedHandles;
     vector<int32_t> handles;
     auto specialHandles = PtpSpecialHandles::GetInstance();
