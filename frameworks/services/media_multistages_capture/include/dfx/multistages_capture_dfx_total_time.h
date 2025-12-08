@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DFX_TOTAL_TIME_H
 
 #include <string>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 
@@ -38,6 +39,7 @@ private:
     const MultiStagesCaptureDfxTotalTime &operator=(const MultiStagesCaptureDfxTotalTime &totalTime) = delete;
 
     std::unordered_map<std::string, int64_t> startTimes_;
+    static std::mutex mutex_;
 };
 
 } // namespace Media
