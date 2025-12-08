@@ -316,7 +316,7 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
     }
 
     if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
-        MEDIA_WARN_LOG("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
+        HILOG_COMM_WARN("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
         newData.size = static_cast<int64_t>(imageSize);
         newData.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
         return E_OK;

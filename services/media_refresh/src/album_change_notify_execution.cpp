@@ -111,7 +111,9 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
 {
     AlbumChangeData albumChangeData = changeData;
-    ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
+    if (AccurateRefresh::accurateDebugLevel >= 3) {
+        HILOG_COMM_INFO("origin data: %{public}s", changeData.ToString(true).c_str());
+    }
     // screenshot do not need to send notify
     bool isSrceenshot =
         albumChangeData.infoBeforeChange_.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::SCREENSHOT) ||

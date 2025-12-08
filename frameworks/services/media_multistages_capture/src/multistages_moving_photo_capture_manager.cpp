@@ -61,7 +61,7 @@ void MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(const in
 
 void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t &fileId)
 {
-    MEDIA_INFO_LOG("Enter AddVideoFromMovingPhoto, fileId: %{public}d", fileId);
+    HILOG_COMM_INFO("Enter AddVideoFromMovingPhoto, fileId: %{public}d", fileId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = MediaColumn::MEDIA_ID + " = ? ";
     vector<string> whereArgs { to_string(fileId) };
@@ -89,7 +89,7 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
     UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
-    MEDIA_INFO_LOG("Moving photo mulit stage video task has been delivered");
+    HILOG_COMM_INFO("Moving photo mulit stage video task has been delivered");
 }
 } // Media
 } // OHOS

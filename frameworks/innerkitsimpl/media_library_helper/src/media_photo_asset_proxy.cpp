@@ -71,7 +71,7 @@ PhotoAssetProxy::PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dat
     } else {
         subType_ = itr->second;
     }
-    MEDIA_ERR_LOG("init success, callerInfo: %{public}s, shottype: %{public}d.",
+    HILOG_COMM_INFO("init success, callerInfo: %{public}s, shottype: %{public}d.",
         callerInfo.ToString().c_str(), static_cast<int32_t>(cameraShotType));
 }
 
@@ -91,7 +91,7 @@ PhotoAssetProxy::~PhotoAssetProxy()
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
         valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
         int32_t changeRows = dataShareHelper_->Update(updateUri, predicates, valuesBucket);
-        MEDIA_WARN_LOG("Degenerate moving photo: %{public}s, ret: %{public}d", fileId.c_str(), changeRows);
+        HILOG_COMM_WARN("Degenerate moving photo: %{public}s, ret: %{public}d", fileId.c_str(), changeRows);
     }
 }
 
@@ -192,7 +192,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     Uri createUri(uri);
     fileId_ = dataShareHelper_->InsertExt(createUri, values, uri_);
     CHECK_AND_RETURN_LOG(fileId_ >= 0, "Failed to create Asset, insert database error!");
-    MEDIA_ERR_LOG(
+    HILOG_COMM_INFO(
         "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s "
         "ceAvailable: %{public}u", photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(),
         photoProxy->GetBurstKey().c_str(), photoProxy->GetCloudImageEnhanceFlag());
@@ -271,13 +271,13 @@ int PhotoAssetProxy::SaveImage(int fd, const string &uri, const string &photoId,
     tracer.Start("SaveImage");
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "invalid fd");
     if (isHighQualityPhotoExist(uri)) {
-        MEDIA_ERR_LOG("high quality photo exists, discard low quality photo. photoId: %{public}s", photoId.c_str());
+        HILOG_COMM_ERROR("high quality photo exists, discard low quality photo. photoId: %{public}s", photoId.c_str());
         return E_OK;
     }
 
     int ret = write(fd, output, writeSize);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "write err %{public}d", errno);
-    MEDIA_ERR_LOG("Save Low Quality file Success, photoId: %{public}s, size: %{public}zu, ret: %{public}d",
+    HILOG_COMM_INFO("Save Low Quality file Success, photoId: %{public}s, size: %{public}zu, ret: %{public}d",
         photoId.c_str(), writeSize, ret);
     return E_OK;
 }
@@ -321,7 +321,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         delete[] buffer;
         return E_ERR;
     }
-    MEDIA_ERR_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
+    HILOG_COMM_INFO("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
 
     auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), buffer, packedSize);
     SetShootingModeAndGpsInfo(buffer, packedSize, photoProxy, fd);
@@ -362,7 +362,7 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
     tracer.Finish();
     CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property latitude ref fail %{public}d", ret);
-    MEDIA_ERR_LOG("Success.");
+    HILOG_COMM_INFO("Success.");
 }
  
 std::string PhotoAssetProxy::LocationValueToString(double value)
@@ -402,7 +402,7 @@ int32_t PhotoAssetProxy::AddProcessImage(shared_ptr<DataShare::DataShareHelper> 
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE);
     int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
-    MEDIA_ERR_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
+    HILOG_COMM_INFO("MultistagesCapture photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
         photoProxy->GetPhotoId().c_str(), fileId, ret);
     return ret;
 }
@@ -439,7 +439,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
 {
     MediaLibraryTracer tracer;
     tracer.Start("DealWithLowQualityPhoto");
-    MEDIA_ERR_LOG("start photoId: %{public}s format: %{public}d, quality: %{public}d",
+    HILOG_COMM_INFO("start photoId: %{public}s format: %{public}d, quality: %{public}d",
         photoProxy->GetPhotoId().c_str(), photoProxy->GetFormat(), photoProxy->GetPhotoQuality());
 
     PhotoFormat photoFormat = photoProxy->GetFormat();
@@ -448,7 +448,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
     } else if (photoFormat == PhotoFormat::DNG) {
         auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(),
             photoProxy->GetFileSize());
-        MEDIA_ERR_LOG("direct save dng file, ret: %{public}d", ret);
+        HILOG_COMM_INFO("direct save dng file, ret: %{public}d", ret);
     } else {
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
@@ -463,7 +463,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy is nullptr");
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
-    MEDIA_ERR_LOG("MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
+    HILOG_COMM_INFO("MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
     CHECK_AND_RETURN_INFO_LOG(cameraShotType_ != CameraShotType::VIDEO, "MultistagesCapture exit for VIDEO");
@@ -474,7 +474,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     }
     if (photoProxy->GetFormat() == PhotoFormat::YUV) {
         photoProxy->Release();
-        MEDIA_ERR_LOG("MultistagesCapture exit for YUV");
+        HILOG_COMM_INFO("MultistagesCapture exit for YUV");
         tracer.Finish();
         return;
     }
@@ -484,7 +484,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     int fd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
     CHECK_AND_RETURN_LOG(fd >= 0, "fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
     DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
-    MEDIA_ERR_LOG("MultistagesCapture exit");
+    HILOG_COMM_INFO("MultistagesCapture exit");
 }
 
 int32_t PhotoAssetProxy::GetVideoFd()
@@ -495,14 +495,14 @@ int32_t PhotoAssetProxy::GetVideoFd()
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, CREATE_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
     int32_t fd = dataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READWRITE);
-    MEDIA_ERR_LOG("GetVideoFd enter, video path: %{public}s, fd: %{public}d", videoUri.c_str(), fd);
+    HILOG_COMM_INFO("GetVideoFd enter, video path: %{public}s, fd: %{public}d", videoUri.c_str(), fd);
     return fd;
 }
 
 void PhotoAssetProxy::NotifyVideoSaveFinished()
 {
     if (cameraShotType_ == CameraShotType::VIDEO) {
-        MEDIA_ERR_LOG("NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
+        HILOG_COMM_INFO("NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
             static_cast<int32_t>(cameraShotType_));
         return;
     }
@@ -514,7 +514,7 @@ void PhotoAssetProxy::NotifyVideoSaveFinished()
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileId_);
     valuesBucket.Put(NOTIFY_VIDEO_SAVE_FINISHED, uri_);
     dataShareHelper_->Insert(uri, valuesBucket);
-    MEDIA_ERR_LOG("video save finished %{public}s", uri_.c_str());
+    HILOG_COMM_INFO("video save finished %{public}s", uri_.c_str());
 }
 
 void PhotoAssetProxy::RegisterPhotoStateCallback(const LowQualityMemoryNumHandler &func)

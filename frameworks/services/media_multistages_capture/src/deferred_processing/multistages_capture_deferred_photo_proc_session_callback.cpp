@@ -122,26 +122,26 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(cons
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const int32_t& fileId,
     uint32_t cloudImageEnhanceFlag, NativeRdb::ValuesBucket &updateValues, int32_t modifyType)
 {
-    MEDIA_ERR_LOG("fileId: %{public}d, modify type is %{public}d", fileId, modifyType);
+    HILOG_COMM_INFO("fileId: %{public}d, modify type is %{public}d", fileId, modifyType);
 
     int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT);
     if (modifyType == static_cast<int32_t>(FirstStageModifyType::EDITED)) {
-        MEDIA_ERR_LOG("fileId: %{public}d edited", fileId);
+        HILOG_COMM_INFO("fileId: %{public}d edited", fileId);
         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::EDIT);
     } else if (modifyType == static_cast<int32_t>(FirstStageModifyType::TRASHED)) {
-        MEDIA_ERR_LOG("fileId: %{public}d trashed", fileId);
+        HILOG_COMM_INFO("fileId: %{public}d trashed", fileId);
         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::TRASH);
     }
 
     if (cloudImageEnhanceFlag & AUTO_ENHANCEMENT) {
-        MEDIA_ERR_LOG("fileId: %{public}d is AUTO_ENHANCEMENT", fileId);
+        HILOG_COMM_INFO("fileId: %{public}d is AUTO_ENHANCEMENT", fileId);
         updateValues.PutInt(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     } else if (cloudImageEnhanceFlag & MANUAL_ENHANCEMENT) {
-        MEDIA_ERR_LOG("fileId: %{public}d is MANUAL_ENHANCEMENT", fileId);
+        HILOG_COMM_INFO("fileId: %{public}d is MANUAL_ENHANCEMENT", fileId);
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     } else {
-        MEDIA_ERR_LOG("fileId: %{public}d doesn't support enhancement", fileId);
+        HILOG_COMM_INFO("fileId: %{public}d doesn't support enhancement", fileId);
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
             static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
     }
@@ -150,7 +150,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnError(
     const string &imageId, const DpsErrorCode error)
 {
-    MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
+    HILOG_COMM_INFO("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
     switch (error) {
         case ERROR_SESSION_SYNC_NEEDED:
             MultiStagesPhotoCaptureManager::GetInstance().SyncWithDeferredProcSession();
@@ -285,7 +285,7 @@ std::shared_ptr<Media::Picture> GetPictureFromPictureIntf(std::shared_ptr<Camera
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleForNullData(const std::string &imageId,
     std::shared_ptr<Media::Picture> picture)
 {
-    MEDIA_ERR_LOG("result set is empty");
+    HILOG_COMM_INFO("result set is empty");
     if (picture != nullptr) {
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture));
     }
@@ -299,7 +299,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleForIsTemp(
     const std::shared_ptr<FileAsset> &fileAsset, std::shared_ptr<Media::Picture> &picture,
     uint32_t cloudImageEnhanceFlag)
 {
-    MEDIA_ERR_LOG("MultistagesCapture, this picture is temp.");
+    HILOG_COMM_INFO("MultistagesCapture, this picture is temp.");
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(fileAsset->GetPhotoId(),
         std::move(picture));
     bool isEdited = fileAsset->GetPhotoEditTime() > 0;
@@ -317,11 +317,11 @@ MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone with PictureIntf " + imageId);
     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture == nullptr || picture->GetMainPixel() == nullptr) {
-        MEDIA_ERR_LOG("MultistagesCapture picture is null");
+        HILOG_COMM_INFO("MultistagesCapture picture is null");
         return;
     }
     // 1. 分段式拍照已经处理完成，保存全质量图
-    MEDIA_ERR_LOG("MultistagesCapture yuv photoid: %{public}s, cloudImageEnhanceFlag: %{public}u enter",
+    HILOG_COMM_INFO("MultistagesCapture yuv photoid: %{public}s, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), cloudImageEnhanceFlag);
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE,
@@ -343,7 +343,7 @@ MediaLibraryTracer tracer;
     tracer.Finish();
 
     CallProcessImageDone(true, imageId);
-    MEDIA_ERR_LOG("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
+    HILOG_COMM_INFO("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
         imageId.c_str(), fileAsset->GetId());
 }
 
@@ -372,14 +372,14 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictureInfo(const int32_t &fileId,
     uint32_t cloudImageEnhanceFlag, int32_t modifyType)
 {
-    MEDIA_ERR_LOG("UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
+    HILOG_COMM_INFO("UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
         "cloudImageEnhanceFlag: %{public}u, modifyType: %{public}d", fileId, cloudImageEnhanceFlag, modifyType);
     NativeRdb::ValuesBucket updateValues;
     // 2. 更新数据库 photoQuality 到高质量
     UpdatePhotoQuality(fileId, updateValues);
     // 3. update cloud enhancement avaiable
     if (cloudImageEnhanceFlag) {
-        MEDIA_ERR_LOG("UpdateHighQualityPictureInfo UpdateCEAvailable enter");
+        HILOG_COMM_INFO("UpdateHighQualityPictureInfo UpdateCEAvailable enter");
         UpdateCEAvailable(fileId, cloudImageEnhanceFlag, updateValues, modifyType);
     }
 
@@ -395,12 +395,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
     std::shared_ptr<PictureIntf> pictureIntf)
 {
-    MEDIA_ERR_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
+    HILOG_COMM_INFO("MultistagesCapture photoid: %{public}s", imageId.c_str());
     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
         MEDIA_ERR_LOG("MultistagesCapture picture is not null");
     } else {
-        MEDIA_ERR_LOG("MultistagesCapture picture is null");
+        HILOG_COMM_ERROR("MultistagesCapture picture is null");
         return;
     }
     MediaLibraryTracer tracer;
@@ -413,7 +413,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
-        MEDIA_ERR_LOG("MultistagesCapture result set is empty");
+        HILOG_COMM_INFO("MultistagesCapture result set is empty");
         return;
     }
     tracer.Finish();
@@ -422,7 +422,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     resultSet->Close();
     MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
-    MEDIA_ERR_LOG("MultistagesCapture save low quality image end");
+    HILOG_COMM_INFO("MultistagesCapture save low quality image end");
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDone(
@@ -433,7 +433,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
         "this photo was delete or err photoId: %{public}s", imageId.c_str());
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone with addr " + imageId);
-    MEDIA_ERR_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
+    HILOG_COMM_INFO("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), bytes, cloudImageEnhanceFlag);
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE,
@@ -456,7 +456,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
         static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(fileAsset, addr, bytes);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
+        HILOG_COMM_INFO("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
