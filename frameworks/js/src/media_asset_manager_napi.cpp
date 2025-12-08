@@ -282,7 +282,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
     assetHandler->observerType = asyncContext->observerType;
-    NAPI_ERR_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode,
+    HILOG_COMM_INFO("Add %{public}d, %{public}s, %{public}s", notifyMode,
         MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
 
     switch (notifyMode) {
@@ -359,10 +359,10 @@ static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
         int currentPhotoQuality = HIGH_QUALITY_IMAGE;
         resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
         if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-            NAPI_ERR_LOG("query photo status : lowQuality");
+            HILOG_COMM_INFO("query photo status : lowQuality");
             return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
         }
-        NAPI_ERR_LOG("query photo status quality: %{public}d", currentPhotoQuality);
+        HILOG_COMM_INFO("query photo status quality: %{public}d", currentPhotoQuality);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     } else {
         return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
@@ -389,10 +389,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     }
     photoId = respBody.photoId;
     if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
-        NAPI_ERR_LOG("query photo status : lowQuality");
+        HILOG_COMM_INFO("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    NAPI_ERR_LOG("query photo status quality: %{public}d", respBody.photoQuality);
+    HILOG_COMM_INFO("query photo status quality: %{public}d", respBody.photoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
@@ -895,7 +895,7 @@ static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
 
 napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
 {
-    NAPI_ERR_LOG("Begin JSRequestImageData");
+    HILOG_COMM_INFO("Begin JSRequestImageData");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImageData js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImageData js arg invalid");
@@ -937,7 +937,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
 {
-    NAPI_ERR_LOG("Begin JSRequestImage");
+    HILOG_COMM_INFO("Begin JSRequestImage");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImage js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
@@ -1104,7 +1104,7 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
 void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
-    NAPI_ERR_LOG("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
+    HILOG_COMM_INFO("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:

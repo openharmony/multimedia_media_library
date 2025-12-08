@@ -2063,7 +2063,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
                                                    context->work, *jsContext);
     }
 
-    NAPI_ERR_LOG("End create asset.");
+    HILOG_COMM_INFO("End create asset.");
     delete context;
 }
 
@@ -10219,7 +10219,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, nap
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperCreatePhotoAsset");
 
-    NAPI_ERR_LOG("enter");
+    HILOG_COMM_INFO("enter");
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
