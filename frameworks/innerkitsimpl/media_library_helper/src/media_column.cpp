@@ -131,6 +131,7 @@ const std::string PhotoColumn::PHOTO_TRANSCODE_TIME = "transcode_time";
 const std::string PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE = "trans_code_file_size";
 const std::string PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE = "exist_compatible_duplicate";
 const std::string PhotoColumn::PHOTO_ASPECT_RATIO = "aspect_ratio";
+const std::string PhotoColumn::PHOTO_EDIT_DATA_EXIST = "edit_data_exist";
 
 const std::string PhotoColumn::PHOTO_FILE_INODE = "inode";
 const std::string PhotoColumn::PHOTO_STORAGE_PATH = "storage_path";

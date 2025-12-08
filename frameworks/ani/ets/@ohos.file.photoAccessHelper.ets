@@ -68,6 +68,8 @@ export namespace photoAccessHelper {
     SCREENSHOT = 1,
     MOVING_PHOTO = 3,
     BURST = 4,
+    SLOW_MOTION_VIDEO = 6,
+    SPATIAL_3DGS = 7,
   }
 
   export enum DynamicRangeType {
@@ -1358,6 +1360,7 @@ export namespace photoAccessHelper {
     SUM_SIZE = 'sum(size)',
     VIDEO_MODE = 'video_mode',
     ASPECT_RATIO = 'aspect_ratio',
+    EDIT_DATA_EXIST = 'edit_data_exist',
   }
 
   export enum AlbumKeys {
