@@ -83,8 +83,8 @@ SendableFileAssetNapi::~SendableFileAssetNapi() = default;
 
 void SendableFileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
-    SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
     lock_guard<mutex> lockGuard(mutex_);
+    SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
         delete fileAssetObj;
         fileAssetObj = nullptr;
