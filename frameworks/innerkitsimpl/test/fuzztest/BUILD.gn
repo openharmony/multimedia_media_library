@@ -55,6 +55,7 @@ group("media_library_fuzztest") {
     "medialibraryfileparseinterface_fuzzer:MediaLibraryFileParseInterfaceFuzzTest",
     "medialibraryfileparseinterface2_fuzzer:MediaLibraryFileParseInterface2FuzzTest",
     "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
+    "medialibrarymediaalbumscontrollerservice2_fuzzer:MediaLibraryMediaAlbumsControllerService2FuzzTest",
     "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
     "medialibrarymetarecover_fuzzer:MediaLibraryMetaRecoverFuzzTest",
