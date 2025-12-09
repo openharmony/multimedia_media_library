@@ -27,6 +27,10 @@ struct CheckedShootingAssetsInfo {
     int32_t fileId;
     std::string path;
     int32_t mediaType;
+    int32_t subtype;
+    std::string frontCamera;
+    std::string shootingMode;
+    std::string shootingModeTag;
 };
 
 class ShootingModeAlbumOperation {
@@ -34,11 +38,10 @@ public:
     static void UpdateShootingModeAlbum();
     static void Stop();
 
-    //PRO_PHOTO、SLOW_MOTION、LIGHT_PAINTING、SUPER_MACRO、TIME_LAPSE、QUICK_CAPTURE_ALBUM
-    static int32_t QueryShootingAssetsCount(int32_t startFileId);
-    static std::vector<CheckedShootingAssetsInfo> QueryShootingAssetsInfo(int32_t startFileId);
-    static void HandleInfos(const std::vector<CheckedShootingAssetsInfo> &photoInfos, int32_t &curFileId);
-    static bool UpdateShootingAlbum(const CheckedShootingAssetsInfo &photoInfo);
+    static std::vector<CheckedShootingAssetsInfo> QueryShootingAssetsInfo(int32_t startFileId, int32_t maxFileId);
+    static void HandleInfos(const std::vector<CheckedShootingAssetsInfo> &photoInfos);
+    static bool ScanAndUpdateAssetShootingMode(const CheckedShootingAssetsInfo &photoInfo,
+        std::unordered_set<std::string> &albumIdsToUpdate);
 
 private:
     static std::atomic<bool> isContinue_;
