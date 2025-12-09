@@ -664,14 +664,15 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
         downloadLock.lock();
         currentDownloadIdFileInfoMap_[progress.downloadId].percent = percent;
         downloadLock.unlock();
-        CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
         int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
             static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
         MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", retDB);
         // 检查点 批量下载 通知应用 notify type 0 进度
-        int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-            DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
-        MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+        if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+            int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
+                DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
+            MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+        }
     }
 }
 
@@ -696,10 +697,11 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallba
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS));
     MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback UpdateDBProgress, ret: %{public}d", ret);
     // 检查点 批量下载 通知应用 notify type 1 完成
-    CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
-    ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
-        std::stoi(fileId), 100); // 100 finish
-    MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+    if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+        ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+            std::stoi(fileId), 100); // 100 finish
+        MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+    }
     unique_lock<mutex> downloadLock(downloadResultMutex_);
     bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
         downloadResult_.find(fileId) == downloadResult_.end());
@@ -740,11 +742,11 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         downloadFileIdAndCount_.erase(fileId);
         downloadLockInside.unlock();
         // 检查点 批量下载 通知应用 notify type 2 失败
-        CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
-            fileId.c_str());
-        ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
-            std::stoi(fileId), percent);
-        MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+        if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+            ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
+                std::stoi(fileId), percent);
+            MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
+        }
     }
     unique_lock<mutex> downloadLock(downloadResultMutex_);
     bool cond = (currentDownloadIdFileInfoMap_.find(progress.downloadId) == currentDownloadIdFileInfoMap_.end() ||
