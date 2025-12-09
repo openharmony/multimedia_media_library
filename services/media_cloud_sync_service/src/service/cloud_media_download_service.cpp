@@ -298,6 +298,7 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &
     assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.mediaType = photosPo.mediaType.value_or(0);
     assetData.exifRotate = CloudMediaSyncUtils::GetExifRotate(assetData.mediaType, assetData.localPath);
+    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0;
     return assetData;
 }
 
@@ -326,6 +327,7 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadLakeAssetData(Photos
     assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
         (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
     assetData.lakeInfo = lakeInfos.at(photosPo.cloudId.value_or(""));
+    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0;
     return assetData;
 }
 
@@ -562,14 +564,14 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     CloudMediaScanService::ScanResult scanResult;
-    bool isNeedScan = assetData.needScanShootingMode || assetData.needScanSubtype;
+    bool isNeedScan = assetData.needScanShootingMode || assetData.needScanSubtype || assetData.needScanHdrMode;
     CHECK_AND_EXECUTE(!isNeedScan, this->scanService_.ScanDownloadedFile(assetData.path, scanResult));
     if (assetData.lakeInfo) {
         // lake file
         MEDIA_INFO_LOG("the file is lake");
-        ret = this->dao_.UpdateDownloadLakeAsset(assetData.fixFileType, assetData.path, assetData.lakeInfo, scanResult);
+        ret = this->dao_.UpdateDownloadLakeAsset(assetData, scanResult);
     } else {
-        ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
+        ret = this->dao_.UpdateDownloadAsset(assetData, scanResult);
     }
     if (scanResult.scanSuccess) {
         CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);

@@ -3647,11 +3647,13 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK && MedialibrarySubscriber::IsCurrentStatusOn()) {
         string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        g_updateHdrModeId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         SourceOptions opts;
         uint32_t err = E_OK;
         std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
         if (err != E_OK || imageSource == nullptr) {
-            MEDIA_ERR_LOG("CreateImageSource failed, filePath: %{public}s", filePath.c_str());
+            MEDIA_ERR_LOG("CreateImageSource failed, fileId: %{public}d, filePath: %{public}s", g_updateHdrModeId,
+                filePath.c_str());
             continue;
         }
         HdrMode hdrMode = HdrMode::DEFAULT;
@@ -3659,21 +3661,19 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
             hdrMode = MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(imageSource->CheckHdrType());
         }
 
-        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         if (hdrMode != HdrMode::DEFAULT) {
             string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
                 PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " = " +
                 to_string(static_cast<int32_t>(DynamicRangeType::HDR)) + ", " + PhotoColumn::PHOTO_HDR_MODE + " = " +
                 to_string(static_cast<int32_t>(hdrMode)) + ", " + PhotoColumn::PHOTO_META_DATE_MODIFIED + " = " +
                 to_string(MediaFileUtils::UTCTimeMilliSeconds()) + " WHERE " + MediaColumn::MEDIA_ID + " = " +
-                to_string(fileId);
+                to_string(g_updateHdrModeId);
             int32_t ret = rdbStore->ExecuteSql(updateSql);
             if (ret != NativeRdb::E_OK) {
                 MEDIA_ERR_LOG("Failed to update rdb");
                 continue;
             }
         }
-        g_updateHdrModeId = fileId;
     }
     return E_SUCCESS;
 }

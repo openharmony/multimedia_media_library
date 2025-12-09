@@ -32,6 +32,7 @@ public:
         std::string frontCamera;
         int32_t subType;
         std::string filePath;
+        int32_t hdrMode;
 
     public:
         std::string ToString() const;
