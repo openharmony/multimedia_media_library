@@ -788,7 +788,33 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackFa
     MEDIA_INFO_LOG("Bcbsfpt_HandleCallbackFailed_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackStopped_Test_001, TestSize.Level1)
+HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackFailed_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcbsfpt_HandleCallbackFailed_Test_001 Start");
+    PrepareBatchDownloadTask(10);
+    BackgroundCloudBatchSelectedFileProcessor::InDownloadingFileInfo currentDownloadFileInfo;
+    currentDownloadFileInfo.fileId = "1";
+    currentDownloadFileInfo.percent = 0;
+    currentDownloadFileInfo.status = BackgroundCloudBatchSelectedFileProcessor::BatchDownloadStatus::INIT;
+    BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_[1] = currentDownloadFileInfo;
+    BackgroundCloudBatchSelectedFileProcessor::downloadResult_ = {
+        {"1", BackgroundCloudBatchSelectedFileProcessor::BatchDownloadStatus::INIT}
+    };
+    DownloadProgressObj progress;
+    progress.downloadId = 1;
+    progress.downloadedSize = 1 * 1000 * 1000;
+    progress.downloadedSize = 0;
+    progress.path = "file://media/Photo/1";
+    progress.state = DownloadProgressObj::Status::FAILED;
+    BackgroundCloudBatchSelectedFileProcessor::downloadFileIdAndCount_["1"] = 6;
+    BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallback(progress);
+    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.find(1),
+        BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.end());
+    int32_t failedCount = QueryTasksCountByStatus(Media::BatchDownloadStatusType::TYPE_FAIL);
+    EXPECT_EQ(failedCount, 0);
+    MEDIA_INFO_LOG("Bcbsfpt_HandleCallbackFailed_Test_001 End");
+}
+HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackStopped_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcbsfpt_HandleCallbackStopped_Test_001 Start");
     PrepareBatchDownloadTask(10);
@@ -804,6 +830,7 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackSt
     progress.downloadId = 1;
     progress.downloadedSize = 1 * 1000 * 1000;
     progress.totalSize = 10 * 1000 * 1000;
+    progress.downloadedSize = 1;
     progress.path = "file://media/Photo/1";
     progress.state = DownloadProgressObj::Status::STOPPED;
     BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallback(progress);
