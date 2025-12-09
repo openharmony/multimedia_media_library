@@ -198,6 +198,12 @@ export namespace photoAccessHelper {
     dataHandler: MediaAssetDataHandler<boolean>;
   }
 
+  interface AlbumChangeInfos {
+  }
+
+  interface PhotoAssetChangeInfos {
+  }
+
   export class MediaAssetManager {
     static onMediaAssetDataPrepared(data: MediaAssetDataType,
       dataHandler: MediaAssetDataHandler<MediaAssetDataType>, map?: Map<string, string>): void {
@@ -2229,6 +2235,10 @@ export namespace photoAccessHelper {
       photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
     getAlbumsByIds(albumIds: Array<int>): Promise<Map<int, Album>>;
     updateGalleryFormInfo(info: GalleryFormInfo): Promise<void>;
+    onSinglePhotoAlbumChange(album: Album, callback: Callback<AlbumChangeInfos>): void;
+    offSinglePhotoAlbumChange(album?: Album, callback?: Callback<AlbumChangeInfos>): void;
+    onSinglePhotoChange(asset: PhotoAsset, callback: Callback<PhotoAssetChangeInfos>): void;
+    offSinglePhotoChange(asset?: PhotoAsset, callback?: Callback<PhotoAssetChangeInfos>): void;
   }
 
   interface AppInfo {
@@ -3235,6 +3245,50 @@ export namespace photoAccessHelper {
       });
     }
 
+    onSinglePhotoAlbumChange(album: Album, callback: Callback<AlbumChangeInfos>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.onSinglePhotoAlbumChangeInner(album, callback);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+    }
+	
+	  offSinglePhotoAlbumChange(album?: Album, callback?: Callback<AlbumChangeInfos>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.offSinglePhotoAlbumChangeInner(album, callback);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+    }
+	
+	  onSinglePhotoChange(asset: PhotoAsset, callback: Callback<PhotoAssetChangeInfos>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.onSinglePhotoChangeInner(asset, callback);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+    }
+
+	  offSinglePhotoChange(asset?: PhotoAsset, callback?: Callback<PhotoAssetChangeInfos>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.offSinglePhotoChangeInner(asset, callback);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+    }
+
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
       callback: AsyncCallback<void>): int;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -3274,6 +3328,10 @@ export namespace photoAccessHelper {
     native updateGalleryFormInfoInner(info: GalleryFormInfo): void;
     native getSupportedPhotoFormatsInner(photoType: PhotoType): Array<string>;
     native startAssetAnalysisInner(type: AnalysisType, assetUris?: Array<string>): int;
+    native onSinglePhotoAlbumChangeInner(album: Album, callback: Callback<AlbumChangeInfos>): void;
+    native offSinglePhotoAlbumChangeInner(album?: Album, callback?: Callback<AlbumChangeInfos>): void;
+    native onSinglePhotoChangeInner(asset: PhotoAsset, callback: Callback<PhotoAssetChangeInfos>): void;
+    native offSinglePhotoChangeInner(asset?: PhotoAsset, callback?: Callback<PhotoAssetChangeInfos>): void;
   }
 
   export interface GalleryFormInfo {
