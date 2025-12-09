@@ -357,11 +357,18 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t BETWEENENDVALUE_IDX = 2;
     vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN};
     string dateType = item.GetSingle(FIELD_IDX);
     auto it = find(dateTypes.begin(), dateTypes.end(), dateType);
-    if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
+    if (it != dateTypes.end() && item.singleParams.size() == BETWEENENDVALUE_IDX + 1 &&
+        (item.operation == DataShare::BETWEEN || item.operation == DataShare::NOTBETWEEN)) {
+        dateType += "_s";
+        operations.push_back({ item.operation, { dateType, item.GetSingle(VALUE_IDX).value,
+            item.GetSingle(BETWEENENDVALUE_IDX).value} });
+        return true;
+    } else if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
         item.operation != DataShare::ORDER_BY_DESC) {
         dateType += "_s";
         operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
