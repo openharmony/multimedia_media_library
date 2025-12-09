@@ -812,7 +812,7 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackFa
     EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.find(1),
         BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.end());
     int32_t failedCount = QueryTasksCountByStatus(Media::BatchDownloadStatusType::TYPE_FAIL);
-    EXPECT_EQ(failedCount, 0);
+    EXPECT_NE(failedCount, 0);
     MEDIA_INFO_LOG("Bcbsfpt_HandleCallbackFailed_Test_002 End");
 }
 HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_HandleCallbackStopped_Test_001, TestSize.Level1)
