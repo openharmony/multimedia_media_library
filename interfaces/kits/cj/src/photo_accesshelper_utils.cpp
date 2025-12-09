@@ -62,6 +62,48 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
     return false;
 }
 
+static void MultiParamLpathToLowerCase(const vector<DataShare::MutliValue::Type>& originMultiParams,
+    vector<DataShare::MutliValue::Type>& newMultiParams)
+{
+    for (const auto& multiParam : originMultiParams) {
+        vector<string> stringVec = std::get_if<vector<string>>(&multiParam) ?
+            std::get<vector<string>>(multiParam) : vector<string>();
+        if (stringVec.empty()) {
+            newMultiParams.push_back(multiParam);
+            continue;
+        }
+        for (auto& str : stringVec) {
+            std::transform(str.begin(), str.end(), str.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+        }
+        newMultiParams.push_back(stringVec);
+    }
+}
+
+static void MakeLpathParamsCaseInsensitive(vector<OperationItem>& operations,
+    const OperationItem& item)
+{
+    vector<DataShare::SingleValue::Type> newSingleParams {};
+    vector<DataShare::MutliValue::Type> newMultiParams {};
+    string lowerField = "lower(" + PhotoAlbumColumns::ALBUM_LPATH + ")";
+    newSingleParams.push_back(lowerField);
+    for (size_t i = 1; i < item.singleParams.size(); i++) { // start with 1 to skip field param
+        string value = static_cast<string>(item.GetSingle(i));
+        if (!value.empty()) {
+            std::transform(value.begin(), value.end(), value.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+            newSingleParams.push_back(value);
+        } else {
+            newSingleParams.push_back(item.singleParams[i]);
+        }
+    }
+    if (!item.multiParams.empty()) {
+        MultiParamLpathToLowerCase(item.multiParams, newMultiParams);
+    }
+    operations.push_back(
+        { item.operation, newSingleParams, newMultiParams });
+}
+
 static bool HandleSpecialPredicate(shared_ptr<DataSharePredicates> &predicatePtr,
     DataSharePredicates &predicates, ExtraInfo &extraInfo)
 {
@@ -103,6 +145,11 @@ static bool HandleSpecialPredicate(shared_ptr<DataSharePredicates> &predicatePtr
             continue;
         }
         if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+            continue;
+        }
+        if (item.operation != DataShare::ORDER_BY_ASC && item.operation != DataShare::ORDER_BY_DESC &&
+            static_cast<string>(item.GetSingle(FIELD_IDX)) == PhotoAlbumColumns::ALBUM_LPATH) {
+            MakeLpathParamsCaseInsensitive(operations, item);
             continue;
         }
         operations.push_back(item);
