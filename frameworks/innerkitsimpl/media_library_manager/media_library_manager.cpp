@@ -1078,7 +1078,8 @@ shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(
 {
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    HILOG_COMM_INFO("dataShareHelper is ready, ret = %{public}d.", dataShareHelper != nullptr);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} dataShareHelper is ready, ret = %{public}d.",
+        MLOG_TAG, __FUNCTION__, __LINE__, dataShareHelper != nullptr);
     shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(
         dataShareHelper, callerInfo, cameraShotType);
     return photoAssetProxy;

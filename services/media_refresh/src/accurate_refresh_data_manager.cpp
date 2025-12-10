@@ -249,9 +249,10 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         if (modifiedDatas.size() <= logTimesLimit || !recordFirst) {
             ACCURATE_INFO("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);
             if (AccurateRefresh::accurateDebugLevel >= AccurateRefresh::accurateDebugLevelMid) {
-                HILOG_COMM_INFO("##: [update] info before: %{public}s",
-                    changeData.infoBeforeChange_.ToString(true).c_str());
-                HILOG_COMM_INFO("##: change: %{public}s",
+                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: [update] info before: %{public}s",
+                    MLOG_TAG, __FUNCTION__, __LINE__, changeData.infoBeforeChange_.ToString(true).c_str());
+                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: change: %{public}s",
+                    MLOG_TAG, __FUNCTION__, __LINE__,
                     changeData.infoBeforeChange_.GetDataDiff(changeData.infoAfterChange_).c_str());
             }
             recordFirst = true;

@@ -1065,13 +1065,10 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     }
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
-    MEDIA_INFO_LOG("API excuted, userId: %{public}d, traceId: %{public}s, "
-                   "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
-        userId,
-        traceId.c_str(),
-        static_cast<int32_t>(operationCode),
-        ret,
-        static_cast<long>(costTime));
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} API excuted, userId: %{public}d, traceId: %{public}s, "
+        "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+        MLOG_TAG, __FUNCTION__, __LINE__, userId, traceId.c_str(),
+        static_cast<int32_t>(operationCode), ret, static_cast<long>(costTime));
     return ret;
 }
 } // namespace AbilityRuntime

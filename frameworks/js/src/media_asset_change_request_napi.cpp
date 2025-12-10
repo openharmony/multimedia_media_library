@@ -1420,7 +1420,8 @@ napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_ca
 
 napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
 {
-    HILOG_COMM_INFO("Begin MediaAssetChangeRequestNapi::JSSaveCameraPhoto");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Begin MediaAssetChangeRequestNapi::JSSaveCameraPhoto",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     constexpr size_t minArgs = ARGS_ZERO;
     constexpr size_t maxArgs = ARGS_ONE;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
