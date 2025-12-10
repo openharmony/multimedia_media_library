@@ -22,6 +22,7 @@
 #include "cloud_sync_notify_handler.h"
 #include "cloud_sync_helper.h"
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_asset_operations.h"
 #ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
 #endif
@@ -333,7 +334,7 @@ int32_t CloudMediaAssetManager::DeleteBatchCloudFile(const std::vector<std::stri
 }
 
 int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
-    std::vector<std::string> &dateTakens)
+    std::vector<std::string> &dateTakens, std::vector<int32_t> &subTypes)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ReadyDataForDelete");
@@ -341,7 +342,8 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
     AbsRdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
     queryPredicates.Limit(BATCH_DELETE_LIMIT_COUNT);
-    vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_DATE_TAKEN};
+    vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_DATE_TAKEN,
+        PhotoColumn::PHOTO_SUBTYPE};
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "ReadyDataForDelete failed. rdbStorePtr is null");
@@ -357,6 +359,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
         fileIds.emplace_back(GetStringVal(MediaColumn::MEDIA_ID, resultSet));
         paths.emplace_back(path);
         dateTakens.emplace_back(GetStringVal(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
+        subTypes.emplace_back(GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet));
     }
     resultSet->Close();
     return OHOS::Media::E_OK;
@@ -392,14 +395,17 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
     paths.reserve(BATCH_DELETE_LIMIT_COUNT);
     std::vector<std::string> dateTakens;
     dateTakens.reserve(BATCH_DELETE_LIMIT_COUNT);
+    std::vector<int32_t> subTypes;
+    subTypes.reserve(BATCH_DELETE_LIMIT_COUNT);
     int32_t cycleNumber = 0;
     while (doDeleteTask_.load() > TaskDeleteState::IDLE && cycleNumber <= CYCLE_NUMBER) {
-        int32_t ret = ReadyDataForDelete(fileIds, paths, dateTakens);
+        int32_t ret = ReadyDataForDelete(fileIds, paths, dateTakens, subTypes);
         if (ret != OHOS::Media::E_OK || fileIds.empty()) {
             MEDIA_WARN_LOG("ReadyDataForDelete failed or fileIds is empty, ret: %{public}d, size: %{public}zu",
                 ret, fileIds.size());
             break;
         }
+        MediaLibraryAssetOperations::SaveDeletedFile(fileIds, paths, PhotoColumn::PHOTOS_TABLE, dateTakens, subTypes);
         ret = DeleteBatchCloudFile(fileIds);
 
         bool retMap = ScannerMapCodeUtils::DeleteMapCodesByFileIds(fileIds);
@@ -417,6 +423,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         MEDIA_INFO_LOG("delete thumb files.");
         CHECK_AND_PRINT_LOG(ThumbnailService::GetInstance()->BatchDeleteThumbnailDirAndAstc(PhotoColumn::PHOTOS_TABLE,
             fileIds, paths, dateTakens), "DeleteThumbnailDirAndAstc error.");
+        MediaLibraryAssetOperations::ClearDeletedFile(fileIds, PhotoColumn::PHOTOS_TABLE);
         MEDIA_INFO_LOG("delete all cloud media asset. loop: %{public}d, deleted asset number: %{public}zu",
             cycleNumber, fileIds.size());
         fileIds.clear();

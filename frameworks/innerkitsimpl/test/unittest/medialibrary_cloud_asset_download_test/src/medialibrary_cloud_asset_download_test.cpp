@@ -477,7 +477,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     std::vector<std::string> fileIds;
     std::vector<std::string> paths;
     std::vector<std::string> dateTakens;
-    ret = instance.ReadyDataForDelete(fileIds, paths, dateTakens);
+    std::vector<int32_t> subTypes;
+    ret = instance.ReadyDataForDelete(fileIds, paths, dateTakens, subTypes);
     EXPECT_EQ(ret, E_OK);
     ret = instance.ForceRetainDownloadCloudMedia(CloudMediaRetainType::RETAIN_FORCE);
     EXPECT_EQ(ret, E_OK);
@@ -647,7 +648,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     std::vector<std::string> fileIds;
     std::vector<std::string> paths;
     std::vector<std::string> dateTakens;
-    ret = instance.ReadyDataForDelete(fileIds, paths, dateTakens);
+    std::vector<int32_t> subTypes;
+    ret = instance.ReadyDataForDelete(fileIds, paths, dateTakens, subTypes);
     EXPECT_EQ(ret, E_OK);
     ret = instance.ForceRetainDownloadCloudMediaEx(CloudMediaRetainType::HDC_RETAIN_FORCE);
     EXPECT_EQ(ret, E_OK);
