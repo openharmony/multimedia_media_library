@@ -602,7 +602,22 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_StartTimerStopTi
     BackgroundCloudBatchSelectedFileProcessor::DownloadLatestBatchSelectedFinished();
     EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::batchDownloadResourcesStartTimerId_, 0);
     BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer();
+    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag(), false);
     MEDIA_INFO_LOG("Bcbsfpt_StartTimerStopTimer_Test_002 End");
+}
+
+HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_StartTimerStopTimer_Test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcbsfpt_StartTimerStopTimer_Test_003 Start");
+    BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer();
+    InsertBatchDownloadTask(1, "file://media/Photo/1/1.jpg", "1.jpg",
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
+    bool status = BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag();
+    BackgroundCloudBatchSelectedFileProcessor::DownloadLatestBatchSelectedFinished();
+    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::batchDownloadResourcesStartTimerId_, 0);
+    BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer();
+    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag(), status);
+    MEDIA_INFO_LOG("Bcbsfpt_StartTimerStopTimer_Test_003 End");
 }
 
 HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_LaunchBatchDownloadProcessor_Test_001, TestSize.Level1)
