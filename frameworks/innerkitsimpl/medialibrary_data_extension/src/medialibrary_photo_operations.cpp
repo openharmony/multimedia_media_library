@@ -3623,6 +3623,17 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     return E_OK;
 }
 
+int32_t UpdateQualityAndDirty(const int32_t &fileId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    int32_t updatedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    return updatedRows;
+}
+
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
@@ -3653,12 +3664,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     }
     isHighQualityPicture = (picture == nullptr) ? photoExtInfo.isHighQualityPicture : isHighQualityPicture;
     if (isHighQualityPicture) {
-        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-        ValuesBucket values;
-        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+        int32_t updatedRows = UpdateQualityAndDirty(fileId);
         CHECK_AND_PRINT_LOG(updatedRows >= 0, "update photo quality fail.");
         MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     }
