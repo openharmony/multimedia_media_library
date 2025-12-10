@@ -1126,6 +1126,7 @@ int32_t MediaAlbumsService::SetOrderPosition(ChangeRequestSetOrderPositionDto &s
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ORDER_POSITION, setOrderPositionDto.orderString);
+    valuesBucket.Put(ALBUM_ID, setOrderPositionDto.albumId);
     NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("SetOrderPosition:Input parameter is invalid ");
