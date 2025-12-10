@@ -874,7 +874,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadResourcesTask()
 
 bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTask()
 {
-    MEDIA_DEBUG_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask START");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload HaveBatchDownloadForAutoResumeTask START");
     CHECK_AND_RETURN_RET_INFO_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(), false,
         "Cloud sync switch off, skip BatchSelectFileDownload");
     CHECK_AND_RETURN_RET_INFO_LOG(batchDownloadTaskAdded_, false, "no batch download start trigger");
@@ -1208,7 +1208,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProces
     }
 }
 
-// 手动触发 部分暂停
+// 手动触发 部分暂停 只停止任务
 void BackgroundCloudBatchSelectedFileProcessor::TriggerPauseBatchDownloadProcessor(std::vector<std::string>
     &fileIdsDownloading)
 {
