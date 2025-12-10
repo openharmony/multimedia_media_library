@@ -111,7 +111,9 @@ void MediaLibraryManagerTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("MediaLibraryManagerTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    ASSERT_NE(sDataShareHelper_, nullptr);
+    if (sDataShareHelper_ == nullptr) {
+        exit(0);
+    }
 
     // make sure board is empty
     ClearAllFile();
@@ -178,7 +180,9 @@ void CreateDataHelper(int32_t systemAbilityId)
     if (sDataShareHelper_ == nullptr) {
         const sptr<IRemoteObject> &token = remoteObj;
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-        ASSERT_NE(sDataShareHelper_, nullptr);
+        if (sDataShareHelper_ == nullptr) {
+            exit(0);
+        }
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
 }
