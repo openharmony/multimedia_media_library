@@ -34,6 +34,7 @@
 #include "cloud_media_dao_utils.h"
 #include "media_file_utils.h"
 #include "cloud_media_context.h"
+#include "photos_field_iterator.h"
 #include "hi_audit.h"
 #include "photo_owner_album_id_operation.h"
 #include "lake_file_utils.h"
@@ -861,7 +862,8 @@ void CloudMediaPhotosDao::HandleShootingMode(const std::string &cloudId, const N
 }
 
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::BatchQueryLocal(
-    const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount)
+    const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount,
+    CleanType cleanType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "BatchQueryLocal Failed to get rdbStore.");
@@ -881,6 +883,7 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::BatchQueryLocal(
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_LOCAL));
     predicates.In(PhotoColumn::MEDIA_NAME, displayNames);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(cleanType));
 
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "BatchQueryLocal Failed to query.");
@@ -2106,6 +2109,110 @@ int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloud
     isValid = ret == E_OK && photoAlbumPoOp.has_value();
     CHECK_AND_RETURN_RET(!isValid, ret);
     return this->albumCache_.QueryAlbumBySourcePath(sourcePath, photoAlbumPoOp);
+}
+
+int32_t CloudMediaPhotosDao::UpdateFileRecordsInTransaction(const std::vector<NativeRdb::ValuesBucket> &updateFiles,
+    const std::vector<int32_t> &cloudFileIdlist, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+{
+    const auto loop_count = std::min(updateFiles.size(), cloudFileIdlist.size());
+    std::function<int(void)> transFunc = [&]() -> int {
+        int32_t totalChangedRows = 0;
+        for (size_t idx = 0; idx < loop_count; ++idx) {
+            const auto& valuesBucket = updateFiles[idx];
+            const auto& cloudFileId = cloudFileIdlist[idx];
+            std::string whereClause = MediaColumn::MEDIA_ID + " = ?";
+            std::vector<std::string> whereArgs = {std::to_string(cloudFileId)};
+
+            int32_t changedRows = 0;
+            auto retInner = photoRefresh->Update(changedRows, PhotoColumn::PHOTOS_TABLE,
+                valuesBucket, whereClause, whereArgs);
+            if (retInner != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
+                MEDIA_ERR_LOG("Failed to update file at index %{public}zu, ret=%{public}d", idx, retInner);
+                return retInner;
+            }
+            totalChangedRows += changedRows;
+        }
+
+        MEDIA_INFO_LOG("BatchUpdateFile: updated %{public}d total rows in batch.", totalChangedRows);
+        return AccurateRefresh::ACCURATE_REFRESH_RET_OK;
+    };
+
+    int32_t transRet = E_ERR;
+    if (photoRefresh->GetTransaction() != nullptr) {
+        transRet = photoRefresh->GetTransaction()->RetryTrans(transFunc);
+    } else {
+        auto trans = std::make_shared<TransactionOperations>(__func__);
+        CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_RDB_STORE_NULL, "BatchUpdate Failed to get trans.");
+        transRet = trans->RetryTrans(transFunc);
+    }
+
+    if (transRet != E_OK) {
+        MEDIA_ERR_LOG("BatchUpdate transaction failed, ret=%{public}d", transRet);
+    }
+
+    return transRet;
+}
+
+int32_t CloudMediaPhotosDao::BatchUpdateFile(std::map<std::string, int> &recordAnalysisAlbumMaps,
+    std::map<std::string, std::set<int>> &recordAlbumMaps, std::vector<NativeRdb::ValuesBucket> &updateFiles,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh, std::vector<int32_t> cloudFileIdlist)
+{
+    int32_t ret = E_OK;
+    if (!updateFiles.empty()) {
+        ret = UpdateFileRecordsInTransaction(updateFiles, cloudFileIdlist, photoRefresh);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("UpdateFileRecordsInTransaction failed, ret=%{public}d", ret);
+            return ret;
+        }
+    }
+
+    if (!recordAlbumMaps.empty()) {
+        BatchInsertAssetMaps(recordAlbumMaps);
+    }
+
+    if (!recordAnalysisAlbumMaps.empty()) {
+        BatchInsertAssetAnalysisMaps(recordAnalysisAlbumMaps);
+    }
+
+    return ret;
+}
+
+void CloudMediaPhotosDao::UpdateMediaAnalysisHdcData()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateInvalidHighlightInfo Failed to get rdbStore.");
+    
+    // 更新非前台推送和删除的时刻状态为-4，智慧分析会清理时刻状态为-4的数据
+    std::string updateSql = "\
+        UPDATE tab_highlight_album \
+            SET highlight_status = -4 \
+        WHERE highlight_status != 1 \
+            AND highlight_status != -3 ";
+    int32_t highlighRet = rdbStore->ExecuteSql(updateSql);
+    if (highlighRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update invalid highlight err %{public}d", highlighRet);
+    }
+
+    // 更新时刻封面状态为1，智慧分析根据状态位刷新时刻封面
+    std::string updateHighlightCoverSql = "\
+        UPDATE tab_highlight_cover_info \
+            SET status = 1 ";
+    int32_t highlighCoverRet = rdbStore->ExecuteSql(updateHighlightCoverSql);
+    if (highlighCoverRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update invalid highlight cover err %{public}d", highlighCoverRet);
+    }
+
+    // 更新人像相册、合影相册的analysis_status为1，智慧分析根据状态位刷新相册显示状态
+    std::string updatePortraitSql = "\
+        UPDATE AnalysisAlbum \
+            SET analysis_status = 1 \
+        WHERE (album_subtype = 4102 \
+            OR album_subtype = 4103) \
+            AND user_display_level < 0 ";
+    int32_t portraitRet = rdbStore->ExecuteSql(updatePortraitSql);
+    if (portraitRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update portrait analysis status err %{public}d", portraitRet);
+    }
 }
 
 bool CloudMediaPhotosDao::IsLocalFileExists(const PhotosDto &record)
