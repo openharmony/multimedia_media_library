@@ -153,6 +153,21 @@ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Pictur
     return DealPicture(mime_type, path, picture, isHighQualityPicture);
 }
 
+Media::PackOption SetPackOption(const std::string &mime_type)
+{
+    Media::PackOption packOption;
+    packOption.format = (mime_type == MIME_TYPE_HEIC) ? MIME_TYPE_HEIF : mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    packOption.isEditScene = false;
+    if (packOption.format == MIME_TYPE_HEIF) {
+        packOption.quality = PACKOPTION_QUALITY_HEIF;
+    } else {
+        packOption.quality = PACKOPTION_QUALITY;
+    }
+    return packOption;
+}
+
 int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
     std::shared_ptr<Media::Picture> &picture, bool isHighQualityPicture)
 {
@@ -165,16 +180,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
         return -1;
     }
     Media::ImagePacker imagePacker;
-    Media::PackOption packOption;
-    packOption.format = (mime_type == MIME_TYPE_HEIC) ? MIME_TYPE_HEIF : mime_type;
-    packOption.needsPackProperties = true;
-    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    packOption.isEditScene = false;
-    if (packOption.format == MIME_TYPE_HEIF) {
-        packOption.quality = PACKOPTION_QUALITY_HEIF;
-    } else {
-        packOption.quality = PACKOPTION_QUALITY;
-    }
+    Media::PackOption packOption = SetPackOption(mime_type);
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());

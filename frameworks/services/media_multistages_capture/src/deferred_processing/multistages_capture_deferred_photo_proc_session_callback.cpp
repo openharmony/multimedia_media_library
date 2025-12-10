@@ -412,7 +412,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     std::shared_ptr<PictureIntf> pictureIntf)
 {
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture photoid: %{public}s",
-        MLOG_TAG, __FUNCTION__, __LINE__ imageId.c_str());
+        MLOG_TAG, __FUNCTION__, __LINE__, imageId.c_str());
     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
         MEDIA_ERR_LOG("MultistagesCapture picture is not null");
