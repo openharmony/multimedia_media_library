@@ -683,6 +683,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         rowId = outRowId;
     } else if (type == to_string(SMART) && subtype == to_string(PORTRAIT)) {
         rowId = CreatePortraitAlbum(albumName);
+        return rowId;
     } else {
         rowId = CreatePhotoAlbum(albumName);
     }
