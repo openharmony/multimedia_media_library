@@ -158,8 +158,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::DealPicture");
-    HILOG_COMM_INFO("DealPicture, path: %{public}s, mime_type: %{public}s",
-        MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} DealPicture, path: %{public}s, mime_type: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
     if (picture == nullptr) {
         MEDIA_ERR_LOG("picture is nullptr.");
         return -1;
@@ -188,7 +188,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     imagePacker.FinalizePacking();
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
-    HILOG_COMM_INFO("SavePicture end size: %{public}zu", size);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} SavePicture end size: %{public}zu",
+        MLOG_TAG, __FUNCTION__, __LINE__, size);
     if (size == 0) {
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
@@ -197,7 +198,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     ret = rename(tempOutputPath.c_str(), path.c_str());
     CHECK_AND_PRINT_LOG(ret == E_SUCCESS, "Failed rename errno: %{public}d", errno);
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
-        HILOG_COMM_INFO("file: %{public}s exists and needs to be deleted", tempOutputPath.c_str());
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} file: %{public}s exists and needs to be deleted",
+            MLOG_TAG, __FUNCTION__, __LINE__, tempOutputPath.c_str());
         if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
             MEDIA_ERR_LOG("delete file: %{public}s failed", tempOutputPath.c_str());
         }

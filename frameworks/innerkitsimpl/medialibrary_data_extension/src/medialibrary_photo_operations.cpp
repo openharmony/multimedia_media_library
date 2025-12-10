@@ -1329,7 +1329,9 @@ static void UpdateValuesBucketForExt(MediaLibraryCommand &cmd, ValuesBucket &val
         PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
         values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
     }
-    HILOG_COMM_INFO("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         supportedWatermarkType, cameraShotKey.c_str());
 }
 
@@ -1547,7 +1549,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
         return 0;
     }
-    HILOG_COMM_INFO("MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture, start save fileId: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
@@ -1586,7 +1589,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         }
     }
     tracer.Finish();
-    HILOG_COMM_INFO("MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         fileId.c_str(), ret, needScanStr.c_str());
     return ret;
 }
@@ -3487,18 +3492,22 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
 {
     int32_t ret = GetPhotoIdByFileId(fileId, photoId);
     if (ret != E_OK || photoId.empty()) {
-        HILOG_COMM_ERROR("photoId is emply fileId is: %{public}d", fileId);
+        HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} photoId is emply fileId is: %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, fileId);
         return E_FILE_EXIST;
     }
 
-    HILOG_COMM_INFO("photoId: %{public}s", photoId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} photoId: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     bool isTakeEffect = false;
     CHECK_AND_EXECUTE(pictureManagerThread == nullptr,
         picture = pictureManagerThread->GetDataWithImageId(photoId,
         isHighQualityPicture, isTakeEffect, isCleanImmediately));
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
-    HILOG_COMM_INFO("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         photoId.c_str(), static_cast<int32_t>(picture.use_count()),
         std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
     return E_OK;
@@ -3514,7 +3523,8 @@ int32_t MediaLibraryPhotoOperations::GetTakeEffect(std::shared_ptr<Media::Pictur
             isTakeEffect, false);
     }
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
-    HILOG_COMM_INFO("get takeEffect: %{public}d", isTakeEffect);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} get takeEffect: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, isTakeEffect);
     if (isTakeEffect) {
         return E_ERR;
     }
@@ -3620,7 +3630,8 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
-    HILOG_COMM_INFO("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} savePicture fileType is: %{public}d, fileId is: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, fileType, fileId);
     CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST, "Failed get picture");
 
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
@@ -3766,14 +3777,17 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
         int32_t errCode = VideoCompositionCallbackImpl::EraseWatermarkTagAndStickerField(editData, isFiltersFieldEmpty);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to erase watermark tag and sticker field");
         if (isFiltersFieldEmpty && isSaveVideo) {
-            HILOG_COMM_INFO("MovingPhoto video only supports filter now.");
+            HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MovingPhoto video only supports filter now.",
+                MLOG_TAG, __FUNCTION__, __LINE__);
             CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath, videoType) == E_OK, E_HAS_FS_ERROR,
                 "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
             return CopyVideoFile(assetPath, true);
         } else if (isFiltersFieldEmpty && !isSaveVideo) {
             return CopyVideoFile(assetPath, false);
         }
-        HILOG_COMM_INFO("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+            "AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s",
+            MLOG_TAG, __FUNCTION__, __LINE__, editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData, isNeedScan);
@@ -3918,8 +3932,9 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
 
 int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
 {
-    HILOG_COMM_INFO("Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
-        DfxUtils::GetSafePath(assetPath).c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, DfxUtils::GetSafePath(assetPath).c_str());
     string sourceImagePath = GetEditDataSourcePath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
     string videoPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(assetPath)
@@ -4253,7 +4268,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
-    HILOG_COMM_INFO("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
     std::string info = editdata;
     size_t lastSlash = outputPath.rfind('/');
@@ -4268,13 +4285,16 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
     tracer.Finish();
     if (ret != E_OK) {
-        HILOG_COMM_ERROR("MultistagesCapture, TakeEffect error. ret = %{public}d", ret);
+        HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} MultistagesCapture, TakeEffect error. ret = %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, ret);
         return E_ERR;
     }
 
     string editDataPath = GetEditDataPath(outputPath);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
-        HILOG_COMM_INFO("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+            "Editdata path: %{private}s exists, cannot add filters to photo",
+            MLOG_TAG, __FUNCTION__, __LINE__, editDataPath.c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return E_OK;
@@ -4287,7 +4307,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return ret;
     }
-    HILOG_COMM_INFO("MultistagesCapture finish");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture finish",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     return E_OK;
 }
 
@@ -4295,8 +4316,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     const std::string &outputPath, string &editdata)
 {
     (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
-    HILOG_COMM_INFO("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
-        outputPath.c_str(), editdata.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, outputPath.c_str(), editdata.c_str());
     size_t lastSlash = outputPath.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
@@ -4307,7 +4329,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
     bool isMovingPhotoEffectMode, const std::string &path)
 {
-    HILOG_COMM_INFO("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
     CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path, isEdited, isMovingPhotoEffectMode));
     return FileUtils::SaveVideo(path, isEdited);

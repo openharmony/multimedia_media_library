@@ -1199,7 +1199,8 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    HILOG_COMM_INFO("insert success, rowId = %{public}d", (int)outRowId);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} insert success, rowId = %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, (int)outRowId);
     auto fileId = outRowId;
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
@@ -1209,7 +1210,8 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    HILOG_COMM_INFO("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} insert uripermission success, rowId = %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, (int)tmpOutRowId);
     return static_cast<int32_t>(outRowId);
 }
 

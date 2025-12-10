@@ -282,8 +282,9 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
     assetHandler->observerType = asyncContext->observerType;
-    HILOG_COMM_INFO("Add %{public}d, %{public}s, %{public}s", notifyMode,
-        MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Add %{public}d, %{public}s, %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
+        notifyMode, MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -359,10 +360,12 @@ static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
         int currentPhotoQuality = HIGH_QUALITY_IMAGE;
         resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
         if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-            HILOG_COMM_INFO("query photo status : lowQuality");
+            HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status : lowQuality",
+                MLOG_TAG, __FUNCTION__, __LINE__);
             return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
         }
-        HILOG_COMM_INFO("query photo status quality: %{public}d", currentPhotoQuality);
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status quality: %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, currentPhotoQuality);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     } else {
         return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
@@ -389,10 +392,12 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     }
     photoId = respBody.photoId;
     if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
-        HILOG_COMM_INFO("query photo status : lowQuality");
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status : lowQuality",
+            MLOG_TAG, __FUNCTION__, __LINE__);
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    HILOG_COMM_INFO("query photo status quality: %{public}d", respBody.photoQuality);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status quality: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, respBody.photoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
@@ -895,7 +900,8 @@ static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
 
 napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
 {
-    HILOG_COMM_INFO("Begin JSRequestImageData");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Begin JSRequestImageData",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImageData js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImageData js arg invalid");
@@ -937,7 +943,8 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
 {
-    HILOG_COMM_INFO("Begin JSRequestImage");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Begin JSRequestImage",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImage js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
@@ -1104,7 +1111,8 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
 void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
-    HILOG_COMM_INFO("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnHandleRequestImage mode: %{public}d.",
+        MLOG_TAG, __FUNCTION__, __LINE__, static_cast<int32_t>(asyncContext->deliveryMode));
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:

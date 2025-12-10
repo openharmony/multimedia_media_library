@@ -64,7 +64,8 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     const sptr<IPCFileDescriptor> ipcFd)
 {
     CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
-    HILOG_COMM_INFO("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnProcessVideoDone, videoId: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, videoId.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = PhotoColumn::PHOTO_ID + " = ? ";
@@ -75,14 +76,13 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
         PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        HILOG_COMM_INFO("result set is empty");
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} result set is empty", MLOG_TAG, __FUNCTION__, __LINE__);
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(videoId);
         // When subType query failed, default mediaType is Video
         MultiStagesCaptureDfxResult::Report(videoId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
             static_cast<int32_t>(MultiStagesCaptureMediaType::VIDEO));
         return;
     }
-
     bool isMovingPhoto = (GetInt32Val(PhotoColumn::STAGE_VIDEO_TASK_STATUS, resultSet) ==
         static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED));
     int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_VIDEO) :
@@ -97,29 +97,29 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, isMovingPhotoEffectMode,
         data);
     if (ret != E_OK) {
-        HILOG_COMM_INFO("Save 110 quality video failed. ret: %{public}d, errno: %{public}d", ret, errno);
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+            "Save 110 quality video failed. ret: %{public}d, errno: %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, ret, errno);
         MultiStagesCaptureDfxResult::Report(videoId,
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_VIDEO_FAIL), mediaType);
         return;
     }
-
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
-
     UpdateVideoQuality(videoId, true, isDirtyNeedUpdate);
-
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(videoId, mediaType);
     MultiStagesCaptureDfxResult::Report(videoId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
-
     MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(videoId, false);
-    HILOG_COMM_INFO("OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnProcessVideoDone, success videoid: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, videoId.c_str());
 }
 
 void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(AsyncTaskData *data)
 {
     auto *taskData = static_cast<VideoFaileProcTaskData *>(data);
     CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is null");
-    HILOG_COMM_INFO("OnError, errorCode: %{public}d", taskData->errorCode_);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnError, errorCode: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, taskData->errorCode_);
     switch (taskData->errorCode_) {
         case ERROR_SESSION_SYNC_NEEDED:
             MultiStagesVideoCaptureManager::GetInstance().SyncWithDeferredVideoProcSession();
@@ -159,7 +159,8 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::AsyncOnErrorProc(const 
         make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, taskData);
     CHECK_AND_RETURN_LOG(asyncTask != nullptr, "Can not get asyncWorker");
 
-    HILOG_COMM_INFO("AsyncOnErrorProc add task success");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} AsyncOnErrorProc add task success",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     asyncWorker->AddTask(asyncTask, false);
 }
 
