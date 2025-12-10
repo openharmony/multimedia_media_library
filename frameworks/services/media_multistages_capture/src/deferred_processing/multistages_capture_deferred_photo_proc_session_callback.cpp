@@ -411,7 +411,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
     std::shared_ptr<PictureIntf> pictureIntf)
 {
-    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture photoid: %{public}s", imageId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture photoid: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__ imageId.c_str());
     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
         MEDIA_ERR_LOG("MultistagesCapture picture is not null");
@@ -444,6 +445,16 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
         MLOG_TAG, __FUNCTION__, __LINE__);
 }
 
+int32_t GetModifyType(std::shared_ptr<FileAsset> fileAsset)
+{
+    bool isEdited = fileAsset->GetPhotoEditTime() > 0;
+    bool isTrashed = fileAsset->GetIsTrash() > 0;
+    int32_t modifyType = isEdited ? static_cast<int32_t>(FirstStageModifyType::EDITED) :
+        (isTrashed ? static_cast<int32_t>(FirstStageModifyType::TRASHED) :
+            static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
+    return modifyType;
+}
+
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDone(
     const string &imageId, const uint8_t *addr, const long bytes, uint32_t cloudImageEnhanceFlag)
 {
@@ -466,11 +477,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDon
         HandleForNullData(imageId, nullptr);
         return;
     }
-    bool isEdited = fileAsset->GetPhotoEditTime() > 0;
-    bool isTrashed = fileAsset->GetIsTrash() > 0;
-    int32_t modifyType = isEdited ? static_cast<int32_t>(FirstStageModifyType::EDITED) :
-        (isTrashed ? static_cast<int32_t>(FirstStageModifyType::TRASHED) :
-            static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
+    int32_t modifyType = GetModifyType(fileAsset);
     bool isMovingPhoto = (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
         static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);

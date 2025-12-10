@@ -1552,12 +1552,10 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture, start save fileId: %{public}s",
         MLOG_TAG, __FUNCTION__, __LINE__, fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
-
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     int32_t getPicRet = -1;
     PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
     int32_t ret = UpdateIsTempAndDirty(cmd, fileId, fileType, getPicRet, photoExtInfo);
-
     tracer.Finish();
     CHECK_AND_RETURN_RET_LOG(ret >= 0, 0, "UpdateIsTempAndDirty failed, ret: %{public}d", ret);
     if (photoExtInfo.oldFilePath != "") {
@@ -1570,10 +1568,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_DEBUG_LOG("MultistagesCapture, save picture end, fileId: %{public}s", fileId.c_str());
     }
     tracer.Finish();
-
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
-                                                         OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
+                                            OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, 0, "MultistagesCapture, get fileAsset fail");
     string path = fileAsset->GetPath();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
@@ -3633,13 +3630,11 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} savePicture fileType is: %{public}d, fileId is: %{public}d",
         MLOG_TAG, __FUNCTION__, __LINE__, fileType, fileId);
     CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST, "Failed get picture");
-
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
-
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
     bool existEditData = (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK);
@@ -3649,7 +3644,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     } else {
         FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
     }
-
     std::string photoId;
     std::shared_ptr<Media::Picture> picture;
     bool isHighQualityPicture = false;
@@ -3669,7 +3663,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         CHECK_AND_PRINT_LOG(updatedRows >= 0, "update photo quality fail.");
         MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
     }
-
     resultPicture = (picture == nullptr) ? photoExtInfo.picture : picture;
     photoId = (picture == nullptr) ? photoExtInfo.photoId : photoId;
     auto pictureManagerThread = PictureManagerThread::GetInstance();
