@@ -2744,6 +2744,19 @@ shared_ptr<NativeRdb::ResultSet> QueryIndex(MediaLibraryCommand &cmd, const vect
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryCvInfo(MediaLibraryCommand &cmd, const vector<string> &columns,
+    const DataSharePredicates &predicates)
+{
+    switch (cmd.GetOprnType()) {
+        case OperationType::QUERY_RAW_VISION_TOTAL:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        default:
+            /* add filter */
+            return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
+                columns);
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -2813,6 +2826,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ANALYSIS_ASSET_SD_MAP:
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::VISION_ANALYSIS:
+            return QueryCvInfo(cmd, columns, predicates);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
