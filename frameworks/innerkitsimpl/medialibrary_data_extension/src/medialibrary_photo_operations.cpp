@@ -1570,7 +1570,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     tracer.Finish();
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
-                                            OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
+        OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, 0, "MultistagesCapture, get fileAsset fail");
     string path = fileAsset->GetPath();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
@@ -1588,8 +1588,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     tracer.Finish();
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
         "MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
-        MLOG_TAG, __FUNCTION__, __LINE__,
-        fileId.c_str(), ret, needScanStr.c_str());
+        MLOG_TAG, __FUNCTION__, __LINE__, fileId.c_str(), ret, needScanStr.c_str());
     return ret;
 }
 
@@ -3671,8 +3670,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
     }
     lastPhotoId_ = photoId;
-    // 删除已经存在的异常后缀的图片
-    size_t size = -1;
+    size_t size = -1;    // 删除已经存在的异常后缀的图片
     MediaFileUtils::GetFileSize(photoExtInfo.oldFilePath, size);
     bool cond = (photoExtInfo.oldFilePath != "" && size > 0);
     CHECK_AND_EXECUTE(!cond, DeleteAbnormalFile(assetPath, fileId, photoExtInfo.oldFilePath));
