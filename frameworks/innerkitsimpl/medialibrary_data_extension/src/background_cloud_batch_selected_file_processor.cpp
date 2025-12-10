@@ -404,7 +404,9 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadLatestBatchSelectedFinis
         }
     }
     MEDIA_INFO_LOG("BatchSelectFileDownload Timer Shutdown");
-    SetBatchDownloadAddedFlag(false);
+    if (!HaveBatchDownloadForAutoResumeTask()) {
+        SetBatchDownloadAddedFlag(false);
+    }
     SetBatchDownloadProcessRunningStatus(false);
     MEDIA_INFO_LOG("BatchSelectFileDownload Exit Done %{public}d", batchDownloadProcessRunningStatus_.load());
 }
