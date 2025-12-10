@@ -1560,7 +1560,11 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     photoAlbum->SetAlbumId(ret);
-    photoAlbum->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(ret));
+    if (photoAlbum->GetPhotoAlbumType() == SMART) {
+        photoAlbum->SetAlbumUri(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + to_string(ret));
+    } else {
+        photoAlbum->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(ret));
+    }
     return true;
 }
 
