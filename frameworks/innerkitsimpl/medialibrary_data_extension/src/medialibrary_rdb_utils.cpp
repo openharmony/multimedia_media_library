@@ -3190,7 +3190,8 @@ void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &column
             operationItemsNew.push_back(item);
             continue;
         }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID
+            || static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_MODIFIED) {
             vector<DataShare::SingleValue::Type> newSingleParam;
             newSingleParam.push_back(tableName + "." + MediaColumn::MEDIA_ID);
             for (size_t i = VALUE_IDX; i < item.singleParams.size(); i++) {
@@ -3204,7 +3205,7 @@ void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &column
     predicates = DataShare::DataSharePredicates(operationItemsNew);
     transform(columns.begin(), columns.end(), columns.begin(),
         [tableName](const std::string &column) {
-            if (column == MediaColumn::MEDIA_ID) {
+            if (column == MediaColumn::MEDIA_ID || column == MediaColumn::MEDIA_DATE_MODIFIED) {
                 return tableName + "." + column;
             } else {
                 return column;
