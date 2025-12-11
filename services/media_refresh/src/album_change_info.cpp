@@ -176,8 +176,7 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
     if (count_ != oldAlbumInfo.count_ && count_ != INVALID_INT32_VALUE) {
         values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, count_);
         ss << "count_: " << oldAlbumInfo.count_ << " -> " << count_ << ", ";
-        values.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, count_ == 0);
-        ss << "hidden_: " << oldAlbumInfo.hidden_ << " -> " << hidden_ << ", ";
+        GetUpdatePhotoAlbumHidden(oldAlbumInfo, values, ss);
     }
     if (hiddenCount_ != oldAlbumInfo.hiddenCount_ && hiddenCount_ != INVALID_INT32_VALUE) {
         values.PutInt(PhotoAlbumColumns::HIDDEN_COUNT, hiddenCount_);
@@ -209,6 +208,16 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
     ACCURATE_INFO("Update albumInfo[%{public}d], notifyType[%{public}d]: %{public}s", oldAlbumInfo.albumId_,
         static_cast<int32_t>(type), ss.str().c_str());
     return values;
+}
+
+void AlbumChangeInfo::GetUpdatePhotoAlbumHidden(const AlbumChangeInfo &oldAlbumInfo, ValuesBucket &values,
+    stringstream &ss)
+{
+    if (!(oldAlbumInfo.albumSubType_ >= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_START) &&
+        oldAlbumInfo.albumSubType_ <= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_END))) {
+        values.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, count_ == 0);
+        ss << "hidden_: " << oldAlbumInfo.hidden_ << " -> " << hidden_ << ", ";
+    }
 }
 
 bool AlbumChangeInfo::Marshalling(Parcel &parcel) const
