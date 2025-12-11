@@ -10951,7 +10951,7 @@ int32_t MediaLibraryNapi::HandleNewUriRegistration(napi_env env, napi_ref ref,
     Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
     std::string registerUri = "";
 
-    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
         NAPI_ERR_LOG("Failed to get registerUriType registerUri");
         return JS_E_PARAM_INVALID;
     }
@@ -11015,7 +11015,7 @@ int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref,
 {
     Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
     std::string registerUri = "";
-    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
         NAPI_ERR_LOG("Failed to get registerUriType registerUri");
         return JS_E_PARAM_INVALID;
     }
@@ -11073,7 +11073,7 @@ napi_value MediaLibraryNapi::SinglePhotoAccessRegisterCallback(napi_env env, nap
 
     string type = RegisterNotifyType::SINGLE_PHOTO_CHANGE;
     Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
-    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+    if (MediaLibraryNotifyUtils::GetSingleRegisterNotifyType(type, uriType) != E_OK) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
         return undefinedResult;
     }
@@ -11121,7 +11121,7 @@ napi_value MediaLibraryNapi::SinglePhotoAlbumRegisterCallback(napi_env env, napi
 
     string type = RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE;
     Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
-    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+    if (MediaLibraryNotifyUtils::GetSingleRegisterNotifyType(type, uriType) != E_OK) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
         return undefinedResult;
     }

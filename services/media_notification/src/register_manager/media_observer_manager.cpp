@@ -185,6 +185,29 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
     return E_OK;
 }
 
+bool MediaObserverManager::FindSingleObserverWithUri(const NotifyUriType &uri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
+{
+    MEDIA_INFO_LOG("enter FindSingleObserverWithUri");
+    NotifyRegisterPermission permissionHandle;
+    int32_t ret = permissionHandle.ExecuteCheckPermission(uri);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Permission verification failed");
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto observersIter = observers_.find(uri);
+    if (observersIter == observers_.end()) {
+        MEDIA_ERR_LOG("uri is not exist");
+        return false;
+    }
+    auto iter = std::find_if(observersIter->second.begin(), observersIter->second.end(),
+        [dataObserver](const ObserverInfo& s) {
+        return s.observer->AsObject() == dataObserver->AsObject();
+    });
+    return iter != observersIter->second.end();
+}
+
 std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> MediaObserverManager::GetObservers()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -248,6 +271,19 @@ int32_t MediaObserverManager::RemoveSingleObserverUris(const NotifyUriType& regi
             std::lock_guard<std::mutex> lock(mutex_);
             uris.erase(targetUri);
         });
+}
+
+bool MediaObserverManager::FindSingleObserver(const NotifyUriType &uri,
+    std::vector<ObserverInfo>& obsInfos)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto iter = observers_.find(uri);
+    if (iter == observers_.end()) {
+        MEDIA_ERR_LOG("failed to find single observer, uri is not exist");
+        return false;
+    }
+    obsInfos = iter->second;
+    return true;
 }
 
 int32_t MediaObserverManager::RemoveSingleObserverUris(ObserverInfo& singleObserverInfo, const std::string& uri)

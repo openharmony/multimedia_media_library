@@ -48,11 +48,16 @@ static void ProcessPhotoAssetChanges(NewJsOnChangeCallbackWrapper& callbackWrapp
             continue;
         }
         photoAssetDataPtr = std::make_shared<AccurateRefresh::PhotoAssetChangeData>(*rawData);
-        std::string assetUri = photoAssetDataPtr->infoBeforeChange_.uri_;
-        auto iter = innerMap.find(assetUri);
-        if (iter != innerMap.end()) {
-            callbackWrapper.singleClientObservers_[assetUri] = iter->second;
-            callbackWrapper.singleAssetClientChangeInfo_[assetUri] = photoAssetDataPtr;
+        std::string beforeAssetUri = photoAssetDataPtr->infoBeforeChange_.uri_;
+        std::string afterAssetUri = photoAssetDataPtr->infoAfterChange_.uri_;
+        auto beforeIter = innerMap.find(beforeAssetUri);
+        auto afterIter = innerMap.find(afterAssetUri);
+        if (beforeIter != innerMap.end()) {
+            callbackWrapper.singleClientObservers_[beforeAssetUri] = beforeIter->second;
+            callbackWrapper.singleAssetClientChangeInfo_[beforeAssetUri] = photoAssetDataPtr;
+        } else if (afterIter != innerMap.end()) {
+            callbackWrapper.singleClientObservers_[afterAssetUri] = afterIter->second;
+            callbackWrapper.singleAssetClientChangeInfo_[afterAssetUri] = photoAssetDataPtr;
         }
     }
 }
@@ -69,11 +74,16 @@ static void ProcessAlbumChanges(NewJsOnChangeCallbackWrapper& callbackWrapper,
             continue;
         }
         albumDataPtr = std::make_shared<AccurateRefresh::AlbumChangeData>(*rawData);
-        std::string albumUri = albumDataPtr->infoBeforeChange_.albumUri_;
-        auto iter = innerMap.find(albumUri);
-        if (iter != innerMap.end()) {
-            callbackWrapper.singleClientObservers_[albumUri] = iter->second;
-            callbackWrapper.singleAlbumClientChangeInfo_[albumUri] = albumDataPtr;
+        std::string beforeAlbumUri = albumDataPtr->infoBeforeChange_.albumUri_;
+        std::string afterAlbumUri = albumDataPtr->infoAfterChange_.albumUri_;
+        auto beforeIter = innerMap.find(beforeAlbumUri);
+        auto afterIter = innerMap.find(afterAlbumUri);
+        if (beforeIter != innerMap.end()) {
+            callbackWrapper.singleClientObservers_[beforeAlbumUri] = beforeIter->second;
+            callbackWrapper.singleAlbumClientChangeInfo_[beforeAlbumUri] = albumDataPtr;
+        } else if (afterIter != innerMap.end()) {
+            callbackWrapper.singleClientObservers_[afterAlbumUri] = afterIter->second;
+            callbackWrapper.singleAlbumClientChangeInfo_[afterAlbumUri] = albumDataPtr;
         }
     }
 }
@@ -298,7 +308,6 @@ static bool ProcessSceneSpecificNotifications(napi_env env, napi_handle_scope sc
             napi_close_handle_scope(env, scope);
             return false;
         }
-        return true;
     } else if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothAlbumAndSingleAlbum) {
         napi_value buildResult = ProcessSingleAlbumUriNotifications(env, scope, wrapper, mediaChangeInfo);
         if (buildResult == nullptr) {
@@ -306,7 +315,6 @@ static bool ProcessSceneSpecificNotifications(napi_env env, napi_handle_scope sc
             napi_close_handle_scope(env, scope);
             return false;
         }
-        return true;
     }
     return true;
 }
