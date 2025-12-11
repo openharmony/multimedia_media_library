@@ -5710,6 +5710,17 @@ static void AddPhotoAlbumHidden(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add photoalbum hidden column end");
 }
 
+static void UpdateMdirtyTrigger(RdbStore &store, int32_t version, const std::string &columnName)
+{
+    MEDIA_INFO_LOG("Update mdirty trigger for %{public}s start", columnName.c_str());
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Update mdirty trigger for %{public}s end", columnName.c_str());
+}
+
 static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PET_TABLES &&
@@ -5746,6 +5757,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_EDIT_OPERATION, true)) {
         AddEditOperation(store, VERSION_ADD_EDIT_OPERATION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_EDIT_OPERATION, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE, true)) {
+        CreateChangeTime(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE, true);
     }
 }
 
