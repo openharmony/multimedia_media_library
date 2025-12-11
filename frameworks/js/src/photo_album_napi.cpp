@@ -470,7 +470,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetPhotoAlbumtHidden(napi_env env, napi_
     CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetHidden(), &jsResult), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_boolean(env, static_cast<bool>(obj->GetHidden()), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 

@@ -97,7 +97,7 @@ private:
         WHERE position IN (1, 3) AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') AND \
             (0 = ? OR media_type = ?) AND \
-            (-1 = ? OR 0 = ? AND COALESCE(hidden, 0) = 0 OR 1 = ? AND COALESCE(hidden, 0) = 1) AND \
+            (-1 = ? OR 0 = ? AND COALESCE(Photos.hidden, 0) = 0 OR 1 = ? AND COALESCE(Photos.hidden, 0) = 1) AND \
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
@@ -128,9 +128,9 @@ private:
         WHERE album_plugin.album_name = ? AND \
             COALESCE(burst_cover_level, 1) = 1 AND \
             COALESCE(date_trashed, 0) = 0 AND \
-            COALESCE(hidden, 0) = 0 AND \
+            COALESCE(Photos.hidden, 0) = 0 AND \
             (0 = ? OR media_type = ?) AND \
-            (-1 = ? OR 0 = ? AND COALESCE(hidden, 0) = 0 OR 1 = ? AND COALESCE(hidden, 0) = 1) AND \
+            (-1 = ? OR 0 = ? AND COALESCE(Photos.hidden, 0) = 0 OR 1 = ? AND COALESCE(Photos.hidden, 0) = 1) AND \
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
