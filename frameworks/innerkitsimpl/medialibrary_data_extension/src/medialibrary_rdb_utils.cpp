@@ -562,7 +562,9 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const UpdateAlb
             values.PutInt(otherColumn, newCount);
             MEDIA_INFO_LOG("AccurateRefresh Update album other count");
         }
-        if (targetColumn == PhotoAlbumColumns::ALBUM_COUNT) {
+        if (targetColumn == PhotoAlbumColumns::ALBUM_COUNT &&
+            !(data.albumSubtype > static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_START) &&
+            data.albumSubtype < static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_END))) {
             MEDIA_INFO_LOG("AccurateRefresh Update album hidden: %{public}d", newCount == 0);
             values.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, newCount == 0);
         }
@@ -2071,6 +2073,10 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
         bool isValidNew = false;
         std::string assetUri = value.Get(MediaColumn::MEDIA_ID, isValidNew);
         CHECK_AND_CONTINUE(MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX));
+        if (!MediaLibraryDataManagerUtils::IsNumber(MediaFileUri::GetPhotoId(assetUri))) {
+            MEDIA_INFO_LOG("invalid photo id: %{public}s", MediaFileUri::GetPhotoId(assetUri).c_str());
+            continue;
+        }
         auto photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds, hidden)) {
             updateRows++;

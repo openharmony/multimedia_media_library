@@ -842,7 +842,7 @@ const OperationType = {
   OR : 8,
   IN : 9,
   NOT_IN : 10,
-  BEGIN_WARP : 11,
+  BEGIN_WRAP : 11,
   END_WRAP : 12,
   BETWEEN : 13,
   NOT_BETWEEN : 14

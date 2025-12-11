@@ -41,6 +41,7 @@
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_uripermission_operations.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -130,8 +131,10 @@ int32_t MediaAssetsRdbOperations::SaveFormInfo(const string& formId, const strin
         MediaFileUri mediaUri(uri);
         CHECK_AND_RETURN_RET_LOG(QueryFileIdIfExists(mediaUri.GetFileId()),
             E_GET_PRAMS_FAIL, "the fileId is not exist");
-        vector<int64_t> formIds = { std::stoll(formId) };
-        MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+        if (MediaLibraryDataManagerUtils::IsNumber(formId)) {
+            vector<int64_t> formIds = { std::stoll(formId) };
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+        }
     }
     if (QueryFormIdIfExists(formId)) {
         lock_guard<mutex> lock(facardMutex_);

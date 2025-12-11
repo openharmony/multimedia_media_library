@@ -53,6 +53,7 @@ enum class AlbumChangeOperation {
     RECOVER_ASSETS_WITH_URI,
     DELETE_ASSETS_WITH_URI,
     RESET_COVER_URI,
+    SMART_MOVE_ASSET,
 };
 
 struct PhotoAlbumPtrCompare {

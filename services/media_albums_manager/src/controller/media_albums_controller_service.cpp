@@ -305,6 +305,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME),
         &MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS),
+        &MediaAlbumsControllerService::SmartMoveAssets
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -677,6 +681,28 @@ int32_t MediaAlbumsControllerService::MoveAssets(MessageParcel &data, MessagePar
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MoveAssets Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ChangeRequestMoveAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().MoveAssets(dto);
+    ChangeRequestMoveAssetsRespBody respBody;
+    respBody.albumCount = dto.albumCount;
+    respBody.albumImageCount = dto.albumImageCount;
+    respBody.albumVideoCount = dto.albumVideoCount;
+    respBody.targetAlbumCount = dto.targetAlbumCount;
+    respBody.targetAlbumImageCount = dto.targetAlbumImageCount;
+    respBody.targetAlbumVideoCount = dto.targetAlbumVideoCount;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::SmartMoveAssets(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SmartMoveAssets");
+    ChangeRequestMoveAssetsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SmartMoveAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ChangeRequestMoveAssetsDto dto;

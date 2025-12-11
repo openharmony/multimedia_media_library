@@ -683,6 +683,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         rowId = outRowId;
     } else if (type == to_string(SMART) && subtype == to_string(PORTRAIT)) {
         rowId = CreatePortraitAlbum(albumName);
+        return rowId;
     } else {
         rowId = CreatePhotoAlbum(albumName);
     }
@@ -1312,6 +1313,34 @@ static int32_t GetAlbumTypeFromOldAlbum(const shared_ptr<MediaLibraryRdbStore>& 
     return oldAlbumType;
 }
 
+static int32_t NotifyForRenameUserAlbum(std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefresh,
+    std::shared_ptr<DfxRefreshManager> &dfxRefreshManager, const int64_t newAlbumId,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &assetRefresh)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    std::vector<AlbumChangeData> albumChangeDatas = albumRefresh->GetAlbumChangeDatas();
+    for (size_t i = 0; i < albumChangeDatas.size(); i++) {
+        if (albumChangeDatas[i].infoAfterChange_.albumId_ == newAlbumId &&
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.fileId_ > 0) {
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumId_ = newAlbumId;
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(
+                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId));
+        }
+        if (albumChangeDatas[i].infoAfterChange_.albumId_ == newAlbumId &&
+            albumChangeDatas[i].infoAfterChange_.hiddenCoverInfo_.fileId_ > 0) {
+            albumChangeDatas[i].infoAfterChange_.hiddenCoverInfo_.ownerAlbumId_ = newAlbumId;
+            albumChangeDatas[i].infoAfterChange_.hiddenCoverInfo_.ownerAlbumUri_ =
+                MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId));
+        }
+    }
+    albumRefresh->Notify(albumChangeDatas, dfxRefreshManager);
+    assetRefresh->Notify();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+        to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
+    return E_OK;
+}
+
 // Set album name: delete old and build a new one
 static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 {
@@ -1380,22 +1409,8 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     CHECK_AND_PRINT_LOG(ret == E_OK, "move inner anco asset to new album error");
 
     UpdateAnalysisIndexAfterRename(fileIdsInAlbum);
-
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    std::vector<AlbumChangeData> albumChangeDatas = albumRefresh->GetAlbumChangeDatas();
-    for (size_t i = 0; i < albumChangeDatas.size(); i++) {
-        if (albumChangeDatas[i].infoAfterChange_.albumId_ == newAlbumId &&
-            albumChangeDatas[i].infoAfterChange_.coverInfo_.fileId_ > 0) {
-            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumId_ = newAlbumId;
-            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(
-                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId));
-        }
-    }
-    albumRefresh->Notify(albumChangeDatas, dfxRefreshManager);
-    assetRefresh->Notify();
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-        to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
+    ret = NotifyForRenameUserAlbum(albumRefresh, dfxRefreshManager, newAlbumId, assetsRefresh);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "failed to send notification for rename user album");
     return ALBUM_SETNAME_OK;
 }
 
