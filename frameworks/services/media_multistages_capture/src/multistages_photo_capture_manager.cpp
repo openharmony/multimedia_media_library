@@ -158,7 +158,8 @@ void MultiStagesPhotoCaptureManager::DealLowQualityPicture(const std::string &im
     sptr<PicturePair> picturePair = new PicturePair(std::move(picture), imageIdInPair, expireTime, true, false);
     // 存低质量裸picture
     pictureManagerThread->InsertPictureData(imageId, picturePair, LOW_QUALITY_PICTURE);
-    MEDIA_INFO_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture photoid: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__, imageId.c_str());
 }
 
 bool MultiStagesPhotoCaptureManager::IsHighQualityPhotoExist(const std::string &uri)
@@ -539,7 +540,9 @@ void MultiStagesPhotoCaptureManager::ProcessImage(int fileId, int deliveryMode)
     MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId, fileId);
     int32_t currentRequestCount =
         MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
-    MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         callerBundleName.c_str(), photoId.c_str(), deliveryMode, currentRequestCount);
     if ((deliveryMode == static_cast<int32_t>(RequestPolicy::HIGH_QUALITY_MODE) ||
         deliveryMode == static_cast<int32_t>(RequestPolicy::BALANCE_MODE)) &&
