@@ -445,6 +445,13 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
     if (genreJson.empty()) {
         return "";
     }
+
+    //Camera shooting mode parse after 6.1
+    if (ShootingModeAlbum::VALID_TAGS.find(genreJson) != ShootingModeAlbum::VALID_TAGS.end()) {
+        return genreJson;
+    }
+
+    //Compatible Camera shooting mode parse before 4.x
     size_t pos = genreJson.find("param-use-tag");
     if (pos != std::string::npos) {
         size_t start = genreJson.find(":", pos);
@@ -604,24 +611,11 @@ void MetadataExtractor::PopulateVideoTimeInfo(const shared_ptr<Meta> &customMeta
         detailTime.c_str());
 }
 
-static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data, const std::string &videoShootingMode,
-    const std::string &strTemp)
+static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data)
 {
-    if (videoShootingMode == SLOW_MOTION_ALBUM_TAG || strTemp == SLOW_MOTION_ALBUM_TAG) {
+    if (data->GetShootingMode() == std::to_string(static_cast<int>(ShootingModeValue::SLOW_MOTION_SHOOTING_MODE))) {
         MEDIA_DEBUG_LOG("shoot mode type is SlowMotion");
         data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO));
-        data->SetShootingModeTag(SLOW_MOTION_ALBUM_TAG);
-        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(SLOW_MOTION_ALBUM_TAG));
-    }
-}
-
-static void FillTimeLapseMetadata(std::unique_ptr<Metadata> &data, const std::string &videoShootingMode,
-    const std::string &strTemp)
-{
-    if (videoShootingMode == TIME_LAPSE_TAG || strTemp == TIME_LAPSE_TAG) {
-        MEDIA_DEBUG_LOG("shoot mode type is TimeLapse");
-        data->SetShootingModeTag(TIME_LAPSE_TAG);
-        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(TIME_LAPSE_TAG));
     }
 }
 
@@ -644,8 +638,7 @@ void PopulateExtractedAVMetadataTwo(
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingModeTag(videoShootingMode);
         data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(videoShootingMode));
-        FillSlowMotionMetadata(data, videoShootingMode, strTemp);
-        FillTimeLapseMetadata(data, videoShootingMode, strTemp);
+        FillSlowMotionMetadata(data);
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";

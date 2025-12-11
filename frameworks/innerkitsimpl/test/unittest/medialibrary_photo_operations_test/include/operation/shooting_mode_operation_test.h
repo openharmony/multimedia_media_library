@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef VIDEO_3DGS_OPERATION_TEST_H
-#define VIDEO_3DGS_OPERATION_TEST_H
+#ifndef SHOOTING_MODE_OPERATION_TEST_H
+#define SHOOTING_MODE_OPERATION_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class Video3DgsOperationTest : public testing::Test {
+class ShootingModeOperationTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
@@ -30,4 +30,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif // VIDEO_3DGS_OPERATION_TEST_H
+#endif // SHOOTING_MODE_OPERATION_TEST_H
