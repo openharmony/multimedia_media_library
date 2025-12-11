@@ -125,6 +125,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
     OperationObject::PAH_BACKUP_POSTPROCESS,
+    OperationObject::VISION_ANALYSIS,
 };
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
