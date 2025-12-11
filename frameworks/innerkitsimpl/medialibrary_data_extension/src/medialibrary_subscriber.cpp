@@ -59,7 +59,6 @@
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "shooting_mode_album_operation.h"
-#include "video_3dgs_operation.h"
 #include "parameters.h"
 #include "height_width_correct_operation.h"
 #ifdef HAS_WIFI_MANAGER_PART
@@ -1030,7 +1029,6 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     HeightWidthCorrectOperation::UpdateHeightAndWidth();
-    Video3DgsOperation::Update3DgsType();
     ShootingModeAlbumOperation::UpdateShootingModeAlbum();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
@@ -1068,7 +1066,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
     HeightWidthCorrectOperation::Stop();
-    Video3DgsOperation::Stop();
     MediaLibraryAspectRatioOperation::Stop();
     ShootingModeAlbumOperation::Stop();
     AgingTmpCompatibleDuplicates(false);

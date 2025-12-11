@@ -706,6 +706,23 @@ static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& 
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
 }
 
+static void UpdateQuickCaptureAndTimeLapseAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    vector<string> albumIdsStr;
+    vector<ShootingModeAlbumType> albumTypes;
+    albumTypes.push_back(ShootingModeAlbumType::TIME_LAPSE);
+    albumTypes.push_back(ShootingModeAlbumType::QUICK_CAPTURE_ALBUM);
+
+    for (const auto& type : albumTypes) {
+        int32_t albumId;
+        if (MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(type, albumId)) {
+            albumIdsStr.push_back(to_string(albumId));
+        }
+    }
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+}
+
 static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     MEDIA_INFO_LOG("Start to set exif rotate");
@@ -929,7 +946,7 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
     if (oldVersion < VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false)) {
-        UpdateAllShootingModeAlbums(rdbStore);
+        UpdateQuickCaptureAndTimeLapseAlbums(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false);
     }

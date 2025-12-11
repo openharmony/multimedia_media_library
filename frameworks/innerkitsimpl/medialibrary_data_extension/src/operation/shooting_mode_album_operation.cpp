@@ -42,35 +42,45 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS::Media {
 const std::string ORIGIN_SHOOTING_MODE_ASSETS_NUMBER = "origin_shooting_mode_assets_number";
-const std::int32_t BATCH_SIZE = 500;
+const std::int32_t SHOOTING_MODE_SCAN_BATCH_SIZE = 50;
 const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
-
-const std::string SQL_PHOTOS_TABLE_QUERY_SHOOTING_COUNT = "SELECT"
-                                                          " COUNT( * ) AS Count "
-                                                          "FROM"
-                                                          " Photos "
-                                                          "WHERE"
-                                                          " (shooting_mode = '' OR front_camera = '')"
-                                                          " AND position != 2"
-                                                          " AND file_id > ?;";
 
 const std::string SQL_PHOTOS_TABLE_QUERY_SHOOTING_ASSETS = "SELECT"
                                                            " file_id,"
                                                            " data,"
-                                                           " media_type "
+                                                           " media_type,"
+                                                           " subtype,"
+                                                           " front_camera,"
+                                                           " shooting_mode,"
+                                                           " shooting_mode_tag "
                                                            "FROM"
                                                            " Photos "
                                                            "WHERE"
-                                                           " (shooting_mode = '' OR front_camera = '')"
+                                                           " (COALESCE(shooting_mode, '') = ''"
+                                                           " OR COALESCE(front_camera, '') = '')"
+                                                           " OR (COALESCE(subtype, 0) = 0 AND mime_type = 'video/mp4'"
+                                                           " AND media_type = 2)"
                                                            " AND position != 2"
                                                            " AND file_id > ?"
-                                                           " LIMIT ?;";
+                                                           " AND file_id < ?;";
 
 std::atomic<bool> ShootingModeAlbumOperation::isContinue_{true};
 
 void ShootingModeAlbumOperation::Stop()
 {
     isContinue_.store(false);
+}
+
+static int QueryMaxFileId()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "get rdb store failed");
+    string queryMaxSql = "SELECT Max(file_id) FROM " + PhotoColumn::PHOTOS_TABLE;
+    auto resultSet = rdbStore->QuerySql(queryMaxSql);
+    CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), E_ERR, "Query max file_id failed");
+    int32_t maxFileId = -1;
+    maxFileId = GetInt32Val("Max(file_id)", resultSet);
+    return maxFileId;
 }
 
 void ShootingModeAlbumOperation::UpdateShootingModeAlbum()
@@ -82,47 +92,33 @@ void ShootingModeAlbumOperation::UpdateShootingModeAlbum()
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(ORIGIN_SHOOTING_MODE_ASSETS_NUMBER, 0);
-    while (MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
-        CHECK_AND_BREAK_INFO_LOG(QueryShootingAssetsCount(curFileId) > 0, "No shooting mode assets need to handle");
-        MEDIA_INFO_LOG("handle shooting mode assets curFileId: %{public}d", curFileId);
-        std::vector<CheckedShootingAssetsInfo> photoInfos = QueryShootingAssetsInfo(curFileId);
-        HandleInfos(photoInfos, curFileId);
+    int maxFileId = QueryMaxFileId();
+    CHECK_AND_RETURN_LOG(maxFileId > 0, "query max file id failed");
+    while (curFileId < maxFileId && MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
+        int32_t endId = std::min(curFileId + SHOOTING_MODE_SCAN_BATCH_SIZE, maxFileId);
+        std::vector<CheckedShootingAssetsInfo> photoInfos = QueryShootingAssetsInfo(curFileId, endId);
+        HandleInfos(photoInfos);
+        curFileId = endId;
     }
     prefs->PutInt(ORIGIN_SHOOTING_MODE_ASSETS_NUMBER, curFileId);
     prefs->FlushSync();
     MEDIA_INFO_LOG(
-        "end handle no origin photo! cost: %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+        "end handle no origin photo! curFileId: %{public}d, cost: %{public}" PRId64,
+        curFileId, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     return;
 }
 
-int32_t ShootingModeAlbumOperation::QueryShootingAssetsCount(int32_t startFileId)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    const std::vector<NativeRdb::ValueObject> bindArgs = {startFileId};
-    auto resultSet = rdbStore->QuerySql(SQL_PHOTOS_TABLE_QUERY_SHOOTING_COUNT, bindArgs);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is null");
-    int32_t count = 0;
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        count = get<int32_t>(ResultSetUtils::GetValFromColumn("Count", resultSet, TYPE_INT32));
-    } else {
-        MEDIA_DEBUG_LOG("No shooting mode assets found from file ID %{public}d.", startFileId);
-    }
-    resultSet->Close();
-    return count;
-}
-
-std::vector<CheckedShootingAssetsInfo> ShootingModeAlbumOperation::QueryShootingAssetsInfo(int32_t startFileId)
+std::vector<CheckedShootingAssetsInfo> ShootingModeAlbumOperation::QueryShootingAssetsInfo(int32_t startFileId,
+    int32_t maxFileId)
 {
     std::vector<CheckedShootingAssetsInfo> photoInfos;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, photoInfos, "Failed to get rdbstore!");
 
-    const std::vector<NativeRdb::ValueObject> bindArgs = {startFileId, BATCH_SIZE};
+    const std::vector<NativeRdb::ValueObject> bindArgs = {startFileId, maxFileId};
     auto resultSet = rdbStore->QuerySql(SQL_PHOTOS_TABLE_QUERY_SHOOTING_ASSETS, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, photoInfos, "resultSet is null");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_DEBUG_LOG("resultSet count is 0");
         resultSet->Close();
         return photoInfos;
     }
@@ -137,9 +133,17 @@ std::vector<CheckedShootingAssetsInfo> ShootingModeAlbumOperation::QueryShooting
         photoInfo.path = path;
         photoInfo.mediaType =
             get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
+        photoInfo.subtype =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32));
+        photoInfo.frontCamera = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_FRONT_CAMERA,
+            resultSet, TYPE_STRING));
+        photoInfo.shootingMode = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SHOOTING_MODE,
+            resultSet, TYPE_STRING));
+        photoInfo.shootingModeTag =
+            get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
+            resultSet, TYPE_STRING));
         photoInfos.push_back(photoInfo);
-    } while (MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load() &&
-        resultSet->GoToNextRow() == NativeRdb::E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     resultSet->Close();
     return photoInfos;
 }
@@ -157,61 +161,81 @@ static void NotifyAnalysisAlbum(const vector<string>& changedAlbumIds)
     }
 }
 
-void ShootingModeAlbumOperation::HandleInfos(const std::vector<CheckedShootingAssetsInfo> &photoInfos,
-    int32_t &curFileId)
+void ShootingModeAlbumOperation::HandleInfos(const std::vector<CheckedShootingAssetsInfo> &photoInfos)
 {
     bool hasUpdateShootingAssets = false;
+    std::unordered_set<string> albumIdsToUpdate;
     for (const CheckedShootingAssetsInfo &photoInfo : photoInfos) {
-        CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load(),
-            "current status is off, break");
-        curFileId = photoInfo.fileId;
-        if (UpdateShootingAlbum(photoInfo)) {
+        if (ScanAndUpdateAssetShootingMode(photoInfo, albumIdsToUpdate)) {
             hasUpdateShootingAssets = true;
         }
     }
 
     if (hasUpdateShootingAssets) {
-        vector<string> albumIdsStr;
-        for (int32_t type = static_cast<int32_t>(ShootingModeAlbumType::START);
-            type <= static_cast<int32_t>(ShootingModeAlbumType::END); ++type) {
-            int32_t albumId;
-            ShootingModeAlbumType albumType = static_cast<ShootingModeAlbumType>(type);
-            MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(albumType, albumId);
-            albumIdsStr.push_back(to_string(albumId));
-        }
-
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
-        NotifyAnalysisAlbum(albumIdsStr);
+        vector<string> albumIdsVector(albumIdsToUpdate.begin(), albumIdsToUpdate.end());
+        if (!albumIdsVector.empty()) {
+            MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsVector);
+            NotifyAnalysisAlbum(albumIdsVector);
+        }
     }
 }
 
-bool ShootingModeAlbumOperation::UpdateShootingAlbum(const CheckedShootingAssetsInfo &photoInfo)
+static int32_t ExtractMetadata(std::unique_ptr<Metadata> &data, const CheckedShootingAssetsInfo &photoInfo)
 {
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    int32_t err = E_ERR;
     data->SetFilePath(photoInfo.path);
     data->SetFileName(MediaFileUtils::GetFileName(photoInfo.path));
     data->SetFileMediaType(photoInfo.mediaType);
     if (data->GetFileMediaType() == MediaType::MEDIA_TYPE_IMAGE) {
-        int32_t ret = MetadataExtractor::ExtractImageMetadata(data);
+        err = MetadataExtractor::ExtractImageMetadata(data);
         data->SetVideoMode(0);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Failed to extract image metadata");
     } else {
-        MetadataExtractor::ExtractAVMetadata(data);
+        err = MetadataExtractor::ExtractAVMetadata(data);
     }
-    CHECK_AND_RETURN_RET_LOG(!(data->GetShootingMode() == "" && data->GetFrontCamera() == ""), false,
-        "assets is not shooting mode");
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to extract image metadata");
+    return E_OK;
+}
+
+bool ShootingModeAlbumOperation::ScanAndUpdateAssetShootingMode(const CheckedShootingAssetsInfo &photoInfo,
+    std::unordered_set<string> &albumIdsToUpdate)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    int32_t ret = ExtractMetadata(data, photoInfo);
+    CHECK_AND_RETURN_RET(ret == E_OK, false);
+    CHECK_AND_RETURN_RET(!(data->GetShootingMode() == "" && data->GetFrontCamera() == "" &&
+        data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT)), false);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
 
     ValuesBucket value;
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
-    value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
+    if (photoInfo.subtype == 0) {
+        value.PutInt(PhotoColumn::PHOTO_SUBTYPE, data->GetPhotoSubType());
+    }
+    if (photoInfo.frontCamera.empty()) {
+        value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
+    }
+    if (photoInfo.shootingMode.empty()) {
+        value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
+    }
+    if (photoInfo.shootingModeTag.empty()) {
+        value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
+    }
+    CHECK_AND_RETURN_RET(!value.IsEmpty(), false);
     value.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+
+    vector<ShootingModeAlbumType> albumTypes = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+        data->GetPhotoSubType(), data->GetFileMimeType(), data->GetMovingPhotoEffectMode(),
+        data->GetFrontCamera(), data->GetShootingMode());
+    for (const auto& type : albumTypes) {
+        int32_t albumId;
+        if (MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(type, albumId)) {
+            albumIdsToUpdate.insert(to_string(albumId));
+        }
+    }
 
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, value, predicates);
@@ -219,8 +243,10 @@ bool ShootingModeAlbumOperation::UpdateShootingAlbum(const CheckedShootingAssets
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
         "Update shooting assets failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
 
-    MEDIA_INFO_LOG("Update shooting assets success, file_id=%{public}d, updated_rows=%{public}d", photoInfo.fileId,
-        updateCount);
+    MEDIA_INFO_LOG("Update shooting assets success, file_id=%{public}d, shooting_mode=%{public}s, "
+        "shooting_mode_tag=%{public}s, front_camera=%{public}s, subtype=%{public}d",
+        photoInfo.fileId, data->GetShootingMode().c_str(), data->GetShootingModeTag().c_str(),
+        data->GetFrontCamera().c_str(), data->GetPhotoSubType());
     return updateCount > 0;
 }
 }  // namespace OHOS::Media
