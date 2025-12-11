@@ -321,7 +321,7 @@ void SetTables()
 {
     // 创建Album表
     vector<string> createTableSqlList = {
-        CREATE_PHOTO_ALBUM_TABLE
+        PhotoAlbumColumns::CREATE_TABLE
     };
     for (auto &createTableSql : createTableSqlList) {
         if (g_rdbStore == nullptr) {
