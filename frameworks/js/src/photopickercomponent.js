@@ -342,7 +342,7 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
     }
 
-    checkAssetFilterIncalid(assetFilter) {
+    checkAssetFilterInvalid(assetFilter) {
         // 获取所有有效的值
         const validOperationTypes = Object.values(OperationType);
         const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
@@ -356,7 +356,7 @@ export class PhotoPickerComponent extends ViewPU {
             }
 
             //如果field有值，检查是否在枚举中
-            if (item.field !== undefined || item.field !== null) {
+            if (item.field !== undefined && item.field !== null) {
                 if (!validPhotoKeys.includes(item.field)) {
                     console.log('PhotoPickerComponent, Invalid photokeys');
                     return true;
@@ -372,7 +372,7 @@ export class PhotoPickerComponent extends ViewPU {
     }
 
     initialRender() {
-        if (this.pickerOptions?.assetFilter && this.checkAssetFilterIncalid(this.pickerOptions.assetFilter)) {
+        if (this.pickerOptions?.assetFilter && this.checkAssetFilterInvalid(this.pickerOptions.assetFilter)) {
             console.error('PhotoPickerComponent, assetFilter has value but invalid');
             return;
         }
