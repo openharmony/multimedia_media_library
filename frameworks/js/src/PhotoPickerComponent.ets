@@ -195,8 +195,40 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
   }
 
+  private checkAssetFilterIncalid(assetFilter: photoAccessHelper.OperationItem[]): boolean {
+    // 获取所有有效的值
+    const validOperationTypes = Object.values(photoAccessHelper.OperationType);
+    const validPhotoKeys = Object.values(photoAccessHelper.PhotoKeys);
+
+    //遍历数组中的每个OperationItem
+    for (const item of assetFilter) {
+        //检查operationType是否有值且在枚举中
+        if (!item.operationType || !validOperationTypes.includes(item?.operationType)) {
+            console.log('PhotoPickerComponent, Invalid operationType');
+            return true;
+        }
+
+        //如果field有值，检查是否在枚举中
+        if (item.field !== undefined || item.field !== null) {
+            if (!validPhotoKeys.includes(item.field)) {
+                console.log('PhotoPickerComponent, Invalid photokeys');
+                return true;
+            }
+            // uri仅支持EQUAL_TO操作
+            if (item.field === photoAccessHelper.PhotoKeys.URI &&
+              item.operationType !== photoAccessHelper.OperationType.EQUAL_TO) {
+                console.log('PhotoPickerComponent, Invalid uri operation');
+                return true;
+            }
+        }
+    }
+    return false;
+  }
+
   build() {
-    Row() {
+    if (!this.pickerOptions?.assetFilter ||
+      !this.checkAssetFilterIncalid(this.pickerOptions?.assetFilter ?? [])) {
+      Row() {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
@@ -273,6 +305,7 @@ export struct PhotoPickerComponent {
       .width('100%')
     }
     .height('100%')
+    }
   }
 
   private handleOnReceive(wantParam: Record<string, Object>): void {
