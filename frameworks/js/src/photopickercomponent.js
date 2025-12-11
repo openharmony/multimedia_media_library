@@ -38,6 +38,75 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
 ]);
 const display = requireNapi('display');
 const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
+
+const OperationType = {
+  EQUAL_TO : 1,
+  NOT_EQUAL_TO : 2,
+  GREATER_THAN : 3,
+  LESS_THAN : 4,
+  GREATER_THAN_OR_EQUAL_TO : 5,
+  LESS_THAN_OR_EQUAL_TO : 6,
+  AND : 7,
+  OR : 8,
+  IN : 9,
+  NOT_IN : 10,
+  BEGIN_WRAP : 11,
+  END_WRAP : 12,
+  BETWEEN : 13,
+  NOT_BETWEEN : 14
+}
+
+const PickerFilterPhotoKeys = {
+  
+    URI: 'uri',
+    
+    PHOTO_TYPE: 'media_type',
+    
+    DISPLAY_NAME: 'display_name',
+    
+    SIZE: 'size',
+    
+    DATE_ADDED: 'date_added',
+    
+    DATE_MODIFIED: 'date_modified',
+    
+    DURATION: 'duration',
+    
+    WIDTH: 'width',
+    
+    HEIGHT: 'height',
+    
+    DATE_TAKEN: 'date_taken',
+    
+    ORIENTATION: 'orientation',
+    
+    FAVORITE: 'is_favorite',
+    
+    TITLE: 'title',
+    
+    POSITION: 'position',
+    
+    PHOTO_SUBTYPE: 'subtype',
+    
+    DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+    
+    COVER_POSITION: 'cover_position',
+    
+    BURST_KEY: 'burst_key',
+    
+    LCD_SIZE: 'lcd_size',
+    
+    THM_SIZE: 'thm_size',
+    
+    DETAIL_TIME: 'detail_time',
+    
+    OWNER_ALBUM_ID: 'owner_album_id',
+    
+    MEDIA_SUFFIX: 'media_suffix',
+    
+    ASPECT_RATIO: 'aspect_ratio',
+  }
+
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
         super(e, t, i);
@@ -273,7 +342,40 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
     }
 
+    checkAssetFilterInvalid(assetFilter) {
+        // 获取所有有效的值
+        const validOperationTypes = Object.values(OperationType);
+        const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
+
+        //遍历数组中的每个OperationItem
+        for (const item of assetFilter) {
+            //检查operationType是否有值且在枚举中
+            if (!item.operationType || !validOperationTypes.includes(item.operationType)) {
+                console.log('PhotoPickerComponent, Invalid operationType');
+                return true;
+            }
+
+            //如果field有值，检查是否在枚举中
+            if (item.field !== undefined && item.field !== null) {
+                if (!validPhotoKeys.includes(item.field)) {
+                    console.log('PhotoPickerComponent, Invalid photokeys');
+                    return true;
+                }
+                // uri仅支持EQUAL_TO操作
+                if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
+                    console.log('PhotoPickerComponent, Invalid uri operation');
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     initialRender() {
+        if (this.pickerOptions?.assetFilter && this.checkAssetFilterInvalid(this.pickerOptions.assetFilter)) {
+            console.error('PhotoPickerComponent, assetFilter has value but invalid');
+            return;
+        }
         this.observeComponentCreation2(((e, o) => {
             Row.create();
             Row.height('100%');
