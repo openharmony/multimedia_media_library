@@ -650,6 +650,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         
     photoAlbumData->SetLatitude(latitude);
     photoAlbumData->SetLongitude(longitude);
+    photoAlbumData->SetChangeTime(get<int64_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::CHANGE_TIME, TYPE_INT64, resultSet)));
     photoAlbumData->SetUploadStatus(get<int32_t>(GetRowValFromColumn(
         PhotoAlbumColumns::UPLOAD_STATUS, TYPE_INT32, resultSet)));
     photoAlbumData->SetHidden(get<int32_t>(GetRowValFromColumn(
