@@ -274,7 +274,7 @@ static int32_t UnregisterSingleObserverExecute(UnregisterContext& singleContext)
         return JS_E_PARAM_INVALID;
     }
 
-    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(singleContext.uriType, singleContext.registerUriType,
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(singleContext.uriType, singleContext.registerUriType,
         singleContext.registerUri) != E_OK) {
         return JS_E_PARAM_INVALID;
     }

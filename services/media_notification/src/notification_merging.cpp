@@ -61,30 +61,41 @@ static void FilterSingleChanges(MediaChangeInfo& outerElem, std::vector<NotifyIn
     std::shared_ptr<Notification::MediaObserverManager> manager, bool isPhotoAsset)
 {
     auto& innerChanges = outerElem.changeInfos;
-    MediaChangeInfo singleMediaChangeInfos;
-    singleMediaChangeInfos.isForRecheck = outerElem.isForRecheck;
-    singleMediaChangeInfos.notifyType = outerElem.notifyType;
-    singleMediaChangeInfos.isSystem = outerElem.isSystem;
-    singleMediaChangeInfos.notifyUri = isPhotoAsset ?
+    CHECK_AND_RETURN_LOG(!innerChanges.empty(), "FilterSingleChanges: innerChanges is empty, skip");
+    const NotifyUriType notifyUri = isPhotoAsset ?
         NotifyUriType::SINGLE_PHOTO_URI : NotifyUriType::SINGLE_PHOTO_ALBUM_URI;
-    std::vector<ObserverInfo> obsInfos = manager->FindObserver(
-        isPhotoAsset ? NotifyUriType::SINGLE_PHOTO_URI : NotifyUriType::SINGLE_PHOTO_ALBUM_URI);
+    Notification::NotifyUriType sourceUri = isPhotoAsset ?
+        NotifyUriType::PHOTO_URI : NotifyUriType::PHOTO_ALBUM_URI;
+    std::vector<ObserverInfo> obsInfos = manager->FindObserver(notifyUri);
     for (auto& obsInfo : obsInfos) {
+        if (manager->FindSingleObserverWithUri(sourceUri, obsInfo.observer)) {
+            MEDIA_DEBUG_LOG("No need to handle");
+            continue;
+        }
+        MediaChangeInfo singleMediaChangeInfos;
+        singleMediaChangeInfos.isForRecheck = outerElem.isForRecheck;
+        singleMediaChangeInfos.notifyType = outerElem.notifyType;
+        singleMediaChangeInfos.isSystem = outerElem.isSystem;
+        singleMediaChangeInfos.notifyUri = notifyUri;
         bool modifySucceeded = false;
         NotifyInfo notifyInfo;
         for (auto& it : innerChanges) {
             const auto* photoData = isPhotoAsset ? std::get_if<PhotoAssetChangeData>(&it) : nullptr;
             const auto* albumData = !isPhotoAsset ? std::get_if<AlbumChangeData>(&it) : nullptr;
-            std::string targetUri;
+            std::string targetBeforeUri;
+            std::string targetAfterUri;
             bool dataValid = false;
             if (isPhotoAsset && photoData != nullptr) {
-                targetUri = photoData->infoBeforeChange_.uri_;
+                targetBeforeUri = photoData->infoBeforeChange_.uri_;
+                targetAfterUri = photoData->infoAfterChange_.uri_;
                 dataValid = true;
             } else if (!isPhotoAsset && albumData != nullptr) {
-                targetUri = albumData->infoBeforeChange_.albumUri_;
+                targetBeforeUri = albumData->infoBeforeChange_.albumUri_;
+                targetAfterUri = albumData->infoAfterChange_.albumUri_;
                 dataValid = true;
             }
-            if (dataValid && manager->isUriDataPresentInSingleObserver(obsInfo.observerUris, targetUri)) {
+            if (dataValid && (manager->isUriDataPresentInSingleObserver(obsInfo.observerUris, targetBeforeUri) ||
+                manager->isUriDataPresentInSingleObserver(obsInfo.observerUris, targetAfterUri))) {
                 singleMediaChangeInfos.changeInfos.push_back(it);
                 modifySucceeded = true;
             }
@@ -100,18 +111,20 @@ static void FilterSingleChanges(MediaChangeInfo& outerElem, std::vector<NotifyIn
 static void ProcessSingleRemoveNotifications(std::shared_ptr<Notification::MediaObserverManager> manager,
     std::vector<std::variant<PhotoAssetChangeData, AlbumChangeData>>& innerChanges, bool isPhotoAsset)
 {
-    std::vector<ObserverInfo> obsInfos = manager->FindObserver(
-        isPhotoAsset ? NotifyUriType::SINGLE_PHOTO_URI : NotifyUriType::SINGLE_PHOTO_ALBUM_URI);
+    std::vector<ObserverInfo> obsInfos ;
+    auto ret = manager->FindSingleObserver(isPhotoAsset ?
+        NotifyUriType::SINGLE_PHOTO_URI : NotifyUriType::SINGLE_PHOTO_ALBUM_URI, obsInfos);
+    CHECK_AND_RETURN(ret);
     for (auto& obsInfo : obsInfos) {
         for (const auto& it : innerChanges) {
             const auto* photoData = isPhotoAsset ? std::get_if<PhotoAssetChangeData>(&it) : nullptr;
             const auto* albumData = !isPhotoAsset ? std::get_if<AlbumChangeData>(&it) : nullptr;
             std::string targetUri;
             bool dataValid = false;
-            if (isPhotoAsset && photoData != nullptr) {
+            if (isPhotoAsset && photoData != nullptr && photoData->isDelete_ == true) {
                 targetUri = photoData->infoBeforeChange_.uri_;
                 dataValid = true;
-            } else if (!isPhotoAsset && albumData != nullptr) {
+            } else if (!isPhotoAsset && albumData != nullptr && albumData->isDelete_ == true) {
                 targetUri = albumData->infoBeforeChange_.albumUri_;
                 dataValid = true;
             }
@@ -135,7 +148,7 @@ static void MergeNotifyInfoForSingleType(std::vector<MediaChangeInfo>& changeInf
     Notification::NotifyUriType trashUri = isPhotoAsset ?
         NotifyUriType::TRASH_PHOTO_URI : NotifyUriType::TRASH_ALBUM_URI;
 
-    if (manager->FindObserver(sourceUri).empty() && !manager->FindObserver(targetUri).empty()) {
+    if (!manager->FindObserver(targetUri).empty()) {
         for (auto& outerElem : changeInfos) {
             if (outerElem.notifyUri != sourceUri) {
                 continue;
