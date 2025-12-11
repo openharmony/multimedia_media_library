@@ -2071,6 +2071,10 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
         bool isValidNew = false;
         std::string assetUri = value.Get(MediaColumn::MEDIA_ID, isValidNew);
         CHECK_AND_CONTINUE(MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX));
+        if (!MediaLibraryDataManagerUtils::IsNumber(MediaFileUri::GetPhotoId(assetUri))) {
+            MEDIA_INFO_LOG("invalid photo id: %{public}s", MediaFileUri::GetPhotoId(assetUri).c_str());
+            continue;
+        }
         auto photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds, hidden)) {
             updateRows++;
