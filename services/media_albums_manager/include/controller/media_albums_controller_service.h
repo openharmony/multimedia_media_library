@@ -70,6 +70,7 @@ public:
     EXPORT int32_t GetClonedAlbumUris(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t ChangeRequestSetUploadStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAlbumIdByLpathOrBundleName(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SmartMoveAssets(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAlbumsControllerService() = default;
