@@ -106,6 +106,7 @@ int32_t CloudMediaScanService::ScanDownloadedFile(const string& path, CloudMedia
     result.shootingMode = data->GetShootingMode();
     result.shootingModeTag = data->GetShootingModeTag();
     result.frontCamera = data->GetFrontCamera();
+    result.hdrMode = data->GetHdrMode();
     result.subType = data->GetPhotoSubType();
     result.scanSuccess = true;
     MEDIA_INFO_LOG("ScanDownloadedFile, result: %{public}s", result.ToString().c_str());
