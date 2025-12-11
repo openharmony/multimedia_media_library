@@ -58,98 +58,54 @@ const OperationType = {
 
 const PickerFilterPhotoKeys = {
   
-  URI: 'uri',
-  
-  PHOTO_TYPE: 'media_type',
-  
-  DISPLAY_NAME: 'display_name',
-  
-  SIZE: 'size',
-  
-  DATE_ADDED: 'date_added',
-  
-  DATE_MODIFIED: 'date_modified',
-  
-  DURATION: 'duration',
-  
-  WIDTH: 'width',
-  
-  HEIGHT: 'height',
-  
-  DATE_TAKEN: 'date_taken',
-  
-  ORIENTATION: 'orientation',
-  
-  FAVORITE: 'is_favorite',
-  
-  TITLE: 'title',
-  
-  POSITION: 'position',
-  
-  DATE_TRASHED: 'date_trashed',
-  
-  HIDDEN: 'hidden',
-  
-  USER_COMMENT: 'user_comment',
-  
-  CAMERA_SHOT_KEY: 'camera_shot_key',
-  
-  DATE_YEAR: 'date_year',
-  
-  DATE_MONTH: 'date_month',
-  
-  DATE_DAY: 'date_day',
-  
-  PENDING: 'pending',
-  
-  PHOTO_SUBTYPE: 'subtype',
-  
-  MOVING_PHOTO_EFFECT_MODE: 'moving_photo_effect_mode',
-  
-  DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
-  
-  COVER_POSITION: 'cover_position',
-  
-  BURST_KEY: 'burst_key',
-  
-  THUMBNAIL_READY: 'thumbnail_ready',
-  
-  LCD_SIZE: 'lcd_size',
-  
-  THM_SIZE: 'thm_size',
-  
-  DETAIL_TIME: 'detail_time',
-  
-  CE_AVAILABLE: 'ce_available',
-  
-  SUPPORTED_WATERMARK_TYPE: 'supported_watermark_type',
-  
-  THUMBNAIL_VISIBLE: 'thumbnail_visible',
-  
-  IS_CE_AUTO: 'is_auto',
-  
-  OWNER_ALBUM_ID: 'owner_album_id',
-  
-  IS_RECENT_SHOW: 'is_recent_show',
-  
-  MEDIA_SUFFIX: 'media_suffix',
-  
-  EXIF_ROTATE: 'exif_rotate',
-  
-  HAS_APPLINK: 'has_applink',
-  
-  APPLINK: 'applink',
-  
-  HDR_MODE: 'hdr_mode',
-  
-  CLOUD_ID: 'cloud_id',
-  
-  EXIST_COMPATIBLE_DUPLICATE: 'exist_compatible_duplicate',
-  
-  COMPOSITE_DISPLAY_STATUS: 'composite_display_status',
-  
-  ASPECT_RATIO: 'aspect_ratio',
-}
+    URI: 'uri',
+    
+    PHOTO_TYPE: 'media_type',
+    
+    DISPLAY_NAME: 'display_name',
+    
+    SIZE: 'size',
+    
+    DATE_ADDED: 'date_added',
+    
+    DATE_MODIFIED: 'date_modified',
+    
+    DURATION: 'duration',
+    
+    WIDTH: 'width',
+    
+    HEIGHT: 'height',
+    
+    DATE_TAKEN: 'date_taken',
+    
+    ORIENTATION: 'orientation',
+    
+    FAVORITE: 'is_favorite',
+    
+    TITLE: 'title',
+    
+    POSITION: 'position',
+    
+    PHOTO_SUBTYPE: 'subtype',
+    
+    DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+    
+    COVER_POSITION: 'cover_position',
+    
+    BURST_KEY: 'burst_key',
+    
+    LCD_SIZE: 'lcd_size',
+    
+    THM_SIZE: 'thm_size',
+    
+    DETAIL_TIME: 'detail_time',
+    
+    OWNER_ALBUM_ID: 'owner_album_id',
+    
+    MEDIA_SUFFIX: 'media_suffix',
+    
+    ASPECT_RATIO: 'aspect_ratio',
+  }
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
