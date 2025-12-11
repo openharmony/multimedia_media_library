@@ -1036,7 +1036,7 @@ function parseMimeTypeFilter(filter) {
   return o;
 }
 
-function checkAssetFilterIncalid(assetFilter) {
+function checkAssetFilterInvalid(assetFilter) {
   // 获取所有有效的值
   const validOperationTypes = Object.values(OperationType);
   const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
@@ -1056,7 +1056,7 @@ function checkAssetFilterIncalid(assetFilter) {
         return true;
       }
       // uri仅支持EQUAL_TO操作
-      if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationItem.EQUAL_TO) {
+      if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
         console.log('[picker] Invalid uri operation');
         return true;
       }
@@ -1105,7 +1105,7 @@ async function photoPickerSelect(...args) {
 
   let assetFilter = config.parameters.assetFilter;
   if (assetFilter) {
-    let isAssetFilterInvalid = checkAssetFilterIncalid(assetFilter);
+    let isAssetFilterInvalid = checkAssetFilterInvalid(assetFilter);
     if (isAssetFilterInvalid) {
       console.error('[picker] config: assetFilter has value but invalid');
       throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
