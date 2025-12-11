@@ -90,7 +90,7 @@ private:
     EXPORT int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
     EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
-        std::vector<std::string> &dateTakens);
+        std::vector<std::string> &dateTakens, std::vector<int32_t> &subTypes);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
     EXPORT int32_t DeleteEmptyCloudAlbums();

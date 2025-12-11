@@ -5689,6 +5689,16 @@ static void UpdateSourceAlbumBundleNameTriggerUseLpath(RdbStore &store, int32_t 
     MEDIA_INFO_LOG("end update source album bundle name trigger use lpath");
 }
 
+static void AddEditOperation(RdbStore &store, int32_t version)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " + EDIT_OPERATION + " INT ",
+    };
+    MEDIA_INFO_LOG("add edit operation column start");
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("start add edit operation column end");
+}
+
 static void AddPhotoAlbumHidden(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
@@ -5741,6 +5751,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, true)) {
         CreateChangeTime(store, VERSION_ADD_CHANGE_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, true);
+    }
+
+    if (oldVersion < VERSION_ADD_EDIT_OPERATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_EDIT_OPERATION, true)) {
+        AddEditOperation(store, VERSION_ADD_EDIT_OPERATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_EDIT_OPERATION, true);
     }
 
     if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE &&

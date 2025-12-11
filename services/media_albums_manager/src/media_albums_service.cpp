@@ -57,6 +57,7 @@
 #include "media_file_utils.h"
 #include "refresh_business_name.h"
 #include "media_old_albums_column.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -935,6 +936,28 @@ int32_t MediaAlbumsService::UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto &s
     return changedRows;
 }
 
+int32_t MediaAlbumsService::SmartMoveAssets(ChangeRequestMoveAssetsDto &smartMoveAssetsDto)
+{
+    MEDIA_INFO_LOG("MediaAlbumsService::SmartMoveAssets");
+    CHECK_AND_RETURN_RET_LOG(!smartMoveAssetsDto.assets.empty(), E_INNER_FAIL,
+        "SmartMoveAssets assets is empery");
+
+    vector<std::string> assets;
+    for (const string asset : smartMoveAssetsDto.assets) {
+        size_t pos = asset.find(PhotoColumn::PHOTO_URI_PREFIX);
+        if (pos != string::npos) {
+            string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(asset);
+            CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(fileId));
+            assets.push_back(fileId);
+        }
+    }
+
+    string albumId = to_string(smartMoveAssetsDto.albumId);
+    string targetAlbumId = to_string(smartMoveAssetsDto.targetAlbumId);
+    int32_t ret = PhotoMapOperations::SmartMoveAssets(albumId, targetAlbumId, assets);
+    return ret;
+}
+
 int32_t MediaAlbumsService::MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto)
 {
     DataShare::DataSharePredicates predicates;
@@ -1126,6 +1149,7 @@ int32_t MediaAlbumsService::SetOrderPosition(ChangeRequestSetOrderPositionDto &s
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ORDER_POSITION, setOrderPositionDto.orderString);
+    valuesBucket.Put(ALBUM_ID, setOrderPositionDto.albumId);
     NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("SetOrderPosition:Input parameter is invalid ");

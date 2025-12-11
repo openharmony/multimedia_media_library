@@ -231,11 +231,15 @@ static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &pred
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(albumId),
+            E_INVALID_ARGUMENTS, "invalid album id: %{public}s", albumId.c_str());
         PhotoAlbumColumns::GetUserAlbumPredicates(stoi(albumId), predicates, false);
         return E_SUCCESS;
     }
 
     if (PhotoAlbum::IsSourceAlbum(type, subType)) {
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(albumId),
+            E_INVALID_ARGUMENTS, "invalid album id: %{public}s", albumId.c_str());
         PhotoAlbumColumns::GetSourceAlbumPredicates(stoi(albumId), predicates, false);
         return E_SUCCESS;
     }
