@@ -88,6 +88,8 @@ private:
     std::string GetAlbumDiff(const AlbumChangeInfo &album, const AlbumChangeInfo &compare);
     static void SetPhotoAlbumHidden(AlbumChangeInfo &albumChangeInfo,
         const shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetUpdatePhotoAlbumHidden(const AlbumChangeInfo &oldAlbumInfo, NativeRdb::ValuesBucket &values,
+        stringstream &ss);
 private:
     static const std::vector<std::string> albumInfoColumns_;
     static const std::map<std::string, ResultSetDataType> albumInfoCloumnTypes_;
