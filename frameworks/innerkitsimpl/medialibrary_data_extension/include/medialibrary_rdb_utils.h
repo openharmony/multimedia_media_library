@@ -141,8 +141,6 @@ public:
         const std::vector<int32_t> &affectedAlbumIds,
         std::vector<UpdateAlbumData> &albumDatas,
         std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap);
-    EXPORT static int32_t ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
-        int32_t deltaCount, std::string newCover);
     EXPORT static void GetAlbumCountAndCoverPredicates(const UpdateAlbumData& albumInfo,
         NativeRdb::RdbPredicates &predicates, const bool hiddenState, const bool isUpdateAlbum = false);
     EXPORT static void DetermineQueryOrder(NativeRdb::RdbPredicates& predicates, const UpdateAlbumData& data,
