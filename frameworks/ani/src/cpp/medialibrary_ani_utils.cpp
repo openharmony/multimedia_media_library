@@ -63,14 +63,14 @@ struct AniArrayOperator {
 static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find escompat.Array.");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find std.core.Array.");
 
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "i:", &(arrayOperator.ctorMethod)),
-        "Can't find method <ctor> in escompat.Array.");
+        "Can't find method <ctor> in std.core.Array.");
 
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iC{std.core.Object}:",
-        &(arrayOperator.setMethod)), "Can't find method $_set in escompat.Array.");
+        &(arrayOperator.setMethod)), "Can't find method $_set in std.core.Array.");
     return ANI_OK;
 }
 
@@ -79,12 +79,12 @@ ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
     CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is nullptr");
     ani_boolean isArray = ANI_FALSE;
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find escompat.Array.");
+    static const std::string className = "std.core.Array";
+    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find std.core.Array.");
 
     ani_static_method isArrayMethod {};
     CHECK_COND_RET(ANI_OK == env->Class_FindStaticMethod(cls, "isArray", nullptr, &isArrayMethod), isArray,
-        "Can't find method isArray in escompat.Array.");
+        "Can't find method isArray in std.core.Array.");
 
     CHECK_COND_RET(ANI_OK == env->Class_CallStaticMethod_Boolean(cls, isArrayMethod, &isArray, object),
         isArray, "Call method isArray failed.");
@@ -434,7 +434,7 @@ ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani
 ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "escompat.BigInt";
+    static const char *className = "std.core.BigInt";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
@@ -592,19 +592,19 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "escompat.Map";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
 
     ani_method mapConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
-        "Can't find method <ctor> in escompat.Map");
+        "Can't find method <ctor> in std.core.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
-        "Can't find method set in escompat.Map");
+        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
 
     for (const auto &[key, value] : map) {
         ani_string aniKey {};
@@ -623,16 +623,16 @@ ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_o
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(size < std::numeric_limits<int>::max(), ANI_ERROR, "size is too large");
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Array");
 
     ani_method arrayConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
-        "Can't find method <ctor> in escompat.Array");
+        "Can't find method <ctor> in std.core.Array");
 
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, size), "New aniArray failed");
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
-        "Can't find method $_set in escompat.Array.");
+        "Can't find method $_set in std.core.Array.");
     return ANI_OK;
 }
 
@@ -2456,19 +2456,19 @@ ani_status MediaLibraryAniUtils::VariantMapToAniMap(ani_env *env, const VarMap &
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     ani_class cls {};
-    static const std::string className = "escompat.Map";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
 
     ani_method mapConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
-        "Can't find method <ctor> in escompat.Map");
+        "Can't find method <ctor> in std.core.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
-        "Can't find method set in escompat.Map");
+        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
 
     ani_ref setResult {};
     for (const auto &[key, value] : map) {
