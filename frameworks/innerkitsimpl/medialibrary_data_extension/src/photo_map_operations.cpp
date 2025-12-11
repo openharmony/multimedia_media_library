@@ -181,6 +181,10 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     for (auto value : values) {
         bool isValidValue = false;
         std::string assetUri = value.Get(PhotoMap::ASSET_ID, isValidValue);
+        if (MediaLibraryDataManagerUtils::IsNumber(MediaFileUri::GetPhotoId(assetUri))) {
+            MEDIA_INFO_LOG("invalid photo id: %{public}s", MediaFileUri::GetPhotoId(assetUri).c_str());
+            continue;
+        }
         uris.push_back(assetUri);
         int32_t photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         DataShare::DataShareValuesBucket pair;
