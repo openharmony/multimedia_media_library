@@ -848,6 +848,57 @@ const OperationType = {
   NOT_BETWEEN : 14
 }
 
+const PickerFilterPhotoKeys = {
+  
+  URI: 'uri',
+  
+  PHOTO_TYPE: 'media_type',
+  
+  DISPLAY_NAME: 'display_name',
+  
+  SIZE: 'size',
+  
+  DATE_ADDED: 'date_added',
+  
+  DATE_MODIFIED: 'date_modified',
+  
+  DURATION: 'duration',
+  
+  WIDTH: 'width',
+  
+  HEIGHT: 'height',
+  
+  DATE_TAKEN: 'date_taken',
+  
+  ORIENTATION: 'orientation',
+  
+  FAVORITE: 'is_favorite',
+  
+  TITLE: 'title',
+  
+  POSITION: 'position',
+  
+  PHOTO_SUBTYPE: 'subtype',
+  
+  DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+  
+  COVER_POSITION: 'cover_position',
+  
+  BURST_KEY: 'burst_key',
+  
+  LCD_SIZE: 'lcd_size',
+  
+  THM_SIZE: 'thm_size',
+  
+  DETAIL_TIME: 'detail_time',
+  
+  OWNER_ALBUM_ID: 'owner_album_id',
+  
+  MEDIA_SUFFIX: 'media_suffix',
+  
+  ASPECT_RATIO: 'aspect_ratio',
+}
+
 const SingleSelectionMode = {
   BROWSER_MODE: 0,
   SELECT_MODE: 1,
@@ -985,6 +1036,35 @@ function parseMimeTypeFilter(filter) {
   return o;
 }
 
+function checkAssetFilterInvalid(assetFilter) {
+  // 获取所有有效的值
+  const validOperationTypes = Object.values(OperationType);
+  const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
+
+  //遍历数组中的每个OperationItem
+  for (const item of assetFilter) {
+    //检查operationType是否有值且在枚举中
+    if (!item.operationType || !validOperationTypes.includes(item.operationType)) {
+      console.log('[picker] Invalid operationType');
+      return true;
+    }
+
+    //如果field有值，检查是否在枚举中
+    if (item.field !== undefined || item.field !== null) {
+      if (!validPhotoKeys.includes(item.field)) {
+        console.log('[picker] Invalid photokeys');
+        return true;
+      }
+      // uri仅支持EQUAL_TO操作
+      if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
+        console.log('[picker] Invalid uri operation');
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function getPhotoPickerSelectResult(args) {
   let selectResult = {
     error: undefined,
@@ -1020,6 +1100,15 @@ async function photoPickerSelect(...args) {
     if (!check) {
       console.log('[picker] error: ' + ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION);
       return undefined;
+    }
+  }
+
+  let assetFilter = config.parameters.assetFilter;
+  if (assetFilter) {
+    let isAssetFilterInvalid = checkAssetFilterInvalid(assetFilter);
+    if (isAssetFilterInvalid) {
+      console.error('[picker] config: assetFilter has value but invalid');
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
     }
   }
 
