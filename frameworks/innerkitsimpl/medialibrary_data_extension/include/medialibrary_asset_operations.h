@@ -135,6 +135,7 @@ public:
     EXPORT static void TaskDataFileProcess(const std::vector<std::string> &ids,
         const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
         std::vector<int32_t> &subTypes);
+    EXPORT static std::string GetAssetCompressCachePath(const std::string &path);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
@@ -197,7 +198,6 @@ protected:
     EXPORT static std::string GetEditDataPath(const std::string &path);
     EXPORT static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
-    static std::string GetAssetCompressCachePath(const std::string &path);
     static std::string GetAssetCompressJsonPath(const std::string &path);
     static int32_t AddOtherBurstIdsToFileIds(std::vector<std::string> &fileIds);
 

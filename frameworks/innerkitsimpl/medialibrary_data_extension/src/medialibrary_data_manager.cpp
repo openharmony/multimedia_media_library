@@ -136,7 +136,6 @@ namespace OHOS {
 namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
-unordered_map<std::string, std::string> MediaLibraryDataManager::compressAssetTempFiles_ = {};
 mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
@@ -152,7 +151,6 @@ const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
 const int32_t ERROR_OLD_FILE_ID_OFFSET = -1000000;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
-constexpr int64_t SHARE_UID = 5520;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
@@ -4097,7 +4095,6 @@ int32_t MediaLibraryDataManager::OpenAssetCompress(const std::string &uri, const
 {
     MEDIA_INFO_LOG("MediaLibraryDataManager::OpenAssetCompress begin");
     fd = -1;
-    CHECK_AND_RETURN_RET_LOG(IPCSkeleton::GetCallingUid() == SHARE_UID, E_ERR, "only support share");
     CHECK_AND_RETURN_RET_LOG(version > 0, E_INVALID_VALUES, "Invalid version: %{public}d", version);
     string assetUri = uri;
     MediaFileUtils::UriAppendKeyValue(assetUri, "type", to_string(static_cast<int32_t>(type)));
@@ -4120,22 +4117,7 @@ int32_t MediaLibraryDataManager::OpenAssetCompress(const std::string &uri, const
         CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(tlvPath), MediaFileUtils::DeleteFile(tlvPath));
         return E_ERR;
     }
-    SaveCompressTempFile(uri, tlvPath);
     return ret;
-}
-
-void MediaLibraryDataManager::SaveCompressTempFile(const std::string &uri, const std::string &tempFilePath)
-{
-    MEDIA_INFO_LOG("SaveCompressTempFile begin");
-    CHECK_AND_RETURN_LOG(!uri.empty() && MediaFileUtils::IsFileExists(tempFilePath),
-        "SaveCompressTempFile failed, uri or tempFilePath is empty");
-    std::string id = MediaFileUtils::GetIdFromUri(uri);
-    if (compressAssetTempFiles_.count(id) > 0) {
-        CHECK_AND_RETURN_LOG(tempFilePath != compressAssetTempFiles_[id], "temp file already exists");
-        MediaFileUtils::DeleteFile(compressAssetTempFiles_[id]);
-    }
-    compressAssetTempFiles_[id] = tempFilePath;
-    MEDIA_INFO_LOG("SaveCompressTempFile tempFilePath: %{public}s", tempFilePath.c_str());
 }
 
 int32_t MediaLibraryDataManager::NotifyAssetSended(const std::string &uri)
@@ -4143,13 +4125,11 @@ int32_t MediaLibraryDataManager::NotifyAssetSended(const std::string &uri)
     MEDIA_INFO_LOG("NotifyAssetSended begin");
     CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_OK, "Invalid uri");
     std::string id = MediaFileUtils::GetIdFromUri(uri);
-    auto it = compressAssetTempFiles_.find(id);
-    CHECK_AND_RETURN_RET_LOG(it != compressAssetTempFiles_.end(), E_OK, "temp file not in map");
-    std::string tempFilePath = it->second;
-    compressAssetTempFiles_.erase(it);
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(tempFilePath), E_OK, "temp compress asset file not exists");
+    std::string tempFilePath = MediaLibraryAssetOperations::GetAssetCompressCachePath(id);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(tempFilePath), E_OK, "Temp compress asset file not exists");
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(tempFilePath), E_OK, "Clean temp compress asset file failed");
-    MEDIA_INFO_LOG("NotifyAssetSended erase tempFilePath: %{public}s", DfxUtils::GetSafePath(tempFilePath).c_str());
+    MEDIA_INFO_LOG("NotifyAssetSended delete tempFilePath: %{public}s",
+        DfxUtils::GetSafePath(tempFilePath).c_str());
     return E_OK;
 }
 

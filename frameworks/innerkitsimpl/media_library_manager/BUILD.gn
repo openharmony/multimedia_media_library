@@ -186,6 +186,7 @@ ohos_shared_library("media_library_extend_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/notify_asset_sended_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/open_asset_compress_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_asset_compress_version_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_compress_asset_size_vo.cpp",
   ]
 
   user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
