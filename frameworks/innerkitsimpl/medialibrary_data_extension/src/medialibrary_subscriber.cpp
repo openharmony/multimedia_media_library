@@ -81,6 +81,7 @@
 #include "database_adapter.h"
 #include "product_info.h"
 #include "permission_whitelist_utils.h"
+#include "cloud_media_retain_smart_data.h"
 
 using namespace OHOS::AAFwk;
 
@@ -1039,6 +1040,8 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName();
 #endif
+    int32_t ret = DoCloudMediaRetainCleanup();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
 }
 
 static void PauseBackgroundDownloadCloudMedia()
