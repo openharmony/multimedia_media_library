@@ -407,7 +407,7 @@ void CloudMediaAssetManager::CleanUpFileData(const std::string& path)
 
 bool CloudMediaAssetManager::ProcessDeleteBatch(const std::vector<std::string> &fileIds,
     const std::vector<std::string> &paths, const std::vector<std::string> &dateTakens,
-    const std::vector<int64_t> &lcdVisitTimes, const std::vector<int32_t> &subTypes)
+    const std::vector<int64_t> &lcdVisitTimes, std::vector<int32_t> &subTypes)
 {
     std::vector<std::string> deleteDbFileIds;
     std::vector<std::string> updateDbFileIds;

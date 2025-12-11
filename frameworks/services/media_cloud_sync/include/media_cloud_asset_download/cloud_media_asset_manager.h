@@ -95,7 +95,7 @@ private:
         std::vector<std::string> &dateTakens, std::vector<int64_t>& lcdVisitTimes, std::vector<int32_t> &subTypes);
     static bool ProcessDeleteBatch(const std::vector<std::string> &fileIds,
         const std::vector<std::string> &paths, const std::vector<std::string> &dateTakens,
-        const std::vector<int64_t> &lcdVisitTimes);
+        const std::vector<int64_t> &lcdVisitTimes, std::vector<int32_t> &subTypes);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE,
         SmartDataProcessingMode mode = SmartDataProcessingMode::NONE);
