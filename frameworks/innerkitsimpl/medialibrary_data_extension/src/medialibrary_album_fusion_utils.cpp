@@ -2170,6 +2170,9 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
         MEDIA_INFO_LOG("compatible duplicate file is exists");
         return UpdateTranscodeTime(fileId);
     }
+    std::string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    CHECK_AND_RETURN_RET_LOG(mimeType == "image/heic" || mimeType == "image/heif", E_PARAM_CONVERT_FORMAT,
+        "mimeType is invalid, mimeType: %{public}s", mimeType.c_str());
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
         "pure cloud asset is invalid, position: %{public}d", position);
@@ -2203,7 +2206,7 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     }
 
     const std::string querySql = R"(SELECT exist_compatible_duplicate, position, is_temp, time_pending, hidden,
-        date_trashed, date_deleted FROM Photos WHERE file_id = ?)";
+        date_trashed, date_deleted, mime_type FROM Photos WHERE file_id = ?)";
     std::vector<NativeRdb::ValueObject> params = { fileId };
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     dupExist = 0;
