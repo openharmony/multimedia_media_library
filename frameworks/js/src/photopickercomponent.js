@@ -148,8 +148,6 @@ const PickerFilterPhotoKeys = {
   
   COMPOSITE_DISPLAY_STATUS: 'composite_display_status',
   
-  VIDEO_MODE: 'video_mode',
-  
   ASPECT_RATIO: 'aspect_ratio',
 }
 
