@@ -1853,4 +1853,13 @@ int32_t MediaAssetsService::GetAssetCompressVersion(int32_t &version)
     version = dataManager->GetAssetCompressVersion();
     return E_SUCCESS;
 }
+
+int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> &uris,
+    GetCompressAssetSizeRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetCompressAssetSize start");
+    int32_t ret = MediaLibraryPhotoOperations::GetCompressAssetSize(uris, respBody.totalSize);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to get compress asset size, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
 } // namespace OHOS::Media

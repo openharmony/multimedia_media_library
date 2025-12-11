@@ -1896,23 +1896,14 @@ string MediaLibraryAssetOperations::GetAssetCacheDir()
     return MEDIA_CACHE_DIR + cacheOwner;
 }
 
-string MediaLibraryAssetOperations::GetAssetCompressCachePath(const string &path)
+string MediaLibraryAssetOperations::GetAssetCompressCachePath(const string &id)
 {
-    string fileName = MediaFileUtils::GetFileName(path);
-    CHECK_AND_RETURN_RET(!fileName.empty(), "");
-    string cacheDir = GetAssetCacheDir() + "/compressCache/";
-    string titleName = MediaFileUtils::GetTitleFromDisplayName(fileName);
-    int64_t timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    return cacheDir + titleName + "_" + std::to_string(timestamp) + ".tlv";
+    return GetAssetCacheDir() + "/compressCache/" + id + ".tlv";
 }
 
-string MediaLibraryAssetOperations::GetAssetCompressJsonPath(const string &path)
+string MediaLibraryAssetOperations::GetAssetCompressJsonPath(const string &id)
 {
-    string parentPath = GetEditDataDirPath(path);
-    if (parentPath.empty()) {
-        return "";
-    }
-    return parentPath + "/editdata.json";
+    return GetAssetCacheDir() + "/compressCache/" + id + "_editdata.json";
 }
 
 static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)

@@ -221,6 +221,7 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_NOTIFY_ASSET_SENDED), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSET_COMPRESS_VERSION), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE), 200},
 };
 
 int64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)
