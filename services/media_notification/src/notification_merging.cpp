@@ -68,7 +68,7 @@ static void FilterSingleChanges(MediaChangeInfo& outerElem, std::vector<NotifyIn
         NotifyUriType::PHOTO_URI : NotifyUriType::PHOTO_ALBUM_URI;
     std::vector<ObserverInfo> obsInfos = manager->FindObserver(notifyUri);
     for (auto& obsInfo : obsInfos) {
-        if (manager->FindSingleObserverWithUri(sourceUri, obsInfo.observer)) {
+        if (manager->FindSingleObserverWithUri(sourceUri, obsInfo.callingTokenId)) {
             MEDIA_DEBUG_LOG("No need to handle");
             continue;
         }
