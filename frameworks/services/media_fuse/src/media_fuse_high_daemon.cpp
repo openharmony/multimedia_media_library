@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "MediaFuseDaemon"
-#include "media_fuse_daemon.h"
+#define MLOG_TAG "MediaFuseHighDaemon"
+#include "media_fuse_high_daemon.h"
 
 #include <fcntl.h>
 #define FUSE_USE_VERSION FUSE_MAKE_VERSION(3, 17)
@@ -221,7 +221,7 @@ static const struct fuse_operations high_ops = {
     .create     = Create,
 };
 
-int32_t MediaFuseDaemon::StartFuse()
+int32_t MediaFuseHighDaemon::StartFuse()
 {
     int ret = E_OK;
 
@@ -236,7 +236,7 @@ int32_t MediaFuseDaemon::StartFuse()
     return ret;
 }
 
-void MediaFuseDaemon::DaemonThread()
+void MediaFuseHighDaemon::DaemonThread()
 {
     struct fuse_args args = FUSE_ARGS_INIT(0, nullptr);
     struct fuse *fuse_default = nullptr;
