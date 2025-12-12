@@ -337,7 +337,7 @@ int32_t TlvUtil::ExtractFileData(TlvFile tlvFile, const std::string& outFilePath
 {
     CHECK_AND_RETURN_RET_LOG(tlvFile >= 0, E_ERR, "tlvFile is invalid");
     TlvFile outTlv = open(outFilePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, CHOWN_RW_USER_GRP);
-    CHECK_AND_RETURN_RET_LOG(outTlv > 0, E_ERR, "outTlv open error %{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(outTlv >= 0, E_ERR, "outTlv open error %{public}d", errno);
     UniqueFd outTlvFd(outTlv);
 
     char buffer[TLV_BUFFER_SIZE] = {0};
@@ -393,7 +393,7 @@ int32_t TlvUtil::ExtractMovingPhotoVideoFile(TlvFile tlvFile, TlvLength dataLeng
 {
     std::string originDir = destDir + "/origin";
     if (!std::filesystem::exists(originDir)) {
-        std::filesystem::create_directory(originDir);
+        std::filesystem::create_directories(originDir);
     }
     std::string outPutFileName = "origin_file.mp4";
     if (!fileName.empty() && fileName.find('/') == std::string::npos) {
@@ -413,7 +413,7 @@ int32_t TlvUtil::ExtractOriginFile(TlvFile tlvFile, TlvLength dataLength, const 
 {
     std::string originDir = destDir + "/origin";
     if (!std::filesystem::exists(originDir)) {
-        std::filesystem::create_directory(originDir);
+        std::filesystem::create_directories(originDir);
     }
     std::string outPutFileName = "origin_file";
     if (!fileName.empty() && fileName.find('/') == std::string::npos) {
@@ -448,7 +448,7 @@ int32_t TlvUtil::ExtractMovingPhotoVideoSourceFile(TlvFile tlvFile, TlvLength da
     MEDIA_INFO_LOG("Extracting moving photo video source file to: %{public}s, size: %{public}" PRId64,
         DfxUtils::GetSafePath(outFilePath).c_str(), dataLength);
     if (!std::filesystem::exists(realDir)) {
-        std::filesystem::create_directory(realDir);
+        std::filesystem::create_directories(realDir);
     }
     CHECK_AND_RETURN_RET_LOG(ExtractFileData(tlvFile, outFilePath, dataLength) == E_OK,
         E_ERR, "failed to extract moving photo video source file");
@@ -464,7 +464,7 @@ int32_t TlvUtil::ExtractMovingPhotoVideoSourceBackFile(TlvFile tlvFile, TlvLengt
     MEDIA_INFO_LOG("Extracting moving photo image source file to: %{public}s, size: %{public}" PRId64,
         DfxUtils::GetSafePath(outFilePath).c_str(), dataLength);
     if (!std::filesystem::exists(realDir)) {
-        std::filesystem::create_directory(realDir);
+        std::filesystem::create_directories(realDir);
     }
     CHECK_AND_RETURN_RET_LOG(ExtractFileData(tlvFile, outFilePath, dataLength) == E_OK,
         E_ERR, "failed to extract source file");
@@ -552,7 +552,7 @@ int32_t TlvUtil::ExtractTlv(const std::string &tlvFilePath, const std::string &d
     CHECK_AND_RETURN_RET_LOG(ValidateTlvFile(tlvFilePath) == E_OK, E_ERR, "TLV file validation failed");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!std::filesystem::exists(destDir)) {
-        std::filesystem::create_directory(destDir);
+        std::filesystem::create_directories(destDir);
     }
     TlvFile tlvFile = open(tlvFilePath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(tlvFile >= 0, E_ERR, "tlvFile is invalid");
