@@ -161,7 +161,8 @@ int32_t CloudMediaPhotosDao::BatchInsertQuick(int64_t &outRowId, const std::stri
 
     std::function<int(void)> transFunc = [&]()->int {
         int rdbError = 0;
-        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues, rdbError);
+        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues, rdbError,
+            NativeRdb::ConflictResolution::ON_CONFLICT_REPLACE);
         CHECK_AND_RETURN_RET_LOG(
             retInner == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
             rdbError,
