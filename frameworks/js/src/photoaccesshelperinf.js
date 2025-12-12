@@ -1050,7 +1050,7 @@ function checkAssetFilterInvalid(assetFilter) {
     }
 
     //如果field有值，检查是否在枚举中
-    if (item.field !== undefined || item.field !== null) {
+    if (item.field !== undefined && item.field !== null) {
       if (!validPhotoKeys.includes(item.field)) {
         console.log('[picker] Invalid photokeys');
         return true;
