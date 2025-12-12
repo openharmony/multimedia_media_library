@@ -18,6 +18,7 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_notification_utils.h"
+#include "ipc_skeleton.h"
 
 namespace OHOS::Media {
 using namespace Notification;
@@ -61,6 +62,7 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
     ObserverInfo obsInfo;
     obsInfo.observer = dataObserver;
     obsInfo.isSystem = permissionHandle.isSystemApp();
+    obsInfo.callingTokenId = IPCSkeleton::GetCallingTokenID();
 
     std::lock_guard<std::mutex> lock(mutex_);
     if (observers_.find(uri) == observers_.end()) {
@@ -186,7 +188,7 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
 }
 
 bool MediaObserverManager::FindSingleObserverWithUri(const NotifyUriType &uri,
-    const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
+    const uint32_t callingTokenId)
 {
     MEDIA_INFO_LOG("enter FindSingleObserverWithUri");
     NotifyRegisterPermission permissionHandle;
@@ -202,8 +204,8 @@ bool MediaObserverManager::FindSingleObserverWithUri(const NotifyUriType &uri,
         return false;
     }
     auto iter = std::find_if(observersIter->second.begin(), observersIter->second.end(),
-        [dataObserver](const ObserverInfo& s) {
-        return s.observer->AsObject() == dataObserver->AsObject();
+        [callingTokenId](const ObserverInfo& s) {
+        return s.callingTokenId == callingTokenId;
     });
     return iter != observersIter->second.end();
 }
