@@ -361,6 +361,7 @@ public:
     static const std::string AUDIO_ALBUM EXPORT;
     static const std::string AUDIO_ARTIST EXPORT;
     static const std::string AUDIO_FILE_SOURCE_TYPE EXPORT;
+    static const std::string AUDIO_IS_TEMP EXPORT;
 
     // table name
     static const std::string AUDIOS_TABLE EXPORT;

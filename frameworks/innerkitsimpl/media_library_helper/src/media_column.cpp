@@ -744,6 +744,7 @@ std::string PhotoColumn::CheckMetaRecoveryPhotoColumns()
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
 const std::string AudioColumn::AUDIO_ARTIST = "artist";
 const std::string AudioColumn::AUDIO_FILE_SOURCE_TYPE = "file_source_type";
+const std::string AudioColumn::AUDIO_IS_TEMP = "is_temp";
 
 const std::string AudioColumn::AUDIOS_TABLE = "Audios";
 
@@ -766,6 +767,7 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_DEVICE_NAME + " TEXT, " +
     AUDIO_ARTIST + " TEXT, " +
     AUDIO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
+    AUDIO_IS_TEMP + " INT DEFAULT 0," +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -787,7 +789,7 @@ const std::string AudioColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
     MediaColumn::MEDIA_TYPE;
 
 const std::set<std::string> AudioColumn::AUDIO_COLUMNS = {
-    AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST, AudioColumn::AUDIO_FILE_SOURCE_TYPE
+    AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST, AudioColumn::AUDIO_FILE_SOURCE_TYPE, AudioColumn::AUDIO_IS_TEMP
 };
 
 bool AudioColumn::IsAudioColumn(const std::string &columnName)
