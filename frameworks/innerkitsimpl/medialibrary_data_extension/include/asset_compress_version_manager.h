@@ -50,7 +50,6 @@ public:
     static int32_t GetCompatibleCompressVersion(int32_t version);
 private:
     static const std::unordered_map<VersionNumber, AssetCompressSpec> atomicSpecs_;
-    static std::mutex cacheSpecsMutex_;
 };
 
 } // namespace Media

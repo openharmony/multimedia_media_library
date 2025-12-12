@@ -202,7 +202,7 @@ public:
      * @param uris list of asset URIs (max 500)
      * @return total size in bytes on success, error code otherwise
      */
-    EXPORT int32_t GetCompressAssetSize(const std::vector<std::string> &uris);
+    EXPORT int64_t GetCompressAssetSize(const std::vector<std::string> &uris);
 
     /**
      * @brief get asset compress version
