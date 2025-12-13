@@ -15,32 +15,17 @@
 
 #include "medialibrary_album_fusion_utils.h"
 
-#include <cerrno>
-#include <functional>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "map_operation_flag.h"
-#include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
-#include "medialibrary_rdbstore.h"
-#include "metadata.h"
-#include "media_file_utils.h"
-#include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_tracer.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
-#include "result_set_utils.h"
 #include "thumbnail_service.h"
-#include "userfile_manager_types.h"
 #include "photo_source_path_operation.h"
-#include "medialibrary_rdb_transaction.h"
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_album_copy_meta_data_operation.h"
@@ -183,6 +168,8 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::STYLE2_ORDER_STATUS, ResultSetDataType::TYPE_INT32},
     {PhotoAlbumColumns::COVER_URI_SOURCE, ResultSetDataType::TYPE_INT32},
     {PhotoAlbumColumns::COVER_CLOUD_ID, ResultSetDataType::TYPE_STRING},
+    {PhotoAlbumColumns::UPLOAD_STATUS, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::ALBUM_HIDDEN, ResultSetDataType::TYPE_INT32},
 };
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
@@ -360,7 +347,8 @@ static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
     return position != POSITION_CLOUD_FLAG;
 }
 
-static inline void buildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType)
+void MediaLibraryAlbumFusionUtils::BuildTargetFilePath(
+    std::string &targetPath, std::string displayName, int32_t mediaType)
 {
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
@@ -810,7 +798,7 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
 
     int32_t mediaType;
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -968,7 +956,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     int32_t mediaType;
     GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -1165,7 +1153,7 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     }
 
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    buildTargetFilePath(targetPath, displayName, mediaType);
+    MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     std::string extension = MediaFileUtils::GetExtensionFromPath(displayName);
     MEDIA_INFO_LOG("ConvertFormatPhoto failed, displayName: %{public}s, targetPath: %{public}s",
         displayName.c_str(), targetPath.c_str());
@@ -1593,11 +1581,42 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
     }
 }
 
+static bool IsDeleteOtherAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
+    int32_t oldAlbumId)
+{
+    CHECK_AND_RETURN_RET_LOG(executeObject.rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
+    const std::string querySql = "SELECT lpath from PhotoAlbum WHERE album_id = " + std::to_string(oldAlbumId);
+    auto resultSet = executeObject.rdbStore->QueryByStep(querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Is delete other album, find album resultSet null");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("IsDeleteOtherAlbum first row empty");
+        resultSet->Close();
+        return false;
+    }
+    std::string deletedAlbumLPath = MediaLibraryRdbStore::GetString(resultSet, PhotoAlbumColumns::ALBUM_LPATH);
+    resultSet->Close();
+    if (deletedAlbumLPath == "/Pictures/其它") {
+        return true;
+    }
+    return false;
+}
+
+static int32_t RecreateOtherAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject)
+{
+    CHECK_AND_RETURN_RET_LOG(executeObject.albumRefresh != nullptr, E_HAS_DB_ERROR, "albumRefresh is null");
+    int32_t ret = executeObject.albumRefresh->ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
+        AccurateRefresh::RDB_OPERATION_ADD);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR,
+        "Cannot insert new othersAlbum into PhotoAlbum table, ret: %{public}d", ret);
+    return E_OK;
+}
+
 static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
     int32_t oldAlbumId, int64_t newAlbumId, bool isCloudAblum, const vector<string>* fileIdsInAlbum = nullptr)
 {
     CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
 
+    bool isOthers = IsDeleteOtherAlbum(executeObject, oldAlbumId);
     int32_t ret = DeleteOldAlbum(executeObject, oldAlbumId, isCloudAblum);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
@@ -1614,6 +1633,9 @@ static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::E
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
         ret, oldAlbumId);
+    if (isOthers) {
+        ret = RecreateOtherAlbum(executeObject);
+    }
     return E_OK;
 }
 
@@ -2148,6 +2170,9 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
         MEDIA_INFO_LOG("compatible duplicate file is exists");
         return UpdateTranscodeTime(fileId);
     }
+    std::string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    CHECK_AND_RETURN_RET_LOG(mimeType == "image/heic" || mimeType == "image/heif", E_PARAM_CONVERT_FORMAT,
+        "mimeType is invalid, mimeType: %{public}s", mimeType.c_str());
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
         "pure cloud asset is invalid, position: %{public}d", position);
@@ -2181,7 +2206,7 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     }
 
     const std::string querySql = R"(SELECT exist_compatible_duplicate, position, is_temp, time_pending, hidden,
-        date_trashed, date_deleted FROM Photos WHERE file_id = ?)";
+        date_trashed, date_deleted, mime_type FROM Photos WHERE file_id = ?)";
     std::vector<NativeRdb::ValueObject> params = { fileId };
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     dupExist = 0;

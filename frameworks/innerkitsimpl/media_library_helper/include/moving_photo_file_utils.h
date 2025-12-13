@@ -57,6 +57,8 @@ public:
     EXPORT static std::string GetMovingPhotoExtraDataPath(const std::string &imagePath, int32_t userId = -1);
     EXPORT static std::string GetSourceMovingPhotoImagePath(const std::string &imagePath, int32_t userId = -1);
     EXPORT static std::string GetSourceMovingPhotoVideoPath(const std::string &imagePath, int32_t userId = -1);
+    EXPORT static std::string GetSourceBackMovingPhotoImagePath(const std::string &imagePath, int32_t userId = -1);
+    EXPORT static std::string GetSourceBackMovingPhotoVideoPath(const std::string &imagePath, int32_t userId = -1);
     EXPORT static std::string GetLivePhotoCacheDir(const std::string &imagePath, int32_t userId = -1);
     EXPORT static std::string GetLivePhotoCachePath(const std::string &imagePath, int32_t userId = -1);
     EXPORT static std::string GetSourceLivePhotoCachePath(const std::string &imagePath, int32_t userId = -1);

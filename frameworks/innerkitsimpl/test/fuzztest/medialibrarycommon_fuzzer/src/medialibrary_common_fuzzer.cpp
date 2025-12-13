@@ -183,8 +183,12 @@ static void PhotoProxyTest()
     uint32_t callingUid = provider->ConsumeIntegral<uint32_t>();
     int32_t userId = provider->ConsumeIntegral<int32_t>();
     uint32_t tokenId = provider->ConsumeIntegral<uint32_t>();
-    Media::PhotoAssetProxy proxy(nullptr, static_cast<Media::CameraShotType>(cameraShotType),
-        callingUid, userId, tokenId);
+    Media::PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = callingUid,
+        .userId = userId,
+        .callingTokenId = tokenId,
+    };
+    Media::PhotoAssetProxy proxy(nullptr, callerInfo, static_cast<Media::CameraShotType>(cameraShotType));
     proxy.GetFileAsset();
     proxy.GetPhotoAssetUri();
     proxy.GetVideoFd();

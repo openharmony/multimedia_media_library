@@ -15,35 +15,21 @@
 #define MLOG_TAG "MtpMedialibraryManager"
 #include "mtp_medialibrary_manager.h"
 
-#include <unistd.h>
-#include <sys/time.h>
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "datashare_result_set.h"
 #include "directory_ex.h"
-#include "fetch_result.h"
 #include "image_format_convert.h"
 #include "image_packer.h"
-#include "image_source.h"
-#include "media_column.h"
 #include "mtp_data_utils.h"
 #include "media_file_utils.h"
-#include "media_mtp_utils.h"
 #include "mtp_error_utils.h"
 #include "media_library_manager.h"
 #include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
-#include "media_smart_map_column.h"
 #include "moving_photo_file_utils.h"
 #include "photo_album_column.h"
 #include "ptp_media_sync_observer.h"
-#include "pixel_map.h"
 #include "ptp_album_handles.h"
 #include "ptp_medialibrary_manager_uri.h"
 #include "ptp_special_handles.h"
-#include "system_ability_definition.h"
-#include "userfilemgr_uri.h"
 #include "mediatool_uri.h"
 #include "album_operation_uri.h"
 
@@ -96,6 +82,8 @@ std::vector<std::string> g_photoColumns = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MEDIA_DATE_MODIFIED,
     PhotoColumn::PHOTO_THUMB_SIZE,
+    PhotoColumn::PHOTO_STORAGE_PATH,
+    PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
     PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL,
@@ -685,7 +673,9 @@ int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &con
     std::string sourcePath;
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "have no row");
-    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t fileSourceType = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+    string data = fileSourceType == MTP_MEDIA_HO_LAKE ? GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet) :
+        GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (context->handle > COMMON_MOVING_OFFSET) {
         sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
     } else {
@@ -1175,7 +1165,8 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     errCode = GetFileAssetFromPhotosInfo(context, oldFileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetFileAssetFromPhotosInfo");
     CHECK_AND_RETURN_RET_LOG(oldFileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "oldFileAsset is nullptr");
-    std::string oldDataPath = oldFileAsset->GetFilePath();
+    std::string oldDataPath = oldFileAsset->GetFileSourceType() == MTP_MEDIA_HO_LAKE ? oldFileAsset->GetStoragePath() :
+        oldFileAsset->GetFilePath();
     context->name = oldFileAsset->GetDisplayName();
     MediaType mediaType;
     std::string displayName = context->name;

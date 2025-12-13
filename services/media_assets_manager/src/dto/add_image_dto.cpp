@@ -28,6 +28,7 @@ AddImageDto AddImageDto::Create(const AddImageReqBody &req)
     dto.deferredProcType = req.deferredProcType;
     dto.photoQuality = req.photoQuality;
     dto.subType = req.subType;
+    dto.packageName = req.packageName;
     MEDIA_INFO_LOG("IPC::Camera addImage: %{public}s.", dto.ToString().c_str());
     return dto;
 }
@@ -40,7 +41,8 @@ std::string AddImageDto::ToString() const
         << "\"photoId\": \"" << this->photoId << "\","
         << "\"deferredProcType\": \"" << std::to_string(this->deferredProcType) << "\","
         << "\"photoQuality\": \"" << std::to_string(this->photoQuality) << "\","
-        << "\"subType\": \"" << std::to_string(this->subType)
+        << "\"subType\": \"" << std::to_string(this->subType) << "\","
+        << "\"packageName\": \"" << this->packageName
         << "}";
     return ss.str();
 }

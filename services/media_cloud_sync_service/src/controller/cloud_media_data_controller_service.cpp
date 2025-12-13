@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -41,7 +41,6 @@
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter UpdateDirtyForCloudCheck");
     UpdateDirtyReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -62,6 +61,32 @@ int32_t CloudMediaDataControllerService::UpdatePosition(MessageParcel &data, Mes
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = this->dataService_.UpdatePosition(reqBody.cloudIds, reqBody.position);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t CloudMediaDataControllerService::UpdatePosWithType(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter UpdatePosWithTypeForCloudCheck");
+    UpdatePositionReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("UpdatePositionForCloudCheck Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = this->dataService_.UpdatePosWithType(reqBody.cloudIds, reqBody.position, reqBody.fileSourceType);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t CloudMediaDataControllerService::UpdateFileSourceType(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter UpdateFileSourceType");
+    UpdatePositionReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("UpdateFileSourceType Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = this->dataService_.UpdateFileSourceType(reqBody.cloudIds, reqBody.fileSourceType);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -118,6 +143,7 @@ int32_t CloudMediaDataControllerService::GetAgingFile(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
+// 主动老化
 int32_t CloudMediaDataControllerService::GetActiveAgingFile(MessageParcel &data, MessageParcel &reply)
 {
     GetAgingFileReqBody reqBody;
@@ -182,7 +208,6 @@ int32_t CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, Me
 
 int32_t CloudMediaDataControllerService::GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetDirtyTypeStat");
     std::vector<uint64_t> statList;
     int32_t ret = this->dataService_.GetDirtyTypeStat(statList);
     if (ret != E_OK) {

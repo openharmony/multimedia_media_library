@@ -15,46 +15,25 @@
 
 #include "medialibrary_rdb_utils.h"
 
-#include <functional>
-#include <iomanip>
-#include <sstream>
-#include <string>
-
-#include "datashare_values_bucket.h"
 #include "media_analysis_helper.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_album_helper.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
 #include "permission_utils.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
-#include "result_set.h"
 #include "result_set_utils.h"
-#include "userfile_manager_types.h"
-#include "vision_album_column.h"
-#include "vision_column.h"
-#include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
-#include "vision_photo_map_column.h"
 #include "vision_total_column.h"
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
-#include "story_play_info_column.h"
 #include "shooting_mode_column.h"
 #include "photo_query_filter.h"
 #include "power_efficiency_manager.h"
@@ -63,6 +42,7 @@
 #include "album_accurate_refresh_manager.h"
 #include "refresh_business_name.h"
 #include "accurate_common_data.h"
+#include "lake_file_operations.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -581,6 +561,12 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const UpdateAlb
             const string &otherColumn = hiddenState ? PhotoAlbumColumns::ALBUM_COUNT : PhotoAlbumColumns::HIDDEN_COUNT;
             values.PutInt(otherColumn, newCount);
             MEDIA_INFO_LOG("AccurateRefresh Update album other count");
+        }
+        if (targetColumn == PhotoAlbumColumns::ALBUM_COUNT &&
+            !(data.albumSubtype >= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_START) &&
+            data.albumSubtype <= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_END))) {
+            MEDIA_INFO_LOG("AccurateRefresh Update album hidden: %{public}d", newCount == 0);
+            values.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, newCount == 0);
         }
     }
     return newCount;
@@ -1231,6 +1217,8 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 "
+        "AND tab_analysis_image_face.tag_id IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
+        albumId + " LIMIT 1) "
         "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
         "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
@@ -2004,7 +1992,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         MEDIA_INFO_LOG("Start trashed album, album id is: %{public}s", albumId.c_str());
         const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id, data, display_name FROM"
             " Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag = 0 AND hidden = 0";
+            " AND clean_flag = 0 AND hidden = 0 AND sync_status = 0 AND date_trashed = 0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2027,7 +2015,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
 
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
-        predicatesPhotos.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
         predicatesPhotos.And()->In(MediaColumn::MEDIA_ID, fileAssetsIds);
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
@@ -2035,6 +2022,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
+        int32_t ret = LakeFileOperations::MoveAssetsFromLake(fileAssetsIds);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "trash inner anco file error");
         assetRefresh.RefreshAlbum();
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
@@ -2084,6 +2073,10 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
         bool isValidNew = false;
         std::string assetUri = value.Get(MediaColumn::MEDIA_ID, isValidNew);
         CHECK_AND_CONTINUE(MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX));
+        if (!MediaLibraryDataManagerUtils::IsNumber(MediaFileUri::GetPhotoId(assetUri))) {
+            MEDIA_INFO_LOG("invalid photo id: %{public}s", MediaFileUri::GetPhotoId(assetUri).c_str());
+            continue;
+        }
         auto photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds, hidden)) {
             updateRows++;
@@ -2154,8 +2147,7 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(const vector<string>&
 }
 
 int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
-    std::unordered_map<int32_t, std::set<std::string>>& fileToAlbums,
-    std::set<std::string>& allAlbumIds)
+    std::unordered_map<int32_t, std::set<int32_t>>& fileToAlbums, std::set<int32_t>& allAlbumIds)
 {
     // Step 1. 获取数据库连接
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -2183,9 +2175,10 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
             MEDIA_WARN_LOG("Invalid record, fileId=%{public}d, albumId=%{public}d", fileId, albumId);
             continue;
         }
-        std::string albumIdStr = std::to_string(albumId);
-        fileToAlbums[fileId].insert(albumIdStr);
-        allAlbumIds.insert(albumIdStr);
+        CHECK_AND_CONTINUE_ERR_LOG(albumId > 0, "Not valid albumId");
+        auto &albumSet = fileToAlbums.try_emplace(fileId, std::set<int32_t>{}).first->second;
+        albumSet.insert(albumId);
+        allAlbumIds.insert(albumId);
     }
 
     MEDIA_INFO_LOG("QueryAnalysisAlbumMapByAssets done. total files: %{public}zu, total albums: %{public}zu",
@@ -2193,11 +2186,11 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
     return E_OK;
 }
 
-static std::string JoinIds(const std::vector<std::string> &ids)
+static std::string JoinIds(const std::vector<int32_t> &ids)
 {
     std::ostringstream ss;
     for (size_t i = 0; i < ids.size(); i++) {
-        ss << ids[i];
+        ss << to_string(ids[i]);
         if (i + 1 < ids.size()) {
             ss << ",";
         }
@@ -2210,24 +2203,26 @@ static std::string BuildPortraitAwareWhereClause(const std::string &idList)
     const std::string portraitSubType =
         std::to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT));
 
+    std::ostringstream ss;
     // 非人像：只查自身
-    std::string clause =
-        "(" + ALBUM_SUBTYPE + " != " + portraitSubType +
-        " AND " + ALBUM_ID + " IN (" + idList + "))";
+    ss << '('
+       << ALBUM_SUBTYPE << " != " << portraitSubType
+       << " AND " << ALBUM_ID << " IN (" << idList << "))";
 
     // 人像：查 group_tag siblings
-    clause += " OR ("
-        + ALBUM_SUBTYPE + " = " + portraitSubType +
-        " AND " + GROUP_TAG + " IN (SELECT " + GROUP_TAG +
-            " FROM " + ANALYSIS_ALBUM_TABLE +
-            " WHERE " + ALBUM_ID + " IN (" + idList + ")" +
-            " AND " + ALBUM_SUBTYPE + " = " + portraitSubType +
-        "))";
+    ss << " OR ("
+       << ALBUM_SUBTYPE << " = " << portraitSubType
+       << " AND " << GROUP_TAG << " IS NOT NULL"
+       << " AND " << GROUP_TAG << " IN (SELECT " << GROUP_TAG
+       << " FROM " << ANALYSIS_ALBUM_TABLE
+       << " WHERE " << ALBUM_ID << " IN (" << idList << ")"
+       << " AND " << ALBUM_SUBTYPE << " = " << portraitSubType
+       << "))";
 
-    return clause;
+    return ss.str();
 }
 
-static void ParseAnalysisAlbumRows(
+static void ParseAnalysisAlbumRowsForAccurateRefresh(
     const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     std::vector<UpdateAlbumData> &albumDatas,
     std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap)
@@ -2235,7 +2230,7 @@ static void ParseAnalysisAlbumRows(
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         UpdateAlbumData data;
         data.albumId = GetAlbumId(resultSet);
-        data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(resultSet));
+        data.albumSubtype = GetAlbumSubType(resultSet);
         data.albumCoverUri = GetAlbumCover(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
         data.albumCount = GetAlbumCount(resultSet, PhotoAlbumColumns::ALBUM_COUNT);
         data.isCoverSatisfied = GetIsCoverSatisfied(resultSet);
@@ -2250,7 +2245,7 @@ static void ParseAnalysisAlbumRows(
 }
 
 int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
-    const std::vector<std::string> &affectedAlbumIds,
+    const std::vector<int32_t> &affectedAlbumIds,
     std::vector<UpdateAlbumData> &albumDatas,
     std::unordered_map<std::string, std::vector<int32_t>> &portraitGroupMap)
 {
@@ -2261,13 +2256,12 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
     // 1. 构造相册id列表
     const std::string idList = JoinIds(affectedAlbumIds);
 
-    // 2. 构造 whereClause（人像自动扩展 groupTag）
+    // 2. 构造 whereClause, 人像相册数据自动扩展 groupTag
     const std::string whereClause = BuildPortraitAwareWhereClause(idList);
 
     // 3. 查询
     NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.SetWhereClause(whereClause);
-
     std::vector<std::string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_SUBTYPE,
@@ -2282,49 +2276,9 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumsForAccurateRefresh(
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Query failed");
 
     // 4. 解析结果
-    ParseAnalysisAlbumRows(resultSet, albumDatas, portraitGroupMap);
+    ParseAnalysisAlbumRowsForAccurateRefresh(resultSet, albumDatas, portraitGroupMap);
 
     resultSet->Close();
-    return E_OK;
-}
-
-int32_t MediaLibraryRdbUtils::ApplyAlbumRefreshInfo(const UpdateAlbumData &base,
-    int32_t deltaCount, std::string newCover)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "no rdbStore");
-
-    // 1. 新 count = 旧 count + delta
-    int32_t newCount = base.albumCount + deltaCount;
-    if (newCount < 0) {
-        newCount = 0;
-    }
-
-    // 3. 如果没有变化就不写库
-    if (newCover == "") {
-        newCover = base.albumCoverUri;
-    }
-    if (newCount == base.albumCount && newCover == base.albumCoverUri) {
-        MEDIA_INFO_LOG("ApplyAlbumRefreshInfo: nothing changed: album=%{public}d", base.albumId);
-        return E_OK;
-    }
-
-    // 4. update 写库
-    ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
-    MEDIA_INFO_LOG("ApplyAlbumRefreshInfo album=%{public}d, beforeCount: %{public}d, afterCount: %{public}d, "
-        "beforeCover:%{public}s, afterCover:%{public}s", base.albumId, base.albumCount, newCount,
-        base.albumCoverUri.c_str(), newCover.c_str());
-
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, std::to_string(base.albumId));
-
-    int32_t changedRows = 0;
-    int ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
-        "Update failed: album=%{public}d", base.albumId);
-
     return E_OK;
 }
 
@@ -3604,6 +3558,8 @@ bool MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType 
         {ShootingModeAlbumType::FRONT_CAMERA_ALBUM, -1},
         {ShootingModeAlbumType::RAW_IMAGE_ALBUM, -1},
         {ShootingModeAlbumType::MP4_3DGS_ALBUM, -1},
+        {ShootingModeAlbumType::TIME_LAPSE, -1},
+        {ShootingModeAlbumType::QUICK_CAPTURE_ALBUM, -1},
     };
     if (SHOOTING_MODE_ALBUM_ID_CACHE_MAP.find(type) == SHOOTING_MODE_ALBUM_ID_CACHE_MAP.end()) {
         MEDIA_ERR_LOG("Shooting mode type %{public}d is not in the map", static_cast<int32_t>(type));

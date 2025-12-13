@@ -17,7 +17,6 @@
 
 #include "base_restore.h"
 
-#include <sstream>
 #include <cinttypes>
 #include "application_context.h"
 #include "background_task_mgr_helper.h"
@@ -26,33 +25,19 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "cloud_sync_manager.h"
-#include "cloud_sync_utils.h"
 #include "directory_ex.h"
-#include "extension_context.h"
 #include "media_analysis_helper.h"
-#include "media_column.h"
-#include "media_log.h"
-#include "media_file_utils.h"
 #include "media_image_framework_utils.h"
 #include "media_scanner_manager.h"
-#include "medialibrary_asset_operations.h"
 #include "medialibrary_business_code.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_errno.h"
 #include "moving_photo_file_utils.h"
-#include <nlohmann/json.hpp>
 #include "parameters.h"
-#include "photo_album_column.h"
-#include "result_set_utils.h"
 #include "resource_type.h"
-#include "userfilemgr_uri.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_notify.h"
 #include "upgrade_restore_task_report.h"
-#include "medialibrary_rdb_transaction.h"
 #include "database_report.h"
 #include "ohos_account_kits.h"
 #include "medialibrary_photo_operations.h"
@@ -78,6 +63,7 @@ const int32_t APP_MAIN_DATA_USER_ID = 0;
 const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
 const int32_t SINGLE_LEN_EXTRADATA = 20;
+const int32_t MAX_FILE_PATH_LENGTH = 256;
 const double DOUBLE_EPSILON = 1e-15;
 
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
@@ -206,10 +192,10 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
 
     backupRestoreDir_ = backupRetoreDir;
     upgradeRestoreDir_ = upgradePath;
-    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
     GetSyncSwitchOn();
     GetSourceDeviceInfo();
+    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();
@@ -390,6 +376,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     int64_t duplicateCost = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
+        if (fileInfos[i].filePath.length() >= MAX_FILE_PATH_LENGTH) {
+            MEDIA_WARN_LOG("abnormal filePath: %{private}s", fileInfos[i].filePath.c_str());
+        }
         NativeRdb::ValuesBucket value;
         CHECK_AND_CONTINUE(PrepareInsertValue(sceneCode, fileInfos[i], sourceType, value));
         int64_t startMetaData = MediaFileUtils::UTCTimeMilliSeconds();
@@ -700,6 +689,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
+    value.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, data->GetFileAspectRatio());
     value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, GetDataLongitude(fileInfo, data));
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, GetDataLatitude(fileInfo, data));
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
@@ -2259,7 +2249,8 @@ nlohmann::json BaseRestore::GetBackupErrorInfoJson()
     nlohmann::json errorInfoJson = {
         { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
         { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
-        { STAT_KEY_ERROR_INFO, errorInfo_ }
+        { STAT_KEY_ERROR_INFO, errorInfo_ },
+        { STAT_KEY_COMPATIBLE_DIR_MAPPING, dirMappingList_ }
     };
     return errorInfoJson;
 }
@@ -2297,16 +2288,18 @@ void BaseRestore::UpdateHdrMode(std::vector<FileInfo> &fileInfos)
         HdrMode hdrMode = HdrMode::DEFAULT;
         if (imageSource->IsHdrImage()) {
             hdrMode = MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(imageSource->CheckHdrType());
+            CHECK_AND_PRINT_LOG(hdrMode != HdrMode::DEFAULT, "unknown HDR type");
+            std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+                make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+            predicates->EqualTo(MediaColumn::MEDIA_ID, fileInfo.fileIdNew);
+            int32_t changeRows = 0;
+            NativeRdb::ValuesBucket values;
+            values.PutInt(PhotoColumn::PHOTO_HDR_MODE, static_cast<int32_t>(hdrMode));
+            values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, static_cast<int32_t>(DynamicRangeType::HDR));
+            values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+            int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, values, predicates);
+            CHECK_AND_PRINT_LOG(changeRows >= 0 && ret == E_OK, "failed to update columns");
         }
-
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
-        predicates->EqualTo(MediaColumn::MEDIA_ID, fileInfo.fileIdNew);
-        int32_t changeRows = 0;
-        NativeRdb::ValuesBucket values;
-        values.PutInt(PhotoColumn::PHOTO_HDR_MODE, static_cast<int32_t>(hdrMode));
-        int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, values, predicates);
-        CHECK_AND_RETURN_LOG(changeRows >= 0 && ret == E_OK, "failed to update columns");
     }
 }
 

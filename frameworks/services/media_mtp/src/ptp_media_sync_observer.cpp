@@ -81,7 +81,7 @@ void MediaSyncObserver::SendEventPackets(uint32_t objectHandle, uint16_t eventCo
     CHECK_AND_RETURN_LOG(context_ != nullptr, "Mtp Ptp context is nullptr");
     MtpPacketTool::PutUInt32(outBuffer, context_->transactionID);
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
-    MEDIA_DEBUG_LOG("MtpMediaLibrary album [%{public}d]", objectHandle);
+    MEDIA_INFO_LOG("MtpMediaLibrary album [%{public}d]", objectHandle);
 
     event.data = outBuffer;
     CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "Mtp Ptp mtpDriver is nullptr");
@@ -222,6 +222,7 @@ void MediaSyncObserver::StopDelayInfoThread()
 
 void MediaSyncObserver::DelayInfoThread()
 {
+    MEDIA_INFO_LOG("DelayInfoThread start.");
     auto specialHandles = PtpSpecialHandles::GetInstance();
     CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
     while (isRunningDelay_.load()) {

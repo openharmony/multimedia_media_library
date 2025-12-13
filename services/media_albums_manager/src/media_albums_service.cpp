@@ -57,6 +57,7 @@
 #include "media_file_utils.h"
 #include "refresh_business_name.h"
 #include "media_old_albums_column.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -189,6 +190,7 @@ int32_t MediaAlbumsService::ChangeRequestSetAlbumName(const ChangeRequestSetAlbu
 {
     switch (dto.albumSubtype) {
         case PhotoAlbumSubType::PORTRAIT:
+        case PhotoAlbumSubType::PET:
             return SetPortraitAlbumName(dto);
         case PhotoAlbumSubType::GROUP_PHOTO:
             return SetGroupAlbumName(dto);
@@ -262,6 +264,7 @@ int32_t MediaAlbumsService::ChangeRequestSetCoverUri(const ChangeRequestSetCover
 {
     switch (dto.albumSubtype) {
         case PhotoAlbumSubType::PORTRAIT:
+        case PhotoAlbumSubType::PET:
             return SetPortraitCoverUri(dto);
         case PhotoAlbumSubType::GROUP_PHOTO:
             return SetGroupAlbumCoverUri(dto);
@@ -423,14 +426,16 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelectedAssets(
     AlbumGetSelectedAssetsDto &dto)
 {
-    int curFileId;
+    int curFileId = 0;
     double maxScore = 250;
     double minScore = 0;
     if (!dto.filter.empty()) {
-        CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(dto.filter), nullptr,
-            "failed to verify the filter format");
-        nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str());
-        std::string fileId = filterJson["currentFileId"];
+        nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str(), nullptr, false);
+        std::string fileIdField = "currentFileId";
+        bool cond =
+            (filterJson.is_discarded() || !filterJson.contains(fileIdField) || !filterJson[fileIdField].is_string());
+        CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "failed to verify the filter format");
+        std::string fileId = filterJson["currentFileId"].get<std::string>();
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), nullptr,
             "AlbumGetSelectedAssets get score fail");
         curFileId = std::stoi(fileId);
@@ -541,6 +546,7 @@ static void AddPhotoAlbumTypeFilter(DataShare::DataSharePredicates &predicates,
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC),
         }));
     }
 }
@@ -810,7 +816,7 @@ int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBod
         columns = { SEARCH_FINISH_CNT, LOCATION_FINISH_CNT, FACE_FINISH_CNT, OBJECT_FINISH_CNT, AESTHETIC_FINISH_CNT,
             OCR_FINISH_CNT, POSE_FINISH_CNT, SALIENCY_FINISH_CNT, RECOMMENDATION_FINISH_CNT, SEGMENTATION_FINISH_CNT,
             BEAUTY_AESTHETIC_FINISH_CNT, HEAD_DETECT_FINISH_CNT, LABEL_DETECT_FINISH_CNT, TOTAL_IMAGE_CNT,
-            FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS };
+            FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS, CHECK_SPACE_FLAG };
     } else if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_LABEL)) {
         tableName = VISION_TOTAL_TABLE;
         columns = {
@@ -930,6 +936,28 @@ int32_t MediaAlbumsService::UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto &s
     return changedRows;
 }
 
+int32_t MediaAlbumsService::SmartMoveAssets(ChangeRequestMoveAssetsDto &smartMoveAssetsDto)
+{
+    MEDIA_INFO_LOG("MediaAlbumsService::SmartMoveAssets");
+    CHECK_AND_RETURN_RET_LOG(!smartMoveAssetsDto.assets.empty(), E_INNER_FAIL,
+        "SmartMoveAssets assets is empery");
+
+    vector<std::string> assets;
+    for (const string asset : smartMoveAssetsDto.assets) {
+        size_t pos = asset.find(PhotoColumn::PHOTO_URI_PREFIX);
+        if (pos != string::npos) {
+            string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(asset);
+            CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(fileId));
+            assets.push_back(fileId);
+        }
+    }
+
+    string albumId = to_string(smartMoveAssetsDto.albumId);
+    string targetAlbumId = to_string(smartMoveAssetsDto.targetAlbumId);
+    int32_t ret = PhotoMapOperations::SmartMoveAssets(albumId, targetAlbumId, assets);
+    return ret;
+}
+
 int32_t MediaAlbumsService::MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto)
 {
     DataShare::DataSharePredicates predicates;
@@ -1028,8 +1056,13 @@ int32_t MediaAlbumsService::RemoveAssets(
 
 int32_t MediaAlbumsService::RecoverAssets(ChangeRequestRecoverAssetsDto &recoverAssetsDto)
 {
+    // Get all recoverable fileIds
+    std::vector<std::string> targetFileIds;
+    int32_t ret =
+        this->mediaAssetsRecoverService_.BatchMoveOutTrashAndMergeWithSameAsset(recoverAssetsDto.assets, targetFileIds);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchMoveOutTrashAndMergeWithSameAsset failed, ret: %{public}d", ret);
     DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, recoverAssetsDto.assets);
+    predicates.In(PhotoColumn::MEDIA_ID, targetFileIds);
     return MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
 }
 
@@ -1054,7 +1087,8 @@ int32_t MediaAlbumsService::DismissAssets(ChangeRequestDismissAssetsDto &dismiss
         MEDIA_ERR_LOG("DismissAssets Error, ret: %{public}d", ret);
         return ret;
     }
-    if (dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT) {
+    if (dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT ||
+        dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PET) {
         DataShare::DataShareValuesBucket updateValues;
         const int32_t PORTRAIT_REMOVED = -3;
         const std::string TAG_ID = "tag_id";
@@ -1091,7 +1125,7 @@ int32_t MediaAlbumsService::MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto
         MEDIA_ERR_LOG("MergeAlbum:Input parameter is invalid ");
         return E_INVALID_VALUES;
     }
-    return MediaLibraryAlbumOperations::MergePortraitAlbums(value);
+    return MediaLibraryAlbumOperations::MergeAlbums(value);
 }
 
 int32_t MediaAlbumsService::PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto)
@@ -1115,6 +1149,7 @@ int32_t MediaAlbumsService::SetOrderPosition(ChangeRequestSetOrderPositionDto &s
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ORDER_POSITION, setOrderPositionDto.orderString);
+    valuesBucket.Put(ALBUM_ID, setOrderPositionDto.albumId);
     NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("SetOrderPosition:Input parameter is invalid ");
@@ -1236,6 +1271,66 @@ int32_t MediaAlbumsService::ChangeRequestSetHighlightAttribute(ChangeRequestSetH
         dto.highlightAlbumChangeAttribute, dto.highlightAlbumChangeAttributeValue);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
         "ChangeRequestSetHighlightAttribute failed, error id: %{public}d", ret);
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::ChangeRequestSetUploadStatus(const ChangeRequestSetUploadStatusDto &setUploadStatusDto)
+{
+    vector<string> albumIds;
+    for (size_t i = 0; i < setUploadStatusDto.albumIds.size(); i++) {
+        PhotoAlbumType photoAlbumType = static_cast<PhotoAlbumType>(setUploadStatusDto.photoAlbumTypes[i]);
+        PhotoAlbumSubType photoAlbumSubType = static_cast<PhotoAlbumSubType>(setUploadStatusDto.photoAlbumSubtypes[i]);
+        if (PhotoAlbum::IsUserPhotoAlbum(photoAlbumType, photoAlbumSubType) ||
+            PhotoAlbum::IsSourceAlbum(photoAlbumType, photoAlbumSubType)) {
+            albumIds.emplace_back(setUploadStatusDto.albumIds[i]);
+        }
+    }
+    if (albumIds.size() == 0) {
+        MEDIA_INFO_LOG("No userPhotoAlbum and IsourceAlbum");
+        return E_OK;
+    }
+    int32_t changedRows = this->rdbOperation_.SetUploadStatus(albumIds, setUploadStatusDto.allowUpload);
+    CHECK_AND_RETURN_RET_LOG(changedRows >= 0, E_HAS_DB_ERROR,
+        "setUploadStatus failed, changedRows is %{private}d", changedRows);
+    return changedRows;
+}
+
+int32_t MediaAlbumsService::GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &getAlbumIdByLpathDto,
+    GetAlbumIdByLpathRespBody &respBody)
+{
+    std::vector<std::string> columns = getAlbumIdByLpathDto.columns;
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(getAlbumIdByLpathDto.predicates, PhotoAlbumColumns::TABLE);
+    auto rdbResultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (rdbResultSet == nullptr) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpath Service rdbresultSet nullptr");
+        return E_ERR;
+    }
+    auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(rdbResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    if (resultSet == nullptr) {
+        MEDIA_DEBUG_LOG("GetAlbumIdByLpath Service resultSet nullptr");
+        return E_INNER_FAIL;
+    }
+    int albumId = -1;
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int32_t columnIndex;
+        if (resultSet->GetColumnIndex("album_id", columnIndex) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("GetColumnIndex  album_id failed");
+            resultSet->Close();
+            return E_INNER_FAIL;
+        }
+        if (resultSet->GetInt(columnIndex, albumId) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("GetInt for albumId failed");
+            resultSet->Close();
+            return E_INNER_FAIL;
+        }
+    } else {
+        MEDIA_INFO_LOG("album_id column not found");
+        albumId = -1;
+    }
+    resultSet->Close();
+    respBody.albumId = albumId;
     return E_OK;
 }
 } // namespace OHOS::Media

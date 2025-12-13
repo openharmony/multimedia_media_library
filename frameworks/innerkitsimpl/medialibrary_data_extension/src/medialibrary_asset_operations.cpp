@@ -15,37 +15,18 @@
 
 #include "medialibrary_asset_operations.h"
 
-#include <algorithm>
-#include <dirent.h>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <sys/stat.h>
-
 #include "cloud_media_asset_manager.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
-#include "file_asset.h"
 #include "heif_transcoding_check_utils.h"
 #include "map_operation_flag.h"
 #include "media_app_uri_permission_column.h"
-#include "media_column.h"
 #include "media_exif.h"
-#include "media_file_utils.h"
-#include "media_file_uri.h"
-#include "media_log.h"
 #include "media_scanner_manager.h"
 #include "media_unique_number_column.h"
-#include "medialibrary_album_operations.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
-#include "medialibrary_command.h"
-#include "medialibrary_common_utils.h"
-#include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_inotify.h"
 #ifdef META_RECOVERY_SUPPORT
@@ -53,12 +34,7 @@
 #endif
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
-#include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
@@ -67,25 +43,13 @@
 #include "enhancement_manager.h"
 #endif
 #include "permission_utils.h"
-#include "photo_album_column.h"
-#include "rdb_errno.h"
-#include "rdb_predicates.h"
-#include "rdb_store.h"
-#include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
-#include "uri_permission_manager_client.h"
-#include "userfile_manager_types.h"
-#include "value_object.h"
-#include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
-#include "dfx_const.h"
 #include "moving_photo_file_utils.h"
-#include "userfilemgr_uri.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "unique_fd.h"
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"
@@ -98,6 +62,7 @@
 #include "preferences_helper.h"
 #include "file_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "lake_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -107,9 +72,6 @@ namespace OHOS {
 namespace Media {
 mutex g_uniqueNumberLock;
 
-const string DEFAULT_IMAGE_NAME = "IMG_";
-const string DEFAULT_VIDEO_NAME = "VID_";
-const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 constexpr int32_t UNKNOWN_VALUE = -1;
@@ -119,6 +81,7 @@ constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 constexpr int64_t SHARE_UID = 5520;
 static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
+static const std::string DELETED_FILE_EVENT = "/data/storage/el2/base/preferences/deleted_file_events.xml";
 const double TIMER_MULTIPLIER = 60.0;
 
 struct DeletedFilesParams {
@@ -225,6 +188,11 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
     { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_VIDEO_MODE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_FILE_INODE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_STORAGE_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CHANGE_TIME, MEMBER_TYPE_INT64 },
 };
 
 const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
@@ -1231,7 +1199,8 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_ERR_LOG("insert success, rowId = %{public}d", (int)outRowId);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} insert success, rowId = %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, (int)outRowId);
     auto fileId = outRowId;
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
@@ -1241,7 +1210,8 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_ERR_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} insert uripermission success, rowId = %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, (int)tmpOutRowId);
     return static_cast<int32_t>(outRowId);
 }
 
@@ -1579,13 +1549,8 @@ int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
 int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode,
     const string &fileId, int32_t type)
 {
-    std::string absFilePath;
-    if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to get real path: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
-        return E_ERR;
-    }
     MEDIA_DEBUG_LOG("Open with privacy type:%{public}d", type);
-    return MediaPrivacyManager(absFilePath, mode, fileId, type).Open();
+    return MediaPrivacyManager(filePath, mode, fileId, type).Open();
 }
 
 static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
@@ -1707,6 +1672,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
             return errCode;
         }
         path = fileAsset->GetPath();
+        MEDIA_DEBUG_LOG("##### file path is %{private}s", path.c_str());
         SolveMovingPhotoVideoCreation(path, mode, isMovingPhotoVideo);
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
@@ -1894,6 +1860,15 @@ string MediaLibraryAssetOperations::GetEditDataSourcePath(const string &path)
     return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(path);
 }
 
+string MediaLibraryAssetOperations::GetEditDataSourceBackPath(const string& path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source_back." + MediaFileUtils::GetExtensionFromPath(path);
+}
+
 string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
 {
     string parentPath = GetEditDataDirPath(path);
@@ -1919,6 +1894,16 @@ string MediaLibraryAssetOperations::GetAssetCacheDir()
         cacheOwner = "common"; // Create cache file in common dir if there is no bundleName.
     }
     return MEDIA_CACHE_DIR + cacheOwner;
+}
+
+string MediaLibraryAssetOperations::GetAssetCompressCachePath(const string &id)
+{
+    return GetAssetCacheDir() + "/compressCache/" + id + ".tlv";
+}
+
+string MediaLibraryAssetOperations::GetAssetCompressJsonPath(const string &id)
+{
+    return GetAssetCacheDir() + "/compressCache/" + id + "_editdata.json";
 }
 
 static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
@@ -2656,41 +2641,80 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     return E_OK;
 }
 
-static void TaskDataFileProccess(DeleteFilesTask *taskData)
+void MediaLibraryAssetOperations::SaveDeletedFile(const std::vector<std::string> &ids,
+    const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
+    std::vector<int32_t> &subTypes)
 {
-    for (size_t i = 0; i < taskData->paths_.size(); i++) {
-        string filePath = taskData->paths_[i];
-        string fileId = i < taskData->ids_.size() ? taskData->ids_[i] : "";
-        MEDIA_INFO_LOG("Delete file id: %{public}s, path: %{public}s", fileId.c_str(), filePath.c_str());
-        bool cond = (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT));
-        CHECK_AND_WARN_LOG(!cond, "Failed to delete file, errno: %{public}d, path: %{private}s",
-            errno, filePath.c_str());
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DELETED_FILE_EVENT, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    for (size_t i = 0; i < ids.size(); i++) {
+        std::string key = table + "?" + ids[i];
+        std::string value = paths[i] + "?" + dateTakens[i] + "?" + std::to_string(subTypes[i]);
+        prefs->PutString(key, value);
+    }
+    prefs->FlushSync();
+}
+
+void MediaLibraryAssetOperations::ClearDeletedFile(const std::vector<std::string> &ids, const std::string &table)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DELETED_FILE_EVENT, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    for (size_t i = 0; i < ids.size(); i++) {
+        std::string key = table + "?" + ids[i];
+        prefs->Delete(key);
+    }
+    prefs->FlushSync();
+}
+
+void MediaLibraryAssetOperations::TaskDataFileProcess(const std::vector<std::string> &ids,
+    const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
+    std::vector<int32_t> &subTypes)
+{
+    for (size_t i = 0; i < paths.size(); i++) {
+        string filePath = paths[i];
+        string fileId = i < ids.size() ? ids[i] : "";
+        MEDIA_INFO_LOG("Delete file id: %{public}s, path: %{private}s", fileId.c_str(), filePath.c_str());
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
+            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        }
 
 #ifdef META_RECOVERY_SUPPORT
         MediaLibraryMetaRecovery::DeleteMetaDataByPath(filePath);
-
 #endif
-        if (taskData->subTypes_[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (i < subTypes.size() && subTypes[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             // delete video file of moving photo
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
-            bool conds = (!MediaFileUtils::DeleteFile(videoPath) && (errno != ENOENT));
-            CHECK_AND_WARN_LOG(!conds, "Failed to delete video file, errno: %{public}d, path: %{private}s",
-                errno, videoPath.c_str());
-
+            if (!LakeFileUtils::DeleteFile(videoPath) && (errno != ENOENT)) {
+                MEDIA_WARN_LOG("Failed to delete video file, errno: %{public}d, path: %{private}s", errno,
+                    videoPath.c_str());
+            }
             string livePhotoPath = MovingPhotoFileUtils::GetLivePhotoCachePath(filePath);
-            conds = (MediaFileUtils::IsFileExists(livePhotoPath) && !MediaFileUtils::DeleteFile(livePhotoPath));
+            bool conds = (MediaFileUtils::IsFileExists(livePhotoPath) && !MediaFileUtils::DeleteFile(livePhotoPath));
             CHECK_AND_WARN_LOG(!conds, "Failed to delete cache live photo, errno: %{public}d, path: %{private}s",
                 errno, livePhotoPath.c_str());
         }
     }
 
     ThumbnailService::GetInstance()->BatchDeleteThumbnailDirAndAstc(
-        taskData->table_, taskData->ids_, taskData->paths_, taskData->dateTakens_);
-    if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
-        for (const auto &path : taskData->paths_) {
+        table, ids, paths, dateTakens);
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        for (const auto &path : paths) {
             MediaLibraryPhotoOperations::DeleteRevertMessage(path);
         }
     }
+    MediaLibraryAssetOperations::ClearDeletedFile(ids, table);
 }
 
 static void DeleteFiles(AsyncTaskData *data)
@@ -2700,39 +2724,13 @@ static void DeleteFiles(AsyncTaskData *data)
     if (data == nullptr) {
         return;
     }
-    auto *taskData = static_cast<DeleteFilesTask *>(data);
-    if (taskData->refresh_ != nullptr) {
-        taskData->refresh_->RefreshAlbum();
-    }
-
-    DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
-        taskData->notifyUris_, taskData->bundleName_, dataInfo);
+    auto *taskData = static_cast<DeleteFilesData *>(data);
 
     // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
     MEDIA_INFO_LOG("BatchSelectFileDownload DeleteFiles DealWithBatchDownloadingFilesById");
     MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(taskData->ids_);
-
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashAlbumId <= 0) {
-        MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
-        return;
-    }
-    size_t uriSize = taskData->notifyUris_.size() > taskData->isTemps_.size() ? taskData->isTemps_.size() :
-        taskData->notifyUris_.size();
-    for (size_t index = 0; index < uriSize; index++) {
-        if (taskData->isTemps_[index]) {
-            continue;
-        }
-        watch->Notify(MediaFileUtils::Encode(taskData->notifyUris_[index]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET,
-            trashAlbumId);
-    }
-    if (taskData->refresh_ != nullptr) {
-        taskData->refresh_->Notify();
-    }
-    TaskDataFileProccess(taskData);
+    MediaLibraryAssetOperations::TaskDataFileProcess(taskData->ids_, taskData->paths_, taskData->table_,
+        taskData->dateTakens_, taskData->subTypes_);
 }
 
 void HandleAudiosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, DeletedFilesParams &filesParams)
@@ -2753,8 +2751,14 @@ void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, De
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         filesParams.ids.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
-        filesParams.paths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH,
-            resultSet, TYPE_STRING)));
+        if (MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE)
+            == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE)) {
+            filesParams.paths.push_back(get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_STORAGE_PATH,
+                resultSet, TYPE_STRING)));
+        } else {
+            filesParams.paths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH,
+                resultSet, TYPE_STRING)));
+        }
         filesParams.dateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN,
             resultSet, TYPE_STRING)));
         filesParams.subTypes.push_back(
@@ -2828,6 +2832,8 @@ int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, D
         columns.push_back(MediaColumn::MEDIA_HIDDEN);
         columns.push_back(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
         columns.push_back(PhotoColumn::PHOTO_BURST_KEY);
+        columns.push_back(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+        columns.push_back(PhotoColumn::PHOTO_STORAGE_PATH);
     }
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
@@ -2874,14 +2880,11 @@ static int32_t GetFileAssetsFromResultSet(const shared_ptr<NativeRdb::ResultSet>
 static int64_t GetAssetSize(const std::string &extraPath)
 {
     MEDIA_DEBUG_LOG("GetAssetSize start.");
-    string absExtraPath;
-    CHECK_AND_RETURN_RET_LOG(PathToRealPath(extraPath, absExtraPath), static_cast<int64_t>(E_ERR),
-        "file is not real path: %{private}s", extraPath.c_str());
-    
-    UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
-    CHECK_AND_RETURN_RET_LOG(fd.Get() != E_ERR, static_cast<int64_t>(E_ERR),
-        "failed to open extra file");
-
+    UniqueFd fd(LakeFileUtils::OpenFile(extraPath, O_RDONLY));
+    if (fd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("failed to open extra file");
+        return static_cast<int64_t>(E_ERR);
+    }
     struct stat st;
     CHECK_AND_RETURN_RET_LOG(fstat(fd.Get(), &st) == E_OK, static_cast<int64_t>(E_ERR),
         "failed to get file size");
@@ -2946,7 +2949,7 @@ static void GetEditPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &attac
         DfxUtils::GetSafePath(exInfo.editDataSourcePath).c_str());
 }
 
-static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
+CleanFileInfo MediaLibraryAssetOperations::GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
 {
     MEDIA_DEBUG_LOG("GetCleanFileInfo start.");
     CHECK_AND_RETURN_RET_LOG(fileAssetPtr != nullptr, {}, "GetCleanFileInfo fileAssetPtr is nullptr.");
@@ -2975,6 +2978,8 @@ static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
     cleanFileInfo.modifiedTime = externalInfo.dateModified;
     cleanFileInfo.path = externalInfo.path;
     cleanFileInfo.fileName = MediaFileUtils::GetFileName(externalInfo.path);
+    cleanFileInfo.fileSourceType = fileAssetPtr->GetFileSourceType();
+    cleanFileInfo.storagePath = fileAssetPtr->GetStoragePath();
     return cleanFileInfo;
 }
 
@@ -2996,6 +3001,8 @@ static int32_t GetBurstFileInfo(const string &key, vector<CleanFileInfo> &fileIn
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        PhotoColumn::PHOTO_STORAGE_PATH,
     };
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rbdPredicates, columns);
@@ -3004,7 +3011,7 @@ static int32_t GetBurstFileInfo(const string &key, vector<CleanFileInfo> &fileIn
     CHECK_AND_RETURN_RET_LOG(!fileAssetVector.empty(), E_HAS_DB_ERROR,
         "GetBurstFileInfo fileAssetVector is empty.");
     for (auto& fileAssetPtr : fileAssetVector) {
-        fileInfos.push_back(GetCleanFileInfo(fileAssetPtr));
+        fileInfos.push_back(MediaLibraryAssetOperations::GetCleanFileInfo(fileAssetPtr));
     }
     return E_OK;
 }
@@ -3045,7 +3052,7 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
         MEDIA_INFO_LOG("DeleteLocalAndCloudPhotos subFileAsset is empty.");
         return E_OK;
     }
-    
+
     map<string, int32_t> notifyMap;
     for (auto& fileAssetPtr : subFileAsset) {
         CHECK_AND_CONTINUE(fileAssetPtr != nullptr);
@@ -3055,7 +3062,7 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
             GetBurstFileInfo(burst_key, fileInfos);
             continue;
         }
-        fileInfos.push_back(GetCleanFileInfo(fileAssetPtr));
+        fileInfos.push_back(MediaLibraryAssetOperations::GetCleanFileInfo(fileAssetPtr));
     }
     vector<CleanFileInfo> subFileInfo;
     int32_t count = 0;
@@ -3127,6 +3134,26 @@ static void GetAlbumNamesById(DeletedFilesParams &filesParams)
     resultSet->Close();
 }
 
+void notifyOld(const std::vector<std::string> &notifyUris, std::vector<int32_t> &isTemps)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
+        return;
+    }
+    size_t uriSize = notifyUris.size() > isTemps.size() ? isTemps.size() :
+        notifyUris.size();
+    for (size_t index = 0; index < uriSize; index++) {
+        if (isTemps[index]) {
+            continue;
+        }
+        watch->Notify(MediaFileUtils::Encode(notifyUris[index]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET,
+            trashAlbumId);
+    }
+}
+
 /**
  * @brief Delete files permanently from system.
  *
@@ -3155,6 +3182,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     int32_t deletedRows = 0;
     int32_t ret = QueryFileInfoAndHandleRemovePhotos(predicates, fileParams);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "query db error");
+    SaveDeletedFile(fileParams.ids, fileParams.paths, predicates.GetTableName(),
+        fileParams.dateTakens, fileParams.subTypes);
     GetAlbumNamesById(fileParams);
     CHECK_AND_RETURN_RET_LOG(!fileParams.ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
@@ -3174,18 +3203,20 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     MEDIA_DEBUG_LOG("DeleteMapCodeByIds mapCodeRet %{public}d", mapCodeRet);
 
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
 
-    const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
+    vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    auto *taskData = new (nothrow) DeleteFilesTask(fileParams.ids, fileParams.paths, notifyUris,
-        fileParams.dateTakens, fileParams.subTypes,
-        predicates.GetTableName(), deletedRows, bundleName, fileParams.containsHidden);
+    auto *taskData = new (nothrow) DeleteFilesData(fileParams.ids, fileParams.paths, fileParams.dateTakens,
+        fileParams.subTypes, predicates.GetTableName(), deletedRows, bundleName, fileParams.containsHidden);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
-    taskData->SetOtherInfos(fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds);
-    taskData->isTemps_.swap(fileParams.isTemps);
-    taskData->SetAssetAccurateRefresh(assetRefresh);
+    notifyOld(notifyUris, fileParams.isTemps);
+    DeleteBehaviorData dataInfo {fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds};
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, deletedRows, notifyUris, bundleName,
+        dataInfo);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);
@@ -3255,7 +3286,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
     FileUtils::DeleteTempVideoFile(filePath);
-    bool res = MediaFileUtils::DeleteFile(filePath);
+    bool res = LakeFileUtils::DeleteFile(filePath);
     CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
 
     //delete thumbnail
@@ -3533,6 +3564,7 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
         PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_BURST_KEY, MediaColumn::MEDIA_TYPE,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_STORAGE_PATH,
     };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     vector<shared_ptr<FileAsset>> fileAssetVector;

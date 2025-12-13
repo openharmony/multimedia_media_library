@@ -15,13 +15,8 @@
 
 #include "media_column.h"
 
-#include <string>
-#include <vector>
-
 #include "base_column.h"
 #include "medialibrary_db_const.h"
-#include "media_log.h"
-#include "userfile_manager_types.h"
 #include "highlight_column.h"
 
 namespace OHOS {
@@ -131,9 +126,15 @@ const std::string PhotoColumn::PHOTO_VIDEO_MODE = "video_mode";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
 const std::string PhotoColumn::PHOTO_APPLINK = "applink";
+const std::string PhotoColumn::PHOTO_CHANGE_TIME = "change_time";
 const std::string PhotoColumn::PHOTO_TRANSCODE_TIME = "transcode_time";
 const std::string PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE = "trans_code_file_size";
 const std::string PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE = "exist_compatible_duplicate";
+const std::string PhotoColumn::PHOTO_ASPECT_RATIO = "aspect_ratio";
+const std::string PhotoColumn::PHOTO_EDIT_DATA_EXIST = "edit_data_exist";
+
+const std::string PhotoColumn::PHOTO_FILE_INODE = "inode";
+const std::string PhotoColumn::PHOTO_STORAGE_PATH = "storage_path";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -312,9 +313,13 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_FILE_INODE + " TEXT, " +
+    PHOTO_STORAGE_PATH + " TEXT, " +
     PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1 " +
+    PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1, " +
+    PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2, " +
+    PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -671,6 +676,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
     PhotoColumn::PHOTO_HDR_MODE,
+    PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_ASPECT_RATIO,
+    PhotoColumn::PHOTO_CHANGE_TIME,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -686,40 +693,14 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
 {
     // Since date_modified has been checked in mdirty and fdirty, omit it here.
     const std::vector<std::string> uploadPhotoColumns = {
-        MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_NAME,
-        MEDIA_TYPE,
-        MEDIA_MIME_TYPE,
-        MEDIA_OWNER_PACKAGE,
-        MEDIA_OWNER_APPID,
-        MEDIA_DEVICE_NAME,
-        MEDIA_DATE_ADDED,
-        MEDIA_DATE_TAKEN,
-        MEDIA_DURATION,
-        MEDIA_IS_FAV,
-        MEDIA_DATE_TRASHED,
-        MEDIA_DATE_DELETED,
-        MEDIA_HIDDEN,
-        PHOTO_META_DATE_MODIFIED,
-        PHOTO_ORIENTATION,
-        PHOTO_LATITUDE,
-        PHOTO_LONGITUDE,
-        PHOTO_HEIGHT,
-        PHOTO_WIDTH,
-        PHOTO_SUBTYPE,
-        PHOTO_USER_COMMENT,
-        PHOTO_DATE_YEAR,
-        PHOTO_DATE_MONTH,
-        PHOTO_DATE_DAY,
-        PHOTO_DETAIL_TIME,
-        PHOTO_SHOOTING_MODE,
-        PHOTO_SHOOTING_MODE_TAG,
-        PHOTO_OWNER_ALBUM_ID,
-        PHOTO_SOURCE_PATH,
-        MOVING_PHOTO_EFFECT_MODE,
-        PHOTO_COVER_POSITION,
-        PHOTO_ORIGINAL_SUBTYPE,
-        PHOTO_IS_RECTIFICATION_COVER,
-        PHOTO_STRONG_ASSOCIATION,
+        MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE, MEDIA_OWNER_PACKAGE,
+        MEDIA_OWNER_APPID, MEDIA_DEVICE_NAME, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN, MEDIA_DURATION,
+        MEDIA_IS_FAV, MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED, MEDIA_HIDDEN, PHOTO_META_DATE_MODIFIED,
+        PHOTO_ORIENTATION, PHOTO_LATITUDE, PHOTO_LONGITUDE, PHOTO_HEIGHT, PHOTO_WIDTH, PHOTO_SUBTYPE,
+        PHOTO_USER_COMMENT, PHOTO_DATE_YEAR, PHOTO_DATE_MONTH, PHOTO_DATE_DAY, PHOTO_DETAIL_TIME,
+        PHOTO_SHOOTING_MODE, PHOTO_SHOOTING_MODE_TAG, MOVING_PHOTO_EFFECT_MODE, PHOTO_COVER_POSITION,
+        PHOTO_ORIGINAL_SUBTYPE, PHOTO_OWNER_ALBUM_ID, PHOTO_SOURCE_PATH, PHOTO_IS_RECTIFICATION_COVER,
+        PHOTO_STRONG_ASSOCIATION, PHOTO_HDR_MODE,
     };
 
     std::string result = "(";

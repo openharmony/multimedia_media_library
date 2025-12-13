@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -38,6 +38,24 @@ public:  // basic functions
 class ConvertFormatRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
+class MimeTypeReqBody : public IPC::IMediaParcelable {
+public:
+    int32_t fileId {-1};
+
+public:  // functions of Parcelable.
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+
+public:  // basic functions
+    std::string ToString() const;
+};
+class MimeTypeRespBody : public IPC::IMediaParcelable {
+public:
+    bool result;
 
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;

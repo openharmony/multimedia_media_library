@@ -81,6 +81,8 @@ struct AnalysisProperty {
     int32_t enumValue;
 };
 
+struct MediaLibraryAsyncContext;
+
 class MediaOnNotifyObserver;
 class ChangeListenerNapi {
 public:
@@ -106,6 +108,7 @@ public:
         std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
         std::vector<std::shared_ptr<RowObject>> sharedAssetsRowObjVector_;
         std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
+        std::vector<std::shared_ptr<RowObject>> extraSharedAssetsRowObjVector_;
         std::string trashAlbumUriCached_;
     };
 
@@ -157,11 +160,19 @@ private:
 
     static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result, bool isPhoto);
+    static napi_status SetExtraSharedAssetArray(const napi_env& env, const char* fieldStr,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result);
 
     static int ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
         bool isPhoto);
+    static int ParseExtraSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper);
     static napi_value BuildSharedPhotoAssetsObj(const napi_env& env,
         ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
+    static napi_value BuildExtraSharedPhotoAssetsObj(const napi_env& env,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper);
+
+    static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+        napi_value& result);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
@@ -361,11 +372,17 @@ private:
     EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessQuery(napi_env env, napi_callback_info info);
     EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value SinglePhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value SinglePhotoAlbumRegisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value SinglePhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -420,9 +437,20 @@ private:
         const Notification::NotifyUriType uriType);
     static int32_t UnregisterObserverExecute(napi_env env,
         const Notification::NotifyUriType uriType, napi_ref ref, ChangeListenerNapi &listObj);
+    static int32_t RegisterObserverExecute(napi_env env, napi_ref ref,
+        ChangeListenerNapi &listObj, const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri);
     static int32_t AddClientObserver(napi_env env, napi_ref ref,
         std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> &clientObservers,
         const Notification::NotifyUriType uriType);
+    static int32_t AddSingleClientObserver(napi_env env, napi_ref ref,
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+            const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri);
+    static int32_t HandleNewUriRegistration(napi_env env, napi_ref ref,
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+        const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri);
+    static int32_t HandleExistingUriCheck(napi_env env, napi_ref ref,
+        std::vector<std::shared_ptr<ClientObserver>> &existingObservers,
+        const Notification::NotifyUriType uriType, const std::string &assetOrAlbumUri);
     static int32_t RemoveClientObserver(napi_env env, napi_ref ref,
         map<Notification::NotifyUriType, vector<shared_ptr<ClientObserver>>> &clientObservers,
         const Notification::NotifyUriType uriType);

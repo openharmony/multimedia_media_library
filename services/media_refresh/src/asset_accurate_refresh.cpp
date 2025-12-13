@@ -150,10 +150,11 @@ int32_t AssetAccurateRefresh::Notify()
 
 int32_t AssetAccurateRefresh::NotifyYuvReady(const int32_t fileId)
 {
-    int32_t ret = ACCURATE_REFRESH_RET_OK;
     const std::vector<int32_t> keys = { fileId };
     // 查询当前资产数据
-    dataManager_.Init(keys);
+    int32_t ret = dataManager_.Init(keys);
+    CHECK_AND_RETURN_RET_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+        "Init dataManager_ failed, err: %{public}d", ret);
     UpdateModifiedDatasInner(keys, RDB_OPERATION_UPDATE);
     ret = dataManager_.PostProcessModifiedDatas(keys);
     CHECK_AND_RETURN_RET_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,

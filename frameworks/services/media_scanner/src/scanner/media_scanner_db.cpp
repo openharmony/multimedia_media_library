@@ -16,29 +16,13 @@
 
 #include "media_scanner_db.h"
 
-#include "abs_rdb_predicates.h"
-#include "ipc_skeleton.h"
-#include "medialibrary_asset_operations.h"
-#include "media_column.h"
 #include "media_error_column.h"
 #include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_command.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
-#include "medialibrary_smartalbum_map_operations.h"
-#include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
-#include "rdb_errno.h"
-#include "rdb_utils.h"
-#include "result_set.h"
 #include "result_set_utils.h"
-#include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
-#include "values_bucket.h"
 #include "post_event_utils.h"
 #include "photo_file_utils.h"
 #include "scanner_map_code_utils.h"
@@ -79,6 +63,9 @@ static inline void SetRemainFileMetadataApi9(const Metadata &metadata, ValuesBuc
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
     values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
     values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
@@ -97,6 +84,9 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
         } else {
             values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
             values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+            double aspectRatio =
+                MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+            values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
             values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
             values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
             values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
@@ -216,6 +206,13 @@ static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &value
         MEDIA_DEBUG_LOG("video of moving photo cannot upload");
         return;
     }
+
+    string oriVideoPath = MediaFileUtils::GetOriMovingPhotoVideoPath(metadata.GetFilePath());
+    size_t oriVideoSize = 0;
+    if (!MediaFileUtils::GetFileSize(oriVideoPath, oriVideoSize) || oriVideoSize == 0) {
+        MEDIA_DEBUG_LOG("origin video of moving photo cannot upload");
+        return;
+    }
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
 }
 
@@ -233,6 +230,9 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(metadata.GetFileName()));
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
     values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(metadata.GetFileHeight(), metadata.GetFileWidth());
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
     values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, metadata.GetExifRotate());
     if (fabs(metadata.GetLongitude()) > DOUBLE_EPSILON || fabs(metadata.GetLatitude()) > DOUBLE_EPSILON) {

@@ -92,6 +92,11 @@ static string extractIdByPhotoUriString(const string &input)
         return "";
     }
     out.replace(pos, prefix.length(), "");
+    // 全量排查验证cloudsync uri解析
+    if (MediaFileUtils::EndsWith(out, "/meta") || MediaFileUtils::EndsWith(out, "/asset")) {
+        size_t lastSlashPos = out.find_last_of('/');
+        out = out.substr(0, lastSlashPos);
+    }
     return out;
 }
 

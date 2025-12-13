@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -17,7 +17,6 @@
 
 #include "cloud_media_photo_controller_service.h"
 
-#include "media_log.h"
 #include "media_column.h"
 #include "cloud_media_data_controller_processor.h"
 #include "user_define_ipc.h"
@@ -51,6 +50,7 @@ int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Me
         MEDIA_ERR_LOG("OnFetchRecords Read Req Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
+    // 获取端云请求中传递过来的数据
     std::vector<OnFetchPhotosVo> onFetchPhotoDatas = reqBody.GetOnFetchPhotoData();
     std::vector<std::string> cloudIds;
     std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
@@ -61,6 +61,7 @@ int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Me
     MEDIA_INFO_LOG("OnFetchRecords onFetchPhotoDatas size: %{public}zu", onFetchPhotoDatas.size());
     for (auto onFetchPhotoData : onFetchPhotoDatas) {
         cloudIds.emplace_back(onFetchPhotoData.cloudId);
+        // 从vo对象转成数据库的dto对象 在dto中增加attributesFileSourceType 和 attributesStoragePath 两个属性
         CloudMediaPullDataDto pullData = this->processor_.ConvertToCloudMediaPullData(onFetchPhotoData);
         cloudIdRelativeMap[onFetchPhotoData.cloudId] = pullData;
         MEDIA_DEBUG_LOG("OnFetchRecords CloudMediaPullData: %{public}s", pullData.ToString().c_str());

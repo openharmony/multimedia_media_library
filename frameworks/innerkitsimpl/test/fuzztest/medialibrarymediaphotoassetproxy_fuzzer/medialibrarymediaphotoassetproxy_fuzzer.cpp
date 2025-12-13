@@ -101,9 +101,13 @@ void CreateDataHelper(int32_t systemAbilityId)
 
 static shared_ptr<Media::PhotoAssetProxy> Init()
 {
-    shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = make_shared<Media::PhotoAssetProxy>(sDataShareHelper_,
-        FuzzCameraShotType(), provider->ConsumeIntegral<int32_t>(), provider->ConsumeIntegral<int32_t>(),
-        provider->ConsumeIntegral<uint32_t>());
+    Media::PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = provider->ConsumeIntegral<int32_t>(),
+        .userId = provider->ConsumeIntegral<int32_t>(),
+        .callingTokenId = provider->ConsumeIntegral<uint32_t>(),
+    };
+    shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = make_shared<Media::PhotoAssetProxy>(
+        sDataShareHelper_, callerInfo, FuzzCameraShotType());
     return photoAssetProxy;
 }
 
@@ -217,6 +221,13 @@ std::vector<OHOS::Security::AccessToken::PermissionStateFull> DefinePermissionSt
         },
         {
             .permissionName = "ohos.permission.WRITE_MEDIA",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        },
+        {
+            .permissionName = "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED",
             .isGeneral = true,
             .resDeviceID = { "local" },
             .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },

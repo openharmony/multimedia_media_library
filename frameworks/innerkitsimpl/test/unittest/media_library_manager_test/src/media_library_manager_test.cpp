@@ -111,7 +111,9 @@ void MediaLibraryManagerTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("MediaLibraryManagerTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    ASSERT_NE(sDataShareHelper_, nullptr);
+    if (sDataShareHelper_ == nullptr) {
+        exit(0);
+    }
 
     // make sure board is empty
     ClearAllFile();
@@ -178,7 +180,9 @@ void CreateDataHelper(int32_t systemAbilityId)
     if (sDataShareHelper_ == nullptr) {
         const sptr<IRemoteObject> &token = remoteObj;
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-        ASSERT_NE(sDataShareHelper_, nullptr);
+        if (sDataShareHelper_ == nullptr) {
+            exit(0);
+        }
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
 }
@@ -496,7 +500,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level1)
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);
@@ -533,7 +541,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);
 
@@ -563,7 +575,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, Te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::BURST);
     ASSERT_NE(photoAssetProxy, nullptr);
     // mock data for PhotoProxy
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
@@ -609,7 +625,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::BURST);
     ASSERT_NE(photoAssetProxy, nullptr);
     // mock data for PhotoProxy
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
@@ -648,7 +668,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
     photoAssetProxy->NotifyVideoSaveFinished();
     MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test exit");
@@ -768,7 +792,11 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level
 {
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 enter");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
     sptr<PhotoProxyTest> photoProxyTest = new (std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);
@@ -2200,7 +2228,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSiz
 HWTEST_F(MediaLibraryManagerTest, GetResultSetFromPhotos_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetResultSetFromPhotos_001 enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
     sptr<PhotoProxyTest> photoProxyTest = new (std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);

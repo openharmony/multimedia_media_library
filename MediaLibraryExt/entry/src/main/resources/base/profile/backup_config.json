@@ -20,5 +20,8 @@
         "/storage/media/local/files/.backup/backup/media_temp_kvdb/",
         "/storage/media/local/files/highlight/"
     ],
+    "compatibleDirMapping": [
+        {"backupDir": "/storage/media/local/files/.backup/backup/media_temp_rdb/", "restoreDir": "/data/storage/el2/database/rdb/"}
+    ],
     "fullBackupOnly": true
 }

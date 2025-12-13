@@ -42,6 +42,18 @@ const int MediaLibraryAppUriSensitiveOperations::SUCCEED = 0;
 const int MediaLibraryAppUriSensitiveOperations::ALREADY_EXIST = 1;
 const int MediaLibraryAppUriSensitiveOperations::NO_DATA_EXIST = 0;
 
+static void DoSubscribeAppStop(const ValuesBucket &value)
+{
+    ValueObject valueObject;
+    int64_t destTokenId = -1;
+    if (value.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
+    // delete the temporary permission when the app dies
+    MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
+}
+
 int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("insert appUriSensitive begin");
@@ -57,7 +69,7 @@ int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibrar
     
     // query sensitive data before insert
     int queryFlag = ERROR;
-    shared_ptr<ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
     // Update the sensitiveType
     if (queryFlag > 0) {
         return UpdateSensitiveType(resultSet, sensitiveTypeParam);
@@ -67,7 +79,7 @@ int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibrar
     }
 
     // delete the temporary Sensitive when the app dies
-    MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    DoSubscribeAppStop(cmd.GetValueBucket());
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -140,7 +152,7 @@ int32_t MediaLibraryAppUriSensitiveOperations::BatchInsert(
 
         if (queryFlag == 0) {
             // delete the temporary sensitive when the app dies
-            MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+            DoSubscribeAppStop(value);
             value.PutLong(AppUriSensitiveColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
             insertVector.push_back(value);
         } else if (UpdateSensitiveTypeAndForceHideSensitive(resultSet, sensitiveTypeParam, value) == ERROR) {
@@ -219,7 +231,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperation
     fetchColumns.push_back(AppUriSensitiveColumn::ID);
     fetchColumns.push_back(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 
-    shared_ptr<ResultSet> resultSet = QueryOperation(sensitivePredicates, fetchColumns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryOperation(sensitivePredicates, fetchColumns);
     resultFlag = (resultSet == nullptr ? NO_DATA_EXIST : ALREADY_EXIST);
     return resultSet;
 }
@@ -237,7 +249,7 @@ bool MediaLibraryAppUriSensitiveOperations::GetIntFromValuesBucket(
     return true;
 }
 
-int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(shared_ptr<ResultSet> &resultSetDB,
+int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(shared_ptr<NativeRdb::ResultSet> &resultSetDB,
     int &sensitiveTypeParam)
 {
     // delete the temporary Sensitive when the app dies
@@ -260,7 +272,8 @@ int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(shared_ptr<Result
     return SUCCEED;
 }
 
-int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveTypeAndForceHideSensitive(shared_ptr<ResultSet> &resultSetDB,
+int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveTypeAndForceHideSensitive(
+    shared_ptr<NativeRdb::ResultSet> &resultSetDB,
     int &sensitiveTypeParam, OHOS::NativeRdb::ValuesBucket &valueBucket)
 {
     // get force value

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -21,6 +21,7 @@
 #include "i_media_controller_service.h"
 #include "user_define_ipc.h"
 #include "medialibrary_errno.h"
+#include "media_assets_delete_service.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -110,6 +111,7 @@ public:
     EXPORT int32_t QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t ConvertFormat(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CheckMimeType(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CreateTmpCompatibleDup(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetResultSetFromDb(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetResultSetFromPhotosExtend(MessageParcel &data, MessageParcel &reply);
@@ -125,6 +127,15 @@ public:
     EXPORT int32_t SetCompositeDisplayMode(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AcquireDebugDatabase(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t ReleaseDebugDatabase(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t StartChangeScanAssetInner(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetFusionAssetsInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeleteLocalAssetsWithUri(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeleteCloudAssetsWithUri(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t OpenAssetCompress(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t NotifyAssetSended(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetAssetCompressVersion(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetCompressAssetSize(MessageParcel &data, MessageParcel &reply);
+
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;
@@ -132,6 +143,9 @@ public:
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override;
     int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override;
+
+private:
+    Common::MediaAssetsDeleteService mediaAssetsDeleteService_;
 };
 } // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_CONTROLLER_SERVICE_H

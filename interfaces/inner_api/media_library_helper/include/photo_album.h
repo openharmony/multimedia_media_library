@@ -101,6 +101,9 @@ public:
     EXPORT void SetLocationOnly(const bool locationOnly);
     EXPORT bool GetLocationOnly() const;
 
+    EXPORT void SetChangeTime(const int64_t changeTime);
+    EXPORT int64_t GetChangeTime() const;
+
     EXPORT static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
@@ -109,6 +112,7 @@ public:
     EXPORT static bool IsSmartGroupPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsPetAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSystemAlbum(const PhotoAlbumType albumType);
     EXPORT static bool IsHiddenAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
@@ -120,6 +124,12 @@ public:
 
     EXPORT void SetCoverUriSource(int32_t coverUriSource);
     EXPORT int32_t GetCoverUriSource();
+
+    EXPORT void SetUploadStatus(int32_t uploadStatus);
+    EXPORT int32_t GetUploadStatus() const;
+
+    EXPORT void SetHidden(const int32_t hidden);
+    EXPORT int32_t GetHidden() const;
 private:
     int32_t albumId_;
     PhotoAlbumType type_;
@@ -149,6 +159,9 @@ private:
     bool locationOnly_ = false;
     int32_t targetUserId_;
     int32_t coverUriSource_ = static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
+    int32_t uploadStatus_ = 1;
+    int32_t hidden_ = 0;
+    int64_t changeTime_ {0};
 };
 } // namespace Media
 } // namespace OHOS

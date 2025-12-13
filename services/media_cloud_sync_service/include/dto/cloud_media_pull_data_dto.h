@@ -19,10 +19,17 @@
 #include <string>
 #include <vector>
 #include <sstream>
+
 #include "cloud_media_define.h"
+#include "photo_album_po.h"
+#include "photos_po.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 class EXPORT CloudMediaPullDataDto {
+public:
+    std::optional<PhotoAlbumPo> albumInfoOp;
+    std::optional<PhotosPo> localPhotosPoOp;
 public:
     // key
     std::string cloudId;
@@ -77,11 +84,14 @@ public:
     int32_t attributesFileId{-1};                 /* file_id */
     std::string attributesCloudId;                /* cloud_id */
     std::string attributesOriginCloudId;          /* origin cloud_id */
-
+    int32_t deferredEffectsStatus{-2};            /* deferred_effect_status */
     int64_t attributesEditedTimeMs{-1}; /* editedTime_ms */
     int32_t attributesFixVersion{-1};
     std::string attributesEditDataCamera;
     std::vector<std::string> attributesSrcAlbumIds;
+    int32_t attributesFileSourceType{0};          /* file_source_type */
+    std::string attributesStoragePath;            /* storage_path */
+    
     // "properties"
     bool hasProperties{false};
     std::string propertiesSourceFileName;
@@ -105,22 +115,30 @@ public:
     std::string localDateModified;
     int32_t localDirty{-1};
     int32_t localPosition{-1};
-    std::string localOwnerAlbumId;
+    int32_t localOwnerAlbumId;
     int32_t localOrientation{-1};
     int32_t localThumbState{-1};
     std::string localOriginalAssetCloudId;
     int32_t localExifRotate{-1};
     std::string localDisplayName;
+    std::map<std::string, std::string> stringfields;
 
 public:  // basic function
     std::string ToString() const;
-
+    bool IsHiddenAsset() const;
+    bool IsVideoAsset();
+    bool FindAlbumCloudId(std::string &albumCloudId);
+    bool FindAlbumUploadStatus() const;
+    bool GetIsRecycleUpdated() const;
+    void SetIsRecycleUpdated(bool isRecycleUpdated);
 private:
     void GetBasicInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;
     void GetPropertiesInfo(std::stringstream &ss) const;
     void GetCloudInfo(std::stringstream &ss) const;
     void GetAlbumIds(std::stringstream &ss) const;
+    bool isRecycleUpdated{false};
+    void GetAttributesHashMap(std::stringstream &ss) const;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUDSYNC_CLOUD_MEDIA_PULL_DATA_H

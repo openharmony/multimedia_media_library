@@ -34,11 +34,13 @@
 #include "medialibrary_type_const.h"
 #include "permission_utils.h"
 #include "media_exif.h"
-#include "media_library_manager.h"
 #include "medialibrary_bundle_manager.h"
+#include "media_app_uri_sensitive_column.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_tracer.h"
 #include "parameters.h"
+#include "lake_file_utils.h"
+#include "directory_ex.h"
 
 using namespace std;
 using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
@@ -446,15 +448,21 @@ static bool IsDeveloperMediaTool()
 
 int32_t MediaPrivacyManager::Open()
 {
+    path_ = LakeFileUtils::GetAssetRealPath(path_);
     int err = GetPrivacyRanges();
     if (err < 0) {
         MEDIA_ERR_LOG("GetPrivacyRanges failed");
         return err;
     }
+    string absFilePath;
+    if (!PathToRealPath(path_, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", path_.c_str());
+        return -1;
+    }
     if (ranges_.size() > 0 && !IsDeveloperMediaTool()) {
-        return OpenFilterProxyFd(path_, mode_, ranges_, clientBundle_, fuseFlag_);
+        return OpenFilterProxyFd(absFilePath, mode_, ranges_, clientBundle_, fuseFlag_);
     } else {
-        return OpenOriginFd(path_, mode_, clientBundle_, fuseFlag_);
+        return OpenOriginFd(absFilePath, mode_, clientBundle_, fuseFlag_);
     }
 }
 } // namespace Media

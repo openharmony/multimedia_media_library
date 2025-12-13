@@ -34,7 +34,7 @@ enum class MDKRecordFieldType {
     FIELD_TYPE_DOUBLE,     // double
     FIELD_TYPE_STRING,     // std::string
     FIELD_TYPE_BOOL,       // bool
-    FIELD_TYPE_BLOB,       // std::vector<uint8_t>
+    FIELD_TYPE_BYTES,       // std::vector<uint8_t>
     FIELD_TYPE_LIST,       // std::vector<MDKRecordField>
     FIELD_TYPE_MAP,        // std::map<std::string, MDKRecordField>
     FIELD_TYPE_ASSET,      // MDKAsset
@@ -71,7 +71,7 @@ public:
     MDKLocalErrorCode GetDouble(double &val) const;
     MDKLocalErrorCode GetBool(bool &val) const;
     MDKLocalErrorCode GetString(std::string &val) const;
-    MDKLocalErrorCode GetBlob(std::vector<uint8_t> &val) const;
+    MDKLocalErrorCode GetBytes(std::vector<uint8_t> &val) const;
     MDKLocalErrorCode GetRecordList(std::vector<MDKRecordField> &val) const;
     MDKLocalErrorCode GetRecordMap(std::map<std::string, MDKRecordField> &val) const;
     MDKLocalErrorCode GetAsset(MDKAsset &val) const;
@@ -134,7 +134,7 @@ private:
     bool ParseDoubleFromJson(const Json::Value &jvData);
     bool ParseStringFromJson(const Json::Value &jvData);
     bool ParseBoolFromJson(const Json::Value &jvData);
-    bool ParseBlobFromJson(const Json::Value &jvData);
+    bool ParseBytesFromJson(const Json::Value &jvData);
     bool ParseListFromJson(MDKRecordFieldType listType, const Json::Value &jvData);
     bool ParseMapFromJson(const Json::Value &jvData);
     bool ParseAssetFromJson(const Json::Value &jvData);

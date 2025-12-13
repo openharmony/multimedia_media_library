@@ -75,6 +75,7 @@ config("napi_config") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
   ]
 
   if (media_library_feature_mtp) {
@@ -122,6 +123,7 @@ config("napi_config_photoaccesshelpernative") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
   ]
 
   if (media_library_feature_mtp) {
@@ -147,6 +149,8 @@ config("public_napi_config") {
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
+    "${MEDIALIB_INNERIMPL_PATH}/camera/include",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
   ]
 }
 
@@ -179,11 +183,12 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_comm_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_new_observer.cpp",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/src/medialibrary_notify_user_define_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/data/user_define_notify_info.cpp",
     "${MEDIALIB_JS_PATH}/src/modal_ui_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/moving_photo_call_transcoder.cpp",
     "${MEDIALIB_JS_PATH}/src/moving_photo_napi.cpp",
@@ -192,7 +197,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_manager_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/picture_handle_client.cpp",
     "${MEDIALIB_JS_PATH}/src/request_photo_uris_read_permission_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/short_term_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
@@ -201,6 +205,8 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
+    "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
+    "${MEDIALIB_INNERIMPL_PATH}/camera/src/picture_handle_client.cpp",
   ]
 
   media_asset_service_vo_source = [
@@ -248,7 +254,8 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/acquire_debug_database_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/release_debug_database_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp"
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_fussion_assets_vo.cpp",
   ]
 
   media_album_service_vo_source = [
@@ -271,6 +278,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_merge_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_place_before_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_order_position_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_upload_status_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_relationship_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_relationship_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_highlight_attribute_vo.cpp",
@@ -282,6 +290,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_get_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_get_selected_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/query_albums_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_albumid_by_lpath_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_albums_by_ids_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_order_position_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_face_id_vo.cpp",
@@ -396,8 +405,8 @@ ohos_shared_library("medialibrary_nutils") {
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
   }
 
-  if (media_library_device_manager_enabled) {
-    defines += [ "DM_DEVICE_INFO_ENABLE" ]
+  if (media_library_feature_device_manager) {
+    defines += [ "DEVICE_MANAGER_SUPPORT" ]
     external_deps += [ "device_manager:devicemanagersdk" ]
   }
 
@@ -473,10 +482,6 @@ ohos_shared_library("medialibrary") {
     external_deps += [ "image_framework:image_native" ]
   }
 
-  if (media_library_feature_device_manager) {
-    external_deps += ["device_manager:devicemanagersdk"]
-  }
-
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
   part_name = "media_library"
@@ -536,10 +541,6 @@ ohos_shared_library("userfilemanager") {
       "memmgr_override:libpurgeablemem_plugin",
       "memmgr_override:purgeable_pixelmap_builder",
     ]
-  }
-
-  if (media_library_feature_device_manager) {
-     external_deps += ["device_manager:devicemanagersdk"]
   }
 
   if (ability_runtime_graphics) {

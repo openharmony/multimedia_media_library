@@ -82,6 +82,8 @@ public:
     std::string recordType;
     std::string recordId;
     bool isNew;
+    int32_t fileSourceType;
+    std::string storagePath;
 
     // Photo Album
     std::string albumCloudId;
@@ -90,6 +92,9 @@ public:
 
     // Photo Map
     std::vector<std::string> removeAlbumCloudId;
+
+    // Hash Map for attributes
+    std::map<std::string, std::string> stringfields;
 
 public:
     virtual ~CloudMdkRecordPhotosVo() = default;
@@ -103,12 +108,13 @@ private:
     void GetPropertiesInfo(std::stringstream &ss) const;
     void GetCloudInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;
+    void GetAttributesHashMap(std::stringstream &ss) const;
     void GetRemoveAlbumInfo(std::stringstream &ss) const;
     // functions for Marshalling
     bool MarshallingBasicInfo(Parcel &parcel) const;
-    bool MarshallingAttributesInfo(Parcel &parcel) const;
+    bool MarshallingAttributesInfo(MessageParcel &parcel) const;
     bool ReadBasicInfo(Parcel &parcel);
-    bool ReadAttributesInfo(Parcel &parcel);
+    bool ReadAttributesInfo(MessageParcel &parcel);
 
 public:  // basic functions
     std::string ToString();

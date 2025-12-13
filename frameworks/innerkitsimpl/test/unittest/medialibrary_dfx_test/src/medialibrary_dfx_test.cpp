@@ -18,6 +18,7 @@
 #include <string>
 #include <unordered_set>
 
+#include "dfx_anco_manager.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_collector.h"
 #include "dfx_const.h"
@@ -962,5 +963,68 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_test_002, TestSize.Level0)
         "CLOUD_VIDEO_RESOLUTION", querySizeAndResolution.cloudVideoResolution);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportAncoCheckInfo_test_001, TestSize.Level0)
+{
+    AncoCheckInfo reportData;
+    reportData.checkStartTime = 111;
+    reportData.checkEndTime = 211;
+    reportData.checkAdd = 24;
+    reportData.checkUpdate = 121;
+    reportData.checkDelete = 78;
+    int32_t result = DfxReporter::ReportAncoCheckInfo(reportData);
+    EXPECT_EQ(result, E_OK);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportAncoOperationChangeInfo_test_001, TestSize.Level0)
+{
+    AncoOperationChangeInfo reportData;
+    reportData.photoOptAddCount = 41;
+    reportData.photoOptUpdateCount = 42;
+    reportData.photoOptDeleteCount = 43;
+    reportData.albumOptAddCount = 44;
+    reportData.albumOptUpdateCount = 45;
+    reportData.albumOptDeleteCount = 46;
+    reportData.totalOptCount = 147;
+    int32_t result = DfxReporter::ReportAncoOperationChangeInfo(reportData);
+    EXPECT_EQ(result, E_OK);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportAncoCountFormatInfo_test_001, TestSize.Level0)
+{
+    AncoCountFormatInfo reportData;
+    reportData.loadStartTime = 41;
+    reportData.loadEndTime = 42;
+    reportData.albumCount = 48;
+    reportData.imageCount = 46;
+    reportData.videoCount = 44;
+    map<std::string, int32_t> formatCountMap = {
+        {"gif", 1},
+        {"jpg", 2},
+        {"png", 4},
+        {"mp4", 11},
+        {"3gp", 12},
+        {"avi", 13},
+        {"rmvb", 14},
+    };
+    nlohmann::json staticsJson(formatCountMap);
+    reportData.assetFormatDistribution = staticsJson.dump();
+    int32_t result = DfxReporter::ReportAncoCountFormatInfo(reportData);
+    EXPECT_EQ(result, E_OK);
+}
+
+HWTEST_F(MediaLibraryDfxTest, AncoDfxManager_test_001, TestSize.Level0)
+{
+    AncoDfxManager::GetInstance().ReportFirstLoadInfo(100, 200);
+    AncoDfxManager::GetInstance().ReportFirstLoadInfo(300, 400);
+    EXPECT_EQ(0, E_OK);
+}
+
+HWTEST_F(MediaLibraryDfxTest, AncoDfxManager_test_003, TestSize.Level0)
+{
+    AncoDfxManager::GetInstance().InnerReportAndResetOptChangeInfo();
+    EXPECT_EQ(0, E_OK);
+}
+
 } // namespace Media
 } // namespace OHOS

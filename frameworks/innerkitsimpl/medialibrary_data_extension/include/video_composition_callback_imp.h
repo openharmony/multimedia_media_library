@@ -25,17 +25,13 @@ using std::string;
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-static const std::string FRAME_STICKER = "FrameSticker";
-static const std::string INPLACE_STICKER = "InplaceSticker";
-static const std::string TIMING_STICKER = "TimingSticker";
-static const std::string FESTIVAL_STICKER = "FestivalSticker";
+static const std::string STICKER = "Sticker";
 static const std::string FILTERS_FIELD = "filters";
 static const std::string IMAGE_EFFECT = "imageEffect";
 static const std::string FILTER_CATEGORY = "FILTER_CATEGORY";
 static const std::string BORDER_WATERMARK = "BORDER_WATERMARK";
-static const char FILTERS_END = ',';
+static const std::string NAME_FIELD = "name";
 static const int32_t MAX_CONCURRENT_NUM = 5;
-static const int32_t START_DISTANCE = 10;
 
 class EXPORT VideoCompositionCallbackImpl : public CompositionCallback {
 public:
@@ -64,8 +60,7 @@ public:
     static int32_t CallStartComposite(const std::string& sourceVideoPath, const std::string& videoPath,
         const std::string& effectDescription, const std::string& assetPath, bool isNeedScan);
     static void AddCompositionTask(const std::string& assetPath, std::string& editData, bool isNeedScan);
-    static void EraseStickerField(std::string& editData, size_t index, bool isTimingSticker);
-    static void EraseWatermarkTag(std::string& editData);
+    static int32_t EraseWatermarkTagAndStickerField(std::string& editData, bool& isFiltersFieldEmpty);
     static void InitCallbackImpl(std::shared_ptr<VideoCompositionCallbackImpl>& callBack,
         int32_t inputFileFd, int32_t outputFileFd, const std::string& videoPath, std::string& absSourceVideoPath,
         const std::string& assetPath, bool isNeedScan);

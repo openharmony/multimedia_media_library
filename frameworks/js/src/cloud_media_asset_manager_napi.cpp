@@ -17,18 +17,9 @@
 
 #include "cloud_media_asset_manager_napi.h"
 
-#include "media_column.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
-#include "userfile_manager_types.h"
-#include "media_library_napi.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "result_set_utils.h"
-#include "cloud_media_asset_types.h"
 #include "cloud_media_asset_status_napi.h"
 #include "cloud_media_asset_uri.h"
 #include "start_download_cloud_media_vo.h"

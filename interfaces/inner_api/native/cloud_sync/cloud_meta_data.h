@@ -38,6 +38,8 @@ public:
     // 同步流程->所有待创建dentry file的文件(缩略图/LCD/纹理图/缩略视频);
     // 下载流程-> 所有待下载的文件
     std::map<std::string, CloudFileData> attachment;
+    std::string storagePath;      // 湖内文件路径
+    int32_t fileSourceType{0};  // 默认值为0表示湖外文件，3表示湖内文件
 
 public:  // constructor & destructor
     virtual ~CloudMetaData() = default;
@@ -54,6 +56,8 @@ public:  // basic function
            << "\"type\": " << type << ","
            << "\"modifiedTime\": " << modifiedTime << ","
            << "\"originalCloudId\": \"" << originalCloudId << "\","
+           << "\"storagePath\": \"" << storagePath << "\","
+           << "\"fileSourceType\": \"" << fileSourceType << "\","
            << "\"attachment\": [";
         bool first = true;
         for (const auto &item : attachment) {

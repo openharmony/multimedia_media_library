@@ -110,12 +110,12 @@ public:
     EXPORT ~NotificationTestData();
     static std::vector<Notification::MediaChangeInfo> getPhotoChangeInfos(
         const Notification::NotifyUriType& notifyUriType,
-        const Notification::NotifyType& notifyType,  bool isForRecheck);
+        const Notification::AccurateNotifyType& notifyType,  bool isForRecheck);
     static std::vector<Notification::MediaChangeInfo> getPhotnChangeInfosByUriType(
         const Notification::NotifyUriType& notifyUriType, bool isForRecheck);
     static std::vector<Notification::MediaChangeInfo> getAlbumChangeInfos(
         const Notification::NotifyUriType& notifyUriType,
-        const Notification::NotifyType& notifyType, bool isForRecheck);
+        const Notification::AccurateNotifyType& notifyType, bool isForRecheck);
     static std::vector<Notification::MediaChangeInfo> getAlbumChangeInfosByUriType(
         const Notification::NotifyUriType& notifyUriType, bool isForRecheck);
     static std::vector<Notification::NotifyInfo> buildAssetsNotifyInfo(const std::string &testName,

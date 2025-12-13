@@ -62,6 +62,8 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::VISION_HEAD,
     OperationObject::VISION_AFFECTIVE,
     OperationObject::VISION_POSE,
+    OperationObject::VISION_PET_FACE,
+    OperationObject::VISION_PET_TAG,
     OperationObject::VISION_TOTAL,
     OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
     OperationObject::GEO_DICTIONARY,
@@ -84,6 +86,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ADDRESS,
     OperationObject::TAB_FACARD_PHOTO,
     OperationObject::PAH_BACKUP_POSTPROCESS,
+    OperationObject::VISION_ANALYSIS,
 };
 
 std::string USER_STR = "user";

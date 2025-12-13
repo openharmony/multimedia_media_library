@@ -100,6 +100,9 @@ public:
     EXPORT int32_t GetHeight() const;
     EXPORT void SetHeight(int32_t height);
 
+    EXPORT double GetAspectRatio();
+    EXPORT void SetAspectRatio(double aspectRatio);
+
     EXPORT int32_t GetDuration() const;
     EXPORT void SetDuration(int32_t duration);
 
@@ -237,6 +240,17 @@ public:
 
     EXPORT int32_t GetFileResourceType() const;
     EXPORT void SetFileResourceType(int32_t fileResourceType);
+    EXPORT int32_t GetFileSourceType() const;
+    EXPORT void SetFileSourceType(int32_t fileSourceType);
+
+    EXPORT std::string GetStoragePath() const;
+    EXPORT void SetStoragePath(const std::string &storagePath);
+
+    EXPORT int32_t GetIsStylePhoto() const;
+    EXPORT void SetIsStylePhoto(int32_t isStylePhoto);
+
+    EXPORT void SetChangeTime(const int64_t changeTime);
+    EXPORT int64_t GetChangeTime() const;
 
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
@@ -256,6 +270,9 @@ public:
 
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;
+
+    EXPORT void SetPhotoIsTemp(int32_t isTemp);
+    EXPORT int32_t GetPhotoIsTemp() const;
 
     EXPORT void SetExifRotate(int32_t exifRotate);
     EXPORT int32_t GetExifRotate() const;

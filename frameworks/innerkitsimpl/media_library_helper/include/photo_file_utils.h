@@ -51,6 +51,8 @@ public:
         const std::string &timeStr, const std::string &format, bool isUTC = false);
     EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
     EXPORT static int64_t NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue);
+    EXPORT static std::string GetAbsoluteLakeDir(int32_t userId);
+    EXPORT static std::string GetAbsoluteLakePath(const std::string &storagePath, int32_t userId);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);

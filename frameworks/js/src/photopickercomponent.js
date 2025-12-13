@@ -36,6 +36,76 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
     ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
 ]);
+const display = requireNapi('display');
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
+
+const OperationType = {
+  EQUAL_TO : 1,
+  NOT_EQUAL_TO : 2,
+  GREATER_THAN : 3,
+  LESS_THAN : 4,
+  GREATER_THAN_OR_EQUAL_TO : 5,
+  LESS_THAN_OR_EQUAL_TO : 6,
+  AND : 7,
+  OR : 8,
+  IN : 9,
+  NOT_IN : 10,
+  BEGIN_WRAP : 11,
+  END_WRAP : 12,
+  BETWEEN : 13,
+  NOT_BETWEEN : 14
+}
+
+const PickerFilterPhotoKeys = {
+  
+    URI: 'uri',
+    
+    PHOTO_TYPE: 'media_type',
+    
+    DISPLAY_NAME: 'display_name',
+    
+    SIZE: 'size',
+    
+    DATE_ADDED: 'date_added',
+    
+    DATE_MODIFIED: 'date_modified',
+    
+    DURATION: 'duration',
+    
+    WIDTH: 'width',
+    
+    HEIGHT: 'height',
+    
+    DATE_TAKEN: 'date_taken',
+    
+    ORIENTATION: 'orientation',
+    
+    FAVORITE: 'is_favorite',
+    
+    TITLE: 'title',
+    
+    POSITION: 'position',
+    
+    PHOTO_SUBTYPE: 'subtype',
+    
+    DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+    
+    COVER_POSITION: 'cover_position',
+    
+    BURST_KEY: 'burst_key',
+    
+    LCD_SIZE: 'lcd_size',
+    
+    THM_SIZE: 'thm_size',
+    
+    DETAIL_TIME: 'detail_time',
+    
+    OWNER_ALBUM_ID: 'owner_album_id',
+    
+    MEDIA_SUFFIX: 'media_suffix',
+    
+    ASPECT_RATIO: 'aspect_ratio',
+  }
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
@@ -60,8 +130,11 @@ export class PhotoPickerComponent extends ViewPU {
         this.maxBadgeConfigSize = 200000;
         this.badgeConfigIsSending = void 0;
         this.preselectedInfos = void 0;
+        this.onScrollStopAtStart = void 0;
+        this.onScrollStopAtEnd = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
+        this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
         this.setInitiallyProvidedValue(o);
         this.declareWatch('pickerController', this.onChanged);
@@ -83,6 +156,8 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onMovingPhotoBadgeStateChanged && (this.onMovingPhotoBadgeStateChanged = e.onMovingPhotoBadgeStateChanged);
         void 0 !== e.pickerOptions?.badgeConfig && (this.badgeConfig = e.pickerOptions?.badgeConfig);
         void 0 !== e.pickerOptions?.preselectedInfos && (this.preselectedInfos = e.pickerOptions?.preselectedInfos);
+        void 0 !== e.onScrollStopAtStart && (this.onScrollStopAtStart = e.onScrollStopAtStart);
+        void 0 !== e.onScrollStopAtEnd && (this.onScrollStopAtEnd = e.onScrollStopAtEnd);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
             console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
@@ -92,6 +167,12 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.proxy && (this.proxy = e.proxy);
         if (e.revokeIndex !== undefined) {
             this.revokeIndex = e.revokeIndex;
+        }
+        const displayName = display.getDefaultDisplaySync().name;
+        console.info(`displayName = ${displayName}`);
+        if (cooperation_multi_name.includes(displayName)) {
+            this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
+            console.info(`dpiFollowStrategy = ${this.dpiFollowStrategy}`);
         }
     }
 
@@ -261,7 +342,40 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
     }
 
+    checkAssetFilterInvalid(assetFilter) {
+        // 获取所有有效的值
+        const validOperationTypes = Object.values(OperationType);
+        const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
+
+        //遍历数组中的每个OperationItem
+        for (const item of assetFilter) {
+            //检查operationType是否有值且在枚举中
+            if (!item.operationType || !validOperationTypes.includes(item.operationType)) {
+                console.log('PhotoPickerComponent, Invalid operationType');
+                return true;
+            }
+
+            //如果field有值，检查是否在枚举中
+            if (item.field !== undefined && item.field !== null) {
+                if (!validPhotoKeys.includes(item.field)) {
+                    console.log('PhotoPickerComponent, Invalid photokeys');
+                    return true;
+                }
+                // uri仅支持EQUAL_TO操作
+                if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
+                    console.log('PhotoPickerComponent, Invalid uri operation');
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     initialRender() {
+        if (this.pickerOptions?.assetFilter && this.checkAssetFilterInvalid(this.pickerOptions.assetFilter)) {
+            console.error('PhotoPickerComponent, assetFilter has value but invalid');
+            return;
+        }
         this.observeComponentCreation2(((e, o) => {
             Row.create();
             Row.height('100%');
@@ -271,7 +385,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -316,10 +430,15 @@ export class PhotoPickerComponent extends ViewPU {
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
                     isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
+                    isSlidingSupported:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSlidingSupported,
+                    assetFilter:  null === (predicate = this.pickerOptions) || void 0 === predicate ? void 0 : predicate.assetFilter,
+                    edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
+                    isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
+                    isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                 }
             }
             ,{
-                dpiFollowStrategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+                dpiFollowStrategy: this.dpiFollowStrategy
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');
@@ -432,6 +551,14 @@ export class PhotoPickerComponent extends ViewPU {
             console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
             this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
                 index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
+        } else if ('onScrollStopAtStart' === o) {
+            if (this.onScrollStopAtStart) {
+                this.onScrollStopAtStart();
+            }
+        } else if ('onScrollStopAtEnd' === o) {
+            if (this.onScrollStopAtEnd) {
+                this.onScrollStopAtEnd();
+            }
         } else {
             console.info('PhotoPickerComponent onReceive: other case');
         }
@@ -684,6 +811,7 @@ let PickerController = class {
         this.replaceCallbackMap = new Map();
         this.saveCallbackMap = new Map();
         this.createCallbackMap = new Map();
+        this.saveCallbackPromises = new Map();
     }
     setData(e, o) {
         if (o === undefined) {
@@ -842,6 +970,21 @@ let PickerController = class {
         });
     }
 
+    async saveTrustedPhotoAssetsEx(e, settings, saveMode) {
+        return new Promise((resolve, reject) => {
+            if (!e || e.length === 0) {
+                reject({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+                return;
+            }
+            this.getAppName().then((appName) => {
+                let date = Math.random();
+                this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, settings, saveMode, appName, date]]]);
+                this.saveCallbackPromises.set(date, [resolve, reject]);
+                console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS_EX');
+            });
+        });
+    }
+
     actionCreateCallback(grantUri, date, code, message) {
         if (this.createCallbackMap.has(date)) {
             let callback = this.createCallbackMap.get(date);
@@ -870,6 +1013,17 @@ let PickerController = class {
                 this.saveCallbackMap.delete(date);
             }
         }
+        if (this.saveCallbackPromises.has(date)) {
+            let promiseFunc = this.saveCallbackMap.get(date);
+            if (promiseFunc) {
+              if (err) {
+                promiseFunc[1](err);
+              } else {
+                promiseFunc[0](data);
+              }
+              this.saveCallbackPromises.delete(date);
+            }
+        }
     }
 
     setPhotoBrowserUIElementVisibility(e, o) {
@@ -892,7 +1046,7 @@ PickerController = __decorate([Observed], PickerController);
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
 }
 
-export class UpdatablePickerOptions {    
+export class UpdatablePickerConfigs {    
 }
 
 export class BaseItemInfo {
@@ -1038,5 +1192,5 @@ export var MovingPhotoBadgeStateType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerOptions, MovingPhotoBadgeStateType };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerConfigs, MovingPhotoBadgeStateType };
 

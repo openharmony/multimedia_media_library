@@ -35,6 +35,7 @@ private:
     const int32_t WEAK_BONUS = 30;
 
     const int32_t AESTHETICS_SCORE_THRESHOLD = 40;
+    const int32_t IS_EXCLUDED_THRESHOLD = 3072;
 public:
     // Scoring method used as a column in SQL queries
     const std::string SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE = "\
@@ -56,7 +57,7 @@ public:
         END) + \
         tab_analysis_image_face.aesthetics_score ";
 
-    //talbe join
+    // talbe join
     const std::string SQL_PORTRAIT_ALBUM_TABLE_JOIN = "\
         Photos \
         INNER JOIN tab_analysis_image_face ON ( \
@@ -77,7 +78,7 @@ public:
             tab_analysis_affective.file_id = Photos.file_id \
         )";
 
-    //filter condition
+    // filter condition
     const std::string SQL_PORTRAIT_ALBUM_CONDITION = "\
         Photos.sync_status = 0 \
         AND Photos.clean_flag = 0 \
@@ -88,7 +89,8 @@ public:
         AND time_pending = 0 \
         AND is_temp = 0 \
         AND burst_cover_level = 1 \
-        AND tab_analysis_image_face.aesthetics_score > " + std::to_string(AESTHETICS_SCORE_THRESHOLD);
+        AND tab_analysis_image_face.aesthetics_score > " + std::to_string(AESTHETICS_SCORE_THRESHOLD) + " \
+        AND tab_analysis_image_face.is_excluded >= " + std::to_string(IS_EXCLUDED_THRESHOLD);
 
     // get assets that meet the conditions
     const std::string SQL_PORTRAIT_ALBUM_GET_SELECTED_ASSETS = "\
@@ -121,7 +123,7 @@ public:
             WHERE " + SQL_PORTRAIT_ALBUM_CONDITION + " \
         ) WHERE rank = ROUND(count * 0.3 + 0.49);";
 
-    //get the score of the asset with the  file_id
+    // get the score of the asset with the  file_id
     const std::string SQL_PORTRAIT_ALBUM_GET_ASSET_SCORE = "\
         SELECT " + SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " AS total_score \
         FROM " + SQL_PORTRAIT_ALBUM_TABLE_JOIN + " \

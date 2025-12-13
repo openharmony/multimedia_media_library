@@ -63,6 +63,16 @@ void MediaLibraryNotifyNew::AddAlbum(const std::string &albumId)
 {
     NotificationClassification::AddAlbum(albumId);
 }
+
+void MediaLibraryNotifyNew::AddUserDefineItem(const UserDefineNotifyInfo &notifyInfoInner)
+{
+    auto worker = NotifyTaskWorker::GetInstance();
+    worker->AddUserDefineTaskInfo(notifyInfoInner);
+    if (!worker->IsRunning()) {
+        worker->StartWorker();
+    }
+    MEDIA_INFO_LOG("AddUserDefineItem");
+}
 } // Notification
 } // Media
 } // OHOS

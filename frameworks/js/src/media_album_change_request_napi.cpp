@@ -52,6 +52,7 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
+#include "change_request_set_upload_status_vo.h"
 #include "change_request_set_relationship_vo.h"
 #include "change_request_set_highlight_attribute_vo.h"
 
@@ -99,6 +100,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
+            DECLARE_NAPI_STATIC_FUNCTION("setUploadStatus", JSSetUploadStatus),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -431,6 +433,45 @@ napi_value MediaAlbumChangeRequestNapi::JSGetAlbum(napi_env env, napi_callback_i
     return nullValue;
 }
 
+static bool CheckCreateAlbumArgs(unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("conext is nullptr");
+        return false;
+    }
+    if (context->argc < ARGS_TWO) {
+        NAPI_ERR_LOG("No arguments to parse");
+        return false;
+    }
+    switch (context->argc) {
+        case ARGS_TWO:{
+            break;
+        }
+        case ARGS_THREE: {
+            PhotoAlbumType albumType = static_cast<PhotoAlbumType>(context->photoAlbumType);
+            if (albumType != USER) {
+                NAPI_ERR_LOG("error photoAlbumType arguments to parse");
+                return false;
+            }
+            break;
+        }
+        case ARGS_FOUR: {
+            PhotoAlbumType albumType = static_cast<PhotoAlbumType>(context->photoAlbumType);
+            PhotoAlbumSubType albumSubtype = static_cast<PhotoAlbumSubType>(context->photoAlbumSubType);
+            if ((albumType == USER && albumSubtype == USER_GENERIC) ||
+                (albumType == SMART && albumSubtype == PORTRAIT)) {
+                break;
+            } else {
+                NAPI_ERR_LOG("error albumSubtype arguments to parse");
+                return false;
+            }
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 static napi_value ParseArgsCreateAlbum(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
 {
@@ -440,7 +481,7 @@ static napi_value ParseArgsCreateAlbum(
     }
 
     CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_TWO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_FOUR) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
@@ -448,8 +489,23 @@ static napi_value ParseArgsCreateAlbum(
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM1], albumName) == napi_ok,
         "Failed to get album name");
+    NAPI_DEBUG_LOG("ParseArgsCreateAlbum %{private}s", albumName.c_str());
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid album name");
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    context->photoAlbumType = USER;
+    context->photoAlbumSubType = USER_GENERIC;
+
+     // 参数3：相册类型（可选）
+    if (context->argc >= ARGS_THREE) {
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM2],
+            context->photoAlbumType) != nullptr, "Failed to get album type");
+    }
+    // 参数4：相册子类型（可选）
+    if (context->argc >= ARGS_FOUR) {
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM3],
+            context->photoAlbumSubType) != nullptr, "Failed to get album subtype");
+    }
+    CHECK_COND_WITH_MESSAGE(env, CheckCreateAlbumArgs(context), "error arguments to parse");
     RETURN_NAPI_TRUE(env);
 }
 
@@ -462,8 +518,8 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAlbumRequest(napi_env env, napi_
     string albumName = asyncContext->valuesBucket.Get(PhotoAlbumColumns::ALBUM_NAME, isValid);
     auto photoAlbum = make_unique<PhotoAlbum>();
     photoAlbum->SetAlbumName(albumName);
-    photoAlbum->SetPhotoAlbumType(USER);
-    photoAlbum->SetPhotoAlbumSubType(USER_GENERIC);
+    photoAlbum->SetPhotoAlbumType(static_cast<PhotoAlbumType>(asyncContext->photoAlbumType));
+    photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(asyncContext->photoAlbumSubType));
     photoAlbum->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value photoAlbumNapi = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
     CHECK_COND(env, photoAlbumNapi != nullptr, JS_INNER_FAIL);
@@ -680,6 +736,33 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value CheckPhotoAlbumType(napi_env env, ParameterType parameterType,
+    shared_ptr<PhotoAlbum> targetAlbum,
+    napi_value arg, vector<string> &assetUriArray)
+{
+    CHECK_NULLPTR_RET(targetAlbum);
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source and Portrait albums can be set as target album.");
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, arg, assetUriArray),
+            "Failed to parse uri");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source albums and Portrait can be set as target album.");
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, arg, assetUriArray),
+            "Failed to parse assets");
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi_callback_info info,
     ParameterType parameterType)
 {
@@ -704,21 +787,9 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_ARGS_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source albums can be set as target album.");
-        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
-            "Failed to parse assets");
-    } else {
-        CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source albums can be set as target album.");
-        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-            "Failed to parse assets");
-    }
+    CHECK_ARGS_WITH_MESSAGE(env,
+        CheckPhotoAlbumType(env, parameterType, targetAlbum, asyncContext->argv[PARAM0], assetUriArray),
+        "checkAlbumType error");
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
@@ -728,6 +799,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
         }
     }
     changeRequest->RecordMoveAssets(assetUriArray, targetAlbum);
+
+    if (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+        targetAlbum->GetPhotoAlbumSubType())) {
+        changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SMART_MOVE_ASSETS);
+        RETURN_NAPI_UNDEFINED(env);
+    }
+
     if (parameterType == ParameterType::ASSET_URI) {
         changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS_WITH_URI);
     } else {
@@ -959,8 +1037,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callb
     auto subtype = photoAlbum->GetPhotoAlbumSubType();
     CHECK_COND_WITH_MESSAGE(env, PhotoAlbum::IsSmartPortraitPhotoAlbum(type, subtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(type, subtype) || PhotoAlbum::IsSmartClassifyAlbum(type, subtype) ||
-        PhotoAlbum::IsHighlightAlbum(type, subtype),
-        "Only portrait, highlight, group photo and classify album can dismiss asset");
+        PhotoAlbum::IsHighlightAlbum(type, subtype) ||
+        PhotoAlbum::IsPetAlbum(type, subtype),
+        "Only portrait, highlight, pet, group photo and classify album can dismiss asset");
 
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS_ASSET);
     napi_value result = nullptr;
@@ -993,9 +1072,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMergeAlbum(napi_env env, napi_callback
     CHECK_COND_WITH_MESSAGE(env,
         (photoAlbum != nullptr) && (targetAlbum != nullptr), "PhotoAlbum  Or TargetAlbum is nullptr");
     CHECK_COND_WITH_MESSAGE(env,
-        (PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) &&
-        (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType())),
-        "Only portrait album can merge");
+        ((PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(),
+            photoAlbum->GetPhotoAlbumSubType())) &&
+        (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()))) ||
+        ((PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) &&
+        (PhotoAlbum::IsPetAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()))),
+        "Only portrait or only pet album can merge");
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::MERGE_ALBUM);
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
@@ -1020,7 +1103,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only portrait album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
@@ -1228,8 +1312,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user source, highlight, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user source, highlight, pet, smart portrait album and group photo can set album name");
     photoAlbum->SetAlbumName(albumName);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
     RETURN_NAPI_UNDEFINED(env);
@@ -1259,7 +1344,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
         PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "can't set album cover of album subtype:" + to_string(subtype));
     photoAlbum->SetCoverUri(coverUri);
     photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
@@ -1356,6 +1442,120 @@ napi_value MediaAlbumChangeRequestNapi::JSSetHighlightAttribute(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
+static napi_value ParseArgsSetUploadStatus(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    constexpr size_t jsArgs = ARGS_THREE;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, jsArgs, jsArgs) == napi_ok, JS_E_PARAM_INVALID,
+        "Failed to get args");
+    CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_E_INNER_FAIL);
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_object) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "invalid context");
+        return nullptr;
+    }
+
+    vector<napi_value> napiValues;
+    valueType = napi_undefined;
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues),
+        JS_E_PARAM_INVALID, "Failed to get array");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !napiValues.empty(), JS_E_PARAM_INVALID, "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, valueType == napi_object, JS_E_PARAM_INVALID, "Argument must be array of album");
+ 
+    constexpr size_t sizeOfArray = 0;
+    constexpr size_t kBatchSetMaxNumber = 500;
+    if (napiValues.size() > kBatchSetMaxNumber || napiValues.size() == sizeOfArray) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of albums is 0 or over 500.");
+        return nullptr;
+    }
+    for (const auto& napiValue : napiValues) {
+        PhotoAlbumNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_E_PARAM_INVALID);
+        CHECK_COND_WITH_ERR_MESSAGE(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get album napi object");
+
+        if (PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType())) {
+            context->deleteIds.push_back(to_string(obj->GetAlbumId()));
+            context->photoAlbumTypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumType()));
+            context->photoAlbumSubtypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumSubType()));
+        }
+    }
+
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[PARAM2],
+        context->allowUpload) == napi_ok, JS_E_PARAM_INVALID, "Failed to get allowUpload");
+    RETURN_NAPI_TRUE(env);
+}
+
+static void SetUploadStatusExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetUploadStatusExecute");
+
+    auto *context = static_cast<MediaAlbumChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->deleteIds.empty(), "deleteIds is empty");
+
+    NAPI_INFO_LOG("enter SetUploadStatusExecute, allowUpload: %{public}d.", context->allowUpload);
+    ChangeRequestSetUploadStatusReqBody reqBody;
+    reqBody.allowUpload = static_cast<int>(context->allowUpload);
+    reqBody.albumIds = context->deleteIds;
+    reqBody.photoAlbumTypes = context->photoAlbumTypes;
+    reqBody.photoAlbumSubtypes = context->photoAlbumSubtypes;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED || ret == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(ret);
+        } else {
+            context->error = JS_E_INNER_FAIL;
+        }
+        NAPI_ERR_LOG("Failed to set uploadStatus, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void SetUploadStatusCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetUploadStatusCallback");
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSSetUploadStatus(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSSetUploadStatus.");
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    if (!ParseArgsSetUploadStatus(env, info, asyncContext)) {
+        NAPI_ERR_LOG("Failed to parse args");
+        return nullptr;
+    }
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestSetUploadStatus",
+        SetUploadStatusExecute, SetUploadStatusCallback);
+}
+
 static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -1367,6 +1567,8 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     Uri createAlbumUri(PAH_CREATE_PHOTO_ALBUM);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, photoAlbum->GetPhotoAlbumType());
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbum->GetPhotoAlbumSubType());
     int32_t ret = UserFileClient::Insert(createAlbumUri, valuesBucket);
     if (ret == -1) {
         context.SaveError(-EEXIST);
@@ -1380,7 +1582,11 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     photoAlbum->SetAlbumId(ret);
-    photoAlbum->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(ret));
+    if (photoAlbum->GetPhotoAlbumType() == SMART) {
+        photoAlbum->SetAlbumUri(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + to_string(ret));
+    } else {
+        photoAlbum->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(ret));
+    }
     return true;
 }
 
@@ -1588,6 +1794,51 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
         respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
     return true;
 }
+
+static bool SmartMoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    NAPI_INFO_LOG("MediaAlbumChangeRequestNapi::SmartMoveAssetsExecute start ");
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is null");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
+    int32_t albumId = photoAlbum->GetAlbumId();
+    auto moveMap = changeRequest->GetMoveMap();
+    changeRequest->ClearMoveMap();
+    ChangeRequestMoveAssetsReqBody reqBody;
+    ChangeRequestMoveAssetsRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS);
+    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
+        auto targetPhotoAlbum = iter->first;
+        CHECK_COND_RET(targetPhotoAlbum != nullptr, false, "targetPhotoAlbum is nullptr");
+        bool isTargetHiddenOnly = targetPhotoAlbum->GetHiddenOnly();
+        int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
+        vector<string> moveAssetArray = iter->second;
+        reqBody.albumId = albumId;
+        reqBody.targetAlbumId = targetAlbumId;
+        for (const auto& asset : moveAssetArray) {
+            reqBody.assets.push_back(asset);
+        }
+        int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+        if (ret < 0) {
+            context.SaveError(ret);
+            NAPI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
+            return false;
+        }
+        NAPI_ERR_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
+        targetPhotoAlbum->SetVideoCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumVideoCount);
+        targetPhotoAlbum->SetImageCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumImageCount);
+        targetPhotoAlbum->SetCount(respBody.targetAlbumCount);
+    }
+    bool isHiddenOnly = photoAlbum->GetHiddenOnly();
+    photoAlbum->SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
+    photoAlbum->SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
+    photoAlbum->SetCount(respBody.albumCount);
+    NAPI_ERR_LOG("origin album video count: %{public}d, image count: %{public}d, count: %{public}d",
+        respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
+    return true;
+}
+
 
 static bool RecoverAssetsExecuteWithUri(MediaAlbumChangeRequestAsyncContext& context)
 {
@@ -1912,15 +2163,21 @@ static bool SetIsMeExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetIsMeExecute");
-    bool result = MediaLibraryNapiUtils::ClearAllRelationship();
-    if (!result) {
-        NAPI_WARN_LOG("Failed to clear all relationship after set is me");
-    }
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    int32_t isMe = 0;
+    bool isMeExist = false;
+    GetIsMeInfo(isMe, isMeExist, photoAlbum->GetAlbumId());
+    // 存在“我”相册且“我”相册不是当前相册
+    if (isMeExist && isMe == 0) {
+        bool result = MediaLibraryNapiUtils::ClearAllRelationship();
+        if (!result) {
+            NAPI_WARN_LOG("Failed to clear all relationship after set is me");
+        }
+    }
     ChangeRequestSetIsMeReqBody reqBody;
     reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
     reqBody.isMe = VALUE_IS_ME;
@@ -2058,6 +2315,7 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
     { AlbumChangeOperation::SET_RELATIONSHIP, SetRelationshipExecute },
     { AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE, SetHighlightAttributeExecute },
+    { AlbumChangeOperation::SMART_MOVE_ASSETS, SmartMoveAssetsExecute },
 };
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)

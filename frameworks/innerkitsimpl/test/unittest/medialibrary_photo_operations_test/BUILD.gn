@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_photo_operations_test") {
-  module_out_path = "media_library/media_library-asset"
+  module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "./include",
     "./include/operation",
@@ -35,18 +35,23 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/display_name_info.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/height_width_correct_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_album_copy_meta_data_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_asset_copy_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_burst_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_displayname_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_mimetype_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/video_3dgs_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/shooting_mode_album_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_lpath_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_merge_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
@@ -60,13 +65,14 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/medialibrary_photo_edit_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
     "./src/operation/display_name_info_test.cpp",
+    "./src/operation/height_width_correct_operation_test.cpp",
     "./src/operation/photo_album_copy_meta_data_operation_test.cpp",
     "./src/operation/photo_asset_copy_operation_test.cpp",
     "./src/operation/photo_burst_operation_test.cpp",
     "./src/operation/photo_displayname_operation_test.cpp",
     "./src/operation/photo_mimetype_operation_test.cpp",
     "./src/operation/photo_owner_album_id_operation_test.cpp",
-    "./src/operation/video_3dgs_operation_test.cpp",
+    "./src/operation/shooting_mode_operation_test.cpp",
     "./src/operation/video_composition_callback_imp_test.cpp",
     "./src/photo_album_operation/photo_album_lpath_operation_test.cpp",
     "./src/photo_album_operation/photo_album_merge_operation_test.cpp",
@@ -105,6 +111,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   defines = []

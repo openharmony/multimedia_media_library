@@ -38,6 +38,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_dictionary",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_knowledge",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/highlight",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/pet_album",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/portrait_album",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/group_photo_album",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/log",
@@ -51,6 +52,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./include/highlight",
     "./include/group_photo",
     "./include/portrait_album",
+    "./include/pet_album",
   ]
 
   sources = [
@@ -59,6 +61,9 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/pet_album/clone_restore_pet_album.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/pet_album/clone_restore_pet_base.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/pet_album/pet_album_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_album.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_base.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/portrait_album_utils.cpp",
@@ -83,6 +88,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/clone_restore_cv_analysis.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/clone_restore_highlight.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/highlight_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/group_photo_album/group_photo_album_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/group_photo_album/clone_restore_group_photo.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit_helper.cpp",
@@ -122,6 +128,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/group_photo/clone_restore_group_photo_test.cpp",
     "./src/portrait_album/portrait_album_clone_test.cpp",
     "./src/portrait_album/portrait_album_source.cpp",
+    "./src/pet_album/pet_album_clone_test.cpp",
+    "./src/pet_album/pet_album_source.cpp",
 
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore_map_code_utils.cpp",

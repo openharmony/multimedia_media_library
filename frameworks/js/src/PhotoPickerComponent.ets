@@ -18,7 +18,8 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 import { LengthMetrics, LengthUnit } from '@kit.ArkUI';
-
+import { display } from @ohos.display;
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
@@ -51,6 +52,9 @@ export struct PhotoPickerComponent {
   maxBadgeConfigSize: number = 200000;
   batchPreselectedInfos: number = 200;
   preselectedInfos = undefined;
+  onScrollStopAtStart: onScrollStopAtStartCallback;
+  onScrollStopAtEnd: onScrollStopAtEndCallback;
+  dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
@@ -120,7 +124,7 @@ export struct PhotoPickerComponent {
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
-    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerOptions });
+    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerConfigs });
     console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
   }
 
@@ -191,8 +195,40 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
   }
 
+  private checkAssetFilterIncalid(assetFilter: photoAccessHelper.OperationItem[]): boolean {
+    // 获取所有有效的值
+    const validOperationTypes = Object.values(photoAccessHelper.OperationType);
+    const validPhotoKeys = Object.values(photoAccessHelper.PhotoKeys);
+
+    //遍历数组中的每个OperationItem
+    for (const item of assetFilter) {
+        //检查operationType是否有值且在枚举中
+        if (!item.operationType || !validOperationTypes.includes(item?.operationType)) {
+            console.log('PhotoPickerComponent, Invalid operationType');
+            return true;
+        }
+
+        //如果field有值，检查是否在枚举中
+        if (item.field !== undefined || item.field !== null) {
+            if (!validPhotoKeys.includes(item.field)) {
+                console.log('PhotoPickerComponent, Invalid photokeys');
+                return true;
+            }
+            // uri仅支持EQUAL_TO操作
+            if (item.field === photoAccessHelper.PhotoKeys.URI &&
+              item.operationType !== photoAccessHelper.OperationType.EQUAL_TO) {
+                console.log('PhotoPickerComponent, Invalid uri operation');
+                return true;
+            }
+        }
+    }
+    return false;
+  }
+
   build() {
-    Row() {
+    if (!this.pickerOptions?.assetFilter ||
+      !this.checkAssetFilterIncalid(this.pickerOptions?.assetFilter ?? [])) {
+      Row() {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
@@ -237,11 +273,16 @@ export struct PhotoPickerComponent {
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
             pickerIndex: this.pickerOptions?.pickerIndex as number,
-            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean
+            isMovingPhotoBadgeShown: this.pickerOptions?.isMovingPhotoBadgeShown as boolean,
+            isSlidingSupported: this.pickerOptions?.isSlidingSupported as boolean,
+            assetFilter: this.pickerOptions?.assetFilter,
+            edgeEffect: this.pickerOptions?.edgeEffect,
+            isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
+            isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
           }
         },
         {
-          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI
+          dpiFollowStategy: this.dpiFollowStrategy
         })
           .height('100%')
           .width('100%')
@@ -264,6 +305,7 @@ export struct PhotoPickerComponent {
       .width('100%')
     }
     .height('100%')
+    }
   }
 
   private handleOnReceive(wantParam: Record<string, Object>): void {
@@ -356,6 +398,14 @@ export struct PhotoPickerComponent {
       console.log(`send preselectUris isOver=${e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)}`);
       this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 :this.preselectedInfos.slice(e.nextIndex * this.batchPreselectedInfos, ( e.nextIndex + 1 ) * this.batchPreselectedInfos),
           index: e.nextIndex, preselectedInfosIsOver: e.nextIndex >= Math.ceil(this.preselectedInfos.length / this.batchPreselectedInfos)})
+    } else if (dataType === 'onScrollStopAtStart') {
+      if (this.onScrollStopAtStart) {
+        this.onScrollStopAtStart();
+      }
+    } else if (dataType === 'onScrollStopAtEnd') {
+      if (this.onScrollStopAtEnd) {
+        this.onScrollStopAtEnd();
+      }
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
@@ -645,12 +695,17 @@ export type CurrentAlbumDeletedCallback = () => void;
 
 export type VideoPlayStateChanged = (state: VideoPlayerState) => {} void;
 
+export type onScrollStopAtStartCallback = () => void;
+
+export type onScrollStopAtEndCallback = () => void;
+
 @Observed
 export class PickerController {
   data?: Map<string, Object>;
   replaceCallbackMap: Map<number, Object> = new Map<number, Object>();
   saveCallbackMap: Map<number, Object> = new Map<number, Object>();
   createCallbackMap: Map<number, Object> = new Map<number, Object>();
+  saveCallbackPromises: Map<number, Object> = new Map<number, Object>();
 
   setData(type: DataType, data: Object) {
     if (data === undefined) {
@@ -719,7 +774,7 @@ export class PickerController {
     }
   }
 
-  updatePickerOptions(updateConfig: UpdatablePickerOptions): Promise<void> {
+  updatePickerOptions(updateConfig: UpdatablePickerConfigs): Promise<void> {
     return new Promise((resolve, reject) => {
       if (e !== undefined) {
         this.data = new Map([['UPDATE_CONFIG', updateConfig]]);
@@ -816,6 +871,22 @@ export class PickerController {
     console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS ');
   }
 
+  saveTrustedPhotoAssetsEx(selectedMediaUris: Array<string>, settings?: Array<photoAccessHelper.CreationSetting>,
+    saveMode?: SaveMode): Promise<Array<string>> {
+    return new Promise((resolve, reject) => {
+      if (!selectedMediaUris || selectedMediaUris.length === 0) {
+        reject({ 'code': 14000002, 'message': 'Invalid URI', name: '' });
+        return;
+      }
+      this.getAppName().then((appName: string) => {
+        let date = Math.random();
+        this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, settings, saveMode, appName, date]]]);
+        this.saveCallbackPromises.set(date, [resolve, reject]);
+      });
+      console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS_EX');
+    });
+  }
+
   actionCreateCallback(grantUri: string, date: number, code: number, message: string) {
     if (this.createCallbackMap.has(date)) {
       let callback = this.createCallbackMap.get(date) as Function;
@@ -844,6 +915,17 @@ export class PickerController {
         this.saveCallbackMap.delete(date);
       }
     }
+    if (this.saveCallbackPromises.has(date)) {
+      let promiseFunc = this.saveCallbackPromises.get(date) as [Function, Function];
+      if (promiseFunc) {
+        if (err) {
+          promiseFunc[1](err);
+        } else {
+          promiseFunc[0](data);
+        }
+        this.saveCallbackPromises.delete(date);
+      }
+    }  
   }
 
   encrypt(data) {
@@ -876,8 +958,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
-export class UpdatablePickerOptions {
-  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+export class UpdatablePickerConfigs {
+  mimeType?: photoAccessHelper.PhotoViewMIMETypes;
   mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
   maxSelectNumber?: number;
   maxPhotoSelectNumber?: number;
@@ -889,7 +971,8 @@ export class UpdatablePickerOptions {
   checkBoxColor?: string;
   checkboxTextColor?: string;
   backgroundColor?: string;
-  photoBrowserBackgroundColorMode?: PickerColorMode
+  photoBrowserBackgroundColorMode?: PickerColorMode,
+  uiComponentColorMode?: PickerColorMode
 }
 
 export class BaseItemInfo {

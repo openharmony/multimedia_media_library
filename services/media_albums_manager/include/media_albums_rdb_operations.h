@@ -44,6 +44,7 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetSelectedAssets(const AlbumGetSelectedAssetsDto &dto);
     double GetAssetScore(const AlbumGetSelectedAssetsDto &dto, int fileId);
     double GetLimitScore(const AlbumGetSelectedAssetsDto &dto);
+    int32_t SetUploadStatus(const std::vector<std::string>& albumIds, const int32_t allowUpload);
 };
 
 } // namespace OHOS::Media

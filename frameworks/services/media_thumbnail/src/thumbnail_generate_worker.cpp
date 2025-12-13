@@ -15,13 +15,17 @@
 
 #include "thumbnail_generate_worker.h"
 
+#include <iostream>
 #include <pthread.h>
+#include <sstream>
+#include <thread>
 
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
 #endif
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
@@ -181,6 +185,14 @@ int32_t ThumbnailGenerateWorker::AddTask(
     return E_OK;
 }
 
+void ThumbnailGenerateWorker::RecordCurrentTaskId(int32_t requestId)
+{
+    std::unique_lock<std::mutex> lock(requestIdMapLock_);
+    currentRequestId_.store(requestId);
+    requestIdTaskMap_.clear();
+    MEDIA_INFO_LOG("RecordCurrentTaskId, requestId: %{public}d", requestId);
+}
+
 void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 {
     if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
@@ -263,7 +275,8 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
 
 bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
 {
-    return ignoreRequestId_ != 0 && ignoreRequestId_ == requestId;
+    return (requestId != 0 && currentRequestId_ != requestId) ||
+        (ignoreRequestId_ != 0 && ignoreRequestId_ == requestId);
 }
 
 void ThumbnailGenerateWorker::IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)

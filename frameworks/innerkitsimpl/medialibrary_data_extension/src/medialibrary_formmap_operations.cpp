@@ -15,38 +15,17 @@
 
 #include "medialibrary_formmap_operations.h"
 
-#include <memory>
-#include <mutex>
-#include <string>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "abs_shared_result_set.h"
-#include "file_ex.h"
 #include "map_operation_flag.h"
-#include "media_column.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdbstore.h"
-#include "rdb_predicates.h"
 #include "result_set_utils.h"
-#include "string_ex.h"
-#include "thumbnail_const.h"
-#include "uri.h"
-#include "userfile_manager_types.h"
-#include "value_object.h"
-#include "values_bucket.h"
-#include "image_type.h"
-#include "datashare_helper.h"
-#include "unique_fd.h"
 #include "medialibrary_data_manager.h"
-#include "thumbnail_utils.h"
 #include "ithumbnail_helper.h"
 #include "form_map.h"
-#include "nlohmann/json.hpp"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -130,8 +109,8 @@ void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<i
     }
     while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
         string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
-        if (formId.empty()) {
-            MEDIA_WARN_LOG("Failed to get form id from result!");
+        if (!MediaLibraryDataManagerUtils::IsNumber(formId)) {
+            MEDIA_WARN_LOG("invalid formId: %{public}s", formId.c_str());
             continue;
         }
         if (GetStringVal(FormMap::FORMMAP_URI, queryResult) == uri) {
@@ -159,8 +138,8 @@ void MediaLibraryFormMapOperations::GetFormIdsByUris(const vector<string> &notif
     }
     while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
         string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
-        if (formId.empty()) {
-            MEDIA_WARN_LOG("Failed to get form id from result!");
+        if (!MediaLibraryDataManagerUtils::IsNumber(formId)) {
+            MEDIA_WARN_LOG("invalid formId: %{public}s", formId.c_str());
             continue;
         }
         string uri = GetStringVal(FormMap::FORMMAP_URI, queryResult);
@@ -321,6 +300,8 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
         MediaFileUri mediaUri(uri);
         CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO,
             mediaUri.GetFileId()), E_GET_PRAMS_FAIL, "the fileId is not exist");
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(formId),
+            E_GET_PRAMS_FAIL, "invalid formId: %{public}s", formId.c_str());
         vector<int64_t> formIds = { std::stoll(formId) };
         MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
     }

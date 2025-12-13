@@ -52,6 +52,9 @@ public:
     static const std::string ALBUM_CHECK_FLAG EXPORT;
     static const std::string COVER_URI_SOURCE EXPORT;
     static const std::string COVER_CLOUD_ID EXPORT;
+    static const std::string UPLOAD_STATUS EXPORT;
+    static const std::string ALBUM_HIDDEN EXPORT;
+
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
 
@@ -81,6 +84,8 @@ public:
     static const std::string STYLE2_ORDER_SECTION EXPORT;
     static const std::string STYLE2_ORDER_TYPE EXPORT;
     static const std::string STYLE2_ORDER_STATUS EXPORT;
+    // for incremental query
+    static const std::string CHANGE_TIME EXPORT;
 
     static const std::vector<std::string> ALBUM_ORDER_COLUMNS EXPORT;
     static const std::vector<std::string> ALBUM_ORDER_SECTION_COLUMNS EXPORT;
@@ -119,6 +124,11 @@ public:
     static const std::string ALBUM_GALLERY_CLOUD_URI_PREFIX EXPORT;
     static const std::string PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX EXPORT;
     static const std::string PHOTO_GALLERY_DOWNLOAD_URI_PREFIX EXPORT;
+
+    // specified album lpath
+    static const std::string LPATH_CAMERA EXPORT;
+    static const std::string LPATH_SCREENSHOT EXPORT;
+    static const std::string LPATH_SCREENRECORD EXPORT;
 
     EXPORT static bool IsPhotoAlbumColumn(const std::string &columnName);
 

@@ -17,12 +17,14 @@
 #include "dfx_database_utils.h"
 
 #include "dfx_utils.h"
+#include "lake_const.h"
 #include "dfx_reporter.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "media_column.h"
+#include "mimetype_utils.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "moving_photo_file_utils.h"
@@ -764,7 +766,7 @@ bool DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInf
             PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
             PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 " +
             " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_PHOTO_NUMBER);
-
+ 
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Failed to query resultCount");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -782,5 +784,50 @@ bool DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInf
     queryInfo.cloudVideoResolution = GetInfoToString(infoMap.cloudVideoResolutionMap);
     return true;
 }
+ 
+int32_t DfxDatabaseUtils::QueryAncoPhotosFormatAndCount(AncoCountFormatInfo &reportData)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE));
+    predicates.And()->EqualTo(PhotoColumn::MEDIA_DATE_TRASHED, "0");
+    auto resultSet = MediaLibraryRdbStore::Query(predicates,
+        { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE,
+            PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_OWNER_ALBUM_ID});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_DB_FAIL;
+    }
+    set<int32_t> albumSet;
+    map<std::string, int32_t> formatCountMap;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string mtStr = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+        std::string mediaSuffix = GetStringVal(PhotoColumn::PHOTO_MEDIA_SUFFIX, resultSet);
+        if (mtStr.empty() || mediaSuffix.empty()) {
+            continue;
+        }
+        MediaType mt = MimeTypeUtils::GetMediaTypeFromMimeType(mtStr);
+        if (mt == MediaType::MEDIA_TYPE_IMAGE) {
+            reportData.imageCount += 1;
+        } else if (mt == MediaType::MEDIA_TYPE_VIDEO) {
+            reportData.videoCount += 1;
+        } else {
+            continue;
+        }
+        if (formatCountMap.find(mediaSuffix) == formatCountMap.end()) {
+            formatCountMap[mediaSuffix] = 1;
+        } else {
+            formatCountMap[mediaSuffix] = formatCountMap[mediaSuffix] + 1;
+        }
+        int32_t album_id = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+        albumSet.insert(album_id);
+    }
+    resultSet->Close();
+    reportData.albumCount = static_cast<int32_t>(albumSet.size());
+    // 格式数量
+    nlohmann::json staticsJson(formatCountMap);
+    reportData.assetFormatDistribution = staticsJson.dump();
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

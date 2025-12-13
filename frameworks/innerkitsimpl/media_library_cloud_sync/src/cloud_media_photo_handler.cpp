@@ -38,6 +38,7 @@
 #include "failed_size_resp_vo.h"
 #include "get_check_records_vo.h"
 #include "media_operate_result_vo.h"
+#include "cloud_media_sync_utils.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPhotoHandler::SetUserId(const int32_t &userId)
@@ -60,6 +61,34 @@ void CloudMediaPhotoHandler::SetCloudType(const int32_t cloudType)
     this->cloudType_ = cloudType;
 }
 
+int32_t CloudMediaPhotoHandler::OnFetchRecordsInner(
+    const OnFetchRecordsReqBody &reqBody, OnFetchRecordsRespBody &respBody)
+{
+    std::vector<OnFetchRecordsReqBody> reqBodyList;
+    reqBody.SplitBy20K(reqBodyList);
+    int32_t ret = E_DATA;
+    for (const auto &nodeReqBody : reqBodyList) {
+        uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_FETCH_RECORDS);
+        OnFetchRecordsRespBody nodeRespBody;
+        ret = IPC::UserDefineIPCClient()
+                  .SetUserId(userId_)
+                  .SetTraceId(this->traceId_)
+                  .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
+                  .Post(operationCode, nodeReqBody, nodeRespBody);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnFetchRecordsInner failed, ret: %{public}d", ret);
+        for (auto data : nodeRespBody.fdirtyDatas) {
+            if (data.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+                MEDIA_INFO_LOG("Need clear VideoCache, attributesMediaType: %{public}d, localPath: %{public}s",
+                    data.attributesMediaType,
+                    data.localPath.c_str());
+                CloudMediaSyncUtils::InvalidVideoCache(data.localPath);
+            }
+        }
+        respBody.MergeRespBody(nodeRespBody);
+    }
+    return ret;
+}
+
 /**
  * stats: 引用入参，按照以下顺序进行返回 [新增，合一，元数据修改，文件修改，删除]:
  * stats: [100, 30, 50, 10, 10]
@@ -76,6 +105,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
     for (auto record : records) {
         OnFetchPhotosVo onFetchPhotoVo;
+        // 需要从MDKRecord转换成vo 在vo中增加了两个属性
         if (dataConvertor.ConverMDKRecordToOnFetchPhotosVo(record, onFetchPhotoVo) != E_OK) {
             MEDIA_ERR_LOG("OnFetchRecords ConverMDKRecordToOnFetchPhotosVo error, recordId: %{public}s",
                 record.GetRecordId().c_str());
@@ -84,15 +114,32 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
         MEDIA_DEBUG_LOG("OnFetchPhotoVo: %{public}s", onFetchPhotoVo.ToString().c_str());
         reqBody.AddOnFetchPhotoData(onFetchPhotoVo);
     }
-    uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_FETCH_RECORDS);
-    ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
-        .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
-        .Post(operationCode, reqBody, respBody);
+    ret = this->OnFetchRecordsInner(reqBody, respBody);
     failedRecords = respBody.failedRecords;
     stats = respBody.stats;
     newData = this->processor_.GetCloudNewData(respBody.newDatas);
     MEDIA_INFO_LOG("OnFetchRecords NewDataBody: %{public}s", respBody.ToString().c_str());
     fdirtyData = this->processor_.GetCloudFdirtyData(respBody.fdirtyDatas);
+    return ret;
+}
+
+int32_t CloudMediaPhotoHandler::OnDentryFileInsertInner(
+    const OnDentryFileReqBody &reqBody, OnDentryFileRespBody &respBody)
+{
+    std::vector<OnDentryFileReqBody> reqBodyList;
+    reqBody.SplitBy20K(reqBodyList);
+    int32_t ret = E_DATA;
+    for (const auto &nodeReqBody : reqBodyList) {
+        uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_DENTRY_FILE_INSERT);
+        OnDentryFileRespBody nodeRespBody;
+        ret = IPC::UserDefineIPCClient()
+                  .SetUserId(userId_)
+                  .SetTraceId(this->traceId_)
+                  .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
+                  .Post(operationCode, nodeReqBody, nodeRespBody);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnFetchRecordsInner failed, ret: %{public}d", ret);
+        respBody.MergeRespBody(nodeRespBody);
+    }
     return ret;
 }
 
@@ -114,12 +161,9 @@ int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
         MEDIA_INFO_LOG("OnDentryFileInsert OnFetchPhotosVo: %{public}s", onDentryRecord.ToString().c_str());
         reqBody.AddOnDentryFileRecord(onDentryRecord);
     }
-    uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_DENTRY_FILE_INSERT);
-    ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
-        .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
-        .Post(operationCode, reqBody, respBody);
+    ret = this->OnDentryFileInsertInner(reqBody, respBody);
     failedRecords = respBody.failedRecords;
-    MEDIA_INFO_LOG("OnDentryFileInsert end, ret: %{public}d", ret);
+    MEDIA_INFO_LOG("OnDentryFileInsert end, ret: %{public}d, respBody: %{public}s", ret, respBody.ToString().c_str());
     return ret;
 }
 
@@ -166,6 +210,8 @@ int32_t CloudMediaPhotoHandler::GetCheckRecords(
         cloudCheckData.dirtyType = info.dirty;
         cloudCheckData.syncStatus = info.syncStatus;
         cloudCheckData.thmStatus = info.thmStatus;
+        cloudCheckData.fileSourceType = info.fileSourceType;
+        cloudCheckData.storagePath = info.storagePath;
         for (auto &[key, value] : info.attachment) {
             CloudFileData fileData;
             fileData.fileName = value.fileName;

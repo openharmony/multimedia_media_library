@@ -35,6 +35,9 @@ const std::string RegisterNotifyType::PHOTO_ALBUM_CHANGE = "photoAlbumChange";
 const std::string RegisterNotifyType::HIDDEN_ALBUM_CHANGE = "hiddenAlbumChange";
 const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange";
 const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
+const std::string RegisterNotifyType::SINGLE_PHOTO_CHANGE = "singlePhotoChange";
+const std::string RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE = "singlePhotoAlbumChange";
+const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
     MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {
@@ -44,6 +47,31 @@ const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
 
 const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_URI_MAP = {
     { Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI, RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE },
+};
+
+const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
+    MediaLibraryNotifyUtils::REGISTER_USER_DEFINE_TYPE_MAP = {
+    { Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI, Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI },
+};
+ 
+const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_USER_DEFINE_URI_MAP = {
+    { Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI, RegisterNotifyType::USER_CLIENT_CHANGE },
+};
+
+const std::map<std::string, Notification::NotifyUriType> MediaLibraryNotifyUtils::REGISTER_SINGLE_NOTIFY_TYPE_MAP = {
+    { RegisterNotifyType::SINGLE_PHOTO_CHANGE, Notification::NotifyUriType::SINGLE_PHOTO_URI },
+    { RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE, Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI },
+};
+
+const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
+    MediaLibraryNotifyUtils::REGISTER_SINGLE_TYPE_MAP = {
+    { Notification::NotifyUriType::SINGLE_PHOTO_URI, Notification::NotifyUriType::SINGLE_PHOTO_URI },
+    { Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI, Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI },
+};
+
+const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_SINGLE_URI_MAP = {
+    { Notification::NotifyUriType::SINGLE_PHOTO_URI, RegisterNotifyType::SINGLE_PHOTO_CHANGE },
+    { Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI, RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE },
 };
 
 const std::map<std::string, Notification::NotifyUriType> MediaLibraryNotifyUtils::REGISTER_NOTIFY_TYPE_MAP = {
@@ -73,14 +101,14 @@ const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils
     { Notification::NotifyUriType::TRASH_ALBUM_URI, RegisterNotifyType::TRASHED_ALBUM_CHANGE },
 };
 
-const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
-    { Notification::NotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
-    { Notification::NotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
-    { Notification::NotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
-    { Notification::NotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
-    { Notification::NotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
-    { Notification::NotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
-    { Notification::NotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
+const std::map<Notification::AccurateNotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
 };
 
 const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
@@ -89,6 +117,22 @@ const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
     { JS_E_PARAM_INVALID,      JS_E_PARAM_INVALID },
     { OHOS_INVALID_PARAM_CODE, OHOS_INVALID_PARAM_CODE },
 };
+
+int32_t MediaLibraryNotifyUtils::GetUserDefineNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, string &uri)
+{
+    if (REGISTER_USER_DEFINE_TYPE_MAP.find(type) == REGISTER_USER_DEFINE_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("type is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_USER_DEFINE_TYPE_MAP.at(type);
+    if (REGISTER_USER_DEFINE_URI_MAP.find(uriType) == REGISTER_USER_DEFINE_URI_MAP.end()) {
+        NAPI_ERR_LOG("uriType is invalid");
+        return E_ERR;
+    }
+    uri = REGISTER_USER_DEFINE_URI_MAP.at(uriType);
+    return E_OK;
+}
 
 int32_t MediaLibraryNotifyUtils::GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
     Notification::NotifyUriType &uriType, string &uri)
@@ -132,13 +176,39 @@ int32_t MediaLibraryNotifyUtils::GetNotifyTypeAndUri(const Notification::NotifyU
     return E_OK;
 }
 
-int32_t MediaLibraryNotifyUtils::GetNotifyChangeType(const Notification::NotifyType &notifyType)
+int32_t MediaLibraryNotifyUtils::GetNotifyChangeType(const Notification::AccurateNotifyType &notifyType)
 {
     if (NOTIFY_CHANGE_TYPE_MAP.find(notifyType) == NOTIFY_CHANGE_TYPE_MAP.end()) {
         NAPI_ERR_LOG("notifyType is invalid");
         return E_ERR;
     }
     return static_cast<int32_t>(NOTIFY_CHANGE_TYPE_MAP.at(notifyType));
+}
+
+int32_t MediaLibraryNotifyUtils::GetSingleRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType)
+{
+    if (REGISTER_SINGLE_NOTIFY_TYPE_MAP.find(type) == REGISTER_SINGLE_NOTIFY_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("registerNotifyType is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_SINGLE_NOTIFY_TYPE_MAP.at(type);
+    return E_OK;
+}
+
+int32_t MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, string &uri)
+{
+    if (REGISTER_SINGLE_TYPE_MAP.find(type) == REGISTER_SINGLE_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("type is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_SINGLE_TYPE_MAP.at(type);
+    if (REGISTER_SINGLE_URI_MAP.find(uriType) == REGISTER_SINGLE_URI_MAP.end()) {
+        NAPI_ERR_LOG("uriType is invalid");
+        return E_ERR;
+    }
+    uri = REGISTER_SINGLE_URI_MAP.at(uriType);
+    return E_OK;
 }
 
 napi_status MediaLibraryNotifyUtils::SetValueInt32(const napi_env& env, const char* name, const int32_t intValue,
@@ -433,6 +503,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
     SetValueInt32(env, "orderSection", albumChangeInfo.orderSection_, result);
     SetValueInt32(env, "albumOrder", albumChangeInfo.albumsOrder_, result);
+    SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);
 
     napi_status status = napi_ok;
     napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);
@@ -708,6 +779,178 @@ napi_value MediaLibraryNotifyUtils::BuildBatchDownloadProgressInfos(napi_env env
     }
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAssetNapi(napi_env env,
+    const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAssetNapi");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAssetNapi");
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, ARGS_ONE, &result);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create error!");
+    size_t resultIndex = 0;
+    napi_value assetValue = BuildPhotoAssetChangeData(env, *changeInfo);
+    if ((assetValue == nullptr) || (napi_set_element(env, result, resultIndex++, assetValue) != napi_ok)) {
+        NAPI_ERR_LOG("failed to add element");
+        return tmpValue;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos(napi_env env,
+    const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo,
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfos)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildPhotoAssetChangeInfos");
+    if (changeInfo == nullptr) {
+        NAPI_ERR_LOG("Invalid changeInfo");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfos->notifyType), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    MEDIA_INFO_LOG("photoAssetData %{public}s", changeInfo->ToString().c_str());
+    napi_value assetResults = BuildSingleAssetNapi(env, changeInfo);
+    if (assetResults == nullptr) {
+        NAPI_ERR_LOG("Failed to build assetResults");
+        return nullptr;
+    }
+    status = napi_set_named_property(env, result, "assetChangeDatas", assetResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: assetChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", changeInfos->isForRecheck, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumNapi(napi_env env,
+    const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumNapi");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumNapi");
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, ARGS_ONE, &result);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    size_t resultIndex = 0;
+    napi_value assetValue = BuildAlbumChangeData(env, *changeInfo);
+    if ((assetValue == nullptr) || (napi_set_element(env, result, resultIndex++, assetValue) != napi_ok)) {
+        NAPI_ERR_LOG("failed to add element");
+        return tmpValue;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumChangeInfos(napi_env env,
+    const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo,
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfos)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumChangeInfos");
+    if (changeInfo == nullptr) {
+        NAPI_ERR_LOG("Invalid changeInfo");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfos->notifyType), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    MEDIA_INFO_LOG("photoAlbumData %{public}s", changeInfo->ToString().c_str());
+    napi_value albumResults = BuildSingleAlbumNapi(env, changeInfo);
+    if (albumResults == nullptr) {
+        NAPI_ERR_LOG("Failed to build albumResults");
+        return nullptr;
+    }
+    status = napi_set_named_property(env, result, "albumChangeDatas", albumResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: albumChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", changeInfos->isForRecheck, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos(napi_env env)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSinglePhotoAssetRecheckChangeInfos");
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    status = SetValueNull(env, "AssetChangeData", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: assetChangeData");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildSingleAlbumRecheckChangeInfos(napi_env env)
+{
+    NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSingleAlbumRecheckChangeInfos");
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildSingleAlbumRecheckChangeInfos");
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    status = SetValueNull(env, "albumChangeDatas", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: albumChangeDatas");
+        return nullptr;
+    }
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
         return nullptr;
     }
     return result;

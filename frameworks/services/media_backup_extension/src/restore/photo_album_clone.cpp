@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
+#include "photo_album_upload_status_operation.h"
 
 namespace OHOS::Media {
 std::string PhotoAlbumClone::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)
@@ -118,5 +119,18 @@ void PhotoAlbumClone::TRACE_LOG(const std::string &tableName, vector<AlbumInfo> 
     // fetch all albums from mediaLibraryRdb
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> targetAlbumInfos = this->photoAlbumDao_.GetPhotoAlbums();
     this->TRACE_LOG(targetAlbumInfos);
+}
+
+int32_t PhotoAlbumClone::FindUploadStatus(const AlbumInfo &albumInfo) const
+{
+    return isCloudRestoreSatisfied_ ? albumInfo.uploadStatus :
+        PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath(albumInfo.lPath);
+}
+
+int32_t PhotoAlbumClone::UpdatePhotoAlbum(const AlbumInfo &albumInfo)
+{
+    CHECK_AND_RETURN_RET_INFO_LOG(
+        isCloudRestoreSatisfied_, NativeRdb::E_OK, "Media_Restore: isCloudRestoreSatisfied_ is false");
+    return this->photoAlbumDao_.UpdateUploadStatus(albumInfo.lPath, albumInfo.uploadStatus);
 }
 }  // namespace OHOS::Media

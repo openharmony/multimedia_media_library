@@ -15,48 +15,27 @@
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
-
-#include <algorithm>
-#include <cerrno>
 #include <sys/sendfile.h>
-#include <unistd.h>
-#include "album_asset.h"
-#include "datashare_predicates.h"
 #include "dfx_manager.h"
 #include "directory_ex.h"
-#include "fetch_result.h"
-#include "file_asset.h"
-#include "ipc_skeleton.h"
 #include "media_file_utils.h"
-#include "media_column.h"
 #include "media_container_types.h"
 #include "media_directory_type_column.h"
-#include "media_log.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_dir_operations.h"
-#include "medialibrary_notify.h"
-#include "medialibrary_smartalbum_map_operations.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
-#include "medialibrary_smartalbum_map_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "parameter.h"
 #include "permission_utils.h"
-#include "photo_album_column.h"
 #include "photo_file_utils.h"
 #include "result_set_utils.h"
 #include "sandbox_helper.h"
-#include "string_ex.h"
-#include "thumbnail_service.h"
-#include "value_object.h"
 #include "medialibrary_tracer.h"
 #include "picture_handle_service.h"
 #include "post_event_utils.h"
@@ -907,7 +886,8 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
     }
 }
 
-void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api,
+    std::shared_ptr<Media::Picture> picture)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -926,6 +906,9 @@ void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path,
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
+    }
+    if (picture != nullptr) {
+        scanFileCb->SetOriginalPhotoPicture(picture);
     }
     int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanFileCb, api, true);
     if (ret != 0) {

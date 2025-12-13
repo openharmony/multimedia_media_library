@@ -91,7 +91,6 @@
           "netmanager_base",
           "openssl",
           "jsoncpp",
-          "user_file_service",
           "image_framework",
           "media_foundation",
           "qos_manager"
@@ -128,7 +127,9 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:userfilemanager_mimetypes.json",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:heif_transcoding_checklist.json",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_kit_whitelist.json",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:version.txt",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_kit_version.txt",
             "//foundation/multimedia/media_library/tools/medialibrary_scanner:scanner",
             "//foundation/multimedia/media_library/tools/medialibrary_tool:mediatool",
             "//foundation/multimedia/media_library/MediaLibraryExt:medialibrary_ext_hap",

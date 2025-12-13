@@ -27,6 +27,7 @@ class EXPORT UpdatePositionReqBody : public IPC::IMediaParcelable {
 public:
     std::vector<std::string> cloudIds;
     int32_t position;
+    int32_t fileSourceType;
 
 public:  // functions of Parcelable.
     virtual ~UpdatePositionReqBody() = default;

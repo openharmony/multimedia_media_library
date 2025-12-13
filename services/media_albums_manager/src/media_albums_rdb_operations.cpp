@@ -197,6 +197,7 @@ double MediaAlbumsRdbOperations::GetAssetScore(const AlbumGetSelectedAssetsDto &
     CHECK_AND_RETURN_RET_LOG(!cond, 0, "fail to query asset score");
     std::string column = "total_score";
     double score = GetDoubleVal(column, resultSet);
+    resultSet->Close();
     return score;
 }
  
@@ -214,6 +215,23 @@ double MediaAlbumsRdbOperations::GetLimitScore(const AlbumGetSelectedAssetsDto &
     CHECK_AND_RETURN_RET_LOG(!cond, maxScore, "fail to query asset score");
     std::string column = "total_score";
     double score = GetDoubleVal(column, resultSet);
+    resultSet->Close();
     return score;
+}
+
+int32_t MediaAlbumsRdbOperations::SetUploadStatus(const std::vector<std::string>& albumIds, const int32_t allowUpload)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr");
+ 
+    NativeRdb::RdbPredicates  predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    ValuesBucket values;
+    values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, allowUpload);
+    int32_t changedRows = 0;
+    int32_t result = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "SetUploadStatus failed, result: %{public}d, changedRows: %{public}d", result, changedRows);
+    return changedRows;
 }
 } // namespace OHOS::Media

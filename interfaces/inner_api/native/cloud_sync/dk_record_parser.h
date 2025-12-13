@@ -284,9 +284,9 @@ private:
     bool CDKRecordFieldBlob(const ORIGIN_FIELD_TYPE &field, TARGET_FIELD_TYPE &value)
     {
         int32_t type = static_cast<int32_t>(field.GetType());
-        if (type == static_cast<int32_t>(MDKRecordFieldType::FIELD_TYPE_BLOB)) {
+        if (type == static_cast<int32_t>(MDKRecordFieldType::FIELD_TYPE_BYTES)) {
             std::vector<uint8_t> blobVal;
-            field.GetBlob(blobVal);
+            field.GetBytes(blobVal);
             value = TARGET_FIELD_TYPE(blobVal);
             return true;
         }

@@ -31,6 +31,7 @@
 #include "scanner_utils.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -419,5 +420,27 @@ bool MediaLibraryUnitTestUtils::CleanTestTables(
     }
     return true;
 }
+
+bool MediaLibraryUnitTestUtils::CreateBasicTables(const std::shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    std::lock_guard<std::mutex> lock(Mutex_);
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Create Photo failed rdbstore not init");
+        return false;
+    }
+    std::vector<std::string> testTables = {
+        PhotoAlbumColumns::CREATE_TABLE,
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        // add more
+    };
+    for (const auto& table : testTables) {
+        int32_t ret = rdbStore->ExecuteSql(table);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute create table sql failed");
+            return false;
+        }
+    }
+    return true;
 }
-}
+}  // namespace Media
+}  // namespace OHOS

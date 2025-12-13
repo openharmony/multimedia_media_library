@@ -145,6 +145,7 @@ private:
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName);
     void UpdateSystemAlbumColumns(const string &tableName);
+    void PopulateSystemAlbumIdMap();
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
         std::vector<std::string> &albumIds, const std::string &tableName);
@@ -218,6 +219,7 @@ private:
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
     void RestoreAnalysisPortrait();
+    void RestoreAnalysisPet();
     void RestoreAnalysisGeo();
     void RestoreGroupPhoto();
     void PopulateAnalysisAlbumIdMap();
@@ -251,7 +253,7 @@ private:
     void CheckSrcDstSwitchStatusMatch();
     bool BackupPreprocess();
     void ParseDstDeviceBackupInfo();
-    bool InvalidateHdcCloudData();
+    bool InvalidateHdcCloudData(std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
     CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
@@ -268,6 +270,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;
+    std::string tmpDbPath_;
     std::unordered_map<std::string, bool> tableColumnStatusMap_;
     std::unordered_map<std::string, std::string> tableQueryWhereClauseMap_;
     std::unordered_map<std::string, std::string> tableExtraQueryWhereClauseMap_;

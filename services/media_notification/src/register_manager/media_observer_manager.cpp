@@ -18,6 +18,7 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_notification_utils.h"
+#include "ipc_skeleton.h"
 
 namespace OHOS::Media {
 using namespace Notification;
@@ -61,6 +62,7 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
     ObserverInfo obsInfo;
     obsInfo.observer = dataObserver;
     obsInfo.isSystem = permissionHandle.isSystemApp();
+    obsInfo.callingTokenId = IPCSkeleton::GetCallingTokenID();
 
     std::lock_guard<std::mutex> lock(mutex_);
     if (observers_.find(uri) == observers_.end()) {
@@ -185,6 +187,29 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
     return E_OK;
 }
 
+bool MediaObserverManager::FindSingleObserverWithUri(const NotifyUriType &uri,
+    const uint32_t callingTokenId)
+{
+    MEDIA_INFO_LOG("enter FindSingleObserverWithUri");
+    NotifyRegisterPermission permissionHandle;
+    int32_t ret = permissionHandle.ExecuteCheckPermission(uri);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Permission verification failed");
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto observersIter = observers_.find(uri);
+    if (observersIter == observers_.end()) {
+        MEDIA_ERR_LOG("uri is not exist");
+        return false;
+    }
+    auto iter = std::find_if(observersIter->second.begin(), observersIter->second.end(),
+        [callingTokenId](const ObserverInfo& s) {
+        return s.callingTokenId == callingTokenId;
+    });
+    return iter != observersIter->second.end();
+}
+
 std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> MediaObserverManager::GetObservers()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -198,12 +223,88 @@ void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
     recheckChangeInfo->notifyUri = registerUri;
     recheckChangeInfo->isForRecheck = true;
     if (registerUri == PHOTO_URI || registerUri == HIDDEN_PHOTO_URI || registerUri == TRASH_PHOTO_URI) {
-        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ASSET_ADD;
+        recheckChangeInfo->notifyType = Notification::AccurateNotifyType::NOTIFY_ASSET_ADD;
     } else {
-        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ALBUM_ADD;
+        recheckChangeInfo->notifyType = Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD;
     }
     NotificationUtils::SendNotification(dataObserver, recheckChangeInfo);
     MEDIA_WARN_LOG("reconnect server and send recheck for uriType[%{public}d]", registerUri);
 }
 
+int32_t MediaObserverManager::ProcessSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri, const UriOperation& operation)
+{
+    NotifyRegisterPermission permissionHandle;
+    int32_t ret = permissionHandle.ExecuteCheckPermission(registerUri);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
+    auto uriIter = observers_.find(registerUri);
+    if (uriIter == observers_.end()) {
+        MEDIA_ERR_LOG("the registerUri not registered");
+        return E_URI_NOT_EXIST;
+    }
+    auto& observerList = uriIter->second;
+    auto obsIter = std::find_if(observerList.begin(), observerList.end(),
+        [&dataObserver](const ObserverInfo& obsInfo) {
+            return obsInfo.observer->AsObject() == dataObserver->AsObject();
+        });
+    if (obsIter == observerList.end()) {
+        MEDIA_ERR_LOG("registerUri has not been registered by the same observer");
+        return E_DATAOBSERVER_IS_NULL;
+    }
+    operation(obsIter->observerUris, uri);
+    return E_OK;
+}
+
+int32_t MediaObserverManager::AddSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+{
+    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
+        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            uris.insert(targetUri);
+        });
+}
+
+int32_t MediaObserverManager::RemoveSingleObserverUris(const NotifyUriType& registerUri,
+    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+{
+    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
+        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            uris.erase(targetUri);
+        });
+}
+
+bool MediaObserverManager::FindSingleObserver(const NotifyUriType &uri,
+    std::vector<ObserverInfo>& obsInfos)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto iter = observers_.find(uri);
+    if (iter == observers_.end()) {
+        MEDIA_ERR_LOG("failed to find single observer, uri is not exist");
+        return false;
+    }
+    obsInfos = iter->second;
+    return true;
+}
+
+int32_t MediaObserverManager::RemoveSingleObserverUris(ObserverInfo& singleObserverInfo, const std::string& uri)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    singleObserverInfo.observerUris.erase(uri);
+    MEDIA_INFO_LOG("RemoveSingleObserverUris success: uri %{public}s", uri.c_str());
+    return E_OK;
+}
+
+bool MediaObserverManager::isUriDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
+    const std::string& uri)
+{
+    auto constIt = observedUris.find(uri);
+    if (constIt != observedUris.end()) {
+        MEDIA_INFO_LOG("isUriDataPresentInSingleObserver: uri %{public}s exists in observed", uri.c_str());
+        return true;
+    }
+    MEDIA_INFO_LOG("The target singleObserverInfo does not exist");
+    return false;
+}
 } // OHOS::Media

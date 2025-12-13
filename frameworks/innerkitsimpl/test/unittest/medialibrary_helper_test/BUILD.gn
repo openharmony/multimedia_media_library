@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_helper_test") {
-  module_out_path = "media_library/media_library-asset"
+  module_out_path = "media_library/media_library_asset"
 
   include_dirs = [
     "./include",
@@ -31,6 +31,10 @@ ohos_unittest("media_library_helper_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_utils_test/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   cflags = [ "-fno-access-control" ]

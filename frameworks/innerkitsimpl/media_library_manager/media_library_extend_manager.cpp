@@ -46,6 +46,12 @@
 #include "cancel_photo_uri_permission_inner_vo.h"
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
+#include "start_asset_change_scan_vo.h"
+#include "get_asset_compress_version_vo.h"
+#include "get_compress_asset_size_vo.h"
+#include "notify_asset_sended_vo.h"
+#include "open_asset_compress_vo.h"
+#include "open_asset_compress_dto.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -58,6 +64,10 @@ constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 constexpr int32_t DEFUALT_USER_ID = 100;
 constexpr int32_t DATASHARE_ERR = -1;
+constexpr int64_t SHARE_UID = 5520;
+constexpr int32_t COMPRESS_URI_MAX_SIZE = 500;
+constexpr uint64_t BYTES_PER_KIB = 1024;
+constexpr uint64_t KIB_ROUND_UP_MASK = BYTES_PER_KIB - 1;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -217,8 +227,8 @@ static int32_t ClassifyUri(const vector<string> &urisSource, vector<string> &pho
     return E_SUCCESS;
 }
 
-static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &photoIds, const vector<string> &audioIds,
-    map<string, pair<bool, bool>> &photoPermissionMap, map<string, pair<bool, bool>> &audioPermissionMap)
+static void CheckPhotoAccessTokenPermission(uint32_t tokenId, const vector<string> &photoIds,
+    map<string, pair<bool, bool>> &photoPermissionMap, bool readWriteIsolation)
 {
     if (photoIds.size() > 0) {
         bool haveReadPermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_IMAGEVIDEO) == 0;
@@ -227,12 +237,20 @@ static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &p
             if (haveReadPermission) {
                 photoPermissionMap[fileId].first = true;
             }
-            if (haveWritePermission) {
+            if (haveWritePermission && !readWriteIsolation) {
                 photoPermissionMap[fileId].first = true;
+                photoPermissionMap[fileId].second = true;
+            }
+            if (haveWritePermission && readWriteIsolation) {
                 photoPermissionMap[fileId].second = true;
             }
         }
     }
+}
+
+static void CheckAudioAccessTokenPermission(uint32_t tokenId, const vector<string> &audioIds,
+    map<string, pair<bool, bool>> &audioPermissionMap, bool readWriteIsolation)
+{
     if (audioIds.size() > 0) {
         bool haveReadPermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_AUDIO) == 0;
         bool haveWritePermission = AccessTokenKit::VerifyAccessToken(tokenId, PERM_WRITE_AUDIO) == 0;
@@ -240,8 +258,11 @@ static void CheckAccessTokenPermission(uint32_t tokenId, const vector<string> &p
             if (haveReadPermission) {
                 audioPermissionMap[fileId].first = true;
             }
-            if (haveWritePermission) {
+            if (haveWritePermission && !readWriteIsolation) {
                 audioPermissionMap[fileId].first = true;
+                audioPermissionMap[fileId].second = true;
+            }
+            if (haveWritePermission && readWriteIsolation) {
                 audioPermissionMap[fileId].second = true;
             }
         }
@@ -269,7 +290,8 @@ static bool CheckPermissionByMap(const string &fileId, uint32_t flag,
 }
 
 int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
-    const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags)
+    const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags,
+    bool readWriteIsolation)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryExtendManager::CheckPhotoUriPermission");
@@ -281,13 +303,14 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     vector<string> audioIds;
     ret = ClassifyUri(urisSource, photoIds, audioIds);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "invalid uri");
-    CheckAccessTokenPermission(tokenId, photoIds, audioIds, photoPermissionMap, audioPermissionMap);
     if (photoIds.size() > 0) {
+        CheckPhotoAccessTokenPermission(tokenId, photoIds, photoPermissionMap, readWriteIsolation);
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION);
         ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_PHOTOS)),
             photoIds, photoPermissionMap, businessCode);
     }
     if (audioIds.size() > 0) {
+        CheckAudioAccessTokenPermission(tokenId, audioIds, audioPermissionMap, readWriteIsolation);
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION);
         ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_AUDIOS)),
             audioIds, audioPermissionMap, businessCode);
@@ -542,6 +565,19 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     }
     return respBody.resultSet;
 }
+                                   
+int32_t MediaLibraryExtendManager::SendBrokerChangeOperation(string operation)
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "datashareHelper is nullptr");
+    StartAssetChangeScanReqBody reqBody;
+    reqBody.operation = operation;
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHANGE_SCAN_ASSET);
+    MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CHANGE_SCAN_ASSET");
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    return errCode;
+}
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
     const string &value, vector<string> &columns)
@@ -730,7 +766,110 @@ int32_t MediaLibraryExtendManager::CheckCloudDownloadPermission(uint32_t tokenId
     uint64_t tokenIdEx = IPCSkeleton::GetCallingFullTokenID();
     CHECK_AND_RETURN_RET_LOG(TokenIdKit::IsSystemAppByFullTokenID(tokenIdEx),
         E_ERR, "only invoke by systemapp");
-    return CheckPhotoUriPermission(tokenId, uris, result, flags);
+    return CheckPhotoUriPermission(tokenId, uris, result, flags, true);
+}
+
+int32_t MediaLibraryExtendManager::OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryExtendManager::OpenAssetCompress");
+    MEDIA_INFO_LOG("OpenAssetCompress begin");
+
+    CHECK_AND_RETURN_RET_LOG(IPCSkeleton::GetCallingUid() == SHARE_UID, E_ERR, "only support share");
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "Invalid uri");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "Failed to open Asset, datashareHelper is nullptr");
+
+    OpenAssetCompressReqBody reqBody;
+    reqBody.uri = uri;
+    reqBody.version = version;
+    reqBody.type = static_cast<int32_t>(type);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_OPEN_ASSET_COMPRESS);
+    OpenAssetCompressRespBody respBody;
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "OpenAssetCompress failed, errCode: %{public}d", errCode);
+    }
+    return respBody.fileDescriptor;
+}
+
+int32_t MediaLibraryExtendManager::GetAssetCompressVersion()
+{
+    MEDIA_INFO_LOG("GetAssetCompressVersion begin");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+
+    GetAssetCompressVersionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_ASSET_COMPRESS_VERSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Get(businessCode, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Get(businessCode, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+            "GetAssetCompressVersion failed, errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("GetAssetCompressVersion end, version=%{public}d", respBody.version);
+    return respBody.version;
+}
+
+int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
+{
+    MEDIA_INFO_LOG("NotifyAssetSended begin, uri:%{private}s", uri.c_str());
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "invalid uri");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+
+    NotifyAssetSendedReqBody reqBody;
+    reqBody.uri = uri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_NOTIFY_ASSET_SENDED);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "NotifyAssetSended failed, errCode: %{public}d", errCode);
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::string> &uris)
+{
+    MEDIA_INFO_LOG("GetCompressAssetSize begin, count: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+    CHECK_AND_RETURN_RET_LOG(uris.size() > 0 && uris.size() <= COMPRESS_URI_MAX_SIZE, E_ERR, "invalid uris size");
+    GetCompressAssetSizeReqBody reqBody;
+    reqBody.uris = uris;
+    GetCompressAssetSizeRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "GetCompressAssetSize failed, errCode: %{public}d", errCode);
+
+    uint64_t totalBytes = respBody.totalSize;
+    uint64_t totalKiB = (totalBytes + KIB_ROUND_UP_MASK) / BYTES_PER_KIB;
+    CHECK_AND_RETURN_RET_LOG(totalKiB <= static_cast<uint64_t>(INT32_MAX), E_ERR,
+        "Total size in KiB overflow: %{public}" PRIu64 " KiB", totalKiB);
+    int32_t resultKiB = static_cast<int32_t>(totalKiB);
+    MEDIA_INFO_LOG("GetCompressAssetSize success, total bytes: %{public}" PRIu64 ", estimated KiB: %{public}d",
+        totalBytes, resultKiB);
+    return resultKiB;
 }
 } // namespace Media
 } // namespace OHOS

@@ -153,7 +153,8 @@ private:  // sqls
             lpath, \
             priority, \
             date_modified, \
-            date_added \
+            date_added, \
+            upload_status \
         ) \
         SELECT \
             INPUT.album_type, \
@@ -175,7 +176,18 @@ private:  // sqls
                 ELSE album_plugin.priority \
             END AS priority, \
             strftime('%s000', 'now') AS date_modified, \
-            strftime('%s000', 'now') AS date_added \
+            strftime('%s000', 'now') AS date_added, \
+            CASE \
+                WHEN LOWER(INPUT.lpath) IN ( \
+                    LOWER('/DCIM/Camera'), \
+                    LOWER('/Pictures/Screenshots'), \
+                    LOWER('/Pictures/Screenrecords') \
+                    ) THEN 1 \
+                WHEN NOT EXISTS (SELECT 1 FROM PhotoAlbum WHERE album_type IN (0, 2048) AND dirty <> 4) THEN 0 \
+                WHEN EXISTS \
+                (SELECT 1 FROM PhotoAlbum WHERE album_type IN (0, 2048) AND dirty <> 4 AND upload_status = 0) THEN 0 \
+                ELSE 1 \
+            END AS upload_status \
         FROM \
         ( \
             SELECT \

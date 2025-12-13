@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -40,7 +40,7 @@ protected:
     void SetNeedPermissionCheck(bool needPermissionCheck);
 
     static std::unordered_map<PermissionType, std::shared_ptr<PermissionCheck>> permissionRegistry;
-    // API blacklist for deprecated read or write permission
+    // API list for deprecated read or write permission
     static std::unordered_set<uint32_t> deprecatedReadPermissionSet;
     static std::unordered_set<uint32_t> deprecatedWritePermissionSet;
     // API whitelist for check grant operation permission

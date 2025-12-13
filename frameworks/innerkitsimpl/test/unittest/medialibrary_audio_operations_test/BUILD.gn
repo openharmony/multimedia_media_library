@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_audio_operations_test") {
-  module_out_path = "media_library/media_library-asset"
+  module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
@@ -65,6 +65,7 @@ ohos_unittest("medialibrary_audio_operations_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   sanitize = {

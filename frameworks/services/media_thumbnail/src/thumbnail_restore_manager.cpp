@@ -166,7 +166,8 @@ void ThumbnailRestoreManager::ReportProgressBegin()
         MEDIA_ERR_LOG("Error thumbnail number");
         return;
     }
-    float totalTime = total * SINGLE_THREAD_RUNTIME_MS / FFRT_MAX_RESTORE_ASTC_THREADS / MILLIS_PER_MINUTE;
+    float totalTime = total * static_cast<float>(SINGLE_THREAD_RUNTIME_MS) /
+        static_cast<float>(FFRT_MAX_RESTORE_ASTC_THREADS) / MILLIS_PER_MINUTE;
     std::unordered_map<std::string, std::string> payload = {
         {BUNDLENAME, MEDIALIBRARYBUNDLENAME},
         {RELEASETIME, std::to_string(totalTime)},
@@ -253,6 +254,7 @@ int32_t ThumbnailRestoreManager::RestoreAstcDualFrame(ThumbRdbOpt &opts, const i
         infos.size(), restoreAstcCount);
 
     for (auto &info : infos) {
+        info.genThumbScene = GenThumbScene::CLONE_OR_DUAL_FRAME_UPGRADE;
         opts.row = info.id;
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
