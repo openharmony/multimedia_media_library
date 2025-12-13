@@ -22,17 +22,19 @@
 
 namespace OHOS::Media {
 void CloneRestoreAnalysisTotal::Init(const std::string &type, int32_t pageSize,
-    std::shared_ptr<NativeRdb::RdbStore> mediaRdb, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::string &totalTableName)
 {
     type_ = type;
     pageSize_ = pageSize;
     mediaRdb_ = mediaRdb;
     mediaLibraryRdb_ = mediaLibraryRdb;
+    totalTableName_ = totalTableName;
 }
 
 int32_t CloneRestoreAnalysisTotal::GetTotalNumber()
 {
-    const std::string QUERY_SQL = "SELECT count(1) as count FROM tab_analysis_total";
+    const std::string QUERY_SQL = "SELECT count(1) as count FROM " + totalTableName_;
     totalCnt_ = BackupDatabaseUtils::QueryInt(mediaRdb_, QUERY_SQL, "count");
     return totalCnt_;
 }
@@ -40,7 +42,8 @@ int32_t CloneRestoreAnalysisTotal::GetTotalNumber()
 void CloneRestoreAnalysisTotal::GetInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
     analysisTotalInfos_.clear();
-    std::string querySql = "SELECT id, file_id, " + type_ + " FROM tab_analysis_total WHERE id > ? ORDER BY id LIMIT ?";
+    std::string querySql = "SELECT file_id, " + type_ + " FROM " +
+        totalTableName_ + " WHERE file_id > ? ORDER BY file_id LIMIT ?";
     std::vector<NativeRdb::ValueObject> params = { lastId_, pageSize_ };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, querySql, params);
     CHECK_AND_RETURN(resultSet != nullptr);
@@ -48,7 +51,7 @@ void CloneRestoreAnalysisTotal::GetInfos(const std::unordered_map<int32_t, Photo
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileIdOld = GetInt32Val("file_id", resultSet);
         int32_t status = GetInt32Val(type_, resultSet);
-        lastId_ = GetInt32Val("id", resultSet);
+        lastId_ = fileIdOld;
         if (photoInfoMap.count(fileIdOld) == 0) {
             MEDIA_ERR_LOG("Cannot find %{public}d", fileIdOld);
             continue;
@@ -66,7 +69,7 @@ void CloneRestoreAnalysisTotal::SetPlaceHoldersAndParamsByFileIdOld(std::string 
     std::vector<NativeRdb::ValueObject> &params)
 {
     int32_t count = 0;
-    for (const auto info : analysisTotalInfos_) {
+    for (const auto &info : analysisTotalInfos_) {
         CHECK_AND_CONTINUE(info.fileIdOld > 0);
         placeHolders += (count++ > 0 ? "," : "");
         placeHolders += "?";
@@ -78,7 +81,7 @@ void CloneRestoreAnalysisTotal::SetPlaceHoldersAndParamsByFileIdNew(std::string 
     std::vector<NativeRdb::ValueObject> &params)
 {
     int32_t count = 0;
-    for (const auto info : analysisTotalInfos_) {
+    for (const auto &info : analysisTotalInfos_) {
         CHECK_AND_CONTINUE(info.fileIdNew > 0);
         placeHolders += (count++ > 0 ? "," : "");
         placeHolders += "?";
@@ -111,7 +114,7 @@ void CloneRestoreAnalysisTotal::UpdateRestoreStatusAsDuplicateByIndex(size_t ind
 
 void CloneRestoreAnalysisTotal::UpdateRestoreStatusAsFailed()
 {
-    for (auto info : analysisTotalInfos_) {
+    for (auto &info : analysisTotalInfos_) {
         info.restoreStatus = RestoreStatus::FAILED;
         failedCnt_++;
     }
@@ -127,11 +130,11 @@ void CloneRestoreAnalysisTotal::UpdateDatabase()
             it.second.size(), updatedRows);
     }
 }
-    
+
 std::unordered_map<int32_t, std::vector<std::string>> CloneRestoreAnalysisTotal::GetStatusFileIdsMap()
 {
     std::unordered_map<int32_t, std::vector<std::string>> statusFileIdsMap;
-    for (const auto info : analysisTotalInfos_) {
+    for (const auto &info : analysisTotalInfos_) {
         if (info.restoreStatus != RestoreStatus::SUCCESS) {
             continue;
         }
@@ -149,7 +152,7 @@ int32_t CloneRestoreAnalysisTotal::UpdateDatabaseByStatus(int32_t status, const 
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(type_, status);
     std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
-        std::make_unique<NativeRdb::AbsRdbPredicates>("tab_analysis_total");
+        std::make_unique<NativeRdb::AbsRdbPredicates>(totalTableName_);
     updatePredicates->In("file_id", fileIds);
     int32_t errCode = BackupDatabaseUtils::Update(mediaLibraryRdb_, updatedRows, valuesBucket, updatePredicates);
     CHECK_AND_PRINT_LOG(errCode == E_OK, "UpdateDatabaseyStatus failed, errCode = %{public}d", errCode);
@@ -161,5 +164,30 @@ void CloneRestoreAnalysisTotal::SetRestoreTaskInfo(RestoreTaskInfo &info)
     info.successCount = successCnt_;
     info.failedCount = failedCnt_;
     info.duplicateCount = duplicateCnt_;
+}
+
+void CloneRestoreAnalysisTotal::AddSuccessVideoFileIds()
+{
+    std::vector<int32_t> fields;
+    for (const auto &info : analysisTotalInfos_) {
+        CHECK_AND_CONTINUE(info.restoreStatus == RestoreStatus::SUCCESS && info.fileIdNew > 0);
+        fields.emplace_back(info.fileIdNew);
+    }
+    CHECK_AND_RETURN(!fields.empty());
+
+    std::stringstream querySql;
+    querySql << "SELECT file_id FROM Photos WHERE file_id IN (" << BackupDatabaseUtils::JoinSQLValues(fields, ",")
+             << ") AND media_type = 2";
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str());
+    CHECK_AND_RETURN(resultSet != nullptr);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t field = GetInt32Val("file_id", resultSet);
+        successVideoFileIds_.emplace_back(field);
+    }
+}
+
+std::vector<int32_t> CloneRestoreAnalysisTotal::GetSuccessVideoFileIds()
+{
+    return successVideoFileIds_;
 }
 }

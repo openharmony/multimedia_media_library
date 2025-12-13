@@ -26,7 +26,7 @@ namespace OHOS::Media {
 class CloneRestoreAnalysisTotal {
 public:
     void Init(const std::string &type, int32_t pageSize, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, const std::string &totalTableName = "tab_analysis_total");
     int32_t GetTotalNumber();
     void GetInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void SetPlaceHoldersAndParamsByFileIdOld(std::string &placeHolders, std::vector<NativeRdb::ValueObject> &params);
@@ -37,7 +37,8 @@ public:
     void UpdateRestoreStatusAsFailed();
     void UpdateDatabase();
     void SetRestoreTaskInfo(RestoreTaskInfo &info);
-
+    void AddSuccessVideoFileIds();
+    std::vector<int32_t> GetSuccessVideoFileIds();
 private:
     enum AnalysisStatus : int32_t {
         UNANALYZED = 0
@@ -68,6 +69,8 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::vector<AnalysisTotalInfo> analysisTotalInfos_;
+    std::string totalTableName_;
+    std::vector<int32_t> successVideoFileIds_;
 };
 } // namespace OHOS::Media
 #endif // CLONE_RESTORE_ANALYSIS_TOTAL_H
