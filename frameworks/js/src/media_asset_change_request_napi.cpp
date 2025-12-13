@@ -41,6 +41,7 @@
 #include "add_image_vo.h"
 #include "save_camera_photo_vo.h"
 #include "qos.h"
+#include "media_change_request_utils.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -130,6 +131,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
+            DECLARE_NAPI_PROPERTY("COMMENT", MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsPermanentlyWithUri", JSDeleteLocalAssetsPermanentlyWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("createAssetRequest", JSCreateAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createImageAssetRequest", JSCreateImageAssetRequest),
