@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,23 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_FUSE_DAEMON_H
-#define OHOS_MEDIA_FUSE_DAEMON_H
+#ifndef OHOS_MEDIA_FUSE_LOW_DAEMON_H
+#define OHOS_MEDIA_FUSE_LOW_DAEMON_H
 
 #include <string>
 
 namespace OHOS {
 namespace Media {
-class MediaFuseDaemon {
+class MediaFuseLowDaemon {
 public:
-    explicit MediaFuseDaemon(const std::string &mountpoint)
+    explicit MediaFuseLowDaemon(const std::string &mountpoint)
         : mountpoint_(mountpoint) {}
-    ~MediaFuseDaemon() = default;
+    ~MediaFuseLowDaemon() = default;
 
-    int32_t StartFuse();
+    int32_t StartFuseLowLevel();
 
 private:
-    void DaemonThread();
+    void DaemonThreadLowLevel();
 
 private:
     std::atomic<bool> isRunning_{false};
@@ -37,5 +37,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIA_FUSE_DAEMON_H
+#endif // OHOS_MEDIA_FUSE_LOW_DAEMON_H
 
