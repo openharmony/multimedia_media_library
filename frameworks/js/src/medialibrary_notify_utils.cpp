@@ -458,7 +458,6 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueInt64(env, "videoCount", albumChangeInfo.videoCount_, result);
     SetValueInt64(env, "count", albumChangeInfo.count_, result);
     SetValueString(env, "coverUri", albumChangeInfo.coverUri_, result);
-    SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         return result;
     }
@@ -468,6 +467,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
     SetValueInt32(env, "orderSection", albumChangeInfo.orderSection_, result);
     SetValueInt32(env, "albumOrder", albumChangeInfo.albumsOrder_, result);
+    SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);
 
     napi_status status = napi_ok;
     napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);
