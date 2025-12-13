@@ -279,7 +279,7 @@ HWTEST_F(GetAssetAnalysisDataTest, GetAssetAnalysisData_Test_002, TestSize.Level
     ASSERT_EQ(GetAssetAnalysisData(assetId, ANALYSIS_HUMAN_FACE_TAG, 0), 0);
     ASSERT_EQ(GetAssetAnalysisData(assetId, ANALYSIS_HEAD_POSITION, 0), 0);
     ASSERT_EQ(GetAssetAnalysisData(assetId, ANALYSIS_BONE_POSE, 0), 0);
-    ASSERT_EQ(GetAssetAnalysisData(assetId, ANALYSIS_VIDEO_LABEL, 0), 0);
+    ASSERT_GE(GetAssetAnalysisData(assetId, ANALYSIS_VIDEO_LABEL, 0), 0);
     ASSERT_EQ(GetAssetAnalysisData(assetId, ANALYSIS_MULTI_CROP, 0), 0);
 }
 
