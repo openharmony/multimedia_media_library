@@ -279,6 +279,7 @@ export struct PhotoPickerComponent {
             edgeEffect: this.pickerOptions?.edgeEffect,
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
+            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes
           }
         },
         {
@@ -1028,9 +1029,15 @@ export class BadgeConfig {
   badgeConfigType?: BadgeTypes,
   uris?: string[]
 } 
+
 class PreselectedInfo {
   uri:string;
   preselectablePickerIndex?: number = -1;
+}
+
+class LivePhotoMode {
+  isAutoPlay: boolean;
+  sceneType: SceneType;
 }
 
 export enum DataType {
@@ -1125,4 +1132,9 @@ export enum MovingPhotoBadgeStateType {
   NOT_MOVING_PHOTO	= 0,
   MOVING_PHOTO_ENABLED	= 1,
   MOVING_PHOTO_DISABLED	= 2
+}
+
+export enum SceneType {
+  GRID_TO_PHOTO_BROWSER = 0;
+  PHOTO_BROWSER_SWIPE = 1;
 }

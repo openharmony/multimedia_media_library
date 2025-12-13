@@ -386,6 +386,7 @@ export class PhotoPickerComponent extends ViewPU {
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
+            let z;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -435,6 +436,7 @@ export class PhotoPickerComponent extends ViewPU {
                     edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
                     isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
+                    livePhotoModes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : z.livePhotoModes 
                 }
             }
             ,{
