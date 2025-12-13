@@ -905,6 +905,11 @@ const SingleSelectionMode = {
   BROWSER_AND_SELECT_MODE: 2,
 };
 
+const SceneType = {
+  GRID_TO_PHOTO_BROWSER: 0,
+  PHOTO_BROWSER_SWIPE: 1
+};
+
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
@@ -1013,6 +1018,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
     config.parameters.assetFilter = option.assetFilter;
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
+    config.parameters.livePhotoModes = option.livePhotoModes;
   }
 
   return config;
@@ -1193,6 +1199,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
   this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
   this.isMovingPhotoBadgeShown = false;
+  this.livePhotoModes = [];
 }
 
 function PhotoSelectOptions() {
@@ -1219,6 +1226,11 @@ function PhotoViewPicker() {
 }
 
 function RecommendationOptions() {
+}
+
+function livePhotoMode() {
+  this.sceneType = -1;
+  this.isAutoPlay = false;
 }
 
 function encrypt(data) {
@@ -1351,4 +1363,6 @@ export default {
   CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
   MovingPhotoBadgeStateType: MovingPhotoBadgeStateType,
   VideoMode: photoAccessHelper.VideoMode,
+  LivePhotoMode: livePhotoMode,
+  SceneType: SceneType
 };
