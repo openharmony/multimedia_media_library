@@ -1364,6 +1364,7 @@ export namespace photoAccessHelper {
     IS_RECENT_SHOW = 'is_recent_show',
     MEDIA_SUFFIX = 'media_suffix',
     SUM_SIZE = 'sum(size)',
+    CHANGE_TIME = 'change_time',
     VIDEO_MODE = 'video_mode',
     ASPECT_RATIO = 'aspect_ratio',
     EDIT_DATA_EXIST = 'edit_data_exist',
@@ -1375,6 +1376,7 @@ export namespace photoAccessHelper {
     ALBUM_LPATH = 'lpath',
     BUNDLE_NAME = 'bundle_name',
     DATE_MODIFIED = 'date_modified',
+    CHANGE_TIME = 'change_time',
   }
 
   export enum HiddenPhotosDisplayMode {
@@ -1769,6 +1771,7 @@ export namespace photoAccessHelper {
     readonly count: int;
     readonly coverUri: string;
     readonly lpath?: string;
+    readonly changeTime?: long;
 
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void;
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
@@ -1808,6 +1811,7 @@ export namespace photoAccessHelper {
     readonly videoCount: int | undefined = undefined;
     readonly dateAdded: long | undefined = undefined;
     readonly dateModified: long | undefined = undefined;
+    readonly changeTime: long | undefined = undefined;
     private nativePhotoAlbum: long = 0;
 
     constructor(nativePtr: long) {
@@ -1817,6 +1821,7 @@ export namespace photoAccessHelper {
         this.videoCount = this.getVideoCount();
         this.dateAdded = this.getdateAdded();
         this.dateModified = this.getdateModified();
+        this.changeTime = this.getChangeTime();
       }
     }
 
@@ -2173,6 +2178,7 @@ export namespace photoAccessHelper {
     native getSharedPhotoAssets(options: FetchOptions): Array<SharedPhotoAsset>;
     native getdateAdded(): long;
     native getdateModified(): long;
+    native getChangeTime(): long;
   }
 
   export interface PhotoAccessHelper {

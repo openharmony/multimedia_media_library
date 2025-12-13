@@ -8200,12 +8200,14 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
     string coverColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string albumUriPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
     string coverUriSource = PhotoAlbumColumns::COVER_URI_SOURCE;
+    string changeTime = PhotoAlbumColumns::CHANGE_TIME;
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
     photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
     photoAlbumData->SetCoverUriSource(get<int32_t>(ResultSetUtils::GetValFromColumn(coverUriSource, resultSet, TYPE_INT32)));
     photoAlbumData->SetUploadStatus(get<int32_t>(ResultSetUtils::GetValFromColumn(
         PhotoAlbumColumns::UPLOAD_STATUS, resultSet, TYPE_INT32)));
+    photoAlbumData->SetChangeTime(get<int64_t>(ResultSetUtils::GetValFromColumn(changeTime, resultSet, TYPE_INT64)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead
