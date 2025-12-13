@@ -28,6 +28,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> observer;
     bool isSystem;
     std::unordered_set<std::string> observerUris;
+    uint32_t callingTokenId;
 };
 
 }

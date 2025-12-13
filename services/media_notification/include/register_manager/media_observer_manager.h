@@ -50,8 +50,7 @@ public:
         const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &uri);
     EXPORT int32_t RemoveSingleObserverUris(const NotifyUriType &registerUri,
         const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string& uri);
-    EXPORT bool FindSingleObserverWithUri(const NotifyUriType &uri,
-        const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
+    EXPORT bool FindSingleObserverWithUri(const NotifyUriType &uri, const uint32_t callingTokenId);
     EXPORT bool FindSingleObserver(const NotifyUriType &uri, std::vector<ObserverInfo>& obsInfos);
     EXPORT int32_t RemoveSingleObserverUris(ObserverInfo& singleObserverInfo, const std::string &uri);
     EXPORT bool isUriDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
