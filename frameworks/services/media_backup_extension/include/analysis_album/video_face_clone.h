@@ -78,14 +78,14 @@ private:
     int32_t BatchInsertWithRetry(const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
     void DeleteExistingVideoFaceData(const std::vector<int32_t>& newFileIds);
-    void UpdateAnalysisTotalTblVideoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-    std::vector<int32_t> newFileIds);
-    bool CopyAnalysisVideoTotalTab(const std::string &tableName, std::vector<int32_t> &oldFileIds);
-    void UpdateAnalysisVideoTotalTblLabelAndFace(std::vector<int32_t> &oldFileIds);
+    bool CopyAnalysisVideoTotalTab(const std::string &tableName, const std::vector<int32_t> &oldFileIds);
+    void UpdateAnalysisVideoTotalTblLabelAndFace(const std::vector<int32_t> &oldFileIds,
+        const std::vector<int32_t> &newFileIds);
     void UpdateAnalysisVideoTotalTblFaceAndTagId();
     void WriteDataToAnaVideoTotalTab(std::vector<CloneVideoInfo> &updateDataList);
     void WriteDataToAnaVideoTotalTabSub(std::vector<CloneVideoInfo> &updateDataList);
-    void StartCloneAnalysisVideoTotalTab(std::vector<int32_t> &oldFileIds);
+    void StartCloneAnalysisVideoTotalTab(const std::vector<int32_t> &oldFileIds,
+        const std::vector<int32_t> &newFileIds);
 
     template<typename T>
     void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
