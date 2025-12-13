@@ -91,7 +91,6 @@ void SetAllTestTables()
         }
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
     }
-    return;
 }
 
 void InsertPhotoAlbumTestData()
