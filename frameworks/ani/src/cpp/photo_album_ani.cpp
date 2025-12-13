@@ -94,6 +94,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
             reinterpret_cast<void *>(PhotoAccessGetSharedPhotoAssets)},
         ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
         ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
+        ani_native_function {"getChangeTime", nullptr, reinterpret_cast<void *>(GetChangeTime)},
         ani_native_function {"transferToDynamicAlbum", nullptr, reinterpret_cast<void *>(TransferToDynamicAlbum)},
         ani_native_function {"transferToStaticAlbum", nullptr, reinterpret_cast<void *>(TransferToStaticAlbum)}
     };
@@ -1365,6 +1366,17 @@ ani_long PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
     }
     auto dateModified = photoAlbumAni->GetPhotoAlbumInstance()->GetDateModified();
     return static_cast<ani_long>(dateModified);
+}
+
+ani_long PhotoAlbumAni::GetChangeTime(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    auto changeTime = photoAlbumAni->GetPhotoAlbumInstance()->GetChangeTime();
+    return static_cast<ani_long>(changeTime);
 }
 
 PhotoAlbumAni* GetNativePhotoAlbumAni(ani_env *env, ani_object object)
