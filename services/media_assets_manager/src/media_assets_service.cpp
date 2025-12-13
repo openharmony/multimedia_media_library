@@ -17,25 +17,11 @@
 
 #include "media_assets_service.h"
 
-#include <string>
 #include <unordered_set>
 
-#include "media_assets_rdb_operations.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_bundle_manager.h"
-#include "medialibrary_facard_operations.h"
-#include "media_facard_photos_column.h"
-#include "commit_edited_asset_dto.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_vision_operations.h"
-#include "medialibrary_rdb_utils.h"
-#include "media_analysis_helper.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
 #include "media_visit_count_manager.h"
-#include "medialibrary_tracer.h"
-#include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "dfx_manager.h"
 #include "multistages_capture_request_task_manager.h"
@@ -43,13 +29,7 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#include "story_album_column.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_photo_operations.h"
-#include "permission_utils.h"
-#include "medialibrary_notify.h"
-#include "medialibrary_command.h"
-#include "uri.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "rdb_utils.h"
@@ -63,6 +43,7 @@
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
@@ -97,6 +78,7 @@
 #include "media_old_photos_column.h"
 #include "cloud_media_asset_manager.h"
 #include "heif_transcoding_check_utils.h"
+#include "database_adapter.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -105,6 +87,7 @@ namespace OHOS::Media {
 
 const int32_t YES = 1;
 const int32_t NO = 0;
+const int32_t MEDIA_HO_LAKE_CONST = 3;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string COLUMN_FILE_ID = "file_id";
@@ -112,6 +95,8 @@ const std::string COLUMN_DATA = "data";
 const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
+const std::string HEIF_MIME_TYPE = "image/heif";
+const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
@@ -202,15 +187,6 @@ int32_t MediaAssetsService::DeletePhotosCompleted(const std::vector<std::string>
 
 static std::string GetLocalDeviceName()
 {
-#ifdef DISTRIBUTED
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    int32_t ret = deviceManager.GetLocalDeviceInfo(BUNDLE_NAME, deviceInfo);
-    if (ret == 0) {
-        return deviceInfo.deviceName;
-    }
-    MEDIA_ERR_LOG("GetLocalDeviceInfo ret = %{public}d", ret);
-#endif
     return "";
 }
 
@@ -394,6 +370,35 @@ int32_t MediaAssetsService::CameraInnerAddImage(AddImageDto &dto)
 {
     MEDIA_INFO_LOG("enter CameraInnerAddImage");
     MultiStagesPhotoCaptureManager::GetInstance().AddImage(dto);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody)
+{
+    MEDIA_INFO_LOG("enter GetFusionAssetsInfo");
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, MEDIA_HO_LAKE_CONST);
+    rdbPredicate.NotEqualTo(PhotoColumn::PHOTO_STORAGE_PATH, "");
+    rdbPredicate.IsNotNull(PhotoColumn::PHOTO_STORAGE_PATH);
+
+    std::vector<std::string> fetchColumn {
+        "count(*) AS count",
+        "MAX(storage_path) AS storage_path"
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, fetchColumn);
+    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+    respBody.queryResult.push_back(
+        FussionAssetsResult(0, GetInt32Val("count", resultSet), GetStringVal("storage_path", resultSet)));
     return E_OK;
 }
 
@@ -665,6 +670,14 @@ int32_t MediaAssetsService::CheckPhotoUriPermissionInner(CheckUriPermissionInner
     return errCode;
 }
 
+int32_t MediaAssetsService::StartAssetChangeScanInner(
+    const StartAssetChangeScanDto& startAssetChangeScanDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::StartAssetChangeScanInner");
+    auto resultSet = MediaLibraryDataManager::GetInstance()->ProcessBrokerChangeMsg(startAssetChangeScanDto.operation);
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaAssetsService::CancelPhotoUriPermissionInner(
     const CancelUriPermissionInnerDto& cancelUriPermissionInnerDto)
 {
@@ -721,7 +734,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplicateAssets(GetAssetsDto &dto)
 {
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
-    RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetAllDuplicateAssets(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
@@ -731,7 +745,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplica
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetDuplicateAssetsToDelete(GetAssetsDto &dto)
 {
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
-    RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetDuplicateAssetsToDelete(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets for delete");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
@@ -1049,6 +1064,12 @@ static const map<int32_t, struct AnalysisConfig> ANALYSIS_CONFIG_MAP = {
     { ANALYSIS_BONE_POSE, { VISION_POSE_TABLE, POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_MULTI_CROP, { VISION_RECOMMENDATION_TABLE, RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
+    { ANALYSIS_PET_TAG, { VISION_PET_TAG_TABLE, PET_TAG, { TAG_ID, PET_LABEL, CENTER_FEATURES, TAG_VERSION,
+        COUNT, DATE_MODIFIED, ANALYSIS_VERSION } } },
+    { ANALYSIS_PET_FACE, { VISION_PET_FACE_TABLE, PET_FACE, { FILE_ID, PET_ID, PROB, PET_LABEL, PET_TOTAL_FACES,
+        FEATURES, PET_TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, HEAD_VERSION, PET_FEATURE_VERSION,
+        TAG_VERSION, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y, BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT,
+        DATE_MODIFIED } } },
 };
 
 int32_t MediaAssetsService::GetAssetAnalysisData(GetAssetAnalysisDataDto &dto)
@@ -1121,6 +1142,26 @@ shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::ConvertFormat(cons
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
+bool MediaAssetsService::CheckMimeType(const int32_t fileId)
+{
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, false,
+        "Invalid parameters for CheckMimeType, fileId: %{public}d", fileId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    vector<string> columns {MediaColumn::MEDIA_ID, PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE};
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return false;
+    }
+    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    if (mimeType != HEIF_MIME_TYPE && mimeType != HEIC_MIME_TYPE) {
+        MEDIA_ERR_LOG("mimeType : %{public}s, The requested asset must be heif|heic", mimeType.c_str());
+        return false;
+    }
+    return true;
+}
+
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)
 {
     MEDIA_DEBUG_LOG("CreateTmpCompatibleDup: %{public}s", createTmpCompatibleDupDto.ToString().c_str());
@@ -1163,7 +1204,7 @@ int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertTo
         Uri uri(fileUri);
         MediaLibraryCommand cmdEditCommit(uri);
         cmdEditCommit.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-        ValuesBucket values;
+        NativeRdb::ValuesBucket values;
         values.Put(PhotoColumn::MEDIA_ID, fileId);
         cmdEditCommit.SetValueBucket(values);
         MediaLibraryVisionOperations::EditCommitOperation(cmdEditCommit);
@@ -1351,7 +1392,7 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, req.fileId);
     using namespace RdbDataShareAdapter;
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     std::vector<std::string> columns { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID };
 
     shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
@@ -1456,7 +1497,7 @@ int32_t MediaAssetsService::GetMovingPhotoDateModified(const string &fileId, Get
 int32_t MediaAssetsService::CloseAsset(const CloseAssetReqBody &req)
 {
     MEDIA_INFO_LOG("enter CloseAsset, req.uri=%{public}s", req.uri.c_str());
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, req.uri);
     MediaLibraryCommand cmd(valuesBucket);
     return MediaLibraryObjectUtils::CloseFile(cmd);
@@ -1781,6 +1822,44 @@ int32_t MediaAssetsService::ReleaseDebugDatabase(const string &betaIssueId)
     CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
     int32_t ret = dataManager->ReleaseDebugDatabase(betaIssueId);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to release debug database");
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::OpenAssetCompress(const OpenAssetCompressDto &dto, OpenAssetCompressRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::OpenAssetCompress start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
+    int32_t ret = dataManager->OpenAssetCompress(dto.uri, dto.type, dto.version, respBody.fileDescriptor);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to open asset compress, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::NotifyAssetSended start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
+    int32_t ret = dataManager->NotifyAssetSended(uri);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to notify asset sended, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetAssetCompressVersion(int32_t &version)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetAssetCompressVersion start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
+    version = dataManager->GetAssetCompressVersion();
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> &uris,
+    GetCompressAssetSizeRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetCompressAssetSize start");
+    int32_t ret = MediaLibraryPhotoOperations::GetCompressAssetSize(uris, respBody.totalSize);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to get compress asset size, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
 } // namespace OHOS::Media

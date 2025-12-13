@@ -21,7 +21,7 @@ if (media_library_feature_mtp) {
   }
 
   ohos_unittest("mtp_native_test") {
-    module_out_path = "media_library/media_library-asset"
+    module_out_path = "media_library/media_library_asset"
 
     include_dirs = [
       "./include",
@@ -35,6 +35,10 @@ if (media_library_feature_mtp) {
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_mtp_test/include",
       "${MEDIALIB_MTP_PATH}/include/",
+      "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+      "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+      "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+      "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     ]
 
     sources = [

@@ -53,6 +53,7 @@ static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 static constexpr int32_t LIVE_PHOTO_QUERY_NUM = 3000;
 static constexpr int32_t LIVE_PHOTO_PROCESS_NUM = 200;
 static constexpr int32_t COVER_POSITION_PROCESS_NUM = 500;
+static constexpr int64_t VIDEO_SAVE_MAX_TIME = 60000; // 1 min, provided by camera framework
 
 static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFlag";
 static const string LIVE_PHOTO_COMPAT_DONE = "0";
@@ -221,6 +222,7 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::MEDIA_SIZE,
         PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_DATE_ADDED,
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, DIRTY_NOT_UPLOADING)
@@ -258,6 +260,8 @@ void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>
             ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
         std::string path = get<std::string>(
             ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+        int64_t dateAdded = get<int64_t>(
+            ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_ADDED, resultSet, TYPE_INT64));
 
         MovingPhotoData movingPhotoData;
         movingPhotoData.fileId = fileId;
@@ -265,6 +269,7 @@ void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>
         movingPhotoData.effectMode = effectMode;
         movingPhotoData.size = size;
         movingPhotoData.path = path;
+        movingPhotoData.dateAdded = dateAdded;
         dataList.movingPhotos.push_back(movingPhotoData);
     }
 }
@@ -311,7 +316,8 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
     }
 
     if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
-        MEDIA_WARN_LOG("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
+        HILOG_COMM_WARN("%{public}s:{%{public}s:%{public}d} Failed to get video of moving photo, id: %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, currentData.fileId);
         newData.size = static_cast<int64_t>(imageSize);
         newData.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
         return E_OK;
@@ -340,6 +346,14 @@ void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList
     int32_t count = 0;
     for (const auto& movingPhoto : dataList.movingPhotos) {
         CHECK_AND_RETURN_LOG(isProcessing_, "stop compating moving photo");
+        // skip process within 1 min after adding into DB
+        int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+        if (currentTime > movingPhoto.dateAdded) {
+            bool isVideoSaveTimeOut = (currentTime - movingPhoto.dateAdded) > VIDEO_SAVE_MAX_TIME;
+            CHECK_AND_CONTINUE_INFO_LOG(isVideoSaveTimeOut,
+                "skip process moving photo, id: %{public}d, dateAdded: %{public}" PRId64,
+                movingPhoto.fileId, movingPhoto.dateAdded);
+        }
         MovingPhotoData newData;
         if (GetUpdatedMovingPhotoData(movingPhoto, newData) != E_OK) {
             MEDIA_INFO_LOG("Failed to get updated data of moving photo, id: %{public}d", movingPhoto.fileId);

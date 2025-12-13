@@ -22,8 +22,11 @@
 #include "cloud_file_data_dto.h"
 #include "photos_vo.h"
 #include "photos_dto.h"
+#include "photos_po_writer.h"
+#include "cloud_media_sync_const.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto(std::vector<PhotosDto> &fdirtyDataDtos)
 {
     std::vector<PhotosVo> fdirtyDatas;
@@ -39,6 +42,10 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto
         fdirtyDataVo.size = fdirtyDataDto.size;
         fdirtyDataVo.modifiedTime = fdirtyDataDto.modifiedTime;
         fdirtyDataVo.originalCloudId = fdirtyDataDto.originalCloudId;
+        fdirtyDataVo.fileSourceType = fdirtyDataDto.fileSourceType;
+        fdirtyDataVo.storagePath = fdirtyDataDto.storagePath;
+        fdirtyDataVo.localPath = fdirtyDataDto.localPath;
+        fdirtyDataVo.attributesMediaType = fdirtyDataDto.attributesMediaType;
         for (auto &nodePair : fdirtyDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -65,6 +72,8 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetNewDataVoFromDto(st
         newDataVo.size = newDataDto.size;
         newDataVo.modifiedTime = newDataDto.modifiedTime;
         newDataVo.originalCloudId = newDataDto.originalCloudId;
+        newDataVo.fileSourceType = newDataDto.fileSourceType;
+        newDataDto.storagePath = newDataDto.storagePath;
         for (auto &nodePair : newDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -95,6 +104,8 @@ std::unordered_map<std::string, CheckData> CloudMediaPhotoControllerProcessor::G
         checkData.dirty = photosDto.dirty;
         checkData.syncStatus = photosDto.syncStatus;
         checkData.thmStatus = photosDto.thumbStatus;
+        checkData.fileSourceType = photosDto.fileSourceType;
+        checkData.storagePath = photosDto.storagePath;
         for (auto &[key, value] : photosDto.attachment) {
             CloudFileDataVo vo;
             vo.fileName = value.fileName;
@@ -153,6 +164,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &recor
     photosVo.fileId = record.fileId.value_or(0);
     photosVo.data = record.data.value_or("");
     photosVo.ownerAlbumId = record.ownerAlbumId.value_or(0);
+    photosVo.fileSourceType = record.fileSourceType.value_or(0);
+    photosVo.storagePath = record.storagePath.value_or("");
     return true;
 }
 
@@ -192,6 +205,7 @@ CloudMdkRecordPhotosVo CloudMediaPhotoControllerProcessor::ConvertRecordPoToVo(c
     this->GetAttributesInfo(record, photosVo);
     this->GetPropertiesInfo(record, photosVo);
     this->GetCloudInfo(record, photosVo);
+    this->GetAttributesHashMap(record, photosVo);
     return photosVo;
 }
 
@@ -249,6 +263,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesEditDataCamera = photosVo.editDataCamera;
     data.attributesSupportedWatermarkType = photosVo.supportedWatermarkType;
     data.attributesStrongAssociation = photosVo.strongAssociation;
+    data.attributesFileSourceType = photosVo.fileSourceType;
+    data.attributesStoragePath = photosVo.storagePath;
     return true;
 }
 
@@ -292,6 +308,7 @@ CloudMediaPullDataDto CloudMediaPhotoControllerProcessor::ConvertToCloudMediaPul
     this->GetPropertiesInfo(photosVo, data);
     this->GetCloudInfo(photosVo, data);
     this->GetAlbumInfo(photosVo, data);
+    this->GetAttributesHashMap(photosVo, data);
     return data;
 }
 
@@ -317,6 +334,8 @@ PhotosDto CloudMediaPhotoControllerProcessor::ConvertToPhotoDto(const OnCreateRe
     record.serverErrorCode = recordVo.serverErrorCode;
     record.livePhotoCachePath = recordVo.livePhotoCachePath;
     record.errorDetails = recordVo.errorDetails;
+    record.fileSourceType = recordVo.fileSourceType;
+    record.storagePath = recordVo.storagePath;
     return record;
 }
 
@@ -365,5 +384,25 @@ ReportFailureDto CloudMediaPhotoControllerProcessor::GetReportFailureDto(const R
     reportFailureDto.fileId = reqBody.fileId;
     reportFailureDto.cloudId = reqBody.cloudId;
     return reportFailureDto;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
+{
+    PhotosPo photosInfo = record;
+    PhotosPoWriter writer = PhotosPoWriter(photosInfo);
+    std::unordered_map<std::string, std::string> stringfieldsMap = writer.ToMap(false);
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING) {
+        auto it = stringfieldsMap.find(fieldName);
+        CHECK_AND_CONTINUE(it != stringfieldsMap.end());
+        photosVo.stringfields[fieldName] = it->second;
+    }
+    return true;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(
+    const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
+{
+    data.stringfields = photosVo.stringfields;
+    return true;
 }
 }  // namespace OHOS::Media::CloudSync

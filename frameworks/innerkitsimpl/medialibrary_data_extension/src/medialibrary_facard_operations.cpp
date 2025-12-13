@@ -17,30 +17,11 @@
 
 #include "medialibrary_facard_operations.h"
 
-#include <memory>
-#include <mutex>
-#include <string>
-#include "abs_shared_result_set.h"
-
-#include "media_column.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdbstore.h"
-#include "rdb_predicates.h"
 #include "result_set_utils.h"
-#include "value_object.h"
-#include "values_bucket.h"
-#include "datashare_helper.h"
-#include "medialibrary_data_manager.h"
 #include "media_facard_photos_column.h"
 #include "result_set_utils.h"
 #include "ability_manager_client.h"
-#include "application_context.h"
-#include "resource_type.h"
-#include "ffrt.h"
 #include "ffrt_inner.h"
  
 using namespace OHOS::DataShare;

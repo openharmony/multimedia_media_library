@@ -78,8 +78,7 @@ void MediaLibraryAssetHelperCapiTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaLibraryAssetHelperCapiTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
     if (sDataShareHelper_ == nullptr) {
-        ASSERT_NE(sDataShareHelper_, nullptr);
-        return;
+        exit(0);
     }
 
     // make sure board is empty

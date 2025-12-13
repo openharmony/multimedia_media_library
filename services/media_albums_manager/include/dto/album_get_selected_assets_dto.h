@@ -23,7 +23,7 @@ class AlbumGetSelectedAssetsDto {
 public:
     DataShare::DataSharePredicates predicates;
     std::vector<std::string> columns;
-    int32_t albumId;
+    int32_t albumId {0};
     std::string filter;
     double maxScore;
     double minScore;

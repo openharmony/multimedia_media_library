@@ -312,6 +312,11 @@ bool PhotoAlbum::IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumS
     return (albumType == PhotoAlbumType::SOURCE) && (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
 }
 
+bool PhotoAlbum::IsPetAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::PET);
+}
+
 bool PhotoAlbum::IsSystemAlbum(const PhotoAlbumType albumType)
 {
     return albumType == PhotoAlbumType::SYSTEM;
@@ -372,6 +377,36 @@ int32_t PhotoAlbum::GetCoverUriSource()
 {
     return coverUriSource_ > 0 ? static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER) :
         static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
+}
+
+void PhotoAlbum::SetChangeTime(const int64_t changeTime)
+{
+    changeTime_ = changeTime;
+}
+
+int64_t PhotoAlbum::GetChangeTime() const
+{
+    return changeTime_;
+}
+
+void PhotoAlbum::SetUploadStatus(int32_t uploadStatus)
+{
+    uploadStatus_ = uploadStatus;
+}
+
+int32_t PhotoAlbum::GetUploadStatus() const
+{
+    return uploadStatus_;
+}
+
+void PhotoAlbum::SetHidden(const int32_t hidden)
+{
+    hidden_ = hidden;
+}
+
+int32_t PhotoAlbum::GetHidden() const
+{
+    return hidden_;
 }
 }  // namespace Media
 }  // namespace OHOS

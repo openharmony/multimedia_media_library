@@ -23,6 +23,8 @@
 
 namespace OHOS {
 namespace Media {
+std::mutex MultiStagesCaptureDfxTotalTime::mutex_;
+
 MultiStagesCaptureDfxTotalTime::MultiStagesCaptureDfxTotalTime() {}
 
 MultiStagesCaptureDfxTotalTime::~MultiStagesCaptureDfxTotalTime() {}
@@ -35,11 +37,13 @@ MultiStagesCaptureDfxTotalTime& MultiStagesCaptureDfxTotalTime::GetInstance()
 
 void MultiStagesCaptureDfxTotalTime::AddStartTime(const std::string &photoId)
 {
+    std::lock_guard<std::mutex> startTimeLock(mutex_);
     startTimes_.emplace(photoId, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
 void MultiStagesCaptureDfxTotalTime::RemoveStartTime(const std::string &photoId)
 {
+    std::lock_guard<std::mutex> startTimeLock(mutex_);
     if (startTimes_.empty() || startTimes_.find(photoId) == startTimes_.end()) {
         MEDIA_INFO_LOG("RemoveStartTime startTimes_ is empty or photoId is not in startTimes_");
         return;
@@ -50,6 +54,7 @@ void MultiStagesCaptureDfxTotalTime::RemoveStartTime(const std::string &photoId)
 
 void MultiStagesCaptureDfxTotalTime::Report(const std::string &photoId, const int32_t mediaType)
 {
+    std::lock_guard<std::mutex> startTimeLock(mutex_);
     if (startTimes_.empty() || startTimes_.find(photoId) == startTimes_.end()) {
         MEDIA_INFO_LOG("startTimes_ is empty or photoId is not in startTimes_");
         return;

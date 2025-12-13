@@ -18,10 +18,11 @@
 
 #include <string>
 #include <map>
-#include <sstream>
+
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::ORM {
-class PhotoAlbumPo {
+class EXPORT PhotoAlbumPo {
 public:
     std::optional<int32_t> albumId;
     std::optional<int32_t> albumType;
@@ -37,6 +38,7 @@ public:
     std::optional<int32_t> dirty;
     std::optional<int32_t> coverUriSource;
     std::optional<std::string> coverCloudId;
+    std::optional<int32_t> uploadStatus;
 
     /* album_plugin columns */
     std::optional<std::string> albumPluginCloudId;
@@ -46,33 +48,12 @@ public:
     std::optional<bool> isInWhiteList;
 
     std::unordered_map<std::string, std::string> attributes;
-
 public:
-    std::string ToString()
-    {
-        std::stringstream ss;
-        ss << "{"
-           << "\"albumId\": " << albumId.value_or(-1) << ","
-           << "\"albumType\": " << albumType.value_or(-1) << ","
-           << "\"albumName\": " << albumName.value_or("") << ","
-           << "\"albumSubtype\": " << albumSubtype.value_or(-1) << ","
-           << "\"lpath\": \"" << lpath.value_or("") << "\","
-           << "\"cloudId\": \"" << cloudId.value_or("") << "\","
-           << "\"dateAdded\": " << dateAdded.value_or(-1) << ","
-           << "\"dateModified\": " << dateModified.value_or(-1) << ","
-           << "\"bundleName\": \"" << bundleName.value_or("") << "\","
-           << "\"localLanguage\": \"" << localLanguage.value_or("") << "\","
-           << "\"albumOrder\": " << albumOrder.value_or(-1) << ","
-           << "\"albumPluginCloudId\": \"" << albumPluginCloudId.value_or("") << "\","
-           << "\"albumNameEn\": \"" << albumNameEn.value_or("") << "\","
-           << "\"dualAlbumName\": \"" << dualAlbumName.value_or("") << "\","
-           << "\"priority\": " << priority.value_or(-1) << ","
-           << "\"dirty\": " << dirty.value_or(-1) << ","
-           << "\"isInWhiteList\": " << isInWhiteList.value_or(false) << ","
-           << "\"coverUriSource\": " << coverUriSource.value_or(-1) << ","
-           << "\"coverCloudId\": " << coverCloudId.value_or("") << "," << "}";
-        return ss.str();
-    }
+    std::string ToString() const;
+    bool IsCamera() const;
+
+private:
+    std::string ToLower(const std::string &str) const;
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTO_ALBUM_PO_H

@@ -233,6 +233,10 @@ const std::vector<std::string> ON_UPLOAD_COLUMNS = {
     Media::PhotoColumn::PHOTO_DIRTY,
 };
 
+const std::vector<std::string> PHOTOS_SYNC_COLUMN_STRING = {
+    // Add Photos fields here. such as PhotoColumn::PHOTO_MEDIA_SUFFIX,
+};
+
 enum CheckFlag : int32_t {
     CHECKED,
     NEED_CHECK,
@@ -518,7 +522,7 @@ enum CloudSyncServiceErrCode {
     E_DB_FIELD_BASIC = E_FIELD_BASIC + 1000,
     E_DB_SIZE_IS_ZERO = E_DB_FIELD_BASIC + 1,
     E_DB_ALBUM_NOT_FOUND = E_DB_SIZE_IS_ZERO + 1,
-    E_DB_ALBUM_ID_IS_EMPTY = E_DB_ALBUM_NOT_FOUND + 1,
+    E_DB_ALBUM_CLOUD_ID_IS_EMPTY = E_DB_ALBUM_NOT_FOUND + 1,
 
     E_DK_FIELD_BASIC = E_FIELD_BASIC + 2000,
     E_NO_ATTRIBUTES = E_DK_FIELD_BASIC + 1,

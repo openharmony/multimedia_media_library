@@ -1086,10 +1086,8 @@ uint32_t MtpMediaLibrary::ScanDirTraverseWithType(const std::string &root,
         if (!IsRootPath(root)) {
             out->emplace(AddPathToMap(root), root);
         }
-        for (const auto& entry : sf::recursive_directory_iterator(root, ec)) {
-            if (ec.value() != MTP_SUCCESS) {
-                continue;
-            }
+        for (const auto& entry : sf::recursive_directory_iterator(root,
+            sf::directory_options::skip_permission_denied)) {
             if (sf::is_directory(entry.path(), ec) && IsHiddenDirectory(entry.path().string())) {
                 continue;
             }

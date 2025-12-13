@@ -15,8 +15,6 @@
 
 #include "medialibrary_kvstore_utils.h"
 
-#include <algorithm>
-
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "media_log.h"

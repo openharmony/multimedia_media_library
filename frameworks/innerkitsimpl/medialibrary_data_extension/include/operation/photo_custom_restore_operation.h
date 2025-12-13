@@ -22,6 +22,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "metadata.h"
+#include "tlv_util.h"
 
 namespace OHOS::Media {
 struct RestoreTaskInfo {
@@ -130,6 +131,9 @@ private:
         const vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
     void HandleBatchCustomRestore(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
         int32_t notifyType, const vector<string> &subFiles);
+    int32_t HandleTlvRestore(const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo,
+        const vector<string> &filePathVector, bool isFirst, UniqueNumber &uniqueNumber);
+    void RestoreTlvRollback(const std::string &assetPath);
     vector<FileInfo> GetFileInfos(const vector<string> &filePathVector, UniqueNumber &uniqueNumber);
     int32_t UpdateUniqueNumber(UniqueNumber &uniqueNumber);
     int32_t CreateAssetUniqueNumber(int32_t type, UniqueNumber &uniqueNumber);
@@ -163,6 +167,25 @@ private:
     unordered_map<string, TimeInfo> QueryMediaInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     unordered_map<string, TimeInfo> GetTimeInfoMap(RestoreTaskInfo &restoreTaskInfo);
     void SetTimeInfo(const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value);
+
+    int32_t HandleTlvSingleRestore(const std::unordered_map<TlvTag, std::string> &editFileMap,
+        const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo, bool isFirst,
+        UniqueNumber &uniqueNumber);
+
+    static std::string GetUniqueTempDir(const std::string &tlvPath);
+
+    int32_t HandlePhotoSourceRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
+    int32_t HandleEditDataRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
+    int32_t HandleEditDataCameraRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
+    int32_t HandleExtraDataRestore(const string &editDataCameraSrcPath, const std::string &assetPath);
+    int32_t HandleMovingPhotoVideoRestore(const string &originalSrcPath, const std::string &assetPath);
+    int32_t HandleDbFieldsFromJsonRestore(const std::string &jsonPath, const std::string &assetPath);
+    int32_t HandleAllEditData(const std::unordered_map<TlvTag, std::string> &decodeTlvPathMap,
+        const std::string &assetPath);
+    int32_t HandlePhotoSourceBackRestore(const std::string &sourceBackSrcPath, const std::string &assetPath);
+    int32_t HandleMovingPhotoVideoSourceRestore(const std::string &srcPath, const std::string &assetPath);
+    int32_t HandleMovingPhotoVideoSourceBackRestore(const std::string &srcPath, const std::string &assetPath);
+    static int32_t MoveFile(const std::string &srcPath, const std::string &destPath);
 
 private:
     std::atomic<bool> isRunning_{false};

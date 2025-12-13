@@ -207,7 +207,7 @@ void MediaLibraryDbUpgrade::ProcessOcrClassifyAlbum(const std::string &newAlbumN
     for (size_t i = 0; i < ocrText.size(); i++) {
         subOcrSql += "tab_analysis_ocr.ocr_text LIKE '%" + ocrText[i] + "%'";
         if (i != ocrText.size() - 1) {
-            subOcrSql += " OR ";
+            subOcrSql += " AND ";
         }
     }
     std::string selectOcrSql = SQL_SELECT_CLASSIFY_OCR + subOcrSql + ")) ";
@@ -312,7 +312,11 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
 
     ret = this->AddlPathColumn(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
-    return this->UpdatelPathColumn(store);
+    ret = this->UpdatelPathColumn(store);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: Update lpath column failed, ret=%{public}d", ret);
+    ret = this->UpgradePhotoAlbumAddUploadStatusColumn(store);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: Add upload_status column failed, ret=%{public}d", ret);
+    return ret;
 }
 
 /**
@@ -449,6 +453,16 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoMap(NativeRdb::RdbStore &store)
     ret = this->MoveSingleRelationshipToPhotos(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return NativeRdb::E_OK;
+}
+
+/**
+ * @brief Upgrade PhotoAlbum table.
+ */
+int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbumAddUploadStatusColumn(NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_RET(
+        !(this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "upload_status")), NativeRdb::E_OK);
+    return ExecSqlWithRetry([&]() { return store.ExecuteSql(this->SQL_PHOTO_ALBUM_TABLE_ADD_UPDATE_STATUS_COLUMN); });
 }
 // LCOV_EXCL_STOP
 }  // namespace DataTransfer

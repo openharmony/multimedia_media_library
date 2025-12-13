@@ -23,14 +23,16 @@
 #include "i_object_writer.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "photos_po.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::ORM {
-class PhotosPoWriter : public IObjectWriter {
+class EXPORT PhotosPoWriter : public IObjectWriter {
 private:
     PhotosPo &photosPo_;
 
 public:
-    PhotosPoWriter(PhotosPo &photosPo) : photosPo_(photosPo)
+    explicit PhotosPoWriter(PhotosPo &photosPo) : photosPo_(photosPo)
     {}
     virtual ~PhotosPoWriter() = default;
 
@@ -39,462 +41,210 @@ public:
     {
         return MediaColumnType::PHOTOS_COLUMNS;
     }
-
     int32_t SetMemberVariable(
-        const std::string &name, std::variant<int32_t, int64_t, double, std::string> &val) override
-    {
-        auto it = this->HANDLERS.find(name);
-        bool errConn = it == this->HANDLERS.end();
-        CHECK_AND_RETURN_RET(!errConn, E_ERR);
-        (this->*(it->second))(val);
-        std::string columnValue = "";
-        if (std::holds_alternative<int32_t>(val)) {
-            columnValue = std::to_string(std::get<int32_t>(val));
-        } else if (std::holds_alternative<int64_t>(val)) {
-            columnValue = std::to_string(std::get<int64_t>(val));
-        } else if (std::holds_alternative<double>(val)) {
-            columnValue = std::to_string(std::get<double>(val));
-        } else if (std::holds_alternative<std::string>(val)) {
-            columnValue = std::get<std::string>(val);
-        } else {
-            MEDIA_ERR_LOG("PhotoAlbumPoWriter: SetMemberVariable: variant type is not supported");
-        }
-        CHECK_AND_RETURN_RET(!columnValue.empty(), E_OK);
-        this->photosPo_.attributes[name] = columnValue;
-        return E_OK;
-    }
+        const std::string &name, std::variant<int32_t, int64_t, double, std::string> &val) override;
+    /**
+    * @param isIdentifyOnly true: only get identify columns; false: get all columns.
+    */
 
-    std::unordered_map<std::string, std::string> ToMap(bool isIdentifyOnly = true)
-    {
-        return this->photosPo_.attributes;
-    }
+    std::unordered_map<std::string, std::string> ToMap(bool isIdentifyOnly = true);
 
 private:
-    using Handle = void (PhotosPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);
-    const std::map<std::string, Handle> HANDLERS = {
-        {PhotoColumn::MEDIA_FILE_PATH, &PhotosPoWriter::SetMediaFilePath},
-        {PhotoColumn::MEDIA_TITLE, &PhotosPoWriter::SetMediaTitle},
-        {PhotoColumn::MEDIA_SIZE, &PhotosPoWriter::SetMediaSize},
-        {PhotoColumn::MEDIA_NAME, &PhotosPoWriter::SetMediaName},
-        {PhotoColumn::MEDIA_TYPE, &PhotosPoWriter::SetMediaType},
-        {PhotoColumn::MEDIA_MIME_TYPE, &PhotosPoWriter::SetMediaMimeType},
-        {PhotoColumn::MEDIA_DEVICE_NAME, &PhotosPoWriter::SetMediaDeviceName},
-        {PhotoColumn::MEDIA_DATE_ADDED, &PhotosPoWriter::SetMediaDataAdded},
-        {PhotoColumn::MEDIA_DATE_MODIFIED, &PhotosPoWriter::SetDataModified},
-        {PhotoColumn::MEDIA_DATE_TAKEN, &PhotosPoWriter::SetDataTaken},
-        {PhotoColumn::MEDIA_DURATION, &PhotosPoWriter::SetDuration},
-        {PhotoColumn::MEDIA_IS_FAV, &PhotosPoWriter::SetIsFavorite},
-        {PhotoColumn::MEDIA_DATE_TRASHED, &PhotosPoWriter::SetDataTrashed},
-        {PhotoColumn::MEDIA_HIDDEN, &PhotosPoWriter::SetHidden},
-        {PhotoColumn::PHOTO_HIDDEN_TIME, &PhotosPoWriter::SetHiddenTime},
-        {PhotoColumn::MEDIA_RELATIVE_PATH, &PhotosPoWriter::SetRelativePath},
-        {PhotoColumn::MEDIA_VIRTURL_PATH, &PhotosPoWriter::SetVirtualPath},
-        {PhotoColumn::PHOTO_META_DATE_MODIFIED, &PhotosPoWriter::SetMetaDataModified},
-        {PhotoColumn::PHOTO_ORIENTATION, &PhotosPoWriter::SetOrientation},
-        {PhotoColumn::PHOTO_LATITUDE, &PhotosPoWriter::SetLatitude},
-        {PhotoColumn::PHOTO_LONGITUDE, &PhotosPoWriter::SetLongitude},
-        {PhotoColumn::PHOTO_HEIGHT, &PhotosPoWriter::SetHeight},
-        {PhotoColumn::PHOTO_WIDTH, &PhotosPoWriter::SetWidth},
-        {PhotoColumn::PHOTO_SUBTYPE, &PhotosPoWriter::SetSubType},
-        {PhotoColumn::PHOTO_BURST_COVER_LEVEL, &PhotosPoWriter::SetBurstCoverLevel},
-        {PhotoColumn::PHOTO_BURST_KEY, &PhotosPoWriter::SetBurstKey},
-        {PhotoColumn::PHOTO_DATE_YEAR, &PhotosPoWriter::SetDataYear},
-        {PhotoColumn::PHOTO_DATE_MONTH, &PhotosPoWriter::SetDataMonth},
-        {PhotoColumn::PHOTO_DATE_DAY, &PhotosPoWriter::SetDataDay},
-        {PhotoColumn::PHOTO_USER_COMMENT, &PhotosPoWriter::SetUserCommnt},
-        {PhotoColumn::PHOTO_THUMB_STATUS, &PhotosPoWriter::SetThumbStatus},
-        {PhotoColumn::PHOTO_SYNC_STATUS, &PhotosPoWriter::SetSyncStatus},
-        {PhotoColumn::PHOTO_SHOOTING_MODE, &PhotosPoWriter::SetShootingMode},
-        {PhotoColumn::PHOTO_SHOOTING_MODE_TAG, &PhotosPoWriter::SetShootingModeTag},
-        {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, &PhotosPoWriter::SetDynamicRangType},
-        {PhotoColumn::PHOTO_HDR_MODE, &PhotosPoWriter::SetHdrMode},
-        {PhotoColumn::PHOTO_VIDEO_MODE, &PhotosPoWriter::SetVideoMode},
-        {PhotoColumn::PHOTO_FRONT_CAMERA, &PhotosPoWriter::SetFrontCamera},
-        {PhotoColumn::PHOTO_DETAIL_TIME, &PhotosPoWriter::SetDetailTime},
-        {PhotoColumn::PHOTO_EDIT_TIME, &PhotosPoWriter::SetEditTime},
-        {PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, &PhotosPoWriter::SetOriginalSubtype},
-        {PhotoColumn::PHOTO_COVER_POSITION, &PhotosPoWriter::SetCoverPosition},
-        {PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, &PhotosPoWriter::SetIsRectificationCover},
-        {PhotoColumn::PHOTO_EXIF_ROTATE, &PhotosPoWriter::SetExifRotate},
-        {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, &PhotosPoWriter::SetPhotoEffectMode},
-        {PhotoColumn::PHOTO_OWNER_ALBUM_ID, &PhotosPoWriter::SetOwnerAlbumId},
-        {PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, &PhotosPoWriter::SetOriginalAssetCloudId},
-        {PhotoColumn::PHOTO_SOURCE_PATH, &PhotosPoWriter::SetSourcePath},
-        {PhotoColumn::SUPPORTED_WATERMARK_TYPE, &PhotosPoWriter::SetSupportedWatermarkType},
-        {PhotoColumn::PHOTO_STRONG_ASSOCIATION, &PhotosPoWriter::SetStrongAssociation},
-        {MediaColumn::MEDIA_ID, &PhotosPoWriter::SetMediaId},
-        {PhotoColumn::PHOTO_CLOUD_ID, &PhotosPoWriter::SetCloudId},
-        {PhotoColumn::PHOTO_DIRTY, &PhotosPoWriter::SetDirty},
-        {PhotoColumn::PHOTO_POSITION, &PhotosPoWriter::SetPosition},
-        {PhotoColumn::PHOTO_CLOUD_VERSION, &PhotosPoWriter::SetCloudVersion},
-        {"album_cloud_id", &PhotosPoWriter::SetAlbumCloudId},
-        {"lpath", &PhotosPoWriter::SetlPath},
-        {PhotoColumn::PHOTO_LCD_VISIT_TIME, &PhotosPoWriter::SetLcdVisitTime},
-        {PhotoColumn::PHOTO_THUMBNAIL_READY, &PhotosPoWriter::SetThumbnailReady},
-        {PhotoColumn::MEDIA_TIME_PENDING, &PhotosPoWriter::SetTimePending},
+    using SetHandle = void (PhotosPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);
+    using GetHandle = bool (PhotosPoWriter::*)(std::string &);
+    struct GetSetNode {
+        GetHandle funGetPtr;
+        SetHandle funSetPtr;
     };
+    const std::map<std::string, GetSetNode> HANDLERS = {
+        {PhotoColumn::MEDIA_FILE_PATH, {&PhotosPoWriter::GetMediaFilePath, &PhotosPoWriter::SetMediaFilePath}},
+        {PhotoColumn::MEDIA_TITLE, {&PhotosPoWriter::GetMediaTitle, &PhotosPoWriter::SetMediaTitle}},
+        {PhotoColumn::MEDIA_SIZE, {&PhotosPoWriter::GetMediaSize, &PhotosPoWriter::SetMediaSize}},
+        {PhotoColumn::MEDIA_NAME, {&PhotosPoWriter::GetMediaName, &PhotosPoWriter::SetMediaName}},
+        {PhotoColumn::MEDIA_TYPE, {&PhotosPoWriter::GetMediaType, &PhotosPoWriter::SetMediaType}},
+        {PhotoColumn::MEDIA_MIME_TYPE, {&PhotosPoWriter::GetMediaMimeType, &PhotosPoWriter::SetMediaMimeType}},
+        {PhotoColumn::MEDIA_DEVICE_NAME, {&PhotosPoWriter::GetMediaDeviceName, &PhotosPoWriter::SetMediaDeviceName}},
+        {PhotoColumn::MEDIA_DATE_ADDED, {&PhotosPoWriter::GetMediaDataAdded, &PhotosPoWriter::SetMediaDataAdded}},
+        {PhotoColumn::MEDIA_DATE_MODIFIED, {&PhotosPoWriter::GetDataModified, &PhotosPoWriter::SetDataModified}},
+        {PhotoColumn::MEDIA_DATE_TAKEN, {&PhotosPoWriter::GetDataTaken, &PhotosPoWriter::SetDataTaken}},
+        {PhotoColumn::MEDIA_DURATION, {&PhotosPoWriter::GetDuration, &PhotosPoWriter::SetDuration}},
+        {PhotoColumn::MEDIA_IS_FAV, {&PhotosPoWriter::GetIsFavorite, &PhotosPoWriter::SetIsFavorite}},
+        {PhotoColumn::MEDIA_DATE_TRASHED, {&PhotosPoWriter::GetDataTrashed, &PhotosPoWriter::SetDataTrashed}},
+        {PhotoColumn::MEDIA_HIDDEN, {&PhotosPoWriter::GetHidden, &PhotosPoWriter::SetHidden}},
+        {PhotoColumn::PHOTO_HIDDEN_TIME, {&PhotosPoWriter::GetHiddenTime, &PhotosPoWriter::SetHiddenTime}},
+        {PhotoColumn::MEDIA_RELATIVE_PATH, {&PhotosPoWriter::GetRelativePath, &PhotosPoWriter::SetRelativePath}},
+        {PhotoColumn::MEDIA_VIRTURL_PATH, {&PhotosPoWriter::GetVirtualPath, &PhotosPoWriter::SetVirtualPath}},
+        {PhotoColumn::PHOTO_META_DATE_MODIFIED,
+            {&PhotosPoWriter::GetMetaDataModified, &PhotosPoWriter::SetMetaDataModified}},
+        {PhotoColumn::PHOTO_ORIENTATION, {&PhotosPoWriter::GetOrientation, &PhotosPoWriter::SetOrientation}},
+        {PhotoColumn::PHOTO_LATITUDE, {&PhotosPoWriter::GetLatitude, &PhotosPoWriter::SetLatitude}},
+        {PhotoColumn::PHOTO_LONGITUDE, {&PhotosPoWriter::GetLongitude, &PhotosPoWriter::SetLongitude}},
+        {PhotoColumn::PHOTO_HEIGHT, {&PhotosPoWriter::GetHeight, &PhotosPoWriter::SetHeight}},
+        {PhotoColumn::PHOTO_WIDTH, {&PhotosPoWriter::GetWidth, &PhotosPoWriter::SetWidth}},
+        {PhotoColumn::PHOTO_SUBTYPE, {&PhotosPoWriter::GetSubType, &PhotosPoWriter::SetSubType}},
+        {PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            {&PhotosPoWriter::GetBurstCoverLevel, &PhotosPoWriter::SetBurstCoverLevel}},
+        {PhotoColumn::PHOTO_BURST_KEY, {&PhotosPoWriter::GetBurstKey, &PhotosPoWriter::SetBurstKey}},
+        {PhotoColumn::PHOTO_DATE_YEAR, {&PhotosPoWriter::GetDataYear, &PhotosPoWriter::SetDataYear}},
+        {PhotoColumn::PHOTO_DATE_MONTH, {&PhotosPoWriter::GetDataMonth, &PhotosPoWriter::SetDataMonth}},
+        {PhotoColumn::PHOTO_DATE_DAY, {&PhotosPoWriter::GetDataDay, &PhotosPoWriter::SetDataDay}},
+        {PhotoColumn::PHOTO_USER_COMMENT, {&PhotosPoWriter::GetUserCommnt, &PhotosPoWriter::SetUserCommnt}},
+        {PhotoColumn::PHOTO_THUMB_STATUS, {&PhotosPoWriter::GetThumbStatus, &PhotosPoWriter::SetThumbStatus}},
+        {PhotoColumn::PHOTO_SYNC_STATUS, {&PhotosPoWriter::GetSyncStatus, &PhotosPoWriter::SetSyncStatus}},
+        {PhotoColumn::PHOTO_SHOOTING_MODE, {&PhotosPoWriter::GetShootingMode, &PhotosPoWriter::SetShootingMode}},
+        {PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
+            {&PhotosPoWriter::GetShootingModeTag, &PhotosPoWriter::SetShootingModeTag}},
+        {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
+            {&PhotosPoWriter::GetDynamicRangType, &PhotosPoWriter::SetDynamicRangType}},
+        {PhotoColumn::PHOTO_FRONT_CAMERA, {&PhotosPoWriter::GetFrontCamera, &PhotosPoWriter::SetFrontCamera}},
+        {PhotoColumn::PHOTO_DETAIL_TIME, {&PhotosPoWriter::GetDetailTime, &PhotosPoWriter::SetDetailTime}},
+        {PhotoColumn::PHOTO_EDIT_TIME, {&PhotosPoWriter::GetEditTime, &PhotosPoWriter::SetEditTime}},
+        {PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+            {&PhotosPoWriter::GetOriginalSubtype, &PhotosPoWriter::SetOriginalSubtype}},
+        {PhotoColumn::PHOTO_COVER_POSITION, {&PhotosPoWriter::GetCoverPosition, &PhotosPoWriter::SetCoverPosition}},
+        {PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
+            {&PhotosPoWriter::GetIsRectificationCover, &PhotosPoWriter::SetIsRectificationCover}},
+        {PhotoColumn::PHOTO_EXIF_ROTATE, {&PhotosPoWriter::GetExifRotate, &PhotosPoWriter::SetExifRotate}},
+        {PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+            {&PhotosPoWriter::GetPhotoEffectMode, &PhotosPoWriter::SetPhotoEffectMode}},
+        {PhotoColumn::PHOTO_OWNER_ALBUM_ID, {&PhotosPoWriter::GetOwnerAlbumId, &PhotosPoWriter::SetOwnerAlbumId}},
+        {PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID,
+            {&PhotosPoWriter::GetOriginalAssetCloudId, &PhotosPoWriter::SetOriginalAssetCloudId}},
+        {PhotoColumn::PHOTO_SOURCE_PATH, {&PhotosPoWriter::GetSourcePath, &PhotosPoWriter::SetSourcePath}},
+        {PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+            {&PhotosPoWriter::GetSupportedWatermarkType, &PhotosPoWriter::SetSupportedWatermarkType}},
+        {PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+            {&PhotosPoWriter::GetStrongAssociation, &PhotosPoWriter::SetStrongAssociation}},
+        {MediaColumn::MEDIA_ID, {&PhotosPoWriter::GetMediaId, &PhotosPoWriter::SetMediaId}},
+        {PhotoColumn::PHOTO_CLOUD_ID, {&PhotosPoWriter::GetCloudId, &PhotosPoWriter::SetCloudId}},
+        {PhotoColumn::PHOTO_DIRTY, {&PhotosPoWriter::GetDirty, &PhotosPoWriter::SetDirty}},
+        {PhotoColumn::PHOTO_POSITION, {&PhotosPoWriter::GetPosition, &PhotosPoWriter::SetPosition}},
+        {PhotoColumn::PHOTO_CLOUD_VERSION, {&PhotosPoWriter::GetCloudVersion, &PhotosPoWriter::SetCloudVersion}},
+        {PhotoColumn::PHOTO_LCD_SIZE, {&PhotosPoWriter::GetLcdSize, &PhotosPoWriter::SetLcdSize}},
+        {PhotoColumn::PHOTO_THUMB_SIZE, {&PhotosPoWriter::GetThumbSize, &PhotosPoWriter::SetThumbSize}},
+    };
+    const std::map<std::string, GetSetNode> EXTRA_HANDLERS = {
+        {"album_cloud_id", {&PhotosPoWriter::GetAlbumCloudId, &PhotosPoWriter::SetAlbumCloudId}},
+        {"lpath", {&PhotosPoWriter::GetlPath, &PhotosPoWriter::SetlPath}},
+    };
+    const int32_t PRECISION_LOCATION = 15; // The precision of latitude and longitude is 15 digits.
 
 private:
-    void SetMediaFilePath(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.data = std::get<std::string>(val);
-    }
-    void SetMediaTitle(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.title = std::get<std::string>(val);
-    }
-    void SetMediaSize(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.size = std::get<int64_t>(val);
-    }
-    void SetMediaName(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.displayName = std::get<std::string>(val);
-    }
-    void SetMediaType(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.mediaType = std::get<int32_t>(val);
-    }
-    void SetMediaMimeType(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.mimeType = std::get<std::string>(val);
-    }
-    void SetMediaDeviceName(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.deviceName = std::get<std::string>(val);
-    }
-    void SetMediaDataAdded(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateAdded = std::get<int64_t>(val);
-    }
-    void SetDataModified(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateModified = std::get<int64_t>(val);
-    }
-    void SetDataTaken(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateTaken = std::get<int64_t>(val);
-    }
-    void SetDuration(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.duration = std::get<int32_t>(val);
-    }
-    void SetIsFavorite(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.isFavorite = std::get<int32_t>(val);
-    }
-    void SetDataTrashed(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateTrashed = std::get<int64_t>(val);
-    }
-    void SetHidden(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.hidden = std::get<int32_t>(val);
-    }
-    void SetHiddenTime(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.hiddenTime = std::get<int64_t>(val);
-    }
-    void SetRelativePath(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.relativePath = std::get<std::string>(val);
-    }
-    void SetVirtualPath(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.virtualPath = std::get<std::string>(val);
-    }
-    void SetMetaDataModified(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.metaDateModified = std::get<int64_t>(val);
-    }
-    void SetOrientation(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.orientation = std::get<int32_t>(val);
-    }
-    void SetLatitude(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<double>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.latitude = std::get<double>(val);
-    }
-    void SetLongitude(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<double>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.longitude = std::get<double>(val);
-    }
-    void SetHeight(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.height = std::get<int32_t>(val);
-    }
-    void SetWidth(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.width = std::get<int32_t>(val);
-    }
-    void SetSubType(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.subtype = std::get<int32_t>(val);
-    }
-    void SetBurstCoverLevel(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.burstCoverLevel = std::get<int32_t>(val);
-    }
-    void SetBurstKey(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.burstKey = std::get<std::string>(val);
-    }
-    void SetDataYear(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateYear = std::get<std::string>(val);
-    }
-    void SetDataMonth(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateMonth = std::get<std::string>(val);
-    }
-    void SetDataDay(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dateDay = std::get<std::string>(val);
-    }
-    void SetUserCommnt(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.userComment = std::get<std::string>(val);
-    }
-    void SetThumbStatus(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.thumbStatus = std::get<int32_t>(val);
-    }
-    void SetSyncStatus(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.syncStatus = std::get<int32_t>(val);
-    }
-    void SetShootingMode(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.shootingMode = std::get<std::string>(val);
-    }
-    void SetShootingModeTag(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.shootingModeTag = std::get<std::string>(val);
-    }
-    void SetDynamicRangType(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dynamicRangeType = std::get<int32_t>(val);
-    }
-    void SetHdrMode(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.hdrMode = std::get<int32_t>(val);
-    }
-    void SetVideoMode(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.videoMode = std::get<int32_t>(val);
-    }
-    void SetFrontCamera(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.frontCamera = std::get<std::string>(val);
-    }
-    void SetDetailTime(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.detailTime = std::get<std::string>(val);
-    }
-    void SetEditTime(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.editTime = std::get<int64_t>(val);
-    }
-    void SetOriginalSubtype(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.originalSubtype = std::get<int32_t>(val);
-    }
-    void SetCoverPosition(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.coverPosition = std::get<int64_t>(val);
-    }
-    void SetIsRectificationCover(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.isRectificationCover = std::get<int32_t>(val);
-    }
-    void SetExifRotate(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.exifRotate = std::get<int32_t>(val);
-    }
-    void SetPhotoEffectMode(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.movingPhotoEffectMode = std::get<int32_t>(val);
-    }
-    void SetOwnerAlbumId(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.ownerAlbumId = std::get<int32_t>(val);
-    }
-    void SetOriginalAssetCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.originalAssetCloudId = std::get<std::string>(val);
-    }
-    void SetSourcePath(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.sourcePath = std::get<std::string>(val);
-    }
-    void SetSupportedWatermarkType(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.supportedWatermarkType = std::get<int32_t>(val);
-    }
-    void SetStrongAssociation(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.strongAssociation = std::get<int32_t>(val);
-    }
-    void SetMediaId(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.fileId = std::get<int32_t>(val);
-    }
-    void SetCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.cloudId = std::get<std::string>(val);
-    }
-    void SetDirty(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.dirty = std::get<int32_t>(val);
-    }
-    void SetPosition(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.position = std::get<int32_t>(val);
-    }
-    void SetCloudVersion(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.cloudVersion = std::get<int64_t>(val);
-    }
-    void SetAlbumCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.albumCloudId = std::get<std::string>(val);
-    }
-    void SetlPath(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<std::string>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.albumLPath = std::get<std::string>(val);
-    }
-    void SetLcdVisitTime(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.lcdVisitTime = std::get<int64_t>(val);
-    }
-    void SetThumbnailReady(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.thumbnailReady = std::get<int64_t>(val);
-    }
-    void SetTimePending(std::variant<int32_t, int64_t, double, std::string> &val)
-    {
-        bool errConn = !std::holds_alternative<int64_t>(val);
-        CHECK_AND_RETURN(!errConn);
-        this->photosPo_.timePending = std::get<int64_t>(val);
-    }
+    void SetMediaFilePath(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaFilePath(std::string &val);
+    void SetMediaTitle(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaTitle(std::string &val);
+    void SetMediaSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaSize(std::string &val);
+    void SetMediaName(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaName(std::string &val);
+    void SetMediaType(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaType(std::string &val);
+    void SetMediaMimeType(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaMimeType(std::string &val);
+    void SetMediaDeviceName(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaDeviceName(std::string &val);
+    void SetMediaDataAdded(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaDataAdded(std::string &val);
+    void SetDataModified(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataModified(std::string &val);
+    void SetDataTaken(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataTaken(std::string &val);
+    void SetDuration(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDuration(std::string &val);
+    void SetIsFavorite(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetIsFavorite(std::string &val);
+    void SetDataTrashed(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataTrashed(std::string &val);
+    void SetHidden(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetHidden(std::string &val);
+    void SetHiddenTime(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetHiddenTime(std::string &val);
+    void SetRelativePath(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetRelativePath(std::string &val);
+    void SetVirtualPath(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetVirtualPath(std::string &val);
+    void SetMetaDataModified(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMetaDataModified(std::string &val);
+    void SetOrientation(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetOrientation(std::string &val);
+    void SetLatitude(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLatitude(std::string &val);
+    void SetLongitude(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLongitude(std::string &val);
+    void SetHeight(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetHeight(std::string &val);
+    void SetWidth(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetWidth(std::string &val);
+    void SetSubType(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetSubType(std::string &val);
+    void SetBurstCoverLevel(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetBurstCoverLevel(std::string &val);
+    void SetBurstKey(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetBurstKey(std::string &val);
+    void SetDataYear(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataYear(std::string &val);
+    void SetDataMonth(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataMonth(std::string &val);
+    void SetDataDay(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDataDay(std::string &val);
+    void SetUserCommnt(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetUserCommnt(std::string &val);
+    void SetThumbStatus(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetThumbStatus(std::string &val);
+    void SetSyncStatus(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetSyncStatus(std::string &val);
+    void SetShootingMode(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetShootingMode(std::string &val);
+    void SetShootingModeTag(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetShootingModeTag(std::string &val);
+    void SetDynamicRangType(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDynamicRangType(std::string &val);
+    void SetFrontCamera(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetFrontCamera(std::string &val);
+    void SetDetailTime(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDetailTime(std::string &val);
+    void SetEditTime(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetEditTime(std::string &val);
+    void SetOriginalSubtype(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetOriginalSubtype(std::string &val);
+    void SetCoverPosition(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetCoverPosition(std::string &val);
+    void SetIsRectificationCover(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetIsRectificationCover(std::string &val);
+    void SetExifRotate(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetExifRotate(std::string &val);
+    void SetPhotoEffectMode(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetPhotoEffectMode(std::string &val);
+    void SetOwnerAlbumId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetOwnerAlbumId(std::string &val);
+    void SetOriginalAssetCloudId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetOriginalAssetCloudId(std::string &val);
+    void SetSourcePath(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetSourcePath(std::string &val);
+    void SetSupportedWatermarkType(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetSupportedWatermarkType(std::string &val);
+    void SetStrongAssociation(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetStrongAssociation(std::string &val);
+    void SetMediaId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetMediaId(std::string &val);
+    void SetCloudId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetCloudId(std::string &val);
+    void SetDirty(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetDirty(std::string &val);
+    void SetPosition(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetPosition(std::string &val);
+    void SetCloudVersion(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetCloudVersion(std::string &val);
+    void SetAlbumCloudId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetAlbumCloudId(std::string &val);
+    void SetlPath(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetlPath(std::string &val);
+    void SetLcdSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLcdSize(std::string &val);
+    void SetThumbSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetThumbSize(std::string &val);
+    std::string GetStringValByPrecision(const double doubleVal, const int32_t precision);
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTOS_PO_WRITER_H

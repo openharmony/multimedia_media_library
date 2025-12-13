@@ -61,11 +61,43 @@ bool ConvertFormatRespBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet Unmarshal failed");
     return true;
 }
-
 bool ConvertFormatRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(resultSet, parcel);
     CHECK_AND_RETURN_RET_LOG(!status, false, "resultSet marshal failed");
+    return true;
+}
+bool MimeTypeReqBody::Unmarshalling(MessageParcel &parcel)
+{
+    bool status = parcel.ReadInt32(this->fileId);
+    CHECK_AND_RETURN_RET_LOG(status, false, "read fileId failed");
+    return true;
+}
+bool MimeTypeReqBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = parcel.WriteInt32(this->fileId);
+    CHECK_AND_RETURN_RET_LOG(status, false, "write fileId failed");
+    return true;
+}
+string MimeTypeReqBody::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+        << "\"fileId\": \"" << std::to_string(this->fileId) << "\", "
+        << "}";
+    return ss.str();
+}
+bool MimeTypeRespBody::Unmarshalling(MessageParcel &parcel)
+{
+    bool status = parcel.ReadBool(this->result);
+    CHECK_AND_RETURN_RET_LOG(status, false, "write fileId failed");
+    return true;
+}
+
+bool MimeTypeRespBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = parcel.WriteBool(this->result);
+    CHECK_AND_RETURN_RET_LOG(status, false, "write fileId failed");
     return true;
 }
 } // namespace OHOS::Media

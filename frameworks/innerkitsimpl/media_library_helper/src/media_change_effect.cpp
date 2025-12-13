@@ -19,7 +19,6 @@
 #include "plugin/common/any.h"
 #include "image_effect_inner.h"
 #endif
-#include <memory>
 
 using std::string;
 

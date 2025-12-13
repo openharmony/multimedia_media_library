@@ -172,6 +172,8 @@ public:
     EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
     EXPORT static std::string GetTempMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
+    EXPORT static std::string GetOriMovingPhotoVideoPath(const std::string &imagePath);
+    EXPORT static std::string GetTempOriMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static bool CheckMovingPhotoExtension(const std::string &extension);
     EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);
     EXPORT static bool CheckMovingPhotoVideoExtension(const std::string &extension);
@@ -193,6 +195,7 @@ public:
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
+    EXPORT static int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir);
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
     EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
     EXPORT static bool CheckCompositeDisplayMode(int32_t compositeDisplayMode);
@@ -220,6 +223,7 @@ public:
     EXPORT static int32_t CheckAppLink(const std::string &link);
     EXPORT static bool CheckHasAppLink(int32_t hasAppLink);
     EXPORT static int32_t UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec);
+    EXPORT static double CalculateAspectRatio(int32_t height, int32_t width);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

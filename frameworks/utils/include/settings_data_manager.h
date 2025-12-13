@@ -32,6 +32,12 @@ enum class SwitchStatus {
     HDC,
 };
 
+enum class AlbumUploadSwitchStatus {
+    NONE = -1,
+    CLOSE = 0,
+    OPEN,
+};
+
 const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
     {std::to_string(static_cast<int>(SwitchStatus::HDC)),
         SwitchStatus::HDC},
@@ -47,9 +53,13 @@ class SettingsDataManager {
 public:
     EXPORT static SwitchStatus GetPhotosSyncSwitchStatus();
     EXPORT static bool GetHdcDeviceId(std::string& deviceId);
+    static AlbumUploadSwitchStatus GetAllAlbumUploadStatus();
+    static int32_t UpdateOrInsertAllPhotosAlbumUpload();
 
 private:
     static int32_t QueryParamInSettingData(const std::string &key, std::string &value);
+    static int32_t UpdateParamInSettingData(const std::string &key, const std::string &value);
+    static int32_t InsertParamInSettingData(const std::string &key, const std::string &value);
 };
 
 } // OHOS

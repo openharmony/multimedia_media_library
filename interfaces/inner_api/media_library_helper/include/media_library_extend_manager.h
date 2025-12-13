@@ -18,6 +18,8 @@
 #define USERID "100"
 
 #include "datashare_helper.h"
+#include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "unique_fd.h"
 
 namespace OHOS {
@@ -25,30 +27,6 @@ namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
-/**
- * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
- *
- * @since 1.0
- * @version 1.0
- */
-enum class PhotoPermissionType : int32_t {
-    TEMPORARY_READ_IMAGEVIDEO = 0,
-    PERSIST_READ_IMAGEVIDEO,
-    TEMPORARY_WRITE_IMAGEVIDEO,
-    TEMPORARY_READWRITE_IMAGEVIDEO,
-    PERSIST_READWRITE_IMAGEVIDEO, // Internal reserved value, not open to the public
-    PERSIST_WRITE_IMAGEVIDEO,
-    GRANT_PERSIST_READWRITE_IMAGEVIDEO,
-};
-
-enum class HideSensitiveType : int32_t {
-    ALL_DESENSITIZE = 0,
-    GEOGRAPHIC_LOCATION_DESENSITIZE,
-    SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE,
-    DEFAULT
-};
-
 enum class OperationMode : uint32_t {
     READ_MODE = 0b01,
     WRITE_MODE = 0b10,
@@ -87,7 +65,8 @@ public:
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
     EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId,
-        const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags);
+        const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags,
+        bool readWriteIsolation = false);
 
     /**
      * @brief Grant PhotoUri Permission
@@ -190,6 +169,47 @@ public:
      */
     EXPORT int32_t CheckCloudDownloadPermission(uint32_t tokenId,
         const std::vector<string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags);
+
+    /**
+     * @brief send broker change operation
+     *
+     * @param columns columns
+     * @return send ok or not
+     */
+    EXPORT int32_t SendBrokerChangeOperation(string operation);
+
+    /**
+     * @brief Open photo or video compress with edit data
+     *
+     * @param uri uri of the asset
+     * @param type force sensitive type
+     * @param version compress version
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t OpenAssetCompress(const string &uri, HideSensitiveType type, int32_t version);
+
+    /**
+     * @brief notify asset compress sended
+     *
+     * @param uri uri of the asset
+     * @return notify ok or not
+     */
+    EXPORT int32_t NotifyAssetSended(const string &uri);
+
+    /**
+     * @brief Get total compressed size of assets
+     *
+     * @param uris list of asset URIs (max 500)
+     * @return total size in bytes on success, error code otherwise
+     */
+    EXPORT int32_t GetCompressAssetSize(const std::vector<std::string> &uris);
+
+    /**
+     * @brief get asset compress version
+     *
+     * @return asset compress version
+     */
+    EXPORT int32_t GetAssetCompressVersion();
 private:
 
     int32_t userId_;

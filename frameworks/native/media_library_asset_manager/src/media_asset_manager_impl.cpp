@@ -36,7 +36,10 @@
 #include "oh_moving_photo.h"
 #include "moving_photo.h"
 #include "image_source_native.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
+#include "picture_handle_client.h"
+#include "picture_native.h"
+#include "picture_native_impl.h"
 #include "userfilemgr_uri.h"
 
 #include "medialibrary_business_code.h"
@@ -52,7 +55,7 @@ constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 using Uri = OHOS::Uri;
 
 static const std::string MEDIA_ASSET_MANAGER_CLASS = "MediaAssetManagerImpl";
-const std::string API_VERSION = "api_version";
+const std::string API_VERSION_STR = "api_version";
 static std::mutex multiStagesCaptureLock;
 
 const int32_t LOW_QUALITY_IMAGE = 1;
@@ -239,6 +242,11 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
             asyncContext->onRequestMovingPhotoDataPreparedHandler, asyncContext->returnDataType,
             asyncContext->requestUri, asyncContext->destUri, asyncContext->requestOptions.sourceMode);
         mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
+    } else if (asyncContext->returnDataType == ReturnDataType::TYPE_PICTURE) {
+        mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
+            asyncContext->onRequestQuickImageDataPreparedHandler, asyncContext->returnDataType,
+            asyncContext->requestUri, asyncContext->destUri, asyncContext->requestOptions.sourceMode);
+        mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
     } else {
         mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
         asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
@@ -358,6 +366,31 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
             auto status = movingPhoto != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
             dataHandler->onRequestMovingPhotoDataPreparedHandler_(status, requestId, quality,
                 MEDIA_LIBRARY_COMPRESSED, movingPhoto);
+        }
+    } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
+        MediaLibrary_RequestId requestId;
+        strncpyResult = strncpy_s(requestId.requestId,
+            UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        CHECK_AND_RETURN_RET_LOG(strncpyResult == E_OK, false, "strncpy failed");
+        if (dataHandler->onRequestQuickImageDataPreparedHandler_ != nullptr) {
+            int32_t photoQuality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
+            MediaLibrary_MediaQuality quality = (dataHandler->GetPhotoQuality() == photoQuality)
+                ? MEDIA_LIBRARY_QUALITY_FULL
+                : MEDIA_LIBRARY_QUALITY_FAST;
+            bool isPicture = true;
+            OH_PictureNative* pictureNative = nullptr;
+            OH_ImageSourceNative* imageSourceNative = nullptr;
+            GetPictureNativeObject(
+                assetHandler->requestId, dataHandler->GetRequestUri(), &pictureNative, &imageSourceNative, isPicture);
+            
+            MediaLibrary_ErrorCode status;
+            if (isPicture) {
+                status = pictureNative != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+            } else {
+                status = imageSourceNative != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+            }
+            dataHandler->onRequestQuickImageDataPreparedHandler_(status, requestId, quality,
+                MEDIA_LIBRARY_COMPRESSED, pictureNative, imageSourceNative);
         }
     } else {
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
@@ -511,7 +544,7 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
         std::string uriStr = PAH_CANCEL_PROCESS_IMAGE;
-        UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        UriAppendKeyValue(uriStr, API_VERSION_STR, to_string(MEDIA_API_VERSION_V10));
         Uri updateAssetUri(uriStr);
         DataShare::DataSharePredicates predicates;
         DataShare::DatashareBusinessError errCode;
@@ -654,6 +687,30 @@ OH_ImageSourceNative* MediaAssetManagerImpl::CreateImageSource(const std::string
     return imageSource;
 }
 
+void MediaAssetManagerImpl::GetPictureNativeObject(const std::string requestId, const std::string fileUri,
+    OH_PictureNative** pictureNative, OH_ImageSourceNative** imageSourceNative, bool &isPicture)
+{
+    MEDIA_INFO_LOG("GetPictureNativeObject");
+    std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
+    std::size_t index = tempStr.find("/");
+    std::string fileId = tempStr.substr(0, index);
+
+    auto picture = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+    if (picture == nullptr) {
+        MEDIA_INFO_LOG("picture is null");
+        isPicture = false;
+        *imageSourceNative = CreateImageSource(requestId, fileUri);
+        return;
+    }
+
+    MEDIA_INFO_LOG("picture is not null.");
+    *pictureNative = new OH_PictureNative(picture);
+    if (*pictureNative == nullptr) {
+        MEDIA_ERR_LOG("Failed to create OH_PictureNative.");
+        return;
+    }
+}
+
 bool MediaAssetManagerImpl::OnHandleRequestImage(
     const std::unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
@@ -754,7 +811,7 @@ void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMod
 {
     CHECK_AND_RETURN_LOG(sDataShareHelper_ != nullptr, "Get sDataShareHelper_ failed");
     std::string uriStr = PAH_PROCESS_IMAGE;
-    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION_STR, std::to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     DataShare::DatashareBusinessError errCode;
@@ -862,6 +919,58 @@ int32_t MediaAssetManagerImpl::GetFdFromSandBoxUri(const std::string &sandBoxUri
         return E_FILE_OPER_FAIL;
     }
     return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
+}
+
+MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
+    NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnQuickImageDataPrepared callback)
+{
+    MEDIA_INFO_LOG("MediaAssetManagerImpl::NativeQuickRequestImage Called");
+    CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr && mediaAsset->mediaAsset_ != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "mediaAsset or mediaAsset_ is null");
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    MediaLibraryTracer tracer;
+    tracer.Start("NativeQuickRequestImage");
+
+    std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
+    asyncContext->requestUri = fileAsset_->GetUri();
+    asyncContext->displayName = fileAsset_->GetDisplayName();
+    asyncContext->fileId = fileAsset_->GetId();
+    asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
+    asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
+    asyncContext->returnDataType = ReturnDataType::TYPE_PICTURE;
+    asyncContext->needsExtraInfo = true;
+    asyncContext->onRequestQuickImageDataPreparedHandler = callback;
+
+    if (sDataShareHelper_ == nullptr) {
+        CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ == nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+            "sDataShareHelper_ is null");
+    }
+
+    if (asyncContext->requestUri.length() > MAX_URI_SIZE) {
+        MEDIA_ERR_LOG("Request image uri lens out of limit requestUri lens: %{public}zu",
+            asyncContext->requestUri.length());
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_IMAGE) {
+        MEDIA_ERR_LOG("Request image file type invalid");
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    bool isSuccess = false;
+    asyncContext->requestId = GenerateRequestId();
+    isSuccess = OnHandleRequestImage(asyncContext);
+    if (isSuccess) {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (asyncContext->requestId.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OK;
+    } else {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
+    }
 }
 } // namespace Media
 } // namespace OHOS

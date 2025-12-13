@@ -49,6 +49,8 @@ enum class AlbumChangeOperation {
     DELETE_ASSETS_WITH_URI,
     RESET_COVER_URI,
     SET_HIGHLIGHT_ATTRIBUTE,
+    SET_UPLOAD_STATUS,
+    SMART_MOVE_ASSETS,
 };
 
 enum class ParameterType {
@@ -133,6 +135,7 @@ private:
     EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismiss(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetOrderPosition(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetUploadStatus(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHighlightAttribute(napi_env env, napi_callback_info info);
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
@@ -174,6 +177,9 @@ struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     std::vector<std::string> deleteIds;
     std::vector<int32_t> photoAlbumTypes;
     std::vector<int32_t> photoAlbumSubtypes;
+    int32_t photoAlbumType = -1;
+    int32_t photoAlbumSubType = -1;
+    bool allowUpload = false;
 };
 } // namespace Media
 } // namespace OHOS

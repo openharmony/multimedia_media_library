@@ -839,6 +839,9 @@ static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, N
     values.PutInt(MediaColumn::MEDIA_DURATION, metadata->GetFileDuration());
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata->GetFileHeight());
     values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata->GetFileWidth());
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(metadata->GetFileHeight(), metadata->GetFileWidth());
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata->GetFileMimeType());
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, metadata->GetFileExtension());
 }

@@ -99,6 +99,7 @@ const std::string URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "/" + OPRN_FIND_ALL_
 const std::string OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE = "update_supported_watermark_type";
 const std::string OPRN_UPDATE_HAS_APPLINK = "update_supported_has_applink";
 const std::string OPRN_UPDATE_APPLINK = "update_supported_applink";
+const std::string OPRN_QUERY_RAW_VISION_TOTAL = "query_raw_vision_total";
 const std::string OPRN_QUERY_RAW_ANALYSIS_ALBUM = "query_raw_analysis_album";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -240,6 +241,7 @@ const std::string UFM_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + 
 
 // PhotoAccessHelper operation constants
 const std::string PAH_ANA_MAP = "phaccess_ana_map_operation";
+const std::string PAH_ANA_CV = "phaccess_ana_cv_operation";
 const std::string PAH_ANA_OCR = "phaccess_ana_ocr_operation";
 const std::string PAH_ANA_ATTS = "phaccess_ana_atts_operation";
 const std::string PAH_ANA_VIDEO_ATTS = "phaccess_ana_video_atts_operation";
@@ -254,6 +256,8 @@ const std::string PAH_ANA_COMPOSITION = "phaccess_ana_composition_operation";
 const std::string PAH_ANA_HEAD = "phaccess_ana_head_operation";
 const std::string PAH_ANA_AFFECTIVE = "phaccess_ana_affective_operation";
 const std::string PAH_ANA_POSE = "phaccess_ana_pose_operation";
+const std::string PAH_ANA_PET = "phaccess_ana_pet_operation";
+const std::string PAH_ANA_PET_TAG = "phaccess_ana_pet_tag_operation";
 const std::string PAH_ANA_SALIENCY = "phaccess_ana_sal_operation";
 const std::string PAH_FORM_MAP = "phaccess_store_form_operation";
 const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
@@ -379,6 +383,8 @@ const std::string PAH_QUERY_ANA_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + PAH_
 const std::string PAH_QUERY_ANA_HEAD = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_HEAD + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_AFFECTIVE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_AFFECTIVE + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_POSE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_POSE + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_PET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_PET + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_PET_TAG = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_PET_TAG + "/" + OPRN_QUERY;
 const std::string PAH_STORE_FORM_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_FORM_MAP + "/" + OPRN_STORE_FORM_ID;
 const std::string PAH_REMOVE_FORM_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_FORM_MAP + "/" + OPRN_REMOVE_FORM_ID;
 const std::string PAH_QUERY_ANA_SAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_SALIENCY + "/" + OPRN_QUERY;
@@ -433,6 +439,7 @@ const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FA
 
 const std::string ASSET_ALBUM_OPERATION = "tab_asset_and_album_operation";
 
+const std::string VIDEO_TYPE_KEYWORD = "type_for_cinematic_video";
 } // namespace Media
 } // namespace OHOS
 

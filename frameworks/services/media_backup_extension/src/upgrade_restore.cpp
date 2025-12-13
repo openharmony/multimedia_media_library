@@ -18,32 +18,19 @@
 #include "upgrade_restore.h"
 
 #include "backup_const_column.h"
-#include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "database_report.h"
-#include "cloud_sync_helper.h"
 #include "exif_rotate_utils.h"
 #include "gallery_db_upgrade.h"
-#include "media_column.h"
-#include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_data_manager.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_rdb_transaction.h"
-#include "photo_album_restore.h"
-#include "photos_dao.h"
-#include "photos_restore.h"
-#include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
-#include "userfile_manager_types.h"
 #include "vision_album_column.h"
-#include "vision_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "portrait_album_utils.h"
+#include "group_photo_album_restore.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -167,12 +154,10 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     MEDIA_INFO_LOG("GetPhotosSyncSwitchStatus success, switchstatus: %{public}d",
         static_cast<int>(restoreConfig_.restoreSwitchType));
     ParseXml(xmlPath);
-    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_, BaseRestore::IsCloudRestoreSatisfied());
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
-    ocrRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
-    classifyRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -380,15 +365,14 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
-    bool isCloudRestore = IsCloudRestoreSatisfied();
-    ocrRestore_.RestoreOCR(photoInfoMap_, isCloudRestore);
-    int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
-    classifyRestore_.RestoreClassify(photoInfoMap_);
-    int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
+    cloneGroupPhotoAlbum.UpdateGroupPhoto();
+    int64_t endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
-        " RestoreOCR cost: %{public}" PRId64 ", RestoreClassify cost: %{public}" PRId64,
+        " GroupPhoto cost: %{public}" PRId64,
         startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
-        endRestoreOCR - endRestoreHighlight, endRestoreClassify - endRestoreOCR);
+        endGroupPhoto - startGroupPhoto);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
@@ -487,7 +471,6 @@ void UpgradeRestore::RestorePhoto()
     }
     RestoreSmartAlbums();
     ReportPortraitStat(sceneCode_);
-
     int32_t restoreMode = BaseRestore::GetRestoreMode();
     UpgradeRestoreTaskReport()
         .SetSceneCode(sceneCode_)
@@ -1053,6 +1036,9 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(fileInfo.height, fileInfo.width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
     std::string package_name = fileInfo.packageName;
     if (package_name != "") {
@@ -1198,7 +1184,7 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.groupTagOld = GetStringVal(GALLERY_GROUP_TAG, resultSet);
     portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
-    portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    portraitAlbumInfo.renameOperation = (!portraitAlbumInfo.tagName.empty() ? RENAME_OPERATION_RENAMED : 0);
     portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
     std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
     if (oldRelationshipId != std::to_string(INDEX_ME)) {

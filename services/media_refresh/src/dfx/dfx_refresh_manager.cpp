@@ -175,7 +175,6 @@ static bool IsBetaVersion()
 void DfxRefreshManager::DfxRefreshReport()
 {
     SetEndTotalTime();
-    MEDIA_INFO_LOG("enter DfxRefreshReport totalCostTime_:%{public}d", static_cast<int>(totalCostTime_));
     AccurateRefreshDfxDataPoint reportData;
     auto albumOperationTime = albumOperationTime_;
     auto albumHiddenInfoOperationTime = albumHiddenInfoOperationTime_;

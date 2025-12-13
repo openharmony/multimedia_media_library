@@ -42,6 +42,8 @@
 using namespace std;
 
 namespace OHOS::Media::CloudSync {
+static const string HMDFS_PATH_PREFIX = "/mnt/hmdfs/100";
+static const string PHOTOS_PATH = "com.huawei.hmos.photos";
 int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
     const int32_t exifRotate, const int32_t &thumbState)
@@ -141,8 +143,8 @@ std::string CloudMediaSyncUtils::GetThumbParentPath(const std::string &path, con
         MEDIA_ERR_LOG("invalid path %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
         return "";
     }
-    /* transform sandbox path to hmdfs local path*/
-    return "/storage/cloud/files/.thumbs" + path.substr(pos + prefixCloud.size());
+    /* transform sandbox path to hmdfs local path */
+    return "/storage/cloud/files/.thumbs/" + path.substr(pos + prefixCloud.size());
 }
 
 void CloudMediaSyncUtils::RemoveThmParentPath(const std::string &path, const std::string &prefixCloud)
@@ -154,7 +156,7 @@ void CloudMediaSyncUtils::RemoveThmParentPath(const std::string &path, const std
     MediaFileUtils::DeleteDir(thmPath);
 }
 
-void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path, const std::string &prefixCloud)
+void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path)
 {
     std::string editParentPath = PhotoFileUtils::GetEditDataDir(path);
 
@@ -164,7 +166,7 @@ void CloudMediaSyncUtils::RemoveEditDataParentPath(const std::string &path, cons
     MediaFileUtils::DeleteDir(editParentPath);
 }
 
-void CloudMediaSyncUtils::RemoveMetaDataPath(const std::string &path, const std::string &prefixCloud)
+void CloudMediaSyncUtils::RemoveMetaDataPath(const std::string &path)
 {
     std::string metaDataPath = PhotoFileUtils::GetMetaDataRealPath(path);
 
@@ -178,14 +180,17 @@ static std::string GetVideoCachePath(const std::string &filePath)
 {
     std::string result = "";
     const std::string sandboxPrefix = "/storage/cloud";
-    const std::string cachePathPrefix = "/data/service/el2/hmdfs/cache/cloud_cache/pread_cache";
+    const std::string cachePathPrefix = "/account/device_view/local/data/";
+    const std::string cachepathSuffix = "/.video_cache";
     size_t pos = filePath.find(sandboxPrefix);
     if (pos != 0 || pos == std::string::npos) {
         MEDIA_ERR_LOG(
             "GetVideoCachePath Invalid filePath, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return result;
     }
-    std::string cachePath = cachePathPrefix + filePath.substr(sandboxPrefix.length());
+    std::string cachePath = HMDFS_PATH_PREFIX + cachePathPrefix + PHOTOS_PATH +
+        cachepathSuffix + filePath.substr(sandboxPrefix.length());
+    MEDIA_INFO_LOG("The cachePath is: %{public}s", cachePath.c_str());
     auto resolvedPath = realpath(cachePath.c_str(), nullptr);
     if (resolvedPath == nullptr) {
         if (errno != ENOENT) {
@@ -491,10 +496,11 @@ bool CloudMediaSyncUtils::IsLivePhoto(const PhotosPo &photosPo)
 
 int32_t CloudMediaSyncUtils::UpdateModifyTime(const std::string &localPath, int64_t localMtime)
 {
-    struct utimbuf ubuf {
-        .actime = localMtime / MILLISECOND_TO_SECOND, .modtime = localMtime / MILLISECOND_TO_SECOND
-    };
-    if (utime(localPath.c_str(), &ubuf) < 0) {
+    struct timeval times[2];
+    times[0].tv_sec = static_cast<time_t>(localMtime / MILLISECOND_TO_SECOND);
+    times[0].tv_usec = static_cast<suseconds_t>((localMtime % MILLISECOND_TO_SECOND) * MILLISECOND_TO_SECOND);
+    times[1] = times[0];
+    if (utimes(localPath.c_str(), times) < 0) {
         MEDIA_ERR_LOG(
             "utime failed %{public}d, lPath: %{public}s", errno, MediaFileUtils::DesensitizePath(localPath).c_str());
         return errno;

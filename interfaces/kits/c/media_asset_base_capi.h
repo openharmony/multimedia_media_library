@@ -49,6 +49,7 @@
 #include <stdint.h>
 
 #include "image_source_native.h"
+#include "picture_native.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -157,6 +158,15 @@ typedef enum MediaLibrary_ErrorCode {
     MEDIA_LIBRARY_INVALID_PHOTO_KEY = 23800104,
 
     /**
+     * @error The scenario parameter verification fails.
+     * It is recommended to retry and check the logs.
+     * Possible causes:
+     * 1. The type is not fixed at 'hiddenPhotoChange'.
+     * 2. The same callback is registered repeatedly.
+     */
+    MEDIA_LIBRARY_INVALID_PARAMETER_ERROR = 23800151,
+
+    /**
      * @error Operation is not supported.
      */
     MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED = 23800201,
@@ -247,6 +257,8 @@ typedef enum MediaLibrary_ResourceType {
 typedef enum MediaLibrary_ImageFileType {
     /*JPEG type*/
     MEDIA_LIBRARY_IMAGE_JPEG = 1,
+    /*HEIF type*/
+    MEDIA_LIBRARY_IMAGE_HEIF = 2,
     /*MPEG type*/
     MEDIA_LIBRARY_FILE_VIDEO = 3
 } MediaLibrary_ImageFileType;
@@ -317,6 +329,23 @@ typedef void (*OH_MediaLibrary_OnImageDataPrepared)(MediaLibrary_ErrorCode resul
 typedef void (*OH_MediaLibrary_OnMovingPhotoDataPrepared)(MediaLibrary_ErrorCode result,
     MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
     OH_MovingPhoto* movingPhoto);
+
+/**
+ * @brief Called when a requested picture is prepared.
+ *
+ * This function is called when the requested picture is prepared.
+ *
+ * @param result results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
+ * @param requestId indicates the {@link MediaLibrary_RequestId} of the request.
+ * @param mediaQuality the {@link MediaLibrary_MediaQuality} of the requested source.
+ * @param type the {@link MediaLibrary_MediaContentType} of the requested source.
+ * @param pictureNative it used to obtain {@link OH_PictureNative} information when the picture is prepared.
+ * @param imageSourceNative it used to obtain {@link OH_ImageSourceNative} information when image source is prepared.
+ * @since 23
+ */
+typedef void (*OH_MediaLibrary_OnQuickImageDataPrepared)(MediaLibrary_ErrorCode result,
+    MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
+    OH_PictureNative* pictureNative, OH_ImageSourceNative* imageSourceNative);
 
 #ifdef __cplusplus
 }

@@ -76,11 +76,12 @@ void DeferredPhotoProcessingAdapter::EndSynchronize()
 }
 
 #ifdef ABILITY_CAMERA_SUPPORT
-void DeferredPhotoProcessingAdapter::AddImage(const std::string &imageId, DpsMetadata &metadata, const bool isTrashed)
+void DeferredPhotoProcessingAdapter::AddImage(const std::string &imageId, DpsMetadata &metadata, const bool isTrashed,
+    const std::string &packageName)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isTrashed: %{public}d", imageId.c_str(), isTrashed);
     CHECK_AND_RETURN_LOG(deferredPhotoProcSession_ != nullptr, "AddImage deferredPhotoProcSession_ is nullptr");
-    deferredPhotoProcSession_->AddImage(imageId, metadata, isTrashed);
+    deferredPhotoProcSession_->AddImage(imageId, metadata, isTrashed, packageName);
 }
 #endif
 
@@ -137,5 +138,17 @@ void DeferredPhotoProcessingAdapter::SetProcessImageDoneCallback(const ProcessDo
     photoProcCallback_->SetProcessImageDoneCallback(func);
 }
 #endif
+
+void DeferredPhotoProcessingAdapter::NotifyProcessImage()
+{
+    MEDIA_INFO_LOG("DeferredPhotoProcessingAdapter::NotifyProcessImage");
+#ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredPhotoProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("NotifyProcessImage deferredPhotoProcSession_ is nullptr");
+        return;
+    }
+    deferredPhotoProcSession_->NotifyProcessImage();
+#endif
+}
 } // namespace Media
 } // namespace OHOS

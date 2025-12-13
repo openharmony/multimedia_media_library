@@ -88,6 +88,10 @@ public:
     bool isFavorite;
     bool isRecycle;
     std::vector<std::string> sourceAlbumIds;
+    // lake
+    int32_t fileSourceType;
+    std::string storagePath;
+    std::map<std::string, std::string> stringfields;
 
 public:  // functions of Parcelable.
     virtual ~OnFetchPhotosVo() = default;
@@ -104,6 +108,7 @@ private:
     bool ReadAttributesInfo(Parcel &parcel);
     void GetBasicInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;
+    void GetAttributesHashMap(std::stringstream &ss) const;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_ON_FETCH_PHOTOS_VO_H

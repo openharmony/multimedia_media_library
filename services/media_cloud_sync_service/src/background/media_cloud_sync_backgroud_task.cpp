@@ -21,6 +21,7 @@
 #include "repair_video_dirty_and_quality_task.h"
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
+#include "media_location_synchronize_task.h"
 
 namespace OHOS::Media::Background {
 // LCOV_EXCL_START
@@ -28,6 +29,7 @@ MediaCloudSyncBackgroundTask::MediaCloudSyncBackgroundTask()
 {
     this->tasks_ = {
         std::make_shared<MediaHiddenAndRecycleTask>(),
+        std::make_shared<MediaLocationSynchronizeTask>(),
     };
 }
 

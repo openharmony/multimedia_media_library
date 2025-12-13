@@ -18,8 +18,6 @@
 #include "media_asset_edit_data_napi.h"
 
 #include "medialibrary_client_errno.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
 
 using namespace std;
 

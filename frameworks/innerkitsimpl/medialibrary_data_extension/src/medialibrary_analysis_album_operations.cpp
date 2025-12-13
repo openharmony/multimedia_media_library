@@ -16,32 +16,17 @@
 
 #include "medialibrary_analysis_album_operations.h"
 
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <sstream>
-
-#include "media_log.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_rdb_transaction.h"
-#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "result_set_utils.h"
-#include "values_bucket.h"
 #include "photo_album_column.h"
-#include "photo_map_column.h"
 #include "story_album_column.h"
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "vision_total_column.h"
 #include "medialibrary_rdb_utils.h"
 
 using namespace std;
@@ -837,7 +822,24 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(Media
 
     int ret = rdbStore->ExecuteSql(sqlStr, args);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update orderPositions failed, error id: %{public}d", ret);
-    return ret;
+
+    ValueObject albumIdValue;
+    int32_t albumId = -1;
+    if (valueBucket.GetObject(ALBUM_ID, albumIdValue)) {
+        albumIdValue.GetInt(albumId);
+    }
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, ret, "Get album_id failed, album_id: %{public}d", albumId);
+    std::stringstream updateUserOperationSql;
+    const int userOperationSetted = 1;
+    updateUserOperationSql << "UPDATE AnalysisAlbum SET user_operation = " << userOperationSetted
+                           << " WHERE album_id = " << albumId;
+    int updateUserOperationRet = rdbStore->ExecuteSql(updateUserOperationSql.str());
+    CHECK_AND_RETURN_RET_LOG(updateUserOperationRet == NativeRdb::E_OK,
+        updateUserOperationRet,
+        "Update user_operation failed, ret: %{public}d",
+        updateUserOperationRet);
+
+    return updateUserOperationRet;
 }
 
 int32_t MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(const int32_t &albumId,

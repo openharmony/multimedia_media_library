@@ -15,6 +15,8 @@
 
 import { PickerColorMode } from '@ohos.file.PhotoPickerComponent';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import { display } from @ohos.display;
+const cooperation_multi_name = ['Cooperation-multi', 'Cooperation'];
 
 @Component
 export struct AlbumPickerComponent {
@@ -23,7 +25,7 @@ export struct AlbumPickerComponent {
   onEmptyAreaClick?: EmptyAreaClickCallback;
   @Watch('onChanged') albumPickerController?: AlbumPickerController; 
   private proxy: UIExtensionProxy | undefined;
-
+  dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   build() {
     Row() {
       Column() {
@@ -35,6 +37,9 @@ export struct AlbumPickerComponent {
             filterType: this.albumPickerOptions?.filterType,
             fontSize: this.albumPickerOptions?.fontSize,
           }
+        },
+        {
+          dpiFollowStategy: SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
           console.info('AlbumPickerComponent onRemoteReady');

@@ -30,6 +30,7 @@
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_const.h"
+#include "lake_file_utils.h"
 
 using namespace std;
 
@@ -698,8 +699,13 @@ bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string LocalOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = GetLocalThumbnailPath(data.path, "");
+    if (IsLocalSourceAvailable(tmpPath)) {
+        return tmpPath;
+    }
+    tmpPath = LakeFileUtils::GetAssetRealPath(data.path);
+    MEDIA_DEBUG_LOG("##### file path is %{private}s", tmpPath.c_str());
     if (!IsLocalSourceAvailable(tmpPath)) {
-        return "";
+        MEDIA_ERR_LOG("GetSourcePath failed 2, path:%{public}s", data.path.c_str());
     }
     return tmpPath;
 }

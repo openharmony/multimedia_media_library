@@ -18,7 +18,7 @@
 #include <charconv>
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
@@ -57,7 +57,8 @@ OH_MediaAsset *MediaAssetHelperImpl::GetOhMediaAsset(const std::string &uri)
         UserFileClient::Init();
     }
     std::string fileId = MediaFileUtils::GetIdFromUri(uri);
-    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), nullptr, "Failed to extract file ID from URI: %{public}s", uri.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), nullptr,
+        "Failed to extract file ID from URI: %{public}s", uri.c_str());
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     std::vector<std::string> columns = {PhotoColumn::MEDIA_SIZE,

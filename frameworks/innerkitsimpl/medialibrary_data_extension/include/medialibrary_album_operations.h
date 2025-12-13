@@ -37,6 +37,8 @@ namespace Media {
 constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
 struct MergeAlbumInfo {
     int albumId;
+    int albumType;
+    int albumSubtype;
     std::string groupTag;
     int count;
     int isMe;
@@ -49,6 +51,7 @@ struct MergeAlbumInfo {
     uint8_t isCoverSatisfied;
     std::string tagId;
     std::vector<string> repeatedAlbumIds;
+    std::string relationship;
 };
 
 struct SetCoverUriAlbumInfo {
@@ -104,7 +107,8 @@ public:
     static int32_t RecoverPhotoAssets(const DataShare::DataSharePredicates &predicates);
     static int32_t DeletePhotoAssets(const DataShare::DataSharePredicates &predicates,
         const bool isAging, const bool compatible);
-    static int32_t MergePortraitAlbums(const NativeRdb::ValuesBucket &values);
+    static bool IsOnlyPortraitOrPetAlbumMerge(const vector<MergeAlbumInfo>& mergeAlbumInfo);
+    static int32_t MergeAlbums(const NativeRdb::ValuesBucket &values);
     static int32_t OrderSingleAlbum(const NativeRdb::ValuesBucket &values);
     static int32_t UpdateAlbumCoverUri(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, bool isSystemAlbum);

@@ -15,7 +15,6 @@
 
 #include "mimetype_utils.h"
 
-#include <algorithm>
 #include <fstream>
 #include <sys/stat.h>
 #include <sstream>

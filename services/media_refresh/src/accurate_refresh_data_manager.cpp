@@ -248,9 +248,13 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         PostInsertAfterData(changeData, pendingInfo);
         if (modifiedDatas.size() <= logTimesLimit || !recordFirst) {
             ACCURATE_INFO("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);
-            ACCURATE_INFO("[update] info before: %{public}s", changeData.infoBeforeChange_.ToString(true).c_str());
-            ACCURATE_INFO("change: %{public}s",
-                changeData.infoBeforeChange_.GetDataDiff(changeData.infoAfterChange_).c_str());
+            if (AccurateRefresh::accurateDebugLevel >= AccurateRefresh::accurateDebugLevelMid) {
+                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: [update] info before: %{public}s",
+                    MLOG_TAG, __FUNCTION__, __LINE__, changeData.infoBeforeChange_.ToString(true).c_str());
+                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: change: %{public}s",
+                    MLOG_TAG, __FUNCTION__, __LINE__,
+                    changeData.infoBeforeChange_.GetDataDiff(changeData.infoAfterChange_).c_str());
+            }
             recordFirst = true;
             if (modifiedDatas.size() > logTimesLimit) {
                 ACCURATE_INFO("%{public}zu total update datas", modifiedDatas.size());
@@ -328,14 +332,15 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChangeDataByKey(const int32_t key,
     ChangeData &changeData, bool isCheckUpdate)
 {
-    if (changeDatas_.find(key) == changeDatas_.end()) {
+    auto iter = changeDatas_.find(key);
+    if (iter == changeDatas_.end()) {
         MEDIA_WARN_LOG("no change data found by key: %{public}d", key);
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
     if (isCheckUpdate) {
         CheckUpdateDataForMultiThread(changeDatas_[key]);
     }
-    changeData = changeDatas_[key];
+    changeData = iter->second;
     return ACCURATE_REFRESH_RET_OK;
 }
 

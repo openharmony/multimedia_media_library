@@ -196,12 +196,13 @@ const std::vector<std::string> downloadAssetsNotifyTypeEnum {
 };
 
 const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
-    std::make_pair("DEFAULT",       static_cast<int32_t>(PhotoSubType::DEFAULT)),
-    std::make_pair("SCREENSHOT",    static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
-    std::make_pair("CAMERA",        static_cast<int32_t>(PhotoSubType::CAMERA)),
-    std::make_pair("MOVING_PHOTO",  static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
-    std::make_pair("BURST",         static_cast<int32_t>(PhotoSubType::BURST)),
-    std::make_pair("SPATIAL_3DGS",  static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS))
+    std::make_pair("DEFAULT",           static_cast<int32_t>(PhotoSubType::DEFAULT)),
+    std::make_pair("SCREENSHOT",        static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
+    std::make_pair("CAMERA",            static_cast<int32_t>(PhotoSubType::CAMERA)),
+    std::make_pair("MOVING_PHOTO",      static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
+    std::make_pair("BURST",             static_cast<int32_t>(PhotoSubType::BURST)),
+    std::make_pair("SLOW_MOTION_VIDEO", static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO)),
+    std::make_pair("SPATIAL_3DGS",      static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS))
 };
 
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
@@ -309,6 +310,10 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
     std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
     std::make_pair("VIDEO_MODE",                PhotoColumn::PHOTO_VIDEO_MODE),
+    std::make_pair("FUSION_ASSET_STORAGE_PATH", PhotoColumn::PHOTO_STORAGE_PATH),
+    std::make_pair("ASSET_SOURCE_TYPE",         PhotoColumn::PHOTO_FILE_SOURCE_TYPE),
+    std::make_pair("ASPECT_RATIO",              PhotoColumn::PHOTO_ASPECT_RATIO),
+    std::make_pair("EDIT_DATA_EXIST",           PhotoColumn::PHOTO_EDIT_DATA_EXIST),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -320,6 +325,8 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
     std::make_pair("BUNDLE_NAME",               PhotoAlbumColumns::ALBUM_BUNDLE_NAME),
     std::make_pair("COVER_URI_SOURCE",          PhotoAlbumColumns::COVER_URI_SOURCE),
+    std::make_pair("UPLOAD_STATUS",             PhotoAlbumColumns::UPLOAD_STATUS),
+    std::make_pair("HIDDEN",                    PhotoAlbumColumns::ALBUM_HIDDEN),
 };
 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {

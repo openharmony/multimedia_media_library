@@ -39,6 +39,7 @@ private:
     int32_t MergeAlbumFromOldBundleNameToNewBundleName(NativeRdb::RdbStore &store);
     int32_t UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &store);
     void AggregateClassifyAlbum(NativeRdb::RdbStore &store);
+    int32_t UpgradePhotoAlbumAddUploadStatusColumn(NativeRdb::RdbStore &store);
 
 private:
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
@@ -367,6 +368,8 @@ private:
             INNER JOIN tab_analysis_ocr \
             ON AnalysisPhotoMap.map_asset = tab_analysis_ocr.file_id \
             AND (";
+    const std::string SQL_PHOTO_ALBUM_TABLE_ADD_UPDATE_STATUS_COLUMN =
+        "ALTER TABLE PhotoAlbum ADD COLUMN upload_status INT DEFAULT 1 NOT NULL;";
 };
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

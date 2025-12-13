@@ -19,13 +19,17 @@
 #ifdef ABILITY_CAMERA_SUPPORT
 #include <memory>
 #include <string>
+#include <sstream>
 
+#include "camera_character_types.h"
 #include "deferred_photo_proc_session.h"
 #include "result_set_utils.h"
 #include "medialibrary_command.h"
+#include "user_define_notify_info.h"
 
 namespace OHOS {
 namespace Media {
+using namespace Notification;
 class Picture;
 #define EXPORT __attribute__ ((visibility ("default")))
 using ProcessDoneHandler = std::function<void(bool, const std::string &)>;
@@ -46,6 +50,15 @@ public:
     void SetProcessImageDoneCallback(const ProcessDoneHandler &func);
 
 private:
+    void HandleForNullData(const std::string &imageId, std::shared_ptr<Media::Picture> picture);
+    void HandleForIsTemp(const std::shared_ptr<FileAsset> &fileAsset, std::shared_ptr<Media::Picture> &picture,
+        uint32_t cloudImageEnhanceFlag);
+    void HandleOnError(const string &imageId, const CameraStandard::DpsErrorCode error);
+    void HandleOnProcessImageDone(const string &imageId, const uint8_t *addr,
+        const long bytes, uint32_t cloudImageEnhanceFlag);
+    void HandleOnProcessImageDone(
+        const std::string &imageId, std::shared_ptr<CameraStandard::PictureIntf> pictureIntf,
+        uint32_t cloudImageEnhanceFlag);
     EXPORT int32_t UpdatePhotoQuality(const int32_t &fileId);
     EXPORT void UpdatePhotoQuality(const int32_t &fileId, NativeRdb::ValuesBucket &updateValues);
     EXPORT void UpdateCEAvailable(const int32_t &fileId, uint32_t cloudImageEnhanceFlag,
@@ -53,9 +66,9 @@ private:
     EXPORT void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd);
     EXPORT void UpdateHighQualityPictureInfo(const int32_t &fileId, uint32_t cloudImageEnhanceFlag,
          int32_t modifyType = 0);
-    EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isError = false);
-    EXPORT void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
-        std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
+    EXPORT void NotifyIfTempFile(const std::shared_ptr<FileAsset> &fileAsset, bool isError = false);
+    EXPORT void ProcessAndSaveHighQualityImage(const std::shared_ptr<FileAsset> &fileAsset,
+        std::shared_ptr<Media::Picture> picture, uint32_t cloudImageEnhanceFlag);
     void CallProcessImageDone(bool success, const std::string &photoId);
 
 private:

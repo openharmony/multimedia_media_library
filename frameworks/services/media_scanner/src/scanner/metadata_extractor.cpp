@@ -411,6 +411,9 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         data->SetFileWidth(imageInfo.size.width);
         data->SetFileHeight(imageInfo.size.height);
         data->SetFileMimeType(imageInfo.encodedFormat);
+        double aspectRatio =
+            MediaFileUtils::CalculateAspectRatio(imageInfo.size.height, imageInfo.size.width);
+        data->SetFileAspectRatio(aspectRatio);
     } else {
         MEDIA_ERR_LOG("Failed to get image info, err = %{public}d", err);
     }
@@ -442,6 +445,13 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
     if (genreJson.empty()) {
         return "";
     }
+
+    //Camera shooting mode parse after 6.1
+    if (ShootingModeAlbum::VALID_TAGS.find(genreJson) != ShootingModeAlbum::VALID_TAGS.end()) {
+        return genreJson;
+    }
+
+    //Compatible Camera shooting mode parse before 4.x
     size_t pos = genreJson.find("param-use-tag");
     if (pos != std::string::npos) {
         size_t start = genreJson.find(":", pos);
@@ -487,6 +497,10 @@ void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::strin
         intTempMeta = stringToNum<int32_t>(strTemp);
         data->SetFileWidth(intTempMeta);
     }
+
+    double aspectRatio =
+        MediaFileUtils::CalculateAspectRatio(data->GetFileHeight(), data->GetFileWidth());
+    data->SetFileAspectRatio(aspectRatio);
 
     strTemp = resultMap.at(AV_KEY_MIME_TYPE);
     if (strTemp != "") {
@@ -597,14 +611,11 @@ void MetadataExtractor::PopulateVideoTimeInfo(const shared_ptr<Meta> &customMeta
         detailTime.c_str());
 }
 
-static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data, const std::string &videoShootingMode,
-    const std::string &strTemp)
+static void FillSlowMotionMetadata(std::unique_ptr<Metadata> &data)
 {
-    if (videoShootingMode == SLOW_MOTION_ALBUM_TAG || strTemp == SLOW_MOTION_ALBUM_TAG) {
+    if (data->GetShootingMode() == std::to_string(static_cast<int>(ShootingModeValue::SLOW_MOTION_SHOOTING_MODE))) {
         MEDIA_DEBUG_LOG("shoot mode type is SlowMotion");
         data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO));
-        data->SetShootingModeTag(SLOW_MOTION_ALBUM_TAG);
-        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(SLOW_MOTION_ALBUM_TAG));
     }
 }
 
@@ -627,7 +638,7 @@ void PopulateExtractedAVMetadataTwo(
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingModeTag(videoShootingMode);
         data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(videoShootingMode));
-        FillSlowMotionMetadata(data, videoShootingMode, strTemp);
+        FillSlowMotionMetadata(data);
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";
@@ -832,6 +843,8 @@ int32_t MetadataExtractor::BuildMetaData(
         if (IsMovingPhoto(data)) {
             FillFrameIndex(avMetadataHelper, data);
         }
+    } else {
+        MEDIA_ERR_LOG("resultMap is empty, file path: %{private}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     }
     int32_t fileId = data->GetFileId();
     if (fileId != FILE_ID_DEFAULT) {

@@ -31,9 +31,15 @@ bool PhotosVo::Unmarshalling(MessageParcel &parcel)
     parcel.ReadInt64(this->modifiedTime);
     parcel.ReadString(this->path);
     parcel.ReadString(this->fileName);
+    parcel.ReadString(this->localPath);
     parcel.ReadString(this->originalCloudId);
     parcel.ReadInt32(this->type);
     parcel.ReadInt32(this->orientation);
+    parcel.ReadInt32(this->fileSourceType);
+    parcel.ReadString(this->storagePath);
+    parcel.ReadInt32(this->hidden);
+    parcel.ReadInt64(this->dateTrashed);
+    parcel.ReadInt32(this->attributesMediaType);
     CloudFileDataVo::Unmarshalling(this->attachment, parcel);
     return true;
 }
@@ -46,9 +52,15 @@ bool PhotosVo::Marshalling(MessageParcel &parcel) const
     parcel.WriteInt64(this->modifiedTime);
     parcel.WriteString(this->path);
     parcel.WriteString(this->fileName);
+    parcel.WriteString(this->localPath);
     parcel.WriteString(this->originalCloudId);
     parcel.WriteInt32(this->type);
     parcel.WriteInt32(this->orientation);
+    parcel.WriteInt32(this->fileSourceType);
+    parcel.WriteString(this->storagePath);
+    parcel.WriteInt32(this->hidden);
+    parcel.WriteInt64(this->dateTrashed);
+    parcel.WriteInt32(this->attributesMediaType);
     CloudFileDataVo::Marshalling(this->attachment, parcel);
     return true;
 }
@@ -110,6 +122,10 @@ std::string PhotosVo::ToString() const
        << "\"size\": " << this->size << ", "
        << "\"modifiedTime\": " << this->modifiedTime << ", "
        << "\"type\": " << this->type << ", "
+       << "\"fileSourceType\": " << this->fileSourceType << ", "
+       << "\"storagePath\": " << this->storagePath << ", "
+       << "\"hidden\": " << this->hidden << ", "
+       << "\"dateTrashed\": " << this->dateTrashed << ", "
        << "\"attachment\": {" << this->ToString(this->attachment) << "}"
        << "}";
     return ss.str();

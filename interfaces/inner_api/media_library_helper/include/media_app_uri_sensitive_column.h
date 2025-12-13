@@ -70,5 +70,13 @@ public:
     static const std::set<std::string> ALL_COLUMNS EXPORT;
 };
 
+enum class HideSensitiveType : int32_t {
+    ALL_DESENSITIZE = 0,
+    GEOGRAPHIC_LOCATION_DESENSITIZE,
+    SHOOTING_PARAM_DESENSITIZE,
+    NO_DESENSITIZE,
+    DEFAULT
+};
+
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_APP_URI_PERMISSION_H_

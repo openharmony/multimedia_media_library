@@ -12,70 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "userfile_manager_types.h"
 #define MLOG_TAG "FileAssetNapi"
 
 #include "file_asset_napi.h"
 
-#include <algorithm>
-#include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
 
-#include "abs_shared_result_set.h"
-#include "access_token.h"
 #include "accesstoken_kit.h"
-#include "datashare_errno.h"
-#include "datashare_predicates.h"
-#include "datashare_result_set.h"
-#include "datashare_values_bucket.h"
 #include "exif_rotate_utils.h"
-#include "hitrace_meter.h"
 #include "fetch_result.h"
 #include "file_uri.h"
-#include "hilog/log.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
-#include "js_native_api.h"
-#include "js_native_api_types.h"
-#include "location_column.h"
 #include "locale_config.h"
 #include "media_asset_edit_data_napi.h"
 #include "media_exif.h"
-#include "media_column.h"
-#include "media_file_utils.h"
-#include "media_file_uri.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_napi_enum_comm.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
-#include "nlohmann/json.hpp"
-#include "post_proc.h"
-#include "rdb_errno.h"
 #include "sandbox_helper.h"
-#include "string_ex.h"
-#include "thumbnail_const.h"
 #include "thumbnail_utils.h"
-#include "unique_fd.h"
-#include "userfile_client.h"
-#include "userfilemgr_uri.h"
 #include "vision_aesthetics_score_column.h"
-#include "vision_album_column.h"
-#include "vision_column_comm.h"
-#include "vision_column.h"
 #include "vision_composition_column.h"
-#include "vision_face_tag_column.h"
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
-#include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
-#include "vision_photo_map_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
@@ -2215,6 +2180,11 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_BONE_POSE, { POSE, PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
+    { ANALYSIS_PET_FACE, { PET_STATUS, PAH_QUERY_ANA_PET, { PET_ID, PET_TAG_ID, PET_TOTAL_FACES, PET_LABEL,
+        FEATURES, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, DATE_MODIFIED } } },
+    { ANALYSIS_PET_TAG, { PET_TAG, PAH_QUERY_ANA_PET_TAG, { VISION_PET_TAG_TABLE + "." + TAG_ID, PET_LABEL,
+        CENTER_FEATURES, COUNT } } },
 };
 
 static DataShare::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext *context)
@@ -2223,6 +2193,10 @@ static DataShare::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext 
     if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
         string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
         predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
+    }
+    if (context->analysisType == ANALYSIS_PET_TAG) {
+        string onClause = VISION_PET_FACE_TABLE + "." + PET_TAG_ID + " = " + VISION_PET_TAG_TABLE + "." + TAG_ID;
+        predicates.InnerJoin(VISION_PET_FACE_TABLE)->On({ onClause });
     }
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
@@ -2302,8 +2276,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     if (analysisType == ANALYSIS_DETAIL_ADDRESS) {
         const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
         auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-        context->analysisData = "";
         if (!err) {
+            context->SaveError(E_PERMISSION_DENIED);
             return;
         }
     }
@@ -3056,12 +3030,6 @@ napi_value FileAssetNapi::PhotoAccessHelperCreateTmpCompatibleDup(napi_env env, 
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Only image file type is supported");
         return nullptr;
     }
-    // Check if the file is HEIF/HEIC format
-    std::string originExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    if (originExtension != "heif" && originExtension != "heic") {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "extension must be heif or heic");
-        return nullptr;
-    }
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCreateTmpCompatibleDup",
         PhotoAccessHelperCreateTmpCompatibleDupExecute, PhotoAccessHelperCreateTmpCompatibleDupComplete);
@@ -3097,6 +3065,8 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,
         PhotoColumn::PHOTO_EXIF_ROTATE,
+        PhotoColumn::PHOTO_STORAGE_PATH,
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -3298,6 +3268,8 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
         napi_create_int32(env, get<int32_t>(m), &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
         napi_create_int64(env, GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
+    } else if (m.index() == MEMBER_TYPE_DOUBLE) {
+        napi_create_double(env, get<double>(m), &jsResult);
     } else {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;
@@ -4415,7 +4387,6 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
         NAPI_ERR_LOG("fileAsset is null");
         return;
     }
-
     ConvertFormatReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
     reqBody.title = context->title;
@@ -4445,8 +4416,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
     NAPI_INFO_LOG("End ConvertFormatHandlerExecute.");
 }
 
-static bool CheckConvertFormatParams(const std::string &originExtension, const std::string &title,
-    const std::string &extension)
+static bool CheckConvertFormatParams(const std::string &title, const std::string &extension)
 {
     std::string displayName = title + "." + extension;
     if (MediaFileUtils::CheckDisplayName(displayName, true) != E_OK) {
@@ -4464,10 +4434,32 @@ static bool CheckConvertFormatParams(const std::string &originExtension, const s
         NAPI_ERR_LOG("The format of transition is not supported.");
         return false;
     }
-    if (originExtension != "heif" && originExtension != "heic") {
-        NAPI_ERR_LOG("The requested asset must be heif|heic");
+    NAPI_INFO_LOG("CheckConvertFormatParams end");
+    return true;
+}
+
+static bool CheckConvertFormatMimeType(napi_env env, const int32_t fileId)
+{
+    NAPI_INFO_LOG("CheckConvertFormatMimeType in");
+    MimeTypeReqBody mimeTypeReqBody;
+    mimeTypeReqBody.fileId = fileId;
+    MimeTypeRespBody mimeTypeRespBody;
+    mimeTypeRespBody.result = false;
+    IPC::UserDefineIPCClient mimeTypeClient;
+    int32_t ret = mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+        mimeTypeReqBody, mimeTypeRespBody);
+    if (ret < 0) {
+        NAPI_ERR_LOG("Failed to CheckConvertFormatMimeType, ret: %{public}d", ret);
+        int32_t error = MediaLibraryNapiUtils::TransErrorCode("CheckConvertFormatMimeType", ret);
+        NapiError::ThrowError(env, error);
         return false;
     }
+    if (!mimeTypeRespBody.result) {
+        NAPI_ERR_LOG("CheckConvertFormatMimeType result false");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
+        return false;
+    }
+    NAPI_INFO_LOG("CheckConvertFormatMimeType end");
     return true;
 }
 
@@ -4488,13 +4480,15 @@ napi_value FileAssetNapi::PhotoAccessHelperConvertFormat(napi_env env, napi_call
     MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ZERO], title);
     string extension;
     MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], extension);
-    std::string originExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
+    int32_t fileId = fileAsset->GetId();
     NAPI_INFO_LOG("ConvertFormat title: %{public}s, extension: %{public}s", title.c_str(), extension.c_str());
-    if (!CheckConvertFormatParams(originExtension, title, extension)) {
+    if (!CheckConvertFormatParams(title, extension)) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Input params is invalid");
         return nullptr;
     }
-
+    if (!CheckConvertFormatMimeType(env, fileId)) {
+        return nullptr;
+    }
     asyncContext->title = title;
     asyncContext->extension = extension;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ConvertFormateHandlerExecute",

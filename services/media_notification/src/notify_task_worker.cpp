@@ -42,6 +42,9 @@ std::unordered_map<int32_t, NotifyTaskInfo> NotifyTaskWorker::taskInfos_;
 mutex NotifyTaskWorker::instanceMtx_;
 std::mutex NotifyTaskWorker::mapMutex_;
 
+std::vector<UserDefineNotifyInfo> NotifyTaskWorker::userDefineTaskInfos_;
+std::mutex NotifyTaskWorker::userDefineVecMutex_;
+
 static const int32_t MAX_WAIT_TIME = 50;
 static const int32_t WAIT_FOR_MS = 100;
 shared_ptr<NotifyTaskWorker> NotifyTaskWorker::GetInstance()
@@ -85,9 +88,15 @@ void NotifyTaskWorker::AddTaskInfo(NotifyInfoInner &notifyInfoInner)
     }
 }
 
+void NotifyTaskWorker::AddUserDefineTaskInfo(const UserDefineNotifyInfo &notifyInfoInner)
+{
+    lock_guard<mutex> lock(userDefineVecMutex_);
+    userDefineTaskInfos_.push_back(notifyInfoInner);
+}
+
 bool NotifyTaskWorker::IsTaskInfosEmpty()
 {
-    return taskInfos_.empty();
+    return taskInfos_.empty() && userDefineTaskInfos_.empty();
 }
 
 bool NotifyTaskWorker::IsRunning()
@@ -115,6 +124,18 @@ std::vector<NotifyTaskInfo> NotifyTaskWorker::GetCurrentNotifyMap()
     }
     
     MEDIA_INFO_LOG("notifyTaskInfos size: %{public}d", (int32_t)notifyTaskInfos.size());
+    return notifyTaskInfos;
+}
+
+std::vector<UserDefineNotifyInfo> NotifyTaskWorker::GetCurrentUserDefineNotifyVec()
+{
+    lock_guard<mutex> lock(userDefineVecMutex_);
+    MEDIA_INFO_LOG("UserDefineTaskInfos_: %{public}d", (int32_t)userDefineTaskInfos_.size());
+    std::vector<UserDefineNotifyInfo> notifyTaskInfos = userDefineTaskInfos_;
+    userDefineTaskInfos_.clear();
+    
+    MEDIA_INFO_LOG("NotifyTaskInfos size: %{public}d, userDefineTaskInfos_: %{public}d",
+        (int32_t)notifyTaskInfos.size(), (int32_t)userDefineTaskInfos_.size());
     return notifyTaskInfos;
 }
 
@@ -147,6 +168,12 @@ void NotifyTaskWorker::HandleNotifyTask()
     DistributeNotifyInfo(notifyInfos);
 }
 
+void NotifyTaskWorker::HandleUserDefineNotifyTask()
+{
+    std::vector<UserDefineNotifyInfo> notifyTaskInfos = GetCurrentUserDefineNotifyVec();
+    NotificationDistribution::DistributeUserDefineNotifyInfo(notifyTaskInfos);
+}
+
 std::vector<MediaChangeInfo> NotifyTaskWorker::ClassifyNotifyInfo(std::vector<NotifyTaskInfo> &notifyTaskInfos)
 {
     MEDIA_INFO_LOG("ClassifyNotifyInfo");
@@ -174,6 +201,7 @@ void NotifyTaskWorker::HandleNotifyTaskPeriod()
             continue;
         }
         HandleNotifyTask();
+        HandleUserDefineNotifyTask();
         noTaskTims_ = 0;
     }
     NotificationUtils::UpdateNotificationProp();

@@ -687,7 +687,9 @@ function getPhotoAccessHelper(context, userId = -1) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.constructor.prototype.createDeleteRequest = createDeleteRequest;
     helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
+    helper.constructor.prototype.showAssetsCreationDialogEx = showAssetsCreationDialog;
     helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+    helper.constructor.prototype.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
     helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
     helper.constructor.prototype.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
     helper.constructor.prototype.getRecentPhotoInfo = getRecentPhotoInfo;
@@ -727,7 +729,9 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
           helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
           helper.getRecentPhotoInfo = getRecentPhotoInfo;
@@ -749,7 +753,9 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
           helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
           helper.getRecentPhotoInfo = getRecentPhotoInfo;
@@ -824,6 +830,74 @@ const FilterOperator = {
   LESS_THAN_OR_EQUAL_TO: 5,
   BETWEEN: 6,
 };
+
+const OperationType = {
+  EQUAL_TO : 1,
+  NOT_EQUAL_TO : 2,
+  GREATER_THAN : 3,
+  LESS_THAN : 4,
+  GREATER_THAN_OR_EQUAL_TO : 5,
+  LESS_THAN_OR_EQUAL_TO : 6,
+  AND : 7,
+  OR : 8,
+  IN : 9,
+  NOT_IN : 10,
+  BEGIN_WRAP : 11,
+  END_WRAP : 12,
+  BETWEEN : 13,
+  NOT_BETWEEN : 14
+}
+
+const PickerFilterPhotoKeys = {
+  
+  URI: 'uri',
+  
+  PHOTO_TYPE: 'media_type',
+  
+  DISPLAY_NAME: 'display_name',
+  
+  SIZE: 'size',
+  
+  DATE_ADDED: 'date_added',
+  
+  DATE_MODIFIED: 'date_modified',
+  
+  DURATION: 'duration',
+  
+  WIDTH: 'width',
+  
+  HEIGHT: 'height',
+  
+  DATE_TAKEN: 'date_taken',
+  
+  ORIENTATION: 'orientation',
+  
+  FAVORITE: 'is_favorite',
+  
+  TITLE: 'title',
+  
+  POSITION: 'position',
+  
+  PHOTO_SUBTYPE: 'subtype',
+  
+  DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+  
+  COVER_POSITION: 'cover_position',
+  
+  BURST_KEY: 'burst_key',
+  
+  LCD_SIZE: 'lcd_size',
+  
+  THM_SIZE: 'thm_size',
+  
+  DETAIL_TIME: 'detail_time',
+  
+  OWNER_ALBUM_ID: 'owner_album_id',
+  
+  MEDIA_SUFFIX: 'media_suffix',
+  
+  ASPECT_RATIO: 'aspect_ratio',
+}
 
 const SingleSelectionMode = {
   BROWSER_MODE: 0,
@@ -915,6 +989,8 @@ function parsePhotoPickerSelectOption(args) {
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
     }
+    config.parameters.maxPhotoSelectNumber = option.maxPhotoSelectNumber;
+    config.parameters.maxVideoSelectNumber = option.maxVideoSelectNumber;
     config.parameters.isSearchSupported = option.isSearchSupported === undefined || option.isSearchSupported;
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
@@ -935,6 +1011,8 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
+    config.parameters.assetFilter = option.assetFilter;
+    config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
   }
 
   return config;
@@ -956,6 +1034,35 @@ function parseMimeTypeFilter(filter) {
     }
   }
   return o;
+}
+
+function checkAssetFilterInvalid(assetFilter) {
+  // 获取所有有效的值
+  const validOperationTypes = Object.values(OperationType);
+  const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
+
+  //遍历数组中的每个OperationItem
+  for (const item of assetFilter) {
+    //检查operationType是否有值且在枚举中
+    if (!item.operationType || !validOperationTypes.includes(item.operationType)) {
+      console.log('[picker] Invalid operationType');
+      return true;
+    }
+
+    //如果field有值，检查是否在枚举中
+    if (item.field !== undefined && item.field !== null) {
+      if (!validPhotoKeys.includes(item.field)) {
+        console.log('[picker] Invalid photokeys');
+        return true;
+      }
+      // uri仅支持EQUAL_TO操作
+      if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
+        console.log('[picker] Invalid uri operation');
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function getPhotoPickerSelectResult(args) {
@@ -993,6 +1100,15 @@ async function photoPickerSelect(...args) {
     if (!check) {
       console.log('[picker] error: ' + ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION);
       return undefined;
+    }
+  }
+
+  let assetFilter = config.parameters.assetFilter;
+  if (assetFilter) {
+    let isAssetFilterInvalid = checkAssetFilterInvalid(assetFilter);
+    if (isAssetFilterInvalid) {
+      console.error('[picker] config: assetFilter has value but invalid');
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
     }
   }
 
@@ -1063,9 +1179,15 @@ function FileSizeFilterArray() {
   this.photoViewMimeTypeFileSizeFilters = [];
 }
 
+function OperationItem() {
+  this.operationType = -1;
+}
+
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
+  this.maxPhotoSelectNumber = -1;
+  this.maxVideoSelectNumber = -1;
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
@@ -1082,6 +1204,7 @@ function PhotoSelectOptions() {
   this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
   this.userId = -1;
+  this.isDestroyedWithNavigation = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {
@@ -1179,6 +1302,8 @@ export default {
   VideoDurationFilter: VideoDurationFilter,
   PhotoViewMimeTypeFileSizeFilters: FileSizeFilterArray,
   FilterOperator: FilterOperator,
+  OperationItem: OperationItem,
+  OperationType: OperationType,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,

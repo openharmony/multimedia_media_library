@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_multistages_capture_test") {
-  module_out_path = "media_library/media_library-asset"
+  module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
@@ -33,6 +33,7 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_multistages_photo_capture_test.cpp",
     "./src/medialibrary_multistages_video_capture_test.cpp",
+    "./src/multistages_capture_notify_test.cpp",
   ]
 
   deps = [
@@ -66,6 +67,7 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "relational_store:native_rdb",
     "googletest:gtest_main",
     "googletest:gmock_main",
+    "dfs_service:cloudsync_kit_inner",
   ]
 
   if (defined(global_parts_info) &&

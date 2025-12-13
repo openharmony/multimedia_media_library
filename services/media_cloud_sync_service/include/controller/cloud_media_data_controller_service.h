@@ -42,6 +42,8 @@ class EXPORT CloudMediaDataControllerService : public IPC::IMediaControllerServi
 private:
     int32_t UpdateDirty(MessageParcel &data, MessageParcel &reply);
     int32_t UpdatePosition(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdatePosWithType(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdateFileSourceType(MessageParcel &data, MessageParcel &reply);
     int32_t UpdateThmStatus(MessageParcel &data, MessageParcel &reply);
     int32_t GetAgingFile(MessageParcel &data, MessageParcel &reply);
     int32_t GetActiveAgingFile(MessageParcel &data, MessageParcel &reply);
@@ -63,6 +65,10 @@ private:
             &CloudMediaDataControllerService::UpdateDirty},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_POSITION_FOR_CLOUD_CHECK),
             &CloudMediaDataControllerService::UpdatePosition},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_POSITION_WITH_TYPE_FOR_CLOUD_CHECK),
+            &CloudMediaDataControllerService::UpdateFileSourceType},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_FILE_SOURCE_TYPE),
+            &CloudMediaDataControllerService::UpdatePosWithType},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_THM_STATUS_FOR_CLOUD_CHECK),
             &CloudMediaDataControllerService::UpdateThmStatus},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_VIDEO_TO_CACHE),

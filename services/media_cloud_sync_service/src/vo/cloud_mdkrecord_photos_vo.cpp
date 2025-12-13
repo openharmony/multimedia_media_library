@@ -21,6 +21,7 @@
 
 #include "media_itypes_utils.h"
 #include "media_log.h"
+#include "itypes_util.h"
 
 namespace OHOS::Media::CloudSync {
 bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
@@ -55,7 +56,7 @@ bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
     parcel.WriteInt32(strongAssociation);
     return true;
 }
-bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
+bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(MessageParcel &parcel) const
 {
     parcel.WriteInt32(fileId);
     parcel.WriteString(cloudId);
@@ -85,6 +86,9 @@ bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     parcel.WriteString(albumLPath);
     parcel.WriteString(recordType);
     parcel.WriteString(recordId);
+    parcel.WriteInt32(fileSourceType);
+    parcel.WriteString(storagePath);
+    ITypesUtil::Marshalling(stringfields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
@@ -119,7 +123,7 @@ bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
     parcel.ReadInt32(strongAssociation);
     return true;
 }
-bool CloudMdkRecordPhotosVo::ReadAttributesInfo(Parcel &parcel)
+bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
 {
     parcel.ReadInt32(fileId);
     parcel.ReadString(cloudId);
@@ -149,6 +153,9 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(Parcel &parcel)
     parcel.ReadString(albumLPath);
     parcel.ReadString(recordType);
     parcel.ReadString(recordId);
+    parcel.ReadInt32(fileSourceType);
+    parcel.ReadString(storagePath);
+    ITypesUtil::Unmarshalling(stringfields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const
@@ -263,6 +270,7 @@ std::string CloudMdkRecordPhotosVo::ToString()
     this->GetCloudInfo(ss);
     this->GetAttributesInfo(ss);
     this->GetRemoveAlbumInfo(ss);
+    this->GetAttributesHashMap(ss);
     ss << "}";
     return ss.str();
 }
@@ -342,5 +350,16 @@ bool CloudMdkRecordPhotosRespBody::Unmarshalling(MessageParcel &parcel)
 std::string CloudMdkRecordPhotosRespBody::ToString() const
 {
     return "";
+}
+
+void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
+{
+    ss << "\"stringfields\": {";
+    for (const auto &node : this->stringfields) {
+        ss << "\"" << node.first << "\": ";
+        ss << "\"" << node.second << "\", ";
+    }
+    ss << "}";
+    return;
 }
 }  // namespace OHOS::Media::CloudSync

@@ -71,7 +71,9 @@ enum class EXPORT OperationObject : uint32_t {
     VISION_HEAD,
     VISION_AFFECTIVE,
     VISION_POSE,
-    VISION_END = VISION_POSE,
+    VISION_PET_FACE,
+    VISION_PET_TAG,
+    VISION_END = VISION_PET_TAG,
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,
     GEO_PHOTO,
@@ -120,6 +122,7 @@ enum class EXPORT OperationObject : uint32_t {
     MOVING_PHOTO_VIDEO_READY,
     PAH_BACKUP_POSTPROCESS,
     FILESYSTEM_DEBUG_DB,
+    VISION_ANALYSIS,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -236,6 +239,7 @@ enum class EXPORT OperationType : uint32_t {
     UPDATE_APPLINK,
     RESTORE_INVALID_HDC_CLOUD_DATA_POS,
     QUERY_RAW_ANALYSIS_ALBUM,
+    QUERY_RAW_VISION_TOTAL,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

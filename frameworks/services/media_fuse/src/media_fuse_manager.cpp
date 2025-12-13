@@ -54,6 +54,7 @@
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "lake_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -71,6 +72,10 @@ const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
+const int32_t FILE_FAIL = -2;
+const int32_t PHOTO_POSITION_TYPE_CLOUD = 2;
+static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
+static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 1;
 static constexpr int32_t HDC_SECOND_ARGS = 2;
 static constexpr int32_t HDC_THIRD_ARGS = 3;
@@ -204,6 +209,8 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     columns.push_back(MediaColumn::MEDIA_DATE_TRASHED);
     columns.push_back(MediaColumn::MEDIA_HIDDEN);
+    columns.push_back(PhotoColumn::PHOTO_STORAGE_PATH);
+    columns.push_back(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
     if (resultSet == nullptr) {
@@ -216,8 +223,52 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
         return E_ERR;
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+        int32_t sourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE) ?
+            MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
+            MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
     }
+    return E_SUCCESS;
+}
+
+static int32_t GetPathFromFileId(string &filePath, const string &fileId,
+    int32_t &position, int64_t &accesstime, int64_t &changeTime)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_FILE_PATH);
+    columns.push_back(MediaColumn::MEDIA_DATE_TRASHED);
+    columns.push_back(MediaColumn::MEDIA_HIDDEN);
+    columns.push_back(PhotoColumn::PHOTO_STORAGE_PATH);
+    columns.push_back(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+    columns.push_back(PhotoColumn::PHOTO_POSITION);
+    columns.push_back(PhotoColumn::PHOTO_LAST_VISIT_TIME);
+    columns.push_back(MediaColumn::MEDIA_DATE_MODIFIED);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    int32_t numRows = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rslt");
+        return E_ERR;
+    }
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
+        MEDIA_ERR_LOG("Failed to get filePath");
+        return E_ERR;
+    }
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int32_t sourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE) ?
+            MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
+            MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+        position = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_POSITION);
+        accesstime = GetInt64Val(PhotoColumn::PHOTO_LAST_VISIT_TIME, resultSet);
+        changeTime = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    }
+    resultSet->Close();
     return E_SUCCESS;
 }
 
@@ -241,9 +292,23 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     } else {
         ret = GetFileIdFromUri(fileId, path);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
-        ret = GetPathFromFileId(target, fileId);
-        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr path fail");
+        int32_t position = 0;
+        int64_t accesstime = 0;
+        int64_t changeTime = 0;
+        ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
         ret = lstat(target.c_str(), stbuf);
+        if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
+            if (accesstime > MILLISECONDS_THRESHOLD) {
+                accesstime /= MILLISECONDS_PER_SECOND;
+            }
+            if (changeTime > MILLISECONDS_THRESHOLD) {
+                changeTime /= MILLISECONDS_PER_SECOND;
+            }
+            stbuf->st_atime = accesstime;
+            stbuf->st_ctime = changeTime;
+        }
     }
     stbuf->st_mode = stbuf->st_mode | 0x6;
     MEDIA_DEBUG_LOG("get attr succ");
@@ -621,8 +686,8 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
     char realPath[PATH_MAX] = {0};
     bool bflag = realpath(localPath.c_str(), realPath) == nullptr;
     CHECK_AND_RETURN_RET_LOG(!bflag, E_ERR,
-        "check dirPath fail, dirPath = %{public}s", localPath.c_str());
-    fd = open(localPath.c_str(), flags);
+        "check dirPath fail, dirPath = %{private}s", localPath.c_str());
+    fd = open(realPath, flags);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_ERR, "Open failed, localPath=%{private}s, errno=%{public}d",
         localPath.c_str(), -errno);
     return E_SUCCESS;

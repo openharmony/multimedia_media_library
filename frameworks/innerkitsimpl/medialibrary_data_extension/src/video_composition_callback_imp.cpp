@@ -27,6 +27,7 @@
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "medialibrary_object_utils.h"
+#include "lake_file_utils.h"
 
 using std::string;
 
@@ -147,10 +148,11 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     const std::string& videoPath, const std::string& effectDescription, const std::string& assetPath, bool isNeedScan)
 {
     MEDIA_INFO_LOG("StartComposite, sourceVideoPath: %{public}s", DfxUtils::GetSafePath(sourceVideoPath).c_str());
+    string tmpPath = LakeFileUtils::GetAssetRealPath(sourceVideoPath);
     string absSourceVideoPath;
-    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceVideoPath, absSourceVideoPath), E_HAS_FS_ERROR,
-        "file is not real path, file path: %{private}s, errno: %{public}d", sourceVideoPath.c_str(), errno);
-    int32_t inputFileFd = open(absSourceVideoPath.c_str(), O_RDONLY);
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(tmpPath, absSourceVideoPath), E_HAS_FS_ERROR,
+        "file is not real path, file path: %{private}s, errno: %{public}d", tmpPath.c_str(), errno);
+    int32_t inputFileFd = open(tmpPath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(inputFileFd != -1, E_ERR, "Open failed for inputFileFd file, errno: %{public}d", errno);
     if (CheckDirPathReal(videoPath) != E_OK) {
         MEDIA_ERR_LOG("dirFile is not real path, file path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
@@ -222,37 +224,35 @@ void VideoCompositionCallbackImpl::AddCompositionTask(const std::string& assetPa
     }
 }
 
-void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size_t index, bool isTimingSticker)
+int32_t VideoCompositionCallbackImpl::EraseWatermarkTagAndStickerField(std::string& editData, bool& isFiltersFieldEmpty)
 {
-    auto begin = index - START_DISTANCE;
-    auto end = index;
-    while (editData[end] != '}') {
-        ++end;
-    }
-    if (!isTimingSticker) {
-        ++end;
-    }
-    auto len = end - begin + 1;
-    editData.erase(begin, len);
-}
-
-void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
-{
-    CHECK_AND_RETURN_LOG(nlohmann::json::accept(editData),
+    CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(editData), E_ERR,
         "Failed to verify the editData format, editData is: %{public}s", editData.c_str());
     nlohmann::json data = nlohmann::json::parse(editData);
     if (data.contains(IMAGE_EFFECT) && data[IMAGE_EFFECT].contains(FILTERS_FIELD)) {
         nlohmann::json filters = data[IMAGE_EFFECT][FILTERS_FIELD];
-        nlohmann::json newFilters;
+        nlohmann::json newFilters = nlohmann::json::array();
         for (const auto& filter : filters) {
-            if (!filter.contains(FILTER_CATEGORY) ||
-                (filter[FILTER_CATEGORY].is_string() && filter[FILTER_CATEGORY] != BORDER_WATERMARK)) {
-                newFilters.push_back(filter);
+            bool keep = true;
+            // handle watermark tag
+            if (filter.contains(FILTER_CATEGORY) && filter[FILTER_CATEGORY].is_string()) {
+                CHECK_AND_EXECUTE(filter[FILTER_CATEGORY] != BORDER_WATERMARK, keep = false);
             }
+            // handle sticker field
+            if (keep && filter.contains(NAME_FIELD) && filter[NAME_FIELD].is_string()) {
+                std::string name = filter[NAME_FIELD].get<std::string>();
+                CHECK_AND_EXECUTE(!MediaFileUtils::EndsWith(name, STICKER), keep = false);
+            }
+            CHECK_AND_EXECUTE(!keep, newFilters.push_back(filter));
         }
+        CHECK_AND_EXECUTE(!newFilters.empty(), isFiltersFieldEmpty = true);
         nlohmann::json newData = data;
         newData[IMAGE_EFFECT][FILTERS_FIELD] = newFilters;
         editData = newData.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("Can not find video filters field");
+        return E_ERR;
     }
 }
 

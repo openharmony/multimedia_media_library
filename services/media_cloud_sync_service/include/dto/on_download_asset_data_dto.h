@@ -20,6 +20,7 @@
 #include <vector>
 #include <sstream>
 #include "cloud_media_define.h"
+#include "cloud_lake_info.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT OnDownloadAssetData {
@@ -38,6 +39,8 @@ public:
     int32_t exifRotate;
     bool needScanShootingMode;
     bool needScanSubtype{false};
+    AdditionFileInfo lakeInfo;
+    bool needScanHdrMode{false};
 
 public:  // basic functions
     std::string ToString() const;

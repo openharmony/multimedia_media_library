@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_asset_helper_capi_test") {
-  module_out_path = "media_library/media_library-asset"
+  module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
@@ -32,6 +32,10 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
   ]
 
   sources = [

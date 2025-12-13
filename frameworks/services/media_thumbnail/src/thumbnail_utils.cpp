@@ -19,45 +19,31 @@
 
 #include <fcntl.h>
 #include <malloc.h>
-#include <sys/stat.h>
 
-#include "cloud_sync_helper.h"
 #include "datashare_helper.h"
-#include "datashare_abs_result_set.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
-#include "distributed_kv_data_manager.h"
 #include "exif_rotate_utils.h"
-#include "hitrace_meter.h"
-#include "image_packer.h"
-#include "ipc_skeleton.h"
 #include "iservice_registry.h"
-#include "media_column.h"
 #include "media_exif.h"
 #include "media_remote_thumbnail_column.h"
-#include "medialibrary_common_utils.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
-#include "media_log.h"
 #include "mimetype_utils.h"
-#include "parameter.h"
 #include "post_proc.h"
-#include "rdb_errno.h"
 #include "result_set_utils.h"
-#include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_rdb_utils.h"
 #include "thumbnail_source_loading.h"
-#include "unique_fd.h"
 #include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 #include "image_format_convert.h"
 #include "highlight_column.h"
+#include "lake_file_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -1291,17 +1277,10 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     }
     MEDIA_DEBUG_LOG("path = %{public}s", DfxUtils::GetSafePath(path).c_str());
 
-    string absFilePath;
-    if (!PathToRealPath(path, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to open a nullptr path, errno=%{public}d, path:%{public}s",
-            errno, DfxUtils::GetSafePath(path).c_str());
-        return E_ERR;
-    }
-
-    int32_t fd = open(absFilePath.c_str(), O_RDONLY);
+    int32_t fd = LakeFileUtils::OpenFile(path, O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, DfxUtils::GetSafePath(absFilePath).c_str(), MediaFileUtils::IsFileExists(absFilePath));
+            errno, DfxUtils::GetSafePath(path).c_str(), MediaFileUtils::IsFileExists(path));
         return E_ERR;
     }
     struct stat64 st;
@@ -1313,7 +1292,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(absFilePath, DfxType::AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
@@ -1625,6 +1604,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DIRTY,
+        MediaColumn::MEDIA_NAME,
     };
 
     CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfo(opts.store, predicates, columns, data, err),
@@ -1819,7 +1799,7 @@ static bool IsMobileNetworkEnabled()
     vector<string> columns = {"value"};
     shared_ptr<DataShare::DataShareResultSet> resultSet =
         cloudHelper->Query(cloudUri, predicates, columns);
-    
+
     //default mobile network is off
     string switchOn = "0";
     if (resultSet != nullptr && resultSet->GoToNextRow()==0) {

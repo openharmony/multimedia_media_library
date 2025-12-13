@@ -47,31 +47,11 @@ int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
     return isDirtyResult;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
-    const std::string &imageId)
-{
-    int32_t fileId = -1;
-    int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId, fileId);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    if (ret == E_ERR || fileId == -1) {
-        MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, imageId);
-    } else {
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    }
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
-    return DatabaseAdapter::Query(cmd, columns);
-}
-
-std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryVideoDataById(const std::string &videoId)
+std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryDataByPhotoId(const std::string &videoId,
+    const std::vector<std::string> &columns)
 {
     int32_t fileId = -1;
     int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(videoId, fileId);
-    std::vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP};
     std::shared_ptr<FileAsset> fileAsset;
     if (ret == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");

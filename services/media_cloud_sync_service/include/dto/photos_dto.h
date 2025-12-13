@@ -63,6 +63,7 @@ public:
     std::string livePhotoCachePath;
     std::string mimeType;
     int32_t mediaType;
+    int32_t attributesMediaType;
     int32_t serverErrorCode;
     ErrorType errorType;
     std::vector<CloudErrorDetail> errorDetails;
@@ -73,7 +74,10 @@ public:
     int64_t version;
     bool isSuccess;
     int32_t videoMode;
-
+    int32_t fileSourceType;
+    std::string storagePath;
+    std::string localPath;
+    int32_t hidden;
     std::map<std::string, CloudFileDataDto> attachment;
 
 private:
@@ -96,6 +100,10 @@ struct DownloadAssetData {
     int64_t editTime;
     int32_t effectMode;
     int32_t orientation;
+    int32_t fileSourceType;
+    std::string storagePath;
+    int32_t hidden;
+    int64_t dateTrashed;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_PHOTOS_DTO_H

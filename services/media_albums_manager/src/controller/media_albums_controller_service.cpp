@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -78,6 +78,9 @@
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "get_albums_lpath_by_ids_vo.h"
+#include "change_request_set_upload_status_vo.h"
+#include "change_request_set_upload_status_dto.h"
+#include  "get_albumid_by_lpath_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -290,6 +293,22 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_MOVE_ASSETS),
         &MediaAlbumsControllerService::MoveAssets
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS),
+        &MediaAlbumsControllerService::ChangeRequestSetUploadStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH),
+        &MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME),
+        &MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS),
+        &MediaAlbumsControllerService::SmartMoveAssets
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -470,7 +489,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype)) && cond;
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype)) && cond;
     cond = cond && !reqBody.albumName.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
@@ -501,7 +521,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &da
     bool cond = PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype);
+        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype);
     cond = cond && !reqBody.coverUri.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
@@ -555,7 +576,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetDisplayLevel(MessageParcel
     PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
     int32_t albumId = atoi(reqBody.albumId.c_str());
     bool cond = (PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype)) &&
+        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype)) &&
         MediaFileUtils::CheckDisplayLevel(reqBody.displayLevel) && albumId > 0;
     if (!cond) {
         MEDIA_ERR_LOG("params is invalid");
@@ -659,6 +681,28 @@ int32_t MediaAlbumsControllerService::MoveAssets(MessageParcel &data, MessagePar
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MoveAssets Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ChangeRequestMoveAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().MoveAssets(dto);
+    ChangeRequestMoveAssetsRespBody respBody;
+    respBody.albumCount = dto.albumCount;
+    respBody.albumImageCount = dto.albumImageCount;
+    respBody.albumVideoCount = dto.albumVideoCount;
+    respBody.targetAlbumCount = dto.targetAlbumCount;
+    respBody.targetAlbumImageCount = dto.targetAlbumImageCount;
+    respBody.targetAlbumVideoCount = dto.targetAlbumVideoCount;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::SmartMoveAssets(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SmartMoveAssets");
+    ChangeRequestMoveAssetsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SmartMoveAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ChangeRequestMoveAssetsDto dto;
@@ -1366,5 +1410,46 @@ int32_t MediaAlbumsControllerService::AlbumGetSelectAssets(MessageParcel &data, 
     AlbumGetSelectedAssetsRespBody respBody;
     respBody.resultSet = resultSet;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAlbumsControllerService::ChangeRequestSetUploadStatus(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_UPLOAD_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestSetUploadStatusReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetUploadStatusReqBody Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+ 
+    ChangeRequestSetUploadStatusDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().ChangeRequestSetUploadStatus(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("GetAlbumIdByLpathOrBundleName start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    GetAlbumIdByLpathDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().GetAlbumIdByLpathOrBundleName(dto, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

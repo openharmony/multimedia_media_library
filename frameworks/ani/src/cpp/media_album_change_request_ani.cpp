@@ -288,8 +288,9 @@ ani_status MediaAlbumChangeRequestAni::SetAlbumName(ani_env *env, ani_object obj
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only user album, highlight, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only user album, highlight, pet, smart portrait album and group photo can set album name");
     photoAlbum->SetAlbumName(albumName);
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
     return ANI_OK;
@@ -320,7 +321,8 @@ ani_status MediaAlbumChangeRequestAni::SetCoverUri(ani_env *env, ani_object obje
         PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         ANI_INVALID_ARGS, "can't set album cover of album subtype:" + to_string(subtype));
     photoAlbum->SetCoverUri(coverUriStr);
     photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
@@ -347,9 +349,13 @@ ani_status MediaAlbumChangeRequestAni::MergeAlbum(ani_env *env, ani_object objec
     CHECK_COND_WITH_RET_MESSAGE(env,
         (photoAlbum != nullptr) && (targetAlbum != nullptr), ANI_INVALID_ARGS, "PhotoAlbum or TargetAlbum is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env,
-        (PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) &&
-        (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType())),
-        ANI_INVALID_ARGS, "Only portrait album can merge");
+        ((PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(),
+            photoAlbum->GetPhotoAlbumSubType())) &&
+        (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+            targetAlbum->GetPhotoAlbumSubType()))) ||
+        ((PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) &&
+        (PhotoAlbum::IsPetAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()))),
+        ANI_INVALID_ARGS, "Only portrait or only pet album can merge");
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::MERGE_ALBUM);
     return ANI_OK;
 }
@@ -400,8 +406,9 @@ ani_status MediaAlbumChangeRequestAni::DismissAssets(ani_env *env, ani_object ob
     auto subtype = photoAlbum->GetPhotoAlbumSubType();
     CHECK_COND_WITH_RET_MESSAGE(env, PhotoAlbum::IsSmartPortraitPhotoAlbum(type, subtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(type, subtype) || PhotoAlbum::IsSmartClassifyAlbum(type, subtype) ||
-        PhotoAlbum::IsHighlightAlbum(type, subtype),
-        ANI_INVALID_ARGS, "Only portrait, highlight, group photo and classify album can dismiss asset");
+        PhotoAlbum::IsHighlightAlbum(type, subtype) ||
+        PhotoAlbum::IsPetAlbum(type, subtype),
+        ANI_INVALID_ARGS, "Only portrait, highlight, pet, group photo and classify album can dismiss asset");
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS_ASSET);
     return ANI_OK;
 }
@@ -675,7 +682,8 @@ ani_status MediaAlbumChangeRequestAni::SetDisplayLevel(ani_env *env, ani_object 
     auto photoAlbum = aniContext->objectInfo->photoAlbum_;
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "PhotoAlbum is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsPetAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         ANI_INVALID_ARGS, "Only portrait album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);

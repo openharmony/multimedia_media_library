@@ -182,6 +182,7 @@ const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
 const std::string STAT_TYPE_ONGOING = "ongoing";
+const std::string STAT_KEY_COMPATIBLE_DIR_MAPPING = "compatibleDirMapping";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
 const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
     STAT_TYPE_THUMBNAIL, STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
@@ -492,6 +493,7 @@ struct AlbumInfo {
     std::string lPath;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     int64_t dateModified {0};
+    int32_t uploadStatus {0};
 };
 
 struct GalleryAlbumInfo {
@@ -599,11 +601,16 @@ struct AnalysisAlbumTbl {
     std::optional<std::string> relationship;
     std::optional<int32_t> albumIdOld;
     std::optional<int32_t> albumIdNew;
-    std::optional<double> age;
-    std::optional<int32_t> gender;
 };
 
 struct PortraitAlbumDfx {
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> count;
+};
+
+struct PetAlbumDfx {
     std::optional<std::string> albumName;
     std::optional<std::string> coverUri;
     std::optional<std::string> tagId;
@@ -636,6 +643,8 @@ struct FaceTagTbl {
     std::optional<int32_t> albumType;
     std::optional<int32_t> isRemoved;
     std::optional<std::string> analysisVersion;
+    std::optional<double> age;
+    std::optional<int32_t> gender;
 };
 
 struct ImageFaceTbl {
@@ -692,6 +701,41 @@ struct AlbumCoverInfo {
     std::string lPath;
     std::string coverUri;
     std::string coverCloudId = "";
+};
+
+struct PetFaceTbl {
+    std::optional<int32_t> id;
+    std::optional<int32_t> fileId;
+    std::optional<int32_t> petId;
+    std::optional<double> prob;
+    std::optional<int32_t> petLabel;
+    std::optional<int32_t> petTotalFaces;
+    std::optional<std::string> features;
+    std::optional<std::string> petTagId;
+    std::optional<double> scaleX;
+    std::optional<double> scaleY;
+    std::optional<double> scaleWidth;
+    std::optional<double> scaleHeight;
+    std::optional<std::string> headVersion;
+    std::optional<std::string> petFeaturesVersion;
+    std::optional<std::string> tagVersion;
+    std::optional<std::string> analysisVersion;
+    std::optional<double> jointBeautyBounderX;
+    std::optional<double> jointBeautyBounderY;
+    std::optional<double> jointBeautyBounderWidth;
+    std::optional<double> jointBeautyBounderHeight;
+    std::optional<int64_t> dateModified;
+};
+
+struct PetTagTbl {
+    std::optional<int32_t> id;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> petLabel;
+    std::optional<std::string> centerFeatures;
+    std::optional<std::string> tagVersion;
+    std::optional<int32_t> count;
+    std::optional<int64_t> dateModified;
+    std::optional<std::string> analysisVersion;
 };
 
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
@@ -765,6 +809,8 @@ const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operatio
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
 const std::vector<std::string> EXCLUDED_VIDEO_FACE_COLUMNS = {"id"};
+const std::vector<std::string> EXCLUDED_PET_FACE_COLUMNS = {"id"};
+const std::vector<std::string> EXCLUDED_PET_TAG_COLUMNS = {"id"};
 const std::vector<std::string> EXCLUDED_BEAUTY_SCORE_COLUMNS = {"id"};
 const std::string SQL_SELECT_ERROR_BURST_PHOTOS  = "COALESCE(burst_key, '') <> '' and NOT EXISTS ( \
         SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 1)";
