@@ -66,17 +66,11 @@ const PickerFilterPhotoKeys = {
     
     SIZE: 'size',
     
-    DATE_ADDED: 'date_added',
-    
-    DATE_MODIFIED: 'date_modified',
-    
     DURATION: 'duration',
     
     WIDTH: 'width',
     
     HEIGHT: 'height',
-    
-    DATE_TAKEN: 'date_taken',
     
     ORIENTATION: 'orientation',
     

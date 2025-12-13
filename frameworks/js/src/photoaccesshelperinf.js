@@ -858,17 +858,11 @@ const PickerFilterPhotoKeys = {
   
   SIZE: 'size',
   
-  DATE_ADDED: 'date_added',
-  
-  DATE_MODIFIED: 'date_modified',
-  
   DURATION: 'duration',
   
   WIDTH: 'width',
   
   HEIGHT: 'height',
-  
-  DATE_TAKEN: 'date_taken',
   
   ORIENTATION: 'orientation',
   
@@ -898,6 +892,12 @@ const PickerFilterPhotoKeys = {
   
   ASPECT_RATIO: 'aspect_ratio',
 }
+
+const PhotoSource = {
+  ALL: 0,
+  CAMERA: 1,
+  SCREENSHOT: 2
+};
 
 const SingleSelectionMode = {
   BROWSER_MODE: 0,
@@ -1278,6 +1278,7 @@ export default {
   ThumbnailType: photoAccessHelper.ThumbnailType,
   PhotoCreationConfig: photoAccessHelper.PhotoCreationConfig,
   PhotoKeys: photoAccessHelper.PhotoKeys,
+  PhotoSource: PhotoSource,
   AlbumKeys: photoAccessHelper.AlbumKeys,
   AlbumType: photoAccessHelper.AlbumType,
   AlbumSubtype: photoAccessHelper.AlbumSubtype,
