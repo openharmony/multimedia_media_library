@@ -5657,6 +5657,17 @@ static void CreateChangeTime(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("end add change_time column");
 }
 
+static void AddAudioIsTemp(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " +
+            AudioColumn::AUDIO_IS_TEMP + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("AddAudioIsTemp start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("AddAudioIsTemp end");
+}
+
 static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("create batchdownload records begin");
@@ -5764,6 +5775,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         CreateChangeTime(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE, true);
     }
+
+    if (oldVersion < VERSION_ADD_AUDIO_IS_TEMP &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AUDIO_IS_TEMP, true)) {
+        AddAudioIsTemp(store, VERSION_ADD_AUDIO_IS_TEMP);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AUDIO_IS_TEMP, true);
+    }
 }
 
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
@@ -5841,7 +5858,7 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         AddAnalysisProgressColumns(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true);
     }
-    
+
     if (oldVersion < VERSION_ADD_BATCH_DOWNLOAD &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_BATCH_DOWNLOAD, true)) {
         CreateBatchDownloadRecords(store, VERSION_ADD_BATCH_DOWNLOAD);
