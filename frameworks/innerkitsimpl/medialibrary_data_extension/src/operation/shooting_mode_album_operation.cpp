@@ -60,9 +60,9 @@ const std::string SQL_PHOTOS_TABLE_QUERY_SHOOTING_ASSETS = "SELECT"
                                                            " OR COALESCE(front_camera, '') = ''"
                                                            " OR (COALESCE(subtype, 0) = 0 AND mime_type = 'video/mp4'"
                                                            " AND media_type = 2))"
-                                                           " AND position != 2"
+                                                           " AND (position = 1 OR position = 3)"
                                                            " AND file_id > ?"
-                                                           " AND file_id < ?;";
+                                                           " AND file_id <= ?;";
 
 std::atomic<bool> ShootingModeAlbumOperation::isContinue_{true};
 
@@ -93,6 +93,8 @@ void ShootingModeAlbumOperation::UpdateShootingModeAlbum()
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(ORIGIN_SHOOTING_MODE_ASSETS_NUMBER, 0);
     int maxFileId = QueryMaxFileId();
+    MEDIA_INFO_LOG("ShootingModeAlbumOperation::UpdateShootingModeAlbum start. "
+        "curFileId: %{public}d, maxFileId: %{public}d", curFileId, maxFileId);
     CHECK_AND_RETURN_LOG(maxFileId > 0, "query max file id failed");
     while (curFileId < maxFileId && MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
         int32_t endId = std::min(curFileId + SHOOTING_MODE_SCAN_BATCH_SIZE, maxFileId);
@@ -212,16 +214,16 @@ bool ShootingModeAlbumOperation::ScanAndUpdateAssetShootingMode(const CheckedSho
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
 
     ValuesBucket value;
-    if (photoInfo.subtype == 0) {
+    if (photoInfo.subtype == 0 && photoInfo.subtype != data->GetPhotoSubType()) {
         value.PutInt(PhotoColumn::PHOTO_SUBTYPE, data->GetPhotoSubType());
     }
-    if (photoInfo.frontCamera.empty()) {
+    if (photoInfo.frontCamera.empty() && photoInfo.frontCamera != data->GetFrontCamera()) {
         value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     }
-    if (photoInfo.shootingMode.empty()) {
+    if (photoInfo.shootingMode.empty() && photoInfo.shootingMode != data->GetShootingMode()) {
         value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
     }
-    if (photoInfo.shootingModeTag.empty()) {
+    if (photoInfo.shootingModeTag.empty() && photoInfo.shootingModeTag != data->GetShootingModeTag()) {
         value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
     }
     CHECK_AND_RETURN_RET(!value.IsEmpty(), false);
