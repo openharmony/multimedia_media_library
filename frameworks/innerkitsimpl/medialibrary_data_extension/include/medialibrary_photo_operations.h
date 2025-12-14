@@ -110,7 +110,7 @@ public:
     EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
     EXPORT static int32_t UpdateAppLink(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
-    EXPORT static int32_t GetCompressAssetSize(const std::vector<std::string> &uris, uint64_t &size);
+    EXPORT static int32_t GetCompressAssetSize(const std::vector<std::string> &uris, int64_t &size);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
     static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
@@ -241,18 +241,18 @@ private:
     static int32_t WriteMovingPhotoEditedDataToTlv(const std::string &assetPath, TlvFile tlv);
     static int32_t WriteEditedDataCameraToTlv(const std::string &assetPath, TlvFile tlv);
     static int32_t WriteMovingPhotoCameraDataToTlv(const std::string &assetPath, TlvFile tlv);
-    static int32_t GetFileSizeByIds(const vector<string> &validIds, uint64_t &size,
+    static int32_t GetFileSizeByIds(const vector<string> &validIds, int64_t &size,
         std::vector<std::string> &movingPhotoExtraDataFiles,
-        const std::unordered_map<std::string, int32_t> &duplicateIdMap, uint64_t &transcodeTotalSize);
-    static int32_t GetEditDataSizeByIds(const std::vector<std::string> &validIds, uint64_t &size,
+        const std::unordered_map<std::string, int32_t> &duplicateIdMap, int64_t &transcodeTotalSize);
+    static int32_t GetEditDataSizeByIds(const std::vector<std::string> &validIds, int64_t &size,
         const std::unordered_map<std::string, int32_t> &duplicateIdMap);
-    static int32_t GetSizeByFiles(const std::vector<std::string> &filePaths, uint64_t &size);
+    static int32_t GetSizeByFiles(const std::vector<std::string> &filePaths, int64_t &size);
     static int32_t ProcessFileSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-        uint64_t &size, std::vector<std::string> &movingPhotoExtraDataFiles,
-        const std::unordered_map<std::string, int32_t> &duplicateIdMap, uint64_t &transcodeSize);
+        int64_t &size, std::vector<std::string> &movingPhotoExtraDataFiles,
+        const std::unordered_map<std::string, int32_t> &duplicateIdMap, int64_t &transcodeSize);
     static int32_t ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-        uint64_t &size, const std::unordered_map<std::string, int32_t> &duplicateIdMap);
-    static bool SafeAccumulateSize(uint64_t add, uint64_t &acc);
+        int64_t &size, const std::unordered_map<std::string, int32_t> &duplicateIdMap);
+    static bool SafeAccumulateSize(int64_t add, int64_t &acc);
     static bool CheckMovingPhotoForShare(const shared_ptr<FileAsset> &fileAsset);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;

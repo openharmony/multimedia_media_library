@@ -49,7 +49,6 @@ const EditedDataFileList BASE_EDITED_DATA_FILES = {
 };
 } // namespace CompressVersion
 
-std::mutex AssetCompressVersionManager::cacheSpecsMutex_;
 const std::unordered_map<VersionNumber, AssetCompressSpec> AssetCompressVersionManager::atomicSpecs_ = {
     {
         CompressVersion::BASE,
@@ -89,9 +88,9 @@ int32_t AssetCompressVersionManager::GetCompatibleCompressVersion(int32_t versio
             version, CompressVersion::CURRENT_COMPRESS_VERSION);
         return CompressVersion::CURRENT_COMPRESS_VERSION;
     }
-    int32_t compatibaleVersion = version & CompressVersion::CURRENT_COMPRESS_VERSION;
-    MEDIA_INFO_LOG("GetCompatibleCompressVersion compatibal version: %{public}d", compatibaleVersion);
-    return compatibaleVersion;
+    int32_t compatibleVersion = version & CompressVersion::CURRENT_COMPRESS_VERSION;
+    MEDIA_INFO_LOG("GetCompatibleCompressVersion compatible version: %{public}d", compatibleVersion);
+    return compatibleVersion;
 }
 } // namespace Media
 } // namespace OHOS

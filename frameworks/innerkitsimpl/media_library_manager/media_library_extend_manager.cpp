@@ -66,8 +66,6 @@ constexpr int32_t DEFUALT_USER_ID = 100;
 constexpr int32_t DATASHARE_ERR = -1;
 constexpr int64_t SHARE_UID = 5520;
 constexpr int32_t COMPRESS_URI_MAX_SIZE = 500;
-constexpr uint64_t BYTES_PER_KIB = 1024;
-constexpr uint64_t KIB_ROUND_UP_MASK = BYTES_PER_KIB - 1;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -842,7 +840,7 @@ int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::string> &uris)
+int64_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::string> &uris)
 {
     MEDIA_INFO_LOG("GetCompressAssetSize begin, count: %{public}zu", uris.size());
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
@@ -862,14 +860,8 @@ int32_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::s
     }
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "GetCompressAssetSize failed, errCode: %{public}d", errCode);
 
-    uint64_t totalBytes = respBody.totalSize;
-    uint64_t totalKiB = (totalBytes + KIB_ROUND_UP_MASK) / BYTES_PER_KIB;
-    CHECK_AND_RETURN_RET_LOG(totalKiB <= static_cast<uint64_t>(INT32_MAX), E_ERR,
-        "Total size in KiB overflow: %{public}" PRIu64 " KiB", totalKiB);
-    int32_t resultKiB = static_cast<int32_t>(totalKiB);
-    MEDIA_INFO_LOG("GetCompressAssetSize success, total bytes: %{public}" PRIu64 ", estimated KiB: %{public}d",
-        totalBytes, resultKiB);
-    return resultKiB;
+    MEDIA_INFO_LOG("GetCompressAssetSize success, total bytes: %{public}" PRId64, respBody.totalSize);
+    return respBody.totalSize;
 }
 } // namespace Media
 } // namespace OHOS

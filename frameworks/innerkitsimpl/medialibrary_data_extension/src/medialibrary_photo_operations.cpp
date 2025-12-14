@@ -90,7 +90,7 @@ constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
 constexpr int32_t XT_ORIGIN_VIDEO = 1;
 constexpr int32_t XT_EFFECT_VIDEO = 2;
-constexpr uint64_t FIXED_PADDING_BYTES = 1024;
+constexpr int64_t FIXED_PADDING_BYTES = 1024;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
@@ -5226,16 +5226,16 @@ int32_t MediaLibraryPhotoOperations::HandleJsonFile(const shared_ptr<FileAsset> 
     return ret;
 }
 
-bool MediaLibraryPhotoOperations::SafeAccumulateSize(uint64_t add, uint64_t &acc)
+bool MediaLibraryPhotoOperations::SafeAccumulateSize(int64_t add, int64_t &acc)
 {
-    CHECK_AND_RETURN_RET_LOG(add <= UINT64_MAX - acc, false, "File size overflow");
+    CHECK_AND_RETURN_RET_LOG(add <= INT64_MAX - acc, false, "File size overflow");
     acc += add;
     return true;
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    uint64_t &size, vector<string> &movingPhotoExtraDataFiles, const unordered_map<string, int32_t> &duplicateIdMap,
-    uint64_t &transcodeTotalSize)
+    int64_t &size, vector<string> &movingPhotoExtraDataFiles, const unordered_map<string, int32_t> &duplicateIdMap,
+    int64_t &transcodeTotalSize)
 {
     MEDIA_DEBUG_LOG("ProcessFileSizeWithResultSet start");
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
@@ -5249,10 +5249,10 @@ int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_p
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(fileSize >= 0, E_ERR, "Invalid size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(fileSize), size), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, size), E_ERR);
         transcodeSize = GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(transcodeSize >= 0, E_ERR, "Invalid transcode size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(transcodeSize), transcodeTotalSize), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, transcodeTotalSize), E_ERR);
         needProcessMovingPhoto =
             GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
             GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) ==
@@ -5266,17 +5266,17 @@ int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_p
         fileId = to_string(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
         CHECK_AND_CONTINUE(duplicateIdMap.count(fileId) > 0);
         for (int32_t i = 0; i < duplicateIdMap.at(fileId); ++i) {
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(fileSize), size), E_ERR);
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(transcodeSize), transcodeTotalSize), E_ERR);
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, size), E_ERR);
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, transcodeTotalSize), E_ERR);
             CHECK_AND_EXECUTE(!needProcessMovingPhoto, movingPhotoExtraDataFiles.push_back(extraDataPath));
         }
     }
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetFileSizeByIds(const vector<string> &validIds, uint64_t &size,
+int32_t MediaLibraryPhotoOperations::GetFileSizeByIds(const vector<string> &validIds, int64_t &size,
     vector<string> &movingPhotoExtraDataFiles, const std::unordered_map<std::string, int32_t> &duplicateIdMap,
-    uint64_t &transcodeTotalSize)
+    int64_t &transcodeTotalSize)
 {
     MEDIA_DEBUG_LOG("GetFileSizeByIds start");
     size = 0;
@@ -5301,7 +5301,7 @@ int32_t MediaLibraryPhotoOperations::GetFileSizeByIds(const vector<string> &vali
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    uint64_t &size, const unordered_map<string, int32_t> &duplicateIdMap)
+    int64_t &size, const unordered_map<string, int32_t> &duplicateIdMap)
 {
     MEDIA_DEBUG_LOG("ProcessEditDataSizeWithResultSet start");
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
@@ -5311,18 +5311,18 @@ int32_t MediaLibraryPhotoOperations::ProcessEditDataSizeWithResultSet(const shar
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         editdataSize = GetInt64Val(PhotoExtColumn::EDITDATA_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(editdataSize >= 0, E_ERR, "Invalid size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(editdataSize), size), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, size), E_ERR);
         CHECK_AND_CONTINUE(hasDuplicateIds);
         fileId = to_string(GetInt32Val(PhotoExtColumn::PHOTO_ID, resultSet));
         CHECK_AND_CONTINUE(duplicateIdMap.count(fileId) > 0);
         for (int32_t i = 0; i < duplicateIdMap.at(fileId); ++i) {
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(editdataSize), size), E_ERR);
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, size), E_ERR);
         }
     }
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetEditDataSizeByIds(const std::vector<std::string> &validIds, uint64_t &size,
+int32_t MediaLibraryPhotoOperations::GetEditDataSizeByIds(const std::vector<std::string> &validIds, int64_t &size,
     const std::unordered_map<std::string, int32_t> &duplicateIdMap)
 {
     MEDIA_DEBUG_LOG("GetEditDataSizeByIds start");
@@ -5346,7 +5346,7 @@ int32_t MediaLibraryPhotoOperations::GetEditDataSizeByIds(const std::vector<std:
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetSizeByFiles(const std::vector<std::string> &filePaths, uint64_t &size)
+int32_t MediaLibraryPhotoOperations::GetSizeByFiles(const std::vector<std::string> &filePaths, int64_t &size)
 {
     MEDIA_DEBUG_LOG("GetSizeByFiles start");
     size = 0;
@@ -5357,13 +5357,14 @@ int32_t MediaLibraryPhotoOperations::GetSizeByFiles(const std::vector<std::strin
             "File not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GetFileSize(filePath, fileSize), E_ERR,
             "Get file size failed: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<uint64_t>(fileSize), size), E_ERR);
+        CHECK_AND_RETURN_RET_LOG(fileSize <= INT64_MAX, E_ERR, "File size overflow");
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(static_cast<int64_t>(fileSize), size), E_ERR);
     }
     MEDIA_INFO_LOG("GetSizeByFiles end, total size: %{public}" PRIu64 " bytes", size);
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std::string> &uris, uint64_t &size)
+int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std::string> &uris, int64_t &size)
 {
     MEDIA_INFO_LOG("GetCompressAssetSize start");
     size = 0;
@@ -5380,13 +5381,13 @@ int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std:
         CHECK_AND_EXECUTE(idSet.insert(id).second, duplicateIdMap[id]++);
     }
     vector<string> movingPhotoExtraDataFiles;
-    uint64_t totalFileSize = 0;
-    uint64_t transcodeTotalSize = 0;
+    int64_t totalFileSize = 0;
+    int64_t transcodeTotalSize = 0;
     int32_t ret = GetFileSizeByIds(validIds, totalFileSize, movingPhotoExtraDataFiles, duplicateIdMap,
         transcodeTotalSize);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Get total file size by ids failed");
 
-    uint64_t totalEditDataSize = 0;
+    int64_t totalEditDataSize = 0;
     ret = GetEditDataSizeByIds(validIds, totalEditDataSize, duplicateIdMap);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Get total edit data size by ids failed");
 
@@ -5396,12 +5397,12 @@ int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std:
         totalEditDataSize -= transcodeTotalSize;
     }
     CHECK_AND_RETURN_RET_LOG(validIds.size() <= UINT64_MAX / FIXED_PADDING_BYTES, E_ERR, "Padding size overflow");
-    uint64_t sumSize = FIXED_PADDING_BYTES * validIds.size();
+    int64_t sumSize = FIXED_PADDING_BYTES * validIds.size();
     CHECK_AND_RETURN_RET(SafeAccumulateSize(totalEditDataSize, sumSize), E_ERR);
     CHECK_AND_RETURN_RET(SafeAccumulateSize(totalFileSize, sumSize), E_ERR);
     size = sumSize;
     if (!movingPhotoExtraDataFiles.empty()) {
-        uint64_t totalExtraDataSize = 0;
+        int64_t totalExtraDataSize = 0;
         ret = GetSizeByFiles(movingPhotoExtraDataFiles, totalExtraDataSize);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Calculate moving photo extra data size failed");
         CHECK_AND_RETURN_RET_LOG(size > totalExtraDataSize, E_ERR, "Invalid size value");
