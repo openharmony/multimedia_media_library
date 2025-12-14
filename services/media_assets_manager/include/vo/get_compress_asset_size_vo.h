@@ -35,7 +35,7 @@ public:  // functions of Parcelable.
 
 class GetCompressAssetSizeRespBody : public IPC::IMediaParcelable {
 public:
-    uint64_t totalSize{0};
+    int64_t totalSize{0};
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;

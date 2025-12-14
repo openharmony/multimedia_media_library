@@ -171,6 +171,7 @@ private:
     int32_t HandleTlvSingleRestore(const std::unordered_map<TlvTag, std::string> &editFileMap,
         const unordered_map<string, TimeInfo> &timeInfoMap, RestoreTaskInfo &restoreTaskInfo, bool isFirst,
         UniqueNumber &uniqueNumber);
+    static int32_t UpdateTlvEditDataSize(const std::string &assetPath);
 
     static std::string GetUniqueTempDir(const std::string &tlvPath);
 
@@ -186,6 +187,7 @@ private:
     int32_t HandleMovingPhotoVideoSourceRestore(const std::string &srcPath, const std::string &assetPath);
     int32_t HandleMovingPhotoVideoSourceBackRestore(const std::string &srcPath, const std::string &assetPath);
     static int32_t MoveFile(const std::string &srcPath, const std::string &destPath);
+    static bool CheckNeedProcessMovingPhotoSize(const NativeRdb::ValuesBucket &values);
 
 private:
     std::atomic<bool> isRunning_{false};

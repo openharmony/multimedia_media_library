@@ -32,12 +32,12 @@ bool GetCompressAssetSizeReqBody::Marshalling(MessageParcel &parcel) const
 
 bool GetCompressAssetSizeRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    this->totalSize = parcel.ReadUint64();
+    this->totalSize = parcel.ReadInt64();
     return true;
 }
 bool GetCompressAssetSizeRespBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteUint64(this->totalSize);
+    bool status = parcel.WriteInt64(this->totalSize);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

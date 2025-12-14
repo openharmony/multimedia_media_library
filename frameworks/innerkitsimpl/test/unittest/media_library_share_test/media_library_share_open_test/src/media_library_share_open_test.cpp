@@ -302,14 +302,13 @@ void MediaLibraryShareOpenTest::InitPhotoAsset(std::string &dataFileUri, bool is
     int32_t dataFileId = 0;
     
     std::string uriReal = mediaLibraryManager->CreateAsset(effectFileName);
-    if (uriReal.empty()) {
-        MEDIA_ERR_LOG("InitPhotoAsset CreateAsset failed for %{public}s", effectFileName.c_str());
-    }
+    ASSERT_FALSE(uriReal.empty());
     if (isEdited) {
         dataFileId = MediaLibraryShareOpenTest::CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, effectFileName, true);
     } else {
         dataFileId = MediaLibraryShareOpenTest::CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, effectFileName, false);
     }
+    ASSERT_GT(dataFileId, 0);
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(dataFileId), "", MEDIA_API_VERSION_V10);
     dataFileUri = fileUri.ToString();
     string id = MediaFileUtils::GetIdFromUri(dataFileUri);
@@ -341,7 +340,7 @@ void MediaLibraryShareOpenTest::CopyToDestPath(int32_t srcFd, const std::string 
         ret = MediaFileUtils::CreateDirectory(destDir);
         if (ret != E_OK) {
             std::filesystem::create_directories(destDir);
-            MEDIA_INFO_LOG("destDir is exsist? : %{public}d", MediaFileUtils::IsDirExists(destDir));
+            MEDIA_INFO_LOG("destDir is exist? : %{public}d", MediaFileUtils::IsDirExists(destDir));
         }
     }
     if (MediaFileUtils::IsFileExists(destPath)) {
@@ -451,7 +450,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_005, TestSize.Level
     std::string uri = "";
     MediaLibraryShareOpenTest::InitPhotoAsset(uri);
     const vector<string> uris = {uri};
-    uint64_t totalSize = 0;
+    int64_t totalSize = 0;
     int32_t ret = E_OK;
 
     string id = MediaFileUtils::GetIdFromUri(uri);
@@ -466,7 +465,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_005, TestSize.Level
         }
     }
     EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("GetCompressAssetSize totalSize: %{public}" PRIu64, totalSize);
+    MEDIA_INFO_LOG("GetCompressAssetSize totalSize: %{public}" PRId64, totalSize);
     MEDIA_INFO_LOG("media_library_share_test_005 End");
 }
 } // namespace Media
