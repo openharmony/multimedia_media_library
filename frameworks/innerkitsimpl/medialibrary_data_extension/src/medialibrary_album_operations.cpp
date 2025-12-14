@@ -3337,6 +3337,23 @@ std::vector<std::string> GetUpdateSqlForSetAlbumName(std::string targetAlbumId, 
     return updateSqls;
 }
 
+static int32_t GetTargetAlbumId(const DataSharePredicates &predicates, std::string &targetAlbumId)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty()) {
+        MEDIA_ERR_LOG("no target album id");
+        return E_INVALID_VALUES;
+    }
+
+    targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        E_INVALID_VALUES, "target album id not exists");
+
+    return E_OK;
+}
+
 /**
  * set target album name
  * @param values album_name
@@ -3344,19 +3361,13 @@ std::vector<std::string> GetUpdateSqlForSetAlbumName(std::string targetAlbumId, 
  */
 int32_t MediaLibraryAlbumOperations::SetAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
-    auto whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.size() == 0) {
-        MEDIA_ERR_LOG("no target album id");
-        return E_INVALID_VALUES;
-    }
-    string targetAlbumId = whereArgs[0];
-    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
-        E_INVALID_VALUES, "target album id not exists");
+    std::string targetAlbumId;
+    int32_t err = GetTargetAlbumId(predicates, targetAlbumId);
+    CHECK_AND_RETURN_RET(err == E_OK, err);
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for set album name");
     string albumName;
-    int err = GetStringVal(values, ALBUM_NAME, albumName);
+    err = GetStringVal(values, ALBUM_NAME, albumName);
     if (err < 0 || albumName.empty()) {
         MEDIA_ERR_LOG("invalid album name");
         return E_INVALID_VALUES;
