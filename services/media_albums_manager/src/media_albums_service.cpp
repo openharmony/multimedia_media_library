@@ -1333,4 +1333,12 @@ int32_t MediaAlbumsService::GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &
     respBody.albumId = albumId;
     return E_OK;
 }
+
+int32_t MediaAlbumsService::CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody)
+{
+    std::string albumName = dto.albumName;
+    auto rowId = MediaLibraryAlbumOperations::CreatePortraitAlbum(albumName);
+    respBody.albumId = rowId;
+    return E_OK;
+}
 } // namespace OHOS::Media
