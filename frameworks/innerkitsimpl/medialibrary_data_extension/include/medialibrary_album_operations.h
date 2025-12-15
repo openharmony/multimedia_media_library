@@ -121,6 +121,7 @@ public:
         const std::string &fileId, int64_t coverDateTime, AccurateRefresh::AlbumAccurateRefresh& albumRefresh);
     static int32_t UpdatePhotoAlbumOrder(const vector<NativeRdb::ValuesBucket> &valuesBuckets,
         const vector<NativeRdb::RdbPredicates> &predicatesArray);
+    static int32_t CreatePortraitAlbum(const string &albumName);
 };
 } // namespace Media
 } // namespace OHOS
