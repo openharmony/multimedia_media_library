@@ -59,6 +59,7 @@
 #include "media_assets_recover_service.h"
 #include "get_albumid_by_lpath_dto.h"
 #include "get_albumid_by_lpath_vo.h"
+#include "create_analysis_album_dto.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -111,6 +112,7 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
     int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
     int32_t SmartMoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
+    int32_t CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);
