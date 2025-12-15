@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+class MediaFuseHighDaemon;
 class MediaFuseManager {
 public:
     static MediaFuseManager &GetInstance();
@@ -53,6 +54,7 @@ private:
 
 private:
     std::shared_ptr<MediaFuseLowDaemon> fuseLowDaemon_;
+    std::shared_ptr<MediaFuseHighDaemon> fuseHighDaemon_;
     std::atomic<uid_t> uid_;
     bool isInLinux_;
 };
