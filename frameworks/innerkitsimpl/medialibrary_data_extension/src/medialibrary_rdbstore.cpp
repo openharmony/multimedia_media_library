@@ -1973,6 +1973,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
     CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
@@ -5173,6 +5174,18 @@ static void UpgradeAnalysisUpdateSearchTrigger(RdbStore &store)
     MEDIA_INFO_LOG("end upgrade analysis update search trigger");
 }
 
+static void AddAnalysisUpdateVideoSearchTrigger(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add analysis update video search trigger");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add analysis update video search trigger");
+}
+
 static void CreateTabCustomRecords(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -5780,6 +5793,12 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AUDIO_IS_TEMP, true)) {
         AddAudioIsTemp(store, VERSION_ADD_AUDIO_IS_TEMP);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AUDIO_IS_TEMP, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER, true)) {
+        AddAnalysisUpdateVideoSearchTrigger(store, VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER, true);
     }
 }
 
