@@ -166,7 +166,7 @@ const std::string CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER =
     " CASE WHEN (NEW.status = 1) THEN " + std::to_string(TblSearchPhotoStatus::NO_INDEX) +
     " ELSE " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) + " END" +
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = old.file_id " +
-    " AND " + TBL_SEARCH_CV_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + 
+    " AND " + TBL_SEARCH_CV_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
     " AND EXISTS (SELECT 1 FROM Photos WHERE file_id = old.file_id AND media_type != 2));" +
     " END;";
 
