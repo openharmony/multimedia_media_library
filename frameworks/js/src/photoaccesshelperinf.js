@@ -799,7 +799,19 @@ const RecommendationType = {
   DRIVING_LICENSE: 9,
 
   // Indicates that featured single portrait photos can be recommended
-  FEATURED_SINGLE_PORTRAIT: 10
+  FEATURED_SINGLE_PORTRAIT: 10,
+
+  // Indicates that cat photos can be recommended
+  CAT: 13,
+
+  // Indicates that dog photos can be recommended
+  DOG: 14,
+
+  // Indicates that architecture photos can be recommended
+  ARCHITECTURE: 15,
+
+  // Indicates that landscape photos can be recommended
+  LANDSCAPE: 16
 };
 
 const PhotoViewMIMETypes = {
