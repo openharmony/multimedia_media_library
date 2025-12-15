@@ -82,7 +82,7 @@ std::string MediaFuseNode::BuildFullPathByInode(fuse_ino_t ino)
     std::string result;
     size_t maxDepth = 20;
     Inode currentNode = GetNodeById(ino);
-    while (currentNode.parent >= FUSE_ROOT_INO && maxDepth--) {
+    while (currentNode.parent >= FUSE_ROOT_INO && maxDepth > 0) {
         if (!currentNode.fileName.empty()) {
             result = "/" + currentNode.fileName + result;
         }
@@ -91,6 +91,7 @@ std::string MediaFuseNode::BuildFullPathByInode(fuse_ino_t ino)
             break;
         }
         currentNode = parentNode;
+        maxDepth--;
     }
     return result;
 }
@@ -157,10 +158,9 @@ fuse_ino_t MediaFuseNode::FindNodeIdByStIno(ino_t srcIno)
 void MediaFuseNode::UpdateInoByInodeKey(Inode &inode, fuse_ino_t parent, const std::string &name, fuse_ino_t ino)
 {
     std::lock_guard<std::mutex> lock(MediaFuseNode::nodeDataMutex_);
-    if (inode.fileName != name || inode.parent != parent) {
+    if (inode.fileName != name) {
         inoByParent_.erase({inode.fileName, inode.parent});
         inode.fileName = name;
-        inode.parent = parent;
         inoByParent_[{name, parent}] = ino;
     }
 }

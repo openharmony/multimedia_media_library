@@ -24,6 +24,7 @@
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
+#include "media_fuse_high_daemon.h"
 #include "media_fuse_hdc_operations.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -120,7 +121,7 @@ void MediaFuseManager::Start()
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
 
-    CHECK_AND_RETURN_INFO_LOG(fuseLowDaemon_ == nullptr, "Fuse low level daemon already started");
+    CHECK_AND_RETURN_INFO_LOG(fuseHighDaemon_ == nullptr, "Fuse daemon already started");
 
     /* init current device is in linux or not */
     isInLinux_ = CheckDeviceInLinux();
@@ -134,9 +135,9 @@ void MediaFuseManager::Start()
     }
 
     MEDIA_INFO_LOG("Mount fuse successfully, mountpoint = %{public}s", mountpoint.c_str());
-    fuseLowDaemon_ = std::make_shared<MediaFuseLowDaemon>(mountpoint);
-    CHECK_AND_RETURN_LOG(fuseLowDaemon_ != nullptr, "Create fuse low level daemon failed");
-    ret = fuseLowDaemon_->StartFuseLowLevel();
+    fuseHighDaemon_ = std::make_shared<MediaFuseHighDaemon>(mountpoint);
+    CHECK_AND_RETURN_LOG(fuseHighDaemon_ != nullptr, "Create fuse low level daemon failed");
+    ret = fuseHighDaemon_->StartFuse();
     if (ret != E_OK) {
         DfxReporter::ReportStartResult(DfxType::START_FUSE_DAEMON_FAIL, ret, startTime);
         MEDIA_INFO_LOG("Start fuse daemon failed");
@@ -449,7 +450,9 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
 static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode)
 {
     MEDIA_DEBUG_LOG("fuse open file");
-    uid_t uid = MediaFuseManager::GetInstance().GetUid();
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
+    uid_t uid = ctx->uid;
     string bundleName;
     AccessTokenID tokenCaller = INVALID_TOKENID;
     PermissionUtils::GetClientBundle(uid, bundleName);
