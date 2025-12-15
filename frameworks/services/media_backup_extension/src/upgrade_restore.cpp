@@ -482,7 +482,6 @@ void UpgradeRestore::RestorePhoto()
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     ProcessBurstPhotos();
-    RestoreSearchIndex();
     StopParameterForRestore();
     StopParameterForClone();
 }
