@@ -81,6 +81,7 @@
 #include "change_request_set_upload_status_vo.h"
 #include "change_request_set_upload_status_dto.h"
 #include  "get_albumid_by_lpath_dto.h"
+#include  "create_analysis_album_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -308,6 +309,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS),
         &MediaAlbumsControllerService::SmartMoveAssets
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM),
+        &MediaAlbumsControllerService::CreateAnalysisAlbum
     },
 };
 
@@ -1448,6 +1453,30 @@ int32_t MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName(MessageParce
     ret = MediaAlbumsService::GetInstance().GetAlbumIdByLpathOrBundleName(dto, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CreateAnalysisAlbum start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    CreateAnalysisAlbumReqBody reqBody;
+    CreateAnalysisAlbumRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateAnalysisAlbum Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    CHECK_AND_RETURN_RET_LOG(reqBody.subType == static_cast<int32_t>(PORTRAIT), E_INNER_FAIL, "subtype failed");
+    CreateAnalysisAlbumDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().CreateAnalysisAlbum(dto, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateAnalysisAlbum Error: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);

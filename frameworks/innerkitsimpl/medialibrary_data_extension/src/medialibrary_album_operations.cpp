@@ -621,7 +621,7 @@ int CreatePhotoAlbum(const string &albumName)
     return DoCreatePhotoAlbum(albumName, "", albumValues);
 }
 
-static int CreatePortraitAlbum(const string &albumName)
+int32_t MediaLibraryAlbumOperations::CreatePortraitAlbum(const string &albumName)
 {
     int32_t err = MediaFileUtils::CheckAlbumName(albumName);
     if (err < 0) {
@@ -668,7 +668,6 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     string type;
     string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
-    GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_TYPE, type);
     GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
     if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO) && subtype != to_string(PET)) {
         return err;
@@ -681,9 +680,6 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         auto ret = rdbStore->Insert(cmd, outRowId);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, outRowId, "insert fail, ret: %{public}d", ret);
         rowId = outRowId;
-    } else if (type == to_string(SMART) && subtype == to_string(PORTRAIT)) {
-        rowId = CreatePortraitAlbum(albumName);
-        return rowId;
     } else {
         rowId = CreatePhotoAlbum(albumName);
     }

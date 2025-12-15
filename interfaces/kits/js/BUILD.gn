@@ -302,6 +302,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_photo_album_object_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/set_photo_album_order_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_cloned_album_uris_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_analysis_album_vo.cpp",
   ]
 
   sources += media_asset_service_vo_source
