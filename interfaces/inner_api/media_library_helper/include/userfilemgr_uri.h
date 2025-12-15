@@ -100,6 +100,7 @@ const std::string OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE = "update_supported_water
 const std::string OPRN_UPDATE_HAS_APPLINK = "update_supported_has_applink";
 const std::string OPRN_UPDATE_APPLINK = "update_supported_applink";
 const std::string OPRN_QUERY_RAW_VISION_TOTAL = "query_raw_vision_total";
+const std::string OPRN_QUERY_RAW_VISION_VIDEO_TOTAL = "query_raw_vision_video_total";
 const std::string OPRN_QUERY_RAW_ANALYSIS_ALBUM = "query_raw_analysis_album";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -242,6 +243,7 @@ const std::string UFM_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + 
 // PhotoAccessHelper operation constants
 const std::string PAH_ANA_MAP = "phaccess_ana_map_operation";
 const std::string PAH_ANA_CV = "phaccess_ana_cv_operation";
+const std::string PAH_ANA_V_CV = "phaccess_ana_v_cv_operation";
 const std::string PAH_ANA_OCR = "phaccess_ana_ocr_operation";
 const std::string PAH_ANA_ATTS = "phaccess_ana_atts_operation";
 const std::string PAH_ANA_VIDEO_ATTS = "phaccess_ana_video_atts_operation";

@@ -166,6 +166,24 @@ const std::string CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER =
     " CASE WHEN (NEW.status = 1) THEN " + std::to_string(TblSearchPhotoStatus::NO_INDEX) +
     " ELSE " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) + " END" +
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = old.file_id " +
+    " AND " + TBL_SEARCH_CV_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + 
+    " AND EXISTS (SELECT 1 FROM Photos WHERE file_id = old.file_id AND media_type != 2));" +
+    " END;";
+
+// Listening of cv tab_analysis_video_total: update of(status,label,face), update cv_status
+const std::string ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER = "analysis_update_video_search_trigger";
+const std::string CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER =
+    std::string("CREATE TRIGGER IF NOT EXISTS analysis_update_video_search_trigger AFTER UPDATE ") +
+    " OF status, label, face" +
+    " ON " + VISION_VIDEO_TOTAL_TABLE + " FOR EACH ROW " +
+    " WHEN (NEW.status = 1" +
+    " OR NEW.label = 1 OR NEW.face > 2)" +
+    " BEGIN " +
+    " UPDATE " + SEARCH_TOTAL_TABLE +
+    " SET " + TBL_SEARCH_CV_STATUS + " = " +
+    " CASE WHEN (NEW.status = 1) THEN " + std::to_string(TblSearchPhotoStatus::NO_INDEX) +
+    " ELSE " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) + " END" +
+    " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = old.file_id " +
     " AND " + TBL_SEARCH_CV_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + ");" +
     " END;";
 
