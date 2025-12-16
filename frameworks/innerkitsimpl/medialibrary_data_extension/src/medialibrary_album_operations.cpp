@@ -423,7 +423,7 @@ static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDelete
     return GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
 }
 
-static void UseDefaultCreateValue(const string& columnName, const pair<bool, string>& defaultValue,
+static void UseDefaultCreateValue(const string& columnName, const ColumnSchema& schema,
     string& sql, vector<ValueObject>& bindArgs, int32_t albumId)
 {
     // needs to set album order to the max value + 1
@@ -431,15 +431,17 @@ static void UseDefaultCreateValue(const string& columnName, const pair<bool, str
         sql.append("( SELECT COALESCE(MAX(album_order), 0) + 1 FROM PhotoAlbum WHERE album_id <> ?)");
         bindArgs.push_back(ValueObject {albumId});
     // otherwise, set the default value
-    } else if (defaultValue.first) {
+    } else if (schema.defaultNull) {
         sql.append("NULL");
     } else {
-        sql.append(defaultValue.second);
+        sql.append('"');
+        sql.append(schema.defaultValue);
+        sql.append('"');
     }
 }
 
 static string BuildReuseSql(int32_t id, const ValuesBucket& albumValues,
-    const unordered_map<string, pair<bool, string>>& photoAlbumSchema, vector<ValueObject>& bindArgs)
+    const unordered_map<string, ColumnSchema>& photoAlbumSchema, vector<ValueObject>& bindArgs)
 {
     map<string, ValueObject> createUserValuesMap;
     albumValues.GetAll(createUserValuesMap);
@@ -463,27 +465,39 @@ static string BuildReuseSql(int32_t id, const ValuesBucket& albumValues,
     return sql;
 }
 
-static unordered_map<string, pair<bool, string>> QueryPhotoAlbumSchema()
+static unordered_map<string, ColumnSchema> QueryPhotoAlbumSchema()
 {
+    unordered_map<string, ColumnSchema> photoAlbumSchema;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, {}, "fail to get rdbstore");
     const string queryScheme = "PRAGMA table_info([PhotoAlbum])";
     auto resultSet = rdbStore->QueryByStep(queryScheme);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, {}, "Query failed");
 
-    unordered_map<string, pair<bool, string>> photoAlbumSchema;
     while (resultSet->GoToNextRow() == E_OK) {
         bool isPk = GetInt32Val("pk", resultSet) == 1;
         if (!isPk) {
             string colName = GetStringVal("name", resultSet);
             string defaultValue = GetStringVal("dflt_value", resultSet);
+            string columnType = GetStringVal("type", resultSet);
             bool isNull;
             int32_t dfltIdx;
             resultSet->GetColumnIndex("dflt_value", dfltIdx);
             resultSet->IsColumnNull(dfltIdx, isNull);
-            photoAlbumSchema[colName] = make_pair(isNull, defaultValue);
+            photoAlbumSchema[colName] = ColumnSchema {isNull, defaultValue, columnType};
         }
     }
+    return photoAlbumSchema;
+}
+
+const unordered_map<string, ColumnSchema>& MediaLibraryAlbumOperations::GetPhotoAlbumTableSchema()
+{
+    static unordered_map<string, ColumnSchema> photoAlbumSchema {};
+
+    if (photoAlbumSchema.empty()) {
+        photoAlbumSchema = QueryPhotoAlbumSchema();
+    }
+
     return photoAlbumSchema;
 }
 
@@ -491,7 +505,7 @@ int32_t MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(int32_t id, const Va
     std::shared_ptr<TransactionOperations> trans, AlbumAccurateRefresh *albumRefresh)
 {
     MEDIA_INFO_LOG("Renew deleted PhotoAlbum start, album id: %{public}d", id);
-    unordered_map<string, pair<bool, string>> photoAlbumSchema = QueryPhotoAlbumSchema();
+    unordered_map<string, ColumnSchema> photoAlbumSchema = GetPhotoAlbumTableSchema();
     vector<NativeRdb::ValueObject> bindArgs;
     string sql = BuildReuseSql(id, albumValues, photoAlbumSchema, bindArgs);
     int32_t ret {};
@@ -1341,15 +1355,18 @@ static int32_t NotifyForRenameUserAlbum(std::shared_ptr<AccurateRefresh::AlbumAc
 static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Rename user album failed. RdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, E_INVALID_ARGS, "Rename user album failed. Invalid album id: %{public}d",
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Rename album failed. RdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, E_INVALID_ARGS, "Rename album failed. Invalid album id: %{public}d",
         oldAlbumId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, E_INVALID_ARGS,
         "Check album name failed");
-    MEDIA_INFO_LOG("Start to set user album name of id %{public}d", oldAlbumId);
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
     int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
+
+    MEDIA_INFO_LOG("Start to set %{public}s album name of id %{public}d",
+        oldAlbumType == PhotoAlbumType::SOURCE ? "source" : "user", oldAlbumId);
+
     CHECK_AND_RETURN_RET_LOG(CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_HAS_DB_ERROR,
         "Check album name renameable failed");
 
