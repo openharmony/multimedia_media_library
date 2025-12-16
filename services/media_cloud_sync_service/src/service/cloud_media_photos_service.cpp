@@ -1279,6 +1279,12 @@ int32_t CloudMediaPhotosService::OnCompletePull(const MediaOperateResult &optRet
         GetSmartDataUpdateState() > static_cast<int64_t>(UpdateSmartDataState::IDLE)) {
         int32_t ret = DoUpdateSmartDataAlbum();
         CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoUpdateSmartDataAlbum task");
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            return E_FAIL;
+        }
+        watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
         SetSmartDataUpdateState(UpdateSmartDataState::IDLE);
     }
     return this->photosDao_.UpdatePhotoVisible();
