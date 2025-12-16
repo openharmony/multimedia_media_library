@@ -5781,12 +5781,6 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         AddAudioIsTemp(store, VERSION_ADD_AUDIO_IS_TEMP);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AUDIO_IS_TEMP, true);
     }
-
-    if (oldVersion < VERSION_ADD_ALBUM_ORDER_BACK_VERSION &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true)) {
-        AddAlbumOrderBackTable(store, VERSION_ADD_ALBUM_ORDER_BACK_VERSION);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true);
-    }
 }
 
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
@@ -5890,6 +5884,12 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
 
 static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
+    if (oldVersion < VERSION_ADD_ALBUM_ORDER_BACK_VERSION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true)) {
+        AddAlbumOrderBackTable(store, VERSION_ADD_ALBUM_ORDER_BACK_VERSION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true);
+    }
+    
     if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
         AddCloneSequenceColumns(store, VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE);
