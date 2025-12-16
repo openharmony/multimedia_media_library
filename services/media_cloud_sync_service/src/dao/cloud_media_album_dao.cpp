@@ -644,7 +644,7 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         int32_t albumOrder = get<int32_t>(ResultSetUtils::GetValFromColumn("albums_order", resultSet,
                                                                            TYPE_INT32));
-        int32_t orderType = get<int32_t>(ResultSetUtils::GetValFromColumn("order_type", resultSet, 
+        int32_t orderType = get<int32_t>(ResultSetUtils::GetValFromColumn("order_type", resultSet,
                                                                           TYPE_INT32));
         int32_t orderSection = get<int32_t>(ResultSetUtils::GetValFromColumn("order_section", resultSet,
                                                                              TYPE_INT32));
