@@ -620,6 +620,7 @@ export class PhotoPickerComponent extends ViewPU {
     handlePhotoBrowserChange(e) {
         let o = new BaseItemInfo();
         o.uri = e.uri;
+        o.photoSubType = e.photoSubType;
         if (this.onPhotoBrowserChanged) {
             this.onPhotoBrowserChanged(o);
         }
