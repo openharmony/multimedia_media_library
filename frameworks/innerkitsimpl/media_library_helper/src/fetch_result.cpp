@@ -21,6 +21,7 @@
 #include "media_smart_album_column.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
+#include "result_set_utils.h"
 
 using namespace std;
 
@@ -322,6 +323,37 @@ bool FetchResult<T>::IsAtLastRow()
     bool retVal = false;
     resultset_->IsAtLastRow(retVal);
     return retVal;
+}
+
+template <class T>
+int32_t FetchResult<T>::GetObjectIndexById(int32_t assetId)
+{
+    CHECK_AND_RETURN_RET_LOG(resultset_ != nullptr, -1, "resultset_ is null");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultset_->GetRowCount(count) == NativeRdb::E_OK, -1, "GetRowCount failed");
+    if constexpr (std::is_same<T, FileAsset>::value || std::is_same<T, PhotoAssetCustomRecord>::value) {
+        for (int32_t i = 0; i < count; i++) {
+            CHECK_AND_RETURN_RET_LOG(resultset_->GoToRow(i) == NativeRdb::E_OK, -1, "GoToRow failed");
+            int32_t fileId =
+                get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultset_, TYPE_INT32));
+            if (fileId == assetId) {
+                return i;
+            }
+        }
+    } else if constexpr (std::is_same<T, AlbumAsset>::value || std::is_same<T, PhotoAlbum>::value ||
+        std::is_same<T, SmartAlbumAsset>::value || std::is_same<T, AlbumOrder>::value) {
+            for (int32_t i = 0; i < count; i++) {
+                CHECK_AND_RETURN_RET_LOG(resultset_->GoToRow(i) == NativeRdb::E_OK, -1, "GoToRow failed");
+                int32_t albumId =
+                    get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultset_, TYPE_INT32));
+                if (albumId == assetId) {
+                    return i;
+                }
+            }
+        } else {
+            MEDIA_ERR_LOG("unsupported FetchResType");
+        }
+    return -1;
 }
 
 variant<int32_t, int64_t, string, double> ReturnDefaultOnError(string errMsg, ResultSetDataType dataType)
