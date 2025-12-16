@@ -40,6 +40,7 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
+#include "thumbnail_ready_manager.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
@@ -710,58 +711,14 @@ void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileI
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
 }
 
-int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
+int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId, pid_t pid)
 {
-    if (requestId <= 0) {
-        MEDIA_ERR_LOG("create astc batch failed, invalid request id:%{public}d", requestId);
-        return E_INVALID_VALUES;
-    }
-    CancelAstcBatchTask(requestId - 1);
-    CHECK_AND_RETURN_RET_LOG(RecordAstcBatchTaskId(requestId), E_ERR, "RecordAstcBatchTaskId failed");
-    if (GetCurrentTemperatureLevel() >= READY_TEMPERATURE_LEVEL) {
-        isTemperatureHighForReady_ = true;
-        currentRequestId_ = requestId;
-        rdbPredicatePtr_ = make_shared<NativeRdb::RdbPredicates>(rdbPredicate);
-        MEDIA_INFO_LOG("temperature is too high, the operation is suspended");
-        return E_OK;
-    }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE
-    };
-    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
+    return ThumbnailReadyManager::GetInstance().CreateAstcBatchOnDemand(rdbPredicate, requestId, pid);
 }
 
-bool ThumbnailService::RecordAstcBatchTaskId(int32_t requestId)
+void ThumbnailService::CancelAstcBatchTask(int32_t requestId, pid_t pid)
 {
-    CHECK_AND_RETURN_RET_LOG(requestId > 0, false,
-        "RecordAstcBatchTaskId failed, invalid request id:%{public}d", requestId);
-
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
-    CHECK_AND_RETURN_RET_LOG(thumbnailWorker != nullptr, false, "ThumbnailWorker is nullptr");
-    thumbnailWorker->RecordCurrentTaskId(requestId);
-    return true;
-}
-
-void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
-{
-    if (requestId <= 0) {
-        MEDIA_ERR_LOG("cancel astc batch failed, invalid request id:%{public}d", requestId);
-        return;
-    }
-
-    if (isTemperatureHighForReady_) {
-        currentRequestId_ = 0;
-    }
-    MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
-    if (thumbnailWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker is null");
-        return;
-    }
-    thumbnailWorker->IgnoreTaskByRequestId(requestId);
+    ThumbnailReadyManager::GetInstance().CancelAstcBatchTask(requestId, pid);
 }
 
 void ThumbnailService::UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
@@ -891,16 +848,7 @@ bool ThumbnailService::GetCurrentStatusForTask()
 
 void ThumbnailService::NotifyTempStatusForReady(const int32_t &currentTemperatureLevel)
 {
-    static std::mutex notifyTempStatusForReadyLock;
-    std::lock_guard<std::mutex> lock(notifyTempStatusForReadyLock);
-    currentTemperatureLevel_ = currentTemperatureLevel;
-    if (isTemperatureHighForReady_ && currentTemperatureLevel_ < READY_TEMPERATURE_LEVEL) {
-        MEDIA_INFO_LOG("temperature is normal, the opreation is resumed");
-        isTemperatureHighForReady_ = false;
-        if (rdbPredicatePtr_ != nullptr && currentRequestId_ > 0) {
-            CreateAstcBatchOnDemand(*rdbPredicatePtr_, currentRequestId_);
-        }
-    }
+    ThumbnailReadyManager::GetInstance().NotifyTempStatusForReady(currentTemperatureLevel);
 }
 
 int32_t ThumbnailService::GetCurrentTemperatureLevel()

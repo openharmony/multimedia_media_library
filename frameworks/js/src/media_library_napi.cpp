@@ -150,6 +150,7 @@ string ChangeListenerNapi::trashAlbumUri_;
 int32_t ChangeListenerNapi::trashAlbumUserId_ = -1;
 std::mutex ChangeListenerNapi::trashMutex_;
 static std::once_flag g_prewarmTrashOnce;
+mutex MediaLibraryNapi::thumbnailMutex_;
 
 static void PrewarmTrashAlbumUriAsync()
 {
@@ -7071,8 +7072,8 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
         return nullptr;
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
-        env, info, context, ARGS_TWO, ARGS_TWO), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsTwoCallback(
+        env, info, context, ARGS_TWO, ARGS_THREE), JS_ERR_PARAMETER_INVALID);
     CHECK_COND_WITH_MESSAGE(env, context->callbackRef, "Can not get callback function");
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParsePredicates(env,
         context->argv[PARAM0], context, ASSET_FETCH_OPT), JS_INNER_FAIL);
@@ -7091,7 +7092,8 @@ static void RegisterThumbnailGenerateObserver(napi_env env,
         return;
     }
     dataObserver = std::make_shared<ThumbnailBatchGenerateObserver>();
-    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId) + "," +
+        std::to_string(getpid());
     UserFileClient::RegisterObserverExt(Uri(observerUri), dataObserver, false);
     thumbnailGenerateObserverMap.Insert(requestId, dataObserver);
 }
@@ -7103,7 +7105,8 @@ static void UnregisterThumbnailGenerateObserver(int32_t requestId)
         return;
     }
 
-    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId) + "," +
+        std::to_string(getpid());
     UserFileClient::UnregisterObserverExt(Uri(observerUri), dataObserver);
     thumbnailGenerateObserverMap.Erase(requestId);
 }
@@ -7176,6 +7179,68 @@ static int32_t GetRequestId()
     return requestIdCounter_;
 }
 
+static int32_t StartCreateThumbnailTask(napi_env env, MediaLibraryAsyncContext *asyncContext)
+{
+    CHECK_COND_RET(asyncContext != nullptr, JS_INNER_FAIL, "Async context is null");
+    int32_t requestId = asyncContext->requestId;
+    StartThumbnailCreationTaskReqBody reqBody;
+    reqBody.predicates = asyncContext->predicates;
+    reqBody.requestId = requestId;
+    reqBody.pid = getpid();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
+    int32_t err = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (err < 0) {
+        ReleaseThumbnailTask(requestId);
+        asyncContext->SaveError(err);
+        NAPI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", err);
+    }
+    return err;
+}
+
+static void StartCreateThumbnailTaskExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    CHECK_IF_EQUAL(context->requestId == GetRequestId(), "RequestId is invalid");
+    StartCreateThumbnailTask(env, context);
+}
+
+static void StartCreateThumbnailTaskCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("StartCreateThumbnailTaskCompleteCallback");
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    if (context->requestId != GetRequestId() && context->work != nullptr) {
+        napi_delete_reference(env, context->responseRef);
+        context->responseRef = nullptr;
+        napi_delete_async_work(env, context->work);
+        delete context;
+        return;
+    }
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    napi_get_undefined(env, &jsContext->error);
+    napi_get_undefined(env, &jsContext->data);
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_create_int32(env, 0, &jsContext->data);
+    } else if (context->error == E_THUMBNAIL_ASTC_ALL_EXIST) {
+        napi_create_int32(env, 1, &jsContext->data);
+    } else {
+        napi_create_int32(env, 0, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->responseRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -7183,27 +7248,23 @@ napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, n
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsStartCreateThumbnailTask(env, info, asyncContext));
 
+    lock_guard<mutex> lock(thumbnailMutex_);
     ReleaseThumbnailTask(GetRequestId());
     int32_t requestId = AssignRequestId();
     RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
     CreateThumbnailHandler(env, asyncContext, requestId);
-
-    StartThumbnailCreationTaskReqBody reqBody;
-    reqBody.predicates = asyncContext->predicates;
-    reqBody.requestId = requestId;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-
+    asyncContext->requestId = requestId;
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
-    if (changedRows < 0) {
-        ReleaseThumbnailTask(requestId);
-        asyncContext->SaveError(changedRows);
-        NAPI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", changedRows);
-        napi_create_int32(env, changedRows, &result);
-        return result;
+    if (asyncContext->responseRef != nullptr) {
+        MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StartCreateThumbnailTask",
+            StartCreateThumbnailTaskExecute, StartCreateThumbnailTaskCompleteCallback);
+    } else {
+        int32_t err = StartCreateThumbnailTask(env, asyncContext.get());
+        if (err < 0) {
+            napi_create_int32(env, err, &result);
+            return result;
+        }
     }
     napi_create_int32(env, requestId, &result);
     return result;
@@ -7221,10 +7282,26 @@ void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
         if (pos == std::string::npos) {
             continue;
         }
-        if (!MediaFileUtils::IsValidInteger(uriString.substr(pos + 1))) {
+        std::string params = uriString.substr(pos + 1);
+        auto commaPos = params.find(',');
+        if (commaPos == std::string::npos) {
             continue;
         }
-        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        std::string requestIdStr = params.substr(0, commaPos);
+        std::string pidStr = params.substr(commaPos + 1);
+
+        if (!MediaFileUtils::IsValidInteger(requestIdStr)) {
+            continue;
+        }
+        requestIdCallback_ = std::stoi(requestIdStr.c_str());
+
+        if (!MediaFileUtils::IsValidInteger(pidStr)) {
+            continue;
+        }
+        pid_t pid = std::atoi(pidStr.c_str());
+        if (pid != getpid()) {
+            continue;
+        }
         std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
         if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
             continue;
@@ -7260,6 +7337,46 @@ static napi_value ParseArgsStopCreateThumbnailTask(napi_env env,
     return result;
 }
 
+static void StopCreateThumbnailTaskExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    CHECK_IF_EQUAL(context->requestId == GetRequestId(), "RequestId is invalid");
+    StopThumbnailCreationTaskReqBody reqBody;
+    reqBody.requestId = context->requestId;
+    reqBody.pid = getpid();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t err = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (err < 0) {
+        context->SaveError(err);
+        NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", err);
+    }
+}
+
+static void StopCreateThumbnailTaskCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("StopCreateThumbnailTaskCompleteCallback");
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        napi_delete_async_work(env, context->work);
+    }
+    delete context;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -7274,18 +7391,11 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
         NAPI_WARN_LOG("Invalid requestId: %{public}d", requestId);
         RETURN_NAPI_UNDEFINED(env);
     }
+    lock_guard<mutex> lock(thumbnailMutex_);
     ReleaseThumbnailTask(requestId);
-
-    StopThumbnailCreationTaskReqBody reqBody;
-    reqBody.requestId = requestId;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (changedRows < 0) {
-        asyncContext->SaveError(changedRows);
-        NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
-    }
+    asyncContext->requestId = requestId;
+    MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StopCreateThumbnailTask",
+        StopCreateThumbnailTaskExecute, StopCreateThumbnailTaskCompleteCallback);
     RETURN_NAPI_UNDEFINED(env);
 }
 
