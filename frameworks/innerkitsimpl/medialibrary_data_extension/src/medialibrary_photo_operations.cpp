@@ -3471,6 +3471,12 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
         ThumbnailService::GetInstance()->HasInvalidateThumbnail(to_string(fileAsset->GetId()),
             PhotoColumn::PHOTOS_TABLE);
     }
+    std::string imageId = fileAsset->GetPhotoId();
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->DeleteDataWithImageId(imageId, PictureType::HIGH_QUALITY_PICTURE);
+        pictureManagerThread->DeleteDataWithImageId(imageId, PictureType::LOW_QUALITY_PICTURE);
+    }
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
 
@@ -4147,7 +4153,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_ID };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
