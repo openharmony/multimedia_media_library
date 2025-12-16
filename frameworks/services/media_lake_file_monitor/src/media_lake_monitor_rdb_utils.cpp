@@ -112,6 +112,39 @@ bool MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(const std::shared_ptr<MediaL
     return true;
 }
 
+bool MediaLakeMonitorRdbUtils::QueryAlbumByLPath(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    const std::string &lPath, std::vector<int32_t> &albumIds, std::unordered_map<int32_t, int32_t> &albumCounts)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
+
+    RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+    rdbPredicates.BeginWrap();
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lPath)
+           ->Or()
+           ->Like(PhotoAlbumColumns::ALBUM_LPATH, lPath + "/%");
+    rdbPredicates.EndWrap();
+    std::vector<std::string> columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT };
+    auto resultSet = rdbStore->QueryByStep(rdbPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false,
+        "QueryByStep returned nullptr, lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
+
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t albumId = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(
+            resultSet, PhotoAlbumColumns::ALBUM_ID, INVALID_ID);
+        int32_t counts = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(
+            resultSet, PhotoAlbumColumns::ALBUM_COUNT, 0);
+        CHECK_AND_CONTINUE_ERR_LOG(albumId > 0, "Invalid albumId found for lPath: %{public}s",
+            DfxUtils::GetSafePath(lPath).c_str());
+        albumIds.push_back(albumId);
+        albumCounts.insert(make_pair(albumId, counts));
+    }
+
+    CHECK_AND_RETURN_RET_LOG(!albumIds.empty(), false,
+        "No valid albumId found for lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
+
+    return true;
+}
+
 bool MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     const std::vector<int32_t> &albumIds, std::vector<LakeMonitorQueryResultData> &dataList)
 {
@@ -423,5 +456,90 @@ void MediaLakeMonitorRdbUtils::NotifyAnalysisAlbum(const std::vector<std::string
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
             PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
     }
+}
+
+bool MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(const std::string &path,
+    std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
+{
+    // 1. 去除湖外前缀
+    std::string lPath = RemovePrefix(path, HODirPrefix);
+    CHECK_AND_RETURN_RET_LOG(!lPath.empty(), false,
+        "Invalid path after prefix removal, path: %{public}s", DfxUtils::GetSafePath(path).c_str());
+
+    // 2. 查出该目录及子目录的 album_id
+    std::vector<int32_t> albumIds;
+    std::unordered_map<int32_t, int32_t> albumCounts;
+    CHECK_AND_RETURN_RET_LOG(QueryAlbumByLPath(rdbStore, lPath, albumIds, albumCounts),
+        false, "QueryAlbumByLPath failed, lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
+
+    // 3. 查出对应的所有湖内文件的相关数据用于后续处理
+    std::vector<LakeMonitorQueryResultData> dataList;
+    CHECK_AND_RETURN_RET_LOG(QueryDataListByAlbumIds(rdbStore, albumIds, dataList),
+        false, "QueryDataListByAlbumIds failed, lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
+
+    // 4. 在相册表删除非融合的纯湖内相册
+    CHECK_AND_RETURN_RET_LOG(DeleteLakeAlbums(rdbStore, albumCounts, dataList),
+        false, "DeleteLakeAlbums failed, lPath: %{public}s", DfxUtils::GetSafePath(lPath).c_str());
+
+    // 5. 删除空相册
+    CHECK_AND_RETURN_RET_LOG(DeleteEmptyAlbumsByLPath(rdbStore, lPath),
+        false, "DeleteEmptyAlbumsByLPath failed");
+
+    return true;
+}
+
+bool MediaLakeMonitorRdbUtils::DeleteLakeAlbums(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    std::unordered_map<int32_t, int32_t>& albumCounts, std::vector<LakeMonitorQueryResultData>& dataList)
+{
+    // 1.入参校验
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr, cannot delete lake albums");
+    CHECK_AND_RETURN_RET_LOG(!albumCounts.empty(), false, "albumCounts is empty, cannot delete lake albums");
+    CHECK_AND_RETURN_RET_LOG(!dataList.empty(), false, "dataList is empty, cannot delete lake albums");
+
+    // 2.统计dataList中每个albumId对应的记录数量
+    std::unordered_map<int32_t, int32_t> albumIdCountMap;
+    for (const auto& data : dataList) {
+        // 过滤无效albumId
+        if (data.albumId <= 0) {
+            MEDIA_ERR_LOG("Skip invalid albumId: %{public}d in dataList, fileId:%{public}d",
+                data.albumId, data.fileId);
+            continue;
+        }
+        albumIdCountMap[data.albumId]++;
+    }
+
+    // 3.筛选数量匹配的albumId（count == albumCounts中对应值）
+    std::vector<string> matchedAlbumIds;
+    for (const auto& [albumId, realCount] : albumIdCountMap) {
+        auto it = albumCounts.find(albumId);
+        if (it == albumCounts.end()) {
+            MEDIA_DEBUG_LOG("AlbumId %{public}d not found in albumCounts, skip", albumId);
+            continue;
+        }
+
+        int32_t expectedCount = it->second;
+        if (realCount == expectedCount) {
+            matchedAlbumIds.push_back(to_string(albumId));
+            MEDIA_DEBUG_LOG("AlbumId %{public}d matched count: real=%{public}d, expected=%{public}d",
+                albumId, realCount, expectedCount);
+        } else {
+            MEDIA_DEBUG_LOG("AlbumId %{public}d count not matched: real=%{public}d, expected=%{public}d",
+                albumId, realCount, expectedCount);
+        }
+    }
+
+    // 4. 无匹配的albumId时直接返回
+    CHECK_AND_RETURN_RET_LOG(!matchedAlbumIds.empty(), false,
+        "No albumId matched count condition, skip delete");
+
+    // 5.删除对应album记录
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, matchedAlbumIds);
+    int32_t deletedRow = -1;
+    auto ret = rdbStore->Delete(deletedRow, predicates);
+    bool cond = (ret != NativeRdb::E_OK || deletedRow < 0);
+    CHECK_AND_PRINT_LOG(!cond, "Story Delete db failed, errCode = %{public}d", ret);
+    MEDIA_INFO_LOG("album Delete retVal:%{public}d, deletedRow:%{public}d", ret, deletedRow);
+    return cond;
 }
 } // namespace OHOS::Media
