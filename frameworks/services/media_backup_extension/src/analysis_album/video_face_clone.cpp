@@ -33,6 +33,7 @@
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
+
 VideoFaceClone::VideoFaceClone(
     const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
     const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
@@ -69,6 +70,8 @@ bool VideoFaceClone::CloneVideoFaceInfo()
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(sourceRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryVideoFaceTotalNumber, totalNumber = %{public}d", totalNumber);
     if (totalNumber <= 0) {
+        // The video status must be updated even if video_face is empty.
+        StartCloneAnalysisVideoTotalTab(oldFileIds, newFileIds);
         int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
         migrateVideoFaceTotalTimeCost_ += end - start;
         return true;
@@ -91,8 +94,7 @@ bool VideoFaceClone::CloneVideoFaceInfo()
         std::vector<VideoFaceTbl> processedVideoFaces = ProcessVideoFaceTbls(videoFaceTbls);
         BatchInsertVideoFaces(processedVideoFaces);
     }
-    StartCloneAnalysisVideoTotalTab(oldFileIds);
-    UpdateAnalysisTotalTblVideoFaceStatus(destRdb_, newFileIds);
+    StartCloneAnalysisVideoTotalTab(oldFileIds, newFileIds);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("VideoFaceClone::CloneVideoFaceInfo completed. Migrated %{public}lld records. "
         "Total time: %{public}lld ms", (long long)migrateVideoFaceNum_, (long long)migrateVideoFaceTotalTimeCost_);
@@ -269,23 +271,8 @@ void VideoFaceClone::DeleteExistingVideoFaceData(const std::vector<int32_t>& new
     BackupDatabaseUtils::ExecuteSQL(destRdb_, deleteFaceSql);
 }
 
-void VideoFaceClone::UpdateAnalysisTotalTblVideoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-    std::vector<int32_t> newFileIds)
-{
-    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
-
-    std::string updateSql =
-        "UPDATE tab_analysis_total "
-        "SET face = 1 "
-        "WHERE EXISTS (SELECT 1 FROM tab_analysis_video_face "
-                      "WHERE tab_analysis_video_face.file_id = tab_analysis_total.file_id) "
-        "AND " + VIDEO_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
-
-    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
-    CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis total failed, ret=%{public}d", errCode);
-}
-
-void VideoFaceClone::StartCloneAnalysisVideoTotalTab(std::vector<int32_t> &oldFileIds)
+void VideoFaceClone::StartCloneAnalysisVideoTotalTab(const std::vector<int32_t> &oldFileIds,
+    const std::vector<int32_t> &newFileIds)
 {
     BackupDatabaseUtils::ClearAnalysisVideoTotalTable(destRdb_);
     bool isTableExist = false;
@@ -294,12 +281,13 @@ void VideoFaceClone::StartCloneAnalysisVideoTotalTab(std::vector<int32_t> &oldFi
     if (isTableExist) {
         CopyAnalysisVideoTotalTab(VISION_VIDEO_TOTAL_TABLE, oldFileIds);
     } else {
-        UpdateAnalysisVideoTotalTblLabelAndFace(oldFileIds);
+        UpdateAnalysisVideoTotalTblLabelAndFace(oldFileIds, newFileIds);
         UpdateAnalysisVideoTotalTblFaceAndTagId();
     }
 }
 
-void VideoFaceClone::UpdateAnalysisVideoTotalTblLabelAndFace(std::vector<int32_t> &oldFileIds)
+void VideoFaceClone::UpdateAnalysisVideoTotalTblLabelAndFace(const std::vector<int32_t> &oldFileIds,
+    const std::vector<int32_t> &newFileIds)
 {
     MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
@@ -307,6 +295,7 @@ void VideoFaceClone::UpdateAnalysisVideoTotalTblLabelAndFace(std::vector<int32_t
     CopyAnalysisVideoTotalTab(VISION_TOTAL_TABLE, oldFileIds);
     BackupDatabaseUtils::UpdateFaceToAnalysisVideoTotalTable(destRdb_);
     BackupDatabaseUtils::UpdateStatusToAnalysisTable(destRdb_);
+    BackupDatabaseUtils::UpdateFaceToAnalysisTable(destRdb_, newFileIds);
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblLabelAndFace cost %{public}lld", static_cast<long long>(end - start));
@@ -320,7 +309,7 @@ void VideoFaceClone::UpdateAnalysisVideoTotalTblFaceAndTagId()
     BackupDatabaseUtils::DeleteDirtytagIdFromFaceTagTable(destRdb_);
     BackupDatabaseUtils::UpdateVideoFaceTagId(destRdb_);
     BackupDatabaseUtils::UpdateVideoTotalFaceId(destRdb_);
-    BackupDatabaseUtils::CheckLabelAndFaceToAnalysisVideoTotalTable(destRdb_);
+    BackupDatabaseUtils::CheckFaceToAnalysisVideoTotalTable(destRdb_);
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("UpdateAnalysisVideoTotalTblFaceAndTagId cost %{public}lld", static_cast<long long>(end - start));
@@ -361,17 +350,13 @@ void VideoFaceClone::WriteDataToAnaVideoTotalTabSub(std::vector<CloneVideoInfo> 
     std::unordered_map<int32_t, int32_t> idMap = buildFileIdMap(photoInfoMap_);
     std::string updateSql = "UPDATE tab_analysis_video_total SET ";
     std::string faceCase = "face = CASE file_id ";
-    std::string labelCase = ", label = CASE file_id ";
     std::string whereClause = " WHERE file_id IN (";
     for (size_t i = 0; i < updateDataList.size(); ++i) {
         const auto& data = updateDataList[i];
         int32_t newFileId = getNewFileId(idMap, data.file_id);
         int32_t face = data.face;
-        int32_t label = data.label;
-        int32_t status = data.status;
 
         faceCase += " WHEN " + std::to_string(newFileId) + " THEN " + std::to_string(face) + " ";
-        labelCase += " WHEN " + std::to_string(newFileId) + " THEN " + std::to_string(label) + " ";
         whereClause += std::to_string(newFileId);
         if (i != updateDataList.size() - 1) {
             whereClause += ", ";
@@ -379,10 +364,9 @@ void VideoFaceClone::WriteDataToAnaVideoTotalTabSub(std::vector<CloneVideoInfo> 
     }
 
     faceCase += " END";
-    labelCase += " END";
     whereClause += ")";
 
-    updateSql += faceCase + labelCase + whereClause + ";";
+    updateSql += faceCase + whereClause + ";";
 
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(destRdb_, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0,
@@ -406,7 +390,7 @@ void VideoFaceClone::WriteDataToAnaVideoTotalTab(std::vector<CloneVideoInfo> &up
     }
 }
 
-bool VideoFaceClone::CopyAnalysisVideoTotalTab(const std::string &tableName, std::vector<int32_t> &oldFileIds)
+bool VideoFaceClone::CopyAnalysisVideoTotalTab(const std::string &tableName, const std::vector<int32_t> &oldFileIds)
 {
     MEDIA_INFO_LOG("CopyAnalysisVideoTotalTab");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
