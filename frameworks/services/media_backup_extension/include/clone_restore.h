@@ -230,6 +230,7 @@ private:
     void SetTimeInfo(const FileInfo &info, NativeRdb::ValuesBucket &values);
     void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void SetAggregateBitThird();
+    bool ShouldRestoreFromCloud();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
