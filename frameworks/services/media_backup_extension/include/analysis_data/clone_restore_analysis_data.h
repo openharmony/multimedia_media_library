@@ -33,7 +33,7 @@ public:
     };
 
     void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, const std::string &totalTableName = "tab_analysis_total");
     std::unordered_map<std::string, std::string> GetTableCommonColumns(
         const std::unordered_set<std::string> &excludedColumns);
     void GetValFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, AnalysisDataInfo &info,
@@ -86,6 +86,7 @@ private:
     int32_t duplicateCnt_{0};
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
+    std::string totalTableName_;
 };
 } // namespace OHOS::Media
 #endif // CLONE_RESTORE_ANALYSIS_DATA_H

@@ -38,6 +38,11 @@ public:
         const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection);
 
 private:
+    enum InfoType {
+        ALL = 0,
+        IMAGE,
+        VIDEO
+    };
     struct ClassifyCloneInfo {
         std::optional<int32_t> id;
         std::optional<int32_t> fileIdOld;
@@ -72,7 +77,15 @@ private:
         std::optional<int32_t> triggerGenerateThumbnail;
     };
 
+    void RestoreByVersion(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreFromOldVersion(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreFromNewVersion(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void HandleOldVersionData();
+    void CheckLabelToAnalysisVideoTotalTable();
+
     void GetMaxIds();
+    void RestoreBatchByType(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreMapsByType();
     void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void RestoreMaps();
     void RestoreVideoMaps();
@@ -104,7 +117,8 @@ private:
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
-    
+    CloneRestoreAnalysisTotal& GetCloneRestoreAnalysisTotal();
+
     void AddSpecialAlbum();
     void AddSelfieAlbum();
     void AddUserCommentAlbum();
@@ -127,6 +141,9 @@ private:
     std::atomic<int64_t> restoreLabelTimeCost_{0};
     std::atomic<int64_t> restoreVideoLabelTimeCost_{0};
     CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal_;
+    CloneRestoreAnalysisTotal cloneRestoreAnalysisVideoTotal_;
+    bool isRestoreFromNewVersion_ {false};
+    int32_t infoType_{InfoType::ALL};
 };
 
 template<typename T>
