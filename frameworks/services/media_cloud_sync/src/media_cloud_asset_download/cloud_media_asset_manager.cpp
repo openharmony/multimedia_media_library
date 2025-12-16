@@ -667,12 +667,12 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
         values.emplace_back(value);
         rowCount++;
     }
+    int64_t insertNum = 0;
     if (rowCount != 0) {
         int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
-    }
-    int64_t insertNum = 0;
-    if (!values.empty()) {
-        int32_t ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "delete album_order_back data failed. ret %{public}d.", ret);
+        ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "insert album_order_back data failed. ret %{public}d.", ret);
     }
     MEDIA_INFO_LOG("End_BackupAlbumOrderInfo");
     return OHOS::Media::E_OK;
