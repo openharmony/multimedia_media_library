@@ -46,19 +46,23 @@ enum class ThumbnailTaskPriority {
 class ThumbnailTaskData {
 public:
     ThumbnailTaskData() = default;
+
+    ThumbnailTaskData(int32_t requestId, pid_t pid = 0) : requestId_(requestId), pid_(pid) {}
+
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data) : opts_(opts), thumbnailData_(data) {}
 
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data,
-        int32_t requestId) : opts_(opts), thumbnailData_(data), requestId_(requestId) {}
+        int32_t requestId, pid_t pid = 0) : opts_(opts), thumbnailData_(data), requestId_(requestId), pid_(pid) {}
 
     ~ThumbnailTaskData() = default;
 
     ThumbRdbOpt opts_;
     ThumbnailData thumbnailData_;
     int32_t requestId_ = 0;
+    pid_t pid_ = 0;
 };
 
-using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> &data);
+using ThumbnailGenerateExecute = std::function<void(std::shared_ptr<ThumbnailTaskData> &)>;
 
 class ExecuteParamBuilder {
 public:
@@ -112,19 +116,12 @@ public:
     EXPORT int32_t ReleaseTaskQueue(const ThumbnailTaskPriority &taskPriority);
     EXPORT int32_t AddTask(
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
-    EXPORT void IgnoreTaskByRequestId(int32_t requestId);
-    EXPORT void RecordCurrentTaskId(int32_t requestId);
     EXPORT void TryCloseTimer();
     EXPORT bool IsLowerQueueEmpty();
 
 private:
     void StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
     bool WaitForTask(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
-
-    bool NeedIgnoreTask(int32_t requestId);
-    void IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
-    void DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
-    void NotifyTaskFinished(int32_t requestId);
     void ClearWorkerThreads();
     void TryClearWorkerThreads();
     void RegisterWorkerTimer();
@@ -142,12 +139,6 @@ private:
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> highPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> midPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
-
-    std::atomic<int32_t> ignoreRequestId_ = 0;
-    std::atomic<int32_t> currentRequestId_ = 0;
-    std::map<int32_t, int32_t> requestIdTaskMap_;
-    std::mutex requestIdMapLock_;
-
     Utils::Timer timer_{"closeThumbnailWorker"};
     uint32_t timerId_ = 0;
     std::mutex timerMutex_;

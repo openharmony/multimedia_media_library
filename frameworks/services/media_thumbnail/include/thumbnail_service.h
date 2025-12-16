@@ -72,8 +72,8 @@ public:
     void DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken);
     EXPORT int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
     EXPORT int32_t LocalThumbnailGeneration();
-    EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
-    EXPORT void CancelAstcBatchTask(int32_t requestId);
+    EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId, pid_t pid = 0);
+    EXPORT void CancelAstcBatchTask(int32_t requestId, pid_t pid = 0);
     EXPORT bool CreateAstcMthAndYear(const std::string &id);
     EXPORT bool RegenerateThumbnailFromCloud(const std::string &id);
     EXPORT void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
@@ -81,8 +81,8 @@ public:
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void AstcChangeKeyFromDateAddedToDateTaken();
     EXPORT void UpdateCurrentStatusForTask(const bool &currentStatusForTask);
-    EXPORT bool GetCurrentStatusForTask();
     EXPORT void NotifyTempStatusForReady(const int32_t &currentTemperatureLevel);
+    EXPORT bool GetCurrentStatusForTask();
     EXPORT int32_t GetCurrentTemperatureLevel();
     EXPORT void CheckLcdSizeAndUpdateStatus();
     EXPORT int32_t RepairExifRotateBackground();
@@ -97,7 +97,6 @@ private:
         const std::string &uri, const Size &size, bool isAstc = false);
     EXPORT int GetKeyFrameThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, int32_t &beginStamp, int32_t &type);
-    EXPORT bool RecordAstcBatchTaskId(int32_t requestId);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
