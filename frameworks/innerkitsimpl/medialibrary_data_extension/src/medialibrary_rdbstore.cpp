@@ -5889,7 +5889,7 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         AddAlbumOrderBackTable(store, VERSION_ADD_ALBUM_ORDER_BACK_VERSION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true);
     }
-    
+
     if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
         AddCloneSequenceColumns(store, VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE);
