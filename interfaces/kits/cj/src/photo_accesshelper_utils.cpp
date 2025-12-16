@@ -104,6 +104,21 @@ static void MakeLpathParamsCaseInsensitive(vector<OperationItem>& operations,
         { item.operation, newSingleParams, newMultiParams });
 }
 
+static void HandleUriParams(const OperationItem& item,
+    vector<OperationItem>& operations, ExtraInfo& extraInfo)
+{
+    string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
+    MediaFileUri::RemoveAllFragment(uri);
+    MediaFileUri fileUri(uri);
+    extraInfo.uri = uri;
+    if ((extraInfo.fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    extraInfo.networkId = fileUri.GetNetworkId();
+    string field = (extraInfo.fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
+    operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+}
+
 static bool HandleSpecialPredicate(shared_ptr<DataSharePredicates> &predicatePtr,
     DataSharePredicates &predicates, ExtraInfo &extraInfo)
 {
@@ -129,16 +144,7 @@ static bool HandleSpecialPredicate(shared_ptr<DataSharePredicates> &predicatePtr
                 LOGE("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
-            MediaFileUri::RemoveAllFragment(uri);
-            MediaFileUri fileUri(uri);
-            extraInfo.uri = uri;
-            if ((extraInfo.fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
-                fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
-            }
-            extraInfo.networkId = fileUri.GetNetworkId();
-            string field = (extraInfo.fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
-            operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+            HandleUriParams(item, operations, extraInfo);
             continue;
         }
         if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
