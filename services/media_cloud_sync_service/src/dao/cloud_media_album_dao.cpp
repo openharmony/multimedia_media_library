@@ -634,7 +634,12 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
 
     int32_t rowCount = 0;
     int32_t errCode = resultSet->GetRowCount(rowCount);
-    if (errCode != NativeRdb::E_OK || rowCount == 0) {
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("errCode is E_ERR.");
+        resultSet->Close();
+        return E_ERR;
+    }
+    if (rowCount == 0) {
         MEDIA_INFO_LOG("No records in the table. Nothing to Update.");
         resultSet->Close();
         return E_OK;
@@ -663,7 +668,6 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
         values.PutInt(PhotoAlbumColumns::STYLE2_ORDER_SECTION, orderSection2);
 
         found = true;
-        MEDIA_INFO_LOG("Backup order info loaded for lpath: %{private}s", record.lPath.c_str());
     }
     resultSet->Close();
     return found ? E_OK : E_ERR;
