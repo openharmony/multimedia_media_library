@@ -290,6 +290,41 @@ bool CloneRestore::UpdateConfigInfo()
     return true;
 }
 
+bool CloneRestore::ShouldRestoreFromCloud()
+{
+    const std::string QUERY_SQL = "SELECT DISTINCT south_device_type FROM Photos "
+        "WHERE position = 2 "
+        "AND sync_status = 0 "
+        "AND clean_flag = 0 "
+        "AND time_pending = 0 "
+        "AND is_temp = 0";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "query photos south_device_type failed.");
+
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("resultSet is empty");
+        resultSet->Close();
+        return false;
+    }
+
+    int32_t count = 0;
+    int32_t errCode = resultSet->GetRowCount(count);
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("Can not get row count from resultSet, errCode=%{public}d", errCode);
+        return false;
+    }
+    if (count == 0) {
+        MEDIA_WARN_LOG("Can not get the count of south_device_type");
+        return false;
+    }
+    int32_t southDeviceType = GetInt32Val(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, resultSet);
+    resultSet->Close();
+
+    CHECK_AND_RETURN_RET_LOG(count == 1, false, "the count of south_device_type is not 1");
+    MEDIA_INFO_LOG("south_device_type: %{public}d", southDeviceType);
+    return southDeviceType == static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD);
+}
+
 CloneRestoreConfigInfo CloneRestore::GetCloneConfigInfoFromOriginDB()
 {
     CloneRestoreConfigInfo cloneConfigInfo;
@@ -306,22 +341,31 @@ CloneRestoreConfigInfo CloneRestore::GetCloneConfigInfoFromOriginDB()
         cloneConfigInfo.deviceId = "";
     } else {
         auto configInfo = BackupDatabaseUtils::QueryConfigInfo(this->mediaRdb_);
-        CHECK_AND_RETURN_RET_LOG(configInfo.count(ConfigInfoSceneId::CLONE_RESTORE) &&
+        bool hasRequiredKeys = configInfo.count(ConfigInfoSceneId::CLONE_RESTORE) &&
             configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY) \
             && \
-            configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY),
-                                 cloneConfigInfo, "fail to find sufficient config info for CLONE_RESTORE");
-
-        std::string srcswitchStatusStr = \
-            configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY];
-        CHECK_AND_RETURN_RET_LOG(STRING_SWITCH_STATUS_MAP.count(srcswitchStatusStr), cloneConfigInfo,
-            "fail to parse switchStatus of source device from %{public}s", srcswitchStatusStr.c_str());
-        cloneConfigInfo.switchStatus = STRING_SWITCH_STATUS_MAP.at(srcswitchStatusStr);
-
-        cloneConfigInfo.deviceId = \
-            configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY];
-        CHECK_AND_RETURN_RET_LOG(CheckSouthDeviceTypeMatchSwitchStatus(cloneConfigInfo.switchStatus),
-            CloneRestoreConfigInfo{}, "south_device_type and switch status doest not match");
+            configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY);
+        if (!hasRequiredKeys) {
+            if (ShouldRestoreFromCloud()) {
+                // configinfo is empty while phototype is cloud
+                MEDIA_INFO_LOG("configinfo is empty");
+                cloneConfigInfo.switchStatus = SwitchStatus::CLOUD;
+                cloneConfigInfo.deviceId = "";
+            } else {
+                MEDIA_WARN_LOG("fail to find sufficient config info for CLONE_RESTORE");
+                return cloneConfigInfo;
+            }
+        } else {
+            std::string srcswitchStatusStr = \
+                configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY];
+            CHECK_AND_RETURN_RET_LOG(STRING_SWITCH_STATUS_MAP.count(srcswitchStatusStr), cloneConfigInfo,
+                "fail to parse switchStatus of source device from %{public}s", srcswitchStatusStr.c_str());
+            cloneConfigInfo.switchStatus = STRING_SWITCH_STATUS_MAP.at(srcswitchStatusStr);
+            cloneConfigInfo.deviceId = \
+                configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY];
+            CHECK_AND_RETURN_RET_LOG(CheckSouthDeviceTypeMatchSwitchStatus(cloneConfigInfo.switchStatus),
+                CloneRestoreConfigInfo{}, "south_device_type and switch status do not match");
+        }
     }
     cloneConfigInfo.isValid = true;
     MEDIA_INFO_LOG("Config of original DB: %{public}s", cloneConfigInfo.ToString().c_str());
