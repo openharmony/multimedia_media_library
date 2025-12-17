@@ -178,6 +178,25 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     return albumRowData;
 }
 
+bool PhotoAlbumDao::HasSameAlbumName(std::string albumName)
+{
+    std::unique_lock<std::mutex> lock(this->cacheLock_);
+    CHECK_AND_RETURN_RET(std::count(this->albumNameCache_.begin(), this->albumNameCache_.end(),
+        StringUtils::ToLower(albumName)) == 0, true);
+    std::string sql = "SELECT album_name FROM PhotoAlbum WHERE LOWER(album_name) == LOWER(?) AND dirty != 4";
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, false,
+        "Media_Restore: mediaLibraryRdb_ is null.");
+    std::vector<NativeRdb::ValueObject> bindArgs = {albumName};
+    auto resultSet = this->mediaLibraryRdb_->QuerySql(sql, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Media_Restore: can not find the PhotoAlbum info");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string albumNameVal = GetStringVal(this->FIELD_NAME_ALBUM_NAME, resultSet);
+        this->albumNameCache_.push_back(StringUtils::ToLower(albumNameVal));
+    }
+    resultSet->Close();
+    return std::count(this->albumNameCache_.begin(), this->albumNameCache_.end(), StringUtils::ToLower(albumName)) != 0;
+}
+
 /**
  * @brief Get and cache PhotoAlbum info by lPath, if PhotoAlbum not exists, create it.
  */
