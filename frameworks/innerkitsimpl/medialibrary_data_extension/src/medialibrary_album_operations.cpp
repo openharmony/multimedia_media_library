@@ -1405,7 +1405,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     CHECK_AND_PRINT_LOG(ret == E_OK, "move inner anco asset to new album error");
 
     UpdateAnalysisIndexAfterRename(fileIdsInAlbum);
-    ret = NotifyForRenameUserAlbum(albumRefresh, dfxRefreshManager, newAlbumId, assetsRefresh);
+    ret = NotifyForRenameUserAlbum(albumRefresh, dfxRefreshManager, newAlbumId, assetRefresh);
     CHECK_AND_PRINT_LOG(ret == E_OK, "failed to send notification for rename user album");
     return ALBUM_SETNAME_OK;
 }
