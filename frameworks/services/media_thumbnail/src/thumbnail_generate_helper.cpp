@@ -944,7 +944,6 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::REPAIR,
         LoadSourceType::LOCAL_PHOTO);
     if (thumbnailData.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
-
         MediaImageFrameWorkUtils::GetExifRotate(LakeFileUtils::GetAssetRealPath(thumbnailData.path),
             thumbnailData.exifRotate);
         if (thumbnailData.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) {
