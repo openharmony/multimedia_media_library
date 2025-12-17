@@ -3596,10 +3596,11 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
+        int32_t errCode = AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true, videoType);
         if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
             MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(id);
         }
-        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true, videoType);
+        return errCode;
     }
 
     if (IsCameraEditData(cmd)) {
