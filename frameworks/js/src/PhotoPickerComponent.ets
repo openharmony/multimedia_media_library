@@ -495,6 +495,7 @@ export struct PhotoPickerComponent {
   private handlePhotoBrowserChange(wantParam: Record<string, Object>): void {
     let browserItemInfo: BaseItemInfo = new BaseItemInfo();
     browserItemInfo.uri = wantParam['uri'] as string;
+    browserItemInfo.photoSubType = wantParam['photoSubType'] as photoAccessHelper.photoSubType;
     if (this.onPhotoBrowserChanged) {
       this.onPhotoBrowserChanged(browserItemInfo);
     }
