@@ -1377,5 +1377,6 @@ export default {
   MovingPhotoBadgeStateType: MovingPhotoBadgeStateType,
   VideoMode: photoAccessHelper.VideoMode,
   LivePhotoMode: livePhotoMode,
-  SceneType: SceneType
+  SceneType: SceneType,
+  DynamicRangeType: photoAccessHelper.DynamicRangeType
 };

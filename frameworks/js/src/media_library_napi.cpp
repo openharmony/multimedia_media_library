@@ -516,6 +516,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("SupportedImageFormat", CreateSupportedImageFormatEnum(env)),
         DECLARE_NAPI_PROPERTY("HdrMode", CreateHdrModeEnum(env)),
         DECLARE_NAPI_PROPERTY("VideoMode", CreateVideoModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
