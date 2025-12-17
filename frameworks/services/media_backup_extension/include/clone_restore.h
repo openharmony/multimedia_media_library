@@ -260,6 +260,9 @@ private:
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
     void RestoreHdrMode(std::vector<FileInfo> &fileInfos);
     bool CheckIsHdrModeNeedUpdate();
+    bool CheckAlbumNameUnique(std::string albumName, const std::vector<string> &repetedAlbumName);
+    void UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos, vector<string> &repetedAlbumName,
+        size_t index);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};

@@ -52,6 +52,11 @@ public:
         albumId = albumInfo.albumId;
         return true;
     }
+
+    bool HasSameAlbumName(const std::string &albumName)
+    {
+        return this->photoAlbumDao_.HasSameAlbumName(albumName);
+    }
     void TRACE_LOG(const std::string &tableName, std::vector<AlbumInfo> &albumInfos);
     void TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos);
     int32_t FindUploadStatus(const AlbumInfo &albumInfo) const;
