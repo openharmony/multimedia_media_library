@@ -100,6 +100,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
 
         // use in Vision
         { PAH_ANA_CV, OperationObject::VISION_ANALYSIS },
+        { PAH_ANA_V_CV, OperationObject::VISION_ANALYSIS_VIDEO },
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
         { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
         { PAH_ANA_VIDEO_LABEL, OperationObject::VISION_VIDEO_LABEL },
@@ -200,6 +201,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::TOOL_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::VISION_ANALYSIS, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
+        { OperationObject::VISION_ANALYSIS_VIDEO, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_TOTAL_TABLE } } },
         { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
         { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
         { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
@@ -393,6 +395,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_UPDATE_HAS_APPLINK, OperationType::UPDATE_HAS_APPLINK },
         { OPRN_UPDATE_APPLINK, OperationType::UPDATE_APPLINK },
         { OPRN_QUERY_RAW_VISION_TOTAL, OperationType::QUERY_RAW_VISION_TOTAL },
+        { OPRN_QUERY_RAW_VISION_VIDEO_TOTAL, OperationType::QUERY_RAW_VISION_VIDEO_TOTAL },
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
         { OPRN_LS, OperationType::LS_MEDIA_FILES },
         { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },
