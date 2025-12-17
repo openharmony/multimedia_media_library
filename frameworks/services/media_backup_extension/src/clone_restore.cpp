@@ -68,6 +68,7 @@ const int32_t MIGRATE_CLOUD_THM_TYPE = 0;
 const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
 const int32_t MIGRATE_CLOUD_ASTC_TYPE = 2;
 const int32_t RELEATED_TO_PHOTO_MAP = 1;
+const int32_t MAX_ALBUM_NAME_SEQUENCE = 1000;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
@@ -1914,10 +1915,29 @@ void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tabl
         (long)(startQuery - startInsert), (long)(end - startQuery));
 }
 
+void CloneRestore::UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos,
+    vector<string> &repetedAlbumName, size_t index)
+{
+    CHECK_AND_RETURN_LOG(index < albumInfos.size(), "index exceeds the limit");
+    string albumName = "";
+    int32_t sequence = 1;
+    while (!isUinque && sequence < MAX_ALBUM_NAME_SEQUENCE) {
+        albumName = albumInfos[index].albumName + " " + std::to_string(sequence);
+        MEDIA_INFO_LOG("check album sequence: %{public}d, albumName: %{private}s",
+            sequence, albumName.c_str());
+        sequence++;
+        isUinque = CheckAlbumNameUnique(albumName, repetedAlbumName);
+        CHECK_AND_PRINT_LOG(sequence < MAX_ALBUM_NAME_SEQUENCE, "sequence exceed the limit");
+    }
+    albumInfos[index].albumName = albumName;
+    repetedAlbumName.push_back(StringUtils::ToLower(albumName));
+}
+
 vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> &albumInfos, vector<string> &albumIds,
     const string &tableName)
 {
     vector<NativeRdb::ValuesBucket> values;
+    vector<string> repetedAlbumName;
     for (size_t i = 0; i < albumInfos.size(); i++) {
         if (HasSameAlbum(albumInfos[i], tableName)) {
             albumIds.emplace_back(to_string(albumInfos[i].albumIdNew));
@@ -1928,11 +1948,23 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
                 albumInfos[i].albumIdOld, static_cast<int32_t>(albumInfos[i].albumType),
                 static_cast<int32_t>(albumInfos[i].albumSubType), albumInfos[i].albumName.c_str());
             continue;
+        } else {
+            bool isUinque = CheckAlbumNameUnique(albumInfos[i].albumName, repetedAlbumName);
+            if (!isUinque && albumInfos[i].albumType == PhotoAlbumType::SOURCE) {
+                UpdateSourceAlbumName(isUinque, albumInfos, repetedAlbumName, i);
+            }
         }
         NativeRdb::ValuesBucket value = GetInsertValue(albumInfos[i], tableName);
         values.emplace_back(value);
     }
     return values;
+}
+
+bool CloneRestore::CheckAlbumNameUnique(std::string albumName, const std::vector<std::string> &repetedAlbumName)
+{
+    CHECK_AND_RETURN_RET(std::count(repetedAlbumName.begin(), repetedAlbumName.end(),
+        StringUtils::ToLower(albumName)) == 0, true);
+    return !this->photoAlbumClone_.HasSameAlbumName(albumName);
 }
 
 bool CloneRestore::HasSameAlbum(AlbumInfo &albumInfo, const string &tableName)
