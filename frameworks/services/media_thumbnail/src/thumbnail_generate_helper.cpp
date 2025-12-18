@@ -29,6 +29,7 @@
 #include "ffrt_inner.h"
 #include "directory_ex.h"
 #include "ithumbnail_helper.h"
+#include "lake_file_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -335,49 +336,6 @@ int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opts)
     }
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
         ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
-    return E_OK;
-}
-
-int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
-    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
-{
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return E_ERR;
-    }
-
-    vector<ThumbnailData> infos;
-    int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
-        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
-        return err;
-    }
-    if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Astc.");
-        return E_THUMBNAIL_ASTC_ALL_EXIST;
-    }
-
-    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
-    for (auto& info : infos) {
-        info.genThumbScene = GenThumbScene::NEED_MORE_THUMB_READY;
-        opts.row = info.id;
-        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile) {
-            info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
-            continue;
-        }
-
-        info.needGenerateExThumbnail = false;
-        if (ThumbnailUtils::IsExCloudThumbnail(info)) {
-            info.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstcEx, opts, info, requestId);
-        } else {
-            info.loaderOpts.loadingStates = info.mediaType == MEDIA_TYPE_VIDEO ?
-                SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
-        }
-    }
     return E_OK;
 }
 
@@ -986,12 +944,14 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::REPAIR,
         LoadSourceType::LOCAL_PHOTO);
     if (thumbnailData.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
-        MediaImageFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
+        MediaImageFrameWorkUtils::GetExifRotate(LakeFileUtils::GetAssetRealPath(thumbnailData.path),
+            thumbnailData.exifRotate);
         if (thumbnailData.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) {
             needRegenerateThumbnail = true;
         }
     } else {
-        MediaPlayerFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
+        MediaPlayerFrameWorkUtils::GetExifRotate(LakeFileUtils::GetAssetRealPath(thumbnailData.path),
+            thumbnailData.exifRotate);
         if (ExifRotateUtils::IsExifRotateWithFlip(thumbnailData.exifRotate)) {
             needRegenerateThumbnail = true;
             dirtyType = DirtyType::TYPE_FDIRTY;

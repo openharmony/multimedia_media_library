@@ -1768,7 +1768,7 @@ void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size
     values.PutString(column, tmpSize);
 }
 
-static bool IsMobileNetworkEnabled()
+bool ThumbnailUtils::IsMobileNetworkEnabled()
 {
     bool isWifiConnected = false;
     auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
@@ -1810,34 +1810,6 @@ static bool IsMobileNetworkEnabled()
     }
     cloudHelper->Release();
     return switchOn == "1";
-}
-
-bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
-    std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
-{
-    vector<string> column = {
-        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
-        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_ORIENTATION, PhotoColumn::PHOTO_EXIF_ROTATE, MEDIA_DATA_DB_DATE_TAKEN,
-        MEDIA_DATA_DB_DATE_MODIFIED,
-    };
-    rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
-    if (!IsMobileNetworkEnabled()) {
-        rdbPredicate.BeginWrap();
-        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
-        rdbPredicate.Or();
-        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "3");
-        rdbPredicate.EndWrap();
-    }
-    rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
-    rdbPredicate.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
-    rdbPredicate.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
-    rdbPredicate.EqualTo(COMPAT_HIDDEN, "0");
-    rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
-
-    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicate, column, infos, err),
-        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
-    return true;
 }
 
 bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)

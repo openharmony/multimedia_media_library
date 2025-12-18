@@ -62,6 +62,7 @@ public:
     void LoadPhotoAlbums();
     std::vector<int32_t> GetAlbumIdsFromCache();
     int32_t UpdateUploadStatus(const std::string &lPath, const int32_t uploadStatus);
+    bool HasSameAlbumName(std::string albumName);
 
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);
@@ -75,6 +76,7 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     OHOS::SafeMap<std::string, PhotoAlbumRowData> photoAlbumCache_;
+    std::vector<std::string> albumNameCache_;
     std::mutex cacheLock_;
     std::mutex photoAlbumCreateLock_;
 

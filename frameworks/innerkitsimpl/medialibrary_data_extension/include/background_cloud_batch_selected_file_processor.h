@@ -62,6 +62,8 @@ public:
 
     EXPORT static void UpdateDBStatusInfoForSingleDownloadCompletely(int32_t fileId);
 
+    EXPORT static bool IsNetValidated();
+
     enum BatchDownloadStatus : int32_t {
         INIT = 0,
         SUCCESS,
@@ -140,7 +142,6 @@ private:
     EXPORT static int32_t UpdateAllStatusAutoPauseToWaiting();
 
     EXPORT static bool IsCellularNetConnected();
-    EXPORT static bool IsNetValidated();
     EXPORT static bool IsWifiConnected();
     EXPORT static int32_t GetDeviceTemperature();
     EXPORT static void ControlDownloadLimit();

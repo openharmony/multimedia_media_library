@@ -2764,6 +2764,7 @@ shared_ptr<NativeRdb::ResultSet> QueryCvInfo(MediaLibraryCommand &cmd, const vec
 {
     switch (cmd.GetOprnType()) {
         case OperationType::QUERY_RAW_VISION_TOTAL:
+        case OperationType::QUERY_RAW_VISION_VIDEO_TOTAL:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         default:
             /* add filter */
@@ -2842,6 +2843,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::VISION_ANALYSIS:
+        case OperationObject::VISION_ANALYSIS_VIDEO:
             return QueryCvInfo(cmd, columns, predicates);
         default:
             tracer.Start("QueryFile");

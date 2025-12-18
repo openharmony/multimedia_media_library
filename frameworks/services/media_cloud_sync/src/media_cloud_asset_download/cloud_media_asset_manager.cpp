@@ -62,7 +62,7 @@ static const std::string UNKNOWN_VALUE = "NA";
 constexpr int32_t BATCH_UPDATE_LIMIT_COUNT = 500;
 // batch limit count of delete cloud data
 constexpr int32_t BATCH_DELETE_LIMIT_COUNT = 300;
-static const int32_t CYCLE_NUMBER = 1024 * 1024;
+static const int32_t CYCLE_NUMBER = 5000;
 static const int32_t SLEEP_FOR_DELETE = 600;
 static const int32_t BATCH_NOTIFY_CLOUD_FILE = 2000;
 static const std::string DELETE_DISPLAY_NAME = "cloud_media_asset_deleted";
@@ -456,7 +456,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
     std::vector<int32_t> subTypes;
 
     int32_t cycleNumber = 0;
-    while (doDeleteTask_.load() > TaskDeleteState::IDLE && cycleNumber <= CYCLE_NUMBER) {
+    while (doDeleteTask_.load() > TaskDeleteState::IDLE && cycleNumber++ <= CYCLE_NUMBER) {
         int32_t ret = ReadyDataForDelete(fileIds, paths, dateTakens, lcdVisitTimes, subTypes);
         if (ret != OHOS::Media::E_OK || fileIds.empty()) {
             MEDIA_WARN_LOG("ReadyDataForDelete failed or no assets left, ret: %{public}d", ret);
@@ -475,7 +475,6 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         paths.clear();
         dateTakens.clear();
         lcdVisitTimes.clear();
-        cycleNumber++;
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_FOR_DELETE));
     }
 
@@ -588,7 +587,7 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     std::vector<std::string> updateFileIds;
     int32_t actualRet = OHOS::Media::E_OK;
     MEDIA_INFO_LOG("begin UpdateCloudMediaAssets, mode: %{public}d", modeToInt);
-    while (HasDataForUpdate(retainType, updateFileIds, lastFileId, mode) && cycleNumber <= CYCLE_NUMBER) {
+    while (HasDataForUpdate(retainType, updateFileIds, lastFileId, mode) && cycleNumber++ <= CYCLE_NUMBER) {
         int32_t ret = UpdateCloudAssets(updateFileIds, mode);
         if (ret != OHOS::Media::E_OK) {
             MEDIA_WARN_LOG("UpdateCloudAssets failed, and try again ret: %{public}d, mode: %{public}d", ret, modeToInt);
@@ -605,8 +604,6 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
             NotifyUpdateAssetsChange(notifyFileIds);
             notifyFileIds.clear();
         }
-
-        cycleNumber++;
     }
     MEDIA_INFO_LOG("end UpdateCloudMediaAssets, mode: %{public}d", modeToInt);
     if (notifyFileIds.size() > 0) {
@@ -856,11 +853,10 @@ int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets(CloudMediaRetainTy
     int32_t cycleNumber = 0;
     std::string lastFileId = START_QUERY_ZERO;
     std::vector<std::string> updateFileIds;
-    while (HasLocalAndCloudAssets(retainType, updateFileIds, lastFileId) && cycleNumber <= CYCLE_NUMBER) {
+    while (HasLocalAndCloudAssets(retainType, updateFileIds, lastFileId) && cycleNumber++ <= CYCLE_NUMBER) {
         int32_t ret = UpdateLocalAndCloudAssets(updateFileIds);
         CHECK_AND_BREAK_ERR_LOG(ret == OHOS::Media::E_OK, "UpdateBothLocalAndCloudAssets failed, ret: %{public}d", ret);
         lastFileId = updateFileIds.back();
-        cycleNumber++;
     }
     MEDIA_INFO_LOG("end UpdateBothLocalAndCloudAssets.");
     return OHOS::Media::E_OK;

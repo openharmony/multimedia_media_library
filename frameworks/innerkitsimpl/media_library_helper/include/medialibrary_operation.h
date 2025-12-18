@@ -123,6 +123,7 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_BACKUP_POSTPROCESS,
     FILESYSTEM_DEBUG_DB,
     VISION_ANALYSIS,
+    VISION_ANALYSIS_VIDEO,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -240,6 +241,7 @@ enum class EXPORT OperationType : uint32_t {
     RESTORE_INVALID_HDC_CLOUD_DATA_POS,
     QUERY_RAW_ANALYSIS_ALBUM,
     QUERY_RAW_VISION_TOTAL,
+    QUERY_RAW_VISION_VIDEO_TOTAL,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
