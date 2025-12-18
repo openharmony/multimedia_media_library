@@ -163,15 +163,6 @@ static int32_t countSubString(const string &uri, const string &substr)
     return count;
 }
 
-static bool IsFullUri(const string &uri)
-{
-    bool cond = ((uri.find("/Photo") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API10));
-    CHECK_AND_RETURN_RET(!cond, true);
-    cond = (uri.find("/image") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API9);
-    CHECK_AND_RETURN_RET(!cond, true);
-    return false;
-}
-
 static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 {
     int32_t splitCount = countSubString(uri, "/");
@@ -218,8 +209,6 @@ static int32_t GetFileIdFromUriForGetAttr(string &fileId, const string &uri)
     } else {
         MEDIA_ERR_LOG("uri err");
         return E_ERR;
-            MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
-            MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
     }
     return E_SUCCESS;
 }
@@ -315,7 +304,7 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     if (splitCount != URI_SLASH_NUM_API10) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
-        ret = GetFileIdFromUri(fileId, path);
+        ret = GetFileIdFromUriForGetAttr(fileId, path);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
         int32_t position = 0;
         int64_t accesstime = 0;
