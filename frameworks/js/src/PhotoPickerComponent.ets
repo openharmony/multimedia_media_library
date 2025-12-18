@@ -279,7 +279,8 @@ export struct PhotoPickerComponent {
             edgeEffect: this.pickerOptions?.edgeEffect,
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
-            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes
+            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes,
+            bundleNameAlbum: this.pickerOptions?.bundleNameAlbum as Array<string>
           }
         },
         {
@@ -974,7 +975,8 @@ export class UpdatablePickerConfigs {
   checkboxTextColor?: string;
   backgroundColor?: string;
   photoBrowserBackgroundColorMode?: PickerColorMode,
-  uiComponentColorMode?: PickerColorMode
+  uiComponentColorMode?: PickerColorMode;
+  bundleNameAlbum?: Array<string>;
 }
 
 export class BaseItemInfo {
