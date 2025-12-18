@@ -1186,8 +1186,8 @@ static inline bool ShouldUpdateGroupPhotoAlbumCover(const shared_ptr<MediaLibrar
         !IsCoverValid(rdbStore, albumId, fileId);
 }
 
-shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(
-    const shared_ptr<MediaLibraryRdbStore>& rdbStore, const string &albumId)
+shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    const string &albumId, const PhotoAlbumSubType &subType)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryPortraitCover");
@@ -1216,13 +1216,13 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(
         "AND Photos.hidden = 0 "
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
-        "AND Photos.burst_cover_level = 1 "
-        "AND tab_analysis_image_face.tag_id IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
-        albumId + " LIMIT 1) "
-        "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
-        "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
-        albumId +
-        " LIMIT 1))";
+        "AND Photos.burst_cover_level = 1 ";
+    if (subType == PhotoAlbumSubType::PORTRAIT) {
+        clause += "AND tab_analysis_image_face.tag_id IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
+            albumId + " LIMIT 1) ";
+    }
+    clause += "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
+        "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " + albumId + " LIMIT 1))";
     predicates.SetWhereClause(clause);
 
     predicates.OrderByAsc(
@@ -1247,7 +1247,7 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(
 static shared_ptr<ResultSet> QueryGroupPhotoAlbumCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string &albumId)
 {
-    return MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId);
+    return MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId, PhotoAlbumSubType::GROUP_PHOTO);
 }
 
 static void SetPortraitValuesWithCache(shared_ptr<UpdateAlbumDataWithCache> portraitData,
@@ -1329,7 +1329,8 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore>& r
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
     }
-    shared_ptr<ResultSet> coverResult = MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId);
+    shared_ptr<ResultSet> coverResult = MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId,
+        PhotoAlbumSubType::PORTRAIT);
     CHECK_AND_RETURN_RET_LOG(coverResult != nullptr, E_HAS_DB_ERROR,
         "Failed to query Portrait Album Cover");
     SetPortraitCover(coverResult, data, values, newCount);
