@@ -606,12 +606,13 @@ void DeleteTemporaryPhotos()
     // 24H之前的数据
     int64_t current = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t timeBefore24Hours = current - 24 * 60 * 60 * 1000;
-    string where = PhotoColumn::PHOTO_IS_TEMP + " = 1 AND (" + PhotoColumn::MEDIA_DATE_ADDED + " <= " +
-        to_string(timeBefore24Hours) + " OR " + MediaColumn::MEDIA_ID + " NOT IN (SELECT " + MediaColumn::MEDIA_ID +
-        " FROM (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        PhotoColumn::PHOTO_IS_TEMP + " = 1 " + "ORDER BY " + MediaColumn::MEDIA_ID +
-        " DESC LIMIT 50)) AND (select COUNT(1) from " + PhotoColumn::PHOTOS_TABLE +
-        " where " + PhotoColumn::PHOTO_IS_TEMP + " = 1) > 100) ";
+    string where = PhotoColumn::PHOTO_IS_TEMP + " = 1 AND " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> 4 AND (" +
+        PhotoColumn::MEDIA_DATE_ADDED + " <= " + to_string(timeBefore24Hours) + " OR " + MediaColumn::MEDIA_ID +
+        " NOT IN (SELECT " + MediaColumn::MEDIA_ID + " FROM (SELECT " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_IS_TEMP + " = 1 AND " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> 4 ORDER BY " + MediaColumn::MEDIA_ID +
+        " DESC LIMIT 50)) AND (select COUNT(1) from " + PhotoColumn::PHOTOS_TABLE + " where " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 1 AND " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> 4 ) > 100) ";
     predicates.SetWhereClause(where);
 
     auto changedRows = dataManager->Update(cmd, valuesBucket, predicates);
