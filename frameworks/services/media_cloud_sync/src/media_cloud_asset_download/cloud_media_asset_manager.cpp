@@ -619,7 +619,7 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     return actualRet;
 }
 
-std::vector<int> CloudMediaAssetManager::GetValuesAndBackup(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     std::vector<int> albumIDs;
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIDs, "GetValuesAndBackup failed. resultSet is null.");
