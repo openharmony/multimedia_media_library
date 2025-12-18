@@ -12,31 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "media_delete_lake_dir_processor.h"
 
-#define MLOG_TAG "StopThumbnailCreationTaskReqBodyVo"
+#include <string>
 
-#include "stop_thumbnail_creation_task_vo.h"
-
-#include <sstream>
+#include "dfx_utils.h"
+#include "media_lake_monitor_rdb_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
 using namespace std;
-bool StopThumbnailCreationTaskReqBody::Unmarshalling(MessageParcel &parcel)
-{
-    bool status = parcel.ReadInt32(this->requestId);
-    CHECK_AND_RETURN_RET(status, status);
-    status = parcel.ReadInt32(this->pid);
-    CHECK_AND_RETURN_RET(status, status);
-    return true;
-}
 
-bool StopThumbnailCreationTaskReqBody::Marshalling(MessageParcel &parcel) const
+bool MediaDeleteLakeDirProcessor::ProcessInner(const std::string &path)
 {
-    bool status = parcel.WriteInt32(this->requestId);
-    CHECK_AND_RETURN_RET(status, status);
-    status = parcel.WriteInt32(this->pid);
-    CHECK_AND_RETURN_RET(status, status);
+    CHECK_AND_RETURN_RET_LOG(MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(path, rdbStore_), false,
+        "DeleteLakeDirByLakePath failed");
     return true;
 }
 } // namespace OHOS::Media

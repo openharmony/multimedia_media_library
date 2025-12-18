@@ -82,8 +82,6 @@ public:
     EXPORT static bool QueryLocalNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
-    EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
-        std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
     EXPORT static bool QueryNoHighlightInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -111,6 +109,7 @@ public:
 
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
+    EXPORT static bool IsMobileNetworkEnabled();
     EXPORT static bool LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int64_t timeStamp);
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
     EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,

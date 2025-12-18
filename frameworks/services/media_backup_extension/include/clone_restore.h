@@ -230,6 +230,7 @@ private:
     void SetTimeInfo(const FileInfo &info, NativeRdb::ValuesBucket &values);
     void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void SetAggregateBitThird();
+    bool ShouldRestoreFromCloud();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -259,6 +260,9 @@ private:
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
     void RestoreHdrMode(std::vector<FileInfo> &fileInfos);
     bool CheckIsHdrModeNeedUpdate();
+    bool CheckAlbumNameUnique(std::string albumName, const std::vector<string> &repetedAlbumName);
+    void UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos, vector<string> &repetedAlbumName,
+        size_t index);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};

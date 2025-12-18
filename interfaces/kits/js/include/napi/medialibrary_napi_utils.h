@@ -413,6 +413,10 @@ public:
         const size_t minArgs, const size_t maxArgs);
 
     template <class AsyncContext>
+    static napi_status ParseArgsTwoCallback(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
+        const size_t minArgs, const size_t maxArgs);
+
+    template <class AsyncContext>
     static napi_status AsyncContextGetArgs(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
         const size_t minArgs, const size_t maxArgs);
 

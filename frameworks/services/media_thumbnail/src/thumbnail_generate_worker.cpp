@@ -168,7 +168,6 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 int32_t ThumbnailGenerateWorker::AddTask(
     const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority)
 {
-    IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::MID) {
@@ -185,33 +184,11 @@ int32_t ThumbnailGenerateWorker::AddTask(
     return E_OK;
 }
 
-void ThumbnailGenerateWorker::RecordCurrentTaskId(int32_t requestId)
-{
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    currentRequestId_.store(requestId);
-    requestIdTaskMap_.clear();
-    MEDIA_INFO_LOG("RecordCurrentTaskId, requestId: %{public}d", requestId);
-}
-
-void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
-{
-    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
-        MEDIA_INFO_LOG("task queue empty, no need to ignore task requestId: %{public}d", requestId);
-        return;
-    }
-    ignoreRequestId_.store(requestId);
-
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    requestIdTaskMap_.erase(requestId);
-    MEDIA_INFO_LOG("IgnoreTaskByRequestId, requestId: %{public}d", requestId);
-}
-
 bool ThumbnailGenerateWorker::WaitForTask(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus)
 {
     std::unique_lock<std::mutex> lock(workerLock_);
     if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() &&
         isThreadRunning_) {
-        ignoreRequestId_ = 0;
         threadStatus->isThreadWaiting_ = true;
         bool ret = workerCv_.wait_for(lock, std::chrono::milliseconds(CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL), [this]() {
             return !isThreadRunning_ || !highPriorityTaskQueue_.Empty() || !midPriorityTaskQueue_.Empty() ||
@@ -239,93 +216,28 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
             CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
-            if (NeedIgnoreTask(task->data_->requestId_)) {
-                continue;
-            }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
         if (!midPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Pop(task) && task != nullptr) {
             CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
-            if (NeedIgnoreTask(task->data_->requestId_)) {
-                continue;
-            }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
         if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) && task != nullptr) {
             CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityTypeLowPriority);
-            if (NeedIgnoreTask(task->data_->requestId_)) {
-                continue;
-            }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
         }
     }
     MEDIA_INFO_LOG("ThumbnailGenerateWorker thread finish, taskType:%{public}d, id:%{public}d",
         taskType_, threadStatus->threadId_);
 }
 
-bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
-{
-    return (requestId != 0 && currentRequestId_ != requestId) ||
-        (ignoreRequestId_ != 0 && ignoreRequestId_ == requestId);
-}
-
-void ThumbnailGenerateWorker::IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
-{
-    if (task == nullptr || task->data_->requestId_ == 0) {
-        // If requestId is 0, no need to manager this task.
-        return;
-    }
-
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    int32_t requestId = task->data_->requestId_;
-    auto pos = requestIdTaskMap_.find(requestId);
-    if (pos == requestIdTaskMap_.end()) {
-        requestIdTaskMap_.insert(std::make_pair(requestId, 1));
-        return;
-    }
-    ++(pos->second);
-}
-
-void ThumbnailGenerateWorker::DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
-{
-    if (task == nullptr || task->data_->requestId_ == 0) {
-        // If requestId is 0, no need to manager this task.
-        return;
-    }
-
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    int32_t requestId = task->data_->requestId_;
-    auto pos = requestIdTaskMap_.find(requestId);
-    if (pos == requestIdTaskMap_.end()) {
-        return;
-    }
-
-    if (--(pos->second) == 0) {
-        requestIdTaskMap_.erase(requestId);
-        NotifyTaskFinished(requestId);
-    }
-}
-
-void ThumbnailGenerateWorker::NotifyTaskFinished(int32_t requestId)
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("watch is nullptr");
-        return;
-    }
-    std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_UPDATE);
-}
 
 void ThumbnailGenerateWorker::ClearWorkerThreads()
 {
@@ -333,7 +245,6 @@ void ThumbnailGenerateWorker::ClearWorkerThreads()
         std::unique_lock<std::mutex> lock(workerLock_);
         isThreadRunning_ = false;
     }
-    ignoreRequestId_ = 0;
     workerCv_.notify_all();
     for (auto &thread : threads_) {
         if (!thread.joinable()) {
@@ -371,7 +282,6 @@ void ThumbnailGenerateWorker::TryClearWorkerThreads()
     if (!IsAllThreadWaiting()) {
         return;
     }
-    
     ClearWorkerThreads();
 }
 
@@ -389,7 +299,7 @@ void ThumbnailGenerateWorker::RegisterWorkerTimer()
     } else {
         timer_.Unregister(timerId_);
     }
-    
+
     timerId_ = timer_.Register(timerCallback, CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL, false);
     MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Restart, taskType:%{public}d, timeId:%{public}u",
         taskType_, timerId_);

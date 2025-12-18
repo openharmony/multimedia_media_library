@@ -33,6 +33,11 @@ public:
         int32_t subType;
         std::string filePath;
         int32_t hdrMode;
+        int64_t dateTaken{0};
+        std::string detailTime;
+        std::string dateYear;
+        std::string dateMonth;
+        std::string dateDay;
 
     public:
         std::string ToString() const;
