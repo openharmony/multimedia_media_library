@@ -43,6 +43,7 @@ MEDIALIB_BUSINESS_PATH = "${MEDIALIB_ROOT_PATH}/services"
 MEDIALIB_CLOUD_SYNC_CLIENT = "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync"
 MEDIALIB_ACCURATE_REFRESH_PATH = "${MEDIALIB_ROOT_PATH}/services/media_refresh"
 MEDIALIB_NOTIFICATION_MERGING_PATH = "${MEDIALIB_ROOT_PATH}/services/media_notification"
+MEDIALIB_THUMBNAIL_PATH = "${MEDIALIB_ROOT_PATH}/services/media_thumbnail"
 
 declare_args() {
   media_library_link_opt = false
