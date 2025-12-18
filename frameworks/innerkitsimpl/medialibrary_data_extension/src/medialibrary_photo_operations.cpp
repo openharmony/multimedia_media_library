@@ -4954,8 +4954,7 @@ int32_t MediaLibraryPhotoOperations::HandleOpenAssetCompress(const shared_ptr<Fi
     } else {
         ret = MediaLibraryPhotoOperations::HandleNormalPhotoAsset(fileAsset, cmd, tlvFdGuard.Get());
     }
-    // refresh asset path
-    fileAsset->SetPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Handle asset failed");
     ret = MediaLibraryPhotoOperations::HandlePhotoEditData(fileAsset, compressSpec, cmd, tlvFdGuard.Get());
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Handle photo edit data failed");
     if (isMovingPhoto) {
@@ -5107,13 +5106,16 @@ int32_t MediaLibraryPhotoOperations::HandleNormalPhotoAsset(const shared_ptr<Fil
     MEDIA_INFO_LOG("HandleNormalPhotoAsset start");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetPath();
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(assetPath), E_ERR, "assetPath is not exist.");
+    string realPath = LakeFileUtils::GetAssetRealPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(realPath), E_ERR, "assetPath is not exist.");
+    fileAsset->SetPath(realPath);
     MEDIA_INFO_LOG("Asset file exist");
     int32_t assetFd = MediaLibraryPhotoOperations::HandleOpenAsset(fileAsset, false, cmd);
     UniqueFd assetFdGuard(assetFd);
     CHECK_AND_RETURN_RET_LOG(assetFdGuard.Get() >= 0, E_ERR, "Open asset file failed");
-    int32_t ret = TlvUtil::WriteOriginFileToTlv(tlv, assetPath, assetFdGuard.Get());
+    int32_t ret = TlvUtil::WriteOriginFileToTlv(tlv, realPath, assetFdGuard.Get());
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write asset file to tlv failed");
+    fileAsset->SetPath(assetPath);
     return ret;
 }
 
