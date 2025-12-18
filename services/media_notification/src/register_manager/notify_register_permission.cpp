@@ -70,14 +70,16 @@ int32_t NotifyRegisterPermission::ExecuteCheckPermission(const NotifyUriType &re
     if (registerUriType == NotifyUriType::PHOTO_URI || registerUriType == NotifyUriType::PHOTO_ALBUM_URI
         || registerUriType == NotifyUriType::SINGLE_PHOTO_URI
         || registerUriType == NotifyUriType::SINGLE_PHOTO_ALBUM_URI
-        || registerUriType == NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI
-        || registerUriType == NotifyUriType::USER_DEFINE_NOTIFY_URI) {
+        || registerUriType == NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI) {
         ret = BasicPermissionCheck();
     } else if (registerUriType == NotifyUriType::HIDDEN_PHOTO_URI ||
                registerUriType == NotifyUriType::HIDDEN_ALBUM_URI) {
         ret = HiddenPermissionCheck();
     } else if (registerUriType == NotifyUriType::TRASH_PHOTO_URI || registerUriType == NotifyUriType::TRASH_ALBUM_URI) {
         ret = TranshPermissionCheck();
+    } else if (registerUriType == NotifyUriType::USER_DEFINE_NOTIFY_URI) {
+        MEDIA_INFO_LOG("Permission validation is not applicable to USER_DEFINE_NOTIFY_URI.");
+        return E_OK;
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission validation failed");
     MEDIA_INFO_LOG("Permission validation succeeded");

@@ -220,6 +220,7 @@ public:
     EXPORT SourceState lastLoadSource {SourceState::BEGIN};
     EXPORT std::string taskCreatedInfo = "sync task";
     EXPORT GenThumbScene genThumbScene {GenThumbScene::UNDEFINED_SCENE};
+    EXPORT int32_t thumbnailStatus {0};
 };
 
 struct ThumbnailDataBatch {

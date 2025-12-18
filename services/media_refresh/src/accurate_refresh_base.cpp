@@ -92,6 +92,7 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    value.PutLong(PhotoColumn::PHOTO_CHANGE_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetInstance().GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert talbe");

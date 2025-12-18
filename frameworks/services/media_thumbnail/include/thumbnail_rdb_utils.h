@@ -70,6 +70,8 @@ private:
     static void HandleReady(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
     static void HandleLcdVisitTime(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int idx, ThumbnailData &data);
+    static void HandleThumbStatus(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        int idx, ThumbnailData &data);
 
     using HandleFunc = void(*)(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
     static const std::unordered_map<std::string, HandleFunc> RESULT_SET_HANDLER;
