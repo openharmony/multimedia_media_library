@@ -30,8 +30,8 @@ MediaCloudSyncBackgroundTask::MediaCloudSyncBackgroundTask()
 {
     this->tasks_ = {
         std::make_shared<MediaHiddenAndRecycleTask>(),
-        std::make_shared<MediaLocationSynchronizeTask>(),
         std::make_shared<RepairFutureDateTask>(),
+        std::make_shared<MediaLocationSynchronizeTask>(),
     };
 }
 
