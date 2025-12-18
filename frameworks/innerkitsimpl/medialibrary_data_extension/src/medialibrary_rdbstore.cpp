@@ -324,6 +324,16 @@ static int32_t ExecSqlsWithDfx(const vector<string> &sqls, RdbStore &store, int3
     return NativeRdb::E_OK;
 }
 
+void MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    MEDIA_INFO_LOG("Drop photo status for search index start");
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS idx_photo_status_for_search_index",
+    };
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("Drop photo status for search index end");
+}
+
 void MediaLibraryRdbStore::AddPetTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
 {
     const vector<string> executeSqlStrs = {
@@ -1990,7 +2000,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
-    CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
@@ -4919,7 +4928,6 @@ static void AddFrontAnalysisColumn(RdbStore &store)
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_COUNT + " INT DEFAULT 0",
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_MODIFIED + " BIGINT DEFAULT 0",
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_COUNT + " INT DEFAULT 0",
-        CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     };
     MEDIA_INFO_LOG("Add front analysis column start");
     ExecSqls(sqls, store);
