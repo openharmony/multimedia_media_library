@@ -50,11 +50,11 @@ ohos_fuzztest("MediaLibraryMapCodeFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
   ]
 
   sources = [
