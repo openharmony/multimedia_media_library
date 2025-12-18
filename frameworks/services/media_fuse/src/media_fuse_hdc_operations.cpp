@@ -37,8 +37,8 @@ const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const std::string VIDEO_EXTENSION = "mp4";
 const std::string FIXED_PHOTO_ALBUM = "DeveloperAlbum";
 
-static constexpr int32_t HDC_FIRST_ARGS = 1;
-static constexpr int32_t HDC_SECOND_ARGS = 2;
+static constexpr int32_t HDC_FIRST_ARGS = 0;
+static constexpr int32_t HDC_SECOND_ARGS = 1;
 static constexpr uid_t CUSTOM_UID = 1008;
 static constexpr mode_t DIR_PERMISSION = 0777;
 static constexpr mode_t FILE_PERMISSION = 0664;
@@ -80,10 +80,6 @@ void MediaFuseHdcOperations::FillDirStat(struct stat *stbuf, time_t mtime, const
 
 int32_t MediaFuseHdcOperations::GetArgs(const std::string &path, std::vector<std::string> &parts)
 {
-    if (path.find(FUSE_OPEN_PHOTO_PRE) != 0) {
-        MEDIA_ERR_LOG("GetArgs inputPath err.");
-        return E_ERR;
-    }
     std::stringstream ss(path);
     std::string part;
     while (getline(ss, part, '/')) {
@@ -267,7 +263,7 @@ int32_t MediaFuseHdcOperations::HandleFstat(const struct fuse_file_info *fi, str
 
 int32_t MediaFuseHdcOperations::HandleRootOrPhoto(const char *path, struct stat *stbuf)
 {
-    if (strcmp(path, "/") == 0 || strcmp(path, "/Photo") == 0) {
+    if (strcmp(path, "/") == 0) {
         FillDirStat(stbuf);
         return E_SUCCESS;
     }
@@ -599,10 +595,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaFuseHdcOperations::QueryAlbumPhotos(c
 int32_t MediaFuseHdcOperations::ReadAlbumDir(
     const std::string &inputPath, void* buf, fuse_fill_dir_t filler, off_t offset)
 {
-    std::string albumName;
-    if (inputPath.find(FUSE_OPEN_PHOTO_PRE + "/") == 0) {
-        albumName = inputPath.substr(FUSE_OPEN_PHOTO_PRE.length() + 1);
-    }
+    std::string albumName = inputPath.substr(1);
     int32_t albumId;
     if (GetAlbumIdFromAlbumName(albumName, albumId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Failed to get album ID for: %{private}s", albumName.c_str());

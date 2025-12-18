@@ -67,8 +67,8 @@ using namespace std;
 
 const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files/Photo";
 const std::string FUSE_OPEN_PHOTO_PRE = "/Photo";
-const int32_t URI_SLASH_NUM_API9 = 2;
-const int32_t URI_SLASH_NUM_API10 = 4;
+const int32_t URI_SLASH_NUM_API9 = 1;
+const int32_t URI_SLASH_NUM_API10 = 3;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
@@ -76,9 +76,9 @@ const int32_t FILE_FAIL = -2;
 const int32_t PHOTO_POSITION_TYPE_CLOUD = 2;
 static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
 static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
-static constexpr int32_t HDC_FIRST_ARGS = 1;
-static constexpr int32_t HDC_SECOND_ARGS = 2;
-static constexpr int32_t HDC_THIRD_ARGS = 3;
+static constexpr int32_t HDC_FIRST_ARGS = 0;
+static constexpr int32_t HDC_SECOND_ARGS = 1;
+static constexpr int32_t HDC_THIRD_ARGS = 2;
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
     { O_WRONLY, MEDIA_FILEMODE_WRITEONLY },
@@ -120,6 +120,8 @@ void MediaFuseManager::Start()
 {
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+
+    UMountFuse();
 
     CHECK_AND_RETURN_INFO_LOG(fuseHighDaemon_ == nullptr, "Fuse daemon already started");
 
@@ -172,29 +174,52 @@ static bool IsFullUri(const string &uri)
 
 static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 {
-    string tmpPath;
-    uint32_t pos;
-    int32_t virtualId;
-    /* uri = "/Photo/fileid/filename/displayname.jpg" */
-    if (uri.find("/Photo") == 0) {
-        /* tmppath = "fileid/filename/displayname.jpg" */
-        tmpPath = uri.substr(strlen("/Photo/"));
-        /* get fileid end pos */
-        pos = tmpPath.find("/");
-        /* get fileid */
-        fileId = tmpPath.substr(0, pos);
-    } else if (uri.find("/image") == 0) {
-        tmpPath = uri.substr(strlen("/image/"));
+    int32_t splitCount = countSubString(uri, "/");
+    string tmpPath = uri.substr(strlen("/"));
+    if (splitCount == URI_SLASH_NUM_API9) {
         CHECK_AND_RETURN_RET(!tmpPath.empty(), E_ERR);
         CHECK_AND_RETURN_RET(all_of(tmpPath.begin(), tmpPath.end(), ::isdigit), E_ERR);
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(tmpPath), E_ERR, "virtual id invalid");
-        virtualId = stoi(tmpPath);
+        int32_t virtualId = stoi(tmpPath);
         bool cond = ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0);
         CHECK_AND_RETURN_RET_LOG(cond, E_ERR, "virtual id err");
         fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
+    } else if (splitCount == URI_SLASH_NUM_API10) {
+        uint32_t pos = tmpPath.find("/");
+        fileId = tmpPath.substr(0, pos);
     } else {
         MEDIA_ERR_LOG("uri err");
         return E_ERR;
+    }
+    return E_SUCCESS;
+}
+
+static int32_t GetFileIdFromUriForGetAttr(string &fileId, const string &uri)
+{
+    string tmpPath;
+    uint32_t pos;
+    if (uri.find("/") == 0) {
+        tmpPath = uri.substr(strlen("/"));
+        CHECK_AND_RETURN_RET(!tmpPath.empty(), E_ERR);
+        pos = tmpPath.find("/");
+        if (pos < tmpPath.size()) {
+            tmpPath = tmpPath.substr(0, pos);
+        }
+        CHECK_AND_RETURN_RET(all_of(tmpPath.begin(), tmpPath.end(), ::isdigit), E_ERR);
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(tmpPath), E_ERR, "virtual id invalid");
+        fileId = tmpPath;
+        int32_t splitCount = countSubString(uri, "/");
+        if (splitCount == URI_SLASH_NUM_API9) {
+            int32_t virtualId = stoi(tmpPath);
+            bool cond = ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0);
+            CHECK_AND_RETURN_RET_LOG(cond, E_ERR, "virtual id err");
+            fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
+        }
+    } else {
+        MEDIA_ERR_LOG("uri err");
+        return E_ERR;
+            MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
+            MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
     }
     return E_SUCCESS;
 }
@@ -279,16 +304,15 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     string target = path;
     bool cond;
     if (isInLinux_) {
-        cond = (path == nullptr || strlen(path) == 0 ||
-            ((target.find("/Photo") != 0) && (target.find("/image") != 0) && (target != "/")));
+        cond = (path == nullptr || strlen(path) == 0 || target != "/");
     } else {
-        cond = (path == nullptr || strlen(path) == 0 ||
-            ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
+        cond = (path == nullptr || strlen(path) == 0);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{private}s", path == nullptr ? "null" : path);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
     int32_t ret;
-    if (IsFullUri(target) == false) {
+    int32_t splitCount = countSubString(path, "/");
+    if (splitCount != URI_SLASH_NUM_API10) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
         ret = GetFileIdFromUri(fileId, path);
@@ -513,10 +537,8 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     }
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(target, fileId);
-    if (std::string(path).find(FUSE_OPEN_PHOTO_PRE) != std::string::npos) {
-        MEDIA_DEBUG_LOG("MediaFuseManager::DoOpen AddVisitCount fileId[%{public}s]", fileId.c_str());
-        MediaVisitCountManager::AddVisitCount(MediaVisitCountManager::VisitCountType::PHOTO_FS, fileId);
-    }
+    MEDIA_DEBUG_LOG("MediaFuseManager::DoOpen AddVisitCount fileId[%{public}s]", fileId.c_str());
+    MediaVisitCountManager::AddVisitCount(MediaVisitCountManager::VisitCountType::PHOTO_FS, fileId);
     fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
@@ -802,11 +824,11 @@ int32_t MediaFuseManager::DoHdcReadDir(const char *path, void *buf, fuse_fill_di
     }
 
     string target = path;
-    if (target == FUSE_OPEN_PHOTO_PRE) {
+    if (target == "/") {
         return MediaFuseHdcOperations::ReadPhotoRootDir(buf, filler, offset);
     }
 
-    if (target.find(FUSE_OPEN_PHOTO_PRE + "/") == 0) {
+    if (target.find("/") == 0) {
         return MediaFuseHdcOperations::ReadAlbumDir(target, buf, filler, offset);
     }
 
