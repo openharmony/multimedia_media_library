@@ -316,6 +316,8 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: Update lpath column failed, ret=%{public}d", ret);
     ret = this->UpgradePhotoAlbumAddUploadStatusColumn(store);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: Add upload_status column failed, ret=%{public}d", ret);
+    ret = this->AddPhotoAlbumChangeTime(store);
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return ret;
 }
 
@@ -421,6 +423,36 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
 }
 
 /**
+ * @brief Add change_time column to Photos table.
+ */
+int32_t MediaLibraryDbUpgrade::AddPhotosChangeTime(NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_RET(!this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "change_time"), NativeRdb::E_OK);
+    int32_t ret = NativeRdb::E_OK;
+    for (const auto &executeSql : this->SQL_PHOTOS_CHANGE_TIME) {
+        ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "Media_Restore: AddPhotosChangeTime failed, sql: %{public}s", executeSql.c_str());
+    }
+    return NativeRdb::E_OK;
+}
+
+/**
+ * @brief Add change_time column to PhotoAlbum table.
+ */
+int32_t MediaLibraryDbUpgrade::AddPhotoAlbumChangeTime(NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_RET(!this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "change_time"), NativeRdb::E_OK);
+    int32_t ret = NativeRdb::E_OK;
+    for (const auto &executeSql : this->SQL_PHOTO_ALBUM_CHANGE_TIME) {
+        ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "Media_Restore: AddPhotoAlbumChangeTime failed, sql: %{public}s", executeSql.c_str());
+    }
+    return NativeRdb::E_OK;
+}
+
+/**
  * @brief Upgrade Photos table.
  */
 int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
@@ -433,6 +465,9 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = this->AddFileSourceTypeColumn(store);
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
+    ret = this->AddPhotosChangeTime(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = ExecSqlWithRetry([&]() { return PhotoDayMonthYearOperation::UpdatePhotosDate(store); });
