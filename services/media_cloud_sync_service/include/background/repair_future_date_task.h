@@ -34,11 +34,10 @@ public:
     void Execute() override;
 
 private:
-    int32_t GetRepairDateData(const int32_t &lastRecord, std::vector<PhotosPo> &photos);
+    int32_t GetRepairDateData(const int32_t lastRecord, std::vector<PhotosPo> &photos);
     void UpdateFutureDate(
-        const CloudMediaScanService::ScanResult &scanResult, const int32_t &fileId, const int32_t &dirty);
+        const CloudMediaScanService::ScanResult &scanResult, const int32_t fileId, const int32_t position);
     void RepairPhotoDate(int32_t &currentRecord, bool &terminate, const std::vector<PhotosPo> &photos);
-    void HandleRepairDate(const int32_t lastRecord);
 
 private:
     std::mutex repairDateMutex_;
