@@ -116,8 +116,9 @@ private:
     EXPORT void TryToStartSync();
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType, SmartDataProcessingMode mode);
-    EXPORT int32_t BackupAlbumOrderInfo();
     EXPORT int32_t ClearDeletedMapData();
+    EXPORT int32_t BackupAlbumOrderInfo();
+    
 private:
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation_{nullptr};
     inline static std::atomic<TaskDeleteState> doDeleteTask_{TaskDeleteState::IDLE};
