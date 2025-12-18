@@ -503,7 +503,10 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
     SetValueInt32(env, "orderSection", albumChangeInfo.orderSection_, result);
     SetValueInt32(env, "albumOrder", albumChangeInfo.albumsOrder_, result);
-    SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);
+    if (!(albumChangeInfo.albumSubType_ >= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_START) &&
+        albumChangeInfo.albumSubType_ <= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_END))) {
+        SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);
+    }
 
     napi_status status = napi_ok;
     napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);

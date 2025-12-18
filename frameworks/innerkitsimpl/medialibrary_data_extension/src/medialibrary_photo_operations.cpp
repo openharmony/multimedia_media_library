@@ -3471,6 +3471,12 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
         ThumbnailService::GetInstance()->HasInvalidateThumbnail(to_string(fileAsset->GetId()),
             PhotoColumn::PHOTOS_TABLE);
     }
+    std::string imageId = fileAsset->GetPhotoId();
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->DeleteDataWithImageId(imageId, PictureType::HIGH_QUALITY_PICTURE);
+        pictureManagerThread->DeleteDataWithImageId(imageId, PictureType::LOW_QUALITY_PICTURE);
+    }
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
 
@@ -3576,8 +3582,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
     int32_t videoType = 0;
     GetInt32FromValuesBucket(values, VIDEO_TYPE_KEYWORD, videoType);
     string videoSaveFinishedUri;
-    if ((GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) &&
-        (videoType != XT_EFFECT_VIDEO)) {
+    if (GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) {
         int32_t id = -1;
         CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
             E_INVALID_VALUES, "Failed to get fileId");
@@ -3590,10 +3595,12 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
-        if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
+        int32_t errCode = AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true, videoType);
+        if ((fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) &&
+        (videoType != XT_EFFECT_VIDEO)) {
             MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(id);
         }
-        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true, videoType);
+        return errCode;
     }
 
     if (IsCameraEditData(cmd)) {
@@ -4147,7 +4154,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_ID };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
@@ -4947,8 +4954,7 @@ int32_t MediaLibraryPhotoOperations::HandleOpenAssetCompress(const shared_ptr<Fi
     } else {
         ret = MediaLibraryPhotoOperations::HandleNormalPhotoAsset(fileAsset, cmd, tlvFdGuard.Get());
     }
-    // refresh asset path
-    fileAsset->SetPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Handle asset failed");
     ret = MediaLibraryPhotoOperations::HandlePhotoEditData(fileAsset, compressSpec, cmd, tlvFdGuard.Get());
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Handle photo edit data failed");
     if (isMovingPhoto) {
@@ -5100,13 +5106,16 @@ int32_t MediaLibraryPhotoOperations::HandleNormalPhotoAsset(const shared_ptr<Fil
     MEDIA_INFO_LOG("HandleNormalPhotoAsset start");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetPath();
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(assetPath), E_ERR, "assetPath is not exist.");
+    string realPath = LakeFileUtils::GetAssetRealPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(realPath), E_ERR, "assetPath is not exist.");
+    fileAsset->SetPath(realPath);
     MEDIA_INFO_LOG("Asset file exist");
     int32_t assetFd = MediaLibraryPhotoOperations::HandleOpenAsset(fileAsset, false, cmd);
     UniqueFd assetFdGuard(assetFd);
     CHECK_AND_RETURN_RET_LOG(assetFdGuard.Get() >= 0, E_ERR, "Open asset file failed");
-    int32_t ret = TlvUtil::WriteOriginFileToTlv(tlv, assetPath, assetFdGuard.Get());
+    int32_t ret = TlvUtil::WriteOriginFileToTlv(tlv, realPath, assetFdGuard.Get());
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write asset file to tlv failed");
+    fileAsset->SetPath(assetPath);
     return ret;
 }
 

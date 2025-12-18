@@ -144,7 +144,7 @@ void PictureManagerThread::InsertPictureData(const std::string& imageId, sptr<Pi
 void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, PictureType pictureType)
 {
     CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
-        "InsertPictureData failed, pictureDataOperations_ is null");
+        "DeleteDataWithImageId failed, pictureDataOperations_ is null");
     pictureDataOperations_->DeleteDataWithImageId(imageId, pictureType);
 }
 

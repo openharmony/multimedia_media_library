@@ -174,9 +174,11 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType);
     static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void ClearAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static void CheckLabelAndFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void CheckFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateStatusToAnalysisTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateFaceToAnalysisVideoTotalTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateFaceToAnalysisTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<int32_t> &newFileIds);
     static void DeleteDirtytagIdFromFaceTagTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateVideoFaceTagId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateVideoTotalFaceId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
