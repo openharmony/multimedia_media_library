@@ -617,7 +617,6 @@ int32_t CloudMediaAlbumDao::SetSourceValues(PhotoAlbumDto &record, NativeRdb::Va
 
 int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRdb::ValuesBucket &values)
 {
-    MEDIA_INFO_LOG("start UpdateAlbumOrderInfo for single album");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateAlbumOrderInfo failed. rdbStore is null.");
 
@@ -634,14 +633,8 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
 
     int32_t rowCount = 0;
     int32_t errCode = resultSet->GetRowCount(rowCount);
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("errCode is E_ERR.");
-        resultSet->Close();
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_ERR, "errCode is E_ERR.");
     if (rowCount == 0) {
-        MEDIA_INFO_LOG("No records in the table. Nothing to Update.");
-        resultSet->Close();
         return E_OK;
     }
 
@@ -669,7 +662,6 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
 
         found = true;
     }
-    resultSet->Close();
     return found ? E_OK : E_ERR;
 }
 
