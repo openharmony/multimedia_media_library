@@ -280,7 +280,7 @@ export struct PhotoPickerComponent {
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
             livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes,
-            bundleNameAlbum: this.pickerOptions?.bundleNameAlbum as Array<string>
+            bundleNameAlbumFilter: this.pickerOptions?.bundleNameAlbumFilter as Array<string>
           }
         },
         {
@@ -976,7 +976,7 @@ export class UpdatablePickerConfigs {
   backgroundColor?: string;
   photoBrowserBackgroundColorMode?: PickerColorMode,
   uiComponentColorMode?: PickerColorMode;
-  bundleNameAlbum?: Array<string>;
+  bundleNameAlbumFilter?: Array<string>;
 }
 
 export class BaseItemInfo {
