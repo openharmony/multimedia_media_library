@@ -434,9 +434,9 @@ static void UseDefaultCreateValue(const string& columnName, const ColumnSchema& 
     } else if (schema.defaultNull) {
         sql.append("NULL");
     } else {
-        sql.append('"');
+        sql += '"';
         sql.append(schema.defaultValue);
-        sql.append('"');
+        sql += '"';
     }
 }
 
@@ -1121,15 +1121,21 @@ static int32_t CheckIsSpecialSourceAlbum(const shared_ptr<MediaLibraryRdbStore>&
     return E_OK;
 }
 
-static int32_t CheckConflictsWithAlbumPlugin(const string &newAlbumName, int32_t oldAlbumType,
+static int32_t CheckConflictsWithAlbumPlugin(const NativeRdb::ValuesBucket &newAlbumValues, int32_t oldAlbumType,
     const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     if (oldAlbumType != PhotoAlbumType::SOURCE) {
-        MEDIA_INFO_LOG("CheckConflictsWithAlbumPlugin not source album, no need to check album plugin");
         return E_OK;
     }
-    const std::string newLPath = oldAlbumType == PhotoAlbumType::SOURCE ?
-        SOURCE_ALBUM_LPATH_PREFIX + newAlbumName : USER_ALBUM_LPATH_PREFIX + newAlbumName;
+    string newAlbumName;
+    string newLPath;
+    ValueObject tmpObject;
+    if (newAlbumValues.GetObject(PhotoAlbumColumns::ALBUM_NAME, tmpObject)) {
+        tmpObject.GetString(newAlbumName);
+    }
+    if (newAlbumValues.GetObject(PhotoAlbumColumns::ALBUM_LPATH, tmpObject)) {
+        tmpObject.GetString(newLPath);
+    }
     int32_t rowCount = 0;
     std::string albumPluginlPathSql = "SELECT * FROM album_plugin WHERE LOWER(lpath) = LOWER(?)";
     shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QueryByStep(albumPluginlPathSql, { newLPath });
@@ -1159,7 +1165,7 @@ static int32_t HasSameEmptySourceAlbum(const shared_ptr<MediaLibraryRdbStore>& r
 {
     std::string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
                             " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = ? OR " +
-                            PhotoAlbumColumns::ALBUM_LPATH + " = ?) AND" +
+                            PhotoAlbumColumns::ALBUM_LPATH + " = ?) AND " +
                             PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) + " AND " +
                             PhotoAlbumColumns::ALBUM_COUNT + " = 0 AND " + PhotoAlbumColumns::HIDDEN_COUNT + " = 0";
     int32_t rowCount = 0;
@@ -1184,11 +1190,18 @@ static int32_t HasSameEmptySourceAlbum(const shared_ptr<MediaLibraryRdbStore>& r
  *     - 0 if no conflicts is found and new name album can be created
  *     - negative integer if a conflict is found or error occurs and needs to abort
  */
-static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
+static int32_t CheckConflictsWithExistingAlbum(const NativeRdb::ValuesBucket& newAlbumValues,
     const shared_ptr<MediaLibraryRdbStore>& rdbStore, const int32_t oldAlbumType)
 {
-    const std::string newLPath = oldAlbumType == PhotoAlbumType::SOURCE ?
-        SOURCE_ALBUM_LPATH_PREFIX + newAlbumName : USER_ALBUM_LPATH_PREFIX + newAlbumName;
+    string newAlbumName;
+    string newLPath;
+    ValueObject tmpObject;
+    if (newAlbumValues.GetObject(PhotoAlbumColumns::ALBUM_NAME, tmpObject)) {
+        tmpObject.GetString(newAlbumName);
+    }
+    if (newAlbumValues.GetObject(PhotoAlbumColumns::ALBUM_LPATH, tmpObject)) {
+        tmpObject.GetString(newLPath);
+    }
     if (oldAlbumType == PhotoAlbumType::SOURCE) {
         int32_t emptyAlbumId = HasSameEmptySourceAlbum(rdbStore, newAlbumName, newLPath);
         if (emptyAlbumId > 0) {
@@ -1363,12 +1376,11 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
     int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
+    CHECK_AND_RETURN_RET_LOG(oldAlbumType != PhotoAlbumType::SOURCE ||
+        CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_HAS_DB_ERROR, "Check album name renameable failed");
 
     MEDIA_INFO_LOG("Start to set %{public}s album name of id %{public}d",
         oldAlbumType == PhotoAlbumType::SOURCE ? "source" : "user", oldAlbumId);
-
-    CHECK_AND_RETURN_RET_LOG(CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_HAS_DB_ERROR,
-        "Check album name renameable failed");
 
     bool argInvalid { false };
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
@@ -1384,23 +1396,23 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
         assetRefresh->SetDfxRefreshManager(dfxRefreshManager);
     }
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
-        newAlbumId = -1;
-        int32_t ret = CheckConflictsWithAlbumPlugin(newAlbumName, oldAlbumType, rdbStore);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "New name conflicts with existing album plugin");
-        ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore, oldAlbumType);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("New name conflicts with existing album");
-            argInvalid = true;
-            return E_OK;
-        } else if (ret > 0) {
-            newAlbumId = ret;
-        }
         NativeRdb::ValuesBucket newNameValues {};
         bool isCloudAlbum {};
         if (!BuildNewNameValuesBucket(rdbStore, oldAlbumId, newNameValues, newAlbumName, isCloudAlbum)) {
             MEDIA_ERR_LOG("Build new name values bucket failed");
             argInvalid = true;
             return E_OK;
+        }
+        newAlbumId = -1;
+        int32_t ret = CheckConflictsWithAlbumPlugin(newNameValues, oldAlbumType, rdbStore);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "New name conflicts with existing album plugin");
+        ret = CheckConflictsWithExistingAlbum(newNameValues, rdbStore, oldAlbumType);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("New name conflicts with existing album");
+            argInvalid = true;
+            return E_OK;
+        } else if (ret > 0) {
+            newAlbumId = ret;
         }
         MediaLibraryAlbumFusionUtils::ExecuteObject executeObject{rdbStore, trans, albumRefresh, assetRefresh};
         NewNameExecuteInfo executeInfo{oldAlbumId, newAlbumId, isCloudAlbum};
