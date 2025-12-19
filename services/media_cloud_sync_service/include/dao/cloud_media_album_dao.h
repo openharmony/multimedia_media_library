@@ -86,6 +86,7 @@ public:
     bool GetCoverUriFromCoverCloudId(std::string &coverCloudId, std::string &coverUri);
     bool ReplaceCoverUriCondition(const std::string &coverUri, const std::string &lPath);
     int32_t ReportAbnormalLocalRecords();
+    int32_t UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRdb::ValuesBucket &values);
 private:
     int32_t InsertAlbums(PhotoAlbumDto &record,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);

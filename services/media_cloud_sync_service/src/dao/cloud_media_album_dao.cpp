@@ -39,6 +39,7 @@
 #include "media_file_utils.h"
 #include "cloud_media_dao_utils.h"
 #include "photo_album_upload_status_operation.h"
+#include "media_album_order_back.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -614,6 +615,55 @@ int32_t CloudMediaAlbumDao::SetSourceValues(PhotoAlbumDto &record, NativeRdb::Va
     return E_OK;
 }
 
+int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRdb::ValuesBucket &values)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateAlbumOrderInfo failed. rdbStore is null.");
+
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(ALBUM_ORDER_BACK_TABLE);
+    predicates.EqualTo("lpath", record.lPath);
+
+    std::vector<std::string> columns = {
+        "albums_order", "order_type", "order_section",
+        "style2_albums_order",  "style2_order_type",  "style2_order_section"
+    };
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query backup table failed");
+
+    int32_t rowCount = 0;
+    int32_t errCode = resultSet->GetRowCount(rowCount);
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_ERR, "errCode is E_ERR.");
+    if (rowCount == 0) {
+        return E_OK;
+    }
+
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int32_t albumOrder = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("albums_order", resultSet, TYPE_INT32));
+        int32_t orderType = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("order_type", resultSet, TYPE_INT32));
+        int32_t orderSection = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("order_section", resultSet, TYPE_INT32));
+        int32_t albumOrder2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_albums_order", resultSet, TYPE_INT32));
+        int32_t orderType2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_order_type", resultSet, TYPE_INT32));
+        int32_t orderSection2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_order_section", resultSet, TYPE_INT32));
+
+        values.PutInt(PhotoAlbumColumns::ALBUMS_ORDER, albumOrder);
+        values.PutInt(PhotoAlbumColumns::ORDER_TYPE, orderType);
+        values.PutInt(PhotoAlbumColumns::ORDER_SECTION, orderSection);
+        values.PutInt(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, albumOrder2);
+        values.PutInt(PhotoAlbumColumns::STYLE2_ORDER_TYPE, orderType2);
+        values.PutInt(PhotoAlbumColumns::STYLE2_ORDER_SECTION, orderSection2);
+
+        return E_OK;
+    }
+    return E_ERR;
+}
+
 int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
     std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
@@ -658,6 +708,8 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
     }
     values.PutInt(
         PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath(record.lPath));
+    ret = UpdateAlbumOrderInfo(record, values);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateAlbumOrderInfo failed. ret %{public}d.", ret);
     /* update if a album with the same name exists? */
     int64_t rowId;
     ret = albumRefreshHandle->Insert(rowId, PhotoAlbumColumns::TABLE, values);
