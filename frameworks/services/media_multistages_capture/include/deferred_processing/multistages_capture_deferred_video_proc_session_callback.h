@@ -30,8 +30,8 @@ class MultiStagesCaptureDeferredVideoProcSessionCallback : public CameraStandard
 public:
     EXPORT MultiStagesCaptureDeferredVideoProcSessionCallback();
     EXPORT ~MultiStagesCaptureDeferredVideoProcSessionCallback();
- 
-    void OnProcessVideoDone(const std::string& videoId, const sptr<IPCFileDescriptor> ipcFd) override;
+
+    void OnProcessVideoDone(const std::string& videoId) override;
     EXPORT void OnError(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
