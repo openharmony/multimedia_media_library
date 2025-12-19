@@ -632,14 +632,22 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         ValuesBucket value;
 
-        std::string lpath = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet, TYPE_STRING));
-        int32_t order = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
-        int32_t order2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
-        int32_t albumID = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
+        std::string lpath = get<std::string>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet, TYPE_STRING));
+        int32_t order = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t order2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t albumID = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
 
         value.PutString("lpath", lpath);
         value.PutInt("albums_order", order);
@@ -661,8 +669,7 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
         CHECK_AND_PRINT_LOG(ret == E_OK, "delete album_order_back data failed. ret %{public}d.", ret);
         ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
         CHECK_AND_PRINT_LOG(ret == E_OK, "insert album_order_back data failed. ret %{public}d.", ret);
-    }
-    else {
+    } else {
         MEDIA_INFO_LOG("No data to backup");
     }
     return albumIDs;
