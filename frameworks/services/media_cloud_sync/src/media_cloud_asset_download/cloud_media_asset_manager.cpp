@@ -619,13 +619,14 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     return actualRet;
 }
 
-std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+std::vector<int32_t> CloudMediaAssetManager::QueryEmptyAlbumsAndBackup()
 {
     std::vector<int32_t> albumIds;
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIds, "GetValuesAndBackup failed. resultSet is null.");
-
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumIds, "GetValuesAndBackup failed. rdbStore is null.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumIds, "QueryEmptyAlbumsAndBackup failed. rdbStore is null.");
+
+    auto resultSet = rdbStore->QueryByStep(SQL_QUERY_EMPTY_CLOUD_ALBUMS);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIds, "QueryEmptyAlbumsAndBackup failed. resultSet is null.");
 
     std::vector<NativeRdb::ValuesBucket> values;
     int32_t rowCount = 0;
@@ -656,7 +657,7 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
         value.PutInt("style2_albums_order", order2);
         value.PutInt("style2_order_type", type2);
         value.PutInt("style2_order_section", section2);
-        
+
         values.emplace_back(value);
         albumIds.emplace_back(albumId);
         rowCount++;
@@ -696,14 +697,7 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
     MediaLibraryTracer tracer;
     tracer.Start("DeleteEmptyCloudAlbums");
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. rdbStore is null.");
-
-    auto resultSet = rdbStore->QueryByStep(SQL_QUERY_EMPTY_CLOUD_ALBUMS);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query empty cloud albums failed.");
-
-    std::vector<int32_t> albumIds = GetValuesAndBackup(resultSet);
-    resultSet->Close();
+    std::vector<int32_t> albumIds = QueryEmptyAlbumsAndBackup();
 
     if (albumIds.empty()) {
         MEDIA_INFO_LOG("No empty cloud albums to delete.");
