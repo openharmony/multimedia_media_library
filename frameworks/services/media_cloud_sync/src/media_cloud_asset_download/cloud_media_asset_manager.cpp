@@ -621,39 +621,36 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     return actualRet;
 }
 
-int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
+std::vector<int32_t> CloudMediaAssetManager::QueryEmptyAlbumsAndBackup()
 {
-    MEDIA_INFO_LOG("BackupAlbumOrderInfo");
+    std::vector<int32_t> albumIds;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "BackupAlbumOrderInfo failed. rdbStore is null.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumIds, "QueryEmptyAlbumsAndBackup failed. rdbStore is null.");
 
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    std::string subWhereClause =
-        "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
-    std::string whereClause =
-        "(" + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(ALBUM_IS_CLOUD) + " AND " + PhotoAlbumColumns::ALBUM_ID +
-        " NOT IN ( " + subWhereClause + " ))" + " OR " + PhotoAlbumColumns::ALBUM_DIRTY +
-        " = " + to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
-    predicates.SetWhereClause(whereClause);
+    auto resultSet = rdbStore->QueryByStep(SQL_QUERY_EMPTY_CLOUD_ALBUMS);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIds, "QueryEmptyAlbumsAndBackup failed. resultSet is null.");
 
-    std::vector<std::string> columns = {PhotoAlbumColumns::ALBUM_LPATH, PhotoAlbumColumns::ALBUMS_ORDER, PhotoAlbumColumns::ORDER_TYPE,
-                                        PhotoAlbumColumns::ORDER_SECTION, PhotoAlbumColumns::STYLE2_ALBUMS_ORDER,
-                                        PhotoAlbumColumns::STYLE2_ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_SECTION};
-    auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
     std::vector<NativeRdb::ValuesBucket> values;
     int32_t rowCount = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         ValuesBucket value;
 
-        std::string lpath = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet, TYPE_STRING));
-        int32_t order = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
-        int32_t order2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
+        std::string lpath = get<std::string>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet, TYPE_STRING));
+        int32_t order = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t order2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t albumId = get<int32_t>(
+            ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
 
         value.PutString("lpath", lpath);
         value.PutInt("albums_order", order);
@@ -662,19 +659,38 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
         value.PutInt("style2_albums_order", order2);
         value.PutInt("style2_order_type", type2);
         value.PutInt("style2_order_section", section2);
-        
+
         values.emplace_back(value);
+        albumIds.emplace_back(albumId);
         rowCount++;
     }
+    resultSet->Close();
+
     if (rowCount != 0) {
+        int64_t insertNum = 0;
         int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "delete album_order_back data failed. ret %{public}d.", ret);
+        ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "insert album_order_back data failed. ret %{public}d.", ret);
+    } else {
+        MEDIA_INFO_LOG("No data to backup");
     }
-    int64_t insertNum = 0;
-    if (!values.empty()) {
-        int32_t ret = rdbStore->BatchInsert(insertNum, ALBUM_ORDER_BACK_TABLE, values);
+    return albumIds;
+}
+
+std::string CloudMediaAssetManager::BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds)
+{
+    std::string whereClause = PhotoAlbumColumns::ALBUM_ID + " IN (";
+    for (size_t i = 0;i < albumIds.size(); ++i) {
+        whereClause += std::to_string(albumIds[i]);
+        /* Check if current albumId is not the last one */
+        if (i !=albumIds.size() - 1) {
+            whereClause += ",";
+        }
     }
-    MEDIA_INFO_LOG("End_BackupAlbumOrderInfo");
-    return OHOS::Media::E_OK;
+    whereClause += ")";
+
+    return whereClause;
 }
 
 int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
@@ -682,13 +698,25 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
     MEDIA_INFO_LOG("start DeleteEmptyCloudAlbums.");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteEmptyCloudAlbums");
+
+    std::vector<int32_t> albumIds = QueryEmptyAlbumsAndBackup();
+
+    if (albumIds.empty()) {
+        MEDIA_INFO_LOG("No empty cloud albums to delete.");
+        return E_OK;
+    }
+
+    std::string emptyAlbumsWhereClause = BuildEmptyAlbumsWhereClause(albumIds);
+    std::string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " + emptyAlbumsWhereClause;
+    std::string deleteSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + emptyAlbumsWhereClause;
+
     std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
         std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. albumRefresh is null");
-    int32_t ret = albumRefresh->Init(SQL_QUERY_EMPTY_CLOUD_ALBUMS, std::vector<NativeRdb::ValueObject>());
+    int32_t ret = albumRefresh->Init(querySql, std::vector<NativeRdb::ValueObject>());
     CHECK_AND_PRINT_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, "Failed to init albumRefresh");
 
-    ret = albumRefresh->ExecuteSql(SQL_DELETE_EMPTY_CLOUD_ALBUMS, AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
+    ret = albumRefresh->ExecuteSql(deleteSql, AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
         "Failed to delete. ret %{public}d.", ret);
     albumRefresh->Notify();
@@ -1005,9 +1033,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMediaEx(CloudMediaRetain
     } else {
         DeleteBackupPhotosAlbumForSmartData();
     }
-    int32_t ret = BackupAlbumOrderInfo();
-    CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "BackupAlbumOrderInfo failed. ret %{public}d.", ret);
-    ret = DeleteEmptyCloudAlbums();
+    int32_t ret = DeleteEmptyCloudAlbums();
     CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {

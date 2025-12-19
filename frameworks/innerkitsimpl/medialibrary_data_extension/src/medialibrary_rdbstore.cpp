@@ -5579,11 +5579,11 @@ static void AddCloneSequenceColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns end");
 }
 
-static void AddAlbumOrderBackTable(RdbStore &store)
+static void AddAlbumOrderBackTable(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = { CREATE_ALBUM_ORDER_BACK_TABLE };
     MEDIA_INFO_LOG("create album_order_back table start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("create album_order_back table end");
 }
 
@@ -5905,7 +5905,7 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_ALBUM_ORDER_BACK_VERSION &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true)) {
-        AddAlbumOrderBackTable(store);
+        AddAlbumOrderBackTable(store, VERSION_ADD_ALBUM_ORDER_BACK_VERSION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true);
     }
 
