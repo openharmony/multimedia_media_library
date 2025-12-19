@@ -621,11 +621,11 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
 
 std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
-    std::vector<int32_t> albumIDs;
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIDs, "GetValuesAndBackup failed. resultSet is null.");
+    std::vector<int32_t> albumIds;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIds, "GetValuesAndBackup failed. resultSet is null.");
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumIDs, "GetValuesAndBackup failed. rdbStore is null.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumIds, "GetValuesAndBackup failed. rdbStore is null.");
 
     std::vector<NativeRdb::ValuesBucket> values;
     int32_t rowCount = 0;
@@ -646,7 +646,7 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
             ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
         int32_t section2 = get<int32_t>(
             ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
-        int32_t albumID = get<int32_t>(
+        int32_t albumId = get<int32_t>(
             ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
 
         value.PutString("lpath", lpath);
@@ -658,7 +658,7 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
         value.PutInt("style2_order_section", section2);
         
         values.emplace_back(value);
-        albumIDs.emplace_back(albumID);
+        albumIds.emplace_back(albumId);
         rowCount++;
     }
     resultSet->Close();
@@ -672,7 +672,7 @@ std::vector<int32_t> CloudMediaAssetManager::GetValuesAndBackup(const std::share
     } else {
         MEDIA_INFO_LOG("No data to backup");
     }
-    return albumIDs;
+    return albumIds;
 }
 
 std::string CloudMediaAssetManager::BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds)
@@ -680,7 +680,7 @@ std::string CloudMediaAssetManager::BuildEmptyAlbumsWhereClause(const std::vecto
     std::string whereClause = PhotoAlbumColumns::ALBUM_ID + " IN (";
     for (size_t i = 0;i < albumIds.size(); ++i) {
         whereClause += std::to_string(albumIds[i]);
-        /* Check if current albumID is not the last one */
+        /* Check if current albumId is not the last one */
         if (i !=albumIds.size() - 1) {
             whereClause += ",";
         }
@@ -702,15 +702,15 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
     auto resultSet = rdbStore->QueryByStep(SQL_QUERY_EMPTY_CLOUD_ALBUMS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query empty cloud albums failed.");
 
-    std::vector<int32_t> albumIDs = GetValuesAndBackup(resultSet);
+    std::vector<int32_t> albumIds = GetValuesAndBackup(resultSet);
     resultSet->Close();
 
-    if (albumIDs.empty()) {
+    if (albumIds.empty()) {
         MEDIA_INFO_LOG("No empty cloud albums to delete.");
         return E_OK;
     }
 
-    std::string emptyAlbumsWhereClause = BuildEmptyAlbumsWhereClause(albumIDs);
+    std::string emptyAlbumsWhereClause = BuildEmptyAlbumsWhereClause(albumIds);
     std::string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " + emptyAlbumsWhereClause;
     std::string deleteSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + emptyAlbumsWhereClause;
 
