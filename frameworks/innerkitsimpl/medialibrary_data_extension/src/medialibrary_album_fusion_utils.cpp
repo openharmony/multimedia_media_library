@@ -541,7 +541,7 @@ static void ParsingAndFillValue(NativeRdb::ValuesBucket &values, const string &c
     }
 }
 
-static void ParsingAndFillValueForAllColumns(NativeRdb::ValuesBucket &values, const string &columnName,
+static void ParsingAndFillValueForAllAlbumColumns(NativeRdb::ValuesBucket &values, const string &columnName,
     const ColumnSchema &columnSchema, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     bool isNull = false;
@@ -1503,7 +1503,7 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
     const unordered_map<string, ColumnSchema>& photoAlbumSchema =
         MediaLibraryAlbumOperations::GetPhotoAlbumTableSchema();
     for (auto it = photoAlbumSchema.begin(); it != photoAlbumSchema.end(); ++it) {
-        ParsingAndFillValueForAllColumns(values, it->first, it->second, resultSet);
+        ParsingAndFillValueForAllAlbumColumns(values, it->first, it->second, resultSet);
     }
 
     std::string lPath = "";
@@ -1526,6 +1526,8 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.Delete(PhotoAlbumColumns::ALBUM_NAME);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
+    values.Delete(PhotoAlbumColumns::ALBUM_CLOUD_ID);
+    values.Delete(PhotoAlbumColumns::ALBUM_DIRTY);
 }
 
 static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
