@@ -36,6 +36,11 @@ struct CloneDbInfo {
 
 class OthersCloneRestore : public BaseRestore {
 public:
+    enum UserId {
+        MAIN = 0,
+        PRIVATE = 10
+    };
+
     OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName, const std::string &bundleInfo = "");
     virtual ~OthersCloneRestore() = default;
 
@@ -98,6 +103,7 @@ private:
     void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
     void HandleInsertBatch(int32_t offset);
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(FileInfo &fileInfo);
+    bool IsPrivateAccount();
 
     static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &filePath, int32_t fileType);
     static std::string GetFileHeadPath(int32_t sceneCode, int32_t fileType);
@@ -121,6 +127,7 @@ private:
     PhotosRestore photosRestore_;
     int32_t photoFileNotFoundCount_ {0};
     int32_t audioFileNotFoundCount_ {0};
+    int32_t userId_ {UserId::MAIN};
 };
 } // namespace Media
 } // namespace OHOS
