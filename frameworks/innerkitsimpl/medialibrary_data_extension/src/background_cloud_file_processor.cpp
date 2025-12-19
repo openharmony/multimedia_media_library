@@ -285,6 +285,7 @@ void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecor
             std::string mimeType = photosPo.mimeType.value_or("");
             int32_t position = photosPo.position.value_or(0);
             if (path == "" || fileId <= 0 || position <= 0) {
+                repairRecord = fileId;
                 continue;
             }
             if (position == static_cast<int32_t>(POSITION_CLOUD) && !MedialibrarySubscriber::IsWifiConnected()) {
