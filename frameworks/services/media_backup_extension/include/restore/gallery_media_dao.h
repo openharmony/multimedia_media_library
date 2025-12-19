@@ -208,6 +208,8 @@ private:
                 THEN gallery_album.lPath \
                 ELSE relative_album.lPath \
             END AS lPath, \
+            latitude, \
+            longitude, \
             story_id, \
             portrait_id, \
             story_chosen \
@@ -271,6 +273,8 @@ private:
                 THEN gallery_album.lPath \
                 ELSE relative_album.lPath \
             END AS lPath, \
+            latitude, \
+            longitude, \
             story_id, \
             portrait_id, \
             story_chosen \
