@@ -826,8 +826,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
     std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
     picture->Create(surfaceBuffer);
 
-    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, true);
-    callback->OnProcessImageDone(to_string(fileId), picture, false);
+    DpsMetadata metadata;
+    constexpr const char* CLOUD_FLAG = "cloudImageEnhanceFlag";
+    metadata.Set(CLOUD_FLAG, true);
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, metadata);
+    metadata.Set(CLOUD_FLAG, false);
+    callback->OnProcessImageDone(to_string(fileId), picture, metadata);
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
     ValuesBucket values;
@@ -836,7 +840,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd), E_OK);
 
-    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, false);
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, metadata);
     callback->GetCommandByImageId(PHOTO_ID_FOR_TEST, cmd);
     callback->GetCommandByImageId("2011/11/11", cmd);
 
