@@ -96,13 +96,20 @@ ani_status HighlightAlbumAni::Init(ani_env *env)
         ani_native_function {"setHighlightUserActionDataInner", nullptr,
             reinterpret_cast<void *>(SetHighlightUserActionData)},
         ani_native_function {"setSubTitleInner", nullptr, reinterpret_cast<void *>(SetSubTitle)},
-        ani_native_function {"deleteHighlightAlbumsInner", nullptr, reinterpret_cast<void *>(DeleteHighlightAlbums)},
     };
-
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
         return ANI_ERROR;
     }
+
+    std::array staticMethods = {
+        ani_native_function {"deleteHighlightAlbumsInner", nullptr, reinterpret_cast<void *>(DeleteHighlightAlbums)},
+    };
+    if (ANI_OK != env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size())) {
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
+        return ANI_ERROR;
+    }
+
     return ANI_OK;
 }
 
