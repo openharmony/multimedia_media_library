@@ -38,6 +38,7 @@
 #include "media_log.h"
 #include "media_scanner.h"
 #include "medialibrary_rdb_transaction.h"
+#include "os_account_manager.h"
 #include "upgrade_restore_task_report.h"
 #include "restore_map_code_utils.h"
 
@@ -72,7 +73,7 @@ const std::string VIDEO_DB_NAME = "video_MediaInfo.db";
 const std::string VIDEO_SD_MEDIA_INFO_DB_NAME = "video_sd_MediaInfo.db";
 const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
 const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
-const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/0/";
+const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string I_PHONE_IMAGE_FILE_PATH = "/storage/media/local/files/.backup/restore/";
 const std::string I_PHONE_DYNAMIC_IMAGE = "_DYNAMIC";
 const std::string I_PHONE_DYNAMIC_VIDEO = "_DYNAMIC.MOV";
@@ -203,7 +204,7 @@ std::string OthersCloneRestore::BuildDbPath(const std::string &dbName)
     if (dbName == PHOTO_SD_MEDIA_INFO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME) {
         return OTHER_CLONE_FILE_ROOT_PATH + "/" + dbName;
     }
-    return OTHER_CLONE_DB_PATH + dbName;
+    return OTHER_CLONE_DB_PATH + std::to_string(userId_) + "/" + dbName;
 }
 
 bool OthersCloneRestore::CheckDbExists(const std::string &dbPath, const std::string &dbName)
@@ -321,6 +322,7 @@ void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<
 {
     std::string dbPath = BuildDbPath(dbName);
     if (!CheckDbExists(dbPath, dbName)) {
+        MEDIA_ERR_LOG("Db %{public}s not exist", BackupFileUtils::GarbleFilePath(dbPath, DEFAULT_RESTORE_ID).c_str());
         return;
     }
 
@@ -356,6 +358,7 @@ int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::
         MEDIA_ERR_LOG("GetBackupInfo Rdbstore is null");
         return E_FAIL;
     }
+    userId_ = IsPrivateAccount() ? UserId::PRIVATE : UserId::MAIN;
     int64_t startGetInfo = MediaFileUtils::UTCTimeMilliSeconds();
     GetCloneDbInfos(AUDIO_DB_NAME, audioDbInfo_);
     GetCloneDbInfos(PHOTO_DB_NAME, photoDbInfo_);
@@ -374,7 +377,8 @@ int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::
 
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("INIT_OTHERS_CLONE", "",
-            "get clone db cost: " + std::to_string(startCurrent - startGetInfo) +
+            "userId: " + std::to_string(userId_) +
+            ", get clone db cost: " + std::to_string(startCurrent - startGetInfo) +
             ", recursively getting all files cost: " + std::to_string(end - startCurrent) +
             "; photo file size: " + std::to_string(photoInfos_.size()) +
             ", audio file size: " + std::to_string(audioInfos_.size()) +
@@ -1165,5 +1169,13 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
     return false;
 }
 
+bool OthersCloneRestore::IsPrivateAccount()
+{
+    AccountSA::OsAccountType type;
+    ErrCode ret = AccountSA::OsAccountManager::GetOsAccountTypeFromProcess(type);
+    CHECK_AND_RETURN_RET_LOG(ret == ERR_OK, false, "Get OsAccountType failed, ret: %{public}d", ret);
+    MEDIA_INFO_LOG("Current accountType: %{public}d", static_cast<int32_t>(type));
+    return type == AccountSA::OsAccountType::PRIVATE;
+}
 } // namespace Media
 } // namespace OHOS
