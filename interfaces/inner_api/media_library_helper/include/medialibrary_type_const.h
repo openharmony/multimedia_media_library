@@ -246,7 +246,7 @@ struct ColumnSchema {
     bool defaultNull;
     std::string defaultValue;
     std::string columnType;
-}
+};
 
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
