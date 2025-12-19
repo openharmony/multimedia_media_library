@@ -47,6 +47,8 @@
 #include "settings_data_manager.h"
 #include "cloud_media_retain_smart_data.h"
 #include "cloud_media_sync_mutex.h"
+#include "medialibrary_bundle_manager.h"
+#include "hi_audit.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -892,6 +894,11 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
     auto retainTypeInt = static_cast<int32_t>(retainType);
     tracer.Start(std::string("ForceRetainDownloadCloudMedia") + std::to_string(retainTypeInt));
     MEDIA_INFO_LOG("enter. retainType: %{public}d", retainTypeInt);
+
+    AuditLog auditLog = { true, "DFX", "CLOUD_EXIT", "0", 0, "success", "ForceRetainDownloadCloudMedia" };
+    auditLog.id = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    auditLog.type = static_cast<int32_t>(retainType);
+    HiAudit::GetInstance().Write(auditLog);
 
     if (needAvoidRepeatedDoing && IsSouthDeviceSyncCleaning(retainType)) {
         MEDIA_INFO_LOG("this south device is cleaning, retainType: %{public}d", retainTypeInt);
