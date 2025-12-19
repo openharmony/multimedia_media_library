@@ -550,34 +550,22 @@ static void ParsingAndFillValueForAllColumns(NativeRdb::ValuesBucket &values, co
     resultSet->IsColumnNull(columnIndex, isNull);
     if (isNull) {
         values.PutNull(columnName);
-        return;
-    }
-    switch (columnSchema.columnType) {
-        case "INTEGER"
-        case "INT": {
-            int32_t intColumnValue;
-            GetIntValueFromResultSet(resultSet, columnName, intColumnValue);
-            values.PutInt(columnName, intColumnValue);
-            break;
-        }
-        case "BIGINT": {
-            int64_t longColumnValue;
-            GetLongValueFromResultSet(resultSet, columnName, longColumnValue);
-            values.PutLong(columnName, longColumnValue);
-            break;
-        }
-        case "DOUBLE": {
-            double doubleColumnValue;
-            GetDoubleValueFromResultSet(resultSet, columnName, doubleColumnValue);
-            values.PutDouble(columnName, doubleColumnValue);
-            break;
-        }
-        default: {
-            std::string stringValue = "";
-            GetStringValueFromResultSet(resultSet, columnName, stringValue);
-            values.PutString(columnName, stringValue);
-            break;
-        }
+    } else if (columnSchema.columnType == "INTEGER" || columnSchema.columnType == "INT") {
+        int32_t intColumnValue;
+        GetIntValueFromResultSet(resultSet, columnName, intColumnValue);
+        values.PutInt(columnName, intColumnValue);
+    } else if (columnSchema.columnType == "BIGINT") {
+        int64_t longColumnValue;
+        GetLongValueFromResultSet(resultSet, columnName, longColumnValue);
+        values.PutLong(columnName, longColumnValue);
+    } else if (columnSchema.columnType == "DOUBLE") {
+        double doubleColumnValue;
+        GetDoubleValueFromResultSet(resultSet, columnName, doubleColumnValue);
+        values.PutDouble(columnName, doubleColumnValue);
+    } else {
+        std::string stringValue = "";
+        GetStringValueFromResultSet(resultSet, columnName, stringValue);
+        values.PutString(columnName, stringValue);
     }
 }
 
