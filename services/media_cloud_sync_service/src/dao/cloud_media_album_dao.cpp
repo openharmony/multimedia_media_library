@@ -638,20 +638,19 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
         return E_OK;
     }
 
-    bool found = false;
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        int32_t albumOrder = get<int32_t>(ResultSetUtils::GetValFromColumn("albums_order", resultSet,
-                                                                           TYPE_INT32));
-        int32_t orderType = get<int32_t>(ResultSetUtils::GetValFromColumn("order_type", resultSet,
-                                                                          TYPE_INT32));
-        int32_t orderSection = get<int32_t>(ResultSetUtils::GetValFromColumn("order_section", resultSet,
-                                                                             TYPE_INT32));
-        int32_t albumOrder2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_albums_order", resultSet,
-                                                                            TYPE_INT32));
-        int32_t orderType2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_order_type", resultSet,
-                                                                           TYPE_INT32));
-        int32_t orderSection2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_order_section", resultSet,
-                                                                              TYPE_INT32));
+        int32_t albumOrder = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("albums_order", resultSet, TYPE_INT32));
+        int32_t orderType = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("order_type", resultSet, TYPE_INT32));
+        int32_t orderSection = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("order_section", resultSet, TYPE_INT32));
+        int32_t albumOrder2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_albums_order", resultSet, TYPE_INT32));
+        int32_t orderType2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_order_type", resultSet, TYPE_INT32));
+        int32_t orderSection2 = get<int32_t>(
+            ResultSetUtils::GetValFromColumn("style2_order_section", resultSet, TYPE_INT32));
 
         values.PutInt(PhotoAlbumColumns::ALBUMS_ORDER, albumOrder);
         values.PutInt(PhotoAlbumColumns::ORDER_TYPE, orderType);
@@ -660,9 +659,9 @@ int32_t CloudMediaAlbumDao::UpdateAlbumOrderInfo(PhotoAlbumDto &record, NativeRd
         values.PutInt(PhotoAlbumColumns::STYLE2_ORDER_TYPE, orderType2);
         values.PutInt(PhotoAlbumColumns::STYLE2_ORDER_SECTION, orderSection2);
 
-        found = true;
+        return E_OK;
     }
-    return found ? E_OK : E_ERR;
+    return E_ERR;
 }
 
 int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
