@@ -181,7 +181,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
-    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/include",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp_service/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
@@ -491,9 +491,9 @@ ohos_shared_library("medialibrary_data_extension") {
   media_visit_count = [ "${MEDIALIB_SERVICES_PATH}/media_visit_count/src/media_visit_count_manager.cpp" ]
 
   media_mtp_service = [
-    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_manager.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_service_manager.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_subscriber.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp_service/src/media_mtp_manager.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp_service/src/media_mtp_service_manager.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp_service/src/media_mtp_subscriber.cpp",
   ]
 
   media_ipc_source =
