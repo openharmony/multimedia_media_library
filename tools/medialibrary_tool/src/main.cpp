@@ -21,6 +21,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <vector>
+#include <cstdlib>
 
 using namespace std;
 using namespace OHOS;
@@ -55,7 +56,7 @@ int main(int argc, char *argv[])
     }
 
     MEDIA_INFO_LOG("mediatool main start: %{public}s", BuildCommandLine(args).c_str());
-
-    return ControlMain::Main(args);
+    int32_t ret = ControlMain::Main(args);
+    _exit(ret);
 }
 
