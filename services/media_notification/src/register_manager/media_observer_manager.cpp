@@ -237,6 +237,8 @@ int32_t MediaObserverManager::ProcessSingleObserverUris(const NotifyUriType& reg
     NotifyRegisterPermission permissionHandle;
     int32_t ret = permissionHandle.ExecuteCheckPermission(registerUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
+    ret = permissionHandle.SinglePermissionCheck(registerUri, uri);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
     auto uriIter = observers_.find(registerUri);
     if (uriIter == observers_.end()) {
         MEDIA_ERR_LOG("the registerUri not registered");
