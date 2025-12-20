@@ -81,8 +81,9 @@ VideoModeInfo MediaVideoModeTask::QueryFiles(
     VideoModeInfo videoModeInfo;
     std::string UPDATE_VIDEO_MODE = "SELECT * FROM Photos WHERE video_mode = ";
     UPDATE_VIDEO_MODE += std::to_string(static_cast<int32_t>(VideoMode::DEFAULT));
-    UPDATE_VIDEO_MODE +=
-        " AND file_id BETWEEN " + std::to_string(startFileId) + " AND " + std::to_string(startFileId + batchSize);
+    UPDATE_VIDEO_MODE += " AND sync_status = 0 AND clean_flag = 0 AND time_pending = 0 AND is_temp = 0"
+                          " AND file_id BETWEEN " +
+                          std::to_string(startFileId) + " AND " + std::to_string(startFileId + batchSize);
     MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode sql=%{public}s", UPDATE_VIDEO_MODE.c_str());
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(UPDATE_VIDEO_MODE);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, {}, "Failed to query batch selected files!");
