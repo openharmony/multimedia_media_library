@@ -788,10 +788,10 @@ export class PickerController {
         return;
     } else if (type === DataType.SET_ITEM_CLICK_RESULT) {
       let clickResults: Array<ClickResult> = data as Array<ClickResult>;
-+     if (clickResults !== undefined) {
-+       this.data = new Map([['SET_ITEM_CLICK_RESULT', clickResults]]);
-+       console.info('PhotoPickerComponent SET_ITEM_CLICK_RESULT' + this.encrypt(JSON.stringify(e)));
-+     }
+      if (clickResults !== undefined) {
+        this.data = new Map([['SET_ITEM_CLICK_RESULT', clickResults]]);
+        console.info('PhotoPickerComponent SET_ITEM_CLICK_RESULT' + this.encrypt(JSON.stringify(e)));
+      }
     }
   }
 
