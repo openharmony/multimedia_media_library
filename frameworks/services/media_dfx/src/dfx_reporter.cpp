@@ -863,6 +863,18 @@ int32_t DfxReporter::ReportAncoCountFormatInfo(const AncoCountFormatInfo& report
     }
     return ret;
 }
- 
+
+int32_t DfxReporter::ReportThmInodeCleanInfo(const ThmInodeCleanInfo &info)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_THM_INODE_CLEAN_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "RESULT", info.result,
+        "IS_CONFIG_XATTR", info.isConfigXattr,
+        "XATTR_INFO", info.xattrInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "ReportThmInodeCleanInfo error:%{public}d", ret);
+    return ret;
+}
 } // namespace Media
 } // namespace OHOS
