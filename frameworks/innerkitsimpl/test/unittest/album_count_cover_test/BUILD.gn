@@ -21,7 +21,7 @@ ohos_unittest("AlbumCountCoverTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
     "../medialibrary_unittest_utils/include",
     "../medialibrary_photo_operations_test/include",
     "./include",

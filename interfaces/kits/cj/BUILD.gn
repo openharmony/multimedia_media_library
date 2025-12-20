@@ -29,7 +29,7 @@ config("ffi_config") {
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
   ]
 
   if (media_library_feature_mtp) {
@@ -53,7 +53,7 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
 
   include_dirs = [
     "include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
   ]
 
   version_script = "libcj_photoaccesshelper_ffi.map"

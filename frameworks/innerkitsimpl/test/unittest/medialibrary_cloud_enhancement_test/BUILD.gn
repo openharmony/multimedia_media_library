@@ -40,7 +40,6 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
 
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
@@ -48,6 +47,7 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
   ]
 
   include_dirs += include_scanner
@@ -148,7 +148,6 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
 
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
@@ -156,6 +155,7 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
+    "${MEDIALIB_THUMBNAIL_PATH}/include",
   ]
 
   include_dirs += include_scanner
