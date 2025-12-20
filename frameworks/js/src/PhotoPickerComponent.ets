@@ -279,7 +279,8 @@ export struct PhotoPickerComponent {
             edgeEffect: this.pickerOptions?.edgeEffect,
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
-            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes
+            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes,
+            appAlbumFilters: this.parseAppAlbumFilters(this.pickerOptions?.appAlbumFilters as Array<string>)
           }
         },
         {
@@ -528,6 +529,18 @@ export struct PhotoPickerComponent {
       { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['error'] as string },
       wantParam['data'] as Array<string>);
     console.info('PhotoPickerComponent onReceive: handleSaveCallback');
+  }
+
+  private parseAppAlbumFilters(appAlbumFilters?: Array<string>): Array<string> | undefined {
+    if (!appAlbumFilters) {
+      return undefined;
+    }
+
+    if (appAlbumFilters.length > 3) {
+      return appAlbumFilters.slice(0, 3);
+    }
+
+    return appAlbumFilters;
   }
 
   parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
@@ -975,7 +988,8 @@ export class UpdatablePickerConfigs {
   checkboxTextColor?: string;
   backgroundColor?: string;
   photoBrowserBackgroundColorMode?: PickerColorMode,
-  uiComponentColorMode?: PickerColorMode
+  uiComponentColorMode?: PickerColorMode;
+  appAlbumFilters?: Array<string>;
 }
 
 export class BaseItemInfo {

@@ -381,6 +381,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
             let z;
+            let u;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -430,7 +431,8 @@ export class PhotoPickerComponent extends ViewPU {
                     edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
                     isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
-                    livePhotoModes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : z.livePhotoModes 
+                    livePhotoModes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : z.livePhotoModes,
+                    appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters)
                 }
             }
             ,{
@@ -649,6 +651,18 @@ export class PhotoPickerComponent extends ViewPU {
         this.pickerController.actionSaveCallback(e.date, {'name': '', 'code': e.code, 'message': e.message}, e.data);
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
     }
+    
+    parseAppAlbumFilters(appAlbumFilters) {
+        if (!appAlbumFilters) {
+            return undefined;
+        }
+
+        if (appAlbumFilters.length > 3) {
+            return appAlbumFilters.slice(0, 3);
+        }
+
+        return appAlbumFilters;
+    }     
 
     parseMimeTypeFilter(filter) {
         if (!filter) {
