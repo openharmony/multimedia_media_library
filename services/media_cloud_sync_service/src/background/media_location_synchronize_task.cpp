@@ -119,9 +119,10 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
         prefs->PutInt(LAST_LOCAL_LOCATION_REPAIR, repairRecord);
         prefs->FlushSync();
         MEDIA_INFO_LOG("repair location to %{public}d", repairRecord);
-        photosPoVec = {};
+        photosPoVec.clear();
         GetRepairLocationData(repairRecord, photosPoVec);
-    } while (photosPoVec.size() > 0 && !terminate);
+    } while (photosPoVec.size() > 0 && !terminate && PowerEfficiencyManager::IsChargingAndScreenOff()
+            && MedialibrarySubscriber::IsCurrentStatusOn());
 }
 
 void MediaLocationSynchronizeTask::Execute()

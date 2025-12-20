@@ -1199,7 +1199,8 @@ int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
 
 int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
 {
-    CHECK_AND_RETURN_RET(fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_OK);
+    CHECK_AND_RETURN_RET(fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        fileInfo.effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY), E_OK);
     bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
     std::string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
         fileInfo.cloudPath);
@@ -2354,6 +2355,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
     fileInfo.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     fileInfo.cloudVersion = GetInt32Val(PhotoColumn::PHOTO_CLOUD_VERSION, resultSet);
+    fileInfo.effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     fileInfo.cloudId = GetStringVal(PhotoColumn::PHOTO_CLOUD_ID, resultSet);
     fileInfo.oldAstcDateKey = to_string(fileInfo.dateTaken);
     SetSpecialAttributes(tableName, resultSet, fileInfo);
