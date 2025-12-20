@@ -158,6 +158,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
+    classifyRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -369,10 +370,12 @@ void UpgradeRestore::RestoreSmartAlbums()
     CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
     cloneGroupPhotoAlbum.UpdateGroupPhoto();
     int64_t endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    classifyRestore_.RestoreClassify(photoInfoMap_);
+    int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
-        " GroupPhoto cost: %{public}" PRId64,
+        " GroupPhoto cost: %{public}" PRId64 ", RestoreClassify cost: %{public}" PRId64,
         startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
-        endGroupPhoto - startGroupPhoto);
+        endGroupPhoto - startGroupPhoto, endRestoreClassify - endGroupPhoto);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
