@@ -1188,5 +1188,11 @@ void DfxManager::HandleUpgradeFault(const UpgradeExceptionInfo& reportData)
 {
     dfxReporter_->ReportUpgradeFault(reportData);
 }
+
+int32_t DfxManager::HandleThmInodeCleanInfo(const ThmInodeCleanInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(dfxReporter_ != nullptr, E_ERR, "DfxReporter is nullptr");
+    return dfxReporter_->ReportThmInodeCleanInfo(info);
+}
 } // namespace Media
 } // namespace OHOS

@@ -1042,6 +1042,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 #endif
     int32_t ret = DoCloudMediaRetainCleanup();
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
+    ThumbnailService::GetInstance()->DfxReportThumbnailDirAcl();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

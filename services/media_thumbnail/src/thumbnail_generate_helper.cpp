@@ -18,6 +18,9 @@
 
 #include <fcntl.h>
 #include <mutex>
+#include <sys/xattr.h>
+
+#include "preferences_helper.h"
 
 #include "acl.h"
 #include "cloud_sync_helper.h"
@@ -59,6 +62,9 @@ const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string SQL_REFRESH_THUMBNAIL_READY =
     " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
     " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
+const std::string THUMBNAIL_RECORD_EVENT = "/data/storage/el2/base/preferences/thumbnail_record_events.xml";
+const std::string EVENT_REPORT_FIX_THUMBNAIL_DIR_ACL = "EVENT_REPORT_FIX_THUMBNAIL_DIR_ACL";
+constexpr int32_t RECORD_REPORT_THUMBNAIL_DIR_ACL = 1;
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
@@ -1022,6 +1028,46 @@ int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbR
     IThumbnailHelper::AddThumbnailGenerateTask(
         needDeleteFromVisionTables ? taskWithDeleteFromVisionTables : FixThumbnailExifRotateAfterDownloadAssetTask,
         opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
+    return E_OK;
+}
+
+ThmInodeCleanInfo GetThmInodeCleanInfo()
+{
+    ThmInodeCleanInfo info = {
+        .result = 0,
+        .isConfigXattr = 0,
+        .xattrInfo = "",
+    };
+
+    ssize_t len = getxattr(THUMB_DIR.c_str(), ACL_XATTR_DEFAULT, nullptr, 0);
+    CHECK_AND_RETURN_RET_INFO_LOG(len > 0, info, "Thumb dir dose not have xattr");
+
+    info.isConfigXattr = 1;
+    info.xattrInfo = Acl::ParseAclToString(THUMB_DIR, ACL_XATTR_DEFAULT);
+    return info;
+}
+
+int32_t ThumbnailGenerateHelper::DfxReportThumbnailDirAcl()
+{
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(THUMBNAIL_RECORD_EVENT, errCode);
+    CHECK_AND_RETURN_RET_WARN_LOG(prefs != nullptr, E_ERR,  "Prefs is nullptr, err:%{public}d", errCode);
+    int32_t status = prefs->GetInt(EVENT_REPORT_FIX_THUMBNAIL_DIR_ACL, 0);
+    if (status == RECORD_REPORT_THUMBNAIL_DIR_ACL) {
+        return E_OK;
+    }
+
+    MEDIA_INFO_LOG("Start DfxReportThumbnailDirAcl");
+    ThmInodeCleanInfo info = GetThmInodeCleanInfo();
+    auto instance = DfxManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(instance != nullptr, E_ERR, "DfxManager ins nullptr");
+    int32_t err = DfxManager::GetInstance()->HandleThmInodeCleanInfo(info);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "HandleThmInodeCleanInfo failed, err:%{public}d", err);
+
+    prefs->PutInt(EVENT_REPORT_FIX_THUMBNAIL_DIR_ACL, RECORD_REPORT_THUMBNAIL_DIR_ACL);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("Finish DfxReportThumbnailDirAcl, xattr info:%{public}s", info.xattrInfo.c_str());
     return E_OK;
 }
 } // namespace Media
