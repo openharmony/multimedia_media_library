@@ -621,10 +621,11 @@ export class PhotoPickerComponent extends ViewPU {
         let o = new BaseItemInfo();
         o.uri = e.uri;
         o.photoSubType = e.photoSubType;
+        o.mimeType = e.mimeType;
         if (this.onPhotoBrowserChanged) {
             this.onPhotoBrowserChanged(o);
         }
-        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + this.pickerController.encrypt(o.uri));
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + JSON.stringify(o));
     }
 
     handleVideoPlayStateChanged(e) {
