@@ -170,6 +170,7 @@ protected:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    ClassifyRestore classifyRestore_;
     std::vector<int> galleryFailedOffsets_;
     std::vector<int> externalFailedOffsets_;
     ffrt::mutex galleryFailedMutex_;
