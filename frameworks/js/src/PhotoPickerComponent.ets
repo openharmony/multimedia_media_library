@@ -496,11 +496,12 @@ export struct PhotoPickerComponent {
     let browserItemInfo: BaseItemInfo = new BaseItemInfo();
     browserItemInfo.uri = wantParam['uri'] as string;
     browserItemInfo.photoSubType = wantParam['photoSubType'] as photoAccessHelper.photoSubType;
+    browserItemInfo.mimeType = wantParam['mimeType'] as string;
     if (this.onPhotoBrowserChanged) {
       this.onPhotoBrowserChanged(browserItemInfo);
     }
     console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' +
-      this.pickerController.encrypt(browserItemInfo.uri));
+      JSON.stringify(browserItemInfo));
   }
 
   private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
