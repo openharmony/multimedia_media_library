@@ -287,7 +287,7 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
         "FROM"
         "  Photos "
         "WHERE"
-        "  file_id > ? AND time_pending = 0 AND is_temp = 0 "
+        "  file_id > ? AND sync_status = 0 AND clean_flag = 0 AND time_pending = 0 AND is_temp = 0 "
         "  AND ("
         "    date_taken < " +
         to_string(MIN_MILSEC_TIMESTAMP) + " OR date_taken > " + to_string(MAX_MILSEC_TIMESTAMP) +
