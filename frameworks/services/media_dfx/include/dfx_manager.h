@@ -96,6 +96,7 @@ public:
     EXPORT void HandleTranscodeCostTime(const int32_t costTime);
     void HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData);
     void HandleUpgradeFault(const UpgradeExceptionInfo& reportData);
+    int32_t HandleThmInodeCleanInfo(const ThmInodeCleanInfo &info);
 
 private:
     void Init();

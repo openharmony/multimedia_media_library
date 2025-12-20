@@ -164,6 +164,12 @@ struct AncoCountFormatInfo {
     std::string assetFormatDistribution = "{}";
 };
 
+struct ThmInodeCleanInfo {
+    int32_t result = 0;
+    int32_t isConfigXattr = 0;
+    std::string xattrInfo;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -209,6 +215,7 @@ public:
     static int32_t ReportAncoCheckInfo(const AncoCheckInfo& reportData);
     static int32_t ReportAncoOperationChangeInfo(const AncoOperationChangeInfo& reportData);
     static int32_t ReportAncoCountFormatInfo(const AncoCountFormatInfo& reportData, bool firstLoad = false);
+    int32_t ReportThmInodeCleanInfo(const ThmInodeCleanInfo &info);
 };
 } // namespace Media
 } // namespace OHOS
