@@ -66,7 +66,6 @@ export class PhotoPickerComponent extends ViewPU {
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
-        this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
         this.setInitiallyProvidedValue(o);
         this.declareWatch('pickerController', this.onChanged);
     }
@@ -96,9 +95,6 @@ export class PhotoPickerComponent extends ViewPU {
             this.badgeConfig.uris.splice(this.maxBadgeConfigSize);
         }
         void 0 !== e.proxy && (this.proxy = e.proxy);
-        if (e.revokeIndex !== undefined) {
-            this.revokeIndex = e.revokeIndex;
-        }
         const displayName = display.getDefaultDisplaySync().name;
         console.info(`displayName = ${displayName}`);
         if (cooperation_multi_name.includes(displayName)) {
@@ -113,26 +109,16 @@ export class PhotoPickerComponent extends ViewPU {
 
     purgeVariableDependenciesOnElmtId(e) {
         this.__pickerController.purgeDependencyOnElmtId(e);
-        this.__revokeIndex.purgeDependencyOnElmtId(e);
     }
 
     aboutToBeDeleted() {
         this.__pickerController.aboutToBeDeleted();
-        this.__revokeIndex.aboutToBeDeleted();
         SubscriberManager.Get().delete(this.id__());
         this.aboutToBeDeletedInternal();
     }
 
     get pickerController() {
         return this.__pickerController.get();
-    }
-
-    get revokeIndex() {
-        return this.__revokeIndex.get();
-    }
-
-    set revokeIndex(newValue) {
-        return this.__revokeIndex.set();
     }
 
     onChanged() {
@@ -286,7 +272,6 @@ export class PhotoPickerComponent extends ViewPU {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
             SecurityUIExtensionComponent.create({
                 parameters: {
-                    errorRevokeIndex: this.revokeIndex,
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     uri: 'multipleselect',
                     targetPage: 'photoPage',
@@ -350,10 +335,6 @@ export class PhotoPickerComponent extends ViewPU {
             }));
             SecurityUIExtensionComponent.onError(((error) => {
                 console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
-                console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
-                if (error.code === 100014 && this.revokeIndex < 5) {
-                    this.revokeIndex++;
-                }
             }));
         }), SecurityUIExtensionComponent);
         Column.pop();

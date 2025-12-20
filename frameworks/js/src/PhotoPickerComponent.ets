@@ -58,7 +58,6 @@ export struct PhotoPickerComponent {
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
-  @State revokeIndex = 0;
 
   private onChanged(): void {
     if (!this.proxy) {
@@ -200,7 +199,6 @@ export struct PhotoPickerComponent {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
-            errorRevokeIndex: this.revokeIndex,
             "ability.want.params.uiExtensionTargetType": "photoPicker",
             uri: "multipleselect",
             targetPage: "photoPage",
@@ -264,10 +262,6 @@ export struct PhotoPickerComponent {
           })
           .onError((error) => {
             console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
-            console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
-            if (error.code === 100014 && this.revokeIndex < 3) {
-              this.revokeIndex++;
-            }
           });
       }
       .width('100%')
@@ -309,9 +303,6 @@ export struct PhotoPickerComponent {
       this.handleCreateCallback(wantParam);
     } else if (dataType === 'saveCallback') {
       this.handleSaveCallback(wantParam);
-    } else if (dataType === 'onBackground') {
-      console.info('PhotoPickerComponent onReceive: onBackground');
-      this.revokeIndex = 0;
     } else if (dataType === 'onBadgeConfigSend') {
       this.handleBadgeConfigSend(wantParam)
       console.info('PhotoPickerComponent onReceive: onBadgeConfigSend');
