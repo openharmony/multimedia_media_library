@@ -134,7 +134,7 @@
             "//foundation/multimedia/media_library/tools/medialibrary_tool:mediatool",
             "//foundation/multimedia/media_library/MediaLibraryExt:medialibrary_ext_hap",
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package",
+            "//foundation/multimedia/media_library/services/media_mtp:media_mtp_package",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
           ]
         },
