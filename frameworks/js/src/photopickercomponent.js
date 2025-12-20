@@ -432,7 +432,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                     livePhotoModes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : z.livePhotoModes,
-                    bundleNameAlbumFilter: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseBundleNameAlbumFilter(u.bundleNameAlbumFilter)
+                    appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters)
                 }
             }
             ,{
@@ -651,16 +651,16 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
     }
     
-    parseBundleNameAlbumFilter(bundleNameAlbumFilter) {
-        if (!bundleNameAlbumFilter) {
+    parseAppAlbumFilters(appAlbumFilters) {
+        if (!appAlbumFilters) {
             return undefined;
         }
 
-        if (bundleNameAlbumFilter.length > 3) {
-            return bundleNameAlbumFilter.slice(0, 3);
+        if (appAlbumFilters.length > 3) {
+            return appAlbumFilters.slice(0, 3);
         }
 
-        return bundleNameAlbumFilter;
+        return appAlbumFilters;
     }     
 
     parseMimeTypeFilter(filter) {
