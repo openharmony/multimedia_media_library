@@ -53,7 +53,7 @@ void CloudEnhancementGetCount::RemoveStartTime(const std::string &photoId)
 }
 
 void CloudEnhancementGetCount::Report(const std::string &completedType, const std::string &photoId,
-    const int32_t finishType)
+    const int32_t finishType, const int32_t fileType)
 {
     if (startTimes_.empty() || startTimes_.find(photoId) == startTimes_.end()) {
         MEDIA_INFO_LOG("startTimes_ is empty or photoId is not in startTimes_");
@@ -67,6 +67,7 @@ void CloudEnhancementGetCount::Report(const std::string &completedType, const st
         {KEY_TOTAL_TIME_COST, totalTime},
         {KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE, completedType},
         {KEY_CLOUD_ENHANCEMENT_FINISH_TYPE, finishType},
+        {KEY_CLOUD_ENHANCEMENT_FILE_TYPE, fileType}
     };
     PostEventUtils::GetInstance().PostStatProcess(StatType::CLOUD_ENHANCEMENT_GET_COUNT_STAT, map);
 }

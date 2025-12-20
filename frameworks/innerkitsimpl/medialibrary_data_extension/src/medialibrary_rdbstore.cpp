@@ -5050,6 +5050,16 @@ static void AddLakeAlbumTable(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("End add lake album table");
 }
 
+static void AddPhotoMovingphotoEnhancementType(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE +
+            " INT NOT NULL DEFAULT 0",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add AddMovingPhotoEnhancement column end");
+}
+
 static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
 {
     MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
@@ -5753,6 +5763,16 @@ static void UpdateMdirtyTrigger(RdbStore &store, int32_t version, const std::str
     MEDIA_INFO_LOG("Update mdirty trigger for %{public}s end", columnName.c_str());
 }
 
+static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true)) {
+        MEDIA_INFO_LOG("AddMovingPhotoEnhancement start");
+        AddPhotoMovingphotoEnhancementType(store, VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true);
+    }
+}
+
 static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PET_TABLES &&
@@ -5808,6 +5828,7 @@ static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
         AddAnalysisUpdateVideoSearchTrigger(store, VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER, true);
     }
+    UpgradeExtensionPart14(store, oldVersion);
 }
 
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)

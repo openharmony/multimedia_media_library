@@ -19,6 +19,7 @@
 #include "multistages_video_capture_manager.h"
 
 #include "media_log.h"
+#include "media_photo_asset_proxy.h"
 #include "moving_photo_file_utils.h"
 #include "database_adapter.h"
 #include "medialibrary_rdbstore.h"
@@ -35,6 +36,23 @@ namespace Media {
 MultiStagesMovingPhotoCaptureManager::MultiStagesMovingPhotoCaptureManager() {}
 
 MultiStagesMovingPhotoCaptureManager::~MultiStagesMovingPhotoCaptureManager() {}
+
+static void UpdateMultStagesMovingPhotoVideoCloudEnhancementType(int32_t enhancementType, int32_t fileId)
+{
+    NativeRdb::ValuesBucket updateValues;
+    int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT);
+    CHECK_AND_RETURN_LOG(enhancementType == static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH),
+        "enhancementType is not both");
+    updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+
+    CHECK_AND_RETURN_LOG(!updateValues.IsEmpty(), "UpdateHighQualityPictureInfo failed, updateValues is null");
+
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t updatePhotoResult = DatabaseAdapter::Update(updateCmd);
+    CHECK_AND_RETURN_LOG(updatePhotoResult >= 0, "UpdateHighQualityPictureInfo fail, photoId: %{public}d", fileId);
+}
 
 static int32_t UpdateMultStagesMovingPhotoVideoTaskStatus(const int32_t &fileId, StageVideoTaskStatus taskStatus)
 {
@@ -69,7 +87,8 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_QUALITY,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ID };
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ID,
+            PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, PhotoColumn::PHOTO_CE_AVAILABLE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_LOG(!cond, "result set is empty");
@@ -88,6 +107,8 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    int32_t enhancementType = GetInt32Val(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, resultSet);
+    UpdateMultStagesMovingPhotoVideoCloudEnhancementType(enhancementType, fileId);
     MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
     UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Moving photo mulit stage video task has been delivered",
