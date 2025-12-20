@@ -42,6 +42,8 @@ private:
     int32_t UpgradePhotoAlbumAddUploadStatusColumn(NativeRdb::RdbStore &store);
 
 private:
+    int32_t AddPhotosChangeTime(NativeRdb::RdbStore &store);
+    int32_t AddPhotoAlbumChangeTime(NativeRdb::RdbStore &store);
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
     int32_t AddFileSourceTypeColumn(NativeRdb::RdbStore &store);
     int32_t AddlPathColumn(NativeRdb::RdbStore &store);
@@ -370,6 +372,14 @@ private:
             AND (";
     const std::string SQL_PHOTO_ALBUM_TABLE_ADD_UPDATE_STATUS_COLUMN =
         "ALTER TABLE PhotoAlbum ADD COLUMN upload_status INT DEFAULT 1 NOT NULL;";
+    const std::vector<std::string> SQL_PHOTOS_CHANGE_TIME = {
+        "ALTER TABLE Photos ADD COLUMN change_time BIGINT DEFAULT 0 NOT NULL;",
+        "UPDATE Photos SET change_time = date_modified;"
+    };
+    const std::vector<std::string> SQL_PHOTO_ALBUM_CHANGE_TIME = {
+        "ALTER TABLE PhotoAlbum ADD COLUMN change_time BIGINT DEFAULT 0 NOT NULL;",
+        "UPDATE PhotoAlbum SET change_time = date_modified;"
+    };
 };
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

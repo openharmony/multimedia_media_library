@@ -306,6 +306,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("SUM_SIZE",                  MEDIA_SUM_SIZE),
     std::make_pair("HAS_APPLINK",               PhotoColumn::PHOTO_HAS_APPLINK),
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
+    std::make_pair("CHANGE_TIME",               PhotoColumn::PHOTO_CHANGE_TIME),
     std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
     std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
     std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
@@ -325,6 +326,7 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
     std::make_pair("BUNDLE_NAME",               PhotoAlbumColumns::ALBUM_BUNDLE_NAME),
     std::make_pair("COVER_URI_SOURCE",          PhotoAlbumColumns::COVER_URI_SOURCE),
+    std::make_pair("CHANGE_TIME",               PhotoAlbumColumns::CHANGE_TIME),
     std::make_pair("UPLOAD_STATUS",             PhotoAlbumColumns::UPLOAD_STATUS),
     std::make_pair("HIDDEN",                    PhotoAlbumColumns::ALBUM_HIDDEN),
 };
