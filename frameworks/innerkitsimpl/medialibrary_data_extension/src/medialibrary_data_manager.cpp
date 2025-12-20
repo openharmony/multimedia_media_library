@@ -908,6 +908,13 @@ void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_CHANGE_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, false);
     }
+
+    if (oldVersion < VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false)) {
+        MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(rdbStore, VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        rdbStore->SetOldVersion(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
