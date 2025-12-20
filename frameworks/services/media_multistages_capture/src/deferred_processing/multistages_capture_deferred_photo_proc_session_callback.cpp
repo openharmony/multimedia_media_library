@@ -43,6 +43,7 @@
 #include "exif_metadata.h"
 #include "picture_adapter.h"
 #include "high_quality_scan_file_callback.h"
+#include "media_photo_asset_proxy.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -57,6 +58,7 @@ constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
 constexpr uint32_t MANUAL_ENHANCEMENT = 1;
 constexpr uint32_t AUTO_ENHANCEMENT = 1 << 1;
+constexpr uint32_t MOVINGPHOTO_VIDEO_ENHANCEMENT = 1 << 2;
 
 static const std::unordered_map<int, int> ORIENTATION_MAP = {
     {0, ORIENTATION_0},
@@ -119,6 +121,18 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(cons
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 }
 
+static void CheckMovingPhotoFlag(uint32_t cloudImageEnhanceFlag, NativeRdb::ValuesBucket &updateValues)
+{
+    MEDIA_INFO_LOG("start CheckMovingPhotoFlag cloudImageEnhanceFlag: %{public}d", cloudImageEnhanceFlag);
+    if (cloudImageEnhanceFlag & MOVINGPHOTO_VIDEO_ENHANCEMENT) {
+        updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
+        updateValues.PutInt(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE,
+            static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH));
+    }
+    return;
+}
+
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const int32_t& fileId,
     uint32_t cloudImageEnhanceFlag, NativeRdb::ValuesBucket &updateValues, int32_t modifyType)
 {
@@ -141,10 +155,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
             MLOG_TAG, __FUNCTION__, __LINE__, fileId);
         updateValues.PutInt(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+        CheckMovingPhotoFlag(cloudImageEnhanceFlag, updateValues);
     } else if (cloudImageEnhanceFlag & MANUAL_ENHANCEMENT) {
         HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} fileId: %{public}d is MANUAL_ENHANCEMENT",
             MLOG_TAG, __FUNCTION__, __LINE__, fileId);
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+        CheckMovingPhotoFlag(cloudImageEnhanceFlag, updateValues);
     } else {
         HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} fileId: %{public}d doesn't support enhancement",
             MLOG_TAG, __FUNCTION__, __LINE__, fileId);

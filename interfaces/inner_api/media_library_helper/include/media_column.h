@@ -228,6 +228,7 @@ public:
     // cloud enhancement
     static const std::string PHOTO_CE_AVAILABLE EXPORT;
     static const std::string PHOTO_CE_STATUS_CODE EXPORT;
+    static const std::string PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE EXPORT;
     static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
     static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
     static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
