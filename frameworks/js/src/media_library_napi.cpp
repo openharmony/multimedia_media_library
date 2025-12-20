@@ -5593,13 +5593,6 @@ static napi_value ParseArgsCreatePhotoAssetComponent(napi_env env, napi_callback
         if (valueType == napi_object) {
             NAPI_ASSERT(env, ParseCreateOptions(env, context->argv[ARGS_TWO], *context) == napi_ok,
                 "Parse asset create option failed");
-        } else if (valueType == napi_string) {
-            char buffer[ARG_BUF_SIZE];
-            size_t res = 0;
-            NAPI_ASSERT(env,
-                napi_get_value_string_utf8(env, context->argv[ARGS_TWO], buffer, ARG_BUF_SIZE, &res) == napi_ok,
-                "failed to get string");
-            context->valuesBucket.Put(MediaColumn::MEDIA_TITLE, string(buffer));
         } else if (valueType != napi_function) {
             NAPI_ERR_LOG("Napi type is wrong in create options");
             return nullptr;
@@ -5611,26 +5604,6 @@ static napi_value ParseArgsCreatePhotoAssetComponent(napi_env env, napi_callback
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
-}
-
-static napi_value ParseArgsPhotoCreateAsset(napi_env env, napi_callback_info info,
-    unique_ptr<MediaLibraryAsyncContext> &context)
-{
-    constexpr size_t minArgs = ARGS_TWO;
-    constexpr size_t maxArgs = ARGS_THREE;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
-
-    napi_valuetype valueType;
-    NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
-    if (valueType == napi_number) {
-        context->isCreateByComponent = true;
-        context->needSystemApp = false;
-        return ParseArgsCreatePhotoAssetComponent(env, info, context);
-    } else {
-        NAPI_ERR_LOG("JS param type %{public}d is wrong", static_cast<int32_t>(valueType));
-        return nullptr;
-    }
 }
 
 static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info info,
@@ -10356,6 +10329,108 @@ static void PhotoAccessCancelPhotoUriPermissionExecute(napi_env env, void *data)
     }
 }
 
+static void PhotoAccessCreatePhotoAssetExecute(napi_env env, void *data)
+{
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateAssetExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return;
+    }
+
+    string outUri;
+    int index = -EINVAL;
+    if (context->businessCode != static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)){
+        index = CallPhotoAccessCreateAsset(context, outUri);
+    } else {
+        context->error = JS_E_PARAM_INVALID;
+        return;
+    }
+
+    if (index < 0) {
+        context->error = JS_E_INNER_FAIL;
+        NAPI_ERR_LOG("inner fail, index: %{public}d.", index);
+    } else {
+        context->uri = outUri;
+    }
+    OHOS::QOS::ResetThreadQos();
+}
+
+static napi_value ParseCreatePhotoAssetComponentArgs(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    /* Parse the first argument into displayName */
+    napi_valuetype valueType;
+    MediaType mediaType;
+    int32_t type = 0;
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_value_int32(env, context->argv[ARGS_ZERO], &type) == napi_ok,
+        JS_E_PARAM_INVALID, "Failed to get type value");
+    mediaType = static_cast<MediaType>(type);
+    CHECK_COND_WITH_ERR_MESSAGE(env, (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO),
+        JS_E_PARAM_INVALID, "invalid file type");
+
+    /* Parse the second argument into albumUri if exists */
+    string extension;
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], extension) ==
+        napi_ok, JS_E_PARAM_INVALID, "Failed to get extension");
+    CHECK_COND_WITH_ERR_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extension), JS_E_PARAM_INVALID,
+        "Failed to check extension");
+    context->valuesBucket.Put(ASSET_EXTENTION, extension);
+    /* Parse the third argument into albumUri if exists */
+    if (context->argc >= ARGS_THREE) {
+        CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, context->argv[ARGS_TWO], &valueType) == napi_ok,
+            JS_E_PARAM_INVALID, "Failed to get napi type");
+       if (valueType == napi_string) {
+            char buffer[ARG_BUF_SIZE];
+            size_t res = 0;
+            CHECK_COND_WITH_ERR_MESSAGE(env,
+                napi_get_value_string_utf8(env, context->argv[ARGS_TWO], buffer, ARG_BUF_SIZE, &res) == napi_ok,
+                JS_E_PARAM_INVALID, "failed to get string");
+            context->valuesBucket.Put(MediaColumn::MEDIA_TITLE, string(buffer));
+            std::string title = string(buffer);
+            std::string totalSize = title + "." + extension;
+            CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckDisplayName(totalSize, true) == 0, JS_E_PARAM_INVALID,
+                "Display size is error");
+            context->valuesBucket.Put(MediaColumn::MEDIA_TITLE, title);
+        } else {
+            NAPI_ERR_LOG("Napi type is wrong in create options");
+            return nullptr;
+        }
+    }
+
+    context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static napi_value ParseArgsPhotoCreateAsset(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, JS_E_PARAM_INVALID,"Failed to get object info");
+
+    napi_valuetype valueType;
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok,
+        JS_E_PARAM_INVALID, "Failed to get napi type");
+    if (valueType == napi_number) {
+        context->isCreateByComponent = true;
+        context->needSystemApp = false;
+        return ParseCreatePhotoAssetComponentArgs(env, info, context);
+
+    } else {
+        NAPI_ERR_LOG("JS param type %{public}d is wrong", static_cast<int32_t>(valueType));
+        return nullptr;
+    }
+}
+
 napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAsset(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -10366,15 +10441,13 @@ napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAsset(napi_env env, napi_call
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
-    NAPI_ASSERT(env, ParseArgsPhotoCreateAsset(env, info, asyncContext), "Failed to parse js args");
-    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
-    if (asyncContext->needSystemApp) {
-        asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET);
-    }
+    CHECK_COND_WITH_ERR_MESSAGE(env, ParseArgsPhotoCreateAsset(env, info, asyncContext), JS_E_PARAM_INVALID,
+        "Failed to parse js args");
 
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessCreatePhotoAsset",
-        PhotoAccessCreateAssetExecute, JSCreateAssetCompleteCallback);
+        PhotoAccessCreatePhotoAssetExecute, JSCreateAssetCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info)
