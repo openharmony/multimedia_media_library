@@ -108,6 +108,7 @@ const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_c
 const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
 const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
+const std::string PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE = "photo_moving_enhancement_type";
 const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
@@ -319,7 +320,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1, " +
     PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2, " +
-    PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0 " +
+    PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
+    PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE + " INT NOT NULL DEFAULT 0 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +

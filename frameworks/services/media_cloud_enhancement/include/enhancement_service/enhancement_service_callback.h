@@ -64,6 +64,10 @@ private:
         CloudEnhancementThreadTask& task, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
     EXPORT static int32_t UpdateCloudEnhancementPhotoInfo(int32_t fileId,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+    EXPORT static int32_t SaveCloudEnhancementMovingPhotoVideo(shared_ptr<CloudEnhancementFileInfo> info,
+        CloudEnhancementThreadTask& task, shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+    EXPORT static int32_t UpdateCloudEnhancementMovingPhotoInfo(int32_t fileId,
+        shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
 #endif
 };
 } // namespace Media

@@ -460,6 +460,24 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
     }
     task.addr = copyData;
     task.bytes = bytes;
+    if (size > 1) {
+        MEDIA_INFO_LOG("Processing video buffer");
+        uint8_t *videoAddr = rawDateVec[1].buffer;
+        uint32_t videoBytes = rawDateVec[1].size;
+        uint8_t *copyVideoData = new uint8_t[videoBytes];
+        ret = memcpy_s(copyVideoData, videoBytes, videoAddr, videoBytes);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("copy video buffer failed");
+            delete[] copyVideoData;
+            copyVideoData = nullptr;
+            return E_ERR;
+        }
+        task.videoAddr = copyVideoData;
+        task.videoBytes = videoBytes;
+    } else {
+        task.videoAddr = nullptr;
+        task.videoBytes = 0;
+    }
     DeleteRawData(rawDateVec, size);
     return E_OK;
 }

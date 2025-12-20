@@ -30,10 +30,12 @@ struct CloudEnhancementThreadTask {
     uint8_t *addr;
     uint32_t bytes;
     bool isSuccessed;
-    CloudEnhancementThreadTask(const std::string& taskId, int32_t statusCode, uint8_t *addr,
-        uint32_t bytes, bool isSuccessed)
+    uint8_t *videoAddr;
+    uint32_t videoBytes;
+    CloudEnhancementThreadTask(const std::string& taskId, int32_t statusCode, uint8_t *addr, uint32_t bytes,
+        bool isSuccessed, uint8_t *videoAddr, uint32_t videoBytes)
         : taskId(taskId), statusCode(statusCode), addr(addr), bytes(bytes),
-        isSuccessed(isSuccessed) {}
+        isSuccessed(isSuccessed), videoAddr(videoAddr), videoBytes(videoBytes) {}
 };
 
 class EnhancementThreadManager {
