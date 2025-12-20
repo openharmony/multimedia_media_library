@@ -42,6 +42,8 @@
 #include "mimetype_utils.h"
 #include "photo_file_utils.h"
 #include "image_source.h"
+#include "media_photo_asset_proxy.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -237,6 +239,47 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
         MediaEnhance_Bundle_Key::METADATA, metaDataJson.c_str());  // meta data
 }
 
+static void FillMovingPhotoVideoUri(MediaEnhanceBundleHandle* mediaEnhanceBundle,
+    const std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "result set invalid");
+    int32_t photoSubtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t movingEnhanceType = GetInt32Val(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, resultSet);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    std::string movingFilePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+
+    if (photoSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        movingEnhanceType == static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH)) {
+        std::string photoUri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, movingFilePath);
+        CHECK_AND_RETURN_LOG(!photoUri.empty(), "Failed to GetUriByFileId,fileid :%{public}d", fileId);
+        size_t lastDotPos = photoUri.find_last_of('.');
+        CHECK_AND_RETURN_LOG(lastDotPos != string::npos, "Failed to Get lastDotPos");
+        std::string videoUri = photoUri.substr(0, lastDotPos + 1) + "mp4";
+        EnhancementManager::GetInstance().enhancementService_->PutString(mediaEnhanceBundle,
+            MediaEnhance_Bundle_Key::MOVINGPHOTO_VIDEO_PATH, videoUri.c_str());
+        EnhancementManager::GetInstance().enhancementService_->PutInt(mediaEnhanceBundle,
+            MediaEnhance_Bundle_Key::PHOTO_TYPE, movingEnhanceType);
+    }
+}
+
+int32_t EnhancementManager::QueryFileTypeByFileId(const int32_t fileId)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr! failed query album order");
+    std::string querSql = "SELECT " + PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = " + to_string(fileId);
+
+    auto resultSet = uniStore->QuerySql(querSql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("QueryFileTypeByFileId failed, fileid: %{public}d", fileId);
+        return E_ERR;
+    }
+
+    int32_t movingEnhanceType = GetInt32Val(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, resultSet);
+    resultSet->Close();
+    return movingEnhanceType;
+}
+
 static bool ShouldAddTask(bool isAuto, int32_t photoIsAuto, int32_t ceAvailable, const string &photoId)
 {
     if (isAuto && (photoIsAuto != static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO))) {
@@ -389,10 +432,11 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
             continue;
         }
         int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(photoId);
+        int32_t fileType = QueryFileTypeByFileId(fileId);
         if (type == CloudEnhancementAvailableType::EDIT) {
-            CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId, taskType);
+            CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId, taskType, fileType);
         } else if (type == CloudEnhancementAvailableType::TRASH) {
-            CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId, taskType);
+            CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId, taskType, fileType);
         }
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
         photoIds.emplace_back(photoId);
@@ -634,8 +678,9 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
     }
     unordered_map<int32_t, string> fileId2Uri;
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_HIDDEN,
-        PhotoColumn::PHOTO_IS_AUTO, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
-        PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
+        MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_IS_AUTO, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
+        PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE,
+        PhotoColumn::PHOTO_SUBTYPE};
     auto resultSet = EnhancementDatabaseOperations::BatchQuery(cmd, columns, fileId2Uri);
     CHECK_AND_RETURN_RET_LOG(CheckResultSet(resultSet) == E_OK, E_ERR, "result set invalid");
     int32_t errCode = E_OK;
@@ -660,6 +705,7 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
             MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
         enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_MODE, triggerMode);
         FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType, hasCloudWatermark);
+        FillMovingPhotoVideoUri(mediaEnhanceBundle, resultSet);
         errCode = AddServiceTask(mediaEnhanceBundle, fileId, photoId, hasCloudWatermark, isAuto);
         if (errCode != E_OK) {
             continue;
@@ -693,14 +739,13 @@ bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
 int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
-    if (!IsAutoTaskEnabled()) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(IsAutoTaskEnabled(), E_ERR);
     int32_t errCode = E_OK;
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_HIDDEN,
-        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE };
+        MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID,
+        PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, };
     GenerateAddAutoServicePredicates(servicePredicates);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
@@ -733,6 +778,7 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
         enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE,
             MediaEnhance_Trigger_Type::TRIGGER_LOW_LEVEL);
         FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType, shouldAddWaterMark_);
+        FillMovingPhotoVideoUri(mediaEnhanceBundle, resultSet);
         errCode = AddAutoServiceTask(mediaEnhanceBundle, fileId, photoId);
         if (errCode != E_OK) {
             continue;

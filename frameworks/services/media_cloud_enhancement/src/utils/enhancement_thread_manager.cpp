@@ -70,7 +70,7 @@ void EnhancementThreadManager::DealWithTasks()
     bool loopCondition = true;
     while (loopCondition) {
         bool needExtraWork = false;
-        CloudEnhancementThreadTask task("", 0, nullptr, 0, false);
+        CloudEnhancementThreadTask task("", 0, nullptr, 0, false, nullptr, 0);
         {
             unique_lock<mutex> lock(queueMutex_);
             if (condVar_.wait_for(lock, chrono::seconds(WAIT_TIME), [this]() {
