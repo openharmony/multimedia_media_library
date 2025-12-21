@@ -372,6 +372,8 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleCreateCallback(e);
         } else if ('saveCallback' === o) {
             this.handleSaveCallback(e);
+        } else if (dataType === 'onBackground') {
+            console.info('PhotoPickerComponent onReceive: onBackground');
         } else if ('onPhotoBrowserChanged' === o) {
             this.handlePhotoBrowserChange(e);
         } else if ('onVideoPlayStateChanged' === o) {
