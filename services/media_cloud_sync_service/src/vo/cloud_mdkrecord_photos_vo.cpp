@@ -362,4 +362,53 @@ void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
     ss << "}";
     return;
 }
+
+size_t CloudMdkRecordPhotosRespBody::GetDataSize() const
+{
+    return this->cloudPhotosUploadRecord.size();
+}
+
+bool CloudMdkRecordPhotosRespBody::TruncateDataBy20K()
+{
+    CHECK_AND_RETURN_RET(!this->cloudPhotosUploadRecord.empty(), false);
+    const size_t parcelGap = 4800;
+    const size_t maxCapacity = 204800;
+    const size_t parcelCapacity = maxCapacity - parcelGap;
+    const size_t originalSize = this->cloudPhotosUploadRecord.size();
+    size_t parcelSize = 0;
+    MessageParcel data;
+    std::vector<CloudMdkRecordPhotosVo> resultList;
+    for (size_t index = 0; index < originalSize; index++) {
+        // Try marshalling into MessageParcel.
+        CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(data),
+            "Marshalling error, truncate stop. "
+            "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
+            index,
+            resultList.size(),
+            originalSize);
+        // Check the dataSize not exceed capacity.
+        parcelSize = data.GetDataSize();
+        CHECK_AND_BREAK_ERR_LOG(parcelSize <= parcelCapacity,
+            "exceed capacity, truncate it. "
+            "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
+            "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+            index,
+            resultList.size(),
+            originalSize,
+            parcelSize,
+            parcelCapacity);
+        resultList.emplace_back(this->cloudPhotosUploadRecord[index]);
+    }
+    // No need to truncate body.
+    CHECK_AND_RETURN_RET(resultList.size() != originalSize, true);
+    this->cloudPhotosUploadRecord = resultList;
+    MEDIA_INFO_LOG("TruncateDataBy20K completed, "
+        "resultList: %{public}zu, originalSize: %{public}zu, "
+        "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+        resultList.size(),
+        originalSize,
+        parcelSize,
+        parcelCapacity);
+    return true;
+}
 }  // namespace OHOS::Media::CloudSync
