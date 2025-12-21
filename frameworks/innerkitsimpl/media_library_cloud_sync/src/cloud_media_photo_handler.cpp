@@ -258,7 +258,7 @@ int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &record
         }
     }
     MEDIA_INFO_LOG("GetCreatedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -303,7 +303,7 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
         }
     }
     MEDIA_INFO_LOG("GetMetaModifiedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -345,7 +345,7 @@ int32_t CloudMediaPhotoHandler::GetFileModifiedRecords(std::vector<MDKRecord> &r
         }
     }
     MEDIA_INFO_LOG("GetFileModifiedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -384,7 +384,7 @@ int32_t CloudMediaPhotoHandler::GetDeletedRecords(std::vector<MDKRecord> &record
         }
     }
     MEDIA_INFO_LOG("GetDeletedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -423,7 +423,7 @@ int32_t CloudMediaPhotoHandler::GetCopyRecords(std::vector<MDKRecord> &records, 
         }
     }
     MEDIA_INFO_LOG("GetCopyRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;

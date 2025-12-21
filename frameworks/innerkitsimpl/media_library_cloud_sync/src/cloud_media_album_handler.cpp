@@ -190,7 +190,7 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
         dkRecord = nullptr;
     }
     MEDIA_INFO_LOG("GetCreatedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -219,7 +219,7 @@ int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
         }
     }
     MEDIA_INFO_LOG("GetMetaModifiedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;
@@ -253,7 +253,7 @@ int32_t CloudMediaAlbumHandler::GetDeletedRecords(std::vector<MDKRecord> &record
         }
     }
     MEDIA_INFO_LOG("GetDeletedRecords completed, "
-        "query-size: {public}d, result-size: %{public}zu",
+        "query-size: %{public}d, result-size: %{public}zu",
         size,
         records.size());
     return E_OK;

@@ -153,7 +153,7 @@ public:  // functions of Parcelable.
 public:  // basic functions
     std::string ToString() const;
 
-public: // member functions
+public:  // member functions
     size_t GetDataSize() const;
     bool TruncateDataBy20K();
 };
