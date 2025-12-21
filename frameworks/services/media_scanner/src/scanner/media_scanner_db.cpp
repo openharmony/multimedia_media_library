@@ -274,7 +274,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     values.PutLong(MediaColumn::MEDIA_SIZE, metadata.GetFileSize());
-    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
+    if (metadata.GetFileDateModified() != 0) {
+        values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
+    }
     values.PutInt(MediaColumn::MEDIA_DURATION, metadata.GetFileDuration());
     values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, metadata.GetDateTaken());
     values.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
