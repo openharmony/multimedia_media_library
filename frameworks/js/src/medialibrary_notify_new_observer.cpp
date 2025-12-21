@@ -301,14 +301,16 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
 static bool ProcessSceneSpecificNotifications(napi_env env, napi_handle_scope scope,
     NewJsOnChangeCallbackWrapper* wrapper, const std::shared_ptr<Notification::MediaChangeInfo>& mediaChangeInfo)
 {
-    if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothPhotoAndSinglePhoto) {
+    if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothPhotoAndSinglePhoto &&
+        !wrapper->singleAssetClientChangeInfo_.empty()) {
         napi_value buildResult = ProcessSinglePhotoUriNotifications(env, scope, wrapper, mediaChangeInfo);
         if (buildResult == nullptr) {
             NAPI_ERR_LOG("Failed to build result");
             napi_close_handle_scope(env, scope);
             return false;
         }
-    } else if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothAlbumAndSingleAlbum) {
+    } else if (wrapper->ChangeListenScene == PhotoChangeListenScene::BothAlbumAndSingleAlbum &&
+        !wrapper->singleAlbumClientChangeInfo_.empty()) {
         napi_value buildResult = ProcessSingleAlbumUriNotifications(env, scope, wrapper, mediaChangeInfo);
         if (buildResult == nullptr) {
             NAPI_ERR_LOG("Failed to build result");
