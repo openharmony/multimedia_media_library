@@ -208,6 +208,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
     "${MEDIALIB_INNERIMPL_PATH}/camera/src/picture_handle_client.cpp",
+    "${MEDIALIB_JS_PATH}/src/report_event.cpp",
   ]
 
   media_asset_service_vo_source = [
@@ -353,6 +354,7 @@ ohos_shared_library("medialibrary_nutils") {
     "samgr:samgr_proxy",
     "window_manager:libwm",
     "e2fsprogs:libext2_uuid",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = []
@@ -448,6 +450,7 @@ ohos_shared_library("medialibrary") {
     "ipc:ipc_single",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = []
@@ -517,6 +520,7 @@ ohos_shared_library("userfilemanager") {
     "ipc:ipc_single",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = []
@@ -592,6 +596,7 @@ ohos_shared_library("photoaccesshelpernative") {
     "ipc:ipc_napi",
     "napi:ace_napi",
     "player_framework:media_client",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = []

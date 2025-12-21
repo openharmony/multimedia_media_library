@@ -93,7 +93,8 @@
           "jsoncpp",
           "image_framework",
           "media_foundation",
-          "qos_manager"
+          "qos_manager",
+          "hiappevent"
         ]
       },
       "build": {
