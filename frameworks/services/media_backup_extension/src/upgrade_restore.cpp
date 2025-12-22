@@ -977,8 +977,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.bundleName = this->photosRestore_.FindBundleName(info);
     info.packageName = this->photosRestore_.FindPackageName(info);
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
-    info.latitude = GetDoubleVal("latitude", resultSet);
-    info.longitude = GetDoubleVal("longitude", resultSet);
+    info.latitude = GetDoubleVal(GALLERY_LATITUDE, resultSet);
+    info.longitude = GetDoubleVal(GALLERY_LONGITUDE, resultSet);
     info.storyIds = GetStringVal("story_id", resultSet);
     info.portraitIds = GetStringVal("portrait_id", resultSet);
     info.storyChosen = GetInt32Val("story_chosen", resultSet);

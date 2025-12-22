@@ -120,6 +120,8 @@ const std::string GALLERY_HDC_UNIQUE_ID = "hdc_unique_id";
 const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
 const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
 const std::string GALLERY_RESOLUTION = "resolution";
+const std::string GALLERY_LATITUDE = "latitude";
+const std::string GALLERY_LONGITUDE = "longitude";
 
 // dentryInfo fileType
 const std::string DENTRY_INFO_ORIGIN = "CONTENT";

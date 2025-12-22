@@ -637,20 +637,34 @@ void BaseRestore::SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Met
 
 double BaseRestore::GetDataLongitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
 {
+    double longitude = data->GetLongitude();
+    double latitude = data->GetLatitude();
+    if ((sceneCode_ == UPGRADE_RESTORE_ID || sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) &&
+        std::fabs(longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON &&
+        std::fabs(latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON) {
+        return fileInfo.longitude;
+    }
     if (sceneCode_ == I_PHONE_CLONE_RESTORE && (!(std::fabs(fileInfo.longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON)
         || !(std::fabs(fileInfo.latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON))) {
             return fileInfo.longitude;
     }
-    return data->GetLongitude();
+    return longitude;
 }
 
 double BaseRestore::GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
 {
+    double longitude = data->GetLongitude();
+    double latitude = data->GetLatitude();
+    if ((sceneCode_ == UPGRADE_RESTORE_ID || sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) &&
+        std::fabs(longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON &&
+        std::fabs(latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON) {
+        return fileInfo.latitude;
+    }
     if (sceneCode_ == I_PHONE_CLONE_RESTORE && (!(std::fabs(fileInfo.longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON)
         || !(std::fabs(fileInfo.latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON))) {
             return fileInfo.latitude;
     }
-    return data->GetLatitude();
+    return latitude;
 }
 
 void BaseRestore::Set3DgsSubtype(FileInfo &info, NativeRdb::ValuesBucket &value,
