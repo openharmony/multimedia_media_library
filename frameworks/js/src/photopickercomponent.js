@@ -109,6 +109,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.onSelect = void 0;
         this.onDeselect = void 0;
         this.onItemClicked = void 0;
+        this.onItemClickedNotify = void 0;
         this.onEnterPhotoBrowser = void 0;
         this.onExitPhotoBrowser = void 0;
         this.onPickerControllerReady = void 0;
@@ -138,6 +139,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onSelect && (this.onSelect = e.onSelect);
         void 0 !== e.onDeselect && (this.onDeselect = e.onDeselect);
         void 0 !== e.onItemClicked && (this.onItemClicked = e.onItemClicked);
+        void 0 !== e.onItemClickedNotify && (this.onItemClickedNotify = e.onItemClickedNotify);
         void 0 !== e.onEnterPhotoBrowser && (this.onEnterPhotoBrowser = e.onEnterPhotoBrowser);
         void 0 !== e.onExitPhotoBrowser && (this.onExitPhotoBrowser = e.onExitPhotoBrowser);
         void 0 !== e.onPhotoBrowserChanged && (this.onPhotoBrowserChanged = e.onPhotoBrowserChanged);
@@ -239,6 +241,9 @@ export class PhotoPickerComponent extends ViewPU {
             this.onChangedBadgeConfigs(o);
         } else if (null == o ? void 0 : o.has('UPDATE_CONFIG')) {
             this.onUpdateConfig(o);
+        } else if (null == o ? void 0 : o.has('SET_ITEM_CLICK_RESULT')) {
+            this.onChangeItemClickResult(o);
+            console.info('PhotoPickerComponent onChanged: SET_ITEM_CLICK_RESULT');
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
@@ -249,6 +254,12 @@ export class PhotoPickerComponent extends ViewPU {
         console.log(`preselectedInfos start send1 ${o.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos).length}`);
         this.proxy({ uriAndPickerIndexLists: null === o ? void 0 : o.get('SET_SELECTED_INFO').slice(0, this.batchPreselectedInfos),
              index: 0, preselectedInfosIsOver: this.preselectedInfos.length <= this.batchPreselectedInfos });
+    }
+
+    onChangeItemClickResult(o) {
+        let itemClickResult = null === o ? void 0 : o.get('SET_ITEM_CLICK_RESULT');
+        this.proxy.send({ itemClickResult });
+        console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
     }
 
     onUpdateConfig(o) {
@@ -398,6 +409,7 @@ export class PhotoPickerComponent extends ViewPU {
                     maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
                     maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
                     isOnItemClickedSet: !!this.onItemClicked,
+                    isOnItemClickedNotifySet: !!this.onItemClickedNotify,
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
                     singleSelectionMode: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.singleSelectionMode,
                     isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
@@ -448,6 +460,8 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleSelectOrDeselect(e);
         } else if ('itemClick' === o) {
             this.handleItemClick(e); 
+        } else if ('itemClickedNotify' === o) {
+            this.handleItemClickedNotify(e);
         } else if ('onPhotoBrowserStateChanged' === o) {
             this.handleEnterOrExitPhotoBrowser(e);
         } else if ('remoteReady' === o) {
@@ -559,23 +573,9 @@ export class PhotoPickerComponent extends ViewPU {
 
     handleItemClick(e) {
         if (this.onItemClicked) {
-            let o = ClickType.SELECTED;
-            let t = e.clickType;
-            'select' === t ? o = ClickType.SELECTED : 'deselect' === t ? o = ClickType.DESELECTED : console.info('PhotoPickerComponent onReceive: other clickType');
-            let i = new ItemInfo;
+            let o = this.getClickType(e);
             let n = e.itemType;
-            'thumbnail' === n ? i.itemType = ItemType.THUMBNAIL : 'camera' === n ? i.itemType = ItemType.CAMERA : console.info('PhotoPickerComponent onReceive: other itemType');
-            i.uri = e.uri;
-            i.mimeType = e.mimeType;
-            i.width = e.width;
-            i.height = e.height;
-            i.size = e.size;
-            i.duration = e.duration;
-            i.photoSubType = e.subtype;
-            i.dynamicRangeType = e.dynamicRangeType;
-            i.orientation = e.imageOrientation;
-            i.videoMode = e.videoMode;
-            i.movingPhotoBadgeState = e.movingPhotoBadgeState;
+            let i = this.getItemInfo(e);
             let r = this.onItemClicked(i, o);
             console.info('PhotoPickerComponent onReceive: onItemClicked = ' + o);
             if (this.proxy) {
@@ -590,6 +590,40 @@ export class PhotoPickerComponent extends ViewPU {
                 }
             }
         }
+    }
+
+    handleItemClickedNotify(e) {
+        if (this.onItemClickedNotify) {
+            let o = this.getClickType(e);
+            let i = this.getItemInfo(e);
+            this.onItemClickedNotify(i, o);
+            console.info('PhotoPickerComponent onReceive: onItemClickedNotify = ' + o);
+        }
+    }
+
+    getClickType(e) {
+        let o = ClickType.SELECTED;
+        let t = e.clickType;
+        'select' === t ? o = ClickType.SELECTED : 'deselect' === t ? o = ClickType.DESELECTED : console.info('PhotoPickerComponent onReceive: other clickType');
+        return o;
+    }
+
+    getItemInfo(e) {
+        let i = new ItemInfo;
+        let n = e.itemType;
+        'thumbnail' === n ? i.itemType = ItemType.THUMBNAIL : 'camera' === n ? i.itemType = ItemType.CAMERA : console.info('PhotoPickerComponent onReceive: other itemType');
+        i.uri = e.uri;
+        i.mimeType = e.mimeType;
+        i.width = e.width;
+        i.height = e.height;
+        i.size = e.size;
+        i.duration = e.duration;
+        i.photoSubType = e.subtype;
+        i.dynamicRangeType = e.dynamicRangeType;
+        i.orientation = e.imageOrientation;
+        i.movingPhotoBadgeState = e.movingPhotoBadgeState;
+        i.videoMode = e.videoMode;
+        return i;
     }
 
     handleEnterOrExitPhotoBrowser(e) {
@@ -856,6 +890,14 @@ let PickerController = class {
                 console.info('PhotoPickerComponent SET_BADGE_CONFIGS add_data' + this.encrypt(JSON.stringify(e)));
             }
             return;
+        } else if (e === DataType.SET_ITEM_CLICK_RESULT) {
+            if (o instanceof Array) {
+                let e = o;
+                if (e) {
+                    this.data = new Map([['SET_ITEM_CLICK_RESULT', [...e]]]);
+                    console.info('PhotoPickerComponent SET_ITEM_CLICK_RESULT' + this.encrypt(JSON.stringify(e)));
+                }
+            }
         }
     }
 
@@ -1068,6 +1110,9 @@ class PhotoBrowserUIElementVisibility {
 class PreselectedInfo {    
 }
 
+class ClickResult {    
+}
+
 export class SingleLineConfig {
     constructor() {
         this.itemDisplayRatio = ItemDisplayRatio.SQUARE_RATIO;
@@ -1086,6 +1131,7 @@ export var DataType;
     e[e.SET_ALBUM_URI = 2] = 'SET_ALBUM_URI';
     e[e.SET_SELECTED_INFO = 3] = 'SET_SELECTED_INFO';
     e[e.SET_BADGE_CONFIGS = 4] = 'SET_BADGE_CONFIGS';
+    e[e.SET_ITEM_CLICK_RESULT = 5] = 'SET_ITEM_CLICK_RESULT';
 }(DataType || (DataType = {}));
 
 export var ItemType;
