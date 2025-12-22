@@ -158,7 +158,9 @@ config("media_data_extension_public_config") {
   ]
 
   include_backround_task = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/background",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/background",
+	"${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
   ]
 
   include_media_lake_monitor = [
@@ -697,10 +699,21 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources_backround_task = [
-    "src/background/media_background_task_factory.cpp",
-    "src/background/media_deleted_file_task.cpp",
-    "src/background/media_file_manager_temp_file_aging_task.cpp",
-    "src/background/media_video_mode_task.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_background_task_factory.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_deleted_file_task.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_file_manager_temp_file_aging_task.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_video_mode_task.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_download_callback.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_download_callback.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_processor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_processor.cpp",
+	"${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/src/medialibrary_subscriber.cpp",
+	"${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/moving_photo_processor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/medialibrary_aspect_ratio_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/height_width_correct_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/photo_day_month_year_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/photo_mimetype_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/shooting_mode_album_operation.cpp",
   ]
   
   media_lake_scanner_source = [
@@ -746,10 +759,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
     "src/asset_compress_version_manager.cpp",
-    "src/background_cloud_batch_selected_file_download_callback.cpp",
-    "src/background_cloud_file_download_callback.cpp",
-    "src/background_cloud_file_processor.cpp",
-    "src/background_cloud_batch_selected_file_processor.cpp",
     "src/custom_record_operations.cpp",
     "src/event_handler/album_plugin_table_event_handler.cpp",
     "src/event_handler/database_utils.cpp",
@@ -800,7 +809,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_story_operations.cpp",
-    "src/medialibrary_subscriber.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",
     "src/medialibrary_tab_old_albums_operations.cpp",
@@ -808,25 +816,19 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
-    "src/moving_photo_processor.cpp",
     "src/operation/display_name_info.cpp",
     "src/operation/duplicate_photo_operation.cpp",
-    "src/operation/medialibrary_aspect_ratio_operation.cpp",
-    "src/operation/height_width_correct_operation.cpp",
     "src/operation/medialibrary_custom_restore_notify.cpp",
     "src/operation/medialibrary_transcode_data_aging_operation.cpp",
     "src/operation/photo_album_copy_meta_data_operation.cpp",
     "src/operation/photo_asset_copy_operation.cpp",
     "src/operation/photo_burst_operation.cpp",
     "src/operation/photo_custom_restore_operation.cpp",
-    "src/operation/photo_day_month_year_operation.cpp",
     "src/operation/photo_displayname_operation.cpp",
     "src/operation/photo_file_operation.cpp",
-    "src/operation/photo_mimetype_operation.cpp",
     "src/operation/photo_owner_album_id_operation.cpp",
     "src/operation/photo_source_path_operation.cpp",
     "src/operation/photo_storage_operation.cpp",
-    "src/operation/shooting_mode_album_operation.cpp",
     "src/photo_album_operation/photo_album_lpath_operation.cpp",
     "src/photo_album_operation/photo_album_merge_operation.cpp",
     "src/photo_album_operation/photo_album_update_date_modified_operation.cpp",
