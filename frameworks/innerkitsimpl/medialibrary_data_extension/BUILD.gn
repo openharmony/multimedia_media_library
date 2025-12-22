@@ -160,7 +160,7 @@ config("media_data_extension_public_config") {
   include_backround_task = [
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/background",
-	"${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
   ]
 
   include_media_lake_monitor = [
