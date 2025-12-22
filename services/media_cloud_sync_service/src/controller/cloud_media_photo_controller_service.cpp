@@ -143,7 +143,7 @@ int32_t CloudMediaPhotoControllerService::GetCreatedRecords(MessageParcel &data,
         createdRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(createdRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{createdRecordsList};
-    respBody.TruncateDataBy20K();
+    respBody.TruncateDataBy200K();
     MEDIA_INFO_LOG("GetCreatedRecords completed, dataSize: %{public}zu", respBody.GetDataSize());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
@@ -178,7 +178,7 @@ int32_t CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &
         metaModifiedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(metaModifiedRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{metaModifiedRecordsList};
-    respBody.TruncateDataBy20K();
+    respBody.TruncateDataBy200K();
     MEDIA_INFO_LOG("GetMetaModifiedRecords completed, dataSize: %{public}zu", respBody.GetDataSize());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
@@ -207,7 +207,7 @@ int32_t CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &
         fileModifiedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(fileModifiedRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{fileModifiedRecordsList};
-    respBody.TruncateDataBy20K();
+    respBody.TruncateDataBy200K();
     MEDIA_INFO_LOG("GetFileModifiedRecords completed, dataSize: %{public}zu", respBody.GetDataSize());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
@@ -231,7 +231,7 @@ int32_t CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data,
         deletedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(deletedRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{deletedRecordsList};
-    respBody.TruncateDataBy20K();
+    respBody.TruncateDataBy200K();
     MEDIA_INFO_LOG("GetDeletedRecords completed, dataSize: %{public}zu", respBody.GetDataSize());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
@@ -259,7 +259,7 @@ int32_t CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, Me
         copyRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(copyRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{copyRecordsList};
-    respBody.TruncateDataBy20K();
+    respBody.TruncateDataBy200K();
     MEDIA_INFO_LOG("GetCopyRecords completed, dataSize: %{public}zu", respBody.GetDataSize());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }

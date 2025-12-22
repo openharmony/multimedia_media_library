@@ -368,7 +368,7 @@ size_t CloudMdkRecordPhotosRespBody::GetDataSize() const
     return this->cloudPhotosUploadRecord.size();
 }
 
-bool CloudMdkRecordPhotosRespBody::TruncateDataBy20K()
+bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
 {
     CHECK_AND_RETURN_RET(!this->cloudPhotosUploadRecord.empty(), false);
     const size_t parcelGap = 4800;
@@ -402,7 +402,7 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy20K()
     // No need to truncate body.
     CHECK_AND_RETURN_RET(resultList.size() != originalSize, true);
     this->cloudPhotosUploadRecord = resultList;
-    MEDIA_INFO_LOG("TruncateDataBy20K completed, "
+    MEDIA_INFO_LOG("TruncateDataBy200K completed, "
         "resultList: %{public}zu, originalSize: %{public}zu, "
         "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
         resultList.size(),

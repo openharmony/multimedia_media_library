@@ -603,12 +603,12 @@ HWTEST_F(CloudMediaSyncServiceVoTest, CheckDataAlbum_Test, TestSize.Level1)
     EXPECT_FALSE(result.empty());
 }
 
-HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosRespBody_TruncateDataBy20K_Test, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosRespBody_TruncateDataBy200K_Test, TestSize.Level1)
 {
     CloudMdkRecordPhotosVo photosVo;
     std::vector<CloudMdkRecordPhotosVo> uploadRecords = {photosVo};
     CloudMdkRecordPhotosRespBody respBody{uploadRecords};
-    EXPECT_TRUE(respBody.TruncateDataBy20K());
+    EXPECT_TRUE(respBody.TruncateDataBy200K());
     EXPECT_EQ(1, respBody.GetDataSize());
 }
 }
