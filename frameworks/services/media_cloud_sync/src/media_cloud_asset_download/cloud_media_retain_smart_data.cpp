@@ -340,7 +340,7 @@ static void CleanPhotosTableCloudDataAsync(AsyncTaskData *data)
         MEDIA_INFO_LOG("Successfully cleaned a batch of %{public}zu photos.", idsToDelete.size());
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_FOR_CLEAN_MS));
     }
-
+    SetSmartDataRetainTime();
     SetSmartDataCleanState(CleanTaskState::IDLE);
     MEDIA_INFO_LOG("CleanPhotosTableCloudDataAsync: Finished or interrupted.");
 }
@@ -381,11 +381,8 @@ int32_t DoCloudMediaRetainCleanup()
         return ret;
     }
 
-    if (GetSmartDataCleanState() > static_cast<int64_t>(CleanTaskState::IDLE)) {
-        ret = DoCleanPhotosTableCloudData();
-        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
-    }
-
+    ret = DoCleanPhotosTableCloudData();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
     return ret;
 }
 

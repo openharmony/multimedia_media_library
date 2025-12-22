@@ -466,6 +466,8 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
 
     ret = this->AddFileSourceTypeColumn(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+    ret = this->AddPhotosEffectModeColumn(store);
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = this->AddPhotosChangeTime(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
@@ -498,6 +500,13 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbumAddUploadStatusColumn(NativeRdb:
     CHECK_AND_RETURN_RET(
         !(this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "upload_status")), NativeRdb::E_OK);
     return ExecSqlWithRetry([&]() { return store.ExecuteSql(this->SQL_PHOTO_ALBUM_TABLE_ADD_UPDATE_STATUS_COLUMN); });
+}
+
+int32_t MediaLibraryDbUpgrade::AddPhotosEffectModeColumn(NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_RET(
+        !this->dbUpgradeUtils_.IsColumnExists(store, "Photos", PhotoColumn::MOVING_PHOTO_EFFECT_MODE), NativeRdb::E_OK);
+    return ExecSqlWithRetry([&]() { return store.ExecuteSql(SQL_PHOTOS_TABLE_ADD_EFFECT_MODE); });
 }
 // LCOV_EXCL_STOP
 }  // namespace DataTransfer
