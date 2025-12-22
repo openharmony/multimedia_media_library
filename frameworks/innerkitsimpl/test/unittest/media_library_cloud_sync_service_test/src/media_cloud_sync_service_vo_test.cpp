@@ -602,4 +602,13 @@ HWTEST_F(CloudMediaSyncServiceVoTest, CheckDataAlbum_Test, TestSize.Level1)
     string result = dataAlbum->ToString();
     EXPECT_FALSE(result.empty());
 }
+
+HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosRespBody_TruncateDataBy200K_Test, TestSize.Level1)
+{
+    CloudMdkRecordPhotosVo photosVo;
+    std::vector<CloudMdkRecordPhotosVo> uploadRecords = {photosVo};
+    CloudMdkRecordPhotosRespBody respBody{uploadRecords};
+    EXPECT_TRUE(respBody.TruncateDataBy200K());
+    EXPECT_EQ(1, respBody.GetDataSize());
+}
 }
