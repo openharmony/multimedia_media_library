@@ -44,6 +44,7 @@ private:
 private:
     int32_t AddPhotosChangeTime(NativeRdb::RdbStore &store);
     int32_t AddPhotoAlbumChangeTime(NativeRdb::RdbStore &store);
+    int32_t AddPhotosEffectModeColumn(NativeRdb::RdbStore &store);
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
     int32_t AddFileSourceTypeColumn(NativeRdb::RdbStore &store);
     int32_t AddlPathColumn(NativeRdb::RdbStore &store);
@@ -380,6 +381,8 @@ private:
         "ALTER TABLE PhotoAlbum ADD COLUMN change_time BIGINT DEFAULT 0 NOT NULL;",
         "UPDATE PhotoAlbum SET change_time = date_modified;"
     };
+    const std::string SQL_PHOTOS_TABLE_ADD_EFFECT_MODE =
+        "ALTER TABLE Photos ADD COLUMN moving_photo_effect_mode INT DEFAULT 0 NOT NULL;";
 };
 }  // namespace DataTransfer
 }  // namespace OHOS::Media
