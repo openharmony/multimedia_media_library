@@ -610,7 +610,7 @@ export class PhotoPickerComponent extends ViewPU {
         if (this.onPhotoBrowserChanged) {
             this.onPhotoBrowserChanged(o);
         }
-        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + JSON.stringify(o));
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + this.pickerController.encrypt(o.uri));
     }
 
     handleVideoPlayStateChanged(e) {
