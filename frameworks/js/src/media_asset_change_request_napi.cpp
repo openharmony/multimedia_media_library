@@ -131,7 +131,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
-            DECLARE_NAPI_PROPERTY("COMMENT", MediaChangeRequestUtils::CreateComment(env)),
+            DECLARE_NAPI_PROPERTY("comment", MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsPermanentlyWithUri", JSDeleteLocalAssetsPermanentlyWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("createAssetRequest", JSCreateAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createImageAssetRequest", JSCreateImageAssetRequest),

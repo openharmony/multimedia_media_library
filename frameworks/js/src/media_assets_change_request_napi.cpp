@@ -48,7 +48,7 @@ napi_value MediaAssetsChangeRequestNapi::Init(napi_env env, napi_value exports)
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
-            DECLARE_NAPI_PROPERTY("COMMENT", MediaChangeRequestUtils::CreateComment(env)),
+            DECLARE_NAPI_PROPERTY("comment", MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_FUNCTION("setFavorite", JSSetFavorite),
             DECLARE_NAPI_FUNCTION("setHidden", JSSetHidden),
             DECLARE_NAPI_FUNCTION("setUserComment", JSSetUserComment),
