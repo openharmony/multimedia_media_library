@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <algorithm>
+#include <charconv>
 
 #include "height_width_correct_operation.h"
 
@@ -45,7 +46,7 @@ const int32_t ROTATE_ANGLE_90 = 90;
 const int32_t ROTATE_ANGLE_270 = 270;
 const std::string CURRENT_CHECK_ID = "current_check_id";
 const std::string CHECK_FAIL_IDS = "check_fail_ids";
-const int32_t BATCH_SIZE = 500;
+const int32_t BATCH_SIZE = 100;
 const std::string HEIGHT_WIDTH_CORRECT_XML = "/data/storage/el2/base/preferences/height_width_correct.xml";
 
 const std::string SQL_PHOTOS_TABLE_QUERY_PHOTO_INFO = "SELECT"
@@ -81,8 +82,12 @@ static std::unordered_set<int32_t> SplitString(const std::string& input, char de
         if (token.empty()) {
             continue;
         }
-        number = IsNumericStr(token) ? std::stoi(token) : 0;
-        result.emplace(number);
+        auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), number);
+        if (ec == std::errc{} && ptr == token.data() + token.size()) {
+            result.emplace(number);
+        } else {
+            MEDIA_ERR_LOG("token is not numeric-only str.");
+        }
     }
     return result;
 }
@@ -199,7 +204,7 @@ static void GetPhotoInfos(std::vector<CheckPhotoInfo> &photoInfos,
     if (resultSet == nullptr) {
         return;
     }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK && MedialibrarySubscriber::IsCurrentStatusOn()) {
         CheckPhotoInfo photoInfo;
         photoInfo.exifRotate = get<int32_t>(
             ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_EXIF_ROTATE, resultSet, TYPE_INT32));
@@ -280,6 +285,8 @@ void HeightWidthCorrectOperation::HandlePhotoInfos(const std::vector<CheckPhotoI
         return;
     }
     for (const CheckPhotoInfo &photoInfo : photoInfos) {
+        CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn(),
+            "HeightWidthCorrectOperation::current status is off, break");
         count--;
         if (photoInfo.fileId > curFileId) {
             curFileId = photoInfo.fileId;
@@ -304,11 +311,18 @@ static void ParseHeightAndWidthFromLcdSize(int32_t &height, int32_t &width, std:
     }
     std::string lcdWidth = lcdSize.substr(0, pos);
     std::string lcdHeight = lcdSize.substr(pos + 1);
-    if (!IsNumericStr(lcdWidth) || !IsNumericStr(lcdHeight)) {
+    int32_t tempHeight;
+    auto [ptrH, ecH] = std::from_chars(lcdHeight.data(), lcdHeight.data() + lcdHeight.size(), tempHeight);
+    if (ecH != std::errc{} || ptrH != lcdHeight.data() + lcdHeight.size()) {
         return;
     }
-    height = std::stoi(lcdHeight);
-    width = std::stoi(lcdWidth);
+    height = tempHeight;
+    int32_t tempWidth;
+    auto [ptrW, ecW] = std::from_chars(lcdWidth.data(), lcdWidth.data() + lcdWidth.size(), tempWidth);
+    if (ecW != std::errc{} || ptrW != lcdWidth.data() + lcdWidth.size()) {
+        return;
+    }
+    width = tempWidth;
     return;
 }
 
@@ -329,12 +343,11 @@ static bool GetRealHeightAndWidthFromPath(const CheckPhotoInfo &photoInfo, int32
 
 static bool CheckHeightWidth(int32_t width, int32_t height, int32_t lcdWidth, int32_t lcdHeight)
 {
-    if (height == 0 || width == 0 || lcdWidth == 0 || lcdHeight == 0) {
-        return true;
-    }
-    bool cond = (width / height < 1 && lcdWidth / lcdHeight < 1) ||
-        (width / height == 1 && lcdWidth / lcdHeight == 1) ||
-        (width / height > 1 && lcdWidth / lcdHeight > 1);
+    bool cond = height == 0 || width == 0 || lcdWidth == 0 || lcdHeight == 0;
+    CHECK_AND_RETURN_RET(!cond, true);
+    cond = (static_cast<double>(width) / height < 1 && static_cast<double>(lcdWidth) / lcdHeight < 1) ||
+        (static_cast<double>(width) / height == 1 && static_cast<double>(lcdWidth) / lcdHeight == 1) ||
+        (static_cast<double>(width) / height > 1 && static_cast<double>(lcdWidth) / lcdHeight > 1);
     return cond;
 }
 
@@ -351,8 +364,8 @@ static bool DealHeightAndWidth(const CheckPhotoInfo &photoInfo, int32_t &height,
     int32_t lcdHeight = 0;
     int32_t lcdWidth = 0;
     ParseHeightAndWidthFromLcdSize(lcdHeight, lcdWidth, photoInfo.lcdSize);
-    bool cond = (photoInfo.width == 0) || (photoInfo.height == 0) || (lcdHeight == 0) || (lcdWidth == 0);
-    CHECK_AND_RETURN_RET_LOG(!cond, true, "Do not update if width or height is 0.");
+    bool cond = (lcdHeight == 0) || (lcdWidth == 0);
+    CHECK_AND_RETURN_RET(!cond, false);
     if (photoInfo.exifRotate > 0 && photoInfo.exifRotate <= static_cast<int32_t>(ExifRotateType::LEFT_BOTTOM)) {
         if (photoInfo.exifRotate >= static_cast<int32_t>(ExifRotateType::LEFT_TOP)) {
             CHECK_AND_RETURN_RET(!CheckHeightWidth(photoInfo.height, photoInfo.width, lcdWidth, lcdHeight), true);
@@ -387,12 +400,8 @@ bool HeightWidthCorrectOperation::UpdatePhotoHeightWidth(const CheckPhotoInfo &p
     int32_t width = 0;
     bool flag = false;
     bool ret = DealHeightAndWidth(photoInfo, height, width, flag);
-    if (!ret) {
-        return false;
-    }
-    if (!flag) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(ret, false);
+    CHECK_AND_RETURN_RET(flag, true);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
