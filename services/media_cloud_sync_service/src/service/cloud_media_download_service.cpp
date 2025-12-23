@@ -41,6 +41,7 @@
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 
 namespace OHOS::Media::CloudSync {
@@ -573,6 +574,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     } else {
         ret = this->dao_.UpdateDownloadAsset(assetData, scanResult);
     }
+    CalEditDataSizeInHandlePhoto(photo);
     if (scanResult.scanSuccess) {
         CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
     }
@@ -613,6 +615,15 @@ void CloudMediaDownloadService::UpdateBatchDownloadTask(const ORM::PhotosPo &pho
     CHECK_AND_RETURN(fileId != -1);
     MEDIA_INFO_LOG("Successfully download asset[%{public}d] by single task, need to handle batch task.", fileId);
     BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(fileId);
+}
+
+void CloudMediaDownloadService::CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo)
+{
+    int32_t fileId = photo.fileId.value_or(0);
+    int32_t ret = MediaLibraryPhotoOperations::CalSingleEditDataSize(to_string(fileId));
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)", fileId, ret);
+    }
 }
 
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(

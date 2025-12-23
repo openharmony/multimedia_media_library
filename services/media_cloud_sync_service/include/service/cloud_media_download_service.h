@@ -73,6 +73,7 @@ private:
     int32_t FixDownloadAssetExifRotate(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
     int32_t CheckRegenerateThumbnail(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
     void UpdateBatchDownloadTask(const ORM::PhotosPo &photo);
+    void CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo);
 
 private:
     const uint32_t TYPE_THM_MASK = 0x1;
