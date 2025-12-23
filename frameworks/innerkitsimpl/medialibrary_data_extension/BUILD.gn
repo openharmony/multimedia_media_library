@@ -208,10 +208,10 @@ config("media_data_extension_public_config") {
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/include",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/include/utils",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
     ]
     include_dirs += include_cloud_enhancement
   }
@@ -926,15 +926,15 @@ ohos_shared_library("medialibrary_data_extension") {
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_adapter.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_database_operations.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/dynamic_loader.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_thread_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/settings_monitor.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/cloud_enhancement_checker.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_adapter.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_database_operations.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/utils/dynamic_loader.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_thread_manager.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/utils/settings_monitor.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/utils/cloud_enhancement_checker.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
+      "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
     ]
     sources += media_cloud_enhancement_source
   }
@@ -1042,7 +1042,7 @@ ohos_shared_library("medialibrary_data_extension") {
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
       media_library_feature_cloud_enhancement && !factory) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
+    sources += [ "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 
   if (defined(global_parts_info) &&
