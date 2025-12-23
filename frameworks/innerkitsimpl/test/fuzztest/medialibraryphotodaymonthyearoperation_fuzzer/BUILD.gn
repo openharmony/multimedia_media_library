@@ -23,10 +23,11 @@ ohos_fuzztest("MediaLibraryPhotoDayMonthYearOperationFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
   ]
 
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_day_month_year_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/photo_day_month_year_operation.cpp",
     "./medialibraryphotodaymonthyearoperation_fuzzer.cpp",
     "./mock_medialibrary_subscriber.cpp",
   ]
