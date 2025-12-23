@@ -376,22 +376,25 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
     const size_t parcelCapacity = maxCapacity - parcelGap;
     const size_t originalSize = this->cloudPhotosUploadRecord.size();
     size_t parcelSize = 0;
-    MessageParcel data;
+    size_t elementSize = 0;
     std::vector<CloudMdkRecordPhotosVo> resultList;
     for (size_t index = 0; index < originalSize; index++) {
+        MessageParcel tempParcel;
         // Try marshalling into MessageParcel.
-        CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(data),
+        CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(tempParcel),
             "Marshalling error, truncate stop. "
             "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
             index,
             resultList.size(),
             originalSize);
         // Check the dataSize not exceed capacity.
-        parcelSize = data.GetDataSize();
+        elementSize = tempParcel.GetDataSize();
+        parcelSize += elementSize;
         CHECK_AND_BREAK_ERR_LOG(parcelSize <= parcelCapacity,
             "exceed capacity, truncate it. "
-            "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
+            "elementSize: %{public}zu, index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
             "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+            elementSize,
             index,
             resultList.size(),
             originalSize,
