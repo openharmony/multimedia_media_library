@@ -32,11 +32,12 @@ ohos_unittest("medialibrary_aspect_ratio_operation_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
   ]
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_aspect_ratio_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/medialibrary_aspect_ratio_operation.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_aspect_ratio_operation_test.cpp",
