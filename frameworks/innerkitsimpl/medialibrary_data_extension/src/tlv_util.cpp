@@ -547,6 +547,7 @@ int32_t TlvUtil::ExtractTlv(const std::string &tlvFilePath, const std::string &d
 {
     MEDIA_INFO_LOG("Extract tlv file start");
     extractedFiles.clear();
+    CHECK_AND_RETURN_RET_LOG(!destDir.empty(), E_ERR, "destDir is empty");
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(tlvFilePath), E_ERR, "tlvFilePath is not exist");
     MEDIA_INFO_LOG("ExtractTlv tlv file path: %{public}s", DfxUtils::GetSafePath(tlvFilePath).c_str());
     CHECK_AND_RETURN_RET_LOG(ValidateTlvFile(tlvFilePath) == E_OK, E_ERR, "TLV file validation failed");
@@ -565,13 +566,15 @@ int32_t TlvUtil::ExtractTlv(const std::string &tlvFilePath, const std::string &d
     ssize_t bytes = 0;
     int32_t fileCount = 0;
     size_t fileTotalSize = 0;
+    int32_t result = E_OK;
     while ((bytes = read(tlvFileFd.Get(), reinterpret_cast<char*>(&node), sizeof(TlvNode))) > 0) {
-        int32_t result = ProcessTlvNode(tlvFileFd.Get(), node, destDir, extractedFiles, originFileName);
+        result = ProcessTlvNode(tlvFileFd.Get(), node, destDir, extractedFiles, originFileName);
         if (result == E_OK) {
             fileCount++;
             fileTotalSize += node.length;
         } else {
             MEDIA_ERR_LOG("Failed to process TLV node of type 0x%{public}x", node.type);
+            break;
         }
     }
     CHECK_AND_RETURN_RET_LOG(bytes >= 0, E_ERR, "failed to read type, errno: %{public}d", errno);
@@ -579,7 +582,7 @@ int32_t TlvUtil::ExtractTlv(const std::string &tlvFilePath, const std::string &d
     MEDIA_INFO_LOG("Extract tlv file completed successfully, extracted %{public}d files to: %{public}s,"
         " cost %{public}ld ms, total file size: %{public}zu bytes", fileCount, DfxUtils::GetSafePath(destDir).c_str(),
         static_cast<long>(endTime - startTime), fileTotalSize);
-    return E_OK;
+    return result;
 }
 } // namespace Media
 } // namespace OHOS

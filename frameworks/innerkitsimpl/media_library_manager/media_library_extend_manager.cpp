@@ -257,7 +257,13 @@ int32_t MediaLibraryExtendManager::OpenAssetCompress(const string &uri, HideSens
             errCode =
                 IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
         }
-        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR, "OpenAssetCompress failed, errCode: %{public}d", errCode);
+    }
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("OpenAssetCompress failed, errCode: %{public}d, fd: %{public}d, try call OpenAsset", errCode,
+            respBody.fileDescriptor);
+        CHECK_AND_EXECUTE(respBody.fileDescriptor < 0, close(respBody.fileDescriptor));
+        string assetUri = uri;
+        return OpenAsset(assetUri, MEDIA_FILEMODE_READONLY, type);
     }
     return respBody.fileDescriptor;
 }
