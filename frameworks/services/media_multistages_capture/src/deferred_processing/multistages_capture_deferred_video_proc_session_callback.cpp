@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 MultiStagesCaptureDeferredVideoProcSessionCallback::MultiStagesCaptureDeferredVideoProcSessionCallback()
 {}
- 
+
 MultiStagesCaptureDeferredVideoProcSessionCallback::~MultiStagesCaptureDeferredVideoProcSessionCallback()
 {}
 
@@ -59,9 +59,8 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, videoId);
     return DatabaseAdapter::Update(updateCmd);
 }
- 
-void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(const std::string& videoId,
-    const sptr<IPCFileDescriptor> ipcFd)
+
+void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(const std::string& videoId)
 {
     CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnProcessVideoDone, videoId: %{public}s",
