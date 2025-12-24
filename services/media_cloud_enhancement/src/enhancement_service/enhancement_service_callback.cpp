@@ -43,7 +43,6 @@
 #include "moving_photo_file_utils.h"
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
-#include "media_photo_asset_proxy.h"
 #include "multistages_video_capture_manager.h"
 #include "medialibrary_tracer.h"
 
@@ -53,7 +52,7 @@ using namespace OHOS::MediaEnhance;
 #endif
 namespace OHOS {
 namespace Media {
-static const int32_t BOTH = 2;
+static constexpr int32_t BOTH = 2;
 static vector<string> needUpdateUris;
 
 EnhancementServiceCallback::EnhancementServiceCallback()
@@ -132,9 +131,7 @@ static int32_t CheckVideoAddrAndBytes(CloudEnhancementThreadTask& task)
 
 static void RemoveVideo(int32_t stageVideoTaskStatus, const string &photoId)
 {
-    bool isNeedRemove = (stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) ||
-                        (stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER)) ||
-                        (stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED));
+    bool isNeedRemove = stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     CHECK_AND_RETURN_LOG(isNeedRemove, "should not remove video");
     MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(photoId, false);
 }
@@ -203,11 +200,11 @@ static int32_t SaveVideo(const string &filePath, void *output, size_t writeSize)
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::SaveVideo");
     string filePathTemp = filePath + ".high";
+    UniqueFd fd(open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode));
     if (!FileUtils::IsFileExist(filePathTemp)) {
         MEDIA_ERR_LOG("file not exist: %{private}s", filePathTemp.c_str());
         return E_ERR;
     }
-    UniqueFd fd(open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode));
     if (fd.Get() < 0) {
         int err = errno;
         MEDIA_ERR_LOG("Open temp file fail, path: %{private}s, fd=%d, errno=%d",
@@ -257,7 +254,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementMovingPhotoVideo(shared_
         E_ERR, "display name not valid");
 
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(info->filePath);
-    CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_ERR, "movingphoto video is empty, fileid: %{public}d", info->fileId);
+    CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_ERR, "Can not get video path, fileid: %{public}d", info->fileId);
 
     string editDataDirPath = PhotoFileUtils::GetEditDataDir(info->filePath);
     string editDataSourcePath = PhotoFileUtils::GetEditDataSourcePath(info->filePath);
@@ -415,7 +412,7 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
         AccurateRefresh::DEAL_WITH_SUCCESSED_BUSSINESS_NAME);
     int32_t newFileId = SaveCloudEnhancementPhoto(info, task, assetRefresh);
     CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
-    if (movingEnhanceType == static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH)) {
+    if (movingEnhanceType == BOTH) {
         int32_t successSave = SaveCloudEnhancementMovingPhotoVideo(info, task, assetRefresh);
         CHECK_AND_RETURN_LOG(successSave > 0, "invalid video id");
         RemoveVideo(stageVideoTaskStatus, photoId);
