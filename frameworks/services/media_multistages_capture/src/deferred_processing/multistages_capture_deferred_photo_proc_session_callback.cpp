@@ -43,7 +43,6 @@
 #include "exif_metadata.h"
 #include "picture_adapter.h"
 #include "high_quality_scan_file_callback.h"
-#include "media_photo_asset_proxy.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -59,6 +58,7 @@ constexpr int32_t ORIENTATION_270 = 8;
 constexpr uint32_t MANUAL_ENHANCEMENT = 1;
 constexpr uint32_t AUTO_ENHANCEMENT = 1 << 1;
 constexpr uint32_t MOVINGPHOTO_VIDEO_ENHANCEMENT = 1 << 2;
+static constexpr int32_t BOTH = 2;
 
 static const std::unordered_map<int, int> ORIENTATION_MAP = {
     {0, ORIENTATION_0},
@@ -127,8 +127,7 @@ static void CheckMovingPhotoFlag(uint32_t cloudImageEnhanceFlag, NativeRdb::Valu
     if (cloudImageEnhanceFlag & MOVINGPHOTO_VIDEO_ENHANCEMENT) {
         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
             static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
-        updateValues.PutInt(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE,
-            static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH));
+        updateValues.PutInt(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, BOTH);
     }
     return;
 }

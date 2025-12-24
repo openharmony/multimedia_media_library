@@ -42,7 +42,6 @@
 #include "mimetype_utils.h"
 #include "photo_file_utils.h"
 #include "image_source.h"
-#include "media_photo_asset_proxy.h"
 #include "medialibrary_formmap_operations.h"
 
 using namespace std;
@@ -65,6 +64,7 @@ static const string JPEG_STR = "image/jpeg";
 static const string HEIF_STR = "image/heic";
 static const string JPEG_TYPE = "JPEG";
 static const string HEIF_TYPE = "HEIF";
+static constexpr int32_t BOTH = 2;
 static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
@@ -248,8 +248,7 @@ static void FillMovingPhotoVideoUri(MediaEnhanceBundleHandle* mediaEnhanceBundle
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     std::string movingFilePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
 
-    if (photoSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        movingEnhanceType == static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH)) {
+    if (photoSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) && movingEnhanceType == BOTH) {
         std::string photoUri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, movingFilePath);
         CHECK_AND_RETURN_LOG(!photoUri.empty(), "Failed to GetUriByFileId,fileid :%{public}d", fileId);
         size_t lastDotPos = photoUri.find_last_of('.');
