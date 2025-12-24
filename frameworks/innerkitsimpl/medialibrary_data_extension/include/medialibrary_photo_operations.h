@@ -43,6 +43,15 @@ struct PhotoExtInfo {
     bool isHighQualityPicture = false;
 };
 
+struct FileSizeResult {
+    int64_t size = 0;
+    int64_t totalEditDataSize = 0;
+    int64_t transcodeTotalSize = 0;
+    std::vector<std::string> validIds;
+    std::unordered_map<std::string, int32_t> duplicateIdMap;
+    std::vector<std::string> movingPhotoExtraDataFiles;
+};
+
 class AlbumData {
 public:
     AlbumData() = default;
@@ -246,17 +255,13 @@ private:
     static int32_t WriteMovingPhotoEditedDataToTlv(const std::string &assetPath, TlvFile tlv);
     static int32_t WriteEditedDataCameraToTlv(const std::string &assetPath, TlvFile tlv);
     static int32_t WriteMovingPhotoCameraDataToTlv(const std::string &assetPath, TlvFile tlv);
-    static int32_t GetFileSizeByIds(const vector<string> &validIds, int64_t &size,
-        std::vector<std::string> &movingPhotoExtraDataFiles,
-        const std::unordered_map<std::string, int32_t> &duplicateIdMap, int64_t &transcodeTotalSize);
-    static int32_t GetEditDataSizeByIds(const std::vector<std::string> &validIds, int64_t &size,
-        const std::unordered_map<std::string, int32_t> &duplicateIdMap);
+    static int32_t GetFileSizeByIds(FileSizeResult &result);
+    static int32_t GetEditDataSizeByIds(FileSizeResult &result);
     static int32_t GetSizeByFiles(const std::vector<std::string> &filePaths, int64_t &size);
     static int32_t ProcessFileSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int64_t &size, std::vector<std::string> &movingPhotoExtraDataFiles,
-        const std::unordered_map<std::string, int32_t> &duplicateIdMap, int64_t &transcodeSize);
+        FileSizeResult &result);
     static int32_t ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int64_t &size, const std::unordered_map<std::string, int32_t> &duplicateIdMap);
+        FileSizeResult &result);
     static bool SafeAccumulateSize(int64_t add, int64_t &acc);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
