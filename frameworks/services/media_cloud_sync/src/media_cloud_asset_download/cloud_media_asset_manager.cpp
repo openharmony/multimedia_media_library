@@ -220,6 +220,8 @@ int32_t CloudMediaAssetManager::CheckDownloadTypeOfTask(const CloudMediaDownload
 
 int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownloadType &type)
 {
+    HiAudit::GetInstance().WriteForCloudDownload(
+        MediaLibraryBundleManager::GetInstance()->GetClientBundleName(), static_cast<int32_t>(type), "start");
     if (operation_ == nullptr) {
         CloudMediaAssetDownloadOperation taskOperator;
         operation_ = taskOperator.GetInstance();
@@ -297,6 +299,8 @@ int32_t CloudMediaAssetManager::CancelDownloadCloudAsset()
         MEDIA_INFO_LOG("no need to cancel");
         return OHOS::Media::E_OK;
     }
+    HiAudit::GetInstance().WriteForCloudDownload(
+        MediaLibraryBundleManager::GetInstance()->GetClientBundleName(), -1, "cancel");
     int32_t ret = operation_->CancelDownloadTask();
     operation_.reset();
     return ret;
