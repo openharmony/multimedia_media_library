@@ -389,7 +389,6 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
 
     MultiStagesCaptureDeferredVideoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredVideoProcSessionCallback();
-    sptr<IPCFileDescriptor> ipcFd = new IPCFileDescriptor();
 
     int32_t fileId = PrepareVideoData();
     string filePath = GetFilePath(fileId);
@@ -405,7 +404,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
     PrepareBaseVideoFile(filePath);
     PrepareTempVideoFile(filePath);
 
-    callback->OnProcessVideoDone(videoId, ipcFd);
+    callback->OnProcessVideoDone(videoId);
     delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
@@ -424,7 +423,6 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
 
     MultiStagesCaptureDeferredVideoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredVideoProcSessionCallback();
-    sptr<IPCFileDescriptor> ipcFd = new IPCFileDescriptor();
 
     int32_t fileId = PrepareVideoData();
     string filePath = GetFilePath(fileId);
@@ -442,7 +440,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
 
     SetEdited(fileId);
 
-    callback->OnProcessVideoDone(videoId, ipcFd);
+    callback->OnProcessVideoDone(videoId);
     delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
@@ -462,7 +460,6 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest,
 
     MultiStagesCaptureDeferredVideoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredVideoProcSessionCallback();
-    sptr<IPCFileDescriptor> ipcFd = new IPCFileDescriptor();
 
     int32_t fileId = PrepareVideoData();
     string filePath = GetFilePath(fileId);
@@ -478,7 +475,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest,
     PrepareBaseVideoFile(filePath);
     PrepareTempVideoFile(filePath);
 
-    callback->OnProcessVideoDone("42345678", ipcFd);
+    callback->OnProcessVideoDone("42345678");
     delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));

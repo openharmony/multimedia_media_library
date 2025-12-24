@@ -38,10 +38,12 @@ public:
     EXPORT MultiStagesCaptureDeferredPhotoProcSessionCallback();
     EXPORT ~MultiStagesCaptureDeferredPhotoProcSessionCallback();
 
+    void OnProcessImageDone(
+        const std::string& imageId, std::shared_ptr<PictureIntf> picture, const DpsMetadata& metadata) override {};
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
         uint32_t cloudImageEnhanceFlag) override;
     void OnProcessImageDone(const std::string &imageId, std::shared_ptr<CameraStandard::PictureIntf> picture,
-        uint32_t cloudImageEnhanceFlag) override;
+        uint32_t cloudImageEnhanceFlag);
     void OnDeliveryLowQualityImage(const std::string &imageId,
         std::shared_ptr<CameraStandard::PictureIntf> picture) override;
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
