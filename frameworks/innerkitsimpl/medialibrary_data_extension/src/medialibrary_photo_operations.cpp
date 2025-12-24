@@ -2255,6 +2255,8 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
         transCodeExifInfo.orientation = std::to_string(transCodeOrientation->second);
         MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_ORIENTATION,
             fileAsset->GetFilePath(), transCodeExifInfo, __func__);
+        AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+        albumRefresh.IsCoverContentChange(to_string(fileAsset->GetId()));
     }
     return rowId;
 }
@@ -2900,6 +2902,8 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId());
     ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    albumRefresh.IsCoverContentChange(to_string(fileAsset->GetId()));
     return E_OK;
 }
 
