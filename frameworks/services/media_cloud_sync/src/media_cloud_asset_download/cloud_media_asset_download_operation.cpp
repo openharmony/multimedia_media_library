@@ -249,7 +249,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
 
 void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
 {
-    MEDIA_INFO_LOG("enter StartFileCacheFailed");
+    MEDIA_ERR_LOG("enter StartFileCacheFailed");
     SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
     downloadId_ = DOWNLOAD_ID_DEFAULT;
     if (isCache_) {
@@ -307,7 +307,7 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
     }
     isCache_ = isCache;
     if (IsDataEmpty(data)) {
-        MEDIA_INFO_LOG("No data need to submit.");
+        MEDIA_ERR_LOG("No data need to submit.");
         if (!isCache_) {
             CancelDownloadTask();
             return EXIT_TASK;
@@ -407,6 +407,7 @@ int32_t CloudMediaAssetDownloadOperation::DoForceTaskExecute()
         MEDIA_INFO_LOG("pause cause is %{public}d", static_cast<int32_t>(pauseCause_));
         readyForDownload_ = ReadyDataForBatchDownload();
         if (IsDataEmpty(readyForDownload_)) {
+            MEDIA_ERR_LOG("no data need to download, cancel download task");
             CancelDownloadTask();
         }
         return E_OK;
@@ -435,6 +436,7 @@ int32_t CloudMediaAssetDownloadOperation::StartDownloadTask(int32_t cloudMediaDo
     InitDownloadTaskInfo();
     readyForDownload_ = ReadyDataForBatchDownload();
     if (IsDataEmpty(readyForDownload_)) {
+        MEDIA_ERR_LOG("no data need to download, cancel download task");
         CancelDownloadTask();
     }
     return E_OK;
@@ -576,7 +578,7 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
 {
     CHECK_AND_RETURN_RET_LOG(taskStatus_ != CloudMediaAssetTaskStatus::IDLE, E_ERR,
         "CancelDownloadTask permission denied");
-    MEDIA_INFO_LOG("the number of not found assets: %{public}d",
+    MEDIA_ERR_LOG("the number of not found assets: %{public}d",
         static_cast<int32_t>(notFoundForDownload_.fileDownloadMap.Size()));
     SetTaskStatus(Status::IDLE);
     if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
