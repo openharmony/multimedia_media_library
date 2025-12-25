@@ -400,9 +400,9 @@ static void RetainCloudMediaAssetExecute(napi_env env, void* data)
     RetainCloudMediaAssetReqBody reqBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RETAIN_CLOUDMEDIA_ASSET);
     reqBody.cloudMediaRetainType = context->cloudMediaRetainType;
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, retain type: %{public}d", reqBody.cloudMediaRetainType);
     int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call, retain type: %{public}d", reqBody.cloudMediaRetainType);
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Retain cloud media asset failed, err: %{public}d", ret);
@@ -675,6 +675,7 @@ static napi_status ParseArgsStartBatchDownloadCloudResources(napi_env env, napi_
 
 napi_value CloudMediaAssetManagerNapi::JSStartBatchDownloadCloudResources(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -687,6 +688,10 @@ napi_value CloudMediaAssetManagerNapi::JSStartBatchDownloadCloudResources(napi_e
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSStartBatchDownloadCloudResources",
         StartBatchDownloadCloudResourcesExecute, StartBatchDownloadCloudResourcesCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 
 // ------resume----
@@ -767,6 +772,7 @@ static napi_status ParseArgsResumeBatchDownloadCloudResources(napi_env env, napi
 
 napi_value CloudMediaAssetManagerNapi::JSResumeBatchDownloadCloudResources(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -779,6 +785,10 @@ napi_value CloudMediaAssetManagerNapi::JSResumeBatchDownloadCloudResources(napi_
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSResumeBatchDownloadCloudResources",
         ResumeBatchDownloadCloudResourcesExecute, ResumeBatchDownloadCloudResourcesCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 // ----pause------
 static void PauseDownloadCloudResourcesExecute(napi_env env, void *data)
@@ -857,6 +867,7 @@ static napi_status ParseArgsPauseDownloadCloudResources(napi_env env, napi_callb
 
 napi_value CloudMediaAssetManagerNapi::JSPauseDownloadCloudResources(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -869,6 +880,10 @@ napi_value CloudMediaAssetManagerNapi::JSPauseDownloadCloudResources(napi_env en
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPauseDownloadCloudResources",
         PauseDownloadCloudResourcesExecute, PauseDownloadCloudResourcesCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 // ----cancel------
 static void CancelDownloadCloudResourcesExecute(napi_env env, void *data)
@@ -947,6 +962,7 @@ static napi_status ParseArgsCancelDownloadCloudResources(napi_env env, napi_call
 
 napi_value CloudMediaAssetManagerNapi::JSCancelDownloadCloudResources(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -959,6 +975,10 @@ napi_value CloudMediaAssetManagerNapi::JSCancelDownloadCloudResources(napi_env e
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCancelDownloadCloudResources",
         CancelDownloadCloudResourcesExecute, CancelDownloadCloudResourcesCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 // ---------- get
 static void GetBatchDownloadCloudResourcesStatusExecute(napi_env env, void *data)
@@ -1047,6 +1067,7 @@ static napi_status ParseArgsGetBatchDownloadCloudResourcesStatus(napi_env env, n
 
 napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadCloudResourcesStatus(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -1059,6 +1080,10 @@ napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadCloudResourcesStatus(na
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetBatchDownloadCloudResourcesStatus",
         GetBatchDownloadCloudResourcesStatusExecute, GetBatchDownloadCloudResourcesStatusCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 
 //--------get count
@@ -1147,6 +1172,7 @@ static napi_status ParseArgsGetBatchDownloadSpecificTaskCount(napi_env env, napi
 
 napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadSpecificTaskCount(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
@@ -1159,6 +1185,10 @@ napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadSpecificTaskCount(napi_
     tracer.Finish();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetBatchDownloadSpecificTaskCount",
         GetBatchDownloadSpecificTaskCountExecute, GetBatchDownloadSpecificTaskCountCallback);
+#else
+    NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
+    return nullptr;
+#endif
 }
 // ----------
 napi_value CloudMediaAssetManagerNapi::JsBatchDownloadRegisterCallback(napi_env env, napi_callback_info info)
