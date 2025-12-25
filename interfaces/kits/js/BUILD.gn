@@ -95,11 +95,13 @@ config("napi_config") {
     "-fdata-sections",
     "-ffunction-sections",
     "-Os",
+    "-Wno-unused-function",
   ]
 
   cflags_cc = [
     "-fvisibility-inlines-hidden",
     "-Os",
+    "-Wno-unused-function",
   ]
 }
 
