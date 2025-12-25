@@ -1655,53 +1655,77 @@ int32_t MediaAssetsService::GetCloudMediaAssetStatus(string &status)
 int32_t MediaAssetsService::StartBatchDownloadCloudResources(StartBatchDownloadCloudResourcesReqBody &reqBody,
     StartBatchDownloadCloudResourcesRespBody &respBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.StartBatchDownloadCloudResources(reqBody, respBody);
     MEDIA_INFO_LOG("MediaAssetsService StartBatchDownloadCloudResources END ret: %{public}d", ret);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.ResumeBatchDownloadCloudResources(reqBody);
     MEDIA_INFO_LOG("MediaAssetsService ResumeBatchDownloadCloudResources END ret: %{public}d", ret);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.PauseBatchDownloadCloudResources(reqBody);
     MEDIA_INFO_LOG("MediaAssetsService PauseBatchDownloadCloudResources END ret: %{public}d", ret);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::CancelBatchDownloadCloudResources(CancelBatchDownloadCloudResourcesReqBody &reqBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.CancelBatchDownloadCloudResources(reqBody);
     MEDIA_INFO_LOG("MediaAssetsService CancelBatchDownloadCloudResources END ret: %{public}d", ret);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::GetCloudMediaBatchDownloadResourcesStatus(
     GetBatchDownloadCloudResourcesStatusReqBody &reqBody, GetBatchDownloadCloudResourcesStatusRespBody &respBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.GetCloudMediaBatchDownloadResourcesStatus(reqBody, respBody);
     MEDIA_INFO_LOG("MediaAssetsService GetCloudMediaBatchDownloadResourcesStatus ret: %{public}d", ret);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::GetCloudMediaBatchDownloadResourcesCount(
     GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.GetCloudMediaBatchDownloadResourcesCount(reqBody, respBody);
     MEDIA_INFO_LOG("MediaAssetsService GetCloudMediaBatchDownloadResourcesCount ret: %{public}d resp size: %{public}d",
         ret, respBody.count);
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int32_t MediaAssetsService::StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody)
