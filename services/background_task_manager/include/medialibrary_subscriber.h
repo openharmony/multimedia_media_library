@@ -132,6 +132,7 @@ private:
     EXPORT bool TryClearContinueCloneData();
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
+    EXPORT void WalCheckPointAsync();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT void HandleBatchDownloadWhenNetChange();
 #endif
