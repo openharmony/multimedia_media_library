@@ -21,8 +21,8 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t IS_LOCAL_TRUE = 1;
-const int32_t RENAME_OPERATION_RENAMED = 1;
+constexpr int32_t IS_LOCAL_TRUE = 1;
+constexpr int32_t RENAME_OPERATION_RENAMED = 1;
 const std::string DEFAULT_BACKUP_VERSION = "backup1.0";
 const std::string GALLERY_TABLE_MERGE_FACE = "merge_face";
 const std::string GALLERY_TABLE_MERGE_TAG = "merge_tag";
