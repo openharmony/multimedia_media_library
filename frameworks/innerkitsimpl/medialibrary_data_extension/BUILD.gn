@@ -62,8 +62,8 @@ ohos_prebuilt_etc("medialibrary_kit_version.txt") {
 config("media_data_extension_public_config") {
   include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
   include_scanner = [
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   include_multistages_capture = [
