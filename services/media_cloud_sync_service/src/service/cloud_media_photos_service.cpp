@@ -43,7 +43,9 @@
 #include "cloud_media_sync_const.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dfx_service.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
+#endif
 #include "lake_file_utils.h"
 #include "album_plugin_config.h"
 #include "cloud_media_retain_smart_data.h"
