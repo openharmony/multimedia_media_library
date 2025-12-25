@@ -137,7 +137,9 @@ void MediaDeletedFileTask::HandleDeletedFile()
         std::vector<std::string> paths = { values[PATH_INDEX] };
         std::vector<std::string> dateTakens = { values[DATE_TAKEN_INDEX] };
         std::vector<int32_t> subTypes = { CloudSync::CloudMediaDaoUtils::ToInt32(values[SUBTYPE_INDEX]) };
-        MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(ids);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(ids);
+#endif
         MediaLibraryAssetOperations::TaskDataFileProcess(ids, paths, table, dateTakens, subTypes);
         count++;
         if (count % batchSize == 0) {
