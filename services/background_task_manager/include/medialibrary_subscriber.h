@@ -48,6 +48,7 @@ static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "/cloud_sp?key=useMob
 
 class MedialibrarySubscriber;
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 class CloudMediaAssetUnlimitObserver : public DataShare::DataShareObserver {
 public:
     CloudMediaAssetUnlimitObserver(std::weak_ptr<MedialibrarySubscriber> subscriber) : subscriber_(subscriber) {}
@@ -57,6 +58,7 @@ public:
 private:
     std::weak_ptr<MedialibrarySubscriber> subscriber_;
 };
+#endif
 
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
@@ -88,7 +90,9 @@ public:
     EXPORT static void RefreshCellularNetStatus();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     std::shared_ptr<CloudMediaAssetUnlimitObserver> CloudMediaAssetUnlimitObserver_;
+#endif
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
@@ -128,8 +132,9 @@ private:
     EXPORT bool TryClearContinueCloneData();
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
-    EXPORT void WalCheckPointAsync();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT void HandleBatchDownloadWhenNetChange();
+#endif
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
@@ -143,7 +148,9 @@ private:
     void UpdateThumbnailBgGenerationStatus();
     void UpdateMediaInLakeCheckStatus();
     void CheckHalfDayMissions();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     void UpdateBackgroundTimer();
+#endif
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
 };
