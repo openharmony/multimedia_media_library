@@ -561,15 +561,8 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 #endif
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
-        isScreenOff_ && isCharging_ && IsBetaVersion()) {
-        std::tm nowLocalTime;
-        const int32_t BACKUP_START_TIME = 23;
-        const int32_t BACKUP_END_TIME = 5;
-        if (GetNowLocalTime(nowLocalTime) && (nowLocalTime.tm_hour >= BACKUP_START_TIME ||
-            nowLocalTime.tm_hour < BACKUP_END_TIME) && IsTwelveHoursAgo()) {
-            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d", nowLocalTime.tm_hour);
-            UploadDBFile();
-        }
+        isScreenOff_ && isCharging_ && IsBetaVersion() && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
+        UploadDB();
     }
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
@@ -1183,13 +1176,13 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
-    MEDIA_INFO_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
+    MEDIA_DEBUG_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
     if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
         // 触发了批量下载 后台下载可以暂不触发
         MEDIA_INFO_LOG("UpdateBackgroundTimer no allow download 30 day pic");
         return;
     }
-    MEDIA_INFO_LOG("UpdateBackgroundTimer Allow Download 30 day Pic");
+    MEDIA_DEBUG_LOG("UpdateBackgroundTimer Allow Download 30 day Pic");
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;
@@ -1242,6 +1235,20 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
     if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {
         MEDIA_INFO_LOG("Current temperature level is %{public}d", newTemperatureLevel_);
         PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
+    }
+}
+
+void MedialibrarySubscriber::UploadDB()
+{
+    std::tm nowLocalTime;
+    const int32_t BACKUP_START_TIME = 23;
+    const int32_t BACKUP_END_TIME = 5;
+    if (GetNowLocalTime(nowLocalTime) &&
+        (nowLocalTime.tm_hour >= BACKUP_START_TIME || nowLocalTime.tm_hour < BACKUP_END_TIME) &&
+        IsTwelveHoursAgo()) {
+        MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d, batteryCapacity:%{public}d",
+            nowLocalTime.tm_hour, batteryCapacity_);
+        UploadDBFile();
     }
 }
 
