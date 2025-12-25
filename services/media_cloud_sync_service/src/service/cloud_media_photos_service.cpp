@@ -737,9 +737,11 @@ int32_t CloudMediaPhotosService::HandleCloudDeleteRecord(
         cloudDeleteFileIds.emplace_back(std::to_string(pullData.localFileId));
     }
     CHECK_AND_RETURN_RET_INFO_LOG(!cloudDeleteFileIds.empty(), E_OK, "CloudDeleteFileIds List Empty.");
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     MEDIA_INFO_LOG("BatchSelectFileDownload HandleCloudDeleteRecord size: %{public}zu", cloudDeleteFileIds.size());
     // 检查点 批量下载 云删除 通知应用 notify type 3
     BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProcessor(cloudDeleteFileIds, true);
+#endif
     return E_OK;
 }
 
