@@ -21,7 +21,7 @@ ohos_fuzztest("MediaLibraryCommonFuzzTest") {
   include_dirs = [
     "./include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
     "${MEDIALIB_UTILS_PATH}/include",
