@@ -23,6 +23,8 @@
 
 namespace OHOS::Media {
 using namespace Notification;
+const std::string SINGLE_PATH = "file://media/Photo/";
+const std::string SINGLE_NAME = "/IMG_0000000000_001/single.jpg";
 
 int32_t NotifyRegisterPermission::BasicPermissionCheck()
 {
@@ -66,7 +68,8 @@ int32_t NotifyRegisterPermission::HiddenPermissionCheck()
     return E_OK;
 }
 
-int32_t NotifyRegisterPermission::SinglePermissionCheck(const NotifyUriType &registerUriType, const std::string& uri)
+int32_t NotifyRegisterPermission::SinglePermissionCheck(const NotifyUriType &registerUriType,
+    const std::string& singleId)
 {
     int32_t err = BasicPermissionCheck();
     if (err < 0 && registerUriType == NotifyUriType::SINGLE_PHOTO_URI) {
@@ -75,7 +78,7 @@ int32_t NotifyRegisterPermission::SinglePermissionCheck(const NotifyUriType &reg
             .isOpenFile = true,
             .openFileNode = "r"
         };
-        Uri realUri(uri);
+        Uri realUri(SINGLE_PATH + singleId + SINGLE_NAME);
         MediaLibraryCommand command(realUri, Media::OperationType::OPEN);
         DbPermissionHandler permissionHandler;
         err = permissionHandler.CheckPermission(command, permParam);
