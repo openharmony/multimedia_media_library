@@ -28,6 +28,7 @@
 #include "others_clone_restore.h"
 #include "rdb_sql_statistic.h"
 #include "rdb_types.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -197,6 +198,15 @@ void BackupRestoreService::Release(const std::shared_ptr<AbilityRuntime::Context
     CHECK_AND_RETURN_LOG(INT_RELEASE_SCENE_MAP.count(releaseSceneInt),
         "invalid releaseScene: %{public}d", releaseSceneInt);
     ReleaseScene releaseScene = INT_RELEASE_SCENE_MAP.at(releaseSceneInt);
+    if (releaseScene == ReleaseScene::RESTORE) {
+        std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+        MEDIA_INFO_LOG("set CLONE_FLAG to 0");
+        bool retFlag = system::SetParameter(CLONE_FLAG, "0");
+        if (!retFlag) {
+            MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag: %{public}d", retFlag);
+        }
+        return;
+    }
     CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID && releaseScene == ReleaseScene::BACKUP,
         "current release scene is not supported, sceneCode: %{public}d releasescene: %{public}d",
         sceneCode, releaseSceneInt);
