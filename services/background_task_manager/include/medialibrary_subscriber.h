@@ -153,6 +153,7 @@ private:
 #endif
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
+    void UploadDB();
 };
 }  // namespace Media
 }  // namespace OHOS
