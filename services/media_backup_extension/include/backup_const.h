@@ -154,8 +154,8 @@ const std::string AUDIO_DATE_MODIFIED = "date_modified";
 const std::string AUDIO_DATE_TAKEN = "datetaken";
 
 // statistics
-const int32_t STAT_DEFAULT_ERROR_CODE_SUCCESS = 0;
-const int32_t STAT_DEFAULT_ERROR_CODE_FAILED = 13500099;
+constexpr int32_t STAT_DEFAULT_ERROR_CODE_SUCCESS = 0;
+constexpr int32_t STAT_DEFAULT_ERROR_CODE_FAILED = 13500099;
 const std::string STAT_KEY_RESULT_INFO = "resultInfo";
 const std::string STAT_KEY_TYPE = "type";
 const std::string STAT_KEY_ERROR_CODE = "errorCode";
@@ -208,21 +208,21 @@ const std::string GALLERY_NICK_NAME = "nick_name";
  * If lcd_visit_time is 2, the LCD is generated successfully.
  * If lcd_visit_time is 0, the LCD is not generated or fails to be generated.
 */
-const int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
-const int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
-const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
-const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
-const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
-const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
-const int32_t RESTORE_THUMBNAIL_STATUS_NOT_ALL = 3;
-const int32_t RESTORE_THUMBNAIL_STATUS_NOT_THUMB = 2;
-const int32_t RESTORE_THUMBNAIL_STATUS_NOT_LCD = 1;
-const int32_t RESTORE_THUMBNAIL_STATUS_ALL = 0;
-const int32_t RESTORE_THUMBNAIL_READY_FAIL = 0;
-const int32_t RESTORE_THUMBNAIL_READY_ALL_SUCCESS = 1;
+constexpr int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
+constexpr int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
+constexpr int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
+constexpr int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
+constexpr int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
+constexpr int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+constexpr int32_t RESTORE_THUMBNAIL_STATUS_NOT_ALL = 3;
+constexpr int32_t RESTORE_THUMBNAIL_STATUS_NOT_THUMB = 2;
+constexpr int32_t RESTORE_THUMBNAIL_STATUS_NOT_LCD = 1;
+constexpr int32_t RESTORE_THUMBNAIL_STATUS_ALL = 0;
+constexpr int32_t RESTORE_THUMBNAIL_READY_FAIL = 0;
+constexpr int32_t RESTORE_THUMBNAIL_READY_ALL_SUCCESS = 1;
 
-const int PHOTO_IS_DIRTY = 1;
-const int PHOTO_CLOUD_POSITION = 2;
+constexpr int PHOTO_IS_DIRTY = 1;
+constexpr int PHOTO_CLOUD_POSITION = 2;
 
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";

@@ -21,12 +21,12 @@
 
 namespace OHOS {
 namespace Media {
-const int CHAR_FIRST_NUMBER = 72;
-const int CHAR_SECOND_NUMBER = 117;
-const int CHAR_THIRD_NUMBER = 97;
-const int CHAR_FOURTH_NUMBER = 119;
-const int CHAR_FIFTH_NUMBER = 101;
-const int CHAR_SIXTH_NUMBER = 105;
+constexpr int CHAR_FIRST_NUMBER = 72;
+constexpr int CHAR_SECOND_NUMBER = 117;
+constexpr int CHAR_THIRD_NUMBER = 97;
+constexpr int CHAR_FOURTH_NUMBER = 119;
+constexpr int CHAR_FIFTH_NUMBER = 101;
+constexpr int CHAR_SIXTH_NUMBER = 105;
 
 static std::string GetDUALBundleName(bool bLower = false)
 {
