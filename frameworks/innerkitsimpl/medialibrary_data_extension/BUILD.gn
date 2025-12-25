@@ -248,6 +248,15 @@ config("media_data_extension_public_config") {
 
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
+  defines = []
+
+  if (media_library_feature_cloud_enhancement) {
+    defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
+  }
+
+  if (media_library_feature_cloud_download) {
+    defines += [ "MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD" ]
+  }
 
   media_video_mode_source = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
@@ -697,15 +706,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_access_medialib_thumb_db_permission_check.cpp",
   ]
 
-  sources_backround_task = [
+  sources_background_task = [
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_background_task_factory.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_deleted_file_task.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_file_manager_temp_file_aging_task.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_video_mode_task.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_download_callback.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_download_callback.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_processor.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/medialibrary_subscriber.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/moving_photo_processor.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/medialibrary_aspect_ratio_operation.cpp",
@@ -918,12 +923,22 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += accurate_refresh_source
   sources += media_camera_character_service_source
   sources += accurate_refresh_server_source
-  sources += sources_backround_task
+  sources += sources_background_task
   sources += media_orm_source
 
   sources += media_lake_scanner_source
   sources += media_load_lake_source
   sources += media_lake_file_monitor_source
+
+  if (media_library_feature_cloud_download) {
+    sources_background_download_task = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_download_callback.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_download_callback.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_file_processor.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background_cloud_batch_selected_file_processor.cpp",
+    ]
+    sources += sources_background_download_task
+  }
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [
@@ -1016,7 +1031,6 @@ ohos_shared_library("medialibrary_data_extension") {
     external_deps += [ "memospace_service:hdc_proxy" ]
   }
 
-  defines = []
   if (defined(global_parts_info) &&
       defined(global_parts_info.filemanagement_dfs_service)) {
     defines += [ "CLOUD_SYNC_MANAGER" ]
@@ -1055,10 +1069,6 @@ ohos_shared_library("medialibrary_data_extension") {
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp",
     ]
-  }
-
-  if (media_library_feature_cloud_enhancement) {
-    defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
   }
 
   if (media_library_feature_hicollie_enable) {
