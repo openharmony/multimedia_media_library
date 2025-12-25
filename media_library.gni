@@ -60,6 +60,7 @@ declare_args() {
   media_library_feature_cloud_enhancement = true
   media_library_feature_device_manager = false
   media_library_feature_hicollie_enable = false
+  media_library_feature_cloud_download = true
 }
 
 if (defined(global_parts_info) &&
