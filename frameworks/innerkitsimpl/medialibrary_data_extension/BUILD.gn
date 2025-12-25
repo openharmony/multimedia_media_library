@@ -381,7 +381,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_mdkrecord_photo_album_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_sync_unprepared_data_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/failed_size_resp_vo.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_check_records_album_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_check_records_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_cloud_thm_stat_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_dirty_type_stat_vo.cpp",
