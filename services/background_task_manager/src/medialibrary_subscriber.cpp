@@ -559,8 +559,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
 #endif
-    } else if (MediaLakeCloneEventManager::IsRestoreEvent(want)) {
-        MediaLakeCloneEventManager::GetInstance().HandleRestoreEvent(want);
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
         isScreenOff_ && isCharging_ && IsBetaVersion()) {
