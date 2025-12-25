@@ -74,7 +74,6 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_GET_CREATED_RECORDS), 200},
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_GET_META_MODIFIED_RECORDS), 200},
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_GET_DELETED_RECORDS), 200},
-    {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_GET_CHECK_RECORDS), 200},
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_ON_CREATE_RECORDS), 200},
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_ON_MDIRTY_RECORDS), 200},
     {static_cast<uint32_t>(CloudSync::CloudMediaAlbumOperationCode::CMD_ON_FDIRTY_RECORDS), 200},

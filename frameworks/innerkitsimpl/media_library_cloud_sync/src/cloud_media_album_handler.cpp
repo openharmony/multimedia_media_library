@@ -32,7 +32,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "mdk_record_album_data.h"
 #include "cloud_album_data_convert.h"
-#include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
 #include "media_operate_result_vo.h"
 
