@@ -26,8 +26,8 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
   module_out_path = "media_library/medialibrary-data"
 
   include_scanner = [
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   include_dirs = [
@@ -134,8 +134,8 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
   module_out_path = "media_library/cloud_enhancement_get_pair_test"
 
   include_scanner = [
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   include_dirs = [

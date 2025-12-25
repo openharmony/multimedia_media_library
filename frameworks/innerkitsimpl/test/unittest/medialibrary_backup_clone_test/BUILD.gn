@@ -45,7 +45,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/ocr",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/report",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/restore",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "../medialibrary_unittest_utils/include",
     "./include",

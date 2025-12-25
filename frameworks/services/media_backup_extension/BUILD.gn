@@ -49,7 +49,7 @@ ohos_shared_library("mediabackup") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/include",
     "${MEDIALIB_UTILS_PATH}/include",
   ]
 
