@@ -288,7 +288,7 @@ export struct PhotoPickerComponent {
             edgeEffect: this.pickerOptions?.edgeEffect,
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
-            livePhotoModes: this.pickerOptions?.livePhotoModes as LivePhotoModes,
+            autoPlayScenes: this.parseAutoPlayScenes(this.pickerOptions?.autoPlayScenes as Array<photoAccessHelper.AutoPlayScene>),
             appAlbumFilters: this.parseAppAlbumFilters(this.pickerOptions?.appAlbumFilters as Array<string>)
           }
         },
@@ -553,6 +553,18 @@ export struct PhotoPickerComponent {
       { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['error'] as string },
       wantParam['data'] as Array<string>);
     console.info('PhotoPickerComponent onReceive: handleSaveCallback');
+  }
+
+  private parseAutoPlayScenes(autoPlayScenes?: Array<photoAccessHelper.AutoPlayScene>): Array<photoAccessHelper.AutoPlayScene> | undefined {
+    if (!autoPlayScenes) {
+      return undefined;
+    }
+
+    if (autoPlayScenes.length > 2) {
+      return autoPlayScenes.slice(0, 2);
+    }
+
+    return autoPlayScenes;
   }
 
   private parseAppAlbumFilters(appAlbumFilters?: Array<string>): Array<string> | undefined {
