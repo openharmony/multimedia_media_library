@@ -4924,16 +4924,6 @@ int32_t MediaLibraryPhotoOperations::OpenAssetCompress(MediaLibraryCommand &cmd,
     return E_OK;
 }
 
-bool MediaLibraryPhotoOperations::CheckMovingPhotoForShare(const shared_ptr<FileAsset> &fileAsset)
-{
-    MEDIA_DEBUG_LOG("CheckMovingPhotoForShare start");
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, false, "fileAsset is nullptr");
-    bool isMovingPhoto = fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        fileAsset->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY) ||
-        fileAsset->GetOriginalSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-    return isMovingPhoto;
-}
-
 int32_t MediaLibraryPhotoOperations::HandleOpenAssetCompress(const shared_ptr<FileAsset> &fileAsset,
     const AssetCompressSpec &compressSpec, std::string &tlvPath, MediaLibraryCommand &cmd, int32_t &fd)
 {
@@ -4948,7 +4938,8 @@ int32_t MediaLibraryPhotoOperations::HandleOpenAssetCompress(const shared_ptr<Fi
     TlvFile tlv = TlvUtil::CreateTlvFile(tlvPath);
     UniqueFd tlvFdGuard(tlv);
     CHECK_AND_RETURN_RET_LOG(tlvFdGuard.Get() >= 0, E_ERR, "Create tlv file failed");
-    bool isMovingPhoto = CheckMovingPhotoForShare(fileAsset);
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(fileAsset->GetPhotoSubType(),
+        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType());
     if (isMovingPhoto) {
         ret = MediaLibraryPhotoOperations::HandleMovingPhotoAsset(fileAsset, cmd, tlvFdGuard.Get());
     } else {
@@ -4979,6 +4970,12 @@ int32_t MediaLibraryPhotoOperations::HandleMovingPhotoAsset(const shared_ptr<Fil
     MEDIA_INFO_LOG("HandleMovingPhotoAsset start");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetPath();
+    int64_t movingPhotoSize = static_cast<int64_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
+    if (fileAsset->GetSize() != movingPhotoSize) {
+        MEDIA_WARN_LOG("size of moving photo need scan from %{public}ld to %{public}ld",
+            static_cast<long>(fileAsset->GetSize()), static_cast<long>(movingPhotoSize));
+        MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(fileAsset->GetPath(), false, false, true);
+    }
     int32_t ret = E_OK;
     ret = MediaLibraryPhotoOperations::HandleNormalPhotoAsset(fileAsset, cmd, tlv);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Handle moving photo image failed");
@@ -5042,10 +5039,12 @@ int32_t MediaLibraryPhotoOperations::HandleMovingPhotoExtraData(const shared_ptr
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetPath();
     string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(assetPath);
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(extraDataPath), E_ERR, "extraDataPath is not exist.");
-    MEDIA_INFO_LOG("Moving photo extra file exist");
-    int32_t ret = TlvUtil::WriteExtraDataFileToTlv(tlv, extraDataPath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write moving photo extra file to tlv failed");
+    int32_t ret = E_OK;
+    if (MediaFileUtils::IsFileExists(extraDataPath)) {
+        MEDIA_INFO_LOG("Moving photo extra file exist");
+        ret = TlvUtil::WriteExtraDataFileToTlv(tlv, extraDataPath);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write moving photo extra file to tlv failed");
+    }
     return ret;
 }
 
@@ -5362,8 +5361,8 @@ int32_t MediaLibraryPhotoOperations::GetSizeByFiles(const std::vector<std::strin
     CHECK_AND_RETURN_RET_LOG(!filePaths.empty(), E_INVALID_VALUES, "filePaths is empty");
     size_t fileSize = 0;
     for (const auto &filePath : filePaths) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(filePath), E_ERR,
-            "File not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::IsFileExists(filePath), "File not exist: %{public}s",
+            DfxUtils::GetSafePath(filePath).c_str());
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GetFileSize(filePath, fileSize), E_ERR,
             "Get file size failed: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
         CHECK_AND_RETURN_RET_LOG(fileSize <= INT64_MAX, E_ERR, "File size overflow");

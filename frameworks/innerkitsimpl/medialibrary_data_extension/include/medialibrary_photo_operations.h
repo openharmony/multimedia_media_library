@@ -253,7 +253,6 @@ private:
     static int32_t ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
         int64_t &size, const std::unordered_map<std::string, int32_t> &duplicateIdMap);
     static bool SafeAccumulateSize(int64_t add, int64_t &acc);
-    static bool CheckMovingPhotoForShare(const shared_ptr<FileAsset> &fileAsset);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
     static std::string lastPhotoId_;
