@@ -1085,7 +1085,9 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
     } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 &&
-        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
+        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY &&
+        system::GetParameter("multimedia.medialibrary.cloneFlag", "0") == "0") {
+        MEDIA_INFO_LOG("clone_flag is not 0");
         int32_t thumbAstcCount = 0;
         int32_t thumbTotalCount = 0;
         MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
