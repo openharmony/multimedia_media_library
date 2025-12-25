@@ -79,7 +79,7 @@ int32_t MtpPtpProxy::GetHandles(Context &context, std::shared_ptr<UInt32List> &o
     bool isMtp = context->parent > PTP_IN_MTP_ID;
     if (isRoot || isMtp) {
         int32_t errorCode = g_mtpMediaLibrary->GetHandles(context, outHandles);
-        CHECK_AND_EXECUTE(!isRoot, outHandles->push_back(PTP_IN_MTP_ID));
+        CHECK_AND_EXECUTE(!(isRoot && context->storageID == INNER_STORAGE_ID), outHandles->push_back(PTP_IN_MTP_ID));
 
         std::string path("");
         std::string realPath("");
