@@ -19,9 +19,9 @@
 #include <string>
 
 namespace OHOS::Media {
-const uint32_t ON_PROCESS_INTV = 5;
-const uint32_t LOG_PROGRESS_INTV = 2 * 60; // 2min
-const uint32_t LOG_TIMEOUT_INTV = 60 * 60; // 1h
+constexpr uint32_t ON_PROCESS_INTV = 5;
+constexpr uint32_t LOG_PROGRESS_INTV = 2 * 60; // 2min
+constexpr uint32_t LOG_TIMEOUT_INTV = 60 * 60; // 1h
 } // namespace OHOS::Media
 
 #endif // OHOS_MEDIA_BACKUP_LOG_CONST_H

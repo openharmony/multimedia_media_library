@@ -25,7 +25,7 @@
 #include "clone_restore_portrait_base.h"
 
 namespace OHOS::Media {
-const int32_t BATCH_SIZE = 200;
+constexpr int32_t BATCH_SIZE = 200;
 class CloneRestorePortrait : public CloneRestorePortraitBase {
 public:
     void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
