@@ -29,15 +29,14 @@ enum ProcessorIdStatus : int64_t {
     DEFAULT_PROCESSOR_ID = -1,
     NON_APPLICATION_PROCESSOR_ID = -200
 };
- 
-static int64_t processorId = DEFAULT_PROCESSOR_ID;
+
 const int64_t TEN_MINUTE_MS = 10 * 60 * 1000;
 class ReportEvent {
 public:
     int32_t callTimes_ = 0;                       // 调用次数
     int32_t successTimes_ = 0;                    // 调用成功次数
     int64_t maxCostTime_ = 0;                     // 最大时延
-    int64_t minCostTime_ = INT_MAX;               // 最小时延
+    int64_t minCostTime_ = INT64_MAX;             // 最小时延
     int64_t totalCostTime_ = 0;                   // 累计时延
     std::vector<std::string> errorCodeTypes_;     // 错误码类型分布
     std::vector<int> errorCodeNum_;               // 错误码数量分布
@@ -49,10 +48,11 @@ public:
 
     static int64_t beginTime_;                    // 首次调用开始时间
     static bool isReport_;                        // 是否上报打点
+    static int64_t processorId_;
     static void AddEventProcessor();
- private:
- };
- 
+private:
+};
+
 } // namespace Media
 } // namespace OHOS
 
