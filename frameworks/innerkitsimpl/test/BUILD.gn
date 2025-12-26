@@ -29,7 +29,6 @@ group("test") {
     "unittest/media_library_cloud_sync_test:unittest",
     "unittest/media_library_manager_test:unittest",
     "unittest/media_library_share_test:unittest",
-    "unittest/media_notification_register_manager_test:unittest",
     "unittest/media_notification_test:unittest",
     "unittest/media_permission_check_test:unittest",
     "unittest/media_permission_test:unittest",
@@ -103,6 +102,7 @@ group("test") {
     deps += [
       "unittest/background_cloud_batch_selected_file_processor_test:unittest",
       "unittest/background_cloud_file_processor_test:unittest",
+      "unittest/media_notification_register_manager_test:unittest",
     ]
   }
 
