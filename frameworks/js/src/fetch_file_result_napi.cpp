@@ -1225,6 +1225,8 @@ static napi_status CheckArgValuePre(napi_env env, void* data, const napi_value a
             CHECK_COND_RET(context->photoAlbumParameter != nullptr, napi_invalid_arg,
                 "Failed to get PhotoAlbumNapi object");
             context->indexObjectId = context->photoAlbumParameter->GetAlbumId();
+            context->albumType = static_cast<int32_t>(context->photoAlbumParameter->GetPhotoAlbumType());
+            context->albumSubType = static_cast<int32_t>(context->photoAlbumParameter->GetPhotoAlbumSubType());
             break;
         default:
             NAPI_INFO_LOG("need more check.");
@@ -1294,9 +1296,14 @@ static napi_status ProcessIndexSet(napi_env env, void* data, const napi_value ar
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "indexSet is null or undefined");
         return napi_invalid_arg;
     }
-    MediaLibraryNapiUtils::GetInt32Array(env, arg, context->indexSet);
+    napi_status status = MediaLibraryNapiUtils::GetInt32Array(env, arg, context->indexSet);
+    if (status != napi_ok) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "indexSet is not int.");
+        return napi_invalid_arg;
+    }
     if (context->indexSet.empty()) {
-        NAPI_ERR_LOG("JSGetObjectsByIndexSet Invalid arguments!");
+        NAPI_ERR_LOG("JSGetObjectsByIndexSet indexSet is empty!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "indexSet is empty");
         return napi_invalid_arg;
     }
     if (context->indexSet.size() > MAX_SIZE) {
@@ -1895,7 +1902,7 @@ int32_t FetchFileResultAsyncContext::GetObjectIndexById()
         }
         case FetchResType::TYPE_PHOTOALBUM: {
             CHECK_COND_RET(objectPtr->fetchPhotoAlbumResult_, index, "fetchPhotoAlbumResult_ is nullptr");
-            index = objectPtr->fetchPhotoAlbumResult_->GetObjectIndexById(indexObjectId);
+            index = objectPtr->fetchPhotoAlbumResult_->GetAlbumIndex(indexObjectId, albumType, albumSubType);
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {

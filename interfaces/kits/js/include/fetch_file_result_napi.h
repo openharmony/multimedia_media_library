@@ -132,6 +132,8 @@ public:
     int32_t position;
     int32_t offset;
     int32_t length;
+    int32_t albumType = -1;
+    int32_t albumSubType = -1;
     int32_t indexObjectId = -1;
     vector<int32_t> indexSet;
     int32_t fetchResultIndexId = -1;
@@ -147,12 +149,12 @@ public:
     std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
     std::vector<std::unique_ptr<PhotoAssetCustomRecord>> customRecordArray;
     std::vector<std::unique_ptr<AlbumOrder>> fileAlbumOrderArray;
-    std::unique_ptr<FileAssetNapi> fileAssetParameter;
-    std::unique_ptr<AlbumNapi> albumAssetParameter;
-    std::unique_ptr<PhotoAlbumNapi> photoAlbumParameter;
-    std::unique_ptr<SmartAlbumNapi> smartAlbumAssetParameter;
-    std::unique_ptr<PhotoAssetCustomRecordNapi> customRecordAssetParameter;
-    std::unique_ptr<AlbumOrderNapi> albumOrderParameter;
+    FileAssetNapi* fileAssetParameter;
+    AlbumNapi* albumAssetParameter;
+    PhotoAlbumNapi* photoAlbumParameter;
+    SmartAlbumNapi* smartAlbumAssetParameter;
+    PhotoAssetCustomRecordNapi* customRecordAssetParameter;
+    AlbumOrderNapi* albumOrderParameter;
     void GetFirstAsset();
     void GetObjectAtPosition();
     void GetPhotosInRange();
