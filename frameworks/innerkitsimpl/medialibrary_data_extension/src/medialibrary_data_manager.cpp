@@ -31,7 +31,9 @@
 #include "acl.h"
 #include "albums_refresh_manager.h"
 #include "asset_compress_version_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_file_processor.h"
+#endif
 #include "background_task_mgr_helper.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
@@ -1331,9 +1333,9 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         MEDIA_DEBUG_LOG("still other extension exist");
         return;
     }
-
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::StopTimer();
-
+#endif
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     CHECK_AND_RETURN_LOG(shareHelper != nullptr, "DataShareHelper is null");
 

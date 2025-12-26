@@ -54,7 +54,9 @@
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"
 #include "refresh_business_name.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
+#endif
 #include "cloud_media_dao_utils.h"
 #include "scanner_map_code_utils.h"
 #include "photo_map_code_operation.h"
@@ -2726,9 +2728,11 @@ static void DeleteFiles(AsyncTaskData *data)
     }
     auto *taskData = static_cast<DeleteFilesData *>(data);
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
     MEDIA_INFO_LOG("BatchSelectFileDownload DeleteFiles DealWithBatchDownloadingFilesById");
     MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(taskData->ids_);
+#endif
     MediaLibraryAssetOperations::TaskDataFileProcess(taskData->ids_, taskData->paths_, taskData->table_,
         taskData->dateTakens_, taskData->subTypes_);
 }
@@ -3504,7 +3508,7 @@ int32_t MediaLibraryAssetOperations::AddOtherBurstIdsToFileIds(std::vector<std::
     return NativeRdb::E_OK;
 }
 
-
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds)
 {
     MEDIA_INFO_LOG("BatchSelectFileDownload DealWithBatchDownloadingFilesById ids In"); // 自动取消
@@ -3528,6 +3532,7 @@ int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFiles(vector<shared
     }
     return DealWithBatchDownloadingFilesById(needStopDownloadFileIds);
 }
+#endif
 
 static void GetAnalysisAlbumIdsOfAssets(const vector<shared_ptr<FileAsset>> fileAssetVector, set<string>& albumIds)
 {
@@ -3580,9 +3585,11 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
     }
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     MEDIA_INFO_LOG("BatchSelectFileDownload DeletePermanently DealWithBatchDownloadingFiles");
     // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
     DealWithBatchDownloadingFiles(fileAssetVector);
+#endif
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
     vector<string> albumIds(analysisAlbumIds.begin(), analysisAlbumIds.end());

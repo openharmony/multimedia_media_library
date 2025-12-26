@@ -17,8 +17,11 @@
 #include "medialibrary_subscriber.h"
 
 #include <chrono>
+
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_file_processor.h"
 #include "background_cloud_batch_selected_file_processor.h"
+#endif
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -229,12 +232,15 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 
 MedialibrarySubscriber::~MedialibrarySubscriber()
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     if (cloudHelper_ != nullptr && CloudMediaAssetUnlimitObserver_ != nullptr) {
         cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), CloudMediaAssetUnlimitObserver_);
         cloudHelper_ = nullptr;
     }
+#endif
 }
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
 {
     auto subscriber = subscriber_.lock();
@@ -256,6 +262,7 @@ void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
         }
     }
 }
+#endif
 
 bool MedialibrarySubscriber::Subscribe(void)
 {
@@ -274,11 +281,12 @@ bool MedialibrarySubscriber::Subscribe(void)
     CHECK_AND_RETURN_RET_LOG(subscriber_ != nullptr, false, "Subscriber_ is null!");
     bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber_);
     CHECK_AND_EXECUTE(ret, {
-        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEventf failed");
+        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEvent failed");
         subscriber_ = nullptr;
         return false;
     });
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     CreateOptions options;
     options.enabled_ = true;
     subscriber_->cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
@@ -289,6 +297,7 @@ bool MedialibrarySubscriber::Subscribe(void)
         "CloudMediaAssetUnlimitObserver_ is null.");
     // observer more than 50, failed to register
     subscriber_->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber_->CloudMediaAssetUnlimitObserver_, true);
+#endif
     return ret;
 }
 
@@ -420,7 +429,9 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient, newTemperatureLevel_);
     currentStatus_ = newStatus;
     backgroundDelayTask_.EndBackgroundOperationThread();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::RepairMimeType();
+#endif
     if (currentStatus_) {
         backgroundDelayTask_.SetOperationThread([this] { this->DoBackgroundOperation(); });
     } else {
@@ -473,7 +484,9 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     UpdateCurrentStatus();
     UpdateThumbnailBgGenerationStatus();
     UpdateMediaInLakeCheckStatus();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     UpdateBackgroundTimer();
+#endif
     DealWithEventsAfterUpdateStatus(statusEventType);
 }
 
@@ -523,8 +536,10 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         HandleBatchDownloadWhenNetChange();
         UpdateBackgroundTimer();
+#endif
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         int netType = want.GetIntParam("NetType", -1);
         bool isNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
@@ -540,19 +555,14 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         PermissionUtils::ClearBundleInfoInCache();
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
         // when turn off gallery switch or quit account, clear the download lastest finished flag,
-        // download lastest images for the subsequent login new account
+        // so we can download lastest images for the subsequent login new account
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
+#endif
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
-        isScreenOff_ && isCharging_ && IsBetaVersion()) {
-        std::tm nowLocalTime;
-        const int32_t BACKUP_START_TIME = 23;
-        const int32_t BACKUP_END_TIME = 5;
-        if (GetNowLocalTime(nowLocalTime) && (nowLocalTime.tm_hour >= BACKUP_START_TIME ||
-            nowLocalTime.tm_hour < BACKUP_END_TIME) && IsTwelveHoursAgo()) {
-            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d", nowLocalTime.tm_hour);
-            UploadDBFile();
-        }
+        isScreenOff_ && isCharging_ && IsBetaVersion() && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
+        UploadDB();
     }
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
@@ -567,6 +577,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     }
 }
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
 {
     if (!isWifiConnected_ && BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
@@ -574,6 +585,7 @@ void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
         BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
     }
 }
+#endif
 
 int64_t MedialibrarySubscriber::GetNowTime()
 {
@@ -1160,17 +1172,18 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
 }
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
-    MEDIA_INFO_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
+    MEDIA_DEBUG_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
     if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
         // 触发了批量下载 后台下载可以暂不触发
         MEDIA_INFO_LOG("UpdateBackgroundTimer no allow download 30 day pic");
         return;
     }
-    MEDIA_INFO_LOG("UpdateBackgroundTimer Allow Download 30 day Pic");
+    MEDIA_DEBUG_LOG("UpdateBackgroundTimer Allow Download 30 day Pic");
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;
@@ -1190,6 +1203,7 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
         BackgroundCloudFileProcessor::StopTimer();
     }
 }
+#endif
 
 void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType)
 {
@@ -1223,6 +1237,20 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
     if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {
         MEDIA_INFO_LOG("Current temperature level is %{public}d", newTemperatureLevel_);
         PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
+    }
+}
+
+void MedialibrarySubscriber::UploadDB()
+{
+    std::tm nowLocalTime;
+    const int32_t BACKUP_START_TIME = 23;
+    const int32_t BACKUP_END_TIME = 5;
+    if (GetNowLocalTime(nowLocalTime) &&
+        (nowLocalTime.tm_hour >= BACKUP_START_TIME || nowLocalTime.tm_hour < BACKUP_END_TIME) &&
+        IsTwelveHoursAgo()) {
+        MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d, batteryCapacity:%{public}d",
+            nowLocalTime.tm_hour, batteryCapacity_);
+        UploadDBFile();
     }
 }
 

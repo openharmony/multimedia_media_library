@@ -80,7 +80,9 @@ public:
     GetBatchDownloadCloudResourcesStatusReqBody &reqBody, GetBatchDownloadCloudResourcesStatusRespBody &respBody);
     EXPORT int32_t GetCloudMediaBatchDownloadResourcesCount(
         GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT void CleanDownloadTasksTable();
+#endif
     EXPORT static int32_t DeleteEditdata(const std::string &path);
 
 private:

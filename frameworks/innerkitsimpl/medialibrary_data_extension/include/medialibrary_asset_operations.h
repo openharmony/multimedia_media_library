@@ -123,8 +123,10 @@ public:
         const std::vector<std::string> &columns);
     EXPORT static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT static int32_t DealWithBatchDownloadingFiles(std::vector<shared_ptr<FileAsset>> &subFileAssetVector);
     EXPORT static int32_t DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds);
+#endif
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     EXPORT static FileManagement::CloudSync::CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr);

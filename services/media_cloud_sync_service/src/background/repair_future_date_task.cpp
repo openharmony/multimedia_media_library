@@ -39,7 +39,9 @@
 #include "photos_po_writer.h"
 #include "photos_po.h"
 #include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
+#endif
 
 namespace OHOS::Media::Background {
 // LCOV_EXCL_START
@@ -117,6 +119,7 @@ void RepairFutureDateTask::UpdateFutureDate(
 
 void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &terminate, const std::vector<PhotosPo> &photos)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     for (const PhotosPo &photosPo : photos) {
         if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
             MEDIA_INFO_LOG("Break repair future date cause invalid status");
@@ -157,6 +160,7 @@ void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &termina
         }
         this_thread::sleep_for(chrono::milliseconds(dateRepairInterval));
     }
+#endif
 }
 
 void RepairFutureDateTask::Execute()
