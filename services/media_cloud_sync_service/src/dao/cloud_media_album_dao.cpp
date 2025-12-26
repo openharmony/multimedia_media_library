@@ -157,6 +157,7 @@ int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(const PhotoAlbumDto &recor
         changedRows,
         record.cloudId.c_str(),
         albumId);
+    ret = ret == E_OK ? ret : E_RDB; // E_RDB will stop the process.
     return ret;
 }
 

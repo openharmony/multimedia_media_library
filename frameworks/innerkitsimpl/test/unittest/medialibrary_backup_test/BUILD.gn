@@ -50,7 +50,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/restore",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/group_photo_album",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/include",
     "../medialibrary_unittest_utils/include",
   ]
 

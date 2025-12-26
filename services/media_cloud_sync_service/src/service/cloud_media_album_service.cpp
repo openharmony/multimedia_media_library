@@ -641,10 +641,10 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(
     int32_t ret = E_OK;
     const bool insertFlag = !record.localAlbumInfo.has_value() && !record.isDelete;
     const bool updateFlag = record.localAlbumInfo.has_value() && !record.isDelete;
-    const bool deleteFalg = record.localAlbumInfo.has_value() && record.isDelete;
+    const bool deleteFlag = record.localAlbumInfo.has_value() && record.isDelete;
     CHECK_AND_EXECUTE(!insertFlag, ret = this->PullInsert(record, changeType, resp));
     CHECK_AND_EXECUTE(!updateFlag, ret = this->PullUpdate(record, changeType, resp));
-    CHECK_AND_EXECUTE(!deleteFalg, ret = this->PullDelete(record, changeType, resp));
+    CHECK_AND_EXECUTE(!deleteFlag, ret = this->PullDelete(record, changeType, resp));
     return ret;
 }
 
@@ -688,8 +688,7 @@ int32_t CloudMediaAlbumService::PullUpdate(
     int32_t dirty = record.localAlbumInfo.value().dirty.value_or(static_cast<int32_t>(DirtyType::TYPE_MDIRTY));
     bool isValid = dirty != static_cast<int32_t>(Media::DirtyType::TYPE_MDIRTY) &&
                    dirty != static_cast<int32_t>(Media::DirtyType::TYPE_DELETED);
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        isValid, E_INVAL_ARG, "lpath is dirty, skip. cloudId: %{public}s", record.cloudId.c_str());
+    CHECK_AND_RETURN_RET_WARN_LOG(isValid, E_OK, "lpath is dirty, skip. cloudId: %{public}s", record.cloudId.c_str());
     // Process
     changeType = ChangeType::UPDATE;
     int32_t ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
@@ -715,13 +714,12 @@ int32_t CloudMediaAlbumService::PullDelete(
         std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL, "failed to get albumRefresh.");
     // Check
-    const bool deleteFalg = record.localAlbumInfo.has_value() && record.isDelete;
-    CHECK_AND_RETURN_RET_LOG(deleteFalg, E_INVAL_ARG, "invalid data");
+    const bool deleteFlag = record.localAlbumInfo.has_value() && record.isDelete;
+    CHECK_AND_RETURN_RET_LOG(deleteFlag, E_INVAL_ARG, "invalid data");
     int32_t dirty = record.localAlbumInfo.value().dirty.value_or(static_cast<int32_t>(DirtyType::TYPE_MDIRTY));
     bool isValid = dirty != static_cast<int32_t>(Media::DirtyType::TYPE_MDIRTY) &&
                    dirty != static_cast<int32_t>(Media::DirtyType::TYPE_DELETED);
-    CHECK_AND_RETURN_RET_WARN_LOG(
-        isValid, E_INVAL_ARG, "lpath is dirty, skip. cloudId: %{public}s", record.cloudId.c_str());
+    CHECK_AND_RETURN_RET_WARN_LOG(isValid, E_OK, "lpath is dirty, skip. cloudId: %{public}s", record.cloudId.c_str());
     // Process
     changeType = ChangeType::DELETE;
     int32_t ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
