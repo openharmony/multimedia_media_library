@@ -41,6 +41,7 @@ ohos_unittest("media_notification_register_manager_test") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/notify_register_permission.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/observer_callback_recipient.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
+    "${MEDIALIB_JS_PATH}/src/medialibrary_notify_utils.cpp",
   ]
   media_permission_source = [
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/abs_permission_handler.cpp",

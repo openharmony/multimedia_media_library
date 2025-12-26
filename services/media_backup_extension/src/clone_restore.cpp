@@ -2330,7 +2330,7 @@ vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t o
 static void PrintCinematicCloneSize(const FileInfo &fileInfo)
 {
     if (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
-        MEDIA_INFO_LOG("Clone cinematic video, displayName: %{public}s, videoSize: %{public}ld",
+        MEDIA_INFO_LOG("Clone cinematic video, displayName: %{public}s, videoSize: %{public}lld",
             fileInfo.displayName.c_str(), fileInfo.fileSize);
     }
 }
