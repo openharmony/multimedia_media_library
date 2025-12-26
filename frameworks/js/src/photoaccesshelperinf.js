@@ -922,6 +922,11 @@ const SceneType = {
   PHOTO_BROWSER_SWIPE: 1
 };
 
+const PlayMode = {
+  DEFAULT: 0,
+  AUTO_PLAY: 1,
+};
+
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
@@ -1030,10 +1035,22 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
     config.parameters.assetFilter = option.assetFilter;
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
-    config.parameters.livePhotoModes = option.livePhotoModes;
+    config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
   }
 
   return config;
+}
+
+function parseAutoPlayScenes(autoPlayScenes) {
+  if (!autoPlayScenes) {
+    return undefined;
+  }
+
+  if (autoPlayScenes.length > 2) {
+    return autoPlayScenes.slice(0, 2);
+  }
+
+  return autoPlayScenes;
 }
 
 function parseMimeTypeFilter(filter) {
@@ -1211,7 +1228,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
   this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
   this.isMovingPhotoBadgeShown = false;
-  this.livePhotoModes = [];
+  this.autoPlayScenes = [];
 }
 
 function PhotoSelectOptions() {
@@ -1240,9 +1257,9 @@ function PhotoViewPicker() {
 function RecommendationOptions() {
 }
 
-function livePhotoMode() {
+function autoPlayScene() {
   this.sceneType = -1;
-  this.isAutoPlay = false;
+  this.playMode = -1;
 }
 
 function encrypt(data) {
@@ -1376,7 +1393,8 @@ export default {
   CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
   MovingPhotoBadgeStateType: MovingPhotoBadgeStateType,
   VideoMode: photoAccessHelper.VideoMode,
-  LivePhotoMode: livePhotoMode,
+  AutoPlayScene: autoPlayScene,
   SceneType: SceneType,
-  DynamicRangeType: photoAccessHelper.DynamicRangeType
+  DynamicRangeType: photoAccessHelper.DynamicRangeType,
+  PlayMode: PlayMode
 };

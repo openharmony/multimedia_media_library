@@ -428,7 +428,7 @@ export class PhotoPickerComponent extends ViewPU {
                     edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
                     isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
-                    livePhotoModes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : z.livePhotoModes,
+                    autoPlayScenes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : this.parseAutoPlayScenes(z.autoPlayScenes),
                     appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters)
                 }
             }
@@ -667,6 +667,18 @@ export class PhotoPickerComponent extends ViewPU {
     handleSaveCallback(e) {
         this.pickerController.actionSaveCallback(e.date, {'name': '', 'code': e.code, 'message': e.message}, e.data);
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
+    }
+
+    parseAutoPlayScenes(autoPlayScenes) {
+        if (!autoPlayScenes) {
+            return undefined;
+        }
+
+        if (autoPlayScenes.length > 2) {
+            return autoPlayScenes.slice(0, 2);
+        }
+        
+        return autoPlayScenes;
     }
     
     parseAppAlbumFilters(appAlbumFilters) {
