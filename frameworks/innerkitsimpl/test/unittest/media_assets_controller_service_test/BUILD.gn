@@ -116,7 +116,13 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/asset_change_request_test.cpp",
     "./src/cancel_photo_uri_permission_test.cpp",
     "./src/clone_asset_test.cpp",
-    "./src/cloud_enhancement_test.cpp",
+  ]
+
+  if (media_library_feature_cloud_enhancement) {
+    sources += [ "./src/cloud_enhancement_test.cpp" ]
+  }
+
+  sources += [
     "./src/cloud_media_change_test.cpp",
     "./src/commit_edited_asset_test.cpp",
     "./src/create_asset_test.cpp",
