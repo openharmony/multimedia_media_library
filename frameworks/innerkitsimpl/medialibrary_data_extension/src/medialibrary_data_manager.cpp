@@ -169,6 +169,8 @@ static const std::string BROKER_ADD_MSG = "broker_add";
 static const std::string BROKER_REMOVE_MSG = "broker_remove";
 static const std::string BROKER_START_SCAN = "start_scan";
 static const int MAX_LOOP_CNT = 10;
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/e12/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -3085,6 +3087,38 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
+static bool IsMediaLibraryRecoveryDone()
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(MEDIA_LIBRARY_PREF_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return false;
+    }
+    int32_t done = prefs->GetInt(MEDIA_LIBRARY_RECOVERY_FLAG_KEY, 0);
+    return done == 1;
+}
+
+static void SetParameterForClone()
+{
+    std::string nextFlag = "persist.update.hmos_to_next_flag";
+    auto isUpgrade = system::GetParameter(nextFlag, "");
+    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
+    if (isUpgrade != "1") {
+        return;
+    }
+    if (IsMediaLibraryRecoveryDone()) {
+        return;
+    }
+
+    std::string cloneFlag = "multimedia.medialibrary.cloneFlag";
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(cloneFlag, currentTime);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+}
+
 void MediaLibraryDataManager::SetStartupParameter()
 {
     MEDIA_INFO_LOG("Start to set parameter.");
@@ -3106,17 +3140,8 @@ void MediaLibraryDataManager::SetStartupParameter()
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
     }
-    std::string nextFlag = "persist.update.hmos_to_next_flag";
-    auto isUpgrade = system::GetParameter(nextFlag, "");
-    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
-    if (isUpgrade != "1") {
-        return;
-    }
-    std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
-    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
-    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
-    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+
+    SetParameterForClone();
 }
 
 int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
