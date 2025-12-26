@@ -191,6 +191,7 @@ public:
     void ReportCommonVersion(int32_t dbVersion);
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
     void ReportAdaptationToMovingPhoto();
+    void ReportCinematicVideo();
     void ReportAlibHeifDuplicate();
     static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
         const int32_t& totalDownload, const int32_t& southDeviceType);

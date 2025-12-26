@@ -212,7 +212,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnError(
     }
 
     if (error != ERROR_SESSION_SYNC_NEEDED) {
-        int32_t mediaType = (MultiStagesCaptureManager::QuerySubType(imageId) ==
+        int32_t mediaType = (MultiStagesVideoCaptureManager::QuerySubType(imageId) ==
             static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) ?
             static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
             static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);

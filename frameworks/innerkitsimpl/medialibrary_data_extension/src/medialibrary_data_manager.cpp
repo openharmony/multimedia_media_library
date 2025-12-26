@@ -2052,6 +2052,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
+        case OperationObject::PAH_MULTISTAGES_VIDEO: {
+            std::vector<std::string> columns;
+            MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+            return E_OK;
+        }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -2822,6 +2827,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return QueryIndex(cmd, columns, predicates);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_MULTISTAGES_VIDEO:
+            return MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
@@ -2874,12 +2881,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
+static void ExecuteDfxWork(const std::string &fileId)
+{
+    std::thread([fileId]() {
+        MEDIA_INFO_LOG("start ExecuteDfxWork");
+        DfxManager::GetInstance()->HandleCinematicVideoAccessTimes(true, true, fileId);
+    }).detach();
+}
+
 static void AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
 {
     bool isValidCount = false;
     auto visitType = MediaVisitCountManager::VisitCountType::PHOTO_FS;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
         isValidCount = true;
+        auto fileId = cmd.GetOprnFileId();
+        ExecuteDfxWork(fileId);
     } else if (oprnObject == OperationObject::THUMBNAIL) {
         visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
         auto height = std::atoi(cmd.GetQuerySetParam(MEDIA_DATA_DB_HEIGHT).c_str());

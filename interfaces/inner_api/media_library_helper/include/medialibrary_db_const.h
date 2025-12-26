@@ -487,6 +487,9 @@ const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
 const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // movingPhoto video save finish
 
+// movie mode param
+const std::string CREATE_CINEMATIC_VIDEO = "create_cinematic_video";
+
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
@@ -499,6 +502,7 @@ const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/medi
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
+const std::string CONTAIN_ADD_RESOURCE = "contain_add_resource";
 
 const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
 const std::string BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG = "BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG";

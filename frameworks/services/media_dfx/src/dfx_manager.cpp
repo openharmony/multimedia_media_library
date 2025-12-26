@@ -601,6 +601,8 @@ void DfxManager::HandleFiveMinuteTask()
     dfxAnalyzer_->FlushThumbnail(result);
     AdaptationToMovingPhotoInfo adaptationInfo = dfxCollector_->GetAdaptationToMovingPhotoInfo();
     dfxAnalyzer_->FlushAdaptationToMovingPhoto(adaptationInfo);
+    CinematicVideoInfo cinematicVideoInfo = dfxCollector_->GetCinematicVideoInfo();
+    dfxAnalyzer_->FlushCinematicVideoInfo(cinematicVideoInfo);
     CheckStatus();
 }
 
@@ -638,6 +640,7 @@ int64_t DfxManager::HandleOneDayReport()
     dfxReporter_->ReportAdaptationToMovingPhoto();
     dfxReporter_->ReportPhotoRecordInfo();
     dfxReporter_->ReportOperationRecordInfo();
+    dfxReporter_->ReportCinematicVideo();
     dfxReporter_->ReportAlibHeifDuplicate();
     return MediaFileUtils::UTCTimeSeconds();
 }
@@ -649,6 +652,80 @@ void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapt
         return;
     }
     dfxCollector_->CollectAdaptationToMovingPhotoInfo(appName, adapted);
+}
+
+static bool QueryCinematicVideoStatus(const string &fileId, MultiStagesCaptureVideoStatus &photoStatus)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    vector<string> columns { PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_QUALITY };
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return false;
+    }
+
+    int32_t columnIndexSubtype = -1;
+    resultSet->GetColumnIndex(PhotoColumn::PHOTO_SUBTYPE, columnIndexSubtype);
+    int32_t currentSubtype = 0;
+    resultSet->GetInt(columnIndexSubtype, currentSubtype);
+    if (currentSubtype != static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
+        MEDIA_INFO_LOG("Current photo is not cinematic video");
+        return false;
+    }
+
+    int32_t columnIndexQuality = -1;
+    resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
+    int32_t currentPhotoQuality = 0;
+    resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
+    photoStatus = currentPhotoQuality ? MultiStagesCaptureVideoStatus::LOW_QUALITY :
+        MultiStagesCaptureVideoStatus::HIGH_QUALITY;
+    return true;
+}
+
+void DfxManager::HandleCinematicVideoAccessTimes(bool isByUri, bool isHighQualityRequest, const std::string &fileId)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+
+    if (!fileId.empty()) {
+        MultiStagesCaptureVideoStatus photoStatus = MultiStagesCaptureVideoStatus::LOW_QUALITY;
+        CHECK_AND_RETURN_INFO_LOG(QueryCinematicVideoStatus(fileId, photoStatus),
+            "QueryCinematicVideoStatus failed");
+        isHighQualityRequest = photoStatus == MultiStagesCaptureVideoStatus::HIGH_QUALITY ?
+            true : false;
+    }
+    dfxCollector_->CollectCinematicVideoAccessTimes(isByUri, isHighQualityRequest);
+}
+
+void DfxManager::HandleCinematicVideoAddStartTime(const CinematicWaitType waitType, const string &videoId)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxCollector_->CollectCinematicVideoAddStartTime(waitType, videoId);
+}
+
+void DfxManager::HandleCinematicVideoAddEndTime(const CinematicWaitType waitType, const string &videoId)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxCollector_->CollectCinematicVideoAddEndTime(waitType, videoId);
+}
+
+void DfxManager::HandleCinematicVideoMultistageResult(bool multistageResult)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxCollector_->CollectCinematicVideoMultistageResult(multistageResult);
 }
 
 static void GetPhotoAndPhotoExtSizes(QuerySizeAndResolution &queryInfo)
