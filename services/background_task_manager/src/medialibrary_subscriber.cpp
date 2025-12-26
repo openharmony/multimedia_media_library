@@ -1172,6 +1172,7 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
 }
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1202,6 +1203,7 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
         BackgroundCloudFileProcessor::StopTimer();
     }
 }
+#endif
 
 void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType)
 {
