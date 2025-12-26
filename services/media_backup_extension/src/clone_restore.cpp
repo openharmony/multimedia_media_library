@@ -2327,6 +2327,14 @@ vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t o
     return result;
 }
 
+static void PrintCinematicCloneSize(const FileInfo &fileInfo)
+{
+    if (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
+        MEDIA_INFO_LOG("Clone cinematic video, displayName: %{public}s, videoSize: %{public}ld",
+            fileInfo.displayName.c_str(), fileInfo.fileSize);
+    }
+}
+
 bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<NativeRdb::ResultSet> &resultSet,
     FileInfo &fileInfo)
 {
@@ -2359,6 +2367,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.cloudId = GetStringVal(PhotoColumn::PHOTO_CLOUD_ID, resultSet);
     fileInfo.oldAstcDateKey = to_string(fileInfo.dateTaken);
     SetSpecialAttributes(tableName, resultSet, fileInfo);
+    PrintCinematicCloneSize(fileInfo);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
