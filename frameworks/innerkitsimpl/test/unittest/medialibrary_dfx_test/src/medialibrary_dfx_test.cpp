@@ -31,11 +31,14 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "media_file_utils.h"
 #include "photo_album_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "parameters.h"
+#include "userfile_manager_types.h"
 
 using namespace std;
 using namespace OHOS;
@@ -45,17 +48,56 @@ namespace OHOS {
 namespace Media {
 
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
+static constexpr int32_t SLEEP_THREE_SECONDS = 3;
+static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+
+static int32_t ClearTable(const string &table)
+{
+    NativeRdb::RdbPredicates predicates(table);
+    int32_t rows = 0;
+    int32_t err = g_rdbStore->Delete(rows, predicates);
+    MEDIA_INFO_LOG("clear table: %{public}s, rows: %{public}d, err: %{public}d", table.c_str(), rows, err);
+    EXPECT_EQ(err, E_OK);
+    return E_OK;
+}
+
+static int32_t InsertPhotoAlbum(const string &albumName, const int32_t albumType, const int32_t uploadStatus)
+{
+    EXPECT_NE((g_rdbStore == nullptr), true);
+
+    int64_t albumId = -1;
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, uploadStatus);
+    int32_t ret = g_rdbStore->Insert(albumId, PhotoAlbumColumns::TABLE, values);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertPhotoAlbum albumId is %{public}s", to_string(albumId).c_str());
+    return E_OK;
+}
 
 void MediaLibraryDfxTest::SetUpTestCase(void)
 {
+    MEDIA_INFO_LOG("SetUpTestCase");
+    MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE((g_rdbStore == nullptr), true);
     DfxManager::GetInstance();
 }
-void MediaLibraryDfxTest::TearDownTestCase(void) {}
+
+void MediaLibraryDfxTest::TearDownTestCase(void)
+{
+    MEDIA_INFO_LOG("TearDownTestCase");
+    ClearTable(PhotoAlbumColumns::TABLE);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_THREE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryDfxTest::SetUp()
 {
+    MEDIA_INFO_LOG("SetUp");
     DfxManager::GetInstance()->isInitSuccess_ = true;
+    ClearTable(PhotoAlbumColumns::TABLE);
 }
 
 void MediaLibraryDfxTest::TearDown(void) {}
@@ -1026,5 +1068,26 @@ HWTEST_F(MediaLibraryDfxTest, AncoDfxManager_test_003, TestSize.Level0)
     EXPECT_EQ(0, E_OK);
 }
 
+HWTEST_F(MediaLibraryDfxTest, QueryAlbumNames_dfx_test_001, TestSize.Level0)
+{
+    InsertPhotoAlbum("album1", PhotoAlbumType::SOURCE, 0);
+    InsertPhotoAlbum("album2", PhotoAlbumType::SOURCE, 1);
+    InsertPhotoAlbum("album3", PhotoAlbumType::USER, 0);
+    InsertPhotoAlbum("album4", PhotoAlbumType::USER, 1);
+    std::vector<std::string> supportedAlbumNames = DfxDatabaseUtils::QueryAlbumNamesByUploadStatus(1);
+    EXPECT_EQ(supportedAlbumNames.size(), 1);
+    std::vector<std::string> notSupportedAlbumNames = DfxDatabaseUtils::QueryAlbumNamesByUploadStatus(0);
+    EXPECT_EQ(notSupportedAlbumNames.size(), 1);
+}
+
+HWTEST_F(MediaLibraryDfxTest, QueryAlbumNames_dfx_test_002, TestSize.Level0)
+{
+    int32_t maxAlbumCount = 55;
+    for (int32_t i = 0; i < maxAlbumCount; i++) {
+        InsertPhotoAlbum("album" + to_string(i), PhotoAlbumType::SOURCE, 1);
+    }
+    std::vector<std::string> supportedAlbumNames = DfxDatabaseUtils::QueryAlbumNamesByUploadStatus(1);
+    EXPECT_EQ(supportedAlbumNames.size(), 2);
+}
 } // namespace Media
 } // namespace OHOS
