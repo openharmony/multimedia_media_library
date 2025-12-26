@@ -526,7 +526,7 @@ export struct PhotoPickerComponent {
       this.onPhotoBrowserChanged(browserItemInfo);
     }
     console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' +
-      JSON.stringify(browserItemInfo));
+      this.pickerController.encrypt(browserItemInfo.uri));
   }
 
   private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
