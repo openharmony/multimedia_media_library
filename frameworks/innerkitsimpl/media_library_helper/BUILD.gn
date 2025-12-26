@@ -44,6 +44,7 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/vo",
   ]
 
   include_dirs += user_ipc_client_include_dirs
@@ -105,7 +106,12 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp",
   ]
 
+  media_camera_character_service_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/src/vo/add_process_video_vo.cpp",
+  ]
+
   sources += user_ipc_client_source
+  sources += media_camera_character_service_vo_source
 
   public_configs = [ ":media_library_config" ]
   cflags = [

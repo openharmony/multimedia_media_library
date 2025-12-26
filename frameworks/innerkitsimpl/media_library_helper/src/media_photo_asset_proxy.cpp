@@ -26,6 +26,7 @@
 #include "medialibrary_tracer.h"
 #include "userfilemgr_uri.h"
 #include "media_exif.h"
+#include "add_process_video_vo.h"
 #include "medialibrary_business_code.h"
 #include "user_inner_ipc_client.h"
 #include "add_image_vo.h"
@@ -48,6 +49,7 @@ const std::unordered_map<CameraShotType, PhotoSubType> CAMERASHOT_TO_SUBTYPE_MAP
     {CameraShotType::BURST, PhotoSubType::BURST},
     {CameraShotType::IMAGE, PhotoSubType::CAMERA},
     {CameraShotType::VIDEO, PhotoSubType::CAMERA},
+    {CameraShotType::CINEMATIC_VIDEO, PhotoSubType::CINEMATIC_VIDEO},
 };
 
 static std::mutex g_observerVecLock;
@@ -57,12 +59,13 @@ static LowQualityMemoryNumHandler g_handler;
 PhotoAssetProxy::PhotoAssetProxy() {}
 
 PhotoAssetProxy::PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper,
-    const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType)
+    const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType, int32_t videoCount)
 {
     dataShareHelper_ = dataShareHelper;
     cameraShotType_ = cameraShotType;
     callingUid_ = callerInfo.callingUid;
     userId_ = callerInfo.userId;
+    videoCount_ = videoCount;
     callingTokenId_ = callerInfo.callingTokenId;
     packageName_ = callerInfo.packageName;
     auto itr = CAMERASHOT_TO_SUBTYPE_MAP.find(cameraShotType);
@@ -71,10 +74,11 @@ PhotoAssetProxy::PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dat
     } else {
         subType_ = itr->second;
     }
-    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
-        "init success, callerInfo: %{public}s, shottype: %{public}d.",
+    HILOG_COMM_INFO(
+        "%{public}s:{%{public}s:%{public}d} "
+        "init success, callerInfo: %{public}s, shottype: %{public}d, videoCount: %{public}d",
         MLOG_TAG, __FUNCTION__, __LINE__,
-        callerInfo.ToString().c_str(), static_cast<int32_t>(cameraShotType));
+        callerInfo.ToString().c_str(), static_cast<int32_t>(cameraShotType), videoCount);
 }
 
 PhotoAssetProxy::~PhotoAssetProxy()
@@ -139,6 +143,7 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     if (photoProxy->GetPhotoId().size() > 0) {
         values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
     }
+
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
         values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, photoProxy->GetStageVideoTaskStatus());
@@ -151,6 +156,10 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
         values.Put(PhotoColumn::PHOTO_DIRTY, -1);
     } else if (cameraShotType_ == CameraShotType::VIDEO) {
         values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
+        return values;
+    } else if (cameraShotType_ == CameraShotType::CINEMATIC_VIDEO) {
+        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(PhotoQuality::LOW));
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO));
         return values;
     }
 
@@ -473,19 +482,26 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
 void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
 {
     bool cond = (photoProxy == nullptr || dataShareHelper_ == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy is nullptr");
+    CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy or dataShareHelper is nullptr");
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture, photoId: %{public}s",
         MLOG_TAG, __FUNCTION__, __LINE__, photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
-    CHECK_AND_RETURN_INFO_LOG(cameraShotType_ != CameraShotType::VIDEO, "MultistagesCapture exit for VIDEO");
+    if (cameraShotType_ == CameraShotType::VIDEO || cameraShotType_ == CameraShotType::CINEMATIC_VIDEO) {
+        photoProxy->Release();
+        MEDIA_ERR_LOG("MultistagesCapture exit for VIDEO or CINEMATIC_VIDEO, type: %{public}d",
+            static_cast<int32_t>(cameraShotType_));
+        tracer.Finish();
+        return;
+    }
 
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
         (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
         AddProcessImage(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(cameraShotType_), packageName_);
     }
+
     if (photoProxy->GetFormat() == PhotoFormat::YUV) {
         photoProxy->Release();
         HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture exit for YUV",
@@ -503,12 +519,21 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
         MLOG_TAG, __FUNCTION__, __LINE__);
 }
 
-int32_t PhotoAssetProxy::GetVideoFd()
+int32_t PhotoAssetProxy::GetVideoFd(VideoType videoType)
 {
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR,
-        "Failed to read video of moving photo, datashareHelper is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAssetProxy::GetVideoFd ");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesVideo videoType: %{public}d.",
+        MLOG_TAG, __FUNCTION__, __LINE__, videoType);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "Failed to read video, datashareHelper is nullptr");
     string videoUri = uri_;
-    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, CREATE_MOVING_PHOTO_VIDEO);
+    if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
+        MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, CREATE_MOVING_PHOTO_VIDEO);
+        MediaFileUtils::UriAppendKeyValue(videoUri, VIDEO_TYPE_KEYWORD, to_string(static_cast<int32_t>(videoType)));
+    } else {
+        MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_CINEMATIC_VIDEO_OPRN_KEYWORD, CREATE_CINEMATIC_VIDEO);
+        MediaFileUtils::UriAppendKeyValue(videoUri, VIDEO_TYPE_KEYWORD, to_string(static_cast<int32_t>(videoType)));
+    }
     Uri openVideoUri(videoUri);
     int32_t fd = dataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READWRITE);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} GetVideoFd enter, video path: %{public}s, fd: %{public}d",
@@ -516,15 +541,18 @@ int32_t PhotoAssetProxy::GetVideoFd()
     return fd;
 }
 
-void PhotoAssetProxy::NotifyVideoSaveFinished()
+void PhotoAssetProxy::NotifyVideoSaveFinished(VideoType videoType)
 {
-    if (cameraShotType_ == CameraShotType::VIDEO) {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAssetProxy::NotifyVideoSaveFinished ");
+    if (cameraShotType_ == CameraShotType::VIDEO || cameraShotType_ == CameraShotType::CINEMATIC_VIDEO) {
         HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
-            "NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
-            MLOG_TAG, __FUNCTION__, __LINE__,
-            static_cast<int32_t>(cameraShotType_));
+            "NotifyVideoSaveFinished exit, cameraShotType: %{public}d, videoType %{public}d.",
+            MLOG_TAG, __FUNCTION__, __LINE__, static_cast<int32_t>(cameraShotType_), videoType);
         return;
     }
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} NotifyVideoSaveFinished videoType %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, videoType);
     isMovingPhotoVideoSaved_ = true;
     CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "datashareHelper is nullptr");
     string uriStr = PAH_ADD_FILTERS;
@@ -532,9 +560,47 @@ void PhotoAssetProxy::NotifyVideoSaveFinished()
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileId_);
     valuesBucket.Put(NOTIFY_VIDEO_SAVE_FINISHED, uri_);
+    valuesBucket.Put(VIDEO_TYPE_KEYWORD, static_cast<int32_t>(videoType));
     dataShareHelper_->Insert(uri, valuesBucket);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} video save finished %{public}s",
         MLOG_TAG, __FUNCTION__, __LINE__, uri_.c_str());
+}
+
+int32_t PhotoAssetProxy::AddProcessVideo(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+    const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t videoCount)
+{
+    if (photoProxy == nullptr || dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("photoProxy or dataShareHelper is nullptr");
+        return E_ERR;
+    }
+    AddProcessVideoReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.photoId = photoProxy->GetPhotoId();
+    reqBody.photoQuality = static_cast<int32_t>(photoProxy->GetPhotoQuality());
+    reqBody.videoCount = videoCount;
+    reqBody.VideoEnhancementType = photoProxy->GetVideoEnhancementType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_PROCESS_VIDEO);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__, photoProxy->GetPhotoId().c_str(), fileId, ret);
+    return ret;
+}
+
+// 只有电影模式二阶段才调用
+void PhotoAssetProxy::UpdatePhotoProxy(const sptr<PhotoProxy> &photoProxy)
+{
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} UpdatePhotoProxy begin, photoId: %{public}s.",
+        MLOG_TAG, __FUNCTION__, __LINE__, photoProxy->GetPhotoId().c_str());
+    bool cond = (photoProxy == nullptr || dataShareHelper_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy or dataShareHelper is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAssetProxy::UpdatePhotoProxy " + photoProxy->GetPhotoId());
+    AddProcessVideo(dataShareHelper_, photoProxy, fileId_, videoCount_);
+    photoProxy->Release();
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} UpdatePhotoProxy exit.",
+        MLOG_TAG, __FUNCTION__, __LINE__);
 }
 
 void PhotoAssetProxy::RegisterPhotoStateCallback(const LowQualityMemoryNumHandler &func)

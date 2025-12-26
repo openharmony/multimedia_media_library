@@ -1643,6 +1643,18 @@ static int32_t SolveMovingPhotoVideoCreation(const string &imagePath, const stri
     return E_OK;
 }
 
+static int32_t SolveMoviePhotoVideoCreation(const string &videoPath, const string &mode)
+{
+    CHECK_AND_RETURN_RET(mode != MEDIA_FILEMODE_READONLY, E_OK);
+    CHECK_AND_RETURN_RET_INFO_LOG(!MediaFileUtils::IsFileExists(videoPath), E_OK,
+        "videoPath is Exists, videoPath %{private}s", videoPath.c_str());
+
+    int32_t errCode = MediaFileUtils::CreateAsset(videoPath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Create movie video asset failed, path=%{private}s", videoPath.c_str());
+    return E_OK;
+}
+
 static bool IsNotMusicFile(const std::string &path)
 {
     return (path.find(ANALYSIS_FILE_PATH) == string::npos);
@@ -1653,27 +1665,23 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::OpenAsset");
-
-    if (fileAsset == nullptr) {
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
 
     string lowerMode = mode;
     transform(lowerMode.begin(), lowerMode.end(), lowerMode.begin(), ::tolower);
-    if (!MediaFileUtils::CheckMode(lowerMode)) {
-        return E_INVALID_MODE;
-    }
+    CHECK_AND_RETURN_RET(MediaFileUtils::CheckMode(lowerMode), E_INVALID_MODE);
 
     string path;
     if (api == MediaLibraryApi::API_10) {
         int32_t errCode = SolvePendingStatus(fileAsset, mode);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Solve pending status failed, errCode=%{public}d", errCode);
-            return errCode;
-        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Solve pending status failed, errCode=%{public}d", errCode);
         path = fileAsset->GetPath();
         MEDIA_DEBUG_LOG("##### file path is %{private}s", path.c_str());
         SolveMovingPhotoVideoCreation(path, mode, isMovingPhotoVideo);
+        if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
+            SolveMoviePhotoVideoCreation(path, mode);
+        }
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
@@ -1686,14 +1694,12 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     }
 
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
-    MEDIA_DEBUG_LOG("Asset Operation:OpenAsset, type is %{public}d", type);
+
     int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId, type);
-    if (fd < 0) {
-        MEDIA_ERR_LOG(
-            "open file, userId: %{public}d, uri: %{public}s, path: %{private}s, fd %{public}d, errno %{public}d",
-            fileAsset->GetUserId(), fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str(), fd, errno);
-        return E_HAS_FS_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR,
+        "open file, userId: %{public}d, uri: %{public}s, path: %{public}s, fd %{public}d, errno %{public}d",
+        fileAsset->GetUserId(), fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str(), fd, errno);
+
     tracer.Start("AddWatchList");
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo && IsNotMusicFile(path)) {
         auto watch = MediaLibraryInotify::GetInstance();

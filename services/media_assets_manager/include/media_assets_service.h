@@ -43,6 +43,7 @@
 #include "query_cloud_enhancement_task_state_dto.h"
 #include "query_photo_vo.h"
 #include "adapted_vo.h"
+#include "log_cinematic_access_vo.h"
 #include "convert_format_dto.h"
 #include "create_tmp_compatible_dup_dto.h"
 #include "check_photo_uri_permission_inner_dto.h"
@@ -147,6 +148,7 @@ public:
     int32_t SyncCloudEnhancementTaskStatus();
     int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
+    int32_t LogCinematicVideo(const CinematicVideoAccessReqBody &req);
     std::shared_ptr<DataShare::DataShareResultSet> ConvertFormat(const ConvertFormatDto &convertFormatDto);
     bool CheckMimeType(const int32_t fileId);
     int32_t CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto);
@@ -181,6 +183,7 @@ public:
     int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
     int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
     int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
+    int32_t CancelRequest(const std::string &photoId, const int32_t mediaType);
     int32_t CanSupportedCompatibleDuplicate(const std::string &bundleName, HeifTranscodingCheckRespBody &respBody);
     int32_t SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode);
     int32_t AcquireDebugDatabase(const std::string &betaIssueId, const std::string &betaScenario,

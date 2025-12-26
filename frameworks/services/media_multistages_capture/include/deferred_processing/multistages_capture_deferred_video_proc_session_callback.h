@@ -22,6 +22,7 @@
 
 #include "deferred_video_proc_session.h"
 #include "medialibrary_async_worker.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,11 +35,18 @@ public:
     void OnProcessVideoDone(const std::string& videoId) override;
     EXPORT void OnError(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
+    void OnProcessingProgress(const std::string& videoId, float progress) override;
 
 private:
-    static int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate = false);
+    static void NotifyIfTempFile(const std::shared_ptr<FileAsset> &fileAsset, bool isError = false);
+    static int32_t UpdateVideoQuality(const int32_t &fileId, const std::shared_ptr<FileAsset> &fileAsset,
+        bool isSuccess);
     static void AsyncOnErrorProc(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode);
     static void VideoFaileProcAsync(AsyncTaskData *data);
+    static void HandleVideoProcFailedAndInvalid(const std::string& videoId,
+        const CameraStandard::DpsErrorCode errorCode, const std::shared_ptr<FileAsset> &fileAsset);
+    static void HandleVideoProcInterrupted(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode,
+        const std::shared_ptr<FileAsset> &fileAsset);
     class VideoFaileProcTaskData : public AsyncTaskData {
     public:
         VideoFaileProcTaskData(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode)
