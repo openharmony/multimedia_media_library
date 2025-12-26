@@ -281,7 +281,7 @@ bool MedialibrarySubscriber::Subscribe(void)
     CHECK_AND_RETURN_RET_LOG(subscriber_ != nullptr, false, "Subscriber_ is null!");
     bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber_);
     CHECK_AND_EXECUTE(ret, {
-        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEventf failed");
+        MEDIA_ERR_LOG("EventFwk::CommonEventManager::SubscribeCommonEvent failed");
         subscriber_ = nullptr;
         return false;
     });
