@@ -7944,7 +7944,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
                 jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
             }
         }
-        context->analysisDatas.push_back(jsonObject.dump());
+        context->analysisDatas.push_back(jsonObject.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
     }
 }
 
