@@ -62,8 +62,8 @@ ohos_prebuilt_etc("medialibrary_kit_version.txt") {
 config("media_data_extension_public_config") {
   include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
   include_scanner = [
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   include_multistages_capture = [
@@ -254,14 +254,14 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_scan_source = [
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scan_executor.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_manager.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_db.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata_extractor.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/scanner_utils.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/scanner_map_code_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/media_scan_executor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/media_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_db.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/metadata_extractor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/scanner_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/src/scanner/scanner_map_code_utils.cpp",
   ]
 
   media_fuse_source = [
