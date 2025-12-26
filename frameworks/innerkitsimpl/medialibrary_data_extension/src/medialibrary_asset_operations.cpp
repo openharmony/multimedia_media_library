@@ -3585,9 +3585,11 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
     }
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     MEDIA_INFO_LOG("BatchSelectFileDownload DeletePermanently DealWithBatchDownloadingFiles");
     // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
     DealWithBatchDownloadingFiles(fileAssetVector);
+#endif
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
     vector<string> albumIds(analysisAlbumIds.begin(), analysisAlbumIds.end());
