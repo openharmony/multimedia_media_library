@@ -891,6 +891,58 @@ napi_value MediaLibraryNapi::GetUserFileMgrAsync(napi_env env, napi_callback_inf
         GetMediaLibraryAsyncExecute, GetMediaLibraryAsyncComplete);
 }
 
+static void ProcessMediaLibraryHitEvent(ReportEvent& event, int64_t startTime,
+    int64_t endTime, const std::string& errCode) {
+    if (event.beginTime_ == 0 || (startTime - event.beginTime_) > TEN_MINUTE_MS) {
+        event.beginTime_ = startTime;
+        event.isReport_ = true;
+    }
+    event.CountTimeAndNum(startTime, endTime, errCode);
+}
+
+static void RecordKitApiHit(MediaLibraryAsyncContext *asyncContext)
+{
+    if (asyncContext->objectInfo == nullptr) {
+        NAPI_ERR_LOG("Async context objectInfo is null");
+        return;
+    }
+
+    auto* mediaLibInstance = static_cast<MediaLibraryNapi*>(asyncContext->objectInfo);
+    bool isReported = false;
+
+    // 根据事件类型处理上报
+    switch (asyncContext->eventType) {
+        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER: {
+            auto& event = mediaLibInstance->getPhotoAccessHelperEvent_;
+            isReported = event.isReport_;
+            if (ReportEvent::processorId_ == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
+                ReportEvent::AddEventProcessor();
+            }
+            if (ReportEvent::processorId_ != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
+                event.WriteCallStatusEvent();
+            }
+            break;
+        }
+        case MediaLibraryAsyncContext::REGISTER_CHANGE: {
+            auto& event = mediaLibInstance->registerChangeEvent_;
+            isReported = event.isReport_;
+            if (ReportEvent::processorId_ == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
+                ReportEvent::AddEventProcessor();
+            }
+            if (ReportEvent::processorId_ != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
+                event.WriteCallStatusEvent();
+            }
+            break;
+        }
+        default:
+            NAPI_ERR_LOG("Unknown event type in async complete");
+    }
+
+    if (!isReported) {
+        NAPI_INFO_LOG("The function call does not report hit within 10 minute");
+    }
+}
+
 static void RecordKitApiHitAsyncExecute(napi_env env, void *data)
 {
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -905,28 +957,20 @@ static void RecordKitApiHitAsyncExecute(napi_env env, void *data)
     const std::string& errCode = asyncContext->errCode;
 
     switch (asyncContext->eventType) {
-        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER: {
-            auto& event = mediaLibInstance->getPhotoAccessHelperEvent_;
-            if (event.beginTime_ == 0 || (asyncContext->startTime - event.beginTime_) > TEN_MINUTE_MS) {
-                event.beginTime_ = asyncContext->startTime;
-                event.isReport_ = true;
-            }
-            event.CountTimeAndNum(asyncContext->startTime, endTime, errCode);
+        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER:
+            ProcessMediaLibraryHitEvent(mediaLibInstance->getPhotoAccessHelperEvent_, 
+                asyncContext->startTime, endTime, errCode);
             break;
-        }
-        case MediaLibraryAsyncContext::REGISTER_CHANGE: {
-            auto& event = mediaLibInstance->registerChangeEvent_;
-            if (event.beginTime_ == 0 || (asyncContext->startTime - event.beginTime_) > TEN_MINUTE_MS) {
-                event.beginTime_ = asyncContext->startTime;
-                event.isReport_ = true;
-            }
-            event.CountTimeAndNum(asyncContext->startTime, endTime, errCode);
+        case MediaLibraryAsyncContext::REGISTER_CHANGE:
+            ProcessMediaLibraryHitEvent(mediaLibInstance->registerChangeEvent_, 
+                asyncContext->startTime, endTime, errCode);
             break;
-        }
         default:
             NAPI_ERR_LOG("Unknown event type in async execute");
             return;
     }
+
+    RecordKitApiHit(asyncContext);
 }
 
 static void RecordKitApiHitAsyncComplete(napi_env env, napi_status status, void *data)
@@ -936,48 +980,6 @@ static void RecordKitApiHitAsyncComplete(napi_env env, napi_status status, void 
         NAPI_ERR_LOG("Async context is null");
         return;
     }
-
-    if (asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("Async context objectInfo is null");
-        delete asyncContext;
-        return;
-    }
-
-    auto* mediaLibInstance = static_cast<MediaLibraryNapi*>(asyncContext->objectInfo);
-    bool isReported = false;
-
-    // 根据事件类型处理上报
-    switch (asyncContext->eventType) {
-        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER: {
-            auto& event = mediaLibInstance->getPhotoAccessHelperEvent_;
-            isReported = event.isReport_;
-            if (processorId == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
-                ReportEvent::AddEventProcessor();
-            }
-            if (processorId != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
-                event.WriteCallStatusEvent();
-            }
-            break;
-        }
-        case MediaLibraryAsyncContext::REGISTER_CHANGE: {
-            auto& event = mediaLibInstance->registerChangeEvent_;
-            isReported = event.isReport_;
-            if (processorId == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
-                ReportEvent::AddEventProcessor();
-            }
-            if (processorId != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
-                event.WriteCallStatusEvent();
-            }
-            break;
-        }
-        default:
-            NAPI_ERR_LOG("Unknown event type in async complete");
-    }
-
-    if (!isReported) {
-        NAPI_INFO_LOG("The function call does not report hit within 10 minute");
-    }
-
     delete asyncContext;
 }
 
@@ -1000,6 +1002,24 @@ static void CreateRecordKitAsyncWork(napi_env env, MediaLibraryNapi* obj, int64_
         RecordKitApiHitAsyncExecute, RecordKitApiHitAsyncComplete);
 }
 
+void ProcessPhotoAccessHelperHitAsyncTask(napi_env env, napi_value result, int64_t startTime, std::string& errCode) {
+    if (result == nullptr) {
+        NAPI_ERR_LOG("result is null, skip process");
+        return;
+    }
+
+    void* objectPtr = nullptr;
+    napi_status unwrapStatus = napi_unwrap(env, result, &objectPtr);
+    auto* obj = static_cast<MediaLibraryNapi*>(objectPtr);
+
+    if (unwrapStatus != napi_ok || objectPtr == nullptr) {
+        NAPI_ERR_LOG("napi_unwrap failed or objectPtr is null");
+        return;
+    }
+
+    CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER, errCode);
+}
+
 napi_value MediaLibraryNapi::GetPhotoAccessHelper(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -1009,15 +1029,8 @@ napi_value MediaLibraryNapi::GetPhotoAccessHelper(napi_env env, napi_callback_in
     std::string errCode = "0";
     napi_value result = CreateNewInstance(env, info, photoAccessHelperConstructor_);
 
-    void* objectPtr = nullptr;
-    napi_status unwrapStatus = napi_unwrap(env, result, &objectPtr);
-    auto* obj = static_cast<MediaLibraryNapi*>(objectPtr);
-    if (unwrapStatus != napi_ok || objectPtr == nullptr) {
-        NAPI_ERR_LOG("napi_unwrap failed or objectPtr is null");
-        return result;
-    }
+    ProcessPhotoAccessHelperHitAsyncTask(env, result, startTime, errCode);
 
-    CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER, errCode);
     return result;
 }
 

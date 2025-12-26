@@ -14,20 +14,20 @@
  */
 
 #include "report_event.h"
-#include "medialibrary_napi_log.h"
 
 namespace OHOS {
 namespace Media {
 
 int64_t ReportEvent::beginTime_ = 0;
 bool ReportEvent::isReport_ = false;
+int64_t ReportEvent::processorId_ = DEFAULT_PROCESSOR_ID;
 
 void ReportEvent::AddEventProcessor()
 {
     HiviewDFX::HiAppEvent::ReportConfig config;
     config.name = "ha_app_event";  // 系统预制so，实现上报功能，由HA提供
     config.configName = "SDK_OCG"; // 固定内容，此配置内容由HA确认规格
-    processorId = HiviewDFX::HiAppEvent::AppEventProcessorMgr::AddProcessor(config);
+    processorId_ = HiviewDFX::HiAppEvent::AppEventProcessorMgr::AddProcessor(config);
 }
 
 void ReportEvent::WriteCallStatusEvent()
@@ -71,7 +71,7 @@ void ReportEvent::CountTimeAndNum(int64_t startTime, int64_t endTime, std::strin
     }
     totalCostTime_ += runTime;
     callTimes_++;
-    if (errCode == "0") {
+    if (errCode == "0") {  // 接口调用成功
         successTimes_++;
     } else {
         errCodes_[errCode]++;
