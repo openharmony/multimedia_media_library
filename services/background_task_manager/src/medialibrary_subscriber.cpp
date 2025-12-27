@@ -265,7 +265,8 @@ void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
         if (isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
         }
-        if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn) {
+        if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() &&
+            !isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck(); // 批量下载立即停止
         }
     }
@@ -306,6 +307,7 @@ bool MedialibrarySubscriber::Subscribe(void)
     // observer more than 50, failed to register
     subscriber_->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber_->CloudMediaAssetUnlimitObserver_, true);
 #endif
+    MedialibraryRelatedSystemStateManager::GetInstance();
     return ret;
 }
 
@@ -533,16 +535,6 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     }
 }
 
-bool MedialibrarySubscriber::IsCellularNetConnected()
-{
-    return isCellularNetConnected_;
-}
-
-bool MedialibrarySubscriber::IsWifiConnected()
-{
-    return isWifiConnected_;
-}
-
 bool MedialibrarySubscriber::IsCurrentStatusOn()
 {
     return currentStatus_;
@@ -598,6 +590,16 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     std::string type = want.GetStringParam(CLOUD_EVENT_INFO_TYPE);
     if (action == CLOUD_UPDATE_EVENT && type == CLOUD_EVENT_INFO_TYPE_VALUE) {
         PermissionWhitelistUtils::OnReceiveEvent();
+    }
+    HandleNetInfoChange(action);
+}
+
+void MedialibrarySubscriber::HandleNetInfoChange(std::string &action)
+{
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
+        action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
+            MedialibraryRelatedSystemStateManager::GetInstance()->SetCellularNetConnected(isCellularNetConnected_);
+            MedialibraryRelatedSystemStateManager::GetInstance()->SetWifiConnected(isWifiConnected_);
     }
 }
 

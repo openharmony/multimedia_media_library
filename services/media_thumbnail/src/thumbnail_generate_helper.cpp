@@ -51,6 +51,7 @@
 #include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
 #include "highlight_column.h"
+#include "medialibrary_related_system_state_manager.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -855,7 +856,8 @@ void UpgradeThumbnailBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
 {
     CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
     auto &thumbnailData = data->thumbnailData_;
-    CHECK_AND_RETURN_INFO_LOG(thumbnailData.isLocalFile || ThumbnailFileUtils::IsWifiConnected(),
+    CHECK_AND_RETURN_INFO_LOG(thumbnailData.isLocalFile ||
+        MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime(),
         "Wifi is not connected, cloud thumbnail can not be generated, id:%{public}s, path:%{public}s",
         thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
     IThumbnailHelper::CreateLcdAndThumbnail(data);

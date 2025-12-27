@@ -18,6 +18,7 @@
 
 #include "background_cloud_file_processor_common.h"
 #include "background_cloud_batch_selected_file_download_callback.h"
+#include "medialibrary_related_system_state_manager.h"
 
 namespace OHOS {
 namespace Media {

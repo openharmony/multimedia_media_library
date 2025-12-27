@@ -1302,59 +1302,12 @@ void BackgroundCloudBatchSelectedFileProcessor::RefreshNotRestoreReason(vector<i
     }
 }
 
-bool BackgroundCloudBatchSelectedFileProcessor::IsWifiConnected()
-{
-    bool isWifiConnected = false;
-    #ifdef HAS_WIFI_MANAGER_PART
-        auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
-        if (wifiDevicePtr != nullptr) {
-            ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected);
-            if (ret != Wifi::WIFI_OPT_SUCCESS) {
-                MEDIA_ERR_LOG("MedialibrarySubscriber Get-IsConnected-fail: -%{public}d", ret);
-            }
-        }
-    #endif
-    return isWifiConnected;
-}
-
-bool BackgroundCloudBatchSelectedFileProcessor::IsCellularNetConnected()
-{
-    bool isCellularNetConnected = false;
-    NetManagerStandard::NetHandle handle;
-    NetManagerStandard::NetAllCapabilities netAllCap;
-    NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
-    NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
-    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
-    if (types.count(NetManagerStandard::BEARER_CELLULAR)) {
-        MEDIA_INFO_LOG("init cellular status success: %{public}d", isCellularNetConnected);
-        isCellularNetConnected = true;
-    }
-    return isCellularNetConnected;
-}
-
-bool BackgroundCloudBatchSelectedFileProcessor::IsNetValidated()
-{
-    bool isNetValidated = false;
-    NetManagerStandard::NetHandle handle;
-    NetManagerStandard::NetAllCapabilities netAllCap;
-    NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
-    NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
-    const std::set<NetManagerStandard::NetCap>& types = netAllCap.netCaps_;
-    if (types.count(NetManagerStandard::NET_CAPABILITY_INTERNET) &&
-        types.count(NetManagerStandard::NET_CAPABILITY_VALIDATED)) {
-        isNetValidated = true;
-    }
-    MEDIA_DEBUG_LOG("BatchSelectFileDownload net validate : %{public}d", isNetValidated);
-    return isNetValidated;
-}
-
 // 自动停止 网络不满足 电量20- rom 可用10以下 任意满足
 bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownloadAutoPauseReasonType &autoPauseReason)
 {
-    bool netValidated = IsNetValidated();
-    bool inCellNet = IsCellularNetConnected();
-    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
-        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool netValidated = MedialibraryRelatedSystemStateManager::GetInstance()->IsNetValidatedAtRealTime();
+    bool isNetworkAvailable =
+        MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition();
     if (!isNetworkAvailable) {
         autoPauseReason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
@@ -1398,11 +1351,10 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
 bool BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()
 {
     // 自动恢复 网络 电量50+ rom 可用20以上 全满足
-    bool netValidated = IsNetValidated();
+    bool netValidated = MedialibraryRelatedSystemStateManager::GetInstance()->IsNetValidatedAtRealTime();
     vector<int32_t> currentNotRestoreReasons;
-    bool inCellNet = IsCellularNetConnected();
-    bool isNetworkAvailable = netValidated && ((IsWifiConnected() && !inCellNet) ||
-        (inCellNet && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    bool isNetworkAvailable =
+        MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition();
     if (!isNetworkAvailable) {
         BatchDownloadAutoPauseReasonType reason = netValidated ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
