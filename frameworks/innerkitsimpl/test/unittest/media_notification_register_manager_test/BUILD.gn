@@ -93,6 +93,8 @@ ohos_unittest("media_notification_register_manager_test") {
  
   cflags = [
     "-fno-access-control",  # Ignore Private Member Access Control
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
  
   cflags_cc = cflags
