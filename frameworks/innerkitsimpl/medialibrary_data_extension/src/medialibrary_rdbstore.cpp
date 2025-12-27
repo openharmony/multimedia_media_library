@@ -3671,6 +3671,20 @@ void AddHdrMode(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+void AddCriticalTypeColumns(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_IS_CRITICAL + " INT DEFAULT 0 NOT NULL",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CRITICAL_TYPE + " INT DEFAULT 0 NOT NULL",
+    };
+
+    MEDIA_INFO_LOG("add Photos critical_type column starts");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("add Photos critical_type column ends");
+}
+
 void AddLcdAndThumbSizeColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5770,6 +5784,12 @@ static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
         MEDIA_INFO_LOG("AddMovingPhotoEnhancement start");
         AddPhotoMovingphotoEnhancementType(store, VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true)) {
+        AddCriticalTypeColumns(store, VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true);
     }
 }
 

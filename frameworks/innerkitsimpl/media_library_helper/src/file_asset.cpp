@@ -868,5 +868,25 @@ int32_t FileAsset::GetExifRotate() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_EXIF_ROTATE);
 }
+
+void FileAsset::SetCritical(int32_t isCritical)
+{
+    member_[PhotoColumn::PHOTO_IS_CRITICAL] = isCritical;
+}
+
+int32_t FileAsset::GetCritical() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_CRITICAL);
+}
+
+void FileAsset::SetCriticalType(int32_t IsCriticalType)
+{
+    member_[PhotoColumn::PHOTO_CRITICAL_TYPE] = IsCriticalType;
+}
+
+int32_t FileAsset::GetCriticalType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_CRITICAL_TYPE);
+}
 }  // namespace Media
 }  // namespace OHOS

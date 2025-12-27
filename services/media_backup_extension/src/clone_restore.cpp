@@ -975,12 +975,48 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     MEDIA_INFO_LOG("singleClone MoveMigrateCloudFile end");
 }
 
+bool CloneRestore::CheckDestDbHasCriticalTypeColumn()
+{
+    unordered_map<string, string> dstColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_,
+        PhotoColumn::PHOTOS_TABLE);
+    return HasColumn(dstColumnInfoMap, PhotoColumn::PHOTO_CRITICAL_TYPE);
+}
+ 
+bool CloneRestore::CheckSrcDbHasCriticalTypeColumn()
+{
+    unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
+        PhotoColumn::PHOTOS_TABLE);
+    return HasColumn(srcColumnInfoMap, PhotoColumn::PHOTO_CRITICAL_TYPE);
+}
+ 
+void CloneRestore::UpdateCriticalTypeForSamePhotos(vector<FileInfo> &fileInfos)
+{
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew) {
+            continue;
+        }
+
+        if (CheckSrcDbHasCriticalTypeColumn() &&
+            fileInfo.criticalType != static_cast<int32_t>(CriticalType::UNKNOWN_CRITICAL_TYPE)) {
+            auto ret = mediaLibraryRdb_->ExecuteSql("UPDATE Photos SET critical = " +
+                                            std::to_string(fileInfo.criticalType) +
+                                            " WHERE file_id " + std::to_string(fileInfo.fileIdNew));
+            if (ret != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("Update failed for file_id: %{public}d with critical_type: %{public}d, error: %{public}d",
+                              fileInfo.fileIdNew, fileInfo.criticalType, ret);
+                continue;
+            }
+        }
+    }
+}
+
 int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty");
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
+    UpdateCriticalTypeForSamePhotos(fileInfos);
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
@@ -1553,6 +1589,9 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     GetThumbnailInsertValue(fileInfo, values);
     GetInsertValueFromValMap(fileInfo, values);
+    if (CheckDestDbHasCriticalTypeColumn()) {
+        values.PutInt(PhotoColumn::PHOTO_CRITICAL_TYPE, fileInfo.criticalType);
+    }
     return values;
 }
 
@@ -2366,6 +2405,10 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         string columnType = it->second;
         GetValFromResultSet(resultSet, fileInfo.valMap, columnName, columnType);
     }
+    int32_t criticalTypeValue = CheckSrcDbHasCriticalTypeColumn() ?
+                                GetInt32Val(PhotoColumn::PHOTO_CRITICAL_TYPE, resultSet) :
+                                static_cast<int32_t>(CriticalType::UNKNOWN_CRITICAL_TYPE);
+    fileInfo.criticalType = criticalTypeValue;
     return true;
 }
 
