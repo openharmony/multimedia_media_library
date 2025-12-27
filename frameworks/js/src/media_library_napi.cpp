@@ -133,6 +133,7 @@ const string DATE_FUNCTION = "DATE(";
 const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
 const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
+const int32_t BETA_ISSUE_ID_LENGTH = 10;
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -13782,7 +13783,7 @@ void MediaLibraryNapi::SetUserId(const int32_t &userId)
 
 static bool CheckBetaIssueId(const std::string &betaIssueId)
 {
-    return MediaLibraryNapiUtils::IsNumber(betaIssueId) && betaIssueId.length() == 10;
+    return betaIssueId.length() == BETA_ISSUE_ID_LENGTH && MediaLibraryNapiUtils::IsNumber(betaIssueId);
 }
 
 static bool CheckBetaScenario(const std::string &betaScenario)
@@ -13795,13 +13796,23 @@ static bool CheckFileDescriptor(int32_t fileFd)
     return fileFd >= 0 && fileFd <= 1023;
 }
 
-static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info info,
-    unique_ptr<MediaLibraryAsyncContext> &context)
+static int32_t CheckDebugDatabasePermission(napi_env env)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "API only can be called by system app");
-        return nullptr;
+        return E_ERROR;
     }
+    if (!MediaLibraryNapiUtils::IsBetaVersion()) {
+        NapiError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Caller not beta version");
+        return E_ERROR;
+    }
+    return E_OK;
+}
+
+static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == E_OK, nullptr, "Permission verification failed");
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -13933,10 +13944,7 @@ napi_value MediaLibraryNapi::PhotoAccessAcquireDebugDatabase(napi_env env, napi_
 static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info info, 
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "API only can be called by system app");
-        return nullptr;
-    }
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == E_OK, nullptr, "Permission verification failed");
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
