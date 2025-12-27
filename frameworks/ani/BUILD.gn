@@ -48,6 +48,7 @@ config("ani_config") {
     "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
     "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_COMMON_PATH}/utils/include",
   ]
 }
 
@@ -170,7 +171,10 @@ ohos_shared_library("medialibrary_ani_utils") {
 
   public_configs = [ ":taihe_config" ]
 
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_COMMON_PATH}:media_library_common",
+  ]
 
   use_exceptions = true
 
