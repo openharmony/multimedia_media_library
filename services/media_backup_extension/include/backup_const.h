@@ -431,6 +431,7 @@ struct FileInfo {
     int32_t cloudVersion {0};
     int32_t compositeDisplayStatus {0};
     int32_t effectMode {0};
+    int32_t criticalType {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**

@@ -1067,6 +1067,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     } else {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     }
+    values.PutInt(PhotoColumn::PHOTO_CRITICAL_TYPE, CriticalType::UNKNOWN_CRITICAL_TYPE);
     return values;
 }
 

@@ -2821,6 +2821,73 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     }
 }
 
+static int32_t GetCriticalState(const ValuesBucket& values, bool &isCritical)
+{
+    ValueObject isCriticalValObj;
+    bool hasIsCritical = values.GetObject(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalValObj);
+    if (hasIsCritical) {
+        int32_t isCriticalInt = -1;
+        int ret = isCriticalValObj.GetInt(isCriticalInt);
+        bool cond = (ret != E_OK || (isCriticalInt != 0 && isCriticalInt != 1));
+        CHECK_AND_RETURN_RET(!cond, E_INVALID_VALUES);
+        isCritical = (isCriticalInt == 1);
+    } else {
+        // If is_critical is not provided, derive from critical_type
+        ValueObject criticalTypeValObj;
+        bool hasCriticalType = values.GetObject(PhotoColumn::PHOTO_CRITICAL_TYPE, criticalTypeValObj);
+        CHECK_AND_RETURN_RET(hasCriticalType, E_INVALID_VALUES);
+        int32_t criticalType = -1;
+        int ret = criticalTypeValObj.GetInt(criticalType);
+        CHECK_AND_RETURN_RET(ret == E_OK, E_INVALID_VALUES);
+        // SUSPECTED_CRITICAL_TYPE (2) and CRITICAL_TYPE (3) are critical
+        isCritical = (criticalType == 2 || criticalType == 3);
+    }
+    return E_OK;
+}
+
+// Safe Album: Set photo critical state (inner API)
+int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
+{
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_FILE_ASSTE_BUSSINESS_NAME);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SetPhotoCritical");
+
+    // System app check: Only system apps can call this interface
+    bool cond = (!(PermissionUtils::IsSystemApp() || PermissionUtils::IsNativeSAApp() ||
+        (PermissionUtils::IsHdcShell() &&
+        OHOS::system::GetBoolParameter("const.security.developermode.state", true))));
+
+    // Get critical state from ValuesBucket
+    bool isCritical = false;
+    int32_t ret = GetCriticalState(cmd.GetValueBucket(), isCritical);
+    CHECK_AND_RETURN_RET(ret == E_OK, ret);
+
+    // Convert isCritical to critical_type and is_critical values
+    int32_t criticalType = isCritical ? 3 : 1; // CRITICAL_TYPE (3) or NOT_CRITICAL_TYPE (1)
+    int32_t isCriticalInt = isCritical ? 1 : 0;
+
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
+    MEDIA_INFO_LOG("SetPhotoCritical %{public}zu Photos, isCritical: %{public}d", notifyUris.size(), isCriticalInt);
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_CRITICAL_TYPE, criticalType);
+    values.Put(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalInt);
+
+    int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
+    CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
+
+    // Send notification
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    for (const auto &uri : notifyUris) {
+        watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
+    }
+    assetRefresh.Notify();
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
 {
     const ValuesBucket &values = cmd.GetValueBucket();
