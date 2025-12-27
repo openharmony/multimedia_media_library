@@ -44,6 +44,7 @@
 #include "power_efficiency_manager.h"
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
+#include "medialibrary_related_system_state_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -287,7 +288,8 @@ void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecor
                 repairRecord = fileId;
                 continue;
             }
-            if (position == static_cast<int32_t>(POSITION_CLOUD) && !MedialibrarySubscriber::IsWifiConnected()) {
+            if (position == static_cast<int32_t>(POSITION_CLOUD) &&
+                !MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected()) {
                 MEDIA_INFO_LOG("Break repair cause wifi not connect");
                 terminate = true;
                 break;

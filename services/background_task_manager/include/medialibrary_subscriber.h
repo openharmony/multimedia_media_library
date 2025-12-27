@@ -29,6 +29,7 @@
 #include "datashare_helper.h"
 #include "datashare_observer.h"
 #include "cloud_sync_utils.h"
+#include "medialibrary_related_system_state_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -86,8 +87,6 @@ public:
     EXPORT virtual ~MedialibrarySubscriber();
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
-    EXPORT static bool IsCellularNetConnected();
-    EXPORT static bool IsWifiConnected();
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static void RefreshCellularNetStatus();
 private:
@@ -138,6 +137,7 @@ private:
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT void HandleBatchDownloadWhenNetChange();
 #endif
+    EXPORT void HandleNetInfoChange(std::string &action);
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
