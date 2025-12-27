@@ -113,6 +113,7 @@ public:
     EXPORT static int32_t GetCompressAssetSize(const std::vector<std::string> &uris, int64_t &size);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
+    EXPORT static int32_t SetPhotoCritical(MediaLibraryCommand &cmd);
     static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
