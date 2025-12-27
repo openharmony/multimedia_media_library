@@ -277,6 +277,12 @@ public:
     EXPORT void SetExifRotate(int32_t exifRotate);
     EXPORT int32_t GetExifRotate() const;
 
+    // Safe Album: critical type for children's watch
+    EXPORT void SetCritical(int32_t IsCritical);
+    EXPORT int32_t GetCritical() const;
+    EXPORT void SetCriticalType(int32_t IsCriticalType);
+    EXPORT int32_t GetCriticalType() const;
+
 private:
     int32_t userId_ = -1;
     std::string albumUri_;

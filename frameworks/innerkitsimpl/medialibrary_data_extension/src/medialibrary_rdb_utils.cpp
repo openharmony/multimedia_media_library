@@ -328,10 +328,14 @@ static string GetQueryFilter(const string &tableName)
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     }
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
-        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        std::string filter = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
             PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
             to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+        if (!PermissionUtils::CheckCallerPermission(PERM_MANAGE_CRITICAL_PHOTOS)) {
+            filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
+        }
+        return filter;
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +

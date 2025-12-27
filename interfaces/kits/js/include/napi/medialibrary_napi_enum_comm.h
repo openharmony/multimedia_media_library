@@ -195,6 +195,10 @@ const std::vector<std::string> downloadAssetsNotifyTypeEnum {
     "DOWNLOAD_AUTO_RESUMED", "DOWNLOAD_REFRESHED"
 };
 
+const std::vector<std::string> criticalTypeEnum {
+    "UNKNOWN_CRITICAL_TYPE", "NOT_CRITICAL_TYPE", "SUSPECTED_CRITICAL_TYPE", "CRITICAL_TYPE",
+};
+
 const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
     std::make_pair("DEFAULT",           static_cast<int32_t>(PhotoSubType::DEFAULT)),
     std::make_pair("SCREENSHOT",        static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
@@ -315,6 +319,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("ASSET_SOURCE_TYPE",         PhotoColumn::PHOTO_FILE_SOURCE_TYPE),
     std::make_pair("ASPECT_RATIO",              PhotoColumn::PHOTO_ASPECT_RATIO),
     std::make_pair("EDIT_DATA_EXIST",           PhotoColumn::PHOTO_EDIT_DATA_EXIST),
+    std::make_pair("CRITICAL_TYPE",             PhotoColumn::PHOTO_CRITICAL_TYPE),
+    std::make_pair("IS_CRITICAL",               PhotoColumn::PHOTO_IS_CRITICAL),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

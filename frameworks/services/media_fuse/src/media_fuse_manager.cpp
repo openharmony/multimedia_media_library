@@ -32,6 +32,7 @@
 #include "os_account_manager.h"
 #include "storage_manager_proxy.h"
 #include "system_ability_definition.h"
+#include "settings_data_manager.h"
 #include "medialibrary_data_manager.h"
 #include "media_column.h"
 #include "media_privacy_manager.h"
@@ -90,6 +91,45 @@ static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
 };
 std::map<int, time_t> MEDIA_OPEN_WRITE_MAP;
 std::map<std::string, bool> MEDIA_CREATE_WRITE_MAP;
+
+static bool IsCriticalPhoto(const string &fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get RDB store");
+        return false;
+    }
+
+    vector<string> columns = { PhotoColumn::PHOTO_IS_CRITICAL };
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+
+    int32_t isCritical = 0;
+    int32_t columnIndex = 0;
+    resultSet->GetColumnIndex(PhotoColumn::PHOTO_IS_CRITICAL, columnIndex);
+    resultSet->GetInt(columnIndex, isCritical);
+
+    return isCritical == 1;
+}
+
+static int32_t CheckCriticalPhotoPermission(const string &fileId, const uid_t &uid)
+{
+    if (!IsCriticalPhoto(fileId)) {
+        return E_SUCCESS;
+    }
+
+    if (!PermissionUtils::CheckCallerPermission(PERM_MANAGE_CRITICAL_PHOTOS)) {
+        MEDIA_ERR_LOG("Permission denied: MANAGE_CRITICAL_PHOTOS required for critical photo access");
+        return E_PERMISSION_DENIED;
+    }
+
+    return E_SUCCESS;
+}
 
 MediafusePermCheckInfo::MediafusePermCheckInfo(const string &filePath, const string &mode, const string &fileId,
     const string &appId, const int32_t &uid)
@@ -298,6 +338,14 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
         cond = (path == nullptr || strlen(path) == 0);
     }
 
+    fuse_context *ctx = fuse_get_context();
+    if (ctx != nullptr) {
+        int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
+        if (criticalCheck != E_SUCCESS) {
+            return E_PERMISSION_DENIED;
+        }
+    }
+
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
     int32_t ret;
     int32_t splitCount = countSubString(path, "/");
@@ -465,6 +513,10 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     MEDIA_DEBUG_LOG("fuse open file");
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
+    int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
+    if (criticalCheck != E_SUCCESS) {
+        return E_PERMISSION_DENIED;
+    }
     uid_t uid = ctx->uid;
     string bundleName;
     AccessTokenID tokenCaller = INVALID_TOKENID;
