@@ -14,6 +14,7 @@
 */
 #define MLOG_TAG "MtpDriver"
 #include "mtp_driver.h"
+#include <cinttypes>
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "medialibrary_tracer.h"
@@ -150,11 +151,13 @@ int MtpDriver::ReceiveObj(MtpFileRange &mfr)
         .transactionId = mfr.transaction_id,
     };
 
+    MEDIA_INFO_LOG("MtpDriver::ReceiveObj fd:%{public}d offset:%{public}" PRId64 ", length:%{public}" PRId64,
+        mfs.fd, mfs.offset, mfs.length);
     tracer.Start("MTP usbfnMtpInterface->ReceiveFile");
     auto ret = usbfnMtpInterface->ReceiveFile(mfs);
     tracer.Finish();
 
-    MEDIA_DEBUG_LOG("MtpDriver::ReceiveObj end ret:%{public}d", ret);
+    MEDIA_INFO_LOG("MtpDriver::ReceiveObj end ret:%{public}d", ret);
     return ret;
 }
 
