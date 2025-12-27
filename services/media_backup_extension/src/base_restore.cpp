@@ -70,7 +70,7 @@ const double DOUBLE_EPSILON = 1e-15;
 
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND = 5000;
-static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/e12/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
 static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)

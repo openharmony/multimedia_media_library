@@ -169,7 +169,7 @@ static const std::string BROKER_ADD_MSG = "broker_add";
 static const std::string BROKER_REMOVE_MSG = "broker_remove";
 static const std::string BROKER_START_SCAN = "start_scan";
 static const int MAX_LOOP_CNT = 10;
-static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/e12/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
 static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 #ifdef DEVICE_STANDBY_ENABLE
