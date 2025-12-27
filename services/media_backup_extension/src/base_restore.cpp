@@ -42,6 +42,8 @@
 #include "ohos_account_kits.h"
 #include "medialibrary_photo_operations.h"
 #include "restore_map_code_utils.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -68,6 +70,8 @@ const double DOUBLE_EPSILON = 1e-15;
 
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND = 5000;
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -1701,11 +1705,27 @@ void BaseRestore::SetParameterForClone()
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
+static void SetMediaLibraryRecoveryDone(bool flag)
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(MEDIA_LIBRARY_PREF_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    prefs->PutInt(MEDIA_LIBRARY_RECOVERY_FLAG_KEY, flag ? 1 : 0);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("SetMediaLibraryRecoveryDone: %{public}d", flag ? 1 : 0);
+}
+
 void BaseRestore::StopParameterForClone()
 {
     MEDIA_INFO_LOG("StopParameterForClone set 0");
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    SetMediaLibraryRecoveryDone(true);
+    MEDIA_INFO_LOG("SetMediaLibraryRecoveryDone set true");
 }
 
 void BaseRestore::SetParameterForBackup()
