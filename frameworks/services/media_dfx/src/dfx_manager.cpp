@@ -403,6 +403,15 @@ static void HandleAlbumInfoBySubtype(std::shared_ptr<DfxReporter> &dfxReporter, 
     dfxReporter->ReportAlbumInfo(albumName.c_str(), albumInfo.imageCount, albumInfo.videoCount, albumInfo.isLocal);
 }
 
+static void HandleAlbumInfoByUploadStatus(std::shared_ptr<DfxReporter> &dfxReporter, const bool uploadStatus)
+{
+    vector<string> albumNames = DfxDatabaseUtils::QueryAlbumNamesByUploadStatus(static_cast<int32_t>(uploadStatus));
+    for (const auto& albumName : albumNames) {
+        MEDIA_INFO_LOG("albumNames: %{public}s, uploadStatus: %{public}d", albumName.c_str(), uploadStatus);
+        dfxReporter->ReportAlbumInfo(albumName.c_str(), 0, 0, uploadStatus);
+    }
+}
+
 static void HandleAlbumInfo(std::shared_ptr<DfxReporter> &dfxReporter)
 {
     HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::IMAGE));
@@ -410,6 +419,8 @@ static void HandleAlbumInfo(std::shared_ptr<DfxReporter> &dfxReporter)
     HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::FAVORITE));
     HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::HIDDEN));
     HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::TRASH));
+    HandleAlbumInfoByUploadStatus(dfxReporter, false);
+    HandleAlbumInfoByUploadStatus(dfxReporter, true);
 }
 
 static void HandleDirtyCloudPhoto(std::shared_ptr<DfxReporter> &dfxReporter)
