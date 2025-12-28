@@ -137,6 +137,7 @@ private:
     void RevertPendingByPackage(const std::string &bundleName);
     int64_t GetNowTime();
     void Init();
+    bool GetPowerConnected();
     void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();

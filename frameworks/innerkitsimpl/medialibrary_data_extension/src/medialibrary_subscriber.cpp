@@ -82,6 +82,8 @@
 #include "product_info.h"
 #include "permission_whitelist_utils.h"
 #include "cloud_media_retain_smart_data.h"
+#include "power_mgr_client.h"
+#include "power_mode_info.h"
 
 using namespace OHOS::AAFwk;
 
@@ -435,6 +437,15 @@ void MedialibrarySubscriber::WalCheckPointAsync()
         return;
     }
     std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
+}
+
+bool MedialibrarySubscriber::GetPowerConnected()
+{
+    auto& service = OHOS::PowerMgr::BatterySrvClient::GetInstance();
+    PowerMgr::BatteryChargeState chargeState = service.GetChargingStatus();
+    bool isPowerConnected = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE||
+            chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL)
+    return isPowerConnected;
 }
 
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
