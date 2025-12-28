@@ -82,7 +82,7 @@ int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastR
 }
 
 void MediaLocationSynchronizeTask::RepairPhotoLocation(int32_t &repairRecord, bool &terminate,
-                                                        std::vector<PhotosPo> &photosPoVec)
+    std::vector<PhotosPo> &photosPoVec)
 {
     for (PhotosPo photosPo : photosPoVec) {
         std::string path = photosPo.data.value_or("");
