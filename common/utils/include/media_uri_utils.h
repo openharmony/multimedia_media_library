@@ -17,8 +17,9 @@
 #define COMMON_UTILS_MEDIA_URI_UTILS_H_
 
 #include <string>
-
 #include <ctime>
+
+#include "uri.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -36,6 +37,7 @@ public:
     EXPORT static std::string GetPathFromUri(const std::string &uri);
     EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
     EXPORT static int32_t GetFileId(const std::string &uri);
+    EXPORT static Uri GetMultiUri(Uri &uri, int32_t userId);
 };
 } // namespace OHOS::Media
 
