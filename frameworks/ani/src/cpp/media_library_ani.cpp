@@ -534,7 +534,7 @@ static ani_status SetValueArray(ani_env *env, const char *fieldStr, const std::l
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, list.size()), "New aniArray failed");
 
     ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iY:", &setMethod),
         "Can't find method $_set in std.core.Array.");
 
     ani_int elementIndex = 0;
@@ -2297,7 +2297,7 @@ static ani_status ToAniPhotoAlbumsMap(ani_env *env, const std::unordered_map<int
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{std.core.Map}", &setMethod),
+        env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
         "Can't find method set in std.core.Map");
 
     for (const auto &[key, value] : albumMap) {
