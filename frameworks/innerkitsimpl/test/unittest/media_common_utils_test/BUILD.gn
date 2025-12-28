@@ -41,6 +41,7 @@ ohos_unittest("media_common_utils_test") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "ability_base:zuri",
     "hilog:libhilog",
     "relational_store:native_rdb",

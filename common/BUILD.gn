@@ -33,6 +33,7 @@ ohos_shared_library("media_library_common") {
 
   external_deps = [
     "ability_base:zuri",
+    "c_utils:utils",
     "hilog:libhilog",
     "relational_store:native_rdb",
   ]

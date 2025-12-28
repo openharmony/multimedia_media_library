@@ -15,6 +15,7 @@ MEDIALIB_ROOT_PATH = "//foundation/multimedia/media_library"
 
 MEDIALIB_COMMON_PATH = "${MEDIALIB_ROOT_PATH}/common"
 
+MEDIALIB_CLIENT_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/client"
 MEDIALIB_INNERKITS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl"
 MEDIALIB_INNERIMPL_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/innerimpl"
 MEDIALIB_INTERFACES_PATH = "${MEDIALIB_ROOT_PATH}/interfaces"
