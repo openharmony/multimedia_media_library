@@ -1021,7 +1021,7 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     }
     ani_ref value {};
     ani_int index = 0;
-    CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(assets, "$_get", "i:C{std.core.Object}", &value, index),
+    CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(assets, "$_get", "i:Y", &value, index),
         "Failed to get reference.");
 
     ani_class stringClass;
