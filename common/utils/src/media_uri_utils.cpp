@@ -25,10 +25,12 @@ namespace OHOS::Media {
 const int ASSET_IN_BUCKET_NUM_MAX = 1000;
 const int ASSET_DIR_START_NUM = 16;
 const int ASSET_MAX_NUM = 10000000;
+const int DEFAULT_USER_ID_INNER = -1;
 
 const std::string PHOTO_BUCKET_INNER = "Photo";
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files";
 const std::string PHOTO_URI_PREFIX_INNER = "file://media/Photo/";
+const std::string MULTI_USER_URI_FLAG = "user";
 
 void MediaUriUtils::AppendKeyValue(std::string &uri, const std::string &key, std::string value)
 {
@@ -143,4 +145,13 @@ int32_t MediaUriUtils::GetFileId(const std::string &uri)
     return value;
 }
 
+Uri MediaUriUtils::GetMultiUri(Uri &uri, int32_t userId)
+{
+    if (userId == DEFAULT_USER_ID_INNER) {
+        return uri;
+    }
+    std::string uriString = uri.ToString();
+    AppendKeyValue(uriString, MULTI_USER_URI_FLAG, std::to_string(userId));
+    return Uri(uriString);
+}
 } // namespace OHOS::Media
