@@ -12124,7 +12124,7 @@ napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callbac
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), OHOS_INVALID_PARAM_CODE);
 
     bool isImageFullyDisplayed = false;
-    if (argc >= ARGS_EIGHT && !IsNullValue(env, args[ARGS_SEVEN])) {
+    if (!IsNullValue(env, args[ARGS_SEVEN])) {
         napi_get_value_bool(env, args[ARGS_SEVEN], &isImageFullyDisplayed);
     }
 
