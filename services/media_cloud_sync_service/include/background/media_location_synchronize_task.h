@@ -29,7 +29,6 @@ public:
     virtual ~MediaLocationSynchronizeTask() = default;
 
 private:
-    void HandleRepairLocation(const int32_t &lastRecord);
     void RepairPhotoLocation(int32_t &repairRecord, bool &terminate, std::vector<PhotosPo> &photosPoVec);
     int32_t GetRepairLocationData(const int32_t &lastRecord, std::vector<PhotosPo> &photosPoVec);
 
