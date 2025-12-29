@@ -2842,7 +2842,6 @@ int32_t MediaAssetsControllerService::ReleaseDebugDatabase(MessageParcel &data, 
 
 int32_t MediaAssetsControllerService::DeleteLocalAssetsWithUri(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter DeleteLocalAssetsWithUri");
     DeletePhotosCompletedReqBody reqBody;
  
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -2861,7 +2860,6 @@ int32_t MediaAssetsControllerService::DeleteLocalAssetsWithUri(MessageParcel &da
  
 int32_t MediaAssetsControllerService::DeleteCloudAssetsWithUri(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter DeleteCloudAssetsWithUri");
     DeletePhotosCompletedReqBody reqBody;
  
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
