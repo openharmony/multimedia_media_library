@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DFX_RESULT_H
 
 #include <string>
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,6 +36,14 @@ enum class MultiStagesCaptureMediaType : int32_t {
     VIDEO,
     MOVING_PHOTO_IMAGE,
     MOVING_PHOTO_VIDEO,
+    CINEMATIC_VIDEO,
+};
+
+// 维护一个子类型到媒体类型的映射关系
+const std::unordered_map<int32_t, MultiStagesCaptureMediaType> SUBTYPR_TO_MEDIATYPE_MAP = {
+    {static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), MultiStagesCaptureMediaType::MOVING_PHOTO_VIDEO},
+    {static_cast<int32_t>(PhotoSubType::CAMERA), MultiStagesCaptureMediaType::VIDEO},
+    {static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO), MultiStagesCaptureMediaType::CINEMATIC_VIDEO},
 };
 
 class MultiStagesCaptureDfxResult {

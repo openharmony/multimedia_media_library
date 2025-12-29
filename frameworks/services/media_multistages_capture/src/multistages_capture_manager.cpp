@@ -168,21 +168,5 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
     } while (!resultSet->GoToNextRow());
 }
 
-int32_t MultiStagesCaptureManager::QuerySubType(const string &photoId)
-{
-    NativeRdb::AbsRdbPredicates predicatesNew(PhotoColumn::PHOTOS_TABLE);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { photoId };
-    predicatesNew.SetWhereClause(where);
-    predicatesNew.SetWhereArgs(whereArgs);
-    vector<string> columns { PhotoColumn::PHOTO_SUBTYPE };
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Result set is empty, photoId: %{public}s", photoId.c_str());
-        return static_cast<int32_t>(PhotoSubType::CAMERA);
-    }
-
-    return GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-}
 } // Media
 } // OHOS

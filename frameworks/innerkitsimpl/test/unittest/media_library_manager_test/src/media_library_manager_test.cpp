@@ -496,7 +496,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level1)
     EXPECT_GE(fd, 0);
     mediaLibraryManager->CloseAsset(uri, fd);
 }
-
+// 创建PhotoAssetProxy的测试类
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
@@ -550,7 +550,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     ASSERT_NE(photoProxyTest, nullptr);
 
     photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
-    int32_t fd = photoAssetProxy->GetVideoFd();
+    int32_t fd = photoAssetProxy->GetVideoFd(VideoType::ORIGIN_VIDEO);
     EXPECT_GE(fd, 0);
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 exit");
 }
@@ -560,7 +560,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, Te
     MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share enter");
     // empty datashare GetVideoFd will return error
     auto photoAssetProxyPtr = make_shared<PhotoAssetProxy>();
-    auto ret = photoAssetProxyPtr->GetVideoFd();
+    auto ret = photoAssetProxyPtr->GetVideoFd(VideoType::ORIGIN_VIDEO);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share exit");
 }
@@ -665,6 +665,217 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
 
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_005 enter");
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO, 2);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+    string titleExpect = photoProxyTest->GetTitle();
+    photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    EXPECT_EQ(fileAsset->GetTitle(), titleExpect);
+    EXPECT_EQ(fileAsset->GetResultNapiType(), ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_005 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_006 enter");
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::CINEMATIC_VIDEO, 2);
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    int32_t sourceFd = photoAssetProxy->GetVideoFd(VideoType::ORIGIN_VIDEO);
+    int32_t effectFd = photoAssetProxy->GetVideoFd(VideoType::EFFECT_VIDEO);
+    EXPECT_GE(sourceFd, 0);
+    EXPECT_GE(effectFd, 0);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::ORIGIN_VIDEO);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::EFFECT_VIDEO);
+
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_006 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_UpdatePhotoAssetProxy_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_001 enter");
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::CINEMATIC_VIDEO, 2);
+    sptr<PhotoProxyTest> photoProxyTest1 = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest1, nullptr);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest1);
+    int32_t sourceFd = photoAssetProxy->GetVideoFd(VideoType::ORIGIN_VIDEO);
+    int32_t effectFd = photoAssetProxy->GetVideoFd(VideoType::EFFECT_VIDEO);
+    EXPECT_GE(sourceFd, 0);
+    EXPECT_GE(effectFd, 0);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::ORIGIN_VIDEO);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::EFFECT_VIDEO);
+
+    sptr<PhotoProxyTest> photoProxyTest2 = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest2, nullptr);
+    // 下发二阶段任务
+    photoAssetProxy->UpdatePhotoProxy((sptr<PhotoProxy>&)photoProxyTest2);
+
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_UpdatePhotoAssetProxy_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_002 enter");
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::CINEMATIC_VIDEO, 2);
+    sptr<PhotoProxyTest> photoProxyTest1 = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest1, nullptr);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest1);
+    int32_t sourceFd = photoAssetProxy->GetVideoFd(VideoType::ORIGIN_VIDEO);
+    int32_t effectFd = photoAssetProxy->GetVideoFd(VideoType::EFFECT_VIDEO);
+    EXPECT_GE(sourceFd, 0);
+    EXPECT_GE(effectFd, 0);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::ORIGIN_VIDEO);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::EFFECT_VIDEO);
+
+    // 阻塞二阶段
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_002 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_UpdatePhotoAssetProxy_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_003 enter");
+    PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = 0,
+        .userId = 0,
+    };
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::CINEMATIC_VIDEO, 2);
+    sptr<PhotoProxyTest> photoProxyTest1 = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest1, nullptr);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest1);
+    int32_t sourceFd = photoAssetProxy->GetVideoFd(VideoType::ORIGIN_VIDEO);
+    int32_t effectFd = photoAssetProxy->GetVideoFd(VideoType::EFFECT_VIDEO);
+    EXPECT_GE(sourceFd, 0);
+    EXPECT_GE(effectFd, 0);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::ORIGIN_VIDEO);
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::EFFECT_VIDEO);
+
+    sptr<PhotoProxyTest> photoProxyTest2 = new(std::nothrow) PhotoProxyTest();
+    photoProxyTest2->SetVideoEnhancementType(0);
+    photoAssetProxy->UpdatePhotoProxy((sptr<PhotoProxy>&)photoProxyTest2);
+
+    // 阻塞二阶段
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("MediaLibraryManager_UpdatePhotoAssetProxy_test_003 exit");
+}
+
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test enter");
@@ -674,7 +885,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_te
     };
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
-    photoAssetProxy->NotifyVideoSaveFinished();
+    photoAssetProxy->NotifyVideoSaveFinished(VideoType::ORIGIN_VIDEO);
     MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test exit");
 }
 

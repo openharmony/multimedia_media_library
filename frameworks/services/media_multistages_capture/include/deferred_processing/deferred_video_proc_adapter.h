@@ -36,11 +36,12 @@ public:
 
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
-#ifdef ABILITY_CAMERA_SUPPORT
-    void AddVideo(const std::string &videoId, int srcFd, int dstFd);
-#endif
+    void AddVideo(const std::string &videoId, int32_t srcFd, int32_t dstFd);
+    void AddVideo(const std::string &videoId, const std::vector<int32_t> &fds);
     EXPORT virtual void RemoveVideo(const std::string &videoId, const bool isRestorable = true);
     EXPORT void RestoreVideo(const std::string &videoId);
+    EXPORT void ProcessVideo(const std::string &appName, const std::string &videoId);
+    EXPORT void CancelProcessVideo(const std::string &videoId);
 
 private:
 #ifdef ABILITY_CAMERA_SUPPORT

@@ -35,6 +35,7 @@ enum class CameraShotType : int32_t {
     VIDEO, // 视频
     MOVING_PHOTO, // 动态照片
     BURST, // 连拍照片
+    CINEMATIC_VIDEO, // 电影模式
 };
 
 enum class CloudEnhancementMovingPhotoEnhancementType : int32_t {
@@ -46,7 +47,7 @@ enum class CloudEnhancementMovingPhotoEnhancementType : int32_t {
 struct PhotoAssetProxyCallerInfo {
     uint32_t callingUid;
     int32_t userId;
-    uint32_t callingTokenId{0};
+    uint32_t callingTokenId {0};
     std::string packageName;
 
     std::string ToString() const
@@ -55,10 +56,16 @@ struct PhotoAssetProxyCallerInfo {
         ss << "{"
            << "\"callingUid\": \"" << std::to_string(this->callingUid) << "\","
            << "\"userId\": \"" << std::to_string(this->userId) << "\","
+           << "\"callingTokenId\": \"" << std::to_string(this->callingTokenId) << "\","
            << "\"packageName\": \"" << this->packageName
            << "}";
         return ss.str();
     }
+};
+
+enum class VideoType {
+    ORIGIN_VIDEO = 1,
+    EFFECT_VIDEO = 2
 };
 
 class VideoAttrs : public RefBase {
@@ -73,14 +80,15 @@ class PhotoAssetProxy {
 public:
     PhotoAssetProxy();
     PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper,
-        const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType);
+        const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType, int32_t videoCount);
     ~PhotoAssetProxy();
 
     EXPORT std::unique_ptr<FileAsset> GetFileAsset();
     EXPORT std::string GetPhotoAssetUri();
     EXPORT void AddPhotoProxy(const sptr<PhotoProxy> &photoProxy);
-    EXPORT int32_t GetVideoFd();
-    EXPORT void NotifyVideoSaveFinished();
+    EXPORT int32_t GetVideoFd(VideoType videoType);
+    EXPORT void NotifyVideoSaveFinished(VideoType videoType);
+    EXPORT void UpdatePhotoProxy(const sptr<PhotoProxy> &photoProxy);
     EXPORT void RegisterPhotoStateCallback(const LowQualityMemoryNumHandler &func);
     EXPORT void UnregisterPhotoStateCallback();
 
@@ -92,6 +100,8 @@ private:
         const std::string &displayName, const MediaType &mediaType);
     static int32_t AddProcessImage(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
         const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType, const std::string &packageName);
+    static int32_t AddProcessVideo(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+        const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t VideoCount);
     static int SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
     const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
     static void DealWithLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, int fd,
@@ -99,7 +109,7 @@ private:
     static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
         const sptr<PhotoProxy> &photoProxy, int fd);
     static std::string LocationValueToString(double value);
-    
+
     static void SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, DataShare::DataShareValuesBucket &values);
     static std::string GetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy);
     static int32_t RegisterLowQualityMemoryNumObserver(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper);
@@ -111,6 +121,7 @@ private:
     CameraShotType cameraShotType_ = CameraShotType::IMAGE;
     uint32_t callingUid_ {0};
     int32_t userId_ {0};
+    int32_t videoCount_ {1};
     uint32_t callingTokenId_ {0};
     std::string packageName_;
     PhotoSubType subType_ = PhotoSubType::DEFAULT;

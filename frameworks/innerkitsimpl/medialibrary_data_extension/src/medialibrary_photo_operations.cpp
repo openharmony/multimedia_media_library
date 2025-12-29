@@ -88,6 +88,7 @@ constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
+constexpr int32_t ORIGIN_VIDEO = 0;
 constexpr int32_t XT_ORIGIN_VIDEO = 1;
 constexpr int32_t XT_EFFECT_VIDEO = 2;
 constexpr int64_t FIXED_PADDING_BYTES = 1024;
@@ -97,7 +98,10 @@ const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
 const std::string SPECIAL_EDIT_EDIT_DATA = "";
 const std::string SPECIAL_EDIT_APP_ID = "com.ohos.photos";
+static const std::string ORIGIN_VIDEO_STR = "1";
 const bool PROCESS_TRANSCODE_SIZE = false;
+static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
+static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -497,8 +501,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
     shared_ptr<FileAsset>& fileAsset, const string& id, bool& isMovingPhotoVideo)
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
-    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO ||
-        movingPhotoOprnKey == CREATE_MOVING_PHOTO_VIDEO ||
+    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO || movingPhotoOprnKey == CREATE_MOVING_PHOTO_VIDEO ||
         movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD) {
         bool isTemp = movingPhotoOprnKey == CREATE_MOVING_PHOTO_VIDEO;
         CHECK_AND_RETURN_RET_LOG(CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(),
@@ -538,6 +541,31 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
         string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileAsset->GetPath());
         fileAsset->SetPath(extraDataPath);
     }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ProcessCinematicVideoOprnKey(MediaLibraryCommand& cmd,
+    shared_ptr<FileAsset>& fileAsset, const string& id)
+{
+    string cinematicVideoOprnKey = cmd.GetQuerySetParam(MEDIA_CINEMATIC_VIDEO_OPRN_KEYWORD);
+    bool isValid = (cinematicVideoOprnKey == CREATE_CINEMATIC_VIDEO);
+    CHECK_AND_RETURN_RET_INFO_LOG(isValid, E_OK,
+        "cinematicVideoOprnKey is not valid. cinematicVideoOprnKey: %{public}s", cinematicVideoOprnKey.c_str());
+
+    string videoPath = fileAsset->GetPath();
+    MEDIA_INFO_LOG("ProcessCinematicVideoOprnKey videoPath %{private}s", videoPath.c_str());
+    string inputPath;
+    if (cmd.GetQuerySetParam(VIDEO_TYPE_KEYWORD) == ORIGIN_VIDEO_STR) {
+        inputPath = PhotoFileUtils::GetEditDataSourcePath(videoPath);
+        string editDataDirPath = GetEditDataDirPath(videoPath);
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+            "Can not create dir %{private}s", editDataDirPath.c_str());
+    } else {
+        inputPath = videoPath;
+    }
+    MEDIA_INFO_LOG("ProcessCinematicVideoOprnKey inputPath %{private}s, videoType %{public}s",
+        inputPath.c_str(), cmd.GetQuerySetParam(VIDEO_TYPE_KEYWORD).c_str());
+    fileAsset->SetPath(inputPath);
     return E_OK;
 }
 
@@ -633,6 +661,11 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         "Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
     CHECK_AND_RETURN_RET_LOG(CheckPermissionToOpenFileAsset(fileAsset),
         E_PERMISSION_DENIED, "Open not allowed");
+
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
+        errCode = ProcessCinematicVideoOprnKey(cmd, fileAsset, id);
+        CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
+    }
 
     bool isMovingPhotoVideo = false;
     errCode = ProcessMovingPhotoOprnKey(cmd, fileAsset, id, isMovingPhotoVideo);
@@ -1265,6 +1298,7 @@ int32_t GetPhotoIdByFileId(int32_t fileId, std::string &photoId)
 int32_t MediaLibraryPhotoOperations::DiscardCameraPhoto(MediaLibraryCommand &cmd)
 {
     std::string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
+    MEDIA_INFO_LOG("MultistagesCapture, start discard fileId: %{public}s", fileId.c_str());
     bool isClearCachedPicture = false;
     std::string photoId;
     int32_t ret = E_ERR;
@@ -1284,6 +1318,7 @@ int32_t MediaLibraryPhotoOperations::DiscardCameraPhoto(MediaLibraryCommand &cmd
         if (pictureManagerThread != nullptr) {
             pictureManagerThread->DeleteDataWithImageId(photoId, LOW_QUALITY_PICTURE);
         }
+        MultistagesCaptureNotify::NotifyLowQualityMemoryCount();
         MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
     }
 
@@ -1547,19 +1582,63 @@ int32_t MediaLibraryPhotoOperations::GetFilePathById(const shared_ptr<MediaLibra
     return E_OK;
 }
 
+void MediaLibraryPhotoOperations::HandleContainsAddResource(const std::string &fileId,
+    const std::string containsAddResource)
+{
+    MEDIA_ERR_LOG("HandleContainsAddResource containsAddResource: %{public}s.", containsAddResource.c_str());
+    if (containsAddResource == CONTAIN_ADD_RESOURCE_FALSE) {
+        MEDIA_WARN_LOG("no need execute HandleContainsAddResource.");
+        return;
+    }
+
+    const std::vector<std::string> columns = {
+        PhotoColumn::PHOTO_ID,
+    };
+    std::shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_LOG(fileAsset != nullptr, "MultistagesCapture, get fileAsset fail");
+
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->DeleteDataWithImageId(fileAsset->GetPhotoId(), LOW_QUALITY_PICTURE);
+        pictureManagerThread->DeleteDataWithImageId(fileAsset->GetPhotoId(), HIGH_QUALITY_PICTURE);
+    }
+    MultistagesCaptureNotify::NotifyLowQualityMemoryCount();
+}
+
+void MediaLibraryPhotoOperations::HandleScanFile(const std::string &path, int32_t burstCoverLevel,
+    std::shared_ptr<Media::Picture> &resultPicture, const std::string &fileId)
+{
+    if (!path.empty()) {
+        MEDIA_INFO_LOG("MultistagesCapture, scan file start, fileId: %{public}s", fileId.c_str());
+        if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
+            ScanFile(path, false, true, true, stoi(fileId), resultPicture);
+        } else {
+            resultPicture = nullptr;
+            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(
+                path, false, true, true, stoi(fileId));
+        }
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
-    if (fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId)) {
-        MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
-        return 0;
-    }
+    bool cond = fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId);
+    CHECK_AND_RETURN_RET_LOG(!cond, 0, "MultistagesCapture, get fileId fail");
+
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} MultistagesCapture, start save fileId: %{public}s",
         MLOG_TAG, __FUNCTION__, __LINE__, fileId.c_str());
+
+    std::string containsAddResource = cmd.GetQuerySetParam(CONTAIN_ADD_RESOURCE);
+    if (!containsAddResource.empty()) {
+        HandleContainsAddResource(fileId, containsAddResource);
+    }
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+    MEDIA_ERR_LOG("MultistagesCapture fileType: %{public}s", fileType.c_str());
     int32_t getPicRet = -1;
     PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
     int32_t ret = UpdateIsTempAndDirty(cmd, fileId, fileType, getPicRet, photoExtInfo);
@@ -1575,23 +1654,20 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_DEBUG_LOG("MultistagesCapture, save picture end, fileId: %{public}s", fileId.c_str());
     }
     tracer.Finish();
+    if (containsAddResource == CONTAIN_ADD_RESOURCE_TRUE) {
+        MEDIA_ERR_LOG("MultistagesCapture Success, no need scanfile, fileId: %{public}s, ret: %{public}d",
+            fileId.c_str(), ret);
+        return ret;
+    }
+
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
         OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, 0, "MultistagesCapture, get fileAsset fail");
-    string path = fileAsset->GetPath();
+    std::string path = fileAsset->GetPath();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     tracer.Start("MediaLibraryPhotoOperations::Scan");
-    if (!path.empty()) {
-        MEDIA_DEBUG_LOG("MultistagesCapture, scan file start, fileId: %{public}s", fileId.c_str());
-        if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
-            ScanFile(path, false, true, true, stoi(fileId), resultPicture);
-        } else {
-            resultPicture = nullptr;
-            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(
-                path, false, true, true, stoi(fileId));
-        }
-    }
+    HandleScanFile(path, burstCoverLevel, resultPicture, fileId);
     tracer.Finish();
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
         "MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
@@ -1601,10 +1677,12 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)
 {
-    string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
-    string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
-    string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
-    MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, filePath);
+    std::string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
+    std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
+    std::string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
+    int32_t fileIdNum = static_cast<int32_t>(std::strtoul(fileId.c_str(), nullptr, 10));
+    VideoInfo videoInfo = {fileIdNum, VideoCount::SINGLE, filePath, "", ""};
+    MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, videoInfo);
     return E_OK;
 }
 
@@ -3570,6 +3648,7 @@ std::shared_ptr<FileAsset> MediaLibraryPhotoOperations::GetFileAsset(MediaLibrar
 int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
     bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture)
 {
+    MEDIA_ERR_LOG("Enter GetPicture");
     int32_t ret = GetPhotoIdByFileId(fileId, photoId);
     if (ret != E_OK || photoId.empty()) {
         HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} photoId is emply fileId is: %{public}d",
@@ -3650,7 +3729,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
 {
     // moving photo video save and add filters
     const ValuesBucket& values = cmd.GetValueBucket();
-    int32_t videoType = 0;
+    int32_t videoType = ORIGIN_VIDEO;
     GetInt32FromValuesBucket(values, VIDEO_TYPE_KEYWORD, videoType);
     string videoSaveFinishedUri;
     if (GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) {
@@ -3761,6 +3840,8 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
     }
     lastPhotoId_ = photoId;
+    MultistagesCaptureNotify::NotifyLowQualityMemoryCount();
+
     size_t size = -1;    // 删除已经存在的异常后缀的图片
     MediaFileUtils::GetFileSize(photoExtInfo.oldFilePath, size);
     bool cond = (photoExtInfo.oldFilePath != "" && size > 0);
@@ -3850,7 +3931,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
     bool isSaveVideo, bool isNeedScan, int32_t videoType)
 {
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
-    if ((MediaFileUtils::IsFileExists(editDataCameraPath)) && (videoType == 0)) {
+    if ((MediaFileUtils::IsFileExists(editDataCameraPath)) && (videoType == ORIGIN_VIDEO)) {
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
@@ -4239,7 +4320,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(const std::shared_p
     const uint8_t *addr, const long bytes)
 {
     if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr");
+        MEDIA_ERR_LOG("fileAsset is nullptr.");
         return E_ERR;
     }
     MediaLibraryTracer tracer;
@@ -4408,15 +4489,24 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
-    bool isMovingPhotoEffectMode, const std::string &path)
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(const std::shared_ptr<FileAsset> &fileAsset)
 {
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr.");
+        return E_ERR;
+    }
+    bool isMovingPhoto =
+        (fileAsset->GetStageVideoTaskStatus()) == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED);
+    bool isEdited = (fileAsset->GetPhotoEditTime()) > 0;
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
         "ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         MLOG_TAG, __FUNCTION__, __LINE__,
-        DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
-    CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path, isEdited, isMovingPhotoEffectMode));
-    return FileUtils::SaveVideo(path, isEdited);
+        DfxUtils::GetSafePath(fileAsset->GetFilePath()).c_str(), isEdited, isMovingPhoto);
+    if (isMovingPhoto) {
+        bool isMovingPhotoEffectMode = (fileAsset->GetMovingPhotoEffectMode()) > 0;
+        return FileUtils::SaveMovingPhotoVideo(fileAsset->GetFilePath(), isEdited, isMovingPhotoEffectMode);
+    }
+    return FileUtils::SaveVideo(fileAsset->GetFilePath(), isEdited);
 }
 
 int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
