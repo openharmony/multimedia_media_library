@@ -155,12 +155,16 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
     EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT,
     EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
+    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
     CLOUD_UPDATE_EVENT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
     {EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING, StatusEventType::CHARGING},
     {EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING, StatusEventType::DISCHARGING},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED, StatusEventType::POWER_CONNECTED},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED, StatusEventType::POWER_DISCONNECTED},
     {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF, StatusEventType::SCREEN_OFF},
     {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON, StatusEventType::SCREEN_ON},
     {EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED, StatusEventType::BATTERY_CHANGED},
@@ -458,10 +462,10 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
             break;
-        case StatusEventType::CHARGING:
+        case StatusEventType::POWER_CONNECTED:
             isCharging_ = true;
             break;
-        case StatusEventType::DISCHARGING:
+        case StatusEventType::POWER_DISCONNECTED:
             isCharging_ = false;
             break;
         case StatusEventType::BATTERY_CHANGED:
