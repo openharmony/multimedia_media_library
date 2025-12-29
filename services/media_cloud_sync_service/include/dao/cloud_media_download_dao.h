@@ -86,6 +86,7 @@ private:
         PhotoColumn::PHOTO_ORIENTATION,
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
         PhotoColumn::PHOTO_STORAGE_PATH,
+        PhotoColumn::PHOTO_SUBTYPE,
         MediaColumn::MEDIA_HIDDEN,
         MediaColumn::MEDIA_DATE_TRASHED,
     };

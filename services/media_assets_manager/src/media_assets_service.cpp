@@ -511,7 +511,8 @@ int32_t MediaAssetsService::SetVideoEnhancementAttr(
     const int32_t fileId, const std::string &photoId, const std::string &path)
 {
     MEDIA_DEBUG_LOG("photoId:%{public}s, fileId:%{public}d, path:%{public}s", photoId.c_str(), fileId, path.c_str());
-    MultiStagesVideoCaptureManager::GetInstance().AddVideo(photoId, to_string(fileId), path);
+    VideoInfo videoInfo = {fileId, VideoCount::SINGLE, path, "", ""};
+    MultiStagesVideoCaptureManager::GetInstance().AddVideo(photoId, to_string(fileId), videoInfo);
     return E_OK;
 }
 
@@ -1430,6 +1431,12 @@ int32_t MediaAssetsService::LogMovingPhoto(const AdaptedReqBody &req)
     return E_SUCCESS;
 }
 
+int32_t MediaAssetsService::LogCinematicVideo(const CinematicVideoAccessReqBody &req)
+{
+    DfxManager::GetInstance()->HandleCinematicVideoAccessTimes(false, req.isHighQaulity);
+    return E_SUCCESS;
+}
+
 int32_t MediaAssetsService::GetResultSetFromDb(const GetResultSetFromDbDto& getResultSetFromDbDto,
     GetResultSetFromDbRespBody& resp)
 {
@@ -1795,6 +1802,20 @@ int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetU
 
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
     respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CancelRequest(const std::string &photoId,
+    const int32_t mediaType)
+{
+    MEDIA_INFO_LOG("Cancel Request, photoId: %{public}s, mediaType: %{public}d",
+        photoId.c_str(), mediaType);
+    if (static_cast<MediaType>(mediaType) == MEDIA_TYPE_VIDEO) {
+        MultiStagesVideoCaptureManager::GetInstance().CancelProcessRequest(photoId);
+        return E_OK;
+    }
+    MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
+ 
     return E_OK;
 }
 

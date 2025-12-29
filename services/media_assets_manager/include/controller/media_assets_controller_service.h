@@ -110,6 +110,7 @@ public:
     EXPORT int32_t SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t LogCinematicvideo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t ConvertFormat(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CheckMimeType(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CreateTmpCompatibleDup(MessageParcel &data, MessageParcel &reply);
@@ -123,6 +124,7 @@ public:
     EXPORT int32_t GetUrisByOldUrisInner(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t Restore(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t StopRestore(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CancelRequest(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t HeifTranscodingCheck(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetCompositeDisplayMode(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AcquireDebugDatabase(MessageParcel &data, MessageParcel &reply);

@@ -109,7 +109,8 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     int32_t enhancementType = GetInt32Val(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, resultSet);
     UpdateMultStagesMovingPhotoVideoCloudEnhancementType(enhancementType, fileId);
-    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
+    VideoInfo videoInfo = {fileId, VideoCount::SINGLE, data, "", ""};
+    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, videoInfo, false, true);
     UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Moving photo mulit stage video task has been delivered",
         MLOG_TAG, __FUNCTION__, __LINE__);
