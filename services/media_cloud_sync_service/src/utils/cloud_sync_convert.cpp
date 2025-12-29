@@ -137,6 +137,9 @@ int32_t CloudSyncConvert::CompensateAttBurstKey(const CloudMediaPullDataDto &dat
 {
     std::string burstKey = data.attributesBurstKey;
     CHECK_AND_RETURN_RET(!burstKey.empty(), E_CLOUDSYNC_INVAL_ARG);
+    const bool hasLocalAsset = data.localPhotosPoOp.has_value();
+    const std::string localBurstKey = hasLocalAsset ? data.localPhotosPoOp.value().burstKey.value_or("") : "";
+    CHECK_AND_RETURN_RET(localBurstKey.empty(), E_OK); // No update for burst_key
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     return E_OK;
 }
