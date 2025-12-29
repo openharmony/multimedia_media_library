@@ -86,6 +86,8 @@ constexpr int32_t DISPLAY_LEVEL_NUMBER = 1;
 constexpr int32_t LOCAL_NUMBER = 1;
 constexpr int32_t RENAME_OPERATION_NUMBER = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL = 2;
+constexpr int32_t ANALYSISED_DISPLAY_LEVEL_HIDDEN = -1;
+constexpr int32_t ANALYSISED_DISPLAY_LEVEL_SECOND_PAGE = -2;
 const std::string USER_ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_ALBUM_LPATH_PREFIX = "/Pictures/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
@@ -3295,6 +3297,27 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
     return ret;
 }
 
+static int32_t GetIsMeAlbumDisplayLevelClause(
+    shared_ptr<MediaLibraryRdbStore> uniStore, std::string targetAlbumId, std::string &displayLevelClause)
+{
+    std::string queryTargetAlbum =
+        "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    auto targetResultSet = uniStore->QuerySql(queryTargetAlbum);
+    if (targetResultSet == nullptr || targetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return -E_HAS_DB_ERROR;
+    }
+    int32_t userDisplaylevel = -1;
+    GetIntValueFromResultSet(targetResultSet, USER_DISPLAY_LEVEL, userDisplaylevel);
+    targetResultSet->Close();
+
+    if (userDisplaylevel == ANALYSISED_DISPLAY_LEVEL_HIDDEN ||
+        userDisplaylevel == ANALYSISED_DISPLAY_LEVEL_SECOND_PAGE) {
+        MEDIA_INFO_LOG("Album %{public}s has display level: %{public}d", targetAlbumId.c_str(), userDisplaylevel);
+        displayLevelClause = ", " + USER_DISPLAY_LEVEL + " = " + std::to_string(FIRST_PAGE);
+    }
+    return E_OK;
+}
+
 /**
  * set target album is me
  * @param values is_me
@@ -3315,18 +3338,15 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for merge albums");
     vector<string> updateSqls;
     SetMyOldAlbum(updateSqls, uniStore);
-    std::string queryTargetAlbum = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
-    auto targetResultSet = uniStore->QuerySql(queryTargetAlbum);
-    if (targetResultSet == nullptr || targetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query target album!");
-        return -E_HAS_DB_ERROR;
-    }
-    targetResultSet->Close();
+
+    std::string updateDisplayLevelClause = "";
+    int32_t getDisplayLevelRet = GetIsMeAlbumDisplayLevelClause(uniStore, targetAlbumId, updateDisplayLevelClause);
+    CHECK_AND_RETURN_RET_LOG(getDisplayLevelRet == E_OK, getDisplayLevelRet, "Failed to query target album!");
 
     MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " +
-        ALBUM_RELATIONSHIP + " = 'me', " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " +
+        ALBUM_RELATIONSHIP + " = 'me', " + RENAME_OPERATION + " = 1" + updateDisplayLevelClause
+        + " WHERE " + GROUP_TAG + " IN(SELECT " +
         GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
     std::string updateSqlForGroupPhoto = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
         std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " , " + IS_ME + " = 1 WHERE " + ALBUM_ID + " IN (SELECT " +
