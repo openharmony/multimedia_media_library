@@ -5066,12 +5066,13 @@ static void AddLakeAlbumTable(RdbStore &store, int32_t version)
 
 static void AddPhotoMovingphotoEnhancementType(RdbStore &store, int32_t version)
 {
+    MEDIA_INFO_LOG("Add moving photo enhancement column start");
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE +
             " INT NOT NULL DEFAULT 0",
     };
     ExecSqlsWithDfx(sqls, store, version);
-    MEDIA_INFO_LOG("Add AddMovingPhotoEnhancement column end");
+    MEDIA_INFO_LOG("Add moving photo enhancement column end");
 }
 
 static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
@@ -5781,7 +5782,6 @@ static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true)) {
-        MEDIA_INFO_LOG("AddMovingPhotoEnhancement start");
         AddPhotoMovingphotoEnhancementType(store, VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true);
     }

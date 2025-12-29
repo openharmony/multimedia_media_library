@@ -38,12 +38,6 @@ enum class CameraShotType : int32_t {
     CINEMATIC_VIDEO, // 电影模式
 };
 
-enum class CloudEnhancementMovingPhotoEnhancementType : int32_t {
-    IMAGE = 0,  // 默认值仅封面帧
-    VIDEO = 1,  // 仅视频
-    BOTH = 2,   // 封面帧和视频都需要
-};
-
 struct PhotoAssetProxyCallerInfo {
     uint32_t callingUid;
     int32_t userId;
