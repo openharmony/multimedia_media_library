@@ -219,6 +219,7 @@ const int32_t ARGS_FOUR = 4;
 const int32_t ARGS_FIVE = 5;
 const int32_t ARGS_SIX = 6;
 const int32_t ARGS_SEVEN = 7;
+const int32_t ARGS_EIGHT  = 8;
 const int32_t ARG_BUF_SIZE = 384; // 256 for display name and 128 for relative path
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 

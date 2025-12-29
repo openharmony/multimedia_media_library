@@ -272,9 +272,9 @@ function checkIsPhotoCreationConfigValid(config) {
   return true;
 }
 
-function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
+function checkConfirmBoxParams(srcFileUris, photoCreationConfigs, isImageFullyDisplayed) {
   // check param number
-  if (arguments.length > ARGS_TWO) {
+  if (arguments.length < ARGS_TWO || arguments.length > ARGS_THREE) {
     return false;
   }
 
@@ -300,6 +300,13 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
   // check whether photoCreationConfigs element is valid
   for (let photoCreateConfig of photoCreationConfigs) {
     if (!checkIsPhotoCreationConfigValid(photoCreateConfig)) {
+      return false;
+    }
+  }
+
+  if (isImageFullyDisplayed !== undefined) {
+    if (typeof isImageFullyDisplayed !== 'boolean') {
+      console.error('photoAccessHelper isImageFullyDisplayed must be boolean if provided.');
       return false;
     }
   }
@@ -336,7 +343,7 @@ function showAssetsCreationDialogResult(result, reject, resolve) {
   resolve(result.data);
 }
 
-async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs) {
+async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs, isImageFullyDisplayed = false) {
   let bundleInfo = getBundleInfo();
   if (bundleInfo === undefined) {
     return new Promise((resolve, reject) => {
@@ -369,11 +376,20 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
         appName, appId, result => {
           showAssetsCreationDialogResult(result, reject, resolve);
-      });
+      }, isImageFullyDisplayed);
     });
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), null);
   }
+}
+
+function showSingleAssetCreationDialogEx(srcFileUri, photoCreationConfigs, isImageFullyDisplayed) {
+  const displayFlag = isImageFullyDisplayed !== undefined ? isImageFullyDisplayed : false;
+  return showAssetsCreationDialog([srcFileUri], [photoCreationConfigs], displayFlag);
+}
+
+function showAssetsCreationDialogEx(srcFileUri, photoCreationConfigs) {
+  return showAssetsCreationDialog(srcFileUri, photoCreationConfigs, false);
 }
 
 function showAssetsCreationDialog(...params) {
@@ -687,7 +703,8 @@ function getPhotoAccessHelper(context, userId = -1) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.constructor.prototype.createDeleteRequest = createDeleteRequest;
     helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
-    helper.constructor.prototype.showAssetsCreationDialogEx = showAssetsCreationDialog;
+    helper.constructor.prototype.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+    helper.constructor.prototype.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
     helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
     helper.constructor.prototype.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
     helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
@@ -729,7 +746,8 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
-          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+          helper.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
@@ -753,7 +771,8 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
-          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+          helper.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
