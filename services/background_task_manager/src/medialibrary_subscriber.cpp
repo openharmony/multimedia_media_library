@@ -142,6 +142,7 @@ constexpr int32_t SUBSCRIBE_TASK_TIMEOUT_SECOND = 2;
 const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
 const string CLOUD_EVENT_INFO_TYPE = "type";
 const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
+const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -1056,6 +1057,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     int32_t ret = DoCloudMediaRetainCleanup();
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
     ThumbnailService::GetInstance()->DfxReportThumbnailDirAcl();
+    ResetCloneFlagAfterOneDay();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
@@ -1093,13 +1095,13 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     std::lock_guard<std::mutex> lock(mutex_);
     bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
     bool newStatus = false;
-    if (isCharging_) {
+    if (system::GetParameter(CLONE_FLAG, "0") != "0") {
+        newStatus = false;
+    } else if (isCharging_) {
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
-    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 &&
-        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY &&
-        system::GetParameter("multimedia.medialibrary.cloneFlag", "0") == "0") {
-        MEDIA_INFO_LOG("clone_flag is not 0");
+    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40 &&
+        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         int32_t thumbAstcCount = 0;
         int32_t thumbTotalCount = 0;
         MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
@@ -1322,6 +1324,26 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPre
     CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
     value = GetInt32Val(queryColumn, resultSet);
     return E_OK;
+}
+
+void MedialibrarySubscriber::ResetCloneFlagAfterOneDay()
+{
+    std::string cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
+    if (cloneFlagStr == "0") {
+        MEDIA_INFO_LOG("Clone flag is 0, no need to reset");
+        return;
+    }
+    int64_t cloneStartTime = 0;
+    if (!cloneFlagStr.empty()) {
+        cloneStartTime = static_cast<int64_t>(MediaFileUtils::StrToInt64(cloneFlagStr));
+    }
+    auto currentTime = MediaFileUtils::UTCTimeSeconds();
+    int64_t timeCost = currentTime - cloneStartTime;
+    const int64_t oneDayInSeconds = 86400;
+    if (timeCost >= oneDayInSeconds) {
+        bool retFlag = system::SetParameter(CLONE_FLAG, "0");
+        CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
 }
 }  // namespace Media
 }  // namespace OHOS
