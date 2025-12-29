@@ -78,9 +78,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecordsInner(
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnFetchRecordsInner failed, ret: %{public}d", ret);
         for (auto data : nodeRespBody.fdirtyDatas) {
             if (data.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-                MEDIA_INFO_LOG("Need clear VideoCache, attributesMediaType: %{public}d, localPath: %{public}s",
-                    data.attributesMediaType,
-                    data.localPath.c_str());
+                MEDIA_INFO_LOG("Need clear VideoCache");
                 CloudMediaSyncUtils::InvalidVideoCache(data.localPath);
             }
         }

@@ -139,7 +139,9 @@
             "//foundation/multimedia/media_library/services/media_mtp:media_mtp_package",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync",
             "//foundation/multimedia/media_library/common:media_library_common",
-            "//foundation/multimedia/media_library/frameworks/client:media_library_client"
+            "//foundation/multimedia/media_library/frameworks/client:media_library_client",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/analysis_data_kits:analysis_data_kits"
+
           ]
         },
         "inner_kits": [
@@ -152,6 +154,15 @@
                   ]
                 },
                 "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/analysis_data_kits/include",
+                "header_files": [
+                  "analysis_data_manager.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/analysis_data_kits:analysis_data_kits"
             },
             {
               "header": {

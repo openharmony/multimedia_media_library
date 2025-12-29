@@ -31,6 +31,7 @@ ohos_executable("mediatool") {
     "${MEDIALIB_ROOT_PATH}/interfaces/inner_api/media_library_helper/include",
     "${MEDIALIB_ROOT_PATH}/interfaces/kits/js/include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/table",
   ]
 
   sources += [

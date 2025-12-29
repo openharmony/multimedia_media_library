@@ -42,6 +42,7 @@ ohos_shared_library("media_library_asset_manager") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
     "${MEDIALIB_COMMON_PATH}/utils/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/table",
   ]
 
   user_ipc_client_include_dirs = [
