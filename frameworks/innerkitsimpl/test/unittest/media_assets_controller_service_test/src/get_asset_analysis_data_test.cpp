@@ -21,6 +21,7 @@
 #include <string>
 
 #include "media_assets_controller_service.h"
+#include "media_analysis_data_controller_service.h"
 
 #include "get_asset_analysis_data_vo.h"
 #include "user_define_ipc_client.h"
@@ -222,7 +223,7 @@ int32_t GetAssetAnalysisData(int32_t fileId, int32_t analysisType, bool analysis
     }
 
     MessageParcel reply;
-    auto service = make_shared<MediaAssetsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->GetAssetAnalysisData(data, reply);
 
     IPC::MediaRespVo<GetAssetAnalysisDataRespBody> respVo;

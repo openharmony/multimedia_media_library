@@ -21,7 +21,7 @@ config("ffi_config") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/callback",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -30,6 +30,7 @@ config("ffi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/table",
   ]
 
   if (media_library_feature_mtp) {

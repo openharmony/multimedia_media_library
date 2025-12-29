@@ -61,8 +61,6 @@
 #include "request_edit_data_vo.h"
 #include "get_edit_data_dto.h"
 #include "get_edit_data_vo.h"
-#include "start_asset_analysis_dto.h"
-#include "start_asset_analysis_vo.h"
 #include "start_asset_change_scan_dto.h"
 #include "get_cloud_enhancement_pair_dto.h"
 #include "get_cloud_enhancement_pair_vo.h"
@@ -117,7 +115,6 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetAssets(GetAssetsDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(GetAssetsDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetDuplicateAssetsToDelete(GetAssetsDto &dto);
-    int32_t GetIndexConstructProgress(std::string &indexProgress);
     int32_t CreateAsset(CreateAssetDto &dto);
     int32_t CreateAssetForApp(CreateAssetDto &dto);
     int32_t CreateAssetForAppWithAlbum(CreateAssetDto &dto);
@@ -129,7 +126,6 @@ public:
     int32_t SetAssetsRecentShowStatus(const std::vector<int32_t> &fileIds, int32_t recentShowStatus);
     int32_t SetAssetsUserComment(const std::vector<int32_t> &fileIds, const std::string &userComment);
     int32_t AddAssetVisitCount(int32_t fileId, int32_t visitType);
-    int32_t GetAssetAnalysisData(GetAssetAnalysisDataDto &dto);
     int32_t CloneAsset(const CloneAssetDto& cloneAssetDto);
     int32_t RevertToOriginal(const RevertToOriginalDto& revertToOriginalDto);
     int32_t SubmitCloudEnhancementTasks(const CloudEnhancementDto& cloudEnhancementDto);
@@ -179,7 +175,6 @@ public:
         GetBatchDownloadCloudResourcesStatusRespBody &respBody);
     int32_t GetCloudMediaBatchDownloadResourcesCount(
         GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody);
-    int32_t StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody);
     int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
     int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
     int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);

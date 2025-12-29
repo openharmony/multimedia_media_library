@@ -30,7 +30,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/analysis_album",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/analysis_data",
@@ -57,9 +57,9 @@ ohos_unittest("medialibrary_backup_clone_test") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/pet_album/clone_restore_pet_album.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/pet_album/clone_restore_pet_base.cpp",

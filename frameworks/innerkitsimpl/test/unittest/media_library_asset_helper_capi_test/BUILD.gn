@@ -25,7 +25,7 @@ ohos_unittest("media_library_asset_helper_capi_test") {
   include_dirs = [
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/include",
     "../get_self_permissions/include",
     "./include",
     "${MEDIALIB_INTERFACES_PATH}/kits/c",
