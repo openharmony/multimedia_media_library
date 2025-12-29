@@ -270,7 +270,6 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
         this->ClearLocalData(pullData, fdirtyData);
     } else {
         // 处理元数据变更
-        MEDIA_INFO_LOG("change here");
         CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
     }
     return E_OK;
