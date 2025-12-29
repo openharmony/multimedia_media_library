@@ -36,6 +36,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "${MEDIALIB_COMMON_PATH}/utils/include",
     "../medialibrary_unittest_utils/include",
     "./include",
     "../get_self_permissions/include",
@@ -132,6 +133,7 @@ ohos_unittest("media_albums_controller_service_test") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_COMMON_PATH}:media_library_common",
   ]
 
   external_deps = [

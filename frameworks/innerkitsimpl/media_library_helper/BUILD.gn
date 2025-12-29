@@ -20,8 +20,10 @@ group("media_library_packages") {
 
 config("media_library_config") {
   visibility = [ ":*" ]
-  include_dirs =
-      [ "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include" ]
+  include_dirs = [
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_permission_helper/include",
+  ]
 }
 
 ohos_shared_library("media_library") {
@@ -38,6 +40,7 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/include/common_data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
     "${MEDIALIB_INNERIMPL_PATH}/notification/include",
+    "${MEDIALIB_COMMON_PATH}/utils/include",
   ]
 
   user_ipc_client_include_dirs = [
@@ -124,6 +127,8 @@ ohos_shared_library("media_library") {
   ]
 
   cflags_cc = [ "-Os" ]
+
+  deps = [ "${MEDIALIB_COMMON_PATH}:media_library_common" ]
 
   external_deps = [
     "ability_base:zuri",
