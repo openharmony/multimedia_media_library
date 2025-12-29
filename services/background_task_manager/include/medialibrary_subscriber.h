@@ -155,6 +155,7 @@ private:
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
+    void ResetCloneFlagAfterOneDay();
 };
 }  // namespace Media
 }  // namespace OHOS
