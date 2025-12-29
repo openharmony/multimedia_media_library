@@ -60,7 +60,6 @@ public:
     EXPORT int32_t GetBurstAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
     EXPORT int32_t GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetDuplicateAssetsToDelete(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t PublicCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SystemCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply);
@@ -73,7 +72,6 @@ public:
     EXPORT int32_t SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetAssetsUserComment(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AddAssetVisitCount(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CloneAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RevertToOriginal(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply);
@@ -95,7 +93,6 @@ public:
     EXPORT int32_t GetEditData(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RequestEditData(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t IsEdited(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t StartAssetAnalysis(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAlbumsByAlbumIds(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GrantPhotoUriPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GrantPhotoUrisPermission(MessageParcel &data, MessageParcel &reply);
