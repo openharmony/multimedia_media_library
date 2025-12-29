@@ -41,6 +41,7 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
     "${MEDIALIB_INNERIMPL_PATH}/notification/include",
     "${MEDIALIB_COMMON_PATH}/utils/include",
+    "${MEDIALIB_FACARD_PATH}/include",
   ]
 
   user_ipc_client_include_dirs = [
@@ -53,6 +54,7 @@ ohos_shared_library("media_library") {
   include_dirs += user_ipc_client_include_dirs
 
   sources = [
+    "${MEDIALIB_FACARD_PATH}/src/media_facard_photos_column.cpp",
     "src/acl.cpp",
     "src/album_asset.cpp",
     "src/album_order.cpp",
@@ -71,7 +73,6 @@ ohos_shared_library("media_library") {
     "src/media_change_effect.cpp",
     "src/media_column.cpp",
     "src/media_config_info_column.cpp",
-    "src/media_facard_photos_column.cpp",
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
     "src/media_image_framework_utils.cpp",
