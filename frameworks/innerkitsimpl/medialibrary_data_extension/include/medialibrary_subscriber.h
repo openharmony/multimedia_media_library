@@ -36,6 +36,8 @@ namespace Media {
 enum class StatusEventType {
     CHARGING,
     DISCHARGING,
+    POWER_CONNECTED,
+    POWER_DISCONNECTED,
     SCREEN_OFF,
     SCREEN_ON,
     BATTERY_CHANGED,
