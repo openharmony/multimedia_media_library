@@ -448,7 +448,7 @@ bool MedialibrarySubscriber::GetPowerConnected()
     auto& service = OHOS::PowerMgr::BatterySrvClient::GetInstance();
     PowerMgr::BatteryChargeState chargeState = service.GetChargingStatus();
     bool isPowerConnected = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE||
-            chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL)
+            chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
     return isPowerConnected;
 }
 
