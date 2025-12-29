@@ -255,6 +255,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/ani:medialibrary_ani_utils"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_permission_helper/include",
+                "header_files": [
+                  "media_permission_helper.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_permission_helper:media_permission_helper"
             }
         ],
         "test": [

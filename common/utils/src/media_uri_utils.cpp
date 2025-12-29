@@ -145,6 +145,26 @@ int32_t MediaUriUtils::GetFileId(const std::string &uri)
     return value;
 }
 
+std::string MediaUriUtils::GetFileIdStr(const std::string &uri)
+{
+    const static std::string ERROR = "-1";
+    if (PHOTO_URI_PREFIX_INNER.size() >= uri.size()) {
+        MEDIA_ERR_LOG("photo uri is too short");
+        return ERROR;
+    }
+    if (uri.substr(0, PHOTO_URI_PREFIX_INNER.size()) != PHOTO_URI_PREFIX_INNER) {
+        MEDIA_ERR_LOG("only photo uri is valid");
+        return ERROR;
+    }
+    std::string tmp = uri.substr(PHOTO_URI_PREFIX_INNER.size());
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    if (fileIdStr.empty()) {
+        MEDIA_ERR_LOG("fileId is empty");
+        return ERROR;
+    }
+    return fileIdStr;
+}
+
 Uri MediaUriUtils::GetMultiUri(Uri &uri, int32_t userId)
 {
     if (userId == DEFAULT_USER_ID_INNER) {
