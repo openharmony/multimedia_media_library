@@ -33,7 +33,7 @@ public:
 
     int32_t ExecuteCheckPermission(const NotifyUriType &registerUriType);
     bool isSystemApp();
-    EXPORT int32_t SinglePermissionCheck(const NotifyUriType &registerUriType, const std::string& uri);
+    EXPORT int32_t SinglePermissionCheck(const NotifyUriType &registerUriType, const std::string& singleId);
 
 private:
     int32_t BasicPermissionCheck();
