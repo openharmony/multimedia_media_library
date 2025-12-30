@@ -131,29 +131,28 @@ void RepairPhotoLocation(int32_t &repairRecord, bool &terminate, std::vector<Pho
     }
 }
 
-void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t lastRecord)	
-
-{	
-    std::unique_lock<std::mutex> lock(repairLocationMutex_, std::defer_lock);	
-    CHECK_AND_RETURN_WARN_LOG(lock.try_lock(), "Repairing location has started, skipping this operation");	
-    MEDIA_INFO_LOG("Start repair location from %{public}d", lastRecord);	
-    int32_t errCode = 0;	
-    shared_ptr<NativePreferences::Preferences> prefs =	
-        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);	
-    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);	
-    bool terminate = false;	
+void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t lastRecord)
+{
+    std::unique_lock<std::mutex> lock(repairLocationMutex_, std::defer_lock);
+    CHECK_AND_RETURN_WARN_LOG(lock.try_lock(), "Repairing location has started, skipping this operation");
+    MEDIA_INFO_LOG("Start repair location from %{public}d", lastRecord);
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+    bool terminate = false;
     int32_t repairRecord = lastRecord;
-    std::vector<PhotosPo> photosPoVec;	
-    GetRepairLocationData(repairRecord, photosPoVec);	
-    do {	
+    std::vector<PhotosPo> photosPoVec;
+    GetRepairLocationData(repairRecord, photosPoVec);
+    do {
         MEDIA_INFO_LOG("need repair location count %{public}d", static_cast<int>(photosPoVec.size()));
         RepairPhotoLocation(repairRecord, terminate, photosPoVec);
-        prefs->PutInt(LAST_LOCAL_LOCATION_REPAIR, repairRecord);	
-        prefs->FlushSync();	
-        MEDIA_INFO_LOG("repair location to %{public}d", repairRecord);	
-        GetRepairLocationData(repairRecord, photosPoVec);	
-    } while (photosPoVec.size() > 0 && !terminate && MedialibrarySubscriber::IsCurrentStatusOn());	
-}	
+        prefs->PutInt(LAST_LOCAL_LOCATION_REPAIR, repairRecord);
+        prefs->FlushSync();
+        MEDIA_INFO_LOG("repair location to %{public}d", repairRecord);
+        GetRepairLocationData(repairRecord, photosPoVec);
+    } while (photosPoVec.size() > 0 && !terminate && MedialibrarySubscriber::IsCurrentStatusOn());
+}
 
 void MediaLocationSynchronizeTask::Execute()
 {
