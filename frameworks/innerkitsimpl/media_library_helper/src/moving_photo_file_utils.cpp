@@ -19,11 +19,8 @@
 
 #include <fcntl.h>
 #include <regex>
-#include <sstream>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
-#include <map>
-#include <unistd.h>
 
 #include "avmetadatahelper.h"
 #include "directory_ex.h"
@@ -32,8 +29,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
-#include "string_ex.h"
-#include "unique_fd.h"
 
 using namespace std;
 
@@ -415,6 +410,16 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
     }
     livePhotoPath = absCachePath;
     return E_OK;
+}
+
+string MovingPhotoFileUtils::GetSourceBackMovingPhotoImagePath(const string& imagePath, int32_t userId)
+{
+    return GetEditDataSourceBackPath(imagePath, userId);
+}
+
+string MovingPhotoFileUtils::GetSourceBackMovingPhotoVideoPath(const string& imagePath, int32_t userId)
+{
+    return GetMovingPhotoVideoPath(GetSourceBackMovingPhotoImagePath(imagePath, userId));
 }
 
 int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhotoImagePath,

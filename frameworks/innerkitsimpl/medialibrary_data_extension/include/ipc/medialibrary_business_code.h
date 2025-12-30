@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -23,6 +23,7 @@ namespace OHOS::Media {
 //  ALBUMS_BUSINESS_CODE   相册相关接口 [20000, 29999)
 //  MEDIA_CLOUD_CODE       端云相关接口 [30000, 39999)
 //  INNER_BUSINESS_CODE    InnerApi    [50000, 59999)
+//  MEDIA_CAMERA_CHARACTER_CODE     相机特性相关接口(INNER接口 && 对外接口)    [60000, 69999)
 enum class MediaLibraryBusinessCode : uint32_t {
     MEDIA_BUSINESS_CODE_START = 0,
     REMOVE_FORM_INFO,
@@ -104,6 +105,7 @@ enum class MediaLibraryBusinessCode : uint32_t {
     LOG_MOVING_PHOTO,
     CONVERT_FORMAT,
     SET_HAS_APPLINK = 10060,
+    PAH_CANCEL_PROCESS,
     SET_APPLINK,
     CREATE_TMP_DUPLICATE,
     HEIF_TRANSCODING_CHECK,
@@ -122,6 +124,7 @@ enum class MediaLibraryBusinessCode : uint32_t {
     PAH_QUERY_FUSION_ASSET_INFO,
     ASSET_CHANGE_DELETE_LOCAL_ASSETS_WITH_URI,
     ASSET_CHANGE_DELETE_CLOUD_ASSETS_WITH_URI,
+    LOG_CINEMATIC_VIDEO,
     ASSETS_BUSINESS_CODE_END = 19999,
     ALBUMS_BUSINESS_CODE_START = 20000,
     DELETE_HIGH_LIGHT_ALBUMS,
@@ -167,6 +170,10 @@ enum class MediaLibraryBusinessCode : uint32_t {
     CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE,
     ALBUM_SYS_GET_SELECTED_ASSETS,
     GET_CLONED_ALBUM_URIS,
+    PAH_GET_ALBUM_BY_LPATH,
+    PAH_GET_ALBUM_BY_BUNDLENAME,
+    CHANGE_REQUEST_SMART_MOVE_ASSETS,
+    PAH_CREATE_ANALYSIS_ALBUM,
     ALBUMS_BUSINESS_CODE_END = 29999,
     MEDIA_CLOUD_CODE_START = 30000,
     MEDIA_CLOUD_CODE_END = 39999,
@@ -200,7 +207,16 @@ enum class MediaLibraryBusinessCode : uint32_t {
     INNER_MOVE_ASSETS,
     INNER_GET_ASSETS,
     INNER_CHANGE_SCAN_ASSET,
+    INNER_OPEN_ASSET_COMPRESS,
+    INNER_NOTIFY_ASSET_SENDED,
+    INNER_GET_ASSET_COMPRESS_VERSION,
+    INNER_GET_COMPRESS_ASSET_SIZE,
     INNER_BUSINESS_CODE_END = 59999,
+    CAMERA_INNER_ADD_PROCESS_VIDEO = 60000,
+    CAMERA_MAM_CANCEL_PROCESS,
+    CAMERA_DEFINE_PROCESS_VIDEO,
+    CAMERA_DEFINE_GET_PROGRESS_CALLBACK,
+    CAMERA_BUSINESS_CODE_END = 69999,
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BUSINESS_CODE_H

@@ -31,6 +31,7 @@ bool PhotosVo::Unmarshalling(MessageParcel &parcel)
     parcel.ReadInt64(this->modifiedTime);
     parcel.ReadString(this->path);
     parcel.ReadString(this->fileName);
+    parcel.ReadString(this->localPath);
     parcel.ReadString(this->originalCloudId);
     parcel.ReadInt32(this->type);
     parcel.ReadInt32(this->orientation);
@@ -38,6 +39,7 @@ bool PhotosVo::Unmarshalling(MessageParcel &parcel)
     parcel.ReadString(this->storagePath);
     parcel.ReadInt32(this->hidden);
     parcel.ReadInt64(this->dateTrashed);
+    parcel.ReadInt32(this->attributesMediaType);
     CloudFileDataVo::Unmarshalling(this->attachment, parcel);
     return true;
 }
@@ -50,6 +52,7 @@ bool PhotosVo::Marshalling(MessageParcel &parcel) const
     parcel.WriteInt64(this->modifiedTime);
     parcel.WriteString(this->path);
     parcel.WriteString(this->fileName);
+    parcel.WriteString(this->localPath);
     parcel.WriteString(this->originalCloudId);
     parcel.WriteInt32(this->type);
     parcel.WriteInt32(this->orientation);
@@ -57,6 +60,7 @@ bool PhotosVo::Marshalling(MessageParcel &parcel) const
     parcel.WriteString(this->storagePath);
     parcel.WriteInt32(this->hidden);
     parcel.WriteInt64(this->dateTrashed);
+    parcel.WriteInt32(this->attributesMediaType);
     CloudFileDataVo::Marshalling(this->attachment, parcel);
     return true;
 }

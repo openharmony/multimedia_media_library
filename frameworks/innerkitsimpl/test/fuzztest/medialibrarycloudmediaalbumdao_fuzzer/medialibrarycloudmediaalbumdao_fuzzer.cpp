@@ -231,7 +231,6 @@ static void CloudMediaAlbumDaoFuzzer()
     string key = "cloud_id";
     vector<string> argrs = { value1 };
     InsertAlbumAsset(value1);
-    cloudMediaAlbumDao->QueryLocalAlbum(key, argrs);
 
     string field2 = PhotoAlbumColumns::ALBUM_LPATH;
     string value2 = "/Pictures/hiddenAlbum";

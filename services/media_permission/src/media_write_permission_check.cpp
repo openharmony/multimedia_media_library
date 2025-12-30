@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -25,7 +25,6 @@
 #include "parameters.h"
 #include "access_token.h"
 #include "media_app_uri_permission_column.h"
-#include "permission_whitelist_utils.h"
 
 namespace OHOS::Media {
 using namespace OHOS::Security::AccessToken;
@@ -187,10 +186,7 @@ int32_t DeprecatedWritePermCheck::CheckPermission(uint32_t businessCode, const P
         return E_PERMISSION_DENIED;
     }
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
-    if (ret) {
-        DfxDeprecatedPermUsage::Record(businessCode, 0);
-        return PermissionWhitelistUtils::CheckWhiteList();
-    }
+    CHECK_AND_EXECUTE(!ret, DfxDeprecatedPermUsage::Record(businessCode, 0));
     return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 

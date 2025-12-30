@@ -130,6 +130,8 @@ public:
         const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
     CapiMediaAssetDataHandler(OH_MediaLibrary_OnMovingPhotoDataPrepared photoDataHandler, ReturnDataType dataType,
         const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
+    CapiMediaAssetDataHandler(OH_MediaLibrary_OnQuickImageDataPrepared photoDataHandler, ReturnDataType dataType,
+        const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
     ~CapiMediaAssetDataHandler() = default;
     ReturnDataType GetReturnDataType();
     std::string GetRequestUri();
@@ -140,6 +142,7 @@ public:
     NativeOnDataPrepared onDataPreparedHandler_ = nullptr;
     OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_ = nullptr;
     OH_MediaLibrary_OnMovingPhotoDataPrepared onRequestMovingPhotoDataPreparedHandler_ = nullptr;
+    OH_MediaLibrary_OnQuickImageDataPrepared onRequestQuickImageDataPreparedHandler_ = nullptr;
     int32_t GetPhotoQuality();
     void SetPhotoQuality(int32_t photoQuality);
 

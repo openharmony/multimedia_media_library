@@ -16,21 +16,14 @@
 
 #include "sendable_photo_album_napi.h"
 
-#include <nlohmann/json.hpp>
-
 #include "media_file_utils.h"
 #include "photo_album_napi.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
-#include "photo_map_column.h"
 #include "result_set_utils.h"
-#include "sendable_photo_access_helper_napi.h"
 #include "sendable_medialibrary_napi_utils.h"
 #include "sendable_fetch_file_result_napi.h"
-#include "sendable_file_asset_napi.h"
 #include "shooting_mode_column.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"

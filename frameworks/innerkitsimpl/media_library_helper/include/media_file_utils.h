@@ -172,6 +172,8 @@ public:
     EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
     EXPORT static std::string GetTempMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
+    EXPORT static std::string GetOriMovingPhotoVideoPath(const std::string &imagePath);
+    EXPORT static std::string GetTempOriMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static bool CheckMovingPhotoExtension(const std::string &extension);
     EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);
     EXPORT static bool CheckMovingPhotoVideoExtension(const std::string &extension);
@@ -221,6 +223,7 @@ public:
     EXPORT static int32_t CheckAppLink(const std::string &link);
     EXPORT static bool CheckHasAppLink(int32_t hasAppLink);
     EXPORT static int32_t UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec);
+    EXPORT static double CalculateAspectRatio(int32_t height, int32_t width);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

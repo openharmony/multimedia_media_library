@@ -16,36 +16,19 @@
 
 #include "sendable_medialibrary_napi_utils.h"
 
-#include "basic/result_set.h"
-#include "datashare_predicates.h"
-#include "location_column.h"
-#include "ipc_skeleton.h"
 #include "js_proxy.h"
 #include "sendable_photo_album_napi.h"
-#include "sendable_fetch_file_result_napi.h"
 #include "sendable_photo_access_helper_napi.h"
 #include "media_device_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_napi_enum_comm.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
-#include "photo_album_napi.h"
 #include "photo_map_column.h"
-#include "smart_album_napi.h"
 #include "tokenid_kit.h"
-#include "userfile_client.h"
-#include "vision_album_column.h"
-#include "vision_column.h"
-#include "vision_face_tag_column.h"
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
-#include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
 
 using namespace std;
@@ -248,6 +231,48 @@ static void HandleSpecialPredicateProcessUri(AsyncContext &context, const FetchO
     operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
 }
 
+static void MultiParamLpathToLowerCase(const vector<DataShare::MutliValue::Type>& originMultiParams,
+    vector<DataShare::MutliValue::Type>& newMultiParams)
+{
+    for (const auto& multiParam : originMultiParams) {
+        vector<string> stringVec = std::get_if<vector<string>>(&multiParam) ?
+            std::get<vector<string>>(multiParam) : vector<string>();
+        if (stringVec.empty()) {
+            newMultiParams.push_back(multiParam);
+            continue;
+        }
+        for (auto& str : stringVec) {
+            std::transform(str.begin(), str.end(), str.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+        }
+        newMultiParams.push_back(stringVec);
+    }
+}
+
+static void MakeLpathParamsCaseInsensitive(vector<OperationItem>& operations,
+    const OperationItem& item)
+{
+    vector<DataShare::SingleValue::Type> newSingleParams {};
+    vector<DataShare::MutliValue::Type> newMultiParams {};
+    string lowerField = "lower(" + PhotoAlbumColumns::ALBUM_LPATH + ")";
+    newSingleParams.push_back(lowerField);
+    for (size_t i = 1; i < item.singleParams.size(); i++) { // start with 1 to skip field param
+        string value = static_cast<string>(item.GetSingle(i));
+        if (!value.empty()) {
+            std::transform(value.begin(), value.end(), value.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+            newSingleParams.push_back(value);
+        } else {
+            newSingleParams.push_back(item.singleParams[i]);
+        }
+    }
+    if (!item.multiParams.empty()) {
+        MultiParamLpathToLowerCase(item.multiParams, newMultiParams);
+    }
+    operations.push_back(
+        { item.operation, newSingleParams, newMultiParams });
+}
+
 template <class AsyncContext>
 bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType,
@@ -289,6 +314,11 @@ bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context
             continue;
         }
         if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+            continue;
+        }
+        if (item.operation != DataShare::ORDER_BY_ASC && item.operation != DataShare::ORDER_BY_DESC &&
+            static_cast<string>(item.GetSingle(FIELD_IDX)) == PhotoAlbumColumns::ALBUM_LPATH) {
+            MakeLpathParamsCaseInsensitive(operations, item);
             continue;
         }
         operations.push_back(item);

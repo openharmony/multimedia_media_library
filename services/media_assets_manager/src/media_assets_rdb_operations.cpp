@@ -17,54 +17,31 @@
  
 #include "media_assets_rdb_operations.h"
 
-#include <string>
-
-#include "abs_rdb_predicates.h"
 #include "map_operation_flag.h"
-#include "media_log.h"
 #include "form_map.h"
 #include "medialibrary_formmap_operations.h"
-#include "medialibrary_rdbstore.h"
-#include "media_file_uri.h"
-#include "medialibrary_errno.h"
 #include "media_facard_photos_column.h"
 #include "medialibrary_facard_operations.h"
-#include "ipc_skeleton.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_asset_operations.h"
 #include "medialibrary_photo_operations.h"
 #include "vision_column.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_rdb_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "dfx_manager.h"
-#include "multistages_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#include "media_analysis_helper.h"
-#include "story_album_column.h"
 #include "media_app_uri_permission_column.h"
-#include "media_file_utils.h"
-#include "mimetype_utils.h"
-#include "permission_utils.h"
-#include "userfile_manager_types.h"
-#include "media_column.h"
-#include "photo_map_column.h"
-#include "photo_file_operation.h"
-#include "medialibrary_rdb_utils.h"
 #include "thumbnail_service.h"
-#include "photo_asset_copy_operation.h"
 #include "medialibrary_photo_operations.h"
-#include "file_asset.h"
 #include "medialibrary_app_uri_sensitive_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_uripermission_operations.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -87,6 +64,7 @@ static const string RECOMMENDATION = "recommendation";
 static const string SEGMENTATION = "segmentation";
 static const string HEAD = "head";
 static const string POSE = "pose";
+static const string PET_STATUS = "pet";
 
 static vector<int> NEED_UPDATE_TYPE = {
     PhotoAlbumSubType::CLASSIFY, PhotoAlbumSubType::PORTRAIT
@@ -153,8 +131,10 @@ int32_t MediaAssetsRdbOperations::SaveFormInfo(const string& formId, const strin
         MediaFileUri mediaUri(uri);
         CHECK_AND_RETURN_RET_LOG(QueryFileIdIfExists(mediaUri.GetFileId()),
             E_GET_PRAMS_FAIL, "the fileId is not exist");
-        vector<int64_t> formIds = { std::stoll(formId) };
-        MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+        if (MediaLibraryDataManagerUtils::IsNumber(formId)) {
+            vector<int64_t> formIds = { std::stoll(formId) };
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+        }
     }
     if (QueryFormIdIfExists(formId)) {
         lock_guard<mutex> lock(facardMutex_);
@@ -546,16 +526,17 @@ int32_t MediaAssetsRdbOperations::CancelPhotoUriPermission(NativeRdb::RdbPredica
     return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
 }
 
-int32_t MediaAssetsRdbOperations::StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
+int32_t MediaAssetsRdbOperations::StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId,
+    pid_t pid)
 {
     MEDIA_INFO_LOG("MediaAssetsRdbOperations::StartThumbnailCreationTask requestId:%{public}d", requestId);
-    return ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, requestId);
+    return ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, requestId, pid);
 }
 
-int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId)
+int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId, pid_t pid)
 {
     MEDIA_INFO_LOG("MediaAssetsRdbOperations::StopThumbnailCreationTask requestId:%{public}d", requestId);
-    ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId);
+    ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId, pid);
     return E_OK;
 }
 

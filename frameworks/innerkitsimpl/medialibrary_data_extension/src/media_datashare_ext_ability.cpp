@@ -16,56 +16,34 @@
 
 #include "media_datashare_ext_ability.h"
 
-#include <cstdlib>
-
-#include "ability_info.h"
 #include "app_mgr_client.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_utils.h"
 #include "dataobs_mgr_client.h"
 #include "datashare_ext_ability_context.h"
-#include "hilog_wrapper.h"
-#include "ipc_skeleton.h"
-#include "medialibrary_command.h"
 #include "media_app_uri_permission_column.h"
 #include "media_datashare_stub_impl.h"
-#include "media_file_utils.h"
-#include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_appstate_observer.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_bundle_manager.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
-#include "dfx_const.h"
 #include "dfx_deprecated_perm_usage.h"
-#include "dfx_reporter.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_object_utils.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
-#include "multistages_capture_manager.h"
 #include "heif_transcoding_check_utils.h"
-#include "permission_whitelist_utils.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 #include "os_account_manager.h"
-#include "permission_utils.h"
-#include "photo_album_column.h"
 #include "runtime.h"
 #include "singleton.h"
-#include "system_ability_definition.h"
 #include "uri_permission_manager_client.h"
 #include "userfilemgr_uri.h"
-#include "want.h"
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
 #endif
 #include "userfilemgr_uri.h"
-#include "parameters.h"
 #include "media_tool_permission_handler.h"
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
@@ -78,11 +56,8 @@
 #include "media_fuse_manager.h"
 #include "highlight_column.h"
 #include "mediatool_uri.h"
-#include "cloud_enhancement_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
-#include "media_req_vo.h"
-#include "media_empty_obj_vo.h"
 #include "media_permission_check.h"
 #include "user_define_ipc.h"
 #include "medialibrary_tracer.h"
@@ -129,6 +104,8 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::VISION_POSE,
     OperationObject::VISION_TOTAL,
     OperationObject::VISION_VIDEO_TOTAL,
+    OperationObject::VISION_PET_FACE,
+    OperationObject::VISION_PET_TAG,
     OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
     OperationObject::GEO_DICTIONARY,
     OperationObject::GEO_KNOWLEDGE,
@@ -148,6 +125,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
     OperationObject::PAH_BACKUP_POSTPROCESS,
+    OperationObject::VISION_ANALYSIS,
 };
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
@@ -297,7 +275,6 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     OnStartSub(want);
     Media::MedialibrarySubscriber::SubscribeAsync();
     Media::HeifTranscodingCheckUtils::InitCheckList();
-    PermissionWhitelistUtils::SubscribeCloudUpdatedEvent();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
@@ -311,7 +288,6 @@ void MediaDataShareExtAbility::OnStop()
     CHECK_AND_EXECUTE(scannerManager == nullptr, scannerManager->Stop());
 
     Media::HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
-    PermissionWhitelistUtils::UnsubscribeCloudUpdatedEvent();
     MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
@@ -931,7 +907,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
             return nullptr;
         }
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-        if (!AddOwnerCheck(cmd, appidPredicates)) {
+        if (!AddOwnerCheck(cmd, appidPredicates, columns)) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             businessError.SetCode(err);
             return nullptr;
@@ -1074,7 +1050,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
         PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap,
             userId, permissionPolicy, isDBBypass);
         int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
-        if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS) {
+        if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS && errCode != E_DOUBLE_CHECK) {
             ret = IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
             break;
         }
@@ -1090,13 +1066,10 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     }
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
-    MEDIA_INFO_LOG("API excuted, userId: %{public}d, traceId: %{public}s, "
-                   "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
-        userId,
-        traceId.c_str(),
-        static_cast<int32_t>(operationCode),
-        ret,
-        static_cast<long>(costTime));
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} API excuted, userId: %{public}d, traceId: %{public}s, "
+        "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+        MLOG_TAG, __FUNCTION__, __LINE__, userId, traceId.c_str(),
+        static_cast<int32_t>(operationCode), ret, static_cast<long>(costTime));
     return ret;
 }
 } // namespace AbilityRuntime

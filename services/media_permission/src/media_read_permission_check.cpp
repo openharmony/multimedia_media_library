@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -24,7 +24,6 @@
 #endif
 #include "parameters.h"
 #include "media_app_uri_permission_column.h"
-#include "permission_whitelist_utils.h"
 
 namespace OHOS::Media {
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
@@ -71,8 +70,9 @@ int32_t ReadCompositePermCheck::CheckPermission(uint32_t businessCode, const Per
     }
 
     for (const auto& check : readChecks_) {
-        if (check->CheckPermission(businessCode, data) == E_SUCCESS) {
-            return E_SUCCESS;
+        int32_t ret = check->CheckPermission(businessCode, data);
+        if (ret == E_SUCCESS || ret == E_DOUBLE_CHECK) {
+            return ret;
         }
     }
     return E_PERMISSION_DENIED;
@@ -92,7 +92,7 @@ int32_t DbReadPermCheck::CheckPermission(uint32_t businessCode, const Permission
     if (ret != E_SUCCESS) {
         return ret;
     }
-    return (AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType)) ? E_SUCCESS : E_PERMISSION_DENIED;
+    return (AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType)) ? E_DOUBLE_CHECK : E_PERMISSION_DENIED;
 }
 
 int32_t GrantReadPermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
@@ -140,10 +140,7 @@ int32_t DeprecatedReadPermCheck::CheckPermission(uint32_t businessCode, const Pe
         return E_PERMISSION_DENIED;
     }
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA);
-    if (ret) {
-        DfxDeprecatedPermUsage::Record(businessCode, 0);
-        return PermissionWhitelistUtils::CheckWhiteList();
-    }
+    CHECK_AND_EXECUTE(!ret, DfxDeprecatedPermUsage::Record(businessCode, 0));
     return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 

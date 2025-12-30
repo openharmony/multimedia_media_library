@@ -44,7 +44,6 @@
 #include "exif_utils.h"
 #include "file_utils.h"
 #include "mock_deferred_photo_proc_adapter.h"
-#include "multistages_capture_dao.h"
 #include "multistages_capture_deferred_photo_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
@@ -274,6 +273,41 @@ int32_t PrepareForFirstVisit()
     return fileId;
 }
 } // namespace
+
+unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
+{
+    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHRE " +
+        columnName + "='" + value + "';";
+
+    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("g_rdbStore is nullptr");
+        return nullptr;
+    }
+    auto resultSet = g_rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Get resultSet failed");
+        return nullptr;
+    }
+
+    int32_t resultSetCount = 0;
+    int32_t ret = resultSet->GetRowCount(resultSetCount);
+    if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
+        MEDIA_ERR_LOG("resultSet row count is 0");
+        return nullptr;
+    }
+
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    if (fetchFileResult == nullptr) {
+        MEDIA_ERR_LOG("Get fetchFileResult failed");
+        return nullptr;
+    }
+    auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
+    if (fileAsset == nullptr || fileAsset->GetId() < 0) {
+        return nullptr;
+    }
+    return fileAsset;
+}
 
 void MediaLibraryMultiStagesPhotoCaptureTest::SetUpTestCase(void)
 {
@@ -633,16 +667,9 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_002,
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_ABNORMAL);
 
-    vector<string> columns = { PhotoColumn::PHOTO_QUALITY };
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    ASSERT_NE(g_rdbStore, nullptr);
-
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
-
-    callback->NotifyIfTempFile(resultSet, true);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    callback->NotifyIfTempFile(fileAsset, true);
     delete callback;
     MEDIA_INFO_LOG("session_callback_on_error_002 End");
 }
@@ -761,14 +788,10 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateCEAvailable_test, TestSi
 
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    vector<string> columns = { PhotoColumn::MEDIA_NAME, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE };
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
 
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-
-    callback->NotifyIfTempFile(resultSet);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    callback->NotifyIfTempFile(fileAsset);
 
     NativeRdb::ValuesBucket updateValues;
     callback->UpdateCEAvailable(fileId, 1, updateValues, 0);
@@ -803,8 +826,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
     std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
     picture->Create(surfaceBuffer);
 
-    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, true);
-    callback->OnProcessImageDone(to_string(fileId), picture, false);
+    DpsMetadata metadata;
+    constexpr const char* CLOUD_FLAG = "cloudImageEnhanceFlag";
+    metadata.Set(CLOUD_FLAG, true);
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, metadata);
+    metadata.Set(CLOUD_FLAG, false);
+    callback->OnProcessImageDone(to_string(fileId), picture, metadata);
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
     ValuesBucket values;
@@ -813,7 +840,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd), E_OK);
 
-    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, false);
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, metadata);
     callback->GetCommandByImageId(PHOTO_ID_FOR_TEST, cmd);
     callback->GetCommandByImageId("2011/11/11", cmd);
 
@@ -1053,67 +1080,6 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, BeginSynchronize_test_001, Tes
     DeferredPhotoProcessingAdapter adapter;
     EXPECT_NE(adapter.deferredPhotoProcSession_, nullptr);
     adapter.BeginSynchronize();
-}
-
-/**
- * @tc.name: NotifyOnProcess_test01
- * @tc.desc: OnProcess通知，resultSet不能为空
- */
-HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test01, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("enter NotifyOnProcess_test01");
-    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
-        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    ASSERT_NE(callback, nullptr);
- 
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
-    ASSERT_EQ(ret, E_ERR);
-    MEDIA_INFO_LOG("end NotifyOnProcess_test01");
-}
- 
-/**
- * @tc.name: NotifyOnProcess_test02
- * @tc.desc: OnProcess通知，ObserverType不能是未定义状态
- */
-HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test02, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("enter NotifyOnProcess_test02");
-    auto fileId = PrepareForFirstVisit();
-    EXPECT_GT(fileId, 0);
- 
-    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
-        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    ASSERT_NE(callback, nullptr);
- 
-    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
-    ASSERT_NE(resultSet, nullptr);
- 
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::UNDEFINED);
-    ASSERT_EQ(ret, E_ERR);
-    MEDIA_INFO_LOG("end NotifyOnProcess_test02");
-}
- 
-/**
- * @tc.name: NotifyOnProcess_test03
- * @tc.desc: OnProcess通知
- */
-HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, NotifyOnProcess_test03, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("enter NotifyOnProcess_test03");
-    auto fileId = PrepareForFirstVisit();
-    EXPECT_GT(fileId, 0);
- 
-    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
-        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    ASSERT_NE(callback, nullptr);
- 
-    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(PHOTO_ID_FOR_TEST);
-    ASSERT_NE(resultSet, nullptr);
- 
-    int32_t ret = callback->NotifyOnProcess(resultSet, MultistagesCaptureNotifyType::ON_PROCESS_IMAGE_DONE);
-    ASSERT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("end NotifyOnProcess_test03");
 }
 }
 }

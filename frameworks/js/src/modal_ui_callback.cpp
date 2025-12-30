@@ -16,8 +16,6 @@
 #include "modal_ui_callback.h"
 
 #include "ui_content.h"
-#include "media_library_napi.h"
-#include "medialibrary_napi_log.h"
 
 using namespace OHOS::Ace;
 using namespace std;

@@ -132,6 +132,10 @@ public:
     EXPORT int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
     EXPORT void ScanLakeAsset();
     EXPORT std::shared_ptr<NativeRdb::ResultSet> ProcessBrokerChangeMsg(const std::string &operation);
+    EXPORT static int32_t OpenAssetCompress(const std::string &uri, const int32_t type, const int32_t version,
+        int32_t &fd);
+    EXPORT static int32_t NotifyAssetSended(const std::string &uri);
+    EXPORT static int32_t GetAssetCompressVersion();
 
 private:
     int32_t InitMediaLibraryRdbStore();

@@ -14,7 +14,6 @@
  */
 
 #include "media_app_uri_sensitive_column.h"
-#include "media_column.h"
 #include "base_column.h"
 
 namespace OHOS {

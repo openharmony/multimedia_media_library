@@ -272,9 +272,9 @@ function checkIsPhotoCreationConfigValid(config) {
   return true;
 }
 
-function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
+function checkConfirmBoxParams(srcFileUris, photoCreationConfigs, isImageFullyDisplayed) {
   // check param number
-  if (arguments.length > ARGS_TWO) {
+  if (arguments.length < ARGS_TWO || arguments.length > ARGS_THREE) {
     return false;
   }
 
@@ -300,6 +300,13 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
   // check whether photoCreationConfigs element is valid
   for (let photoCreateConfig of photoCreationConfigs) {
     if (!checkIsPhotoCreationConfigValid(photoCreateConfig)) {
+      return false;
+    }
+  }
+
+  if (isImageFullyDisplayed !== undefined) {
+    if (typeof isImageFullyDisplayed !== 'boolean') {
+      console.error('photoAccessHelper isImageFullyDisplayed must be boolean if provided.');
       return false;
     }
   }
@@ -336,7 +343,7 @@ function showAssetsCreationDialogResult(result, reject, resolve) {
   resolve(result.data);
 }
 
-async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs) {
+async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs, isImageFullyDisplayed = false) {
   let bundleInfo = getBundleInfo();
   if (bundleInfo === undefined) {
     return new Promise((resolve, reject) => {
@@ -369,11 +376,20 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
         appName, appId, result => {
           showAssetsCreationDialogResult(result, reject, resolve);
-      });
+      }, isImageFullyDisplayed);
     });
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), null);
   }
+}
+
+function showSingleAssetCreationDialogEx(srcFileUri, photoCreationConfigs, isImageFullyDisplayed) {
+  const displayFlag = isImageFullyDisplayed !== undefined ? isImageFullyDisplayed : false;
+  return showAssetsCreationDialog([srcFileUri], [photoCreationConfigs], displayFlag);
+}
+
+function showAssetsCreationDialogEx(srcFileUri, photoCreationConfigs) {
+  return showAssetsCreationDialog(srcFileUri, photoCreationConfigs, false);
 }
 
 function showAssetsCreationDialog(...params) {
@@ -687,7 +703,8 @@ function getPhotoAccessHelper(context, userId = -1) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.constructor.prototype.createDeleteRequest = createDeleteRequest;
     helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
-    helper.constructor.prototype.showAssetsCreationDialogEx = showAssetsCreationDialog;
+    helper.constructor.prototype.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+    helper.constructor.prototype.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
     helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
     helper.constructor.prototype.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
     helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
@@ -729,7 +746,8 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
-          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+          helper.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
@@ -753,7 +771,8 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
-          helper.showAssetsCreationDialogEx = showAssetsCreationDialog;
+          helper.showAssetsCreationDialogEx = showAssetsCreationDialogEx;
+          helper.showSingleAssetCreationDialogEx = showSingleAssetCreationDialogEx;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.createAssetWithShortTermPermissionEx = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
@@ -799,7 +818,19 @@ const RecommendationType = {
   DRIVING_LICENSE: 9,
 
   // Indicates that featured single portrait photos can be recommended
-  FEATURED_SINGLE_PORTRAIT: 10
+  FEATURED_SINGLE_PORTRAIT: 10,
+
+  // Indicates that cat photos can be recommended
+  CAT: 13,
+
+  // Indicates that dog photos can be recommended
+  DOG: 14,
+
+  // Indicates that architecture photos can be recommended
+  ARCHITECTURE: 15,
+
+  // Indicates that landscape photos can be recommended
+  LANDSCAPE: 16
 };
 
 const PhotoViewMIMETypes = {
@@ -848,10 +879,71 @@ const OperationType = {
   NOT_BETWEEN : 14
 }
 
+const PickerFilterPhotoKeys = {
+  
+  URI: 'uri',
+  
+  PHOTO_TYPE: 'media_type',
+  
+  DISPLAY_NAME: 'display_name',
+  
+  SIZE: 'size',
+  
+  DURATION: 'duration',
+  
+  WIDTH: 'width',
+  
+  HEIGHT: 'height',
+  
+  ORIENTATION: 'orientation',
+  
+  FAVORITE: 'is_favorite',
+  
+  TITLE: 'title',
+  
+  POSITION: 'position',
+  
+  PHOTO_SUBTYPE: 'subtype',
+  
+  DYNAMIC_RANGE_TYPE: 'dynamic_range_type',
+  
+  COVER_POSITION: 'cover_position',
+  
+  BURST_KEY: 'burst_key',
+  
+  LCD_SIZE: 'lcd_size',
+  
+  THM_SIZE: 'thm_size',
+  
+  DETAIL_TIME: 'detail_time',
+  
+  OWNER_ALBUM_ID: 'owner_album_id',
+  
+  MEDIA_SUFFIX: 'media_suffix',
+  
+  ASPECT_RATIO: 'aspect_ratio',
+}
+
+const PhotoSource = {
+  ALL: 0,
+  CAMERA: 1,
+  SCREENSHOT: 2
+};
+
 const SingleSelectionMode = {
   BROWSER_MODE: 0,
   SELECT_MODE: 1,
   BROWSER_AND_SELECT_MODE: 2,
+};
+
+const SceneType = {
+  GRID_TO_PHOTO_BROWSER: 0,
+  PHOTO_BROWSER_SWIPE: 1
+};
+
+const PlayMode = {
+  DEFAULT: 0,
+  AUTO_PLAY: 1,
 };
 
 const ErrCode = {
@@ -963,9 +1055,22 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.assetFilter = option.assetFilter;
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
     config.parameters.isReturnToPhotoBrowserEnable = option.isReturnToPhotoBrowserEnable;
+    config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
   }
 
   return config;
+}
+
+function parseAutoPlayScenes(autoPlayScenes) {
+  if (!autoPlayScenes) {
+    return undefined;
+  }
+
+  if (autoPlayScenes.length > 2) {
+    return autoPlayScenes.slice(0, 2);
+  }
+
+  return autoPlayScenes;
 }
 
 function parseMimeTypeFilter(filter) {
@@ -984,6 +1089,35 @@ function parseMimeTypeFilter(filter) {
     }
   }
   return o;
+}
+
+function checkAssetFilterInvalid(assetFilter) {
+  // 获取所有有效的值
+  const validOperationTypes = Object.values(OperationType);
+  const validPhotoKeys = Object.values(PickerFilterPhotoKeys);
+
+  //遍历数组中的每个OperationItem
+  for (const item of assetFilter) {
+    //检查operationType是否有值且在枚举中
+    if (!item.operationType || !validOperationTypes.includes(item.operationType)) {
+      console.log('[picker] Invalid operationType');
+      return true;
+    }
+
+    //如果field有值，检查是否在枚举中
+    if (item.field !== undefined && item.field !== null) {
+      if (!validPhotoKeys.includes(item.field)) {
+        console.log('[picker] Invalid photokeys');
+        return true;
+      }
+      // uri仅支持EQUAL_TO操作
+      if (item.field === PickerFilterPhotoKeys.URI && item.operationType !== OperationType.EQUAL_TO) {
+        console.log('[picker] Invalid uri operation');
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function getPhotoPickerSelectResult(args) {
@@ -1021,6 +1155,15 @@ async function photoPickerSelect(...args) {
     if (!check) {
       console.log('[picker] error: ' + ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION);
       return undefined;
+    }
+  }
+
+  let assetFilter = config.parameters.assetFilter;
+  if (assetFilter) {
+    let isAssetFilterInvalid = checkAssetFilterInvalid(assetFilter);
+    if (isAssetFilterInvalid) {
+      console.error('[picker] config: assetFilter has value but invalid');
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
     }
   }
 
@@ -1105,6 +1248,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
   this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
   this.isMovingPhotoBadgeShown = false;
+  this.autoPlayScenes = [];
 }
 
 function PhotoSelectOptions() {
@@ -1132,6 +1276,11 @@ function PhotoViewPicker() {
 }
 
 function RecommendationOptions() {
+}
+
+function autoPlayScene() {
+  this.sceneType = -1;
+  this.playMode = -1;
 }
 
 function encrypt(data) {
@@ -1191,6 +1340,7 @@ export default {
   ThumbnailType: photoAccessHelper.ThumbnailType,
   PhotoCreationConfig: photoAccessHelper.PhotoCreationConfig,
   PhotoKeys: photoAccessHelper.PhotoKeys,
+  PhotoSource: PhotoSource,
   AlbumKeys: photoAccessHelper.AlbumKeys,
   AlbumType: photoAccessHelper.AlbumType,
   AlbumSubtype: photoAccessHelper.AlbumSubtype,
@@ -1239,6 +1389,7 @@ export default {
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
+  CriticalType: photoAccessHelper.CriticalType,
   CloudEnhancement: photoAccessHelper.CloudEnhancement,
   CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
   CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
@@ -1264,4 +1415,8 @@ export default {
   CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
   MovingPhotoBadgeStateType: MovingPhotoBadgeStateType,
   VideoMode: photoAccessHelper.VideoMode,
+  AutoPlayScene: autoPlayScene,
+  SceneType: SceneType,
+  DynamicRangeType: photoAccessHelper.DynamicRangeType,
+  PlayMode: PlayMode
 };

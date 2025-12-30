@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 
 #include "media_file_utils.h"
 
-#include <algorithm>
 #include <stack>
 #include <dirent.h>
 #include <fcntl.h>
@@ -24,10 +23,7 @@
 #include <fstream>
 #include <ftw.h>
 #include <regex>
-#include <securec.h>
-#include <sstream>
 #include <sys/sendfile.h>
-#include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -39,12 +35,9 @@
 #include "directory_ex.h"
 #include "hmdfs.h"
 #include "ipc_skeleton.h"
-#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_log.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
 #include "ptp_medialibrary_manager_uri.h"
@@ -97,6 +90,10 @@ const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 const std::string MEDIA_DATA_DEVICE_PATH = "local";
+const int32_t ASPECT_RATIO_UNSUPPORT = -1;
+const int32_t ASPECT_RATIO_MAX = 1000;
+const double ASPECT_RATIO_MIN = 0.001;
+const double ASPECT_RATIO_PRECISION = 1000.0;
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
     { "application/epub+zip", { "epub" } },
@@ -2164,6 +2161,18 @@ string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
     return imagePath.substr(0, splitIndex) + ".mp4";
 }
 
+string MediaFileUtils::GetOriMovingPhotoVideoPath(const string &imagePath)
+{
+    return MEDIA_EDIT_DATA_DIR + imagePath.substr(ROOT_MEDIA_DIR.length())+ "/source.mp4";
+}
+
+string MediaFileUtils::GetTempOriMovingPhotoVideoPath(const string &imagePath)
+{
+    string outPath = MEDIA_EDIT_DATA_DIR + imagePath.substr(ROOT_MEDIA_DIR.length()) + "/source.mp4";
+    size_t lastSlashIndex = outPath.find_last_of('/');
+    return outPath.substr(0, lastSlashIndex + 1) + "temp_" + outPath.substr(lastSlashIndex + 1);
+}
+
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
 {
     return IsMovingPhotoMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP));
@@ -2462,7 +2471,8 @@ int32_t MediaFileUtils::MoveDirectory(const std::string &srcDir, const std::stri
                 "Create dir:%{public}s failed",
                 DesensitizePath(dstFilePath).c_str());
         } else if (entry.is_regular_file()) {
-            if (srcFilePath.find("editdata_camera") != std::string::npos) {
+            if (srcFilePath.find("editdata_camera") != std::string::npos ||
+                srcFilePath.find("source_back") != std::string::npos) {
                 CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath),
                     E_FAIL, "Copy editdata_camera from %{public}s to %{public}s failed.",
                     DesensitizePath(srcFilePath).c_str(),
@@ -2712,5 +2722,21 @@ int32_t MediaFileUtils::UpdateModifyTimeInMsec(const std::string &localPath, int
     CHECK_AND_RETURN_RET_LOG(utimes(localPath.c_str(), times) >= 0, errno,
         "utimes failed %{public}d, localPath: %{public}s", errno, DesensitizePath(localPath).c_str());
     return E_OK;
+}
+
+double MediaFileUtils::CalculateAspectRatio(int32_t height, int32_t width)
+{
+    if (height <= 0 || width <= 0) {
+        return ASPECT_RATIO_UNSUPPORT;
+    }
+
+    double aspect_ratio = static_cast<double>(width) / height;
+    if (aspect_ratio > ASPECT_RATIO_MAX) {
+        return ASPECT_RATIO_MAX;
+    } else if (aspect_ratio < ASPECT_RATIO_MIN) {
+        return ASPECT_RATIO_MIN;
+    } else {
+        return std::round(aspect_ratio * ASPECT_RATIO_PRECISION) / ASPECT_RATIO_PRECISION;
+    }
 }
 } // namespace OHOS::Media

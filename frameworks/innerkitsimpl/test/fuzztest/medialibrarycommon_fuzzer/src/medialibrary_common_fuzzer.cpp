@@ -183,11 +183,14 @@ static void PhotoProxyTest()
     uint32_t callingUid = provider->ConsumeIntegral<uint32_t>();
     int32_t userId = provider->ConsumeIntegral<int32_t>();
     uint32_t tokenId = provider->ConsumeIntegral<uint32_t>();
-    Media::PhotoAssetProxy proxy(nullptr, static_cast<Media::CameraShotType>(cameraShotType),
-        callingUid, userId, tokenId);
+    Media::PhotoAssetProxyCallerInfo callerInfo = {
+        .callingUid = callingUid,
+        .userId = userId,
+        .callingTokenId = tokenId,
+    };
+    Media::PhotoAssetProxy proxy(nullptr, callerInfo, static_cast<Media::CameraShotType>(cameraShotType), 1);
     proxy.GetFileAsset();
     proxy.GetPhotoAssetUri();
-    proxy.GetVideoFd();
 }
 
 static void PhotoFileUtilsTest()
@@ -202,7 +205,8 @@ static void PhotoFileUtilsTest()
     Media::PhotoFileUtils::HasEditData(editTime);
     bool hasEditDataCamera = provider->ConsumeBool();
     int32_t effectMode = provider->ConsumeIntegral<int32_t>();
-    Media::PhotoFileUtils::HasSource(hasEditDataCamera, editTime, effectMode);
+    int32_t subtype = provider->ConsumeIntegral<int32_t>();
+    Media::PhotoFileUtils::HasSource(hasEditDataCamera, editTime, effectMode, subtype);
 
     photoPath = provider->ConsumeBool() ? "" : provider->ConsumeBytesAsString(NUM_BYTES);
     Media::PhotoFileUtils::GetMetaDataRealPath(photoPath, userId);

@@ -22,12 +22,13 @@
 #include "iservice_registry.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
-#include "media_library_manager.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "permission_utils.h"
 #include "system_ability_definition.h"
+
+using namespace std;
 
 namespace OHOS {
 namespace Media {

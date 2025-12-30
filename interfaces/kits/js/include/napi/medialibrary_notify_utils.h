@@ -23,17 +23,11 @@
 #include "photo_asset_change_info.h"
 #include "napi/native_api.h"
 #include "media_change_info.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-
-enum NotifyChangeType {
-    NOTIFY_CHANGE_ADD,
-    NOTIFY_CHANGE_UPDATE,
-    NOTIFY_CHANGE_REMOVE,
-    NOTIFY_CHANGE_YUV_READY,
-};
 
 class RegisterNotifyType {
 public:
@@ -44,6 +38,8 @@ public:
     static const std::string HIDDEN_ALBUM_CHANGE EXPORT;
     static const std::string TRASHED_ALBUM_CHANGE EXPORT;
     static const std::string BATCH_DOWNLOAD_PROGRESS_CHANGE EXPORT;
+    static const std::string SINGLE_PHOTO_CHANGE EXPORT;
+    static const std::string SINGLE_PHOTO_ALBUM_CHANGE EXPORT;
     static const std::string USER_CLIENT_CHANGE EXPORT;
 };
 
@@ -58,6 +54,10 @@ public:
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_URI_MAP;
     static const std::map<Notification::AccurateNotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
 
+    static const std::map<std::string, Notification::NotifyUriType> REGISTER_SINGLE_NOTIFY_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_SINGLE_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, std::string> REGISTER_SINGLE_URI_MAP;
+
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_USER_DEFINE_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_USER_DEFINE_URI_MAP;
 
@@ -69,6 +69,9 @@ public:
     static int32_t GetNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
     static int32_t GetNotifyChangeType(const Notification::AccurateNotifyType &notifyType);
+    static int32_t GetSingleRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType);
+    static int32_t GetSingleNotifyTypeAndUri(const Notification::NotifyUriType type,
+        Notification::NotifyUriType &uriType, string &uri);
 
     static napi_status SetValueInt32(const napi_env& env, const char* name, const int32_t intValue, napi_value& result);
     static napi_status SetValueInt64(const napi_env& env, const char* name, const int64_t intValue, napi_value& result);
@@ -105,6 +108,18 @@ public:
         const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
     static napi_status BuildPauseReasonSubInfos(napi_env env,
         const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
+    static napi_value BuildSingleAssetNapi(napi_env env,
+        const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo);
+    static napi_value BuildSinglePhotoAssetChangeInfos(napi_env env,
+        const std::shared_ptr<AccurateRefresh::PhotoAssetChangeData> &changeInfo,
+        const shared_ptr<Notification::MediaChangeInfo> &changeInfos);
+    static napi_value BuildSingleAlbumNapi(napi_env env,
+        const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo);
+    static napi_value BuildSingleAlbumChangeInfos(napi_env env,
+        const std::shared_ptr<AccurateRefresh::AlbumChangeData> &changeInfo,
+        const shared_ptr<Notification::MediaChangeInfo> &changeInfos);
+    static napi_value BuildSinglePhotoAssetRecheckChangeInfos(napi_env env);
+    static napi_value BuildSingleAlbumRecheckChangeInfos(napi_env env);
 };
 }
 }

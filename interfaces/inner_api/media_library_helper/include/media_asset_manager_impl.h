@@ -42,6 +42,9 @@ public:
     MediaLibrary_ErrorCode NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnMovingPhotoDataPrepared callback) override;
+    MediaLibrary_ErrorCode NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnQuickImageDataPrepared callback) override;
     static std::mutex mutex_;
 
 private:
@@ -55,6 +58,8 @@ private:
     static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
 
     static OH_ImageSourceNative* CreateImageSource(const std::string requestId, const std::string requestUri);
+    static void GetPictureNativeObject(const std::string requestId, const std::string fileUri,
+        OH_PictureNative** pictureNative, OH_ImageSourceNative** imageSourceNative, bool &isPicture);
 
 private:
     static MediaLibraryManager* mediaLibraryManager_;

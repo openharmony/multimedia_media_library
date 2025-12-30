@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,21 +18,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "datashare_business_error.h"
-#include "datashare_predicates.h"
-#include "datashare_result_set.h"
-#include "directory_ex.h"
-#include "media_column.h"
 #include "media_exif.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_helper_container.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_type_const.h"
 #include "sandbox_helper.h"
-#include "uri.h"
-#include "values_bucket.h"
 
 using namespace std;
 
@@ -224,6 +214,16 @@ int32_t FileAsset::GetHeight() const
 void FileAsset::SetHeight(int32_t height)
 {
     member_[MEDIA_DATA_DB_HEIGHT] = height;
+}
+
+double FileAsset::GetAspectRatio()
+{
+    return GetDoubleMember(MEDIA_DATA_DB_ASPECT_RATIO);
+}
+
+void FileAsset::SetAspectRatio(double aspectRatio)
+{
+    member_[MEDIA_DATA_DB_ASPECT_RATIO] = aspectRatio;
 }
 
 int32_t FileAsset::GetDuration() const
@@ -794,6 +794,16 @@ void FileAsset::SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate)
     member_[PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE] = existCompatibleDuplicate;
 }
 
+void FileAsset::SetChangeTime(const int64_t changeTime)
+{
+    member_[PhotoColumn::PHOTO_CHANGE_TIME] = changeTime;
+}
+
+int64_t FileAsset::GetChangeTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
     lock_guard<mutex> lock(resultTypeMapMutex_);
@@ -839,6 +849,16 @@ int32_t FileAsset::GetStageVideoTaskStatus() const
     return GetInt32Member(PhotoColumn::STAGE_VIDEO_TASK_STATUS);
 }
 
+void FileAsset::SetPhotoIsTemp(int32_t isTemp)
+{
+    member_[PhotoColumn::PHOTO_IS_TEMP] = isTemp;
+}
+
+int32_t FileAsset::GetPhotoIsTemp() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_TEMP);
+}
+
 void FileAsset::SetExifRotate(int32_t exifRotate)
 {
     member_[PhotoColumn::PHOTO_EXIF_ROTATE] = exifRotate;
@@ -847,6 +867,26 @@ void FileAsset::SetExifRotate(int32_t exifRotate)
 int32_t FileAsset::GetExifRotate() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_EXIF_ROTATE);
+}
+
+void FileAsset::SetCritical(int32_t isCritical)
+{
+    member_[PhotoColumn::PHOTO_IS_CRITICAL] = isCritical;
+}
+
+int32_t FileAsset::GetCritical() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_CRITICAL);
+}
+
+void FileAsset::SetCriticalType(int32_t IsCriticalType)
+{
+    member_[PhotoColumn::PHOTO_CRITICAL_TYPE] = IsCriticalType;
+}
+
+int32_t FileAsset::GetCriticalType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_CRITICAL_TYPE);
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -20,11 +20,12 @@
 #include <sys/stat.h>
 #define FUSE_USE_VERSION FUSE_MAKE_VERSION(3, 17)
 #include <fuse.h>
+#include <atomic>
+#include "media_fuse_low_daemon.h"
 
 namespace OHOS {
 namespace Media {
-class MediaFuseDaemon;
-
+class MediaFuseHighDaemon;
 class MediaFuseManager {
 public:
     static MediaFuseManager &GetInstance();
@@ -40,6 +41,9 @@ public:
     int32_t DoHdcUnlink(const char *path);
     int32_t DoHdcReadDir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
         enum fuse_readdir_flags flags);
+    void SetUid(uid_t uid);
+    uid_t GetUid();
+
 private:
     MediaFuseManager() = default;
     ~MediaFuseManager() = default;
@@ -49,7 +53,9 @@ private:
     bool CheckDeviceInLinux();
 
 private:
-    std::shared_ptr<MediaFuseDaemon> fuseDaemon_;
+    std::shared_ptr<MediaFuseLowDaemon> fuseLowDaemon_;
+    std::shared_ptr<MediaFuseHighDaemon> fuseHighDaemon_;
+    std::atomic<uid_t> uid_;
     bool isInLinux_;
 };
 

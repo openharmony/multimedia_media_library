@@ -17,8 +17,6 @@
 #include "media_library_napi.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_napi_log.h"
-#include "media_file_utils.h"
-#include "userfile_client.h"
 
 namespace OHOS {
 namespace Media {
@@ -134,6 +132,9 @@ static void GenerateStringArrayValue(napi_env &env, const std::vector<std::strin
 void ConfirmCallback::SendMessageBack(const std::vector<std::string> &desFileUris)
 {
     CloseModalUIExtension();
+
+    NapiScopeHandler scopeHandler(this->env_);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is invalid");
 
     napi_value undefined = nullptr;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_INNER_FAIL);

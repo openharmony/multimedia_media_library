@@ -100,6 +100,9 @@ public:
     EXPORT int32_t GetHeight() const;
     EXPORT void SetHeight(int32_t height);
 
+    EXPORT double GetAspectRatio();
+    EXPORT void SetAspectRatio(double aspectRatio);
+
     EXPORT int32_t GetDuration() const;
     EXPORT void SetDuration(int32_t duration);
 
@@ -246,6 +249,9 @@ public:
     EXPORT int32_t GetIsStylePhoto() const;
     EXPORT void SetIsStylePhoto(int32_t isStylePhoto);
 
+    EXPORT void SetChangeTime(const int64_t changeTime);
+    EXPORT int64_t GetChangeTime() const;
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;
@@ -265,8 +271,17 @@ public:
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;
 
+    EXPORT void SetPhotoIsTemp(int32_t isTemp);
+    EXPORT int32_t GetPhotoIsTemp() const;
+
     EXPORT void SetExifRotate(int32_t exifRotate);
     EXPORT int32_t GetExifRotate() const;
+
+    // Safe Album: critical type for children's watch
+    EXPORT void SetCritical(int32_t IsCritical);
+    EXPORT int32_t GetCritical() const;
+    EXPORT void SetCriticalType(int32_t IsCriticalType);
+    EXPORT int32_t GetCriticalType() const;
 
 private:
     int32_t userId_ = -1;

@@ -769,6 +769,8 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateMergeGroupAlbumsInfo_test
 {
     MergeAlbumInfo info = {
         100,
+        4096,
+        4102,
         "tag1",
         0,
         0,
@@ -783,6 +785,8 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateMergeGroupAlbumsInfo_test
     };
     MergeAlbumInfo info2 = {
         101,
+        4096,
+        4102,
         "tag2",
         0,
         0,

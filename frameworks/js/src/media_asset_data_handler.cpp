@@ -16,7 +16,6 @@
 #include "media_asset_data_handler.h"
 
 #include "medialibrary_client_errno.h"
-#include "medialibrary_napi_utils.h"
 #include "napi_error.h"
 
 namespace OHOS {
@@ -107,6 +106,16 @@ napi_ref NapiMediaAssetDataHandler::GetProgressHandlerRef()
 void NapiMediaAssetDataHandler::SetProgressHandlerRef(napi_ref &progressHandlerRef)
 {
     progressHandlerRef_ = progressHandlerRef;
+}
+
+bool NapiMediaAssetDataHandler::GetCinematicResult()
+{
+    return cinematicResult_;
+}
+
+void NapiMediaAssetDataHandler::SetCinematicResult(bool cinematicResult)
+{
+    cinematicResult_ = cinematicResult;
 }
 
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, napi_value extraInfo)

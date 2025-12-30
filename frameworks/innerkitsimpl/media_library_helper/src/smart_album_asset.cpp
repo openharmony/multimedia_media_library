@@ -15,9 +15,6 @@
 
 #include "smart_album_asset.h"
 
-#include "media_file_utils.h"
-#include "medialibrary_type_const.h"
-
 using namespace std;
 
 namespace OHOS {

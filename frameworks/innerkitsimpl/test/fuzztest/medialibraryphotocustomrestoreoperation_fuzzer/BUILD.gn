@@ -34,10 +34,13 @@ ohos_fuzztest("MediaLibraryPhotoCustomRestoreOperationFuzzTest") {
   ]
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/asset_compress_version_manager.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_json_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_custom_restore_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "./photocustomrestoreoperation_fuzzer.cpp",
   ]
 

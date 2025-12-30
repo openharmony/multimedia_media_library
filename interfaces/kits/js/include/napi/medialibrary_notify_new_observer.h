@@ -48,13 +48,22 @@ public:
     napi_ref ref_;
 };
 
+enum PhotoChangeListenScene {
+    BothPhotoAndSinglePhoto,
+	BothAlbumAndSingleAlbum,
+	Other
+};
+
 struct NewJsOnChangeCallbackWrapper {
     napi_env env_;
     Notification::NotifyUriType observerUriType_;
     std::shared_ptr<Notification::MediaChangeInfo> mediaChangeInfo_;
     std::shared_ptr<Notification::AssetManagerNotifyInfo> assetManagerInfo_;
-    std::shared_ptr<Notification::UserDefineNotifyInfo> userDefineInfo_;
     std::vector<std::shared_ptr<ClientObserver>> clientObservers_;
+    std::map<std::string, std::vector<std::shared_ptr<ClientObserver>>> singleClientObservers_;
+    std::map<std::string, std::shared_ptr<AccurateRefresh::PhotoAssetChangeData>> singleAssetClientChangeInfo_;
+    std::map<std::string, std::shared_ptr<AccurateRefresh::AlbumChangeData>> singleAlbumClientChangeInfo_;
+    PhotoChangeListenScene ChangeListenScene;
 };
 
 class MediaOnNotifyNewObserver : public DataShare::DataShareObserver  {
@@ -67,11 +76,15 @@ public:
     void OnChange(const ChangeInfo &changeInfo) override;
     void static ReadyForCallbackEvent(const NewJsOnChangeCallbackWrapper &callbackWrapper);
     void static OnJsCallbackEvent(std::unique_ptr<NewJsOnChangeCallbackWrapper> &jsCallback);
+    void ProcessObserverBranches(NewJsOnChangeCallbackWrapper& callbackWrapper,
+        Notification::NotifyUriType infoUriType);
 
     Notification::NotifyUriType uriType_;
     std::string uri_;
     napi_env env_ = nullptr;
     std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> clientObservers_;
+    std::map<Notification::NotifyUriType, std::map<std::string,
+        std::vector<std::shared_ptr<ClientObserver>>>> singleClientObservers_;
 };
 
 class ChangeInfoTaskWorker {

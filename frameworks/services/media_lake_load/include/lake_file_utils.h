@@ -22,6 +22,7 @@
 #include "metadata.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class LakeFileUtils {
 public:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
@@ -44,7 +45,7 @@ public:
     static std::string GarbleFile(const std::string &file);
 
     // 文件操作
-    static std::string GetAssetRealPath(const std::string &path);
+    EXPORT static std::string GetAssetRealPath(const std::string &path);
     static int32_t OpenFile(const std::string &filePath, int flags);
     static int32_t CopyFile(const std::string &srcPath, std::string &targetPath);
     static int32_t RenameFileCrossPolicy(const string &oldPath, const string &newPath, bool deleteOld = false);
@@ -53,6 +54,11 @@ public:
     static bool CoverLakeFile(const string &filePath, const string &newPath);
     // Create file path in lake.
     static int32_t BuildLakeFilePath(const std::string &displayName, const int32_t mediaType, std::string &targetPath);
+
+    // 多用户场景
+    static int32_t GetCurrentAccountId();
+    static std::string GetCurrentInLakeLogicPrefix();
+    static bool IsDefaultAccount();
 
 private:
     static bool HasExtension(const std::string &file);

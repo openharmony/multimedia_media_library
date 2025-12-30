@@ -18,79 +18,49 @@
 
 #include "media_library_napi.h"
 
-#include <fcntl.h>
-#include <functional>
 #include <sys/sendfile.h>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "access_token.h"
 #include "accesstoken_kit.h"
-#include "ability_context.h"
 #include "album_order_napi.h"
 #include "confirm_callback.h"
-#include "context.h"
 #include "default_album_name_callback.h"
 #include "directory_ex.h"
-#include "file_ex.h"
-#include "hitrace_meter.h"
-#include "ipc_skeleton.h"
-#include "location_column.h"
 #include "locale_config.h"
 #include "media_analysis_progress_column.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
 #include "media_change_request_napi.h"
-#include "media_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
 #include "media_old_photos_column.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
-#include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_napi_enum_comm.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
 #include "modal_ui_callback.h"
-#include "modal_ui_extension_config.h"
-#include "napi_base_context.h"
 #include "napi_common_want.h"
-#include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
-#include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"
 #include "request_photo_uris_read_permission_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
-#include "string_ex.h"
-#include "string_wrapper.h"
-#include "userfile_client.h"
-#include "uv.h"
 #include "vision_total_column.h"
 #include "file_asset_napi.h"
 #include "form_map.h"
 #include "media_facard_photos_column.h"
 #include "rdb_utils.h"
 #ifdef HAS_ACE_ENGINE_PART
-#include "ui_content.h"
 #endif
 #include "ui_extension_context.h"
-#include "want.h"
-#include "js_native_api.h"
-#include "js_native_api_types.h"
 #include "delete_callback.h"
-#include "window.h"
 #include "permission_utils.h"
-#include "userfilemgr_uri.h"
 #include "user_photography_info_column.h"
 #include "foreground_analysis_meta.h"
 #include "smart_album_column.h"
@@ -134,6 +104,9 @@
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
 #include "vision_image_face_column.h"
+#include "register_unregister_handler_functions.h"
+#include "get_albumid_by_lpath_vo.h"
+#include "report_event.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -144,6 +117,7 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+const string URI_SEPARATOR = "file:media";
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -153,12 +127,14 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
 const int32_t MAX_CREATE_ASSET_LIMIT = 500;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
+const int32_t MAX_LPATH_BUNDLENAME_LENGTH = 255;
 const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
 const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
+const int32_t BETA_ISSUE_ID_LENGTH = 10;
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -177,6 +153,9 @@ string ChangeListenerNapi::trashAlbumUri_;
 int32_t ChangeListenerNapi::trashAlbumUserId_ = -1;
 std::mutex ChangeListenerNapi::trashMutex_;
 static std::once_flag g_prewarmTrashOnce;
+mutex MediaLibraryNapi::thumbnailMutex_;
+ReportEvent MediaLibraryNapi::getPhotoAccessHelperEvent_;
+ReportEvent MediaLibraryNapi::registerChangeEvent_;
 
 static void PrewarmTrashAlbumUriAsync()
 {
@@ -240,6 +219,7 @@ const std::string CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY = "photoSubTypeArray";
 const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
 const std::string CONFIRM_BOX_APP_NAME = "appName";
 const std::string CONFIRM_BOX_APP_ID = "appId";
+const std::string CONFIRM_BOX_IMAGE_FULLY_DISPLAYED = "isImageFullyDisplayed";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 
@@ -266,6 +246,9 @@ thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullp
 thread_local napi_ref MediaLibraryNapi::sAuthorizationModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
+using ClientObserverListMap = std::map<std::string, std::vector<std::shared_ptr<ClientObserver>>>;
+using GlobalObserverMap = std::map<Notification::NotifyUriType, ClientObserverListMap>;
+using ClientObserverListMapIter = ClientObserverListMap::iterator;
 
 thread_local napi_ref MediaLibraryNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::photoAccessHelperConstructor_ = nullptr;
@@ -301,6 +284,7 @@ thread_local napi_ref MediaLibraryNapi::sCompositeDisplayModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sCriticalTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -364,6 +348,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
+
 napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
@@ -381,8 +366,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("off", UserFileMgrOffCallback),
             DECLARE_NAPI_FUNCTION("getPrivateAlbum", UserFileMgrGetPrivateAlbum),
             DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
-            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
-            DECLARE_NAPI_FUNCTION("release", JSRelease),
+            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers), DECLARE_NAPI_FUNCTION("release", JSRelease),
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
@@ -411,7 +395,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
-        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("CriticalType", CreateCriticalTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -425,6 +410,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("getBurstAssets", PhotoAccessGetBurstAssets),
             DECLARE_WRITABLE_NAPI_FUNCTION("createAsset", PhotoAccessHelperCreatePhotoAsset),
+            DECLARE_WRITABLE_NAPI_FUNCTION("createPhotoAsset", PhotoAccessCreatePhotoAsset),
             DECLARE_NAPI_FUNCTION("registerChange", PhotoAccessHelperOnCallback),
             DECLARE_NAPI_FUNCTION("unRegisterChange", PhotoAccessHelperOffCallback),
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperTrashAsset),
@@ -435,6 +421,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAlbumsByOldUris", PhotoAcessGetAlbumsByOldUris),
             DECLARE_NAPI_FUNCTION("getClonedAlbumUris", PhotoAcessGetAlbumsByOldUris),
             DECLARE_NAPI_FUNCTION("getAlbumsByIds", PhotoAccessGetPhotoAlbumsByIds),
+            DECLARE_NAPI_FUNCTION("getAlbumIdByLpath", PhotoAccessGetAlbumIdByLpath),
+            DECLARE_NAPI_FUNCTION("getAlbumIdByBundleName", PhotoAccessGetAlbumIdByBundleName),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("getIndexConstructProgress", PhotoAccessGetIndexConstructProgress),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
@@ -477,6 +465,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("isCompatibleDuplicateSupported", CanSupportedCompatibleDuplicate),
             DECLARE_NAPI_FUNCTION("acquireDebugDatabase", PhotoAccessAcquireDebugDatabase),
             DECLARE_NAPI_FUNCTION("releaseDebugDatabase", PhotoAccessReleaseDebugDatabase),
+            DECLARE_NAPI_FUNCTION("onSinglePhotoChange", SinglePhotoAccessRegisterCallback),
+            DECLARE_NAPI_FUNCTION("onSinglePhotoAlbumChange", SinglePhotoAlbumRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offSinglePhotoChange", SinglePhotoAccessUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("offSinglePhotoAlbumChange", SinglePhotoAlbumUnregisterCallback),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -532,6 +524,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("SupportedImageFormat", CreateSupportedImageFormatEnum(env)),
         DECLARE_NAPI_PROPERTY("HdrMode", CreateHdrModeEnum(env)),
         DECLARE_NAPI_PROPERTY("VideoMode", CreateVideoModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -639,6 +632,8 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         }
         helperLock.unlock();
     }
+    obj->getPhotoAccessHelperEvent_.apiName_ = "getPhotoAccessHelper";
+    obj->registerChangeEvent_.apiName_ = "registerChange";
     status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                        MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
     if (status == napi_ok) {
@@ -901,12 +896,147 @@ napi_value MediaLibraryNapi::GetUserFileMgrAsync(napi_env env, napi_callback_inf
         GetMediaLibraryAsyncExecute, GetMediaLibraryAsyncComplete);
 }
 
+static void ProcessMediaLibraryHitEvent(ReportEvent& event, int64_t startTime,
+    int64_t endTime, const std::string& errCode) {
+    if (event.beginTime_ == 0 || (startTime - event.beginTime_) > TEN_MINUTE_MS) {
+        event.beginTime_ = startTime;
+        event.isReport_ = true;
+    }
+    event.CountTimeAndNum(startTime, endTime, errCode);
+}
+
+static void RecordKitApiHit(MediaLibraryAsyncContext *asyncContext)
+{
+    if (asyncContext->objectInfo == nullptr) {
+        NAPI_ERR_LOG("Async context objectInfo is null");
+        return;
+    }
+
+    auto* mediaLibInstance = static_cast<MediaLibraryNapi*>(asyncContext->objectInfo);
+    bool isReported = false;
+
+    // 根据事件类型处理上报
+    switch (asyncContext->eventType) {
+        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER: {
+            auto& event = mediaLibInstance->getPhotoAccessHelperEvent_;
+            isReported = event.isReport_;
+            if (ReportEvent::processorId_ == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
+                ReportEvent::AddEventProcessor();
+            }
+            if (ReportEvent::processorId_ != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
+                event.WriteCallStatusEvent();
+            }
+            break;
+        }
+        case MediaLibraryAsyncContext::REGISTER_CHANGE: {
+            auto& event = mediaLibInstance->registerChangeEvent_;
+            isReported = event.isReport_;
+            if (ReportEvent::processorId_ == ProcessorIdStatus::DEFAULT_PROCESSOR_ID) {
+                ReportEvent::AddEventProcessor();
+            }
+            if (ReportEvent::processorId_ != ProcessorIdStatus::NON_APPLICATION_PROCESSOR_ID) {
+                event.WriteCallStatusEvent();
+            }
+            break;
+        }
+        default:
+            NAPI_ERR_LOG("Unknown event type in async complete");
+    }
+
+    if (!isReported) {
+        NAPI_INFO_LOG("The function call does not report hit within 10 minute");
+    }
+}
+
+static void RecordKitApiHitAsyncExecute(napi_env env, void *data)
+{
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MediaLibraryAsyncContext *asyncContext = static_cast<MediaLibraryAsyncContext *>(data);
+    
+    if (asyncContext == nullptr || asyncContext->objectInfo == nullptr) {
+        NAPI_ERR_LOG("Async context or objectInfo is null");
+        return;
+    }
+
+    auto* mediaLibInstance = static_cast<MediaLibraryNapi*>(asyncContext->objectInfo);
+    const std::string& errCode = asyncContext->errCode;
+
+    switch (asyncContext->eventType) {
+        case MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER:
+            ProcessMediaLibraryHitEvent(mediaLibInstance->getPhotoAccessHelperEvent_, 
+                asyncContext->startTime, endTime, errCode);
+            break;
+        case MediaLibraryAsyncContext::REGISTER_CHANGE:
+            ProcessMediaLibraryHitEvent(mediaLibInstance->registerChangeEvent_, 
+                asyncContext->startTime, endTime, errCode);
+            break;
+        default:
+            NAPI_ERR_LOG("Unknown event type in async execute");
+            return;
+    }
+
+    RecordKitApiHit(asyncContext);
+}
+
+static void RecordKitApiHitAsyncComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryAsyncContext *asyncContext = static_cast<MediaLibraryAsyncContext *>(data);
+    if (asyncContext == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return;
+    }
+    delete asyncContext;
+}
+
+static void CreateRecordKitAsyncWork(napi_env env, MediaLibraryNapi* obj, int64_t startTime,
+    MediaLibraryAsyncContext::EventType eventType, const std::string& errCode = "0")
+{
+    if (obj == nullptr) {
+        NAPI_ERR_LOG("MediaLibraryNapi instance is null");
+        return;
+    }
+
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    asyncContext->startTime = startTime;
+    asyncContext->objectInfo = obj;
+    asyncContext->eventType = eventType;
+    asyncContext->errCode = errCode;
+
+    const std::string asyncName = "RecordKitApiHitAsync";
+    MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, asyncName,
+        RecordKitApiHitAsyncExecute, RecordKitApiHitAsyncComplete);
+}
+
+void ProcessPhotoAccessHelperHitAsyncTask(napi_env env, napi_value result, int64_t startTime, std::string& errCode) {
+    if (result == nullptr) {
+        NAPI_ERR_LOG("result is null, skip process");
+        return;
+    }
+
+    void* objectPtr = nullptr;
+    napi_status unwrapStatus = napi_unwrap(env, result, &objectPtr);
+    auto* obj = static_cast<MediaLibraryNapi*>(objectPtr);
+
+    if (unwrapStatus != napi_ok || objectPtr == nullptr) {
+        NAPI_ERR_LOG("napi_unwrap failed or objectPtr is null");
+        return;
+    }
+
+    CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::PHOTO_ACCESS_HELPER, errCode);
+}
+
 napi_value MediaLibraryNapi::GetPhotoAccessHelper(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetPhotoAccessHelper");
 
-    return CreateNewInstance(env, info, photoAccessHelperConstructor_);
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::string errCode = "0";
+    napi_value result = CreateNewInstance(env, info, photoAccessHelperConstructor_);
+
+    ProcessPhotoAccessHelperHitAsyncTask(env, result, startTime, errCode);
+
+    return result;
 }
 
 napi_value MediaLibraryNapi::GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info)
@@ -999,6 +1129,11 @@ static napi_value CreateStringEnumProperty(napi_env env, vector<pair<string, str
     }
     NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
     return result;
+}
+
+napi_value MediaLibraryNapi::CreateCriticalTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, criticalTypeEnum, sCriticalTypeEnumRef_);
 }
 
 static void DealWithCommonParam(napi_env env, napi_value arg,
@@ -2081,7 +2216,8 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
                                                    context->work, *jsContext);
     }
 
-    NAPI_ERR_LOG("End create asset.");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} End create asset.",
+        MLOG_TAG, __FUNCTION__, __LINE__);
     delete context;
 }
 
@@ -4827,7 +4963,9 @@ static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerI
     napi_create_object(env, &result);
     SetValueUtf8String(env, "deviceName", info->deviceName.c_str(), result);
     SetValueUtf8String(env, "networkId", info->networkId.c_str(), result);
+#ifdef DEVICE_MANAGER_SUPPORT
     SetValueInt32(env, "deviceTypeId", (int) info->deviceTypeId, result);
+#endif
     SetValueBool(env, "isOnline", info->isOnline, result);
 
     napi_status status = napi_set_element(env, arrayResult, idx, result);
@@ -4877,8 +5015,10 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
                 TYPE_STRING));
             peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
                 TYPE_STRING));
+        #ifdef DEVICE_MANAGER_SUPPORT
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
                 (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+        #endif
             peerInfo->isOnline = true;
             peerInfoArray.push_back(move(peerInfo));
         }
@@ -4927,8 +5067,10 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
                 TYPE_STRING));
             peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
                 TYPE_STRING));
+        #ifdef DEVICE_MANAGER_SUPPORT
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
                 (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+        #endif
             peerInfo->isOnline = (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_DATE_MODIFIED, resultSet,
                 TYPE_INT32)) == 0);
             peerInfoArray.push_back(move(peerInfo));
@@ -7054,8 +7196,8 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
         return nullptr;
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
-        env, info, context, ARGS_TWO, ARGS_TWO), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsTwoCallback(
+        env, info, context, ARGS_TWO, ARGS_THREE), JS_ERR_PARAMETER_INVALID);
     CHECK_COND_WITH_MESSAGE(env, context->callbackRef, "Can not get callback function");
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParsePredicates(env,
         context->argv[PARAM0], context, ASSET_FETCH_OPT), JS_INNER_FAIL);
@@ -7074,7 +7216,8 @@ static void RegisterThumbnailGenerateObserver(napi_env env,
         return;
     }
     dataObserver = std::make_shared<ThumbnailBatchGenerateObserver>();
-    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId) + "," +
+        std::to_string(getpid());
     UserFileClient::RegisterObserverExt(Uri(observerUri), dataObserver, false);
     thumbnailGenerateObserverMap.Insert(requestId, dataObserver);
 }
@@ -7086,7 +7229,8 @@ static void UnregisterThumbnailGenerateObserver(int32_t requestId)
         return;
     }
 
-    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId) + "," +
+        std::to_string(getpid());
     UserFileClient::UnregisterObserverExt(Uri(observerUri), dataObserver);
     thumbnailGenerateObserverMap.Erase(requestId);
 }
@@ -7159,6 +7303,68 @@ static int32_t GetRequestId()
     return requestIdCounter_;
 }
 
+static int32_t StartCreateThumbnailTask(napi_env env, MediaLibraryAsyncContext *asyncContext)
+{
+    CHECK_COND_RET(asyncContext != nullptr, JS_INNER_FAIL, "Async context is null");
+    int32_t requestId = asyncContext->requestId;
+    StartThumbnailCreationTaskReqBody reqBody;
+    reqBody.predicates = asyncContext->predicates;
+    reqBody.requestId = requestId;
+    reqBody.pid = getpid();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
+    int32_t err = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (err < 0) {
+        ReleaseThumbnailTask(requestId);
+        asyncContext->SaveError(err);
+        NAPI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", err);
+    }
+    return err;
+}
+
+static void StartCreateThumbnailTaskExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    CHECK_IF_EQUAL(context->requestId == GetRequestId(), "RequestId is invalid");
+    StartCreateThumbnailTask(env, context);
+}
+
+static void StartCreateThumbnailTaskCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("StartCreateThumbnailTaskCompleteCallback");
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    if (context->requestId != GetRequestId() && context->work != nullptr) {
+        napi_delete_reference(env, context->responseRef);
+        context->responseRef = nullptr;
+        napi_delete_async_work(env, context->work);
+        delete context;
+        return;
+    }
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    napi_get_undefined(env, &jsContext->error);
+    napi_get_undefined(env, &jsContext->data);
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_create_int32(env, 0, &jsContext->data);
+    } else if (context->error == E_THUMBNAIL_ASTC_ALL_EXIST) {
+        napi_create_int32(env, 1, &jsContext->data);
+    } else {
+        napi_create_int32(env, 0, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->responseRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -7166,27 +7372,23 @@ napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, n
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsStartCreateThumbnailTask(env, info, asyncContext));
 
+    lock_guard<mutex> lock(thumbnailMutex_);
     ReleaseThumbnailTask(GetRequestId());
     int32_t requestId = AssignRequestId();
     RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
     CreateThumbnailHandler(env, asyncContext, requestId);
-
-    StartThumbnailCreationTaskReqBody reqBody;
-    reqBody.predicates = asyncContext->predicates;
-    reqBody.requestId = requestId;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-
+    asyncContext->requestId = requestId;
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
-    if (changedRows < 0) {
-        ReleaseThumbnailTask(requestId);
-        asyncContext->SaveError(changedRows);
-        NAPI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", changedRows);
-        napi_create_int32(env, changedRows, &result);
-        return result;
+    if (asyncContext->responseRef != nullptr) {
+        MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StartCreateThumbnailTask",
+            StartCreateThumbnailTaskExecute, StartCreateThumbnailTaskCompleteCallback);
+    } else {
+        int32_t err = StartCreateThumbnailTask(env, asyncContext.get());
+        if (err < 0) {
+            napi_create_int32(env, err, &result);
+            return result;
+        }
     }
     napi_create_int32(env, requestId, &result);
     return result;
@@ -7204,10 +7406,26 @@ void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
         if (pos == std::string::npos) {
             continue;
         }
-        if (!MediaFileUtils::IsValidInteger(uriString.substr(pos + 1))) {
+        std::string params = uriString.substr(pos + 1);
+        auto commaPos = params.find(',');
+        if (commaPos == std::string::npos) {
             continue;
         }
-        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        std::string requestIdStr = params.substr(0, commaPos);
+        std::string pidStr = params.substr(commaPos + 1);
+
+        if (!MediaFileUtils::IsValidInteger(requestIdStr)) {
+            continue;
+        }
+        requestIdCallback_ = std::stoi(requestIdStr.c_str());
+
+        if (!MediaFileUtils::IsValidInteger(pidStr)) {
+            continue;
+        }
+        pid_t pid = std::atoi(pidStr.c_str());
+        if (pid != getpid()) {
+            continue;
+        }
         std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
         if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
             continue;
@@ -7243,6 +7461,46 @@ static napi_value ParseArgsStopCreateThumbnailTask(napi_env env,
     return result;
 }
 
+static void StopCreateThumbnailTaskExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    CHECK_IF_EQUAL(context->requestId == GetRequestId(), "RequestId is invalid");
+    StopThumbnailCreationTaskReqBody reqBody;
+    reqBody.requestId = context->requestId;
+    reqBody.pid = getpid();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t err = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (err < 0) {
+        context->SaveError(err);
+        NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", err);
+    }
+}
+
+static void StopCreateThumbnailTaskCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("StopCreateThumbnailTaskCompleteCallback");
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        napi_delete_async_work(env, context->work);
+    }
+    delete context;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -7257,18 +7515,11 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
         NAPI_WARN_LOG("Invalid requestId: %{public}d", requestId);
         RETURN_NAPI_UNDEFINED(env);
     }
+    lock_guard<mutex> lock(thumbnailMutex_);
     ReleaseThumbnailTask(requestId);
-
-    StopThumbnailCreationTaskReqBody reqBody;
-    reqBody.requestId = requestId;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (changedRows < 0) {
-        asyncContext->SaveError(changedRows);
-        NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
-    }
+    asyncContext->requestId = requestId;
+    MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StopCreateThumbnailTask",
+        StopCreateThumbnailTaskExecute, StopCreateThumbnailTaskCompleteCallback);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -7656,8 +7907,8 @@ static bool CheckGetAnalysisDataPermission(MediaLibraryAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
         auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-        context->analysisDatas.push_back("");
         if (!err) {
+            context->SaveError(E_PERMISSION_DENIED);
             return false;
         }
     }
@@ -7716,7 +7967,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
                 jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
             }
         }
-        context->analysisDatas.push_back(jsonObject.dump());
+        context->analysisDatas.push_back(jsonObject.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
     }
 }
 
@@ -8211,12 +8462,14 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
     string coverColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string albumUriPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
     string coverUriSource = PhotoAlbumColumns::COVER_URI_SOURCE;
+    string changeTime = PhotoAlbumColumns::CHANGE_TIME;
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
     photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
     photoAlbumData->SetCoverUriSource(get<int32_t>(ResultSetUtils::GetValFromColumn(coverUriSource, resultSet, TYPE_INT32)));
     photoAlbumData->SetUploadStatus(get<int32_t>(ResultSetUtils::GetValFromColumn(
         PhotoAlbumColumns::UPLOAD_STATUS, resultSet, TYPE_INT32)));
+    photoAlbumData->SetChangeTime(get<int64_t>(ResultSetUtils::GetValFromColumn(changeTime, resultSet, TYPE_INT64)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead
@@ -8624,6 +8877,8 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
         { "ANALYSIS_HIGHLIGHT", AnalysisType::ANALYSIS_HIGHLIGHT },
         { "ANALYSIS_SEARCH_INDEX", AnalysisType::ANALYSIS_SEARCH_INDEX },
+        { "ANALYSIS_PET_FACE", AnalysisType::ANALYSIS_PET_FACE },
+        { "ANALYSIS_PET_TAG", AnalysisType::ANALYSIS_PET_TAG },
     };
 
     napi_value result = nullptr;
@@ -10224,12 +10479,133 @@ static void PhotoAccessCancelPhotoUriPermissionExecute(napi_env env, void *data)
     }
 }
 
+static void PhotoAccessCreatePhotoAssetExecute(napi_env env, void *data)
+{
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateAssetExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return;
+    }
+
+    string outUri;
+    int index = -EINVAL;
+    if (context->businessCode != static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)){
+        index = CallPhotoAccessCreateAsset(context, outUri);
+    } else {
+        context->error = JS_E_PARAM_INVALID;
+        return;
+    }
+
+    if (index < 0) {
+        context->error = JS_E_INNER_FAIL;
+        NAPI_ERR_LOG("inner fail, index: %{public}d.", index);
+    } else {
+        context->uri = outUri;
+    }
+    OHOS::QOS::ResetThreadQos();
+}
+
+static napi_value ParseCreatePhotoAssetComponentArgs(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    /* Parse the first argument into displayName */
+    napi_valuetype valueType;
+    MediaType mediaType;
+    int32_t type = 0;
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_value_int32(env, context->argv[ARGS_ZERO], &type) == napi_ok,
+        JS_E_PARAM_INVALID, "Failed to get type value");
+    mediaType = static_cast<MediaType>(type);
+    CHECK_COND_WITH_ERR_MESSAGE(env, (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO),
+        JS_E_PARAM_INVALID, "invalid file type");
+
+    /* Parse the second argument into albumUri if exists */
+    string extension;
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], extension) ==
+        napi_ok, JS_E_PARAM_INVALID, "Failed to get extension");
+    CHECK_COND_WITH_ERR_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extension), JS_E_PARAM_INVALID,
+        "Failed to check extension");
+    context->valuesBucket.Put(ASSET_EXTENTION, extension);
+    /* Parse the third argument into albumUri if exists */
+    if (context->argc >= ARGS_THREE) {
+        CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, context->argv[ARGS_TWO], &valueType) == napi_ok,
+            JS_E_PARAM_INVALID, "Failed to get napi type");
+       if (valueType == napi_string) {
+            char buffer[ARG_BUF_SIZE];
+            size_t res = 0;
+            CHECK_COND_WITH_ERR_MESSAGE(env,
+                napi_get_value_string_utf8(env, context->argv[ARGS_TWO], buffer, ARG_BUF_SIZE, &res) == napi_ok,
+                JS_E_PARAM_INVALID, "failed to get string");
+            context->valuesBucket.Put(MediaColumn::MEDIA_TITLE, string(buffer));
+            std::string title = string(buffer);
+            std::string totalSize = title + "." + extension;
+            CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckDisplayName(totalSize, true) == 0, JS_E_PARAM_INVALID,
+                "Display size is error");
+            context->valuesBucket.Put(MediaColumn::MEDIA_TITLE, title);
+        } else {
+            NAPI_ERR_LOG("Napi type is wrong in create options");
+            return nullptr;
+        }
+    }
+
+    context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static napi_value ParseArgsPhotoCreateAsset(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, JS_E_PARAM_INVALID,"Failed to get object info");
+
+    napi_valuetype valueType;
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok,
+        JS_E_PARAM_INVALID, "Failed to get napi type");
+    if (valueType == napi_number) {
+        context->isCreateByComponent = true;
+        context->needSystemApp = false;
+        return ParseCreatePhotoAssetComponentArgs(env, info, context);
+
+    } else {
+        NAPI_ERR_LOG("JS param type %{public}d is wrong", static_cast<int32_t>(valueType));
+        return nullptr;
+    }
+}
+
+napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAsset(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCreatePhotoAsset");
+
+    NAPI_INFO_LOG("PhotoAccessCreatePhotoAsset enter");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_COND_WITH_ERR_MESSAGE(env, ParseArgsPhotoCreateAsset(env, info, asyncContext), JS_E_PARAM_INVALID,
+        "Failed to parse js args");
+
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessCreatePhotoAsset",
+        PhotoAccessCreatePhotoAssetExecute, JSCreateAssetCompleteCallback);
+}
+
 napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperCreatePhotoAsset");
 
-    NAPI_ERR_LOG("enter");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} enter", MLOG_TAG, __FUNCTION__, __LINE__);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
@@ -10834,8 +11210,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperOnCallback");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
+    std::string errCode = "0";
     size_t argc = ARGS_THREE;
     napi_value argv[ARGS_THREE] = {nullptr};
     napi_value thisVar = nullptr;
@@ -10852,18 +11230,24 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
             napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
             napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            errCode = std::to_string(JS_ERR_PARAMETER_INVALID);
+            CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::REGISTER_CHANGE, errCode);
             return undefinedResult;
         }
         char buffer[ARG_BUF_SIZE];
         size_t res = 0;
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            errCode = std::to_string(JS_ERR_PARAMETER_INVALID);
+            CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::REGISTER_CHANGE, errCode);
             return undefinedResult;
         }
         string uri = string(buffer);
         bool isDerived = false;
         if (napi_get_value_bool(env, argv[PARAM1], &isDerived) != napi_ok) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            errCode = std::to_string(JS_ERR_PARAMETER_INVALID);
+            CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::REGISTER_CHANGE, errCode);
             return undefinedResult;
         }
         const int32_t refCount = 1;
@@ -10874,12 +11258,290 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
             obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            errCode = std::to_string(JS_ERR_PARAMETER_INVALID);
+            CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::REGISTER_CHANGE, errCode);
             napi_delete_reference(env, cbOnRef);
             cbOnRef = nullptr;
             return undefinedResult;
         }
         tracer.Finish();
     }
+    CreateRecordKitAsyncWork(env, obj, startTime, MediaLibraryAsyncContext::REGISTER_CHANGE, errCode);
+    return undefinedResult;
+}
+
+std::string MediaLibraryNapiUtils::GetSingleIdFromNapiAssets(
+    napi_env env, const napi_value &napiAsset)
+{
+    FileAssetNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiAsset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+        return "";
+    }
+    if (obj->IsHidden() || obj->IsTrash()) {
+        NAPI_ERR_LOG("Skip invalid asset (hidden or trash), assetId: %{public}d", obj->GetFileId());
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Check Whether It Is A Hidden Or Recycled Asset");
+        return "";
+    }
+    if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+        NAPI_ERR_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,
+            "Check Whether It Is Not A MEDIA_TYPE_IMAGE Or MEDIA_TYPE_VIDEO");
+        return "";
+    }
+    std::string fileId = to_string(obj->GetFileId());
+    if (!obj->GetFileId()) {
+        NAPI_ERR_LOG("Got empty asset ID from asset object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary assets invalid");
+    } else {
+        NAPI_INFO_LOG("Successfully extracted album URI: %{private}s", fileId.c_str());
+    }
+    return fileId;
+}
+
+std::string MediaLibraryNapiUtils::GetSingleIdFromNapiPhotoAlbum(
+    napi_env env, const napi_value &napiPhotoAlbum)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiPhotoAlbum, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get album napi object");
+        return "";
+    }
+
+    PhotoAlbumSubType albumSubType = obj->GetPhotoAlbumSubType();
+    if (albumSubType == PhotoAlbumSubType::TRASH || albumSubType == PhotoAlbumSubType::HIDDEN) {
+        NAPI_ERR_LOG("Skip invalid album (trash or hidden), albumId: %{public}d, subType: %{public}d",
+            obj->GetAlbumId(), static_cast<int32_t>(albumSubType));
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Check Whether It Is A Hidden Or Recycled Hide");
+        return "";
+    }
+
+    std::string albumId = to_string(obj->GetAlbumId());
+    if (albumId.empty()) {
+        NAPI_ERR_LOG("Got empty album Id from photo album object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary Album invalid");
+    }
+    return albumId;
+}
+
+int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref, 
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+        const Notification::NotifyUriType uriType, const std::string &fileIdOrAlbumId)
+{
+    auto& uriMap = observer->singleClientObservers_[uriType];
+    auto uriIter = uriMap.find(fileIdOrAlbumId);
+
+    if (uriIter == uriMap.end()) {
+        return HandleNewUriRegistration(env, ref, observer, uriType, fileIdOrAlbumId);
+    }
+
+    return HandleExistingUriCheck(env, ref, uriIter->second, uriType, fileIdOrAlbumId);
+}
+
+int32_t MediaLibraryNapi::HandleNewUriRegistration(napi_env env, napi_ref ref,
+        std::shared_ptr<MediaOnNotifyNewObserver> &observer,
+        const Notification::NotifyUriType uriType, const std::string &fileIdOrAlbumId)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
+        return JS_E_PARAM_INVALID;
+    }
+    std::vector<std::shared_ptr<ClientObserver>> newObservers;
+    auto clientObserver = std::make_shared<ClientObserver>(uriType, ref);
+
+    if (clientObserver == nullptr) {
+        NAPI_ERR_LOG("Failed to create ClientObserver");
+        return JS_E_PARAM_INVALID;
+    }
+
+    auto ret = UserFileClient::RegisterObserverExtProvider(Uri(registerUri + URI_SEPARATOR + fileIdOrAlbumId),
+        static_cast<std::shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to register observer, ret: %{public}d, uri: %{private}s", ret, fileIdOrAlbumId.c_str());
+        return ret;
+    }
+    std::lock_guard<std::mutex> lock(ChangeListenerNapi::trashMutex_);
+    newObservers.push_back(clientObserver);
+    observer->singleClientObservers_[uriType][fileIdOrAlbumId] = newObservers;
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::HandleExistingUriCheck(napi_env env, napi_ref ref,
+        std::vector<std::shared_ptr<ClientObserver>> &existingObservers,
+        const Notification::NotifyUriType uriType, const std::string &fileIdOrAlbumId)
+{
+    napi_value callback = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &callback);
+
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_get_reference_value failed, status: %{public}d", status);
+        return OHOS_PERMISSION_DENIED_CODE;
+    }
+    bool hasRegister = false;
+    for (auto &obs : existingObservers) {
+        napi_value onCallback = nullptr;
+        status = napi_get_reference_value(env, obs->ref_, &onCallback);
+        if (status == napi_ok) {
+            napi_strict_equals(env, callback, onCallback, &hasRegister);
+        }
+        if (hasRegister) {
+            NAPI_ERR_LOG("clientObserver hasRegister");
+            return JS_E_PARAM_INVALID;
+        }
+    }
+    if (!hasRegister) {
+        auto clientObserver = std::make_shared<ClientObserver>(uriType, ref);
+        if (clientObserver == nullptr) {
+            NAPI_ERR_LOG("Failed to create ClientObserver");
+            return JS_E_PARAM_INVALID;
+        }
+        std::lock_guard<std::mutex> lock(ChangeListenerNapi::trashMutex_);
+        existingObservers.push_back(clientObserver);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, 
+    ChangeListenerNapi &listObj, const Notification::NotifyUriType uriType, const std::string &fileIdOrAlbumId)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
+        return JS_E_PARAM_INVALID;
+    }
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); it++) {
+        Notification::NotifyUriType observerUri = (*it)->uriType_;
+        if (observerUri == registerUriType) {
+            NAPI_INFO_LOG("Found existing observer for registerUriType: %{public}d, adding client observer with uriType: %{public}d", 
+                         registerUriType, uriType);
+            return AddSingleClientObserver(env, ref, *it, uriType, fileIdOrAlbumId);
+        }
+    }
+    shared_ptr<MediaOnNotifyNewObserver> observer =
+        make_shared<MediaOnNotifyNewObserver>(registerUriType, registerUri, env);
+    Uri notifyUri(registerUri);
+    int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to register observer, ret: %{public}d, uri: %{private}s", ret, registerUri.c_str());
+        return ret;
+    }
+    ret = AddSingleClientObserver(env, ref, observer, uriType, fileIdOrAlbumId);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("Failed to add client observer, ret: %{public}d", ret);
+        return ret;
+    }
+    listObj.newObservers_.push_back(observer);
+    RegisterUnregisterHandlerFunctions::SyncUpdateNormalListener(listObj, registerUriType, observer);
+    NAPI_INFO_LOG("success to register observer, uriType: %{public}d,"
+        "registerUriType: %{public}d, fileIdOrAlbumId: %{public}s", uriType, registerUriType, fileIdOrAlbumId.c_str());
+    return ret;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAccessRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAccessRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAccessRegisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckRegisterCallbackArgs(env, info, context) == nullptr) {
+        NAPI_ERR_LOG("Parameter validation failed");
+        return undefinedResult;
+    }
+    
+    int32_t ret = E_OK;
+    std::string fileId;
+    fileId = MediaLibraryNapiUtils::GetSingleIdFromNapiAssets(env, context->argv[PARAM0]);
+    if (fileId.empty()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get fileId from photo asset");
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAccessRegisterCallback got fileId: %{public}s", fileId.c_str());
+
+    string type = RegisterNotifyType::SINGLE_PHOTO_CHANGE;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetSingleRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
+        return undefinedResult;
+    }
+    if (!RegisterUnregisterHandlerFunctions::CheckSingleRegisterCount(*g_listObj, uriType)) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Registration has reached the limit.");
+        return undefinedResult;
+    }
+    const int32_t refCount = 1;
+    napi_ref cbOnRef = nullptr;
+    if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+        return undefinedResult;
+    }
+
+    ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType, fileId);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        napi_delete_reference(env, cbOnRef);
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAccessRegisterCallback success for fileId: %{public}s", fileId.c_str());
+    tracer.Finish();
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAlbumRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAlbumRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAlbumRegisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckRegisterCallbackArgs(env, info, context) == nullptr) {
+        NAPI_ERR_LOG("Parameter validation failed");
+        return undefinedResult;
+    }
+    int32_t ret = E_OK;
+    std::string albumUri;
+    albumUri = MediaLibraryNapiUtils::GetSingleIdFromNapiPhotoAlbum(env, context->argv[PARAM0]);
+    if (albumUri.empty()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get URI from photo album");
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback got albumUri: %{public}s", albumUri.c_str());
+
+    string type = RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetSingleRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "The scenario parameter verification fails.");
+        return undefinedResult;
+    }
+    if (!RegisterUnregisterHandlerFunctions::CheckSingleRegisterCount(*g_listObj, uriType)) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Registration has reached the limit.");
+        return undefinedResult;
+    }
+    const int32_t refCount = 1;
+    napi_ref cbOnRef = nullptr;
+    if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+        return undefinedResult;
+    }
+
+    ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType, albumUri);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        napi_delete_reference(env, cbOnRef);
+        return undefinedResult;
+    }
+    NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback success for album uri: %{public}s", albumUri.c_str());
+    tracer.Finish();
     return undefinedResult;
 }
 
@@ -10953,6 +11615,7 @@ int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, Ch
 
     shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
     observer->clientObservers_[uriType].push_back(clientObserver);
+    RegisterUnregisterHandlerFunctions::SyncUpdateSingleListener(listObj, registerUriType, observer);
     listObj.newObservers_.push_back(observer);
     NAPI_INFO_LOG("success to register observer, ret: %{public}d, uri: %{public}s", ret, registerUri.c_str());
     return ret;
@@ -11162,6 +11825,66 @@ napi_value MediaLibraryNapi::PhotoAccessUnregisterCallback(napi_env env, napi_ca
     }
     if (cbOffRef != nullptr) {
         napi_delete_reference(env, cbOffRef);
+    }
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAccessUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAccessUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAccessUnregisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    if (g_listObj == nullptr) {
+        return undefinedResult;
+    }
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckSingleUnregisterCallbackArgs(env, info, context) == nullptr) {
+        return undefinedResult;
+    }
+
+    napi_ref cbOffRef = nullptr;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::SINGLE_PHOTO_URI;
+    
+    UnregisterContext singleContext(env, uriType, "", *g_listObj);
+    singleContext.cbRef = cbOffRef;
+    int32_t ret = RegisterUnregisterHandlerFunctions::HandleSingleIdScenario(singleContext, context);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+    }
+    if (singleContext.cbRef != nullptr) {
+        napi_delete_reference(env, singleContext.cbRef);
+    }
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter SinglePhotoAlbumUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("SinglePhotoAlbumUnregisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    if (g_listObj == nullptr) {
+        return undefinedResult;
+    }
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (RegisterUnregisterHandlerFunctions::CheckSingleUnregisterCallbackArgs(env, info, context) == nullptr) {
+        return undefinedResult;
+    }
+
+    napi_ref cbOffRef = nullptr;
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI;
+    
+    UnregisterContext singleContext(env, uriType, "", *g_listObj);
+    singleContext.cbRef = cbOffRef;
+    int32_t ret = RegisterUnregisterHandlerFunctions::HandleSingleIdScenario(singleContext, context);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+    }
+    if (singleContext.cbRef != nullptr) {
+        napi_delete_reference(env, singleContext.cbRef);
     }
     return undefinedResult;
 }
@@ -11732,15 +12455,16 @@ static bool ParseAndSetConfigArray(const napi_env &env, OHOS::AAFwk::Want &want,
 }
 
 static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallback> &callback,
-                               napi_env env, napi_value args[], size_t argsLen)
+                               napi_env env, napi_value args[], size_t argsLen, bool isImageFullyDisplayed = false)
 {
-    if (argsLen < ARGS_SEVEN) {
+    if (argsLen < ARGS_EIGHT) {
         return false;
     }
 
     want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
     want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
     want.AddFlags(Want::FLAG_AUTH_READ_URI_PERMISSION);
+    want.SetParam(CONFIRM_BOX_IMAGE_FULLY_DISPLAYED, isImageFullyDisplayed);
 
     // second param: Array<string>
     if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
@@ -11780,15 +12504,27 @@ static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallba
 }
 #endif
 
+static bool IsNullValue(napi_env env, napi_value value)
+{
+    napi_valuetype type;
+    napi_typeof(env, value, &type);
+    return type == napi_null || type == napi_undefined;
+}
+
 napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callback_info info)
 {
 #ifdef HAS_ACE_ENGINE_PART
-    size_t argc = ARGS_SEVEN;
-    napi_value args[ARGS_SEVEN] = {nullptr};
+    size_t argc = ARGS_EIGHT;
+    napi_value args[ARGS_EIGHT] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
     napi_create_object(env, &result);
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), OHOS_INVALID_PARAM_CODE);
+
+    bool isImageFullyDisplayed = false;
+    if (argc >= ARGS_EIGHT && !IsNullValue(env, args[ARGS_SEVEN])) {
+        napi_get_value_bool(env, args[ARGS_SEVEN], &isImageFullyDisplayed);
+    }
 
     // first param: context, check whether context is abilityContext from stage mode
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
@@ -11805,7 +12541,7 @@ napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callbac
     // set want
     OHOS::AAFwk::Want want;
     auto callback = std::make_shared<ConfirmCallback>(env, uiContent);
-    NAPI_ASSERT(env, InitConfirmRequest(want, callback, env, args, sizeof(args)), "Parse input fail.");
+    NAPI_ASSERT(env, InitConfirmRequest(want, callback, env, args, sizeof(args), isImageFullyDisplayed), "Parse input fail.");
 
     // regist callback and config
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
@@ -13071,7 +13807,7 @@ void MediaLibraryNapi::SetUserId(const int32_t &userId)
 
 static bool CheckBetaIssueId(const std::string &betaIssueId)
 {
-    return MediaLibraryNapiUtils::IsNumber(betaIssueId) && betaIssueId.length() == 10;
+    return betaIssueId.length() == BETA_ISSUE_ID_LENGTH && MediaLibraryNapiUtils::IsNumber(betaIssueId);
 }
 
 static bool CheckBetaScenario(const std::string &betaScenario)
@@ -13084,13 +13820,23 @@ static bool CheckFileDescriptor(int32_t fileFd)
     return fileFd >= 0 && fileFd <= 1023;
 }
 
-static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info info,
-    unique_ptr<MediaLibraryAsyncContext> &context)
+static int32_t CheckDebugDatabasePermission(napi_env env)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "API only can be called by system app");
-        return nullptr;
+        return E_ERROR;
     }
+    if (!MediaLibraryNapiUtils::IsBetaVersion()) {
+        NapiError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Caller not beta version");
+        return E_ERROR;
+    }
+    return E_OK;
+}
+
+static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == E_OK, nullptr, "Permission verification failed");
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -13222,10 +13968,7 @@ napi_value MediaLibraryNapi::PhotoAccessAcquireDebugDatabase(napi_env env, napi_
 static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info info, 
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "API only can be called by system app");
-        return nullptr;
-    }
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == E_OK, nullptr, "Permission verification failed");
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -13303,13 +14046,197 @@ napi_value MediaLibraryNapi::PhotoAccessReleaseDebugDatabase(napi_env env, napi_
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-
     CHECK_NULLPTR_RET(ParseArgsReleaseDebugDatabase(env, info, asyncContext));
     asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE);
 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ReleaseDebugDatabase", 
         JSReleaseDebugDatabaseExecute, JSReleaseDebugDatabaseCallbackComplete);
+}
+
+static napi_value HandleOneArgGetAlbumByLpath(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string lpath;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], lpath),
+        JS_E_PARAM_INVALID);
+    if (lpath.empty() || lpath.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        NAPI_ERR_LOG("lpath is invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+    NAPI_DEBUG_LOG("lpath: %{public}s", lpath.c_str());
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lpath);
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+        NAPI_DEBUG_LOG("Created new PhotoAlbum object");
+    }
+    context->photoAlbumData->SetLPath(lpath);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetAlbumIdByLpath(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+    switch (context->argc) {
+        case ARGS_ONE:
+            CHECK_NULLPTR_RET(HandleOneArgGetAlbumByLpath(env, context));
+            break;
+        default:
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+            return nullptr;
+    }
+    CHECK_NULLPTR_RET(context->photoAlbumData);
+    string lpath = context->photoAlbumData->GetLPath();
+    static const std::unordered_set<std::string> MEDIA_DIRS = {
+        "/DCIM/Camera",
+        "/Pictures/Screenshots", 
+        "/Pictures/Screenrecords"
+    };
+    bool isValidLpath = MEDIA_DIRS.find(lpath) == MEDIA_DIRS.end();
+    if (isValidLpath) {
+        NAPI_ERR_LOG("lpath is Invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+    return result;
+}
+
+static void GetAlbumIdByLpathOrBundleNameExecute(napi_env env, void *data)
+{
+    NAPI_DEBUG_LOG("enter GetAlbumIdByLpathOrBundleNameExecute");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->photoAlbumData, "photoAlbumData is null");
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    int32_t ret = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody); 
+    if (ret != 0) {
+        MEDIA_ERR_LOG("UserDefineIPCClient().Call is failed");
+        context->SaveError(ret);
+        return;
+    }
+    int32_t albumId = respBody.albumId;
+    context->photoAlbumData->SetAlbumId(albumId);
+}
+
+static void GetAlbumIdByLpathOrBundleNameCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    if (status != napi_ok || context->error != ERR_DEFAULT) {
+        NAPI_ERR_LOG("GetAlbumIdByLpath failed, status: %{public}d, error: %{public}d", status, context->error);
+        context->HandleError(env, jsContext->error);
+    } else {
+        int albumId = context->photoAlbumData->GetAlbumId();
+        napi_status napiStatus = napi_create_int32(env, albumId, &jsContext->data);
+        if (napiStatus == napi_ok) {
+            jsContext->status = true;
+        } else {
+            NAPI_ERR_LOG("Failed to create albumId value");
+            context->HandleError(env, jsContext->error);
+        }
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    NAPI_DEBUG_LOG("MediaLibraryNapi::GetAlbumIdByLpathOrBundleNameCompleteCallback end");
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetAlbumIdByLpath");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetAlbumIdByLpath(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAlbumIdByLpath",
+        GetAlbumIdByLpathOrBundleNameExecute, GetAlbumIdByLpathOrBundleNameCompleteCallback);
+}
+
+static napi_value HandleOneArgGetAlbumIdByBundleName(napi_env env, 
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string bundle_name;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundle_name),
+     JS_E_PARAM_INVALID);
+    if (bundle_name.empty() || bundle_name.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        NAPI_ERR_LOG("bundle_name is invalid");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+    NAPI_DEBUG_LOG("bundle_name: %{public}s", bundle_name.c_str());
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_PRIORITY, to_string(1));
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+    }
+    context->photoAlbumData->SetAlbumName(bundle_name);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetAlbumIdByBundleName(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+    switch (context->argc) {
+        case ARGS_ONE:
+            CHECK_NULLPTR_RET(HandleOneArgGetAlbumIdByBundleName(env, context));
+            break;
+        default:
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+            return nullptr;
+    }
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+    return result;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetAlbumIdByBundleName");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetAlbumIdByBundleName(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAlbumIdByBundleName",
+       GetAlbumIdByLpathOrBundleNameExecute, GetAlbumIdByLpathOrBundleNameCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS
