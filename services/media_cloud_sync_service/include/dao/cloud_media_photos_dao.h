@@ -134,7 +134,6 @@ public:
         const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t GetSameNamePhotoCount(const PhotosDto &photo, bool isHide, int32_t count);
-    int32_t DeleteSameNamePhoto(const PhotosDto &photo);
     int32_t AddRemoveAlbumCloudId(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const int32_t fileId,
         const int32_t ownerAlbumId, PhotosPo &record);
     std::shared_ptr<NativeRdb::ResultSet> BatchQueryLocal(

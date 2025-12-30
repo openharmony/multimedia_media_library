@@ -907,7 +907,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
             return nullptr;
         }
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-        if (!AddOwnerCheck(cmd, appidPredicates)) {
+        if (!AddOwnerCheck(cmd, appidPredicates, columns)) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             businessError.SetCode(err);
             return nullptr;
@@ -1050,7 +1050,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
         PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap,
             userId, permissionPolicy, isDBBypass);
         int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
-        if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS) {
+        if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS && errCode != E_DOUBLE_CHECK) {
             ret = IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
             break;
         }

@@ -81,7 +81,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
-            DECLARE_NAPI_PROPERTY("COMMENT", MediaChangeRequestUtils::CreateComment(env)),
+            DECLARE_NAPI_PROPERTY("comment", MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbumsWithUri", JSDeleteAlbumsWithUri),
@@ -115,7 +115,7 @@ napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi
         .ref = &mediaAnalysisAlbumChangeRequestConstructor_,
         .constructor = Constructor,
         .props = {
-            DECLARE_NAPI_PROPERTY("COMMENT",
+            DECLARE_NAPI_PROPERTY("comment",
                 MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
@@ -147,7 +147,7 @@ napi_value MediaAlbumChangeRequestNapi::MediaHighlightAlbumChangeRequestInit(nap
         .ref = &mediaHighlightAlbumChangeRequestConstructor_,
         .constructor = Constructor,
         .props = {
-            DECLARE_NAPI_PROPERTY("COMMENT",
+            DECLARE_NAPI_PROPERTY("comment",
                 MediaChangeRequestUtils::CreateComment(env)),
             DECLARE_NAPI_FUNCTION("setHighlightAttribute", JSSetHighlightAttribute),
         } };

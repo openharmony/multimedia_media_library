@@ -230,7 +230,7 @@ public:
      * @return if obtain success, return PhotoAssetProxy; Otherwise return nullptr
      */
     EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(
-        const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType);
+        const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType, int32_t videoCount = 1);
     EXPORT static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc);
     EXPORT static void GetUriIdPrefix(std::string &fileUri);
     EXPORT static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize);

@@ -5262,5 +5262,45 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_add_id_card_album_test_001, T
     auto result = classifyRestore.mediaLibraryRdb_->QuerySql(query_sql);
     EXPECT_FALSE(GetInt32Val("count", result) > 0);
 }
+
+void TestBuildDbPathByUserIdAndDbName(int32_t userId, const std::string &dbName, const std::string &expectedDbPath)
+{
+    OthersCloneRestore othersClone(OTHERS_PHONE_CLONE_RESTORE, "", "");
+    othersClone.userId_ = userId;
+    std::string dbPath = othersClone.BuildDbPath(dbName);
+    EXPECT_EQ(dbPath, expectedDbPath);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_BuildDbPath_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_BuildDbPath_001");
+    TestBuildDbPathByUserIdAndDbName(OthersCloneRestore::UserId::MAIN, "photo_MediaInfo.db",
+        "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db");
+    MEDIA_INFO_LOG("End medialibrary_backup_others_clone_BuildDbPath_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_BuildDbPath_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_BuildDbPath_002");
+    TestBuildDbPathByUserIdAndDbName(OthersCloneRestore::UserId::MAIN, "photo_sd_MediaInfo.db",
+        "/storage/media/local/files/.backup/restore/photo_sd_MediaInfo.db");
+    MEDIA_INFO_LOG("End medialibrary_backup_others_clone_BuildDbPath_002");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_BuildDbPath_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_BuildDbPath_003");
+    TestBuildDbPathByUserIdAndDbName(OthersCloneRestore::UserId::PRIVATE, "video_sd_MediaInfo.db",
+        "/storage/media/local/files/.backup/restore/video_sd_MediaInfo.db");
+    MEDIA_INFO_LOG("End medialibrary_backup_others_clone_BuildDbPath_003");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_BuildDbPath_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_BuildDbPath_004");
+    TestBuildDbPathByUserIdAndDbName(OthersCloneRestore::UserId::PRIVATE, "video_MediaInfo.db",
+        "/storage/media/local/files/.backup/restore/storage/emulated/10/video_MediaInfo.db");
+    MEDIA_INFO_LOG("End medialibrary_backup_others_clone_BuildDbPath_004");
+}
 } // namespace Media
 } // namespace OHOS
