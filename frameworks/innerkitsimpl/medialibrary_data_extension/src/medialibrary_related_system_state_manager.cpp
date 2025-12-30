@@ -18,24 +18,14 @@
 #include "medialibrary_related_system_state_manager.h"
 #include <sys/statvfs.h>
 
-#include "abs_rdb_predicates.h"
-#include "cloud_sync_manager.h"
-#include "common_timer_errors.h"
-#include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_unistore_manager.h"
 #include "cloud_sync_utils.h"
- 
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
 #include "net_conn_client.h"
 #include "medialibrary_tracer.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
