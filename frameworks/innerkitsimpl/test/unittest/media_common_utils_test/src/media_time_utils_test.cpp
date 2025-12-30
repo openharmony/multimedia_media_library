@@ -46,14 +46,15 @@ HWTEST_F(MediaTimeUtilsUnitTest, medialib_create_time_test_001, TestSize.Level1)
     const std::string PHOTO_DETAIL_TIME_FORMAT = "%Y:%m:%d %H:%M:%S";
     int64_t secondTime = 1766644004;
     EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_YEAR_FORMAT, secondTime), "2025");
-    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_MONTH_FORMAT, secondTime), "12");
+    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_MONTH_FORMAT, secondTime), "202512");
     EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_DAY_FORMAT, secondTime), "20251225");
     EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DETAIL_TIME_FORMAT, secondTime), "2025:12:25 14:26:44");
     int64_t milliSecondTime = 1766644004132;
-    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_YEAR_FORMAT, milliSecondTime), "2025");
-    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_MONTH_FORMAT, milliSecondTime), "12");
-    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DATE_DAY_FORMAT, milliSecondTime), "20251225");
-    EXPECT_EQ(MediaTimeUtils::StrCreateTime(PHOTO_DETAIL_TIME_FORMAT, milliSecondTime), "2025:12:25 14:26:44");
+    EXPECT_EQ(MediaTimeUtils::StrCreateTimeByMilliseconds(PHOTO_DATE_YEAR_FORMAT, milliSecondTime), "2025");
+    EXPECT_EQ(MediaTimeUtils::StrCreateTimeByMilliseconds(PHOTO_DATE_MONTH_FORMAT, milliSecondTime), "202512");
+    EXPECT_EQ(MediaTimeUtils::StrCreateTimeByMilliseconds(PHOTO_DATE_DAY_FORMAT, milliSecondTime), "20251225");
+    EXPECT_EQ(MediaTimeUtils::StrCreateTimeByMilliseconds(PHOTO_DETAIL_TIME_FORMAT, milliSecondTime),
+        "2025:12:25 14:26:44");
 }
 } // namespace Media
 } // namespace OHOS

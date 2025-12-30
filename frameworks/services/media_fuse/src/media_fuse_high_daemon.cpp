@@ -138,6 +138,8 @@ static int Create(const char *path, mode_t mode, struct fuse_file_info *fi)
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
         err = MediaFuseManager::GetInstance().DoHdcCreate(path, mode, fi);
+    } else {
+        return err;
     }
     CHECK_AND_RETURN_RET_LOG(err == 0, err, "Create file failed, path = %{private}s", path);
     return E_OK;
@@ -155,6 +157,8 @@ static int Unlink(const char *path)
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
         err = MediaFuseManager::GetInstance().DoHdcUnlink(path);
+    } else {
+        return err;
     }
     CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Unlink: DoHdcUnlink failed, path = %{public}s", path);
     return E_OK;
@@ -188,6 +192,8 @@ static int ReadDir(const char *path, void *buf, fuse_fill_dir_t fullDir, off_t o
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
         err = MediaFuseManager::GetInstance().DoHdcReadDir(path, buf, fullDir, offset, FUSE_READDIR_PLUS);
+    } else {
+        return err;
     }
     CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "DoHdcReadDir failed, path = %{public}s", path);
     return E_OK;

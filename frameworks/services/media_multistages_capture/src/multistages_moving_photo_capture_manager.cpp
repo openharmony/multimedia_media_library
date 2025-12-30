@@ -19,7 +19,6 @@
 #include "multistages_video_capture_manager.h"
 
 #include "media_log.h"
-#include "media_photo_asset_proxy.h"
 #include "moving_photo_file_utils.h"
 #include "database_adapter.h"
 #include "medialibrary_rdbstore.h"
@@ -33,6 +32,8 @@ using namespace OHOS::CameraStandard;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t BOTH = 2;
+
 MultiStagesMovingPhotoCaptureManager::MultiStagesMovingPhotoCaptureManager() {}
 
 MultiStagesMovingPhotoCaptureManager::~MultiStagesMovingPhotoCaptureManager() {}
@@ -41,8 +42,7 @@ static void UpdateMultStagesMovingPhotoVideoCloudEnhancementType(int32_t enhance
 {
     NativeRdb::ValuesBucket updateValues;
     int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT);
-    CHECK_AND_RETURN_LOG(enhancementType == static_cast<int32_t>(CloudEnhancementMovingPhotoEnhancementType::BOTH),
-        "enhancementType is not both");
+    CHECK_AND_RETURN_LOG(enhancementType == BOTH, "enhancementType is not both");
     updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
 
     CHECK_AND_RETURN_LOG(!updateValues.IsEmpty(), "UpdateHighQualityPictureInfo failed, updateValues is null");
@@ -109,7 +109,8 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     int32_t enhancementType = GetInt32Val(PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, resultSet);
     UpdateMultStagesMovingPhotoVideoCloudEnhancementType(enhancementType, fileId);
-    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
+    VideoInfo videoInfo = {fileId, VideoCount::SINGLE, data, "", ""};
+    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, videoInfo, false, true);
     UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Moving photo mulit stage video task has been delivered",
         MLOG_TAG, __FUNCTION__, __LINE__);

@@ -200,11 +200,12 @@ void BackupRestoreService::Release(const std::shared_ptr<AbilityRuntime::Context
     ReleaseScene releaseScene = INT_RELEASE_SCENE_MAP.at(releaseSceneInt);
     if (releaseScene == ReleaseScene::RESTORE) {
         std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
-        MEDIA_INFO_LOG("set CLONE_FLAG to 0");
+        std::string RESTORE_FLAG = "multimedia.medialibrary.restoreFlag";
+        MEDIA_INFO_LOG("set Parameter to 0");
         bool retFlag = system::SetParameter(CLONE_FLAG, "0");
-        if (!retFlag) {
-            MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag: %{public}d", retFlag);
-        }
+        CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+        retFlag = system::SetParameter(RESTORE_FLAG, "0");
+        CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter restoreFlag, retFlag:%{public}d", retFlag);
         return;
     }
     CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID && releaseScene == ReleaseScene::BACKUP,

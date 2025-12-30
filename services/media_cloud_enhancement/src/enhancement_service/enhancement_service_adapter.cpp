@@ -433,8 +433,8 @@ int32_t EnhancementServiceAdapter::GetInt(MediaEnhanceBundleHandle* bundle, cons
 int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHandle* bundle,
     CloudEnhancementThreadTask& task)
 {
-    Raw_Data* rawDateVec;
-    uint32_t size;
+    Raw_Data* rawDataVec = nullptr;
+    uint32_t size = 0;
     if (bundleGetResBufferFunc == nullptr) {
         bundleGetResBufferFunc = (BundleHandleGetResBuffer)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceBundle_GetResultBuffers");
@@ -443,13 +443,13 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
         MEDIA_ERR_LOG("MediaEnhanceBundle_GetResultBuffers dlsym failed. error:%{public}s", dlerror());
         return E_ERR;
     }
-    bundleGetResBufferFunc(bundle, &rawDateVec, &size);
-    if (rawDateVec == nullptr || size == 0) {
-        MEDIA_ERR_LOG("MediaEnhanceBundle_GetResultBuffers rawDateVec is nullptr or size = 0");
+    bundleGetResBufferFunc(bundle, &rawDataVec, &size);
+    if (rawDataVec == nullptr || size == 0) {
+        MEDIA_ERR_LOG("MediaEnhanceBundle_GetResultBuffers rawDataVec is nullptr or size = 0");
         return E_ERR;
     }
-    uint8_t *addr = rawDateVec[0].buffer;
-    uint32_t bytes = rawDateVec[0].size;
+    uint8_t *addr = rawDataVec[0].buffer;
+    uint32_t bytes = rawDataVec[0].size;
     uint8_t *copyData = new uint8_t[bytes];
     int32_t ret = memcpy_s(copyData, bytes, addr, bytes);
     if (ret != E_OK) {
@@ -462,8 +462,8 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
     task.bytes = bytes;
     if (size > 1) {
         MEDIA_INFO_LOG("Processing video buffer");
-        uint8_t *videoAddr = rawDateVec[1].buffer;
-        uint32_t videoBytes = rawDateVec[1].size;
+        uint8_t *videoAddr = rawDataVec[1].buffer;
+        uint32_t videoBytes = rawDataVec[1].size;
         uint8_t *copyVideoData = new uint8_t[videoBytes];
         ret = memcpy_s(copyVideoData, videoBytes, videoAddr, videoBytes);
         if (ret != E_OK) {
@@ -478,7 +478,7 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
         task.videoAddr = nullptr;
         task.videoBytes = 0;
     }
-    DeleteRawData(rawDateVec, size);
+    DeleteRawData(rawDataVec, size);
     return E_OK;
 }
 
