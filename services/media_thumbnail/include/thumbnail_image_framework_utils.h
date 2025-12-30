@@ -16,7 +16,9 @@
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_IMAGE_FRAMEWORK_UTILS_H_
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_IMAGE_FRAMEWORK_UTILS_H_
 
+#include "image_source.h"
 #include "picture.h"
+#include "hdr_type.h"
 #include "surface_buffer.h"
 
 #include "exif_rotate_utils.h"
@@ -24,6 +26,10 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+using ImageSourcePtr = std::unique_ptr<ImageSource>;
+using PicturePtr = std::shared_ptr<Picture>;
+using PixelMapPtr = std::shared_ptr<PixelMap>;
 
 class ThumbnailImageFrameWorkUtils {
 public:
@@ -46,7 +52,12 @@ public:
     EXPORT static bool FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap, int32_t exifRotate);
     EXPORT static bool FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap, const FlipAndRotateInfo &info);
     EXPORT static bool ConvertPixelMapToSdrAndFormatRGBA8888(std::shared_ptr<PixelMap> &pixelMap);
-
+    EXPORT static PicturePtr CreatePicture(const ImageSourcePtr &imageSource, const Size &targetSize);
+    EXPORT static PixelMapPtr CreatePixelMap(const ImageSourcePtr &imageSource,
+        const DecodeOptions &decodeOpts, uint32_t &err);
+    EXPORT static bool ResizePicture(PicturePtr &picture, const Size &targetSize);
+    EXPORT static bool IsAdaptedHdrType(const ImageHdrType hdrType);
+    EXPORT static bool IsSinglePixelMapHdrType(const ImageHdrType hdrType);
 private:
     EXPORT static std::shared_ptr<PixelMap> CopyNormalPixelmap(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static std::shared_ptr<PixelMap> CopyYuvPixelmap(std::shared_ptr<PixelMap> pixelMap);
