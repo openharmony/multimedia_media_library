@@ -13,38 +13,33 @@
  * limitations under the License.
  */
 #define MLOG_TAG "MediaLibraryRelatedSystemStateTest"
- 
+
 #include "medialibrary_related_system_state_manager.h"
 #include "media_library_related_system_state_test.h"
- 
 #include <chrono>
 #include <thread>
- 
- 
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_mock_tocken.h"
 #include "medialibrary_unittest_utils.h"
 #include "userfile_manager_types.h"
- 
- 
+
+
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace testing::ext;
- 
+
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
- 
+
 void MediaLibraryRelatedSystemStateTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryRelatedSystemStateTest SetUpTestCase");
- 
     MediaLibraryUnitTestUtils::Init();
     g_shellToken = IPCSkeleton::GetSelfTokenID();
     MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
- 
     vector<string> perms;
     perms.push_back("ohos.permission.GET_NETWORK_INFO");
     // mock  tokenID
@@ -53,7 +48,7 @@ void MediaLibraryRelatedSystemStateTest::SetUpTestCase()
         MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
     }
 }
- 
+
 void MediaLibraryRelatedSystemStateTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryRelatedSystemStateTest TearDownTestCase");
@@ -65,18 +60,17 @@ void MediaLibraryRelatedSystemStateTest::TearDownTestCase()
     SetSelfTokenID(g_shellToken);
     EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
 }
- 
+
 void MediaLibraryRelatedSystemStateTest::SetUp()
 {
     MEDIA_INFO_LOG("MediaLibraryRelatedSystemStateTest SetUp");
- 
 }
- 
+
 void MediaLibraryRelatedSystemStateTest::TearDown()
 {
     MEDIA_INFO_LOG("MediaLibraryRelatedSystemStateTest TearDown");
 }
- 
+
 HWTEST_F(MediaLibraryRelatedSystemStateTest, Mlrssm_Wifi_Normal_01, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Mlrssm_Wifi_Normal_01 Start");
