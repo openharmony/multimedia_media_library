@@ -104,10 +104,10 @@ int32_t CloudMediaPhotosDeleteService::CopyAndMoveCloudAssetToTrash(
     PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
     std::optional<PhotosPo> targetPhotoInfoOp;
     int32_t ret =
-        this->mediaAssetsDeleteService_.CopyAndMoveCloudAssetToTrash(photoRefresh, localPhotosPo, targetPhotoInfoOp);
+        this->mediaAssetsDeleteService_.DeleteCloudAssetSingle(localPhotosPo, targetPhotoInfoOp, photoRefresh);
     bool isValid = ret == E_OK && targetPhotoInfoOp.has_value();
     CHECK_AND_EXECUTE(!isValid, pullData.localPhotosPoOp = targetPhotoInfoOp);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CopyAndMoveCloudAssetToTrash failed, ret: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "DeleteCloudAssetSingle failed, ret: %{public}d", ret);
     return E_OK;
 }
 

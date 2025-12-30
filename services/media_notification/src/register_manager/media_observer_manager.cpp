@@ -20,6 +20,9 @@
 #include "media_notification_utils.h"
 #include "ipc_skeleton.h"
 
+#include <cctype>
+#include <algorithm>
+
 namespace OHOS::Media {
 using namespace Notification;
 MediaObserverManager::MediaObserverManager() {}
@@ -231,11 +234,17 @@ void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
     MEDIA_WARN_LOG("reconnect server and send recheck for uriType[%{public}d]", registerUri);
 }
 
-int32_t MediaObserverManager::ProcessSingleObserverUris(const NotifyUriType& registerUri,
-    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri, const UriOperation& operation)
+int32_t MediaObserverManager::ProcessSingleObserverSingleIds(const NotifyUriType &registerUri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId, const UriOperation &operation)
 {
     NotifyRegisterPermission permissionHandle;
+    if (!all_of(singleId.begin(), singleId.end(), ::isdigit)) {
+        MEDIA_ERR_LOG("The singleId format is invalid");
+        return E_URI_IS_INVALID;
+    }
     int32_t ret = permissionHandle.ExecuteCheckPermission(registerUri);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
+    ret = permissionHandle.SinglePermissionCheck(registerUri, singleId);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Permission verification failed");
     auto uriIter = observers_.find(registerUri);
     if (uriIter == observers_.end()) {
@@ -251,32 +260,32 @@ int32_t MediaObserverManager::ProcessSingleObserverUris(const NotifyUriType& reg
         MEDIA_ERR_LOG("registerUri has not been registered by the same observer");
         return E_DATAOBSERVER_IS_NULL;
     }
-    operation(obsIter->observerUris, uri);
+    operation(obsIter->singleIds, singleId);
     return E_OK;
 }
 
-int32_t MediaObserverManager::AddSingleObserverUris(const NotifyUriType& registerUri,
-    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+int32_t MediaObserverManager::AddSingleObserverSingleIds(const NotifyUriType &registerUri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId)
 {
-    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
-        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+    return ProcessSingleObserverSingleIds(registerUri, dataObserver, singleId,
+        [this](std::unordered_set<std::string>& singleIds, const std::string& singleId) {
             std::lock_guard<std::mutex> lock(mutex_);
-            uris.insert(targetUri);
+            singleIds.insert(singleId);
         });
 }
 
-int32_t MediaObserverManager::RemoveSingleObserverUris(const NotifyUriType& registerUri,
-    const sptr<AAFwk::IDataAbilityObserver>& dataObserver, const std::string& uri)
+int32_t MediaObserverManager::RemoveSingleObserverSingleIds(const NotifyUriType &registerUri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId)
 {
-    return ProcessSingleObserverUris(registerUri, dataObserver, uri,
-        [this](std::unordered_set<std::string>& uris, const std::string& targetUri) {
+    return ProcessSingleObserverSingleIds(registerUri, dataObserver, singleId,
+        [this](std::unordered_set<std::string>& singleIds, const std::string& singleId) {
             std::lock_guard<std::mutex> lock(mutex_);
-            uris.erase(targetUri);
+            singleIds.erase(singleId);
         });
 }
 
 bool MediaObserverManager::FindSingleObserver(const NotifyUriType &uri,
-    std::vector<ObserverInfo>& obsInfos)
+    std::vector<ObserverInfo> &obsInfos)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = observers_.find(uri);
@@ -288,20 +297,20 @@ bool MediaObserverManager::FindSingleObserver(const NotifyUriType &uri,
     return true;
 }
 
-int32_t MediaObserverManager::RemoveSingleObserverUris(ObserverInfo& singleObserverInfo, const std::string& uri)
+int32_t MediaObserverManager::RemoveSingleObserverSingleIds(ObserverInfo &singleObserverInfo,
+    const std::string &singleId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    singleObserverInfo.observerUris.erase(uri);
-    MEDIA_INFO_LOG("RemoveSingleObserverUris success: uri %{public}s", uri.c_str());
+    singleObserverInfo.singleIds.erase(singleId);
+    MEDIA_INFO_LOG("RemoveSingleObserverSingleIds success: uri %{public}s", singleId.c_str());
     return E_OK;
 }
 
-bool MediaObserverManager::isUriDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
-    const std::string& uri)
+bool MediaObserverManager::IsSingleIdDataPresentInSingleObserver(
+    const std::unordered_set<std::string> &singleIds, const std::string &singleId)
 {
-    auto constIt = observedUris.find(uri);
-    if (constIt != observedUris.end()) {
-        MEDIA_INFO_LOG("isUriDataPresentInSingleObserver: uri %{public}s exists in observed", uri.c_str());
+    if (singleIds.count(singleId) > 0) {
+        MEDIA_INFO_LOG("IsSingleIdDataPresentInSingleObserver: uri %{public}s exists in observed", singleId.c_str());
         return true;
     }
     MEDIA_INFO_LOG("The target singleObserverInfo does not exist");

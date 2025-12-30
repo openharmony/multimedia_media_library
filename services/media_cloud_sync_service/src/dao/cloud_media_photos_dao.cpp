@@ -517,7 +517,6 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     std::map<std::string, int> &recordAnalysisAlbumMaps, std::map<std::string, std::set<int>> &recordAlbumMaps,
     std::set<std::string> &refreshAlbums, std::vector<NativeRdb::ValuesBucket> &insertFiles)
 {
-    MEDIA_ERR_LOG("GetInsertParams enter");
     NativeRdb::ValuesBucket values;
     auto ret = CloudSyncConvert().RecordToValueBucket(pullData, values);
     HandleExifRotateDownloadAsset(pullData, values);
@@ -542,7 +541,6 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     HandleShootingMode(pullData.cloudId, values, recordAnalysisAlbumMaps);
     insertFiles.push_back(values);
-    MEDIA_ERR_LOG("GetInsertParams end");
     return E_OK;
 }
 
@@ -1354,35 +1352,6 @@ bool CloudMediaPhotosDao::IsTimeChanged(const PhotosDto &record,
         return false;
     }
     return true;
-}
-
-int32_t CloudMediaPhotosDao::DeleteSameNamePhoto(const PhotosDto &photo)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "delete same name photo get store failed.");
-    int32_t updateRows = 0;
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_DELETED));
-    string whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_POSITION + " != ?";
-    std::vector<std::string> whereArgs = {to_string(photo.fileId), to_string(POSITION_LOCAL)};
-    int32_t ret = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-    if (ret == E_OK && updateRows != 0) {
-        MEDIA_INFO_LOG("FixData: %{public}d same file in the same album, set deleted and upload!", photo.fileId);
-        return E_OK;
-    }
-    int32_t deletedRows = 0;
-    whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_POSITION + " = ?";
-    whereArgs = {photo.fileId, to_string(POSITION_LOCAL)};
-    ret = rdbStore->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
-    if (ret != E_OK || deletedRows <= 0) {
-        return E_RDB;
-    }
-    MEDIA_INFO_LOG("FixData: %{public}d same file in the same album, delete!", photo.fileId);
-    if (unlink(photo.path.c_str()) < 0) {
-        MEDIA_ERR_LOG("unlink err: %{public}d", errno);
-    }
-    /* 通知 data change notify */
-    return E_OK;
 }
 
 int32_t CloudMediaPhotosDao::GetSameNamePhotoCount(const PhotosDto &photo, bool isHide, int32_t count)

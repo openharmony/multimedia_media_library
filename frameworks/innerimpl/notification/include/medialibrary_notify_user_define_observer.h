@@ -34,7 +34,7 @@ namespace Media {
 class MediaOnNotifyUserDefineObserverBodyBase {
 public:
     MediaOnNotifyUserDefineObserverBodyBase() {}
-    ~MediaOnNotifyUserDefineObserverBodyBase() {}
+    virtual ~MediaOnNotifyUserDefineObserverBodyBase() = default;
 
     virtual void OnChange(const UserDefineCallbackWrapper &callbackWrapper) = 0;
     virtual std::string ToString() const = 0;

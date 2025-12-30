@@ -24,6 +24,7 @@ namespace Media {
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_TRIGGER_MODE_KEYWORD = "trigger_mode";
 const std::string MEDIA_MOVING_PHOTO_OPRN_KEYWORD = "moving_photo_operation";
+const std::string MEDIA_CINEMATIC_VIDEO_OPRN_KEYWORD = "movie_video_operation";
 const std::string OPRN_SYS_CREATE = "sys_create";
 const std::string OPRN_CUSTOM_RESTORE = "custom_restore";
 const std::string OPRN_CUSTOM_RESTORE_CANCEL = "custom_restore_cancel";
@@ -92,6 +93,9 @@ const std::string OPRN_GROUP_COVER_URI = "group_cover_uri";
 const std::string OPRN_SCAN_WITHOUT_ALBUM_UPDATE = "scan_without_album_update";
 const std::string OPRN_ADD_LOWQUALITY_IMAGE = "add_lowquality_image";
 const std::string OPRN_SET_VIDEO_ENHANCEMENT_ATTR = "set_video_enhancement_attr";
+const std::string VIDEO_TYPE_KEYWORD = "type_for_cinematic_video";  // 不建议使用 type 结尾
+const std::string OPRN_CANCEL_PROCESS_VIDEO = "cancel_process_video";
+
 const std::string OPRN_FIND_ALL_DUPLICATE_ASSETS = "all_duplicate_assets";
 const std::string URI_FIND_ALL_DUPLICATE_ASSETS = "/" + OPRN_FIND_ALL_DUPLICATE_ASSETS;
 const std::string OPRN_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "can_del_duplicate_assets";
@@ -270,6 +274,7 @@ const std::string PAH_ANA_ADDRESS_ASSETS_ACTIVE = "phaccess_ana_address_assets_a
 const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
 const std::string PAH_CONVERT_PHOTOS = "phaccess_convert_photos_operation";
 const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operation";
+const std::string PAH_MULTISTAGES_VIDEO = "phaccess_multistages_video_operation";
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_HIGHLIGHT_ALBUM = "phaccess_highlight_album_operation";
@@ -341,6 +346,10 @@ const std::string PAH_VIDEO = "video_operation";
 // Video
 const std::string PAH_SET_VIDEO_ENHANCEMENT_ATTR =
     MEDIALIBRARY_DATA_URI + "/" + PAH_VIDEO + "/" + OPRN_SET_VIDEO_ENHANCEMENT_ATTR;
+
+// MultiStages video related operation uri
+const std::string PAH_CANCEL_PROCESS_VIDEO =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_VIDEO + "/" + OPRN_CANCEL_PROCESS_VIDEO;
 
 // Generate thumbnails in batches operation uri
 const std::string PAH_START_GENERATE_THUMBNAILS =
@@ -441,7 +450,6 @@ const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FA
 
 const std::string ASSET_ALBUM_OPERATION = "tab_asset_and_album_operation";
 
-const std::string VIDEO_TYPE_KEYWORD = "type_for_cinematic_video";
 } // namespace Media
 } // namespace OHOS
 

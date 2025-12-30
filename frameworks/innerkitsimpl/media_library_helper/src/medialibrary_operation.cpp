@@ -97,6 +97,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
         { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
         { MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationObject::MOVING_PHOTO_VIDEO_READY },
+        { PAH_MULTISTAGES_VIDEO, OperationObject::PAH_MULTISTAGES_VIDEO },
 
         // use in Vision
         { PAH_ANA_CV, OperationObject::VISION_ANALYSIS },
