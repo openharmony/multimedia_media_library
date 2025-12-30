@@ -66,9 +66,6 @@
 #include "shooting_mode_album_operation.h"
 #include "parameters.h"
 #include "height_width_correct_operation.h"
-#ifdef HAS_WIFI_MANAGER_PART
-#include "wifi_device.h"
-#endif
 #include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
@@ -184,22 +181,6 @@ bool GetNowLocalTime(std::tm &nowLocalTime)
     return localtime_r(&nowTime, &nowLocalTime) != nullptr;
 }
 
-void MedialibrarySubscriber::RefreshCellularNetStatus()
-{
-    NetManagerStandard::NetHandle handle;
-    int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
-    CHECK_AND_RETURN_LOG(ret == 0, "GetDefaultNet failed, err:%{public}d", ret);
-    NetManagerStandard::NetAllCapabilities netAllCap;
-    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
-    CHECK_AND_RETURN_LOG(ret == 0, "GetNetCapabilities failed, err:%{public}d", ret);
-    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
-    if (types.count(NetManagerStandard::BEARER_CELLULAR)) {
-        MEDIA_INFO_LOG("init cellular status success: %{public}d", isCellularNetConnected_);
-        isCellularNetConnected_ = true;
-    }
-    return;
-}
-
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
 {
@@ -219,18 +200,8 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
     isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
 #endif
-#ifdef HAS_WIFI_MANAGER_PART
-    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
-    if (wifiDevicePtr == nullptr) {
-        MEDIA_ERR_LOG("MedialibrarySubscriber wifiDevicePtr is null");
-    } else {
-        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected_);
-        if (ret != Wifi::WIFI_OPT_SUCCESS) {
-            MEDIA_ERR_LOG("MedialibrarySubscriber Get-IsConnected-fail: -%{public}d", ret);
-        }
-    }
-#endif
-    MedialibrarySubscriber::RefreshCellularNetStatus();
+    isWifiConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime();
+    isCellularNetConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime();
     MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(
         isScreenOff_ && isCharging_ && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY
         && isDeviceTemperatureProper_);
@@ -307,7 +278,6 @@ bool MedialibrarySubscriber::Subscribe(void)
     // observer more than 50, failed to register
     subscriber_->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber_->CloudMediaAssetUnlimitObserver_, true);
 #endif
-    MedialibraryRelatedSystemStateManager::GetInstance();
     return ret;
 }
 

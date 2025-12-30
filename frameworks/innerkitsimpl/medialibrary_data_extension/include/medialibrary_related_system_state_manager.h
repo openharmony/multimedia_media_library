@@ -47,8 +47,8 @@ public:
     ~MedialibraryRelatedSystemStateManager();
 private:
  
-    std::atomic<bool> isCellularNetConnected_;
-    std::atomic<bool> isWifiConnected_;
+    std::atomic<bool> isCellularNetConnected_{false};
+    std::atomic<bool> isWifiConnected_{false};
     static std::mutex mutex_;
 };
 } // namespace Media
