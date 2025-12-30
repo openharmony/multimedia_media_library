@@ -919,7 +919,7 @@ napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos(napi
         NAPI_ERR_LOG("set array named property error: type");
         return nullptr;
     }
-    status = SetValueNull(env, "AssetChangeData", result);
+    status = SetValueNull(env, "assetChangeData", result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: assetChangeData");
         return nullptr;

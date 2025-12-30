@@ -35,7 +35,6 @@ public:
     EXPORT static void RemovePhotosWithResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         bool isRestorable = true);
     EXPORT static void RestorePhotos(const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT static int32_t QuerySubType(const std::string &photoId);
 };
 } // namespace Media
 } // namespace OHOS

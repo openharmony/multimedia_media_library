@@ -94,6 +94,7 @@ group("test") {
     "unittest/media_notification_test:unittest",
     "unittest/media_lake_load_test:unittest",
     "unittest/media_common_utils_test:unittest",
+    "unittest/media_permission_helper_test:unittest",
   ]
 
   if (media_library_feature_cloud_download) {

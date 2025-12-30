@@ -23,6 +23,8 @@
 #include "media_assets_controller_service.h"
 #include "media_albums_controller_service.h"
 #include "media_refresh_controller_service.h"
+#include "media_camera_character_controller_service.h"
+#include "media_analysis_data_controller_service.h"
 
 namespace OHOS::Media::IPC {
 MediaControllerServiceFactory::MediaControllerServiceFactory()
@@ -35,6 +37,8 @@ MediaControllerServiceFactory::MediaControllerServiceFactory()
         std::make_shared<MediaAssetsControllerService>(),
         std::make_shared<MediaAlbumsControllerService>(),
         std::make_shared<MediaRefreshControllerService>(),
+        std::make_shared<MediaCameraCharacterControllerService>(),
+        std::make_shared<AnalysisData::MediaAnalysisDataControllerService>(),
     };
 }
 

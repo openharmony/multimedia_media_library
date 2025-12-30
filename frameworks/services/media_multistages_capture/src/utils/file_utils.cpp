@@ -239,7 +239,6 @@ int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdit
     string tempPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
         filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.')));
     string targetPath;
-
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
     string sourceVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
         MediaLibraryAssetOperations::GetEditDataSourcePath(filePath));

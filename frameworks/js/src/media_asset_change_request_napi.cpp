@@ -300,6 +300,12 @@ bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
         fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
+bool MediaAssetChangeRequestNapi::IsCinematicVideo() const
+{
+    return fileAsset_ != nullptr &&
+        fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO);
+}
+
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
 {
     if (resourceType == ResourceType::INVALID_RESOURCE) {
@@ -2388,6 +2394,25 @@ static bool HasAddResource(MediaAssetChangeRequestAsyncContext& context, Resourc
         context.addResourceTypes.end();
 }
 
+static bool CancelProcessCinematicVideo(MediaAssetChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    int32_t fileId = fileAsset->GetId();
+
+    string uriStr = PAH_CANCEL_PROCESS_VIDEO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(uriStr);
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    vector<string> columns { to_string(fileId) };
+    UserFileClient::Query(uri, predicates, columns, errCode);
+    NAPI_INFO_LOG("CancelProcessCinematicVideo, fileId: %{public}d", fileId);
+    return true;
+}
+
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2399,6 +2424,10 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    if (changeRequest->IsCinematicVideo()) {
+        CancelProcessCinematicVideo(context);
+    }
+
     if (changeRequest->IsMovingPhoto() && HasAddResource(context, ResourceType::VIDEO_RESOURCE) &&
         !AddMovingPhotoVideoExecute(context)) {
         NAPI_ERR_LOG("Faild to write cache file for video of moving photo");
@@ -2755,6 +2784,7 @@ static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext &context
 {
     MediaLibraryTracer tracer;
     tracer.Start("setVideoEnhancementAttr");
+    MEDIA_INFO_LOG("Enter SetVideoEnhancementAttr");
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");

@@ -26,4 +26,9 @@ bool MediaStringUtils::ConvertToInt(const std::string &number, int& value)
     auto [ptr, ec] = std::from_chars(number.data(), number.data() + number.size(), value);
     return ec == std::errc{} && ptr == number.data() + number.size();
 }
+
+bool MediaStringUtils::StartsWith(const std::string &str, const std::string &prefix)
+{
+    return str.compare(0, prefix.size(), prefix) == 0;
+}
 } // namespace OHOS::Media
