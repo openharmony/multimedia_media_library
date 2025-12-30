@@ -88,7 +88,6 @@ public:
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCurrentStatusOn();
-    EXPORT static void RefreshCellularNetStatus();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD

@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #define MLOG_TAG "MedialibraryRelatedSystemStateManager"
- 
+
 #include "medialibrary_related_system_state_manager.h"
 #include <sys/statvfs.h>
- 
+
 #include "abs_rdb_predicates.h"
 #include "cloud_sync_manager.h"
 #include "common_timer_errors.h"
@@ -36,7 +36,7 @@
 #include "net_conn_client.h"
 #include "medialibrary_tracer.h"
 #include "media_log.h"
- 
+
 namespace OHOS {
 namespace Media {
 std::mutex MedialibraryRelatedSystemStateManager::mutex_;
@@ -44,7 +44,6 @@ std::shared_ptr<MedialibraryRelatedSystemStateManager> medialibraryRelatedSystem
 // LCOV_EXCL_START
  
 std::shared_ptr<MedialibraryRelatedSystemStateManager> MedialibraryRelatedSystemStateManager::GetInstance()
-
 {
     if (medialibraryRelatedSystemStateManager == nullptr) { // 双重检查锁定 (DCLP)
         std::lock_guard<std::mutex> lock(mutex_);
@@ -56,7 +55,7 @@ std::shared_ptr<MedialibraryRelatedSystemStateManager> MedialibraryRelatedSystem
     }
     return medialibraryRelatedSystemStateManager;
 }
- 
+
 int32_t MedialibraryRelatedSystemStateManager::Init()
 {
     MediaLibraryTracer tracer;
@@ -66,50 +65,52 @@ int32_t MedialibraryRelatedSystemStateManager::Init()
  
 MedialibraryRelatedSystemStateManager::MedialibraryRelatedSystemStateManager()
 {
-    MEDIA_DEBUG_LOG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    MEDIA_DEBUG_LOG("Instances create");
 }
- 
+
 MedialibraryRelatedSystemStateManager::~MedialibraryRelatedSystemStateManager()
 {
-    MEDIA_DEBUG_LOG("0x%{public}06" PRIXPTR " Instances Destroy", FAKE_POINTER(this));
+    MEDIA_DEBUG_LOG("Instances Destroy");
 }
- 
+
 void MedialibraryRelatedSystemStateManager::SetCellularNetConnected(bool isCellularNetConnected)
 {
     isCellularNetConnected_ = isCellularNetConnected;
 }
- 
+
 bool MedialibraryRelatedSystemStateManager::IsCellularNetConnected()
 {
     return isCellularNetConnected_;
 }
- 
+
 void MedialibraryRelatedSystemStateManager::SetWifiConnected(bool isWifiConnected)
 {
     isWifiConnected_ = isWifiConnected;
 }
- 
+
 bool MedialibraryRelatedSystemStateManager::IsWifiConnected()
 {
     return isWifiConnected_;
 }
- 
+
 bool MedialibraryRelatedSystemStateManager::IsWifiConnectedAtRealTime()
 {
     bool isWifiConnected = false;
-    #ifdef HAS_WIFI_MANAGER_PART
-        auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
-        if (wifiDevicePtr != nullptr) {
-            ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected);
-            if (ret != Wifi::WIFI_OPT_SUCCESS) {
-                MEDIA_ERR_LOG("Get-IsConnected-fail: -%{public}d", ret);
-            }
+#ifdef HAS_WIFI_MANAGER_PART
+    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
+    if (wifiDevicePtr == nullptr) {
+        MEDIA_ERR_LOG("wifiDevicePtr is null");
+    } else {
+        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected);
+        if (ret != Wifi::WIFI_OPT_SUCCESS) {
+            MEDIA_ERR_LOG("Get-IsConnected-fail: -%{public}d", ret);
         }
-    #endif
-    MedialibraryRelatedSystemStateManager::GetInstance()->SetWifiConnected(isWifiConnected);
+    }
+#endif
+    SetWifiConnected(isWifiConnected);
     return isWifiConnected;
 }
- 
+
 bool MedialibraryRelatedSystemStateManager::IsCellularNetConnectedAtRealTime()
 {
     bool isCellularNetConnected = false;
@@ -117,16 +118,18 @@ bool MedialibraryRelatedSystemStateManager::IsCellularNetConnectedAtRealTime()
     NetManagerStandard::NetAllCapabilities netAllCap;
     int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
     CHECK_AND_RETURN_RET_LOG(ret == 0, isCellularNetConnected, "GetDefaultNet failed, err:%{public}d", ret);
-    NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, isCellularNetConnected, "GetNetCapabilities failed, err:%{public}d",
+        ret);
     const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
     if (types.count(NetManagerStandard::BEARER_CELLULAR)) {
-        MEDIA_INFO_LOG("init cellular status success: %{public}d", isCellularNetConnected);
         isCellularNetConnected = true;
+        MEDIA_DEBUG_LOG("init cellular status success: %{public}d", isCellularNetConnected);
     }
     SetCellularNetConnected(isCellularNetConnected);
     return isCellularNetConnected;
 }
- 
+
 bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
 {
     bool isNetValidated = false;
@@ -135,6 +138,8 @@ bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
     int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
     CHECK_AND_RETURN_RET_LOG(ret == 0, isNetValidated, "GetDefaultNet failed, err:%{public}d", ret);
     NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, isNetValidated, "GetNetCapabilities failed, err:%{public}d",
+        ret);
     const std::set<NetManagerStandard::NetCap>& types = netAllCap.netCaps_;
     if (types.count(NetManagerStandard::NET_CAPABILITY_INTERNET) &&
         types.count(NetManagerStandard::NET_CAPABILITY_VALIDATED)) {
@@ -143,7 +148,7 @@ bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
     MEDIA_DEBUG_LOG("BatchSelectFileDownload net validate : %{public}d", isNetValidated);
     return isNetValidated;
 }
- 
+
 // wifi和 无限流量场景组合 wifi连接+未使用蜂窝+网络连通 受无限流量开关控制 不偷跑流量
 bool MedialibraryRelatedSystemStateManager::IsNetAvailableWithUnlimitCondition()
 {
