@@ -47,7 +47,7 @@ private:
             sync_status = 0 AND \
             clean_flag = 0 AND \
             time_pending = 0 AND \
-            is_temp = 0;"
+            is_temp = 0;";
 };
 }  // namespace OHOS::Media::Background
 #endif  // OHOS_MEDIA_BACKGROUND_MEDIA_LOCATION_SYNCHRONIZE_TASK_H
