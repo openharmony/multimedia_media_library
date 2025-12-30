@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef MEDIA_LIBRARY_RELATED_SYSTEM_STATE_TEST_H
 #define MEDIA_LIBRARY_RELATED_SYSTEM_STATE_TEST_H
- 
+
 #include <gtest/gtest.h>
- 
+
 namespace OHOS::Media {
 class MediaLibraryRelatedSystemStateTest : public testing::Test {
 public:
