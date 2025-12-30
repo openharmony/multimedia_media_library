@@ -31,7 +31,9 @@
 #include "acl.h"
 #include "albums_refresh_manager.h"
 #include "asset_compress_version_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_file_processor.h"
+#endif
 #include "background_task_mgr_helper.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
@@ -169,6 +171,8 @@ static const std::string BROKER_ADD_MSG = "broker_add";
 static const std::string BROKER_REMOVE_MSG = "broker_remove";
 static const std::string BROKER_START_SCAN = "start_scan";
 static const int MAX_LOOP_CNT = 10;
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -908,6 +912,13 @@ void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_CHANGE_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, false);
     }
+
+    if (oldVersion < VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false)) {
+        MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(rdbStore, VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        rdbStore->SetOldVersion(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -1324,9 +1335,9 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         MEDIA_DEBUG_LOG("still other extension exist");
         return;
     }
-
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::StopTimer();
-
+#endif
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     CHECK_AND_RETURN_LOG(shareHelper != nullptr, "DataShareHelper is null");
 
@@ -2043,6 +2054,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+            return E_OK;
+        }
+        case OperationObject::PAH_MULTISTAGES_VIDEO: {
+            std::vector<std::string> columns;
+            MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
@@ -2815,6 +2831,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return QueryIndex(cmd, columns, predicates);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_MULTISTAGES_VIDEO:
+            return MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
@@ -2867,12 +2885,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
+static void ExecuteDfxWork(const std::string &fileId)
+{
+    std::thread([fileId]() {
+        MEDIA_INFO_LOG("start ExecuteDfxWork");
+        DfxManager::GetInstance()->HandleCinematicVideoAccessTimes(true, true, fileId);
+    }).detach();
+}
+
 static void AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
 {
     bool isValidCount = false;
     auto visitType = MediaVisitCountManager::VisitCountType::PHOTO_FS;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
         isValidCount = true;
+        auto fileId = cmd.GetOprnFileId();
+        ExecuteDfxWork(fileId);
     } else if (oprnObject == OperationObject::THUMBNAIL) {
         visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
         auto height = std::atoi(cmd.GetQuerySetParam(MEDIA_DATA_DB_HEIGHT).c_str());
@@ -3078,6 +3106,38 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
+static bool IsMediaLibraryRecoveryDone()
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(MEDIA_LIBRARY_PREF_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return false;
+    }
+    int32_t done = prefs->GetInt(MEDIA_LIBRARY_RECOVERY_FLAG_KEY, 0);
+    return done == 1;
+}
+
+static void SetParameterForClone()
+{
+    std::string nextFlag = "persist.update.hmos_to_next_flag";
+    auto isUpgrade = system::GetParameter(nextFlag, "");
+    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
+    if (isUpgrade != "1") {
+        return;
+    }
+    if (IsMediaLibraryRecoveryDone()) {
+        return;
+    }
+
+    std::string cloneFlag = "multimedia.medialibrary.cloneFlag";
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(cloneFlag, currentTime);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+}
+
 void MediaLibraryDataManager::SetStartupParameter()
 {
     MEDIA_INFO_LOG("Start to set parameter.");
@@ -3099,17 +3159,8 @@ void MediaLibraryDataManager::SetStartupParameter()
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
     }
-    std::string nextFlag = "persist.update.hmos_to_next_flag";
-    auto isUpgrade = system::GetParameter(nextFlag, "");
-    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
-    if (isUpgrade != "1") {
-        return;
-    }
-    std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
-    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
-    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
-    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+
+    SetParameterForClone();
 }
 
 int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,

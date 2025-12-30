@@ -35,7 +35,6 @@
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
 #include "change_request_set_album_name_dto.h"
-#include "change_request_set_relationship_vo.h"
 #include "get_relationship_vo.h"
 #include "medialibrary_data_manager_utils.h"
 #include "change_request_add_assets_vo.h"
@@ -46,7 +45,6 @@
 #include "change_request_dismiss_assets_vo.h"
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
-#include "change_request_set_order_position_vo.h"
 #include "album_commit_modify_vo.h"
 #include "album_commit_modify_dto.h"
 #include "album_add_assets_vo.h"
@@ -74,7 +72,6 @@
 #include "change_request_merge_album_dto.h"
 #include "change_request_place_before_dto.h"
 #include "change_request_remove_assets_dto.h"
-#include "change_request_set_order_position_dto.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "get_albums_lpath_by_ids_vo.h"
@@ -183,18 +180,6 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::PlaceBefore
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
-        &MediaAlbumsControllerService::SetOrderPosition
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_RELATIONSHIP),
-        &MediaAlbumsControllerService::SetRelationship
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP),
-        &MediaAlbumsControllerService::GetRelationship
-    },
-    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY),
         &MediaAlbumsControllerService::AlbumCommitModify
     },
@@ -235,20 +220,8 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::GetAlbumsLpathByIds
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION),
-        &MediaAlbumsControllerService::GetOrderPosition
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID),
-        &MediaAlbumsControllerService::GetFaceId
-    },
-    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX),
         &MediaAlbumsControllerService::GetPhotoIndex
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS),
-        &MediaAlbumsControllerService::GetAnalysisProcess
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO),
@@ -809,68 +782,6 @@ int32_t MediaAlbumsControllerService::PlaceBefore(MessageParcel &data, MessagePa
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, MessageParcel &reply)
-{
-    MEDIA_INFO_LOG("enter PlaceBefore");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION);
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(operationCode, timeout, true);
-    ChangeRequestSetOrderPositionReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("PlaceBefore Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    ChangeRequestSetOrderPositionDto dto;
-    dto.FromVo(reqBody);
-    ret = MediaAlbumsService::GetInstance().SetOrderPosition(dto);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-}
-
-int32_t MediaAlbumsControllerService::SetRelationship(MessageParcel &data, MessageParcel &reply)
-{
-    ChangeRequestSetRelationshipReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("SetRelationship Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
-    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
-    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
-    if (!cond) {
-        MEDIA_ERR_LOG("params is invalid");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-    ret = MediaAlbumsService::GetInstance().SetPortraitRelationship(
-        reqBody.albumId, reqBody.relationship, reqBody.isMe);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-}
-
-int32_t MediaAlbumsControllerService::GetRelationship(MessageParcel &data, MessageParcel &reply)
-{
-    GetRelationshipReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetRelationship Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
-    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
-    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
-    if (!cond) {
-        MEDIA_ERR_LOG("params is invalid");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-
-    GetRelationshipRespBody respBody;
-    ret = MediaAlbumsService::GetInstance().GetPortraitRelationship(reqBody.albumId, respBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-}
-
 int32_t MediaAlbumsControllerService::AlbumCommitModify(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CommitModify");
@@ -1098,71 +1009,6 @@ int32_t MediaAlbumsControllerService::GetClonedAlbumUris(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, MessageParcel &reply)
-{
-    MEDIA_INFO_LOG("enter GetOrderPosition");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION);
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(operationCode, timeout, true);
-    GetOrderPositionReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetOrderPosition Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
-    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
-    if (!PhotoAlbum::IsAnalysisAlbum(albumType, albumSubtype)) {
-        MEDIA_ERR_LOG("Only analysis album can get asset order positions");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-
-    if (reqBody.assetIdArray.size() <= 0) {
-        MEDIA_ERR_LOG("needs at least one asset id");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-    std::set<std::string> idSet(reqBody.assetIdArray.begin(), reqBody.assetIdArray.end());
-    if (reqBody.assetIdArray.size() != idSet.size()) {
-        MEDIA_ERR_LOG("has same assets");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-
-    GetOrderPositionRespBody respBody;
-    GetOrderPositionDto getOrderPositionDto;
-    getOrderPositionDto.albumId = reqBody.albumId;
-    getOrderPositionDto.assetIdArray = reqBody.assetIdArray;
-
-    ret = MediaAlbumsService::GetInstance().GetOrderPosition(getOrderPositionDto, respBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-}
-
-int32_t MediaAlbumsControllerService::GetFaceId(MessageParcel &data, MessageParcel &reply)
-{
-    MEDIA_INFO_LOG("enter GetFaceId");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID);
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(operationCode, timeout, true);
-    GetFaceIdReqBody reqBody;
-    GetFaceIdRespBody respBody;
-
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetFaceId Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    if (reqBody.albumSubType != PhotoAlbumSubType::PORTRAIT && reqBody.albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
-        MEDIA_WARN_LOG("albumSubType: %{public}d, not support getFaceId", reqBody.albumSubType);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-
-    string groupTag;
-    ret = MediaAlbumsService::GetInstance().GetFaceId(reqBody.albumId, groupTag);
-    respBody.groupTag = groupTag;
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-}
-
 int32_t MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, MessageParcel &reply)
 {
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX);
@@ -1176,22 +1022,6 @@ int32_t MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, Message
     }
     QueryResultRespBody respBody;
     ret = MediaAlbumsService::GetInstance().GetPhotoIndex(reqBody, respBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-}
-
-int32_t MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, MessageParcel &reply)
-{
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS);
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(operationCode, timeout, true);
-    GetAnalysisProcessReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetAnalysisProcess Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    QueryResultRespBody respBody;
-    ret = MediaAlbumsService::GetInstance().GetAnalysisProcess(reqBody, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 

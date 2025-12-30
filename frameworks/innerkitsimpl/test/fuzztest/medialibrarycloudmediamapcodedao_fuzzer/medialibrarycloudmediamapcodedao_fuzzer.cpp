@@ -404,14 +404,6 @@ static void UpdateLocalAlbumMapFuzzer()
     cloudMediaPhotosDao->UpdateLocalAlbumMap(cloudId);
 }
 
-static void DeleteSameNamePhotoFuzzer()
-{
-    PhotosDto photo;
-    photo.fileId = FDP->ConsumeIntegral<uint32_t>() & 0xf;
-    InsertPhotoAsset();
-    cloudMediaPhotosDao->DeleteSameNamePhoto(photo);
-}
-
 static void GetSameNamePhotoCountFuzzer()
 {
     PhotosDto photo;
@@ -602,7 +594,6 @@ static void MediaLibraryCloudMediaPhotosDaoFuzzer()
     GetDeletedRecordsAssetFuzzer();
     GetPhotoLocalInfoFuzzer();
     UpdateLocalAlbumMapFuzzer();
-    DeleteSameNamePhotoFuzzer();
     GetSameNamePhotoCountFuzzer();
 
     UpdatePhotoCreatedRecordFuzzer();
