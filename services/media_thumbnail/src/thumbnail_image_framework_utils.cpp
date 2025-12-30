@@ -18,9 +18,7 @@
 
 #include <securec.h>
 
-#include "hdr_type.h"
 #include "image_format_convert.h"
-#include "image_source.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
 #include "medialibrary_errno.h"
@@ -403,6 +401,87 @@ bool ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(std::sh
     }
     return true;
 }
+
+bool ThumbnailImageFrameWorkUtils::ResizePicture(PicturePtr &picture, const Size &targetSize)
+{
+    CHECK_AND_RETURN_RET_LOG(IsPictureValid(picture), false, "Invalid picture");
+    CHECK_AND_RETURN_RET_LOG(targetSize.width > 0 && targetSize.height > 0, false,
+        "Invalid target size, weith: %{public}d height: %{public}d", targetSize.width, targetSize.height);
+    auto mainMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    float widthScale = (1.0f * targetSize.width) / mainMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / mainMap->GetHeight();
+    MediaLibraryTracer tracer;
+    tracer.Start("Main map resize");
+    CHECK_AND_RETURN_RET_LOG(mainMap->resize(widthScale, heightScale), false, "Main map resize failed");
+    tracer.Finish();
+    tracer.Start("Gain map resize");
+    CHECK_AND_RETURN_RET_LOG(gainMap->resize(widthScale, heightScale), false, "Gain map resize failed");
+    tracer.Finish();
+    return true;
+}
+
+PicturePtr ThumbnailImageFrameWorkUtils::CreatePicture(const ImageSourcePtr &imageSource, const Size &targetSize)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "Image source is null");
+    CHECK_AND_RETURN_RET_LOG(targetSize.width > 0 && targetSize.height > 0, nullptr,
+        "Invalid target size, weith: %{public}d height: %{public}d", targetSize.width, targetSize.height);
+    DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
+    uint32_t err = E_OK;
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreatePicture");
+    std::unique_ptr<Picture> uniquePtrPicture = imageSource->CreatePicture(pictureOpts, err);
+    PicturePtr picture = move(uniquePtrPicture);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, nullptr, "ImageSource::CreatePicture err: %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(IsPictureValid(picture), nullptr, "Invalid picture");
+    CHECK_AND_RETURN_RET_LOG(ResizePicture(picture, targetSize), nullptr, "ResizePicture failed");
+    return picture;
+}
+
+PixelMapPtr ThumbnailImageFrameWorkUtils::CreatePixelMap(const ImageSourcePtr &imageSource,
+    const DecodeOptions &decodeOpts, uint32_t &err)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "Image source is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreatePixelMap");
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK && pixelMap != nullptr, nullptr,
+        "ImageSource::CreatePixelMap err: %{public}d", err);
+    MEDIA_DEBUG_LOG("Is pixel map support hdr: %{public}d", pixelMap->IsHdr());
+    return pixelMap;
+}
+
+bool ThumbnailImageFrameWorkUtils::IsAdaptedHdrType(const ImageHdrType hdrType)
+{
+    switch (hdrType) {
+        case ImageHdrType::HDR_ISO_DUAL:
+        case ImageHdrType::HDR_CUVA:
+        case ImageHdrType::HDR_VIVID_DUAL:
+        case ImageHdrType::HDR_LOG_DUAL:
+        case ImageHdrType::HDR_VIVID_SINGLE:
+        case ImageHdrType::HDR_ISO_SINGLE:
+            return true;
+        
+        default:
+            MEDIA_ERR_LOG("ImageHdrType: %{public}d not adapted", hdrType);
+            return false;
+    }
+}
+
+bool ThumbnailImageFrameWorkUtils::IsSinglePixelMapHdrType(const ImageHdrType hdrType)
+{
+    switch (hdrType) {
+        case ImageHdrType::HDR_VIVID_SINGLE:
+        case ImageHdrType::HDR_ISO_SINGLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
