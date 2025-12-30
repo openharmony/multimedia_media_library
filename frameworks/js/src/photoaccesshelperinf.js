@@ -962,6 +962,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
     config.parameters.assetFilter = option.assetFilter;
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
+    config.parameters.isReturnToPhotoBrowserEnable = option.isReturnToPhotoBrowserEnable;
   }
 
   return config;
@@ -1116,6 +1117,7 @@ function PhotoSelectOptions() {
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
   this.userId = -1;
   this.isDestroyedWithNavigation = false;
+  this.isReturnToPhotoBrowserEnable = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {
