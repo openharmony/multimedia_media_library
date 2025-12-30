@@ -183,7 +183,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/fetch_file_result_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/file_asset_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/highlight_album_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/js_interface_helper.cpp",
     "${MEDIALIB_JS_PATH}/src/media_album_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_data_handler.cpp",
@@ -215,6 +214,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/transfer_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/js_interface_helper.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_change_request_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
@@ -847,6 +847,7 @@ ohos_shared_library("sendablephotoaccesshelper") {
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_medialibrary_napi_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_access_helper_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_album_napi.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/js_interface_helper.cpp",
   ]
 
   deps = [
