@@ -68,7 +68,7 @@ HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_WhenThumbT
     EXPECT_GE(fd, 0);
 }
 
-HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_WhenThumbTypeIsThumbAstc, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_ThumbTypeIsThumbAstc, TestSize.Level0)
 {
     ThumbnailService thumbnailService;
     std::string path = "/path/to/thumbnail";
