@@ -12,24 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "cloud_sync_utils.h"
- 
+
 namespace OHOS {
 namespace Media {
 CloudSyncUtils::CloudSyncUtils()
 {
 }
- 
+
 CloudSyncUtils::~CloudSyncUtils()
 {
 }
- 
+
 bool CloudSyncUtils::IsCloudSyncSwitchOn()
 {
     return true;
 }
- 
+
 bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
 {
     return true;
