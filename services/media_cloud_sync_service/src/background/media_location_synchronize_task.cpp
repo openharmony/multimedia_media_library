@@ -169,6 +169,6 @@ void MediaLocationSynchronizeTask::Execute()
     std::thread([localRepairRecord]() {
         HandleRepairLocation(localRepairRecord);
     }).detach();
-}	
-// LCOV_EXCL_STOP	
+}
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::Background
