@@ -328,10 +328,14 @@ static string GetQueryFilter(const string &tableName)
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     }
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
-        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        std::string filter = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
             PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
             to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+        if (!PermissionUtils::CheckCallerPermission(PERM_MANAGE_CRITICAL_PHOTOS)) {
+            filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
+        }
+        return filter;
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
@@ -3158,7 +3162,8 @@ void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &column
             operationItemsNew.push_back(item);
             continue;
         }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID
+            || static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_MODIFIED) {
             vector<DataShare::SingleValue::Type> newSingleParam;
             newSingleParam.push_back(tableName + "." + MediaColumn::MEDIA_ID);
             for (size_t i = VALUE_IDX; i < item.singleParams.size(); i++) {
@@ -3172,7 +3177,7 @@ void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &column
     predicates = DataShare::DataSharePredicates(operationItemsNew);
     transform(columns.begin(), columns.end(), columns.begin(),
         [tableName](const std::string &column) {
-            if (column == MediaColumn::MEDIA_ID) {
+            if (column == MediaColumn::MEDIA_ID || column == MediaColumn::MEDIA_DATE_MODIFIED) {
                 return tableName + "." + column;
             } else {
                 return column;

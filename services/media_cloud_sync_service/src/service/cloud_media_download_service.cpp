@@ -41,6 +41,7 @@
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 
 namespace OHOS::Media::CloudSync {
@@ -512,6 +513,9 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
         MEDIA_DEBUG_LOG(
             "OnDownloadAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
         HandlePhoto(photosPo, assetData);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+        UpdateBatchDownloadTask(photosPo);
+#endif
         // record result
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = photosPo.cloudId.value_or("");
@@ -573,6 +577,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     } else {
         ret = this->dao_.UpdateDownloadAsset(assetData, scanResult);
     }
+    CalEditDataSizeInHandlePhoto(photo);
     if (scanResult.scanSuccess) {
         CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
     }
@@ -588,7 +593,6 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         this->ResetAssetModifyTime(assetData);
     }
 
-    UpdateBatchDownloadTask(photo);
     ret = FixDownloadAssetExifRotate(photo, assetData);
     if (ret != E_OK) {
         MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
@@ -606,13 +610,22 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     }
     MEDIA_INFO_LOG("[OnDownloadAsset] Delete transCode file Success!");
 }
-
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 void CloudMediaDownloadService::UpdateBatchDownloadTask(const ORM::PhotosPo &photo)
 {
     int32_t fileId = photo.fileId.value_or(-1);
     CHECK_AND_RETURN(fileId != -1);
     MEDIA_INFO_LOG("Successfully download asset[%{public}d] by single task, need to handle batch task.", fileId);
     BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(fileId);
+}
+#endif
+void CloudMediaDownloadService::CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo)
+{
+    int32_t fileId = photo.fileId.value_or(0);
+    int32_t ret = MediaLibraryPhotoOperations::CalSingleEditDataSize(to_string(fileId));
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)", fileId, ret);
+    }
 }
 
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(

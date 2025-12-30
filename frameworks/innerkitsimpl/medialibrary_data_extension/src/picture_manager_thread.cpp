@@ -223,5 +223,12 @@ void PictureManagerThread::FinishAccessingPicture(const std::string& imageId)
     }
     MEDIA_INFO_LOG("FinishAccessingPicture end: %{public}s", imageId.c_str());
 }
+
+int32_t PictureManagerThread::GetLowPendingTaskSize()
+{
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, 0,
+        "GetLowPendingTaskSize failed, pictureDataOperations_ is null");
+    return pictureDataOperations_->GetLowPendingTaskSize();
+}
 } // namespace Media
 } // namespace OHOS

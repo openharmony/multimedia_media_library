@@ -108,6 +108,7 @@ const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_c
 const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
 const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
+const std::string PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE = "moving_photo_enhancement_type";
 const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
@@ -123,6 +124,8 @@ const std::string PhotoColumn::PHOTO_VISIT_COUNT = "visit_count";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
 const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE = "file_source_type";
 const std::string PhotoColumn::PHOTO_VIDEO_MODE = "video_mode";
+const std::string PhotoColumn::PHOTO_IS_CRITICAL =  "is_critical";
+const std::string PhotoColumn::PHOTO_CRITICAL_TYPE =  "critical_type";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
 const std::string PhotoColumn::PHOTO_APPLINK = "applink";
@@ -319,7 +322,10 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1, " +
     PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2, " +
-    PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0 " +
+    PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
+    PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_IS_CRITICAL + " INT NOT NULL DEFAULT 0," +
+    PHOTO_CRITICAL_TYPE + " INT NOT NULL DEFAULT 0" +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -677,7 +683,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
     PhotoColumn::PHOTO_HDR_MODE,
     PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_ASPECT_RATIO,
-    PhotoColumn::PHOTO_CHANGE_TIME,
+    PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_CRITICAL_TYPE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

@@ -154,7 +154,8 @@ enum class PhotoSubType : int32_t {
     CAMERA,
     MOVING_PHOTO,
     BURST,
-    SLOW_MOTION_VIDEO = 6,
+    CINEMATIC_VIDEO,
+    SLOW_MOTION_VIDEO,
     SPATIAL_3DGS = 7,
     SUBTYPE_END
 };

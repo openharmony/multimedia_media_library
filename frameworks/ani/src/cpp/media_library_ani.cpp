@@ -523,19 +523,19 @@ static ani_status SetValueArray(ani_env *env, const char *fieldStr, const std::l
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Array");
 
     ani_method arrayConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
-        "Can't find method <ctor> in escompat.Array");
+        "Can't find method <ctor> in std.core.Array");
 
     ani_object aniArray {};
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, list.size()), "New aniArray failed");
 
     ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
-        "Can't find method $_set in escompat.Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iY:", &setMethod),
+        "Can't find method $_set in std.core.Array.");
 
     ani_int elementIndex = 0;
     for (auto uri : list) {
@@ -1563,7 +1563,7 @@ static int32_t ParseUserIdFormCbInfo(ani_env *env, ani_object userIdObject)
         ANI_DEBUG_LOG("userIdObject is not a double");
         return userId;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Double(userIdObject, "unboxed", nullptr, &result)) {
+    if (ANI_OK != env->Object_CallMethodByName_Double(userIdObject, "toDouble", nullptr, &result)) {
         ANI_DEBUG_LOG("userId is undefined");
         return userId;
     }
@@ -1597,7 +1597,7 @@ static ani_status CheckWhetherAsync(ani_env *env, ani_object userIdObject, bool 
             isAsync = true;
         }
         ani_boolean isAsyncBoolean;
-        status = env->Object_CallMethodByName_Boolean(userIdObject, "unboxed", nullptr, &isAsyncBoolean);
+        status = env->Object_CallMethodByName_Boolean(userIdObject, "toBoolean", nullptr, &isAsyncBoolean);
         isAsync = static_cast<bool>(isAsyncBoolean);
         return status;
     }
@@ -2286,19 +2286,19 @@ static ani_status ToAniPhotoAlbumsMap(ani_env *env, const std::unordered_map<int
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "escompat.Map";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
 
     ani_method mapConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
-        "Can't find method <ctor> in escompat.Map");
+        "Can't find method <ctor> in std.core.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
-        "Can't find method set in escompat.Map");
+        env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
 
     for (const auto &[key, value] : albumMap) {
         ani_object aniKey {};

@@ -39,7 +39,7 @@
 #include "parcel.h"
 #include "media_change_info.h"
 #include "medialibrary_notify_new_observer.h"
-
+#include "report_event.h"
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -252,6 +252,8 @@ public:
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
     static std::mutex sUserFileClientMutex_;
+    static ReportEvent getPhotoAccessHelperEvent_;
+    static ReportEvent registerChangeEvent_;
 
 private:
     EXPORT static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -285,6 +287,7 @@ private:
     EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
     EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
+    EXPORT static napi_value CreateCriticalTypeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
@@ -468,6 +471,7 @@ private:
     static thread_local napi_ref sVirtualAlbumTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
     static thread_local napi_ref sPrivateAlbumEnumRef_;
+    static thread_local napi_ref sCriticalTypeEnumRef_;
 
     static thread_local napi_ref sUserFileMgrFileKeyEnumRef_;
     static thread_local napi_ref sAudioKeyEnumRef_;
@@ -615,6 +619,12 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string bundleName;
     bool canSupportedCompatibleDuplicate = false;
     std::unordered_map<std::string, std::string> debugDatabaseMap;
+    int64_t startTime = 0;
+    std::string errCode = "0";
+    enum EventType {
+        PHOTO_ACCESS_HELPER,
+        REGISTER_CHANGE
+    } eventType;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

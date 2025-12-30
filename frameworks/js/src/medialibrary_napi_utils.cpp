@@ -46,6 +46,7 @@
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
 #include "photo_album_napi.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -55,6 +56,7 @@ namespace Media {
 static const string EMPTY_STRING = "";
 static const string MULTI_USER_URI_FLAG = "user=";
 static const string OLD_INVALID_ORC_TEXT_MSG = "{\"blockSize\":0,\"blocks\":[],\"linesH\":[],\"value\":\"\"}";
+static const std::string CONST_LOGSYSTEM_VERSIONTYPE = "const.logsystem.versiontype";
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
     {ANALYSIS_FACE, FEATURES},
@@ -2014,6 +2016,12 @@ bool MediaLibraryNapiUtils::IsNumber(const std::string &str)
         }
     }
     return true;
+}
+
+bool MediaLibraryNapiUtils::IsBetaVersion()
+{
+    std::string versionType = system::GetParameter(CONST_LOGSYSTEM_VERSIONTYPE, "unknown");
+    return versionType == "beta";
 }
 
 NapiScopeHandler::NapiScopeHandler(napi_env env): env_(env)

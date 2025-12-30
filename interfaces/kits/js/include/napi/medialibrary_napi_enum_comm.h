@@ -90,7 +90,7 @@ const std::vector<std::string> positionTypeEnum {
 };
 
 const std::vector<std::string> photoSubTypeEnum {
-    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST", "SPATIAL_3DGS"
+    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST", "CINEMATIC_VIDEO", "SPATIAL_3DGS"
 };
 
 const std::vector<std::string> photoPermissionTypeEnum {
@@ -193,6 +193,10 @@ const std::vector<std::string> downloadCloudAssetCodeEnum {
 const std::vector<std::string> downloadAssetsNotifyTypeEnum {
     "DOWNLOAD_PROGRESS", "DOWNLOAD_FINISHED", "DOWNLOAD_FAILED", "DOWNLOAD_ASSET_DELETED", "DOWNLOAD_AUTO_PAUSED",
     "DOWNLOAD_AUTO_RESUMED", "DOWNLOAD_REFRESHED"
+};
+
+const std::vector<std::string> criticalTypeEnum {
+    "UNKNOWN_CRITICAL_TYPE", "NOT_CRITICAL_TYPE", "SUSPECTED_CRITICAL_TYPE", "CRITICAL_TYPE",
 };
 
 const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
@@ -315,6 +319,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("ASSET_SOURCE_TYPE",         PhotoColumn::PHOTO_FILE_SOURCE_TYPE),
     std::make_pair("ASPECT_RATIO",              PhotoColumn::PHOTO_ASPECT_RATIO),
     std::make_pair("EDIT_DATA_EXIST",           PhotoColumn::PHOTO_EDIT_DATA_EXIST),
+    std::make_pair("CRITICAL_TYPE",             PhotoColumn::PHOTO_CRITICAL_TYPE),
+    std::make_pair("IS_CRITICAL",               PhotoColumn::PHOTO_IS_CRITICAL),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
