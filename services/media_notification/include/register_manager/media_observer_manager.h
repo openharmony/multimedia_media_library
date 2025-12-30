@@ -28,6 +28,8 @@ namespace Media {
 namespace Notification {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+using UriOperation = std::function<void(std::unordered_set<std::string>&, const std::string&)>;
+
 class MediaObserverManager : public Notification::IObserverManager {
 public:
     EXPORT MediaObserverManager();
@@ -42,7 +44,18 @@ public:
 
     EXPORT std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> GetObservers();
     EXPORT static std::shared_ptr<Media::Notification::MediaObserverManager> GetObserverManager();
-
+    EXPORT int32_t ProcessSingleObserverSingleIds(const NotifyUriType &registerUri,
+        const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId,
+        const UriOperation& operation);
+    EXPORT int32_t AddSingleObserverSingleIds(const NotifyUriType &registerUri,
+        const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId);
+    EXPORT int32_t RemoveSingleObserverSingleIds(const NotifyUriType &registerUri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, const std::string &singleId);
+    EXPORT bool FindSingleObserverWithUri(const NotifyUriType &uri, const uint32_t callingTokenId);
+    EXPORT bool FindSingleObserver(const NotifyUriType &uri, std::vector<ObserverInfo> &obsInfos);
+    EXPORT int32_t RemoveSingleObserverSingleIds(ObserverInfo &singleObserverInfo, const std::string &singleId);
+    EXPORT bool IsSingleIdDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
+        const std::string &singleId);
 private:
     int32_t RemoveObsDeathRecipient(const wptr<IRemoteObject> &object);
     void ExeForReconnect(const NotifyUriType &registerUri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);

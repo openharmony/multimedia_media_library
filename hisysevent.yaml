@@ -131,6 +131,13 @@ MEDIALIB_BACKUP_PORTRAIT_STAT:
   FACE_COUNT: { type: UINT64, desc: number of restored face analysis data }
   TOTAL_TIME_COST: { type: UINT64, desc: total time cost of portrait restoration }
 
+MEDIALIB_BACKUP_PET_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: result of portrait restoration }
+  ALBUM_COUNT: { type: UINT32, desc: number of restored portrait albums }
+  PHOTO_COUNT: { type: UINT64, desc: number of restored photos with portrait }
+  KEY_PET_COUNT: { type: UINT64, desc: number of restored pet analysis data }
+  TOTAL_TIME_COST: { type: UINT64, desc: total time cost of portrait restoration }
+
 DATABASE_CORRUPTION_ERROR:
   __BASE: { type: FAULT, level: CRITICAL, desc: The database corruption error }
   DATE: { type: STRING, desc: The database corruption time }
@@ -141,6 +148,7 @@ MEDIALIB_CLOUDENHANCEMENT_STAT:
   TOTAL_TIME_COST: { type: UINT64, desc: total time cost of cloud enhancement }
   COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion }
   FINISH_TYPE: { type: INT32, desc: type of a finished cloud enhancement task }
+  FILE_TYPE: {type: INT32, desc: type of cloudenhancement Task Processing Object }
 
 MEDIALIB_BACKUP_MEDIA_STAT:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the under transferred media statistic info before Upgrade Restore task, preserve: true }

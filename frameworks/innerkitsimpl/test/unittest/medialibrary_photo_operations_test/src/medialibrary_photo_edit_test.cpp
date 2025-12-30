@@ -136,10 +136,45 @@ int32_t WriteFile(int destfd)
     return E_OK;
 }
 
-void WriteDefferedPhoto(bool &isEdited, std::string &path)
+unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
+{
+    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHRE " +
+        columnName + "='" + value + "';";
+
+    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("g_rdbStore is nullptr");
+        return nullptr;
+    }
+    auto resultSet = g_rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Get resultSet failed");
+        return nullptr;
+    }
+
+    int32_t resultSetCount = 0;
+    int32_t ret = resultSet->GetRowCount(resultSetCount);
+    if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
+        MEDIA_ERR_LOG("resultSet row count is 0");
+        return nullptr;
+    }
+
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    if (fetchFileResult == nullptr) {
+        MEDIA_ERR_LOG("Get fetchFileResult failed");
+        return nullptr;
+    }
+    auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
+    if (fileAsset == nullptr || fileAsset->GetId() < 0) {
+        return nullptr;
+    }
+    return fileAsset;
+}
+
+void WriteDefferedPhoto(std::shared_ptr<FileAsset> &fileAsset)
 {
     MEDIA_INFO_LOG("WriteDefferedPhoto start");
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, path, BUF, sizeof(BUF), 1);
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(fileAsset, BUF, sizeof(BUF));
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("WriteDefferedPhoto end");
 }
@@ -453,7 +488,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, false);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     MEDIA_INFO_LOG("end deferred_photos_test_001");
 }
 
@@ -468,7 +506,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, false);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     MEDIA_INFO_LOG("end deferred_photos_test_002");
 }
 
@@ -483,7 +524,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_003, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, true);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     // 回退
     Revert(result, false);
     MEDIA_INFO_LOG("end deferred_photos_test_003");
@@ -500,7 +544,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, true);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     // 回退
     Revert(result, false);
     MEDIA_INFO_LOG("end deferred_photos_test_004");
@@ -519,7 +566,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, true);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     // 回退
     Revert(result, true);
     MEDIA_INFO_LOG("end deferred_photos_test_005");
@@ -538,7 +588,10 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level1)
     // 二阶段落盘
     bool isEdited = IsEdited(result.fileId);
     EXPECT_EQ(isEdited, true);
-    WriteDefferedPhoto(isEdited, result.path);
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    WriteDefferedPhoto(fileAsset);
     // 回退
     Revert(result, true);
     MEDIA_INFO_LOG("end deferred_photos_test_006");

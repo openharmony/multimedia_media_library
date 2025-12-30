@@ -28,6 +28,7 @@ public:
     int32_t deferredProcType{-1};
     int32_t photoQuality{-1};
     int32_t subType{-1};
+    std::string packageName;
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

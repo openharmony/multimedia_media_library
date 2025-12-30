@@ -252,15 +252,16 @@ void FileParser::ParseFileInfo()
         MEDIA_ERR_LOG("FileParser: Failed to get data: %{public}s", ToString().c_str());
         return;
     }
-    CHECK_AND_RETURN_LOG(LakeFileUtils::FillMetadata(data) == E_OK, "FileParser: Failed to get data");
     fileInfo_.mimeType = data->GetFileMimeType();
     fileInfo_.mediaSuffix = data->GetFileExtension();
     fileInfo_.dateModified = data->GetFileDateModified();
     fileInfo_.dateTaken = data->GetDateTaken();
     fileInfo_.dateAdded = fileInfo_.dateTaken;
+    fileInfo_.detailTime = data->GetDetailTime();
+    fileInfo_.dateYear = data->GetDateYear();
+    fileInfo_.dateMonth = data->GetDateMonth();
+    fileInfo_.dateDay = data->GetDateDay();
     fileInfo_.duration = data->GetFileDuration();
-    fileInfo_.detailTime = MediaFileUtils::StrCreateTime(
-        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo_.dateTaken / MSEC_TO_SEC);
     fileInfo_.orientation = data->GetOrientation();
     fileInfo_.height = data->GetFileHeight();
     fileInfo_.width = data->GetFileWidth();
@@ -273,12 +274,6 @@ void FileParser::ParseFileInfo()
     fileInfo_.frontCamera = data->GetFrontCamera();
     fileInfo_.dynamicRangeType = data->GetDynamicRangeType();
     fileInfo_.userComment = data->GetUserComment();
-    fileInfo_.dateYear = MediaFileUtils::StrCreateTimeByMilliseconds(
-        PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo_.dateTaken);
-    fileInfo_.dateMonth = MediaFileUtils::StrCreateTimeByMilliseconds(
-        PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo_.dateTaken);
-    fileInfo_.dateDay = MediaFileUtils::StrCreateTimeByMilliseconds(
-        PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo_.dateTaken);
     fileInfo_.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
 }
 
@@ -539,6 +534,8 @@ NativeRdb::ValuesBucket FileParser::GetAssetCommonValues()
     values.Put(PhotoColumn::PHOTO_ORIENTATION, fileInfo_.orientation);
     values.Put(PhotoColumn::PHOTO_HEIGHT, fileInfo_.height);
     values.Put(PhotoColumn::PHOTO_WIDTH, fileInfo_.width);
+    double aspectRatio = MediaFileUtils::CalculateAspectRatio(fileInfo_.height, fileInfo_.width);
+    values.PutDouble(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
     values.Put(PhotoColumn::PHOTO_SUBTYPE, fileInfo_.subtype);
     PutStringVal(values, PhotoColumn::PHOTO_USER_COMMENT, fileInfo_.userComment);
     values.Put(PhotoColumn::PHOTO_ALL_EXIF, fileInfo_.allExif);

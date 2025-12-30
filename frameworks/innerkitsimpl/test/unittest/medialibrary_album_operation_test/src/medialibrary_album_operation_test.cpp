@@ -971,6 +971,114 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favori
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_one_level_rank_10 End");
 }
 
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_portrait_pet_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_portrait_pet_01::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/7/7.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.albumName = "testddggrrffee2";
+    curColumn.tagId = "3";
+    curColumn.displayLevel = UNFAVORITE_PAGE;
+    curColumn.rank = RANK_TWO;
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/9/9.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "4eee";
+    targetColumn.albumName = "teseetdrereed3";
+    targetColumn.displayLevel = FAVORITE_PAGE;
+    targetColumn.rank = RANK_ONE;
+    InsertAlbumTestData(curColumn, PhotoAlbumSubType::PORTRAIT);
+    for (int i = 1; i <= ALBUM_CUR_COUNT; i++) {
+        InsertAlbumMapTestData(TRUE_ALBUM_ID, i);
+    }
+    InsertAlbumTestData(targetColumn, PhotoAlbumSubType::PET);
+    for (int i = ALBUM_CUR_COUNT + 1; i <= ALBUM_TARGET_COUNT; i++) {
+        InsertAlbumMapTestData(TURE_ALBUM_ID_TWO, i);
+    }
+    DataShare::DataSharePredicates dataPredicates;
+    OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TRUE_ALBUM_ID);
+    values.Put(TARGET_ALBUM_ID, TURE_ALBUM_ID_TWO);
+    auto result = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates);
+    EXPECT_EQ(result, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_portrait_pet_01 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_pet_portrait_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_pet_portrait_01::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/7/7.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.albumName = "testddggrrffee2";
+    curColumn.tagId = "3";
+    curColumn.displayLevel = UNFAVORITE_PAGE;
+    curColumn.rank = RANK_TWO;
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/9/9.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "4eee";
+    targetColumn.albumName = "teseetdrereed3";
+    targetColumn.displayLevel = FAVORITE_PAGE;
+    targetColumn.rank = RANK_ONE;
+    InsertAlbumTestData(curColumn, PhotoAlbumSubType::PET);
+    for (int i = 1; i <= ALBUM_CUR_COUNT; i++) {
+        InsertAlbumMapTestData(TRUE_ALBUM_ID, i);
+    }
+    InsertAlbumTestData(targetColumn, PhotoAlbumSubType::PORTRAIT);
+    for (int i = ALBUM_CUR_COUNT + 1; i <= ALBUM_TARGET_COUNT; i++) {
+        InsertAlbumMapTestData(TURE_ALBUM_ID_TWO, i);
+    }
+    DataShare::DataSharePredicates dataPredicates;
+    OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TRUE_ALBUM_ID);
+    values.Put(TARGET_ALBUM_ID, TURE_ALBUM_ID_TWO);
+    auto result = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates);
+    EXPECT_EQ(result, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_pet_portrait_01 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_pet_pet_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_pet_pet_01::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/7/7.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.albumName = "testddggrrffee2";
+    curColumn.tagId = "3";
+    curColumn.displayLevel = UNFAVORITE_PAGE;
+    curColumn.rank = RANK_TWO;
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/9/9.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "4eee";
+    targetColumn.albumName = "teseetdrereed3";
+    targetColumn.displayLevel = FAVORITE_PAGE;
+    targetColumn.rank = RANK_ONE;
+    InsertAlbumTestData(curColumn, PhotoAlbumSubType::PET);
+    for (int i = 1; i <= ALBUM_CUR_COUNT; i++) {
+        InsertAlbumMapTestData(TRUE_ALBUM_ID, i);
+    }
+    InsertAlbumTestData(targetColumn, PhotoAlbumSubType::PET);
+    for (int i = ALBUM_CUR_COUNT + 1; i <= ALBUM_TARGET_COUNT; i++) {
+        InsertAlbumMapTestData(TURE_ALBUM_ID_TWO, i);
+    }
+    DataShare::DataSharePredicates dataPredicates;
+    OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TRUE_ALBUM_ID);
+    values.Put(TARGET_ALBUM_ID, TURE_ALBUM_ID_TWO);
+    auto result = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_pet_pet_01 End");
+}
+
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10::Start");

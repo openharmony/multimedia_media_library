@@ -35,6 +35,8 @@ bool AddImageReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->subType);
     CHECK_AND_RETURN_RET(status, subType);
+    status = parcel.ReadString(this->packageName);
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
@@ -50,6 +52,8 @@ bool AddImageReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->subType);
     CHECK_AND_RETURN_RET(status, subType);
+    status = parcel.WriteString(this->packageName);
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
@@ -61,7 +65,8 @@ std::string AddImageReqBody::ToString() const
        << "\"photoId\": \"" << this->photoId << "\","
        << "\"deferredProcType\": \"" << std::to_string(this->deferredProcType) << "\","
        << "\"photoQuality\": \"" << std::to_string(this->photoQuality) << "\","
-       << "\"subType\": \"" << std::to_string(this->subType)
+       << "\"subType\": \"" << std::to_string(this->subType) << "\","
+       << "\"packageName\": \"" << this->packageName
        << "}";
     return ss.str();
 }

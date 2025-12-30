@@ -124,6 +124,7 @@ std::string CloudMediaPullDataDto::ToString() const
     ss << "{";
     this->GetBasicInfo(ss);
     this->GetAttributesInfo(ss);
+    this->GetAttributesHashMap(ss);
     this->GetPropertiesInfo(ss);
     this->GetCloudInfo(ss);
     this->GetAlbumIds(ss);
@@ -172,5 +173,16 @@ bool CloudMediaPullDataDto::GetIsRecycleUpdated() const
 void CloudMediaPullDataDto::SetIsRecycleUpdated(bool isUpdated)
 {
     this->isRecycleUpdated = isUpdated;
+}
+
+void CloudMediaPullDataDto::GetAttributesHashMap(std::stringstream &ss) const
+{
+    ss << "\"stringfields\": {";
+    for (const auto &node : this->stringfields) {
+        ss << "\"" << node.first << "\": ";
+        ss << "\"" << node.second << "\", ";
+    }
+    ss << "}";
+    return;
 }
 }  // namespace OHOS::Media::CloudSync

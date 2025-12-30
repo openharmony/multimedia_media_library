@@ -55,7 +55,7 @@ public:
     virtual size_t GetFileSize() = 0;
     virtual PhotoFormat GetFormat() = 0; // RGBA、JPG
     virtual PhotoQuality GetPhotoQuality() = 0; // 后续相机框架可能通过AddPhotoProxy传入高质量图
-    virtual std::string GetBurstKey() = 0; // 一组连拍照片一个key，uuid
+    virtual std::string GetBurstKey() = 0; // 一组连拍照片一个key， 32byte uuid
     virtual bool IsCoverPhoto() = 0; // 设置封面，1表示封面
     virtual void Release() = 0;
     virtual double GetLatitude() = 0;
@@ -63,6 +63,11 @@ public:
     virtual int32_t GetShootingMode() = 0;
     virtual uint32_t GetCloudImageEnhanceFlag() = 0;
     virtual int32_t GetStageVideoTaskStatus() // 动态照片是否需要下发分段式视频任务，返回状态枚举值
+    {
+        return 0;
+    }
+
+    virtual int32_t GetVideoEnhancementType()
     {
         return 0;
     }

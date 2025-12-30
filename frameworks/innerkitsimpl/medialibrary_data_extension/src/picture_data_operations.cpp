@@ -64,6 +64,7 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
 {
     MEDIA_INFO_LOG("enter CleanPictureMapData, pictureMap size: %{public}d, pictureType: %{public}d",
         static_cast<int32_t>(pictureMap.size()), static_cast<int32_t>(pictureType));
+
     auto iter = pictureMap.begin();
     while (iter != pictureMap.end()) {
         time_t now = time(nullptr);
@@ -364,9 +365,19 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
 int32_t PictureDataOperations::GetPendingTaskSize()
 {
     lock_guard<mutex> lock(pictureMapMutex_);
-    MEDIA_ERR_LOG("GetPendingTaskSize, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "GetPendingTaskSize, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
+        MLOG_TAG, __FUNCTION__, __LINE__,
         static_cast<int32_t>(lowQualityPictureMap_.size()), static_cast<int32_t>(highQualityPictureMap_.size()));
     return lowQualityPictureMap_.size() + highQualityPictureMap_.size();
+}
+
+int32_t PictureDataOperations::GetLowPendingTaskSize()
+{
+    lock_guard<mutex> lock(pictureMapMutex_);
+    MEDIA_ERR_LOG("GetLowPendingTaskSize, lowQualityPictureMap: %{public}d.",
+        static_cast<int32_t>(lowQualityPictureMap_.size()));
+    return lowQualityPictureMap_.size();
 }
 
 void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, PictureType pictureType)

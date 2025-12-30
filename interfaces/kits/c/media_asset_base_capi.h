@@ -49,6 +49,7 @@
 #include <stdint.h>
 
 #include "image_source_native.h"
+#include "picture_native.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -157,6 +158,15 @@ typedef enum MediaLibrary_ErrorCode {
     MEDIA_LIBRARY_INVALID_PHOTO_KEY = 23800104,
 
     /**
+     * @error The scenario parameter verification fails.
+     * It is recommended to retry and check the logs.
+     * Possible causes:
+     * 1. The type is not fixed at 'hiddenPhotoChange'.
+     * 2. The same callback is registered repeatedly.
+     */
+    MEDIA_LIBRARY_INVALID_PARAMETER_ERROR = 23800151,
+
+    /**
      * @error Operation is not supported.
      */
     MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED = 23800201,
@@ -209,6 +219,11 @@ typedef struct MediaLibrary_RequestOptions {
 typedef enum MediaLibrary_MediaType {
     /*image asset*/
     MEDIA_LIBRARY_IMAGE = 1,
+    /**
+     * @brief HEIF type
+     *
+     * @since 23
+     */
     /*video asset*/
     MEDIA_LIBRARY_VIDEO = 2
 } MediaLibrary_MediaType;
@@ -247,6 +262,8 @@ typedef enum MediaLibrary_ResourceType {
 typedef enum MediaLibrary_ImageFileType {
     /*JPEG type*/
     MEDIA_LIBRARY_IMAGE_JPEG = 1,
+    /*HEIF type*/
+    MEDIA_LIBRARY_IMAGE_HEIF = 2,
     /*MPEG type*/
     MEDIA_LIBRARY_FILE_VIDEO = 3
 } MediaLibrary_ImageFileType;
@@ -317,6 +334,26 @@ typedef void (*OH_MediaLibrary_OnImageDataPrepared)(MediaLibrary_ErrorCode resul
 typedef void (*OH_MediaLibrary_OnMovingPhotoDataPrepared)(MediaLibrary_ErrorCode result,
     MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
     OH_MovingPhoto* movingPhoto);
+
+/**
+ * @brief Called when a requested quickly image is prepared.
+ *
+ * This function is called when the requested quickly image is prepared.When there is an image buffer in the system,
+ * a picture object will be returned, reducing the decoding time.
+ *
+ * @param result results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
+ * @param requestId indicates the {@link MediaLibrary_RequestId} of the request.
+ * @param mediaQuality the {@link MediaLibrary_MediaQuality} of the requested source.
+ * @param type the {@link MediaLibrary_MediaContentType} of the requested source.
+ * @param imageSourceNative it used to obtain {@link OH_ImageSourceNative} information when image file is prepared,
+ *                          otherwise imageSourceNative is null.
+ * @param pictureNative it used to obtain {@link OH_PictureNative} information when image source is prepared,
+ *                      otherwise pictureNative is null.
+ * @since 23
+ */
+typedef void (*OH_MediaLibrary_OnQuickImageDataPrepared)(MediaLibrary_ErrorCode result,
+    MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
+    OH_ImageSourceNative* imageSourceNative, OH_PictureNative* pictureNative);
 
 #ifdef __cplusplus
 }

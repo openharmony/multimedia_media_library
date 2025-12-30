@@ -17,26 +17,11 @@
 
 #include "cloud_media_photos_dao.h"
 
-#include <string>
-#include <utime.h>
-#include <vector>
-
-#include "abs_rdb_predicates.h"
-#include "media_column.h"
-#include "photo_album_column.h"
 #include "photo_map_column.h"
-#include "media_log.h"
-#include "medialibrary_rdbstore.h"
-#include "cloud_media_file_utils.h"
 #include "cloud_media_sync_utils.h"
 #include "cloud_media_operation_code.h"
 #include "exif_rotate_utils.h"
 #include "medialibrary_unistore_manager.h"
-#include "moving_photo_file_utils.h"
-#include "result_set.h"
-#include "result_set_utils.h"
-#include "thumbnail_const.h"
-#include "userfile_manager_types.h"
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "photo_album_po_writer.h"
@@ -45,14 +30,14 @@
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "scanner_utils.h"
-#include "cloud_media_dao_const.h"
 #include "media_gallery_sync_notify.h"
-#include "cloud_media_sync_const.h"
 #include "cloud_media_dao_utils.h"
 #include "media_file_utils.h"
 #include "cloud_media_context.h"
+#include "photos_field_iterator.h"
 #include "hi_audit.h"
 #include "photo_owner_album_id_operation.h"
+#include "lake_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -176,7 +161,8 @@ int32_t CloudMediaPhotosDao::BatchInsertQuick(int64_t &outRowId, const std::stri
 
     std::function<int(void)> transFunc = [&]()->int {
         int rdbError = 0;
-        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues, rdbError);
+        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues, rdbError,
+            NativeRdb::ConflictResolution::ON_CONFLICT_REPLACE);
         CHECK_AND_RETURN_RET_LOG(
             retInner == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
             rdbError,
@@ -431,9 +417,9 @@ void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullData
     if (isLocal && mtimeChanged) {
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_CLOUD));
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
-        values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
         values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
     }
+    this->FillThumbStatus(values, mtimeChanged);
 }
 
 int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,
@@ -531,7 +517,6 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     std::map<std::string, int> &recordAnalysisAlbumMaps, std::map<std::string, std::set<int>> &recordAlbumMaps,
     std::set<std::string> &refreshAlbums, std::vector<NativeRdb::ValuesBucket> &insertFiles)
 {
-    MEDIA_ERR_LOG("GetInsertParams enter");
     NativeRdb::ValuesBucket values;
     auto ret = CloudSyncConvert().RecordToValueBucket(pullData, values);
     HandleExifRotateDownloadAsset(pullData, values);
@@ -556,7 +541,6 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     HandleShootingMode(pullData.cloudId, values, recordAnalysisAlbumMaps);
     insertFiles.push_back(values);
-    MEDIA_ERR_LOG("GetInsertParams end");
     return E_OK;
 }
 
@@ -877,7 +861,8 @@ void CloudMediaPhotosDao::HandleShootingMode(const std::string &cloudId, const N
 }
 
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::BatchQueryLocal(
-    const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount)
+    const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount,
+    CleanType cleanType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "BatchQueryLocal Failed to get rdbStore.");
@@ -897,6 +882,7 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::BatchQueryLocal(
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_LOCAL));
     predicates.In(PhotoColumn::MEDIA_NAME, displayNames);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(cleanType));
 
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "BatchQueryLocal Failed to query.");
@@ -1368,35 +1354,6 @@ bool CloudMediaPhotosDao::IsTimeChanged(const PhotosDto &record,
     return true;
 }
 
-int32_t CloudMediaPhotosDao::DeleteSameNamePhoto(const PhotosDto &photo)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "delete same name photo get store failed.");
-    int32_t updateRows = 0;
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_DELETED));
-    string whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_POSITION + " != ?";
-    std::vector<std::string> whereArgs = {to_string(photo.fileId), to_string(POSITION_LOCAL)};
-    int32_t ret = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-    if (ret == E_OK && updateRows != 0) {
-        MEDIA_INFO_LOG("FixData: %{public}d same file in the same album, set deleted and upload!", photo.fileId);
-        return E_OK;
-    }
-    int32_t deletedRows = 0;
-    whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_POSITION + " = ?";
-    whereArgs = {photo.fileId, to_string(POSITION_LOCAL)};
-    ret = rdbStore->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
-    if (ret != E_OK || deletedRows <= 0) {
-        return E_RDB;
-    }
-    MEDIA_INFO_LOG("FixData: %{public}d same file in the same album, delete!", photo.fileId);
-    if (unlink(photo.path.c_str()) < 0) {
-        MEDIA_ERR_LOG("unlink err: %{public}d", errno);
-    }
-    /* 通知 data change notify */
-    return E_OK;
-}
-
 int32_t CloudMediaPhotosDao::GetSameNamePhotoCount(const PhotosDto &photo, bool isHide, int32_t count)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -1537,7 +1494,7 @@ int32_t CloudMediaPhotosDao::UpdateFdirtyVersion(
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, record.version);
     valuesBucket.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED));
-    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    this->OnFdirtyHandlePosition(record, valuesBucket);
     /**
      * fdirty -> synced: only if no change in meta_date_modified.
      * Fix me: if date_modified unchanged, update fdirty -> mdirty
@@ -1547,8 +1504,9 @@ int32_t CloudMediaPhotosDao::UpdateFdirtyVersion(
         valuesBucket,
         PhotoColumn::PHOTO_CLOUD_ID + " = ? AND " + PhotoColumn::PHOTO_META_DATE_MODIFIED + " = ?",
         {record.cloudId, std::to_string(record.metaDateModified)});
-    MEDIA_INFO_LOG(
-        "UpdateFdirtyVersion Update MetaDateModified Update Rows: %{public}d, Ret: %{public}d", changedRows, ret);
+    MEDIA_INFO_LOG("UpdateFdirtyVersion completed, "
+                   "rows: %{public}d, ret: %{public}d, IsLocalFileExists: %{public}d",
+                   changedRows, ret, this->IsLocalFileExists(record));
     if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
         MEDIA_ERR_LOG("UpdateFdirtyVersion update synced err %{public}d", ret);
         /* update record version anyway */
@@ -2121,6 +2079,133 @@ int32_t CloudMediaPhotosDao::FindPhotoAlbumInCache(const std::string &albumCloud
     isValid = ret == E_OK && photoAlbumPoOp.has_value();
     CHECK_AND_RETURN_RET(!isValid, ret);
     return this->albumCache_.QueryAlbumBySourcePath(sourcePath, photoAlbumPoOp);
+}
+
+int32_t CloudMediaPhotosDao::UpdateFileRecordsInTransaction(const std::vector<NativeRdb::ValuesBucket> &updateFiles,
+    const std::vector<int32_t> &cloudFileIdlist, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+{
+    const auto loop_count = std::min(updateFiles.size(), cloudFileIdlist.size());
+    std::function<int(void)> transFunc = [&]() -> int {
+        int32_t totalChangedRows = 0;
+        for (size_t idx = 0; idx < loop_count; ++idx) {
+            const auto& valuesBucket = updateFiles[idx];
+            const auto& cloudFileId = cloudFileIdlist[idx];
+            std::string whereClause = MediaColumn::MEDIA_ID + " = ?";
+            std::vector<std::string> whereArgs = {std::to_string(cloudFileId)};
+
+            int32_t changedRows = 0;
+            auto retInner = photoRefresh->Update(changedRows, PhotoColumn::PHOTOS_TABLE,
+                valuesBucket, whereClause, whereArgs);
+            if (retInner != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
+                MEDIA_ERR_LOG("Failed to update file at index %{public}zu, ret=%{public}d", idx, retInner);
+                return retInner;
+            }
+            totalChangedRows += changedRows;
+        }
+
+        MEDIA_INFO_LOG("BatchUpdateFile: updated %{public}d total rows in batch.", totalChangedRows);
+        return AccurateRefresh::ACCURATE_REFRESH_RET_OK;
+    };
+
+    int32_t transRet = E_ERR;
+    if (photoRefresh->GetTransaction() != nullptr) {
+        transRet = photoRefresh->GetTransaction()->RetryTrans(transFunc);
+    } else {
+        auto trans = std::make_shared<TransactionOperations>(__func__);
+        CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_RDB_STORE_NULL, "BatchUpdate Failed to get trans.");
+        transRet = trans->RetryTrans(transFunc);
+    }
+
+    if (transRet != E_OK) {
+        MEDIA_ERR_LOG("BatchUpdate transaction failed, ret=%{public}d", transRet);
+    }
+
+    return transRet;
+}
+
+int32_t CloudMediaPhotosDao::BatchUpdateFile(std::map<std::string, int> &recordAnalysisAlbumMaps,
+    std::map<std::string, std::set<int>> &recordAlbumMaps, std::vector<NativeRdb::ValuesBucket> &updateFiles,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh, std::vector<int32_t> cloudFileIdlist)
+{
+    int32_t ret = E_OK;
+    if (!updateFiles.empty()) {
+        ret = UpdateFileRecordsInTransaction(updateFiles, cloudFileIdlist, photoRefresh);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("UpdateFileRecordsInTransaction failed, ret=%{public}d", ret);
+            return ret;
+        }
+    }
+
+    if (!recordAlbumMaps.empty()) {
+        BatchInsertAssetMaps(recordAlbumMaps);
+    }
+
+    if (!recordAnalysisAlbumMaps.empty()) {
+        BatchInsertAssetAnalysisMaps(recordAnalysisAlbumMaps);
+    }
+
+    return ret;
+}
+
+void CloudMediaPhotosDao::UpdateMediaAnalysisHdcData()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateInvalidHighlightInfo Failed to get rdbStore.");
+    
+    // 更新非前台推送和删除的时刻状态为-4，智慧分析会清理时刻状态为-4的数据
+    std::string updateSql = "\
+        UPDATE tab_highlight_album \
+            SET highlight_status = -4 \
+        WHERE highlight_status != 1 \
+            AND highlight_status != -3 ";
+    int32_t highlighRet = rdbStore->ExecuteSql(updateSql);
+    if (highlighRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update invalid highlight err %{public}d", highlighRet);
+    }
+
+    // 更新时刻封面状态为1，智慧分析根据状态位刷新时刻封面
+    std::string updateHighlightCoverSql = "\
+        UPDATE tab_highlight_cover_info \
+            SET status = 1 ";
+    int32_t highlighCoverRet = rdbStore->ExecuteSql(updateHighlightCoverSql);
+    if (highlighCoverRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update invalid highlight cover err %{public}d", highlighCoverRet);
+    }
+
+    // 更新人像相册、合影相册的analysis_status为1，智慧分析根据状态位刷新相册显示状态
+    std::string updatePortraitSql = "\
+        UPDATE AnalysisAlbum \
+            SET analysis_status = 1 \
+        WHERE (album_subtype = 4102 \
+            OR album_subtype = 4103) \
+            AND user_display_level < 0 ";
+    int32_t portraitRet = rdbStore->ExecuteSql(updatePortraitSql);
+    if (portraitRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update portrait analysis status err %{public}d", portraitRet);
+    }
+}
+
+bool CloudMediaPhotosDao::IsLocalFileExists(const PhotosDto &record)
+{
+    std::string cloudFilePath = LakeFileUtils::GetAssetRealPath(record.path);
+    bool isValid = !cloudFilePath.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, false, "cloudFilePath empty, record: %{public}s", record.ToString().c_str());
+    std::string localFilePath = CloudMediaSyncUtils::GetLocalPath(cloudFilePath);
+    return MediaFileUtils::IsFileExists(localFilePath);
+}
+
+int32_t CloudMediaPhotosDao::OnFdirtyHandlePosition(const PhotosDto &record, NativeRdb::ValuesBucket &valuesBucket)
+{
+    CHECK_AND_RETURN_RET(this->IsLocalFileExists(record), E_OK);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    return E_OK;
+}
+
+int32_t CloudMediaPhotosDao::FillThumbStatus(NativeRdb::ValuesBucket &values, const bool mtimeChanged)
+{
+    CHECK_AND_RETURN_RET(mtimeChanged, E_OK);
+    values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

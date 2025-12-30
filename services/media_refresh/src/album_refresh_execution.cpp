@@ -688,9 +688,13 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
     bool isSourceAlbum = albumInfo.albumType_ == static_cast<int32_t>(PhotoAlbumType::SOURCE) &&
         albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
 
+    CHECK_AND_RETURN_LOG(hasSentOldNotifications_.find(albumInfo.albumId_) == hasSentOldNotifications_.end(),
+        "an old notification has been sent: type[%{public}d], albumId[%{public}d], notifyAlbumType[0x%{public}x]",
+        type, albumInfo.albumId_, notifyAlbumType);
     bool needNotify = (needSystemNotify && isSystemAlbum) || (needUserNotify && isUserAlbum)
         || (needSourceNotify && isSourceAlbum);
     if (needNotify) {
+        hasSentOldNotifications_[albumInfo.albumId_] = true;
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, type, albumInfo.albumId_);
         ACCURATE_DEBUG("old notification: type[%{public}d], albumId[%{public}d], notifyAlbumType[0x%{public}x]",
             type, albumInfo.albumId_, notifyAlbumType);

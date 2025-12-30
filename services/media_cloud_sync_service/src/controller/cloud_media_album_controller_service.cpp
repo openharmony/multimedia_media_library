@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -29,7 +29,6 @@
 #include "on_delete_records_album_vo.h"
 #include "on_delete_albums_vo.h"
 #include "on_mdirty_records_album_vo.h"
-#include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
 
 namespace OHOS::Media::CloudSync {
@@ -44,7 +43,7 @@ int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Me
         MEDIA_ERR_LOG("OnFetchRecords Param Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, resp);
     }
-    MEDIA_INFO_LOG("OnFetchRecords Request: %{public}s", req.ToString().c_str());
+    MEDIA_INFO_LOG("OnFetchRecords, size: %{public}zu, data: %{public}s", req.albums.size(), req.ToString().c_str());
     std::vector<PhotoAlbumDto> albumDtoList;
     for (const auto &album : req.albums) {
         PhotoAlbumDto albumDto;
@@ -76,24 +75,6 @@ int32_t CloudMediaAlbumControllerService::OnDentryFileInsert(MessageParcel &data
 {
     int32_t ret = this->albumService_.OnDentryFileInsert();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-}
-
-int32_t CloudMediaAlbumControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
-{
-    GetCheckRecordsAlbumReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    GetCheckRecordsAlbumRespBody respBody;
-
-    std::vector<PhotoAlbumPo> albumsPoList = this->albumService_.GetCheckRecords(reqBody.cloudIds);
-    for (auto albumsPo : albumsPoList) {
-        CheckDataAlbum checkData;
-        checkData.cloudId = albumsPo.cloudId.value_or("");
-        respBody.checkDataAlbumList[checkData.cloudId] = checkData;
-    }
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
 int32_t CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data, MessageParcel &reply)

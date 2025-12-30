@@ -35,7 +35,6 @@
 #include "data_secondary_directory_uri.h"
 #include "dfx_deprecated_perm_usage.h"
 #include "mediatool_uri.h"
-#include "permission_whitelist_utils.h"
 
 using namespace std;
 
@@ -63,6 +62,8 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::VISION_HEAD,
     OperationObject::VISION_AFFECTIVE,
     OperationObject::VISION_POSE,
+    OperationObject::VISION_PET_FACE,
+    OperationObject::VISION_PET_TAG,
     OperationObject::VISION_TOTAL,
     OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
     OperationObject::GEO_DICTIONARY,
@@ -85,6 +86,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ADDRESS,
     OperationObject::TAB_FACARD_PHOTO,
     OperationObject::PAH_BACKUP_POSTPROCESS,
+    OperationObject::VISION_ANALYSIS,
 };
 
 std::string USER_STR = "user";
@@ -336,9 +338,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (!PermissionUtils::CheckCallerPermission(perm)) {
         perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
         if (!PermissionUtils::CheckCallerPermission(perm)) {
-            return E_PERMISSION_DENIED;
-        }
-        if (PermissionWhitelistUtils::CheckWhiteList() != E_SUCCESS) {
             return E_PERMISSION_DENIED;
         }
         DfxDeprecatedPermUsage::Record(

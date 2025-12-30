@@ -17,18 +17,10 @@
 
 #include "cloud_enhancement_napi.h"
 
-#include <unordered_set>
-
-#include "media_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
-#include "userfile_manager_types.h"
-#include "media_library_napi.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "cloud_enhancement_task_state_napi.h"
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT

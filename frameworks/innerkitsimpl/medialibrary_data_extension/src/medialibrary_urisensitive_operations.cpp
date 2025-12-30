@@ -15,27 +15,13 @@
 
 #include "medialibrary_urisensitive_operations.h"
 
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <cstdint>
-
-#include "common_func.h"
-#include "ipc_skeleton.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_type_const.h"
 #include "media_file_utils.h"
-#include "media_log.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
-#include "media_column.h"
-#include "medialibrary_appstate_observer.h"
-#include "medialibrary_rdb_transaction.h"
-#include "media_library_manager.h"
-#include "permission_utils.h"
 #include "result_set_utils.h"
-#include "rdb_utils.h"
+#include "medialibrary_appstate_observer.h"
+#include "medialibrary_data_manager_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -179,7 +165,7 @@ static int32_t GetFileId(const DataShareValuesBucket &values, bool &isValid)
 {
     int32_t ret = E_ERR;
     string fileIdStr = static_cast<string>(values.Get(AppUriSensitiveColumn::FILE_ID, isValid));
-    if (CanConvertToInt32(fileIdStr)) {
+    if (CanConvertToInt32(fileIdStr) && MediaLibraryDataManagerUtils::IsNumber(fileIdStr)) {
         ret = static_cast<int32_t>(std::stoi(fileIdStr));
     }
     return ret;

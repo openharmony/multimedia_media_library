@@ -16,76 +16,49 @@
 
 #include "medialibrary_rdbstore.h"
 
-#include <mutex>
 #include <regex>
 #include <thread>
 #include <chrono>
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
-#include "custom_records_column.h"
-#include "dfx_manager.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "dfx_reporter.h"
-#include "ipc_skeleton.h"
-#include "location_column.h"
-#include "media_column.h"
 #include "media_app_uri_permission_column.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "media_log.h"
 #include "media_old_photos_column.h"
-#include "media_remote_thumbnail_column.h"
-#include "media_smart_album_column.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_object_utils.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_restore.h"
 #include "medialibrary_tracer.h"
 #include "media_container_types.h"
-#include "media_scanner.h"
 #include "media_scanner_manager.h"
 #ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
 #endif
 #include "medialibrary_notify.h"
 #include "medialibrary_operation_record.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_unistore_manager.h"
 #include "moving_photo_processor.h"
 #include "parameters.h"
 #include "parameter.h"
-#include "photo_album_column.h"
 #include "photo_file_utils.h"
-#include "photo_map_column.h"
 #include "post_event_utils.h"
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
-#include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
 #include "tab_facard_photos_table_event_handler.h"
 #include "tab_old_albums_table_event_handler.h"
-#include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
 #include "search_column.h"
 #include "shooting_mode_column.h"
-#include "story_cover_info_column.h"
 #include "story_db_sqls.h"
-#include "story_play_info_column.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
 #include "dfx_utils.h"
-#include "vision_multi_crop_column.h"
-#include "preferences.h"
 #include "preferences_helper.h"
 #include "thumbnail_service.h"
-#include "medialibrary_rdb_transaction.h"
 #include "table_event_handler.h"
 #include "values_buckets.h"
 #include "medialibrary_data_manager.h"
@@ -349,6 +322,28 @@ static int32_t ExecSqlsWithDfx(const vector<string> &sqls, RdbStore &store, int3
         }
     }
     return NativeRdb::E_OK;
+}
+
+void MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    MEDIA_INFO_LOG("Drop photo status for search index start");
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS idx_photo_status_for_search_index",
+    };
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("Drop photo status for search index end");
+}
+
+void MediaLibraryRdbStore::AddPetTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_PET_INDEX,
+        CREATE_PET_TAG_ID_INDEX,
+        UPDATE_PET_TOTAL_VALUE,
+    };
+    MEDIA_INFO_LOG("add pet face index start");
+    ExecSqlsWithDfx(executeSqlStrs, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("add pet face index end");
 }
 
 void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStore> store)
@@ -1048,8 +1043,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryMovingPhotoVideoRead
 
     string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     size_t fileSize;
+    size_t oriFileSize;
     auto videoPath = MediaFileUtils::GetMovingPhotoVideoPath(photoPath);
-    cond = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0);
+    auto oriVideoPath = MediaFileUtils::GetOriMovingPhotoVideoPath(photoPath);
+    cond = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0) &&
+        MediaFileUtils::GetFileSize(oriVideoPath, oriFileSize) && (oriFileSize > 0);
     MEDIA_DEBUG_LOG("photoPath:%{public}s, videoPath:%{public}s, video size:%zu",
         DfxUtils::GetSafePath(photoPath).c_str(), DfxUtils::GetSafePath(videoPath).c_str(), fileSize);
     CHECK_AND_RETURN_RET(!cond, MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS movingPhotoVideoReady"));
@@ -1915,6 +1913,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_ANALYSIS_HEAD,
     CREATE_TAB_ANALYSIS_POSE,
+    CREATE_TAB_ANALYSIS_PET_FACE,
+    CREATE_TAB_ANALYSIS_PET_TAG,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
@@ -1932,6 +1932,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_COMPOSITION_INDEX,
     CREATE_HEAD_INDEX,
     CREATE_POSE_INDEX,
+    CREATE_PET_INDEX,
+    CREATE_PET_TAG_ID_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
@@ -1981,6 +1983,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
     CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
@@ -1997,7 +2000,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
-    CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
@@ -3669,6 +3671,20 @@ void AddHdrMode(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+void AddCriticalTypeColumns(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_IS_CRITICAL + " INT DEFAULT 0 NOT NULL",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CRITICAL_TYPE + " INT DEFAULT 0 NOT NULL",
+    };
+
+    MEDIA_INFO_LOG("add Photos critical_type column starts");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("add Photos critical_type column ends");
+}
+
 void AddLcdAndThumbSizeColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4278,6 +4294,18 @@ void AddHighlightMapTable(RdbStore &store)
     };
     MEDIA_INFO_LOG("add analysis map table of highlight db");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void AddPetFaceTable(RdbStore &store, int32_t version)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_PET_FACE,
+        CREATE_TAB_ANALYSIS_PET_TAG,
+        ADD_PET_STATUS_COLUMN,
+    };
+    MEDIA_INFO_LOG("add pet tables start");
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("add pet tables end");
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -4914,7 +4942,6 @@ static void AddFrontAnalysisColumn(RdbStore &store)
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_COUNT + " INT DEFAULT 0",
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_MODIFIED + " BIGINT DEFAULT 0",
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_COUNT + " INT DEFAULT 0",
-        CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     };
     MEDIA_INFO_LOG("Add front analysis column start");
     ExecSqls(sqls, store);
@@ -5035,6 +5062,17 @@ static void AddLakeAlbumTable(RdbStore &store, int32_t version)
     };
     ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("End add lake album table");
+}
+
+static void AddPhotoMovingphotoEnhancementType(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Add moving photo enhancement column start");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE +
+            " INT NOT NULL DEFAULT 0",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add moving photo enhancement column end");
 }
 
 static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
@@ -5167,6 +5205,18 @@ static void UpgradeAnalysisUpdateSearchTrigger(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end upgrade analysis update search trigger");
+}
+
+static void AddAnalysisUpdateVideoSearchTrigger(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add analysis update video search trigger");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add analysis update video search trigger");
 }
 
 static void CreateTabCustomRecords(RdbStore &store)
@@ -5321,6 +5371,17 @@ static void AddFileSourceType(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("AddFileSourceType start");
     ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("AddFileSourceType end");
+}
+
+static void AddAspectRatio(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_ASPECT_RATIO + " DOUBLE NOT NULL DEFAULT -2 ",
+    };
+    MEDIA_INFO_LOG("AddAspectRatio start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("AddAspectRatio end");
 }
 
 static void AddTempFileAssetsCreateAlbum(RdbStore &store)
@@ -5551,11 +5612,11 @@ static void AddCloneSequenceColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns end");
 }
 
-static void AddAlbumOrderBackTable(RdbStore &store)
+static void AddAlbumOrderBackTable(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = { CREATE_ALBUM_ORDER_BACK_TABLE };
     MEDIA_INFO_LOG("create album_order_back table start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("create album_order_back table end");
 }
 
@@ -5573,9 +5634,9 @@ static void AddImageFaceAndFaceTagAgeGender(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("start to add age and gender for image face and face tag");
     const vector<string> sqls = {
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + AGE + " DOUBLE",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
-        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " INTEGER",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " DOUBLE",
         "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
     };
     ExecSqlsWithDfx(sqls, store, version);
@@ -5629,6 +5690,30 @@ static void CreateVisionVideoTotal(RdbStore& store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void CreateChangeTime(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("start add change_time column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end add change_time column");
+}
+
+static void AddAudioIsTemp(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " +
+            AudioColumn::AUDIO_IS_TEMP + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("AddAudioIsTemp start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("AddAudioIsTemp end");
+}
+
 static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("create batchdownload records begin");
@@ -5648,6 +5733,122 @@ static void UpdateMdirtyTriggerForStrongAssociation(RdbStore &store, int32_t ver
     };
     ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
+}
+
+static void UpdateSourceAlbumBundleNameTriggerUseLpath(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update source album bundle name trigger use lpath");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end update source album bundle name trigger use lpath");
+}
+
+static void AddEditOperation(RdbStore &store, int32_t version)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " + EDIT_OPERATION + " INT ",
+    };
+    MEDIA_INFO_LOG("add edit operation column start");
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("start add edit operation column end");
+}
+
+static void AddPhotoAlbumHidden(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_HIDDEN + " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add photoalbum hidden column start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add photoalbum hidden column end");
+}
+
+static void UpdateMdirtyTrigger(RdbStore &store, int32_t version, const std::string &columnName)
+{
+    MEDIA_INFO_LOG("Update mdirty trigger for %{public}s start", columnName.c_str());
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Update mdirty trigger for %{public}s end", columnName.c_str());
+}
+
+static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true)) {
+        AddPhotoMovingphotoEnhancementType(store, VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true)) {
+        AddCriticalTypeColumns(store, VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true);
+    }
+}
+
+static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_PET_TABLES &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, true)) {
+        AddPetFaceTable(store, VERSION_ADD_PET_TABLES);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ASPECT_RATIO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ASPECT_RATIO, true)) {
+        AddAspectRatio(store, VERSION_ADD_ASPECT_RATIO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ASPECT_RATIO, true);
+    }
+
+    if (oldVersion < VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true)) {
+        UpdateSourceAlbumBundleNameTriggerUseLpath(store, VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH, true);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_HIDDEN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true)) {
+        AddPhotoAlbumHidden(store, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, true);
+    }
+
+    if (oldVersion < VERSION_ADD_CHANGE_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, true)) {
+        CreateChangeTime(store, VERSION_ADD_CHANGE_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, true);
+    }
+
+    if (oldVersion < VERSION_ADD_EDIT_OPERATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_EDIT_OPERATION, true)) {
+        AddEditOperation(store, VERSION_ADD_EDIT_OPERATION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_EDIT_OPERATION, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE, true)) {
+        CreateChangeTime(store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_HDR_MODE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_AUDIO_IS_TEMP &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AUDIO_IS_TEMP, true)) {
+        AddAudioIsTemp(store, VERSION_ADD_AUDIO_IS_TEMP);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AUDIO_IS_TEMP, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER, true)) {
+        AddAnalysisUpdateVideoSearchTrigger(store, VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER, true);
+    }
+    UpgradeExtensionPart14(store, oldVersion);
 }
 
 static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
@@ -5703,6 +5904,7 @@ static void UpgradeExtensionPart12(RdbStore &store, int32_t oldVersion)
         AddAnalysisProgressCheckSpaceColumn(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_CHECK_SPACE_COLUMN, true);
     }
+    UpgradeExtensionPart13(store, oldVersion);
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5724,7 +5926,7 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         AddAnalysisProgressColumns(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true);
     }
-    
+
     if (oldVersion < VERSION_ADD_BATCH_DOWNLOAD &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_BATCH_DOWNLOAD, true)) {
         CreateBatchDownloadRecords(store, VERSION_ADD_BATCH_DOWNLOAD);
@@ -5752,7 +5954,7 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_ALBUM_ORDER_BACK_VERSION &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true)) {
-        AddAlbumOrderBackTable(store);
+        AddAlbumOrderBackTable(store, VERSION_ADD_ALBUM_ORDER_BACK_VERSION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ALBUM_ORDER_BACK_VERSION, true);
     }
 

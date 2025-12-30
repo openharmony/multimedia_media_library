@@ -69,6 +69,11 @@ int32_t MediaLocationSynchronizeTask::GetRepairLocationData(const int32_t &lastR
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
 
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+
     predicates.IsNull(PhotoColumn::PHOTO_LATITUDE)->Or()->EqualTo(PhotoColumn::PHOTO_LATITUDE, 0);
     predicates.IsNull(PhotoColumn::PHOTO_LONGITUDE)->Or()->EqualTo(PhotoColumn::PHOTO_LONGITUDE, 0);
     predicates.GreaterThan(MediaColumn::MEDIA_ID, lastRecord);
@@ -119,9 +124,10 @@ void MediaLocationSynchronizeTask::HandleRepairLocation(const int32_t &lastRecor
         prefs->PutInt(LAST_LOCAL_LOCATION_REPAIR, repairRecord);
         prefs->FlushSync();
         MEDIA_INFO_LOG("repair location to %{public}d", repairRecord);
-        photosPoVec = {};
+        photosPoVec.clear();
         GetRepairLocationData(repairRecord, photosPoVec);
-    } while (photosPoVec.size() > 0 && !terminate);
+    } while (photosPoVec.size() > 0 && !terminate && PowerEfficiencyManager::IsChargingAndScreenOff()
+            && MedialibrarySubscriber::IsCurrentStatusOn());
 }
 
 void MediaLocationSynchronizeTask::Execute()

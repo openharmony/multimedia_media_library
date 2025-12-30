@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,69 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "userfile_manager_types.h"
 #define MLOG_TAG "SendableFileAssetNapi"
 
 #include "sendable_file_asset_napi.h"
-
-#include <algorithm>
-#include <cstring>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-#include "abs_shared_result_set.h"
-#include "access_token.h"
 #include "accesstoken_kit.h"
-#include "datashare_errno.h"
-#include "datashare_predicates.h"
-#include "datashare_result_set.h"
-#include "datashare_values_bucket.h"
+#include "access_token.h"
 #include "exif_rotate_utils.h"
-#include "hitrace_meter.h"
-#include "fetch_result.h"
-#include "file_uri.h"
-#include "hilog/log.h"
-#include "ipc_skeleton.h"
-#include "iservice_registry.h"
-#include "js_native_api.h"
-#include "js_native_api_types.h"
-#include "location_column.h"
 #include "locale_config.h"
-#include "media_asset_edit_data_napi.h"
-#include "media_exif.h"
-#include "media_column.h"
 #include "media_file_utils.h"
-#include "media_file_uri.h"
-#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
-#include "nlohmann/json.hpp"
-#include "post_proc.h"
-#include "rdb_errno.h"
-#include "sandbox_helper.h"
-#include "string_ex.h"
-#include "thumbnail_const.h"
 #include "thumbnail_utils.h"
-#include "unique_fd.h"
 #include "userfile_client.h"
-#include "userfilemgr_uri.h"
 #include "vision_aesthetics_score_column.h"
-#include "vision_album_column.h"
-#include "vision_column_comm.h"
-#include "vision_column.h"
 #include "vision_composition_column.h"
-#include "vision_face_tag_column.h"
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
-#include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
-#include "vision_photo_map_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
@@ -83,6 +39,7 @@
 #include "vision_video_label_column.h"
 #include "sendable_medialibrary_napi_utils.h"
 #include "file_asset_napi.h"
+#include "ipc_skeleton.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -126,8 +83,8 @@ SendableFileAssetNapi::~SendableFileAssetNapi() = default;
 
 void SendableFileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
-    SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
     lock_guard<mutex> lockGuard(mutex_);
+    SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
         delete fileAssetObj;
         fileAssetObj = nullptr;
@@ -847,6 +804,11 @@ static const map<int32_t, struct SendableAnalysisSourceInfo> ANALYSIS_SOURCE_INF
         HEAD_SCALE_WIDTH, HEAD_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_BONE_POSE, { POSE, PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
+    { ANALYSIS_PET_FACE, { PET_STATUS, PAH_QUERY_ANA_PET, { PET_ID, PET_TAG_ID, PET_TOTAL_FACES, PET_LABEL,
+        FEATURES, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, DATE_MODIFIED } } },
+    { ANALYSIS_PET_TAG, { PET_TAG, PAH_QUERY_ANA_PET_TAG, { VISION_PET_TAG_TABLE + "." + TAG_ID, PET_LABEL,
+        CENTER_FEATURES, COUNT } } },
 };
 
 static DataShare::DataSharePredicates GetPredicatesHelper(SendableFileAssetAsyncContext *context)
@@ -903,8 +865,8 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
         auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-        context->analysisData = "";
         if (!err) {
+            context->SaveError(E_PERMISSION_DENIED);
             return;
         }
     }
@@ -954,6 +916,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,
         PhotoColumn::PHOTO_EXIF_ROTATE,
+        MediaColumn::MEDIA_OWNER_PACKAGE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !SendableMediaLibraryNapiUtils::IsSystemApp()) {

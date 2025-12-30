@@ -21,11 +21,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <cstdlib>
-#include <future>
-#include <shared_mutex>
-#include <unordered_set>
-#include <sstream>
 #include <regex>
 #include <iomanip>
 #include <dirent.h>
@@ -33,32 +28,25 @@
 #include <thread>
 #include <unistd.h>
 
-#include "ability_scheduler_interface.h"
-#include "abs_rdb_predicates.h"
 #include "acl.h"
 #include "albums_refresh_manager.h"
+#include "asset_compress_version_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_file_processor.h"
+#endif
 #include "background_task_mgr_helper.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
-#include "datashare_abs_result_set.h"
 #include "dfx_anco_manager.h"
 #include "dfx_manager.h"
-#include "dfx_reporter.h"
 #include "dfx_utils.h"
-#include "directory_ex.h"
-#include "efficiency_resource_info.h"
 #include "ffrt_inner.h"
-#include "hitrace_meter.h"
-#include "ipc_skeleton.h"
 #include "location_column.h"
 #include "map_operation_flag.h"
 #include "media_analysis_helper.h"
-#include "media_column.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
-#include "media_log.h"
 #include "media_old_photos_column.h"
 #include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
@@ -66,27 +54,20 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "media_visit_count_manager.h"
-#include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
-#include "medialibrary_asset_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_app_uri_sensitive_operations.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_dir_operations.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_location_operations.h"
 #include "medialibrary_meta_recovery.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_operation_record.h"
 #include "medialibrary_ptp_operations.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_rdbstore.h"
 #include "medialibrary_restore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -96,7 +77,6 @@
 #include "medialibrary_tab_old_albums_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
@@ -108,31 +88,19 @@
 #include "enhancement_manager.h"
 #endif
 #include "permission_utils.h"
-#include "photo_album_column.h"
 #include "photo_day_month_year_operation.h"
 #include "photo_map_operations.h"
 #include "power_efficiency_manager.h"
-#include "preferences.h"
 #include "preferences_helper.h"
 #include "resource_type.h"
-#include "rdb_store.h"
-#include "rdb_utils.h"
 #include "result_set_utils.h"
-#include "source_album.h"
-#include "system_ability_definition.h"
 #include "shooting_mode_column.h"
-#include "timer.h"
 #include "trash_async_worker.h"
-#include "value_object.h"
 #include "photo_storage_operation.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_facard_operations.h"
-#include "ithumbnail_helper.h"
 #include "vision_db_sqls_more.h"
-#include "vision_face_tag_column.h"
-#include "vision_photo_map_column.h"
-#include "parameter.h"
 #include "parameters.h"
 #include "uuid.h"
 #ifdef DEVICE_STANDBY_ENABLE
@@ -143,9 +111,7 @@
 #endif
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
-#include "vision_db_sqls.h"
 #include "vision_column.h"
-#include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "custom_record_operations.h"
 #include "medialibrary_photo_operations.h"
@@ -198,13 +164,15 @@ static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index"
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
 static const std::string BETA_DEBUG_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
-static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 3LL * 1024 * 1024 * 1024;
+static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 1LL * 1024 * 1024 * 1024;
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
 static const std::string BROKER_ADD_MSG = "broker_add";
 static const std::string BROKER_REMOVE_MSG = "broker_remove";
 static const std::string BROKER_START_SCAN = "start_scan";
 static const int MAX_LOOP_CNT = 10;
+static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
+static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -620,7 +588,6 @@ static void UpdateVideoTotalFaceId(const shared_ptr<MediaLibraryRdbStore>& store
     MEDIA_INFO_LOG("End update face id of video total");
 }
 
-
 static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     MEDIA_INFO_LOG("Start to Update 3DGS mode album");
@@ -646,23 +613,30 @@ static void InsertLabelAndFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLi
     MEDIA_INFO_LOG("End insert face and label to vision");
 }
 
-static void CheckLabelAndFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static void CheckFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
     int32_t version, int32_t upgradedIndex)
 {
-    const std::string sql =
-        "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
-        STATUS + " = 0, " +
-        LABEL  + " = 0, " +
-        FACE   + " = 0 " +
-        "WHERE (NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE +
-        " WHERE " + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ") " +
-        "OR NOT EXISTS (SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " +
-        FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + "));";
-
-    int ret = store->ExecuteSql(sql);
+    const std::string checkFaceSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        FACE + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
+        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + FILE_ID + " = " +
+        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
+    int ret = store->ExecuteSql(checkFaceSql);
     RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End check face and label");
+    MEDIA_INFO_LOG("End check face to vision");
+}
+
+static void CheckLabelToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+    int32_t version, int32_t upgradedIndex)
+{
+    const std::string checkLabelSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        LABEL + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
+        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " + FILE_ID + " = " +
+        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
+    int ret = store->ExecuteSql(checkLabelSql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End check label to vision");
 }
 
 static void UpdateFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
@@ -729,6 +703,23 @@ static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& 
         "Failed to query shooting mode album ids");
     for (auto albumId : albumIds) {
         albumIdsStr.push_back(to_string(albumId));
+    }
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+}
+
+static void UpdateQuickCaptureAndTimeLapseAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    vector<string> albumIdsStr;
+    vector<ShootingModeAlbumType> albumTypes;
+    albumTypes.push_back(ShootingModeAlbumType::TIME_LAPSE);
+    albumTypes.push_back(ShootingModeAlbumType::QUICK_CAPTURE_ALBUM);
+
+    for (const auto& type : albumTypes) {
+        int32_t albumId;
+        if (MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(type, albumId)) {
+            albumIdsStr.push_back(to_string(albumId));
+        }
     }
 
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
@@ -845,6 +836,34 @@ static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRd
     MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
 }
 
+static void UpdatePhotoChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
+    int32_t index)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    MEDIA_INFO_LOG("Start updating photo change time");
+    const string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET " + PhotoColumn::PHOTO_CHANGE_TIME + " = " + PhotoColumn::MEDIA_DATE_MODIFIED;
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End updating photo change time");
+}
+
+static void UpdatePhotoAlbumChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
+    int32_t index)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    MEDIA_INFO_LOG("Start updating photo album change time");
+    const string sql = "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::CHANGE_TIME + " = " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED;
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End updating photo album change time");
+}
+
 static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
 {
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
@@ -868,6 +887,40 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
+static void UpdatePhotoAlbumHidden(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
+{
+    MEDIA_INFO_LOG("Start to Update photoalbum hidden column");
+    std::string sql =
+        "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_HIDDEN + " = 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) +
+        " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+        " AND " + PhotoAlbumColumns::ALBUM_COUNT + " = 0";
+    int ret = rdbStore->ExecuteSql(sql);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End Update photoalbum hidden column");
+}
+
+void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_CHANGE_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, false)) {
+        int32_t index = 0;
+        UpdatePhotoChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
+        UpdatePhotoAlbumChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
+        rdbStore->SetOldVersion(VERSION_ADD_CHANGE_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, false);
+    }
+
+    if (oldVersion < VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false)) {
+        MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(rdbStore, VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        rdbStore->SetOldVersion(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false);
+    }
+}
+
 void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX &&
@@ -881,7 +934,8 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, false)) {
         int32_t upgradedIndex = 0;
         InsertLabelAndFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        CheckLabelAndFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+        CheckFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+        CheckLabelToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateLabelAndFaceToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
         UpdateStatusToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
@@ -901,10 +955,26 @@ void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
     if (oldVersion < VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false)) {
-        UpdateAllShootingModeAlbums(rdbStore);
+        UpdateQuickCaptureAndTimeLapseAlbums(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false);
     }
+
+    if (oldVersion < VERSION_ADD_PET_TABLES &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, false)) {
+        MediaLibraryRdbStore::AddPetTagIdIndex(rdbStore, VERSION_ADD_PET_TABLES);
+        rdbStore->SetOldVersion(VERSION_ADD_PET_TABLES);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, false);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_HIDDEN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false)) {
+        UpdatePhotoAlbumHidden(rdbStore, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false);
+    }
+    HandleUpgradeRdbAsyncPart6(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -1265,9 +1335,9 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         MEDIA_DEBUG_LOG("still other extension exist");
         return;
     }
-
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::StopTimer();
-
+#endif
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     CHECK_AND_RETURN_LOG(shareHelper != nullptr, "DataShareHelper is null");
 
@@ -1555,6 +1625,7 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
 int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    MEDIA_INFO_LOG("MediaLibraryDataManager Insert enter");
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
@@ -1983,6 +2054,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+            return E_OK;
+        }
+        case OperationObject::PAH_MULTISTAGES_VIDEO: {
+            std::vector<std::string> columns;
+            MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
@@ -2699,6 +2775,20 @@ shared_ptr<NativeRdb::ResultSet> QueryIndex(MediaLibraryCommand &cmd, const vect
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryCvInfo(MediaLibraryCommand &cmd, const vector<string> &columns,
+    const DataSharePredicates &predicates)
+{
+    switch (cmd.GetOprnType()) {
+        case OperationType::QUERY_RAW_VISION_TOTAL:
+        case OperationType::QUERY_RAW_VISION_VIDEO_TOTAL:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        default:
+            /* add filter */
+            return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
+                columns);
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -2741,6 +2831,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return QueryIndex(cmd, columns, predicates);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_MULTISTAGES_VIDEO:
+            return MultiStagesVideoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
@@ -2768,6 +2860,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ANALYSIS_ASSET_SD_MAP:
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::VISION_ANALYSIS:
+        case OperationObject::VISION_ANALYSIS_VIDEO:
+            return QueryCvInfo(cmd, columns, predicates);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
@@ -2790,12 +2885,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
+static void ExecuteDfxWork(const std::string &fileId)
+{
+    std::thread([fileId]() {
+        MEDIA_INFO_LOG("start ExecuteDfxWork");
+        DfxManager::GetInstance()->HandleCinematicVideoAccessTimes(true, true, fileId);
+    }).detach();
+}
+
 static void AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
 {
     bool isValidCount = false;
     auto visitType = MediaVisitCountManager::VisitCountType::PHOTO_FS;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
         isValidCount = true;
+        auto fileId = cmd.GetOprnFileId();
+        ExecuteDfxWork(fileId);
     } else if (oprnObject == OperationObject::THUMBNAIL) {
         visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
         auto height = std::atoi(cmd.GetQuerySetParam(MEDIA_DATA_DB_HEIGHT).c_str());
@@ -3001,6 +3106,38 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
+static bool IsMediaLibraryRecoveryDone()
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(MEDIA_LIBRARY_PREF_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return false;
+    }
+    int32_t done = prefs->GetInt(MEDIA_LIBRARY_RECOVERY_FLAG_KEY, 0);
+    return done == 1;
+}
+
+static void SetParameterForClone()
+{
+    std::string nextFlag = "persist.update.hmos_to_next_flag";
+    auto isUpgrade = system::GetParameter(nextFlag, "");
+    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
+    if (isUpgrade != "1") {
+        return;
+    }
+    if (IsMediaLibraryRecoveryDone()) {
+        return;
+    }
+
+    std::string cloneFlag = "multimedia.medialibrary.cloneFlag";
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(cloneFlag, currentTime);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+}
+
 void MediaLibraryDataManager::SetStartupParameter()
 {
     MEDIA_INFO_LOG("Start to set parameter.");
@@ -3022,17 +3159,8 @@ void MediaLibraryDataManager::SetStartupParameter()
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
     }
-    std::string nextFlag = "persist.update.hmos_to_next_flag";
-    auto isUpgrade = system::GetParameter(nextFlag, "");
-    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
-    if (isUpgrade != "1") {
-        return;
-    }
-    std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
-    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
-    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
-    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+
+    SetParameterForClone();
 }
 
 int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
@@ -3602,11 +3730,13 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK && MedialibrarySubscriber::IsCurrentStatusOn()) {
         string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        g_updateHdrModeId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         SourceOptions opts;
         uint32_t err = E_OK;
         std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
         if (err != E_OK || imageSource == nullptr) {
-            MEDIA_ERR_LOG("CreateImageSource failed, filePath: %{public}s", filePath.c_str());
+            MEDIA_ERR_LOG("CreateImageSource failed, fileId: %{public}d, filePath: %{public}s", g_updateHdrModeId,
+                filePath.c_str());
             continue;
         }
         HdrMode hdrMode = HdrMode::DEFAULT;
@@ -3614,21 +3744,19 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
             hdrMode = MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(imageSource->CheckHdrType());
         }
 
-        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         if (hdrMode != HdrMode::DEFAULT) {
             string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
                 PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " = " +
                 to_string(static_cast<int32_t>(DynamicRangeType::HDR)) + ", " + PhotoColumn::PHOTO_HDR_MODE + " = " +
                 to_string(static_cast<int32_t>(hdrMode)) + ", " + PhotoColumn::PHOTO_META_DATE_MODIFIED + " = " +
                 to_string(MediaFileUtils::UTCTimeMilliSeconds()) + " WHERE " + MediaColumn::MEDIA_ID + " = " +
-                to_string(fileId);
+                to_string(g_updateHdrModeId);
             int32_t ret = rdbStore->ExecuteSql(updateSql);
             if (ret != NativeRdb::E_OK) {
                 MEDIA_ERR_LOG("Failed to update rdb");
                 continue;
             }
         }
-        g_updateHdrModeId = fileId;
     }
     return E_SUCCESS;
 }
@@ -3780,7 +3908,7 @@ static int32_t DropAnalysisTables(shared_ptr<NativeRdb::RdbStore> &store)
     int32_t err = store->ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
     CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute drop vision_trigger");
     for (const auto &tableName : VISION_HIGHLIGHT_TABLES) {
-        string sql = "DROP TABLE IF EXISTS" + tableName;
+        string sql = "DROP TABLE IF EXISTS " + tableName;
         err = store->ExecuteSql(sql);
         CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute: %{private}s", sql.c_str());
     }
@@ -4030,5 +4158,54 @@ bool MediaLibraryDataManager::IsDirectoryEmpty()
     return isEmpty;
 }
 
+int32_t MediaLibraryDataManager::OpenAssetCompress(const std::string &uri, const int32_t type, const int32_t version,
+    int32_t &fd)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::OpenAssetCompress begin");
+    fd = -1;
+    CHECK_AND_RETURN_RET_LOG(version > 0, E_INVALID_VALUES, "Invalid version: %{public}d", version);
+    string assetUri = uri;
+    MediaFileUtils::UriAppendKeyValue(assetUri, "type", to_string(static_cast<int32_t>(type)));
+    MEDIA_DEBUG_LOG("merged uri = %{public}s", assetUri.c_str());
+    Uri openUri(assetUri);
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUriStr = MediaFileUtils::GetRealUriFromVirtualUri(openUri.ToString());
+    Uri realUri(realUriStr);
+    MediaLibraryCommand cmd(realUri, Media::OperationType::OPEN);
+
+#else
+    MediaLibraryCommand cmd(openUri, Media::OperationType::OPEN);
+#endif
+    std::string tlvPath = "";
+    int32_t ret =
+        MediaLibraryPhotoOperations::OpenAssetCompress(cmd, tlvPath, version, fd);
+    if (ret != E_OK || fd < 0) {
+        MEDIA_ERR_LOG("OpenAssetCompress failed, clear compress file.");
+        CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(tlvPath), MediaFileUtils::DeleteFile(tlvPath));
+        return E_ERR;
+    }
+    return ret;
+}
+
+int32_t MediaLibraryDataManager::NotifyAssetSended(const std::string &uri)
+{
+    MEDIA_INFO_LOG("NotifyAssetSended begin");
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_OK, "Invalid uri");
+    std::string id = MediaFileUtils::GetIdFromUri(uri);
+    std::string tempFilePath = MediaLibraryAssetOperations::GetAssetCompressCachePath(id);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(tempFilePath), E_OK, "Temp compress asset file not exists");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(tempFilePath), E_OK, "Clean temp compress asset file failed");
+    MEDIA_INFO_LOG("NotifyAssetSended delete tempFilePath: %{public}s",
+        DfxUtils::GetSafePath(tempFilePath).c_str());
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::GetAssetCompressVersion()
+{
+    int32_t compressVersion = AssetCompressVersionManager::GetAssetCompressVersion();
+    MEDIA_INFO_LOG("GetAssetCompressVersion is called, version: %{public}d", compressVersion);
+    return compressVersion;
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -15,20 +15,14 @@
 
 #include "medialibrary_operation.h"
 
-#include "abs_rdb_predicates.h"
-#include "datashare_predicates.h"
-#include "dir_asset.h"
 #include "form_map.h"
 #include "location_column.h"
 #include "media_analysis_progress_column.h"
 #include "media_app_uri_permission_column.h"
-#include "media_column.h"
 #include "media_old_photos_column.h"
 #include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "medialibrary_db_const.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
 #include "ptp_medialibrary_manager_uri.h"
 #include "delete_permanently_operations_uri.h"
 #include "search_column.h"
@@ -36,16 +30,12 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
-#include "uri.h"
-#include "values_bucket.h"
-#include "vision_column.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "mediatool_uri.h"
 #include "cloud_enhancement_uri.h"
 #include "smart_album_column.h"
 #include "custom_record_uri.h"
-#include "custom_records_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -107,8 +97,11 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
         { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
         { MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationObject::MOVING_PHOTO_VIDEO_READY },
+        { PAH_MULTISTAGES_VIDEO, OperationObject::PAH_MULTISTAGES_VIDEO },
 
         // use in Vision
+        { PAH_ANA_CV, OperationObject::VISION_ANALYSIS },
+        { PAH_ANA_V_CV, OperationObject::VISION_ANALYSIS_VIDEO },
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
         { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
         { PAH_ANA_VIDEO_LABEL, OperationObject::VISION_VIDEO_LABEL },
@@ -132,6 +125,10 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_AFFECTIVE, OperationObject::VISION_AFFECTIVE },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
         { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
+        { VISION_PET_FACE_TABLE, OperationObject::VISION_PET_FACE },
+        { PAH_ANA_PET, OperationObject::VISION_PET_FACE },
+        { VISION_PET_TAG_TABLE, OperationObject::VISION_PET_TAG },
+        { PAH_ANA_PET_TAG, OperationObject::VISION_PET_TAG },
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -204,6 +201,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::TOOL_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::TOOL_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::VISION_ANALYSIS, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
+        { OperationObject::VISION_ANALYSIS_VIDEO, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_TOTAL_TABLE } } },
         { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
         { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
         { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
@@ -222,6 +221,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_VIDEO_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_TOTAL_TABLE } } },
         { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
         { OperationObject::VISION_VIDEO_FACE, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_FACE_TABLE } } },
+        { OperationObject::VISION_PET_FACE, { { OperationType::UNKNOWN_TYPE, VISION_PET_FACE_TABLE } } },
+        { OperationObject::VISION_PET_TAG, { { OperationType::UNKNOWN_TYPE, VISION_PET_TAG_TABLE } } },
         { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
@@ -394,6 +395,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
         { OPRN_UPDATE_HAS_APPLINK, OperationType::UPDATE_HAS_APPLINK },
         { OPRN_UPDATE_APPLINK, OperationType::UPDATE_APPLINK },
+        { OPRN_QUERY_RAW_VISION_TOTAL, OperationType::QUERY_RAW_VISION_TOTAL },
+        { OPRN_QUERY_RAW_VISION_VIDEO_TOTAL, OperationType::QUERY_RAW_VISION_VIDEO_TOTAL },
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
         { OPRN_LS, OperationType::LS_MEDIA_FILES },
         { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },

@@ -42,6 +42,7 @@
 #include "vision_image_face_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
+#include "vision_pet_face_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
@@ -70,6 +71,7 @@
 #include "interop_js/arkts_interop_js_api.h"
 #include "transfer_utils.h"
 #include "ani_transfer_lib_manager.h"
+#include "medialibrary_ani_enum_comm.h"
 namespace OHOS::Media {
 using AttachCreateFileAssetFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
 using GetFileAssetInstanceFn = TransferUtils::TransferSharedPtr (*)(FileAssetNapi*);
@@ -95,6 +97,8 @@ const std::array fileAssetAniMethods = {
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperGetEditData)},
     ani_native_function {"cloneSync", nullptr,
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperCloneAsset)},
+    ani_native_function {"convertImageFormatInner", nullptr,
+        reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperConvertFormat)},
     ani_native_function {"requestSourceSync", nullptr,
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperRequestSource)},
     ani_native_function {"commitEditedAssetSync", nullptr,
@@ -121,6 +125,8 @@ const std::array fileAssetAniMethods = {
         reinterpret_cast<void *>(FileAssetAni::GetExif)},
     ani_native_function {"setPendingSync", nullptr,
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperSetPending)},
+};
+std::array staticMethods = {
     ani_native_function {"transferToDynamicPhotoAsset", nullptr,
         reinterpret_cast<void *>(FileAssetAni::TransferToDynamicPhotoAsset)},
     ani_native_function {"transferToStaticPhotoAsset", nullptr,
@@ -195,6 +201,11 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_BONE_POSE, { POSE, PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
+    { ANALYSIS_PET_FACE, { PET_STATUS, PAH_QUERY_ANA_PET, { PET_ID, PET_TAG_ID, PET_TOTAL_FACES, PET_LABEL,
+        FEATURES, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, DATE_MODIFIED } } },
+    { ANALYSIS_PET_TAG, { PET_TAG, PAH_QUERY_ANA_PET_TAG, { VISION_PET_TAG_TABLE + "." + TAG_ID, PET_LABEL,
+        CENTER_FEATURES, COUNT } } },
 };
 
 FileAssetAni::FileAssetAni(std::shared_ptr<FileAsset> fileAsset)
@@ -242,6 +253,12 @@ ani_status FileAssetAni::PhotoAccessHelperInit(ani_env *env)
     status = env->Class_BindNativeMethods(cls, fileAssetAniMethods.data(), fileAssetAniMethods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        return status;
+    }
+
+    status = env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size());
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", className);
         return status;
     }
     return ANI_OK;
@@ -1225,6 +1242,10 @@ static DataShare::DataSharePredicates GetPredicatesHelper(unique_ptr<FileAssetCo
         string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
         predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
     }
+    if (context->analysisType == ANALYSIS_PET_TAG) {
+        string onClause = VISION_PET_FACE_TABLE + "." + PET_TAG_ID + " = " + VISION_PET_TAG_TABLE + "." + TAG_ID;
+        predicates.InnerJoin(VISION_PET_FACE_TABLE)->On({ onClause });
+    }
     string fileId = to_string(context->objectPtr->GetId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
@@ -1742,6 +1763,130 @@ ani_object FileAssetAni::PhotoAccessHelperCloneAsset(ani_env * env, ani_object o
 
     CloneAssetHandlerCompleteCallback(env, context);
     return cloneAssetObj;
+}
+
+static bool CheckConvertFormatParams(const std::string &title, const std::string &extension)
+{
+    std::string displayName = title + "." + extension;
+    if (MediaFileUtils::CheckDisplayName(displayName, true) != E_OK) {
+        ANI_ERR_LOG("displayName: %{public}s is invalid", displayName.c_str());
+        return false;
+    }
+    bool supportedImageFormat = false;
+    for (auto formatProperty : SUPPORTED_IMAGE_FORMAT_ENUM_PROPERTIES) {
+        if (extension == formatProperty.second) {
+            supportedImageFormat = true;
+            break;
+        }
+    }
+    if (!supportedImageFormat) {
+        ANI_ERR_LOG("The format of transition is not supported.");
+        return false;
+    }
+    ANI_INFO_LOG("CheckConvertFormatParams end");
+    return true;
+}
+
+static bool CheckConvertFormatMimeType(ani_env *env, const int32_t fileId)
+{
+    ANI_INFO_LOG("CheckConvertFormatMimeType in");
+    MimeTypeReqBody mimeTypeReqBody;
+    mimeTypeReqBody.fileId = fileId;
+    MimeTypeRespBody mimeTypeRespBody;
+    mimeTypeRespBody.result = false;
+    IPC::UserDefineIPCClient mimeTypeClient;
+    int32_t ret = mimeTypeClient.Call(static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT_MIME_TYPE),
+        mimeTypeReqBody, mimeTypeRespBody);
+    if (ret < 0) {
+        ANI_ERR_LOG("Failed to CheckConvertFormatMimeType, ret: %{public}d", ret);
+        int32_t error = MediaLibraryAniUtils::TransErrorCode("CheckConvertFormatMimeType", ret);
+        AniError::ThrowError(env, error);
+        return false;
+    }
+    if (!mimeTypeRespBody.result) {
+        ANI_ERR_LOG("CheckConvertFormatMimeType result false");
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Input params is invalid");
+        return false;
+    }
+    ANI_INFO_LOG("CheckConvertFormatMimeType end");
+    return true;
+}
+
+static void PhotoAccessHelperConvertFormatExecute(ani_env *env, unique_ptr<FileAssetContext> &context)
+{
+    ANI_INFO_LOG("Begin ConvertFormatHandlerExecute.");
+    MediaLibraryTracer tracer;
+    tracer.Start("ConvertFormatHandlerExecute");
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "objectPtr is null");
+
+    auto fileAsset = context->objectPtr;
+    if (fileAsset == nullptr) {
+        ANI_ERR_LOG("fileAsset is null");
+        return;
+    }
+    ConvertFormatReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.title = context->title;
+    reqBody.extension = context->extension;
+    ConvertFormatRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT);
+    IPC::UserDefineIPCClient client;
+    // db permission
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, to_string(reqBody.fileId) },
+        { URI_TYPE, TYPE_PHOTOS },
+    };
+    client.SetHeader(headerMap);
+    int32_t newAssetId = client.Call(businessCode, reqBody);
+    if (newAssetId < 0) {
+        context->SaveError(newAssetId);
+        ANI_ERR_LOG("Failed to convert format, ret: %{public}d", newAssetId);
+        return;
+    }
+    context->assetId = newAssetId;
+    ANI_INFO_LOG("End ConvertFormatHandlerExecute.");
+}
+
+ani_object FileAssetAni::PhotoAccessHelperConvertFormat(ani_env *env, ani_object object, ani_string title,
+    ani_object imageFormat)
+{
+    ANI_INFO_LOG("PhotoAccessHelperConvertFormat start");
+    ani_object ConvertAssetObj{};
+    auto fileAssetAni = Unwrap(env, object);
+    if (fileAssetAni == nullptr || fileAssetAni->fileAssetPtr == nullptr) {
+        ANI_ERR_LOG("fileAssetAni is nullptr");
+        return nullptr;
+    }
+    auto context = make_unique<FileAssetContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    string extension;
+    MediaLibraryAniUtils::GetOptionalEnumStringField(env, imageFormat, "imageFormat", extension);
+    string titleStr;
+    MediaLibraryAniUtils::GetString(env, title, titleStr);
+    int32_t fileId = fileAssetAni->GetFileId();
+    ANI_INFO_LOG("ConvertFormat title: %{public}s, extension: %{public}s", titleStr.c_str(), extension.c_str());
+    if (!CheckConvertFormatParams(titleStr, extension)) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Input params is invalid");
+        return nullptr;
+    }
+    if (!CheckConvertFormatMimeType(env, fileId)) {
+        return nullptr;
+    }
+    context->title = titleStr;
+    context->extension = extension;
+    context->objectPtr = fileAssetAni->fileAssetPtr;
+    PhotoAccessHelperConvertFormatExecute(env, context);
+    if (context->assetId == 0) {
+        ANI_ERR_LOG("Clone file asset failed");
+        return nullptr;
+    } else {
+        ConvertAssetObj = CreateClonePhotoAsset(env, context);
+    }
+
+    CloneAssetHandlerCompleteCallback(env, context);
+    return ConvertAssetObj;
 }
 
 static void PhotoAccessHelperRequestSourceExecute(ani_env *env, unique_ptr<FileAssetContext> &context)

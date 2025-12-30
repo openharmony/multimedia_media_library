@@ -15,13 +15,10 @@
 
 #include "media_asset_rdbstore.h"
 
-#include <unordered_set>
-
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_tracer.h"
-#include "parameter.h"
 #include "parameters.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"

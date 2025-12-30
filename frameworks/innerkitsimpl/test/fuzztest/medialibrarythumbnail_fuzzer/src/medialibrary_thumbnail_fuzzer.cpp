@@ -42,7 +42,10 @@
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
+#include "thumbnail_rdb_utils.h"
+#include "thumbnail_restore_manager.h"
 #include "thumbnail_service.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
@@ -76,6 +79,8 @@ const int32_t MAX_PIXEL_FORMAT = 15;
 const int32_t MAX_MEDIA_TYPE = 14;
 const int32_t MAX_BYTE_VALUE = 256;
 const int32_t SEED_SIZE = 1024;
+const int32_t MAX_NOTIFY_TYPE = 8;
+const int32_t MAX_DIRTY_TYPE = 8;
 FuzzedDataProvider *provider = nullptr;
 
 static inline Media::ThumbnailType FuzzThumbnailType()
@@ -84,6 +89,17 @@ static inline Media::ThumbnailType FuzzThumbnailType()
     return static_cast<Media::ThumbnailType>(value);
 }
 
+static inline Media::NotifyType FuzzNotifyType()
+{
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_NOTIFY_TYPE);
+    return static_cast<Media::NotifyType>(value);
+}
+
+static inline Media::DirtyType FuzzDirtyType()
+{
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DIRTY_TYPE);
+    return static_cast<Media::DirtyType>(value);
+}
 static inline Media::Size FuzzSize()
 {
     Media::Size value;
@@ -316,7 +332,7 @@ static void ThumbnailAgingHelperTest()
         opt, outLcdCount);
 }
 
-static void ThumbnailGenerateHelperTest()
+static void ThumbnailGenerateHelperTestPart1()
 {
     Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
     Media::ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, provider->ConsumeBool());
@@ -324,12 +340,18 @@ static void ThumbnailGenerateHelperTest()
     Media::ThumbnailGenerateHelper::CreateAstcBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
+    Media::ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(opts);
+    Media::ThumbnailGenerateHelper::RepairExifRotateBackground(opts);
     RdbPredicates predicates(PHOTOS_TABLE);
     Media::ThumbnailGenerateHelper::CreateLcdBackground(opts);
-    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, provider->ConsumeIntegral<int32_t>());
     Media::ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
     int32_t outLcdCount;
     Media::ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
+}
+
+static void ThumbnailGenerateHelperTestPart2()
+{
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
     vector<Media::ThumbnailData> outDatas;
     Media::ThumbnailGenerateHelper::GetNoLcdData(opts, outDatas);
     outDatas.clear();
@@ -354,6 +376,11 @@ static void ThumbnailGenerateHelperTest()
     Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);
     Media::ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    std::string id = to_string(provider->ConsumeIntegral<int64_t>());
+    std::string tracks = provider->ConsumeBytesAsString(NUM_BYTES);
+    std::string trigger = provider->ConsumeBytesAsString(NUM_BYTES);
+    std::string gentype = provider->ConsumeBytesAsString(NUM_BYTES);
+    Media::ThumbnailGenerateHelper::TriggerHighlightThumbnail(opts, id, tracks, trigger, gentype);
     Media::ThumbRdbOpt optsWithRdb = FuzzThumbRdbOpt(false);
     if (optsWithRdb.store != nullptr) {
         outDatas.clear();
@@ -391,6 +418,68 @@ static void ThumbnailGenerateWorkerManagerTest()
     manager.TryCloseThumbnailWorkerTimer();
 }
 
+static void ThumbnailGenerationPostProcessTest()
+{
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
+    Media::ThumbnailGenerationPostProcess::UpdateCachedRdbValueAndNotify(thumbnailData, opts);
+    Media::ThumbnailGenerationPostProcess::Notify(thumbnailData, FuzzNotifyType());
+    Media::NotifyType notifyType = FuzzNotifyType();
+    Media::ThumbnailGenerationPostProcess::GetNotifyType(thumbnailData, opts, notifyType);
+}
+
+static void ThumbnailRestoreManagerTest()
+{
+    auto& restoreManager = Media::ThumbnailRestoreManager::GetInstance();
+    restoreManager.InitializeRestore(provider->ConsumeIntegral<int64_t>());
+    restoreManager.AddCompletedTasks(provider->ConsumeIntegral<int64_t>());
+    restoreManager.StartProgressReporting(provider->ConsumeIntegral<int32_t>());
+    restoreManager.StopProgressReporting();
+    restoreManager.OnScreenStateChanged(provider->ConsumeBool());
+    restoreManager.ReportProgressBegin();
+    restoreManager.ReportProgress(provider->ConsumeBool());
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
+    std::shared_ptr<Media::ThumbnailTaskData> taskData =
+        std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, provider->ConsumeIntegral<int32_t>());
+    Media::ThumbnailRestoreManager::RestoreAstcDualFrameTask(taskData);
+    restoreManager.RestoreAstcDualFrame(opts, provider->ConsumeIntegral<int32_t>());
+    restoreManager.Reset();
+}
+
+static void ThumbnailRdbUtilsTest()
+{
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
+    vector<string> columns = {Media::PhotoColumn::PHOTO_EXIF_ROTATE};
+    NativeRdb::RdbPredicates rdbPredicates(Media::PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = g_rdbStore->QueryByStep(rdbPredicates, columns);
+    Media::ThumbnailRdbUtils::HandleId(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleFilePath(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleDateAdded(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleDisplayName(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleDateTaken(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleDateModified(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleMediaType(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleOrientation(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleExifRotate(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandlePosition(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandlePhotoHeight(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandlePhotoWidth(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleDirty(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleReady(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    Media::ThumbnailRdbUtils::HandleLcdVisitTime(resultSet, provider->ConsumeIntegral<int>(), thumbnailData);
+    vector<Media::ThumbnailData> outdatas;
+    int err;
+    Media::ThumbnailRdbUtils::QueryThumbnailDataInfos(resultSet, columns, outdatas, err);
+    outdatas.clear();
+    Media::ThumbnailRdbUtils::QueryThumbnailDataInfo(g_rdbStore, rdbPredicates, columns, thumbnailData);
+    Media::ThumbnailRdbUtils::QueryThumbnailDataInfo(resultSet, columns, thumbnailData, err);
+    Media::ThumbnailRdbUtils::CheckResultSetCount(resultSet, err);
+    Media::ThumbnailRdbUtils::ParseQueryResult(resultSet, thumbnailData, err, columns);
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
+    Media::ThumbnailRdbUtils::QueryLocalNoExifRotateInfos(opts, outdatas);
+    Media::ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, FuzzDirtyType(), provider->ConsumeBool());
+}
 void SetTables()
 {
     vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
@@ -570,6 +659,8 @@ static void ThumbnailFileUtilsTest()
     thumbnailData.path = FuzzThumbnailPath();
     Media::ThumbnailFileUtils::DeleteThumbnailDir(thumbnailData);
     thumbnailData.path = FuzzThumbnailPath();
+    size_t size;
+    Media::ThumbnailFileUtils::GetThumbFileSize(thumbnailData, FuzzThumbnailType(), size);
     Media::ThumbnailFileUtils::DeleteAllThumbFiles(thumbnailData);
     Media::ThumbnailFileUtils::DeleteMonthAndYearAstc(thumbnailData);
     Media::ThumbnailFileUtils::CheckRemainSpaceMeetCondition(provider->ConsumeIntegral<int32_t>());
@@ -615,7 +706,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::ThumhnailTest();
     OHOS::ThumbnailAgingHelperTest();
-    OHOS::ThumbnailGenerateHelperTest();
+    OHOS::ThumbnailGenerateHelperTestPart1();
+    OHOS::ThumbnailGenerateHelperTestPart2();
     OHOS::ThumbnailGenerateWorkerTest();
     OHOS::ThumbnailGenerateWorkerManagerTest();
     OHOS::ThumbnailSourceTest();
@@ -623,6 +715,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::ParseFileUriTest();
     OHOS::ThumbnailImageFrameworkUtilsTest();
     OHOS::ThumbnailFileUtilsTest();
+    OHOS::ThumbnailGenerationPostProcessTest();
+    OHOS::ThumbnailRestoreManagerTest();
+    OHOS::ThumbnailRdbUtilsTest();
     OHOS::Finish();
     return 0;
 }

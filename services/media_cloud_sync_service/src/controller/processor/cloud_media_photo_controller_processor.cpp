@@ -22,8 +22,11 @@
 #include "cloud_file_data_dto.h"
 #include "photos_vo.h"
 #include "photos_dto.h"
+#include "photos_po_writer.h"
+#include "cloud_media_sync_const.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto(std::vector<PhotosDto> &fdirtyDataDtos)
 {
     std::vector<PhotosVo> fdirtyDatas;
@@ -41,6 +44,8 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto
         fdirtyDataVo.originalCloudId = fdirtyDataDto.originalCloudId;
         fdirtyDataVo.fileSourceType = fdirtyDataDto.fileSourceType;
         fdirtyDataVo.storagePath = fdirtyDataDto.storagePath;
+        fdirtyDataVo.localPath = fdirtyDataDto.localPath;
+        fdirtyDataVo.attributesMediaType = fdirtyDataDto.attributesMediaType;
         for (auto &nodePair : fdirtyDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -178,7 +183,7 @@ bool CloudMediaPhotoControllerProcessor::GetPropertiesInfo(const PhotosPo &recor
     photosVo.deviceName = record.deviceName.value_or("");
     photosVo.latitude = record.latitude.value_or(0);
     photosVo.longitude = record.longitude.value_or(0);
-    photosVo.userComment = record.userComment.value_or("");
+    this->HandleUserComment(record, photosVo);
     return true;
 }
 
@@ -200,6 +205,7 @@ CloudMdkRecordPhotosVo CloudMediaPhotoControllerProcessor::ConvertRecordPoToVo(c
     this->GetAttributesInfo(record, photosVo);
     this->GetPropertiesInfo(record, photosVo);
     this->GetCloudInfo(record, photosVo);
+    this->GetAttributesHashMap(record, photosVo);
     return photosVo;
 }
 
@@ -259,6 +265,9 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesStrongAssociation = photosVo.strongAssociation;
     data.attributesFileSourceType = photosVo.fileSourceType;
     data.attributesStoragePath = photosVo.storagePath;
+    // Safe Album: critical type for children's watch
+    data.attributesCriticalType = photosVo.criticalType;
+    data.attributesIsCritical = photosVo.isCritical;
     return true;
 }
 
@@ -302,6 +311,7 @@ CloudMediaPullDataDto CloudMediaPhotoControllerProcessor::ConvertToCloudMediaPul
     this->GetPropertiesInfo(photosVo, data);
     this->GetCloudInfo(photosVo, data);
     this->GetAlbumInfo(photosVo, data);
+    this->GetAttributesHashMap(photosVo, data);
     return data;
 }
 
@@ -378,4 +388,37 @@ ReportFailureDto CloudMediaPhotoControllerProcessor::GetReportFailureDto(const R
     reportFailureDto.cloudId = reqBody.cloudId;
     return reportFailureDto;
 }
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
+{
+    PhotosPo photosInfo = record;
+    PhotosPoWriter writer = PhotosPoWriter(photosInfo);
+    std::unordered_map<std::string, std::string> stringfieldsMap = writer.ToMap(false);
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_STRING) {
+        auto it = stringfieldsMap.find(fieldName);
+        CHECK_AND_CONTINUE(it != stringfieldsMap.end());
+        photosVo.stringfields[fieldName] = it->second;
+    }
+    return true;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(
+    const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
+{
+    data.stringfields = photosVo.stringfields;
+    return true;
+}
+
+bool CloudMediaPhotoControllerProcessor::HandleUserComment(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
+{
+    // Note. no need to transfer userComment which exceed 1024 byte, avoid IPC exceed 200KB
+    CHECK_AND_RETURN_RET_WARN_LOG(record.userComment.value_or("").size() <= USER_COMMENT_LIMIT_SIZE,
+        true,
+        "userComment size %{public}zu exceed %{public}d, skip it",
+        record.userComment.value_or("").size(),
+        USER_COMMENT_LIMIT_SIZE);
+    photosVo.userComment = record.userComment.value_or("");
+    return true;
+}
+
 }  // namespace OHOS::Media::CloudSync

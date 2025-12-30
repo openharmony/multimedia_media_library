@@ -100,6 +100,9 @@ private:
     int32_t ExtractPosition(const std::string &position, double &latitude, double &longitude);
     int32_t ExtractPosition(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo);
     int32_t CheckFileSize(const std::string &thumbSuffix, const int64_t &fileSize);
+    int32_t HandleAttributesHashMap(
+        std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &uploadRecord);
+    void ConvertAttributesHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo);
 
 private:
     /* identifier */

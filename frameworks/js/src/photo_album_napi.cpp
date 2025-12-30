@@ -121,7 +121,9 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("dateModified", JSGetDateModifiedSystem),
             DECLARE_NAPI_GETTER("dateAdded", JSGetDateAdded),
             DECLARE_NAPI_GETTER("coverUriSource", JSGetCoverUriSource),
+            DECLARE_NAPI_GETTER("changeTime", JSGetChangeTime),
             DECLARE_NAPI_GETTER("uploadStatus", JSGetUploadStatus),
+            DECLARE_NAPI_GETTER("hidden", JSPhotoAccessGetPhotoAlbumtHidden),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -288,9 +290,19 @@ void PhotoAlbumNapi::SetHiddenOnly(const bool hiddenOnly_)
     return photoAlbumPtr->SetHiddenOnly(hiddenOnly_);
 }
 
+int64_t PhotoAlbumNapi::GetChangeTime() const
+{
+    return photoAlbumPtr->GetChangeTime();
+}
+
 int32_t PhotoAlbumNapi::GetUploadStatus() const
 {
     return photoAlbumPtr->GetUploadStatus();
+}
+
+int32_t PhotoAlbumNapi::GetHidden() const
+{
+    return photoAlbumPtr->GetHidden();
 }
 
 void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
@@ -455,6 +467,16 @@ napi_value PhotoAlbumNapi::JSGetPhotoAlbumSubType(napi_env env, napi_callback_in
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int32(env, obj->GetPhotoAlbumSubType(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetPhotoAlbumtHidden(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, static_cast<bool>(obj->GetHidden()), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -627,6 +649,16 @@ napi_value PhotoAlbumNapi::JSGetUploadStatus(napi_env env, napi_callback_info in
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int32(env, obj->GetUploadStatus(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetChangeTime(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int64(env, obj->GetChangeTime(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -1870,7 +1902,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     return jsFileArray;
 }
 
-static napi_value checkArgsGetSelectedPhotoAssets(
+static napi_value CheckArgsGetSelectedPhotoAssets(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context)
 {
     napi_value result = nullptr;
@@ -1904,8 +1936,9 @@ static napi_value checkArgsGetSelectedPhotoAssets(
             bool cond = filterJson.size() == sizeLimit && filterJson.contains(key);
             CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId");
             std::string value = filterJson[key];
-            bool isVaildInteger = !value.empty() && std::all_of(value.begin(), value.end(), ::isdigit);
-            CHECK_COND_RET(isVaildInteger, nullptr, "key : currentFileId must be a integer");
+            bool isValidInteger = !value.empty() &&
+                                  std::all_of(value.begin(), value.end(), [](char c) { return c >= '0' && c <= '9'; });
+            CHECK_COND_RET(isValidInteger, nullptr, "key : currentFileId must be a integer");
         }
     }
  
@@ -1973,7 +2006,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSelectedPhotoAssets(napi_env env, nap
         return nullptr;
     }
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    CHECK_COND(env, checkArgsGetSelectedPhotoAssets(env, info, asyncContext) != nullptr, NAPI_INVALID_PARAMETER_ERROR);
+    CHECK_COND(env, CheckArgsGetSelectedPhotoAssets(env, info, asyncContext) != nullptr, NAPI_INVALID_PARAMETER_ERROR);
  
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSelectedPhotoAssets",
         JSPhotoAccessGetSelectedPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);

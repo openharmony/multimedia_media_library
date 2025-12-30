@@ -33,7 +33,7 @@
 #include "media_volume.h"
 #include "scanner_utils.h"
 #include "media_asset_base_capi.h"
-#include "media_userfile_client.h"
+#include "userfile_client.h"
 #include "media_asset_impl.h"
 #include "directory_ex.h"
 
