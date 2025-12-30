@@ -35,6 +35,11 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t SLEEP_FIVE_MS = 5000;
+static constexpr int64_t TOTALTASKS = 10;
+static constexpr int64_t COMPLETEDTASKS = 5;
+
 const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
 
 const int32_t E_GETROUWCOUNT_ERROR = 27394103;
@@ -76,7 +81,7 @@ HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_WhenThumbT
     EXPECT_GE(fd, 0);
 }
 
-HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_ThumbTypeIsNotThumbOrThumbAstc, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbServiceTest, GetThumbFd_ShouldReturnValidFd_WhenThumbTypeIsNotThumbOrThumbAstc, TestSize.Level0)
 {
     ThumbnailService thumbnailService;
     std::string path = "/path/to/thumbnail";
