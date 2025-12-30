@@ -462,6 +462,12 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
             break;
+        case StatusEventType::CHARGING:
+            isCharging_ = true;
+            break;
+        case StatusEventType::DISCHARGING:
+            isCharging_ = false;
+            break;
         case StatusEventType::POWER_CONNECTED:
             isCharging_ = true;
             break;
