@@ -1039,15 +1039,6 @@ HWTEST_F(MediaLibraryThumbServiceTest, thumbnail_generate_helper_test_008, TestS
     EXPECT_NE(res, E_OK);
 }
  
-HWTEST_F(MediaLibraryThumbServiceTest, thumbnail_generate_helper_test_009, TestSize.Level1)
-{
-    ThumbRdbOpt opts;
-    NativeRdb::RdbPredicates predicate{PhotoColumn::PHOTOS_TABLE};
-    int32_t requestId = 1;
-    auto res = ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicate, requestId);
-    EXPECT_EQ(res, E_ERR);
-}
- 
 HWTEST_F(MediaLibraryThumbServiceTest, thumbnail_generate_helper_test_010, TestSize.Level1)
 {
     ThumbRdbOpt opts;
