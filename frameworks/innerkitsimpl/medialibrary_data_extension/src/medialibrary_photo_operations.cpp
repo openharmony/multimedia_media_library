@@ -57,7 +57,6 @@
 #include "shooting_mode_column.h"
 #include "refresh_business_name.h"
 #include "medialibrary_bundle_manager.h"
-#include "cloud_media_dao_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_file_operations.h"
 #include "lake_file_utils.h"
@@ -67,6 +66,8 @@
 #include "multistages_capture_notify_info.h"
 #include "medialibrary_notify_new.h"
 #include "multistages_capture_notify.h"
+#include "cloud_media_define.h"
+#include "cloud_media_common.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -1186,7 +1187,7 @@ static void HandleQualityAndHidden(NativeRdb::RdbPredicates predicates, const ve
 static void GetBurstMemberIds(vector<string> &fileIds)
 {
     CHECK_AND_RETURN_LOG(!fileIds.empty(), "GetBurstMemberIds fileIds is empty");
-    string inClause = CloudSync::CloudMediaDaoUtils::ToStringWithComma(fileIds);
+    string inClause = Media::CloudMediaCommon::ToStringWithComma(fileIds);
     /**
         SELECT p.file_id
         FROM photos p
