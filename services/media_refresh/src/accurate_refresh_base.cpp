@@ -41,7 +41,7 @@ AccurateRefreshBase::~AccurateRefreshBase()
         DfxRefreshHander::DfxRefreshReportHander(dfxRefreshManager_);
     }
 }
-
+// wyftest
 int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
 {
     if (!IsValidTable(cmd.GetTableName())) {
