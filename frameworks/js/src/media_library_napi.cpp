@@ -12792,6 +12792,14 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
         NAPI_ERR_LOG("napi_set_named_property displayName failed");
     }
 
+    napi_value gridLevel = nullptr;
+    const string &jsGridLevel = context->pickerCallBack->gridLevel;
+    napi_create_string_utf8(env, jsGridLevel.c_str(), NAPI_AUTO_LENGTH, &gridLevel);
+    status = napi_set_named_property(env, recoverInfo, "gridLevel", gridLevel);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property gridLevel failed");
+    }
+
     napi_value recommendationType = nullptr;
     napi_create_int32(env, context->pickerCallBack->recommendationType, &recommendationType);
     status = napi_set_named_property(env, recoverInfo, "recommendationType", recommendationType);
