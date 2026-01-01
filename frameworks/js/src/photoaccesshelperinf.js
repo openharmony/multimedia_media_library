@@ -1056,6 +1056,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
     config.parameters.isReturnToPhotoBrowserEnable = option.isReturnToPhotoBrowserEnable;
     config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
+    config.parameters.globalMovingPhotoState = option.globalMovingPhotoState;
   }
 
   return config;
@@ -1120,6 +1121,11 @@ function checkAssetFilterInvalid(assetFilter) {
   return false;
 }
 
+function checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState) {
+  return globalMovingPhotoState === MovingPhotoBadgeStateType.MOVING_PHOTO_ENABLED ||
+   globalMovingPhotoState === MovingPhotoBadgeStateType.MOVING_PHOTO_DISABLED;
+}
+
 function getPhotoPickerSelectResult(args) {
   let selectResult = {
     error: undefined,
@@ -1168,6 +1174,17 @@ async function photoPickerSelect(...args) {
   }
 
   let context = undefined;
+
+  let globalMovingPhotoState = config.parameters.globalMovingPhotoState;
+  if (globalMovingPhotoState) {
+    let isGlobalMovingPhotoStateInvalid = checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState);
+    if (isGlobalMovingPhotoStateInvalid) {
+      console.error(`[picker] config: globalMovingPhotoState has value but invalid`);
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+      
+    }
+  }
+  
   try {
     context = getContext(this);
   } catch (getContextError) {
