@@ -127,6 +127,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.preselectedInfos = void 0;
         this.onScrollStopAtStart = void 0;
         this.onScrollStopAtEnd = void 0;
+        this.onPinchGridSwitched = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
@@ -153,6 +154,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.pickerOptions?.preselectedInfos && (this.preselectedInfos = e.pickerOptions?.preselectedInfos);
         void 0 !== e.onScrollStopAtStart && (this.onScrollStopAtStart = e.onScrollStopAtStart);
         void 0 !== e.onScrollStopAtEnd && (this.onScrollStopAtEnd = e.onScrollStopAtEnd);
+        void 0 !== e.onPinchGridSwitched && (this.onPinchGridSwitched = e.onPinchGridSwitched);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
             console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
@@ -553,6 +555,10 @@ export class PhotoPickerComponent extends ViewPU {
         } else if ('onScrollStopAtEnd' === o) {
             if (this.onScrollStopAtEnd) {
                 this.onScrollStopAtEnd();
+            }
+        } else if ('onGridLevelChanged' === o) {
+            if (this.onPinchGridSwitched) {
+                this.onPinchGridSwitched(e.gridLevel);
             }
         } else {
             console.info('PhotoPickerComponent onReceive: other case');

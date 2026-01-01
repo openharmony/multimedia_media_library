@@ -987,6 +987,16 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
   [PhotoViewMIMETypes.MOV_VIDEO_TYPE, 'MOV_VIDEO_TYPE'],
 ]);
 
+const GridPinchModeType = {
+  FULL_FUNCTION_GRID: 0,
+}
+ 	 
+const GridLevel = {
+  SPACIOUS: 0,
+  STANDARD: 1,
+  COMPACT: 2,
+}
+
 function checkArguments(args) {
   let checkArgumentsResult = undefined;
 
@@ -1056,6 +1066,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
     config.parameters.isReturnToPhotoBrowserEnable = option.isReturnToPhotoBrowserEnable;
     config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
+    config.parameters.gridPinchMode = option.gridPinchMode;
   }
 
   return config;
@@ -1214,6 +1225,11 @@ async function checkInteractAcrossLocalAccounts() {
   } else {
     return true;
   }
+}
+
+function GridPinchMode() {
+  this.gridPinchModeType = GridPinchModeType.FULL_FUNCTION_GRID;
+  this.defaultGridLevel = GridLevel.STANDARD;
 }
 
 function MimeTypeFilter() {
@@ -1418,5 +1434,8 @@ export default {
   AutoPlayScene: autoPlayScene,
   SceneType: SceneType,
   DynamicRangeType: photoAccessHelper.DynamicRangeType,
-  PlayMode: PlayMode
+  PlayMode: PlayMode,
+  GridPinchModeType: GridPinchModeType,
+  GridLevel: GridLevel,
+  GridPinchMode: GridPinchMode
 };

@@ -55,6 +55,7 @@ export struct PhotoPickerComponent {
   preselectedInfos = undefined;
   onScrollStopAtStart: onScrollStopAtStartCallback;
   onScrollStopAtEnd: onScrollStopAtEndCallback;
+  onPinchGridSwitched = undefined;
   dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
@@ -357,6 +358,11 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'onMovingPhotoBadgeStateChange') {
       this.onMovingPhotoBadgeStateChangeSend(wantParam)
       console.info('PhotoPickerComponent onReceive: onMovingPhotoBadgeStateChangeSend');
+    } else if (dataType === 'onGridLevelChanged') {
+      if (this.onPinchGridSwitched) {
+        this.onPinchGridSwitched(e.gridLevel);
+      }
+    }
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
