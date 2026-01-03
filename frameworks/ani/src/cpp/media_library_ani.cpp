@@ -124,9 +124,6 @@ const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
 const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
     { TITLE, MediaColumn::MEDIA_TITLE }
 };
-const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
-    { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
-};
 const std::string EXTENSION = "fileNameExtension";
 const std::string PHOTO_TYPE = "photoType";
 const std::string PHOTO_SUB_TYPE = "subtype";
@@ -5066,6 +5063,9 @@ static ani_status ParseArgsStartAssetAnalysis(ani_env *env, ani_enum_item type, 
     CHECK_COND_WITH_RET_MESSAGE(env, result == ANI_OK, ANI_INVALID_ARGS, "EnumGetValueInt32 failed");
     CHECK_COND_WITH_RET_MESSAGE(env, asyncContext->analysisType > AnalysisType::ANALYSIS_INVALID, ANI_INVALID_ARGS,
         "analysisType invalid:" + std::to_string(asyncContext->analysisType));
+    const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
+        { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
+    };
     auto it = FOREGROUND_ANALYSIS_ASSETS_MAP.find(asyncContext->analysisType);
     CHECK_COND_WITH_RET_MESSAGE(env, it != FOREGROUND_ANALYSIS_ASSETS_MAP.end(), ANI_INVALID_ARGS,
         "analysisType is not supported:" + std::to_string(asyncContext->analysisType));
