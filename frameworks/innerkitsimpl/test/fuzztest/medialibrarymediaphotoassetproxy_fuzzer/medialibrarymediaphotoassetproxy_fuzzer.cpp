@@ -149,7 +149,6 @@ static void MediaLibraryMediaPhotoAssetProxyTest()
     photoAssetProxy->GetVideoFd(FuzzVideoType());
     photoAssetProxy->NotifyVideoSaveFinished(FuzzVideoType());
     photoAssetProxy->UpdatePhotoProxy((sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
-    photoAssetProxy->GetFileAsset();
 
     int32_t fileId = provider->ConsumeIntegral<int32_t>();
     int32_t subType = static_cast<int32_t>(FuzzPhotoSubType());

@@ -28,6 +28,7 @@
 #include "locale_config.h"
 #include "media_asset_edit_data_napi.h"
 #include "media_exif.h"
+#include "media_file_utils.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_enum_comm.h"

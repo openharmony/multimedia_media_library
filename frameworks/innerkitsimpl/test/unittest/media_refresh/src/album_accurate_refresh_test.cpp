@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include "media_file_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
