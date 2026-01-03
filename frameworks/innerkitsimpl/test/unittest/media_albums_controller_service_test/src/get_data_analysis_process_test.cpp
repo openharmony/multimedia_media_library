@@ -32,6 +32,7 @@
 #include "media_column.h"
 #include "vision_db_sqls.h"
 #include "story_db_sqls.h"
+#include "media_file_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"

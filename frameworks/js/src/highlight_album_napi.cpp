@@ -19,6 +19,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_tracer.h"
 #include "media_album_change_request_napi.h"
+#include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"

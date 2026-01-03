@@ -26,6 +26,7 @@ ohos_unittest("moving_photo_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
+    "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
