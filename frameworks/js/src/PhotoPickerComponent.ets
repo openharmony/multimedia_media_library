@@ -127,9 +127,11 @@ export struct PhotoPickerComponent {
   }
 
   private onChangeItemClickResult(data) {
-    let itemClickResult = null === data ? void 0 : data.get('SET_ITEM_CLICK_RESULT') as Array<ClickResult>;
-    this.proxy.send({ itemClickResult });
-    console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
+    let itemClickResult = data?.get('SET_ITEM_CLICK_RESULT') as Array<ClickResult>;
+    if (itemClickResult && itemClickResult instanceof Array && itemClickResult.length > 0) {
+      this.proxy.send({ itemClickResult: itemClickResult});
+      console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
+    }
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
