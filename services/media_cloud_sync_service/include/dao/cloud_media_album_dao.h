@@ -144,7 +144,7 @@ private:
                 dirty = 1 AND \
                 album_type IN (0, 2048) AND \
                 count != 0 AND \
-                upload_status = 1 \
+                (1 = {2} OR upload_status = 1) \
         ) \
         SELECT \
             album_id, \

@@ -225,7 +225,7 @@ private:
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
                 date_trashed = 0 AND \
-                hidden = 0 AND \
+                (1 = {1} OR hidden = 0) AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
                 file_id NOT IN ({0}) \
@@ -239,7 +239,7 @@ private:
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         WHERE \
             COALESCE(PhotoAlbum.dirty, 0) <> 1 AND \
-            COALESCE(upload_status, 1) = 1 OR \
+            (1 = {1} OR COALESCE(upload_status, 1) = 1) OR \
             LOWER(COALESCE(lpath, '')) = LOWER('/DCIM/Camera') \
         LIMIT ?  \
         ;";
