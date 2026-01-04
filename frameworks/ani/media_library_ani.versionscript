@@ -15,6 +15,7 @@
   global:
     extern "C++" {
       *OHOS::Media::MediaLibraryAni::PhotoAccessHelperInit*;
+      *OHOS::Media::MediaLibraryAni::PhotoViewPickerInit*;
       *OHOS::Media::MediaLibraryAni::GetPhotoAccessHelperInner*;
       *OHOS::Media::MediaLibraryAni::GetPhotoAccessHelperWithUserIdInner*;
       *OHOS::Media::MediaLibraryAni::UserFileMgrInit*;

@@ -173,6 +173,7 @@ public:
 class MediaLibraryAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
+    static ani_status PhotoViewPickerInit(ani_env *env);
     static ani_status UserFileMgrInit(ani_env *env);
     static ani_object CreateNewInstance(ani_env *env, ani_class clazz, ani_object context,
         bool isAsync = false);
@@ -253,6 +254,17 @@ public:
     static ani_object PhotoAccessHelperAgentCreateAssetsWithAlbum(ani_env *env, ani_object object,
     ani_object source, ani_string albumUri, ani_boolean isAuthorized, ani_object photoCreationConfigs);
     static ani_object GetAlbumsByIds(ani_env *env, ani_object object, ani_object albumIds);
+    static ani_boolean CheckShortTermPermission(ani_env *env, ani_object object);
+    static ani_object CreateAssetsHasPermission(ani_env *env, ani_object object);
+    static ani_object CreateAssetWithShortTermPermission(ani_env *env, ani_object object,
+        ani_object context, ani_object photoCreationConfigs, ani_object appInfo, ani_fn_object result);
+    static ani_object ShowAssetsCreationDialog(ani_env *env, ani_object object,
+        ani_object context, ani_object srcFileUris, ani_object photoCreationConfigs, ani_object appInfo,
+        ani_fn_object result);
+    static ani_object RequestPhotoUrisReadPermission(ani_env *env, ani_object object,
+        ani_object context, ani_object srcFileUris, ani_object appInfo, ani_fn_object result);
+    static ani_object StartPhotoPicker(ani_env *env, ani_object object, ani_object context,
+        ani_object photoSelectOptions);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
@@ -267,11 +279,23 @@ private:
     std::unique_ptr<ChangeListenerAni> listObj_ = nullptr;
 };
 
+struct PhotoCreationConfig {
+    std::string title;
+    std::string fileNameExtension;
+    int32_t photoType;
+    int32_t subtype;
+};
+
 struct PickerCallBack {
     bool ready = false;
     bool isOrigin;
     int32_t resultCode;
     vector<string> uris;
+};
+
+struct PhotoSelectResult {
+    vector<string> photoUris;
+    bool isOriginalPhoto;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
