@@ -174,4 +174,13 @@ Uri MediaUriUtils::GetMultiUri(Uri &uri, int32_t userId)
     AppendKeyValue(uriString, MULTI_USER_URI_FLAG, std::to_string(userId));
     return Uri(uriString);
 }
+
+bool MediaUriUtils::CheckUri(const std::string &uri)
+{
+    if (uri.find("../") != std::string::npos) {
+        return false;
+    }
+    std::string uriprex = "file://media";
+    return uri.substr(0, uriprex.size()) == uriprex;
+}
 } // namespace OHOS::Media

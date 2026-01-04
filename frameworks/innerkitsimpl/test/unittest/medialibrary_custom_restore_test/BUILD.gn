@@ -26,6 +26,7 @@ ohos_unittest("medialibrary_custom_restore_test") {
     "./include",
     "../medialibrary_unittest_utils/include",
     "../get_self_permissions/include",
+    "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
@@ -63,6 +64,7 @@ ohos_unittest("medialibrary_custom_restore_test") {
   ]
 
   deps = [
+    "${MEDIALIB_COMMON_PATH}:media_library_common",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_COMMON_PATH}:media_library_common",

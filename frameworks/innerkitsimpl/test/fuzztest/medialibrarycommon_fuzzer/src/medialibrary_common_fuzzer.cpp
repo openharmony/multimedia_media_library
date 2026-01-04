@@ -189,7 +189,6 @@ static void PhotoProxyTest()
         .callingTokenId = tokenId,
     };
     Media::PhotoAssetProxy proxy(nullptr, callerInfo, static_cast<Media::CameraShotType>(cameraShotType), 1);
-    proxy.GetFileAsset();
     proxy.GetPhotoAssetUri();
 }
 

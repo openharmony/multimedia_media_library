@@ -972,8 +972,10 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
 
 static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
+#ifdef MEDIA_NATIVE_SA_APP_TEST
     CHECK_AND_RETURN_LOG(PermissionUtils::IsNativeSAApp(),
         "do not have permission to set burst_key or burst_cover_level");
+#endif
 
     string burstKey;
     ValueObject value;
@@ -1043,10 +1045,12 @@ static void UpdateEnhanceParam(MediaLibraryCommand &cmd, ValuesBucket &outValues
 
 static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, const FileAsset &fileAsset)
 {
+#ifdef MEDIA_NATIVE_SA_APP_TEST
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set is_temp");
         return;
     }
+#endif
 
     ValueObject value;
     bool isTemp = 0;

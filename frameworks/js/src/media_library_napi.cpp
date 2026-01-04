@@ -32,6 +32,7 @@
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
+#include "media_file_utils.h"
 #include "media_change_request_napi.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
