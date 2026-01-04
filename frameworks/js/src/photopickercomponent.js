@@ -258,8 +258,10 @@ export class PhotoPickerComponent extends ViewPU {
 
     onChangeItemClickResult(o) {
         let itemClickResult = null === o ? void 0 : o.get('SET_ITEM_CLICK_RESULT');
-        this.proxy.send({ itemClickResult });
-        console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
+        if(itemClickResult && itemClickResult instanceof Array && itemClickResult.length > 0) {
+            this.proxy.send({ itemClickResult: itemClickResult });
+            console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
+        }
     }
 
     onUpdateConfig(o) {
