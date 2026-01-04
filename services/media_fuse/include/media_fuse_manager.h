@@ -51,6 +51,7 @@ private:
     int32_t MountFuse(std::string &mountpoint);
     int32_t UMountFuse();
     bool CheckDeviceInLinux();
+    int32_t DoMedialibraryReadPermission(const std::string &fileId, const std::string &target, uid_t uid);
 
 private:
     std::shared_ptr<MediaFuseLowDaemon> fuseLowDaemon_;
