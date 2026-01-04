@@ -41,6 +41,7 @@
 #include "photos_po.h"
 #include "cloud_media_scan_service.h"
 #include "cloud_media_dao_utils.h"
+#include "medialibrary_related_system_state_manager.h"
 
 namespace OHOS::Media::Background {
 
