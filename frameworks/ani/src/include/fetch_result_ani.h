@@ -34,6 +34,8 @@ public:
     std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_ = nullptr;
+    std::shared_ptr<FetchResult<PhotoAssetCustomRecord>> fetchCustomRecordResult_ = nullptr;
+    std::shared_ptr<FetchResult<AlbumOrder>> fetchAlbumOrderResult_ = nullptr;
     FetchResType fetchResType_;
 };
 
@@ -63,6 +65,8 @@ public:
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
+    std::shared_ptr<FetchResult<PhotoAssetCustomRecord>> GetFetchCustomRecordResultObject();
+    std::shared_ptr<FetchResult<AlbumOrder>> GetFetchAlbumOrderResultObject();
 
     static ani_ref TransferToDynamicFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
     static ani_object TransferToStaticFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
@@ -76,6 +80,7 @@ public:
 
 private:
     EXPORT static void GetFetchResult(unique_ptr<FetchFileResultAni> &obj);
+    EXPORT static void GetFetchResultPart2(unique_ptr<FetchFileResultAni> &obj);
     EXPORT static ani_object FetchFileResultAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
     EXPORT static napi_value CreateFetchFileResultNapiByType(napi_env jsEnv,
         FetchResType fetchType, FetchFileResultAni *aniFetchFileResult);
@@ -110,10 +115,14 @@ public:
     std::unique_ptr<AlbumAsset> albumAsset;
     std::unique_ptr<PhotoAlbum> photoAlbum;
     std::unique_ptr<SmartAlbumAsset> smartAlbumAsset;
+    std::unique_ptr<AlbumOrder> albumOrder;
+    std::unique_ptr<PhotoAssetCustomRecord> customRecord;
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     std::vector<std::unique_ptr<AlbumAsset>> fileAlbumArray;
     std::vector<std::unique_ptr<PhotoAlbum>> filePhotoAlbumArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
+    std::vector<std::unique_ptr<PhotoAssetCustomRecord>> customRecordArray;
+    std::vector<std::unique_ptr<AlbumOrder>> fileAlbumOrderArray;
 };
 } // namespace Media
 } // namespace OHOS
