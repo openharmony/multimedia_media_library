@@ -39,6 +39,7 @@ public:
     EXPORT static int32_t GetFileId(const std::string &uri);
     EXPORT static std::string GetFileIdStr(const std::string &uri);
     EXPORT static Uri GetMultiUri(Uri &uri, int32_t userId);
+    EXPORT static bool CheckUri(const std::string &uri);
 };
 } // namespace OHOS::Media
 
