@@ -38,6 +38,12 @@ const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
 const ERROR_MSG_OHOS_INNER_FAIL = 'Internal system error';
+const ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE = 
+'Invalid call context. Possible causes:' +
+'  1. The API is called outside the photo browsing scenario.' +
+'  2. The API is called when isMovingPhotoBadgeShown is already set to true.'
+
+const ILLEGAL_SCENARIO_CALL_ERROR_CODE = 23800202;
 
 const SECONDS_OF_ONE_DAY = 24 * 60 * 60;
 const DELAY_MILLSECONDS = 33;
@@ -1042,6 +1048,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.contextRecoveryInfo = option.contextRecoveryInfo;
     config.parameters.subWindowName = option.subWindowName;
+    config.parameters.globalMovingPhotoState = option.globalMovingPhotoState;
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
@@ -1120,6 +1127,11 @@ function checkAssetFilterInvalid(assetFilter) {
   return false;
 }
 
+function checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState) {
+  return globalMovingPhotoState === MovingPhotoBadgeStateType.MOVING_PHOTO_ENABLED ||
+   globalMovingPhotoState === MovingPhotoBadgeStateType.MOVING_PHOTO_DISABLED;
+}
+
 function getPhotoPickerSelectResult(args) {
   let selectResult = {
     error: undefined,
@@ -1168,6 +1180,16 @@ async function photoPickerSelect(...args) {
   }
 
   let context = undefined;
+
+  let globalMovingPhotoState = config.parameters.globalMovingPhotoState;
+  if (globalMovingPhotoState) {
+    let isGlobalMovingPhotoStateInvalid = checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState);
+    if (isGlobalMovingPhotoStateInvalid) {
+      console.error('[picker] config: globalMovingPhotoState has value but invalid');
+      throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
+    }
+  }
+  
   try {
     context = getContext(this);
   } catch (getContextError) {
