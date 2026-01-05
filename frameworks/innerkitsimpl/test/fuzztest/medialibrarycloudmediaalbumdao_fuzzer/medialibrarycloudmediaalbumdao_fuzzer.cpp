@@ -221,12 +221,12 @@ static void CloudMediaAlbumDaoFuzzer()
     cloudMediaAlbumDao->GetCopyAlbum(limitSize, cloudRecordPoList);
     cloudMediaAlbumDao->GetDeletedRecordsAlbum(limitSize, cloudRecordPoList);
     cloudMediaAlbumDao->GetMetaModifiedAlbum(limitSize, cloudRecordPoList);
-    cloudMediaAlbumDao->GetCreatedAlbum(limitSize, cloudRecordPoList);
+    cloudMediaAlbumDao->GetCreatedRecords(limitSize, cloudRecordPoList);
     InsertDeleteAsset(cloudId);
     limitSize = LIMIT_SIZE;
     cloudMediaAlbumDao->GetDeletedRecordsAlbum(limitSize, cloudRecordPoList);
     cloudMediaAlbumDao->GetMetaModifiedAlbum(limitSize, cloudRecordPoList);
-    cloudMediaAlbumDao->GetCreatedAlbum(limitSize, cloudRecordPoList);
+    cloudMediaAlbumDao->GetCreatedRecords(limitSize, cloudRecordPoList);
 
     string key = "cloud_id";
     vector<string> argrs = { value1 };

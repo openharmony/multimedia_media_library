@@ -891,7 +891,7 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
     return E_OK;
 }
 
-int32_t CloudMediaAlbumDao::GetCreatedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList)
+int32_t CloudMediaAlbumDao::GetCreatedRecords(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
@@ -1227,6 +1227,24 @@ bool CloudMediaAlbumDao::GetCoverUriFromCoverCloudId(const string &coverCloudId,
     }
     resultSet->Close();
     return coverUri != "";
+}
+
+int32_t CloudMediaAlbumDao::GetAlbumCloudAssetCount(const int32_t albumId, int32_t &count)
+{
+    CHECK_AND_RETURN_RET(albumId > 0, E_INVAL_ARG);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB, "Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    std::vector<std::string> queryColumns = {"COUNT(1) AS count"};
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RDB, "resultSet is null");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        count = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+    }
+    resultSet->Close();
+    return E_OK;
 }
 
 int32_t CloudMediaAlbumDao::GetPhotoAlbum(const std::string &lPath, std::optional<PhotoAlbumPo> &albumInfoOp)

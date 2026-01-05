@@ -90,7 +90,12 @@ int32_t CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data,
         MEDIA_ERR_LOG("GetCreatedRecords param error, size: %{public}d", size);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
     }
-    std::vector<PhotoAlbumPo> photoAlbumPoList = this->albumService_.GetAlbumCreatedRecords(reqBody.size);
+    std::vector<PhotoAlbumPo> photoAlbumPoList;
+    ret = this->albumService_.GetCreatedRecords(reqBody.size, reqBody.isCloudSpaceFull, photoAlbumPoList);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("GetCreatedRecords process error, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
     std::vector<CloudMdkRecordPhotoAlbumVo> recordsList;
     for (const auto &record : photoAlbumPoList) {
         CloudMdkRecordPhotoAlbumVo recordVo = this->processor_.ConvertRecordPoToVo(record);
