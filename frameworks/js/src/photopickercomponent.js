@@ -1160,7 +1160,7 @@ export var GridLevel;
 !function(e) {
     e[e.SPACIOUS = 0] = 'SPACIOUS';
     e[e.STANDARD = 1] = 'STANDARD';
-    e[e.COMPACT =2] = 'COMPACT';
+    e[e.COMPACT = 2] = 'COMPACT';
 }(GridLevel || (GridLevel = {}));
 
 export var DataType;
