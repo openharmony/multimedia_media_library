@@ -1142,9 +1142,10 @@ function getPhotoPickerSelectResult(args) {
     let isOrigin = args.isOrigin;
     let contextRecoveryInfo = args.contextRecoveryInfo;
     let movingPhotoBadgeStates = args.movingPhotoBadgeStates;
-    selectResult.data = new PhotoSelectResult(uris, isOrigin, contextRecoveryInfo, movingPhotoBadgeStates);
+    let gridLevel = args.gridLevel;
+    selectResult.data = new PhotoSelectResult(uris, isOrigin, contextRecoveryInfo, movingPhotoBadgeStates, gridLevel);
   } else if (args.resultCode === -1) {
-    selectResult.data = new PhotoSelectResult([], undefined, undefined, undefined);
+    selectResult.data = new PhotoSelectResult([], undefined, undefined, undefined, undefined);
   } else {
     selectResult.error = getErr(ErrCode.RESULT_ERROR);
   }
@@ -1280,11 +1281,12 @@ function PhotoSelectOptions() {
   this.isReturnToPhotoBrowserEnable = false;
 }
 
-function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {
+function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates, gridLevel) {
   this.photoUris = uris;
   this.isOriginalPhoto = isOriginalPhoto;
   this.contextRecoveryInfo = contextRecoveryInfo;
   this.movingPhotoBadgeStates = movingPhotoBadgeStates;
+  this.gridLevel = gridLevel;
 }
 
 function PhotoViewPicker() {
