@@ -65,6 +65,8 @@ static std::unordered_map<uint32_t, std::string> storageIdToPathMap;
 
 std::atomic<uint32_t> MtpMediaLibrary::id_ = 0;
 std::shared_ptr<MtpMediaLibrary> MtpMediaLibrary::instance_ = nullptr;
+constexpr int32_t ROTATE_ANGLE_90 = 90;
+constexpr int32_t ROTATE_ANGLE_270 = 270;
 
 std::shared_ptr<MtpMediaLibrary> MtpMediaLibrary::GetInstance()
 {
@@ -559,12 +561,7 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
             resultMap.find(AVMetadataCode::AV_KEY_VIDEO_HEIGHT) == resultMap.end()) {
             break;
         }
-        std::string widthStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH);
-        std::string heightStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT);
-        if (MtpDataUtils::IsNumber(widthStr) && MtpDataUtils::IsNumber(heightStr)) {
-            width = atoi(widthStr.c_str());
-            height = atoi(heightStr.c_str());
-        }
+        HaveRotateToChangeWidthHeight(width, height);
     } while (false);
     CHECK_AND_PRINT_LOG(ResizeThumb(width, height), "resize thumb fail");
     PixelMapParams param = {
@@ -581,6 +578,33 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
     bool isCompressImageSuccess = CompressImage(*sPixelMap.get(), *outThumb);
     CHECK_AND_RETURN_RET_LOG(isCompressImageSuccess == true, MTP_ERROR_NO_THUMBNAIL_PRESENT, "CompressImage is fail");
     return MTP_SUCCESS;
+}
+
+void MtpMediaLibrary::HaveRotateToChangeWidthHeight(int32_t &width, int32_t &height)
+{
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    CHECK_AND_RETURN_LOG(avMetadataHelper != nullptr, "avMetadataHelper is nullptr");
+    auto resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultMap.empty()) {
+        return;
+    }
+    if (resultMap.find(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION) == resultMap.end()) {
+        return;
+    }
+    std::string widthStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH);
+    std::string heightStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT);
+    if (MtpDataUtils::IsNumber(widthStr) && MtpDataUtils::IsNumber(heightStr)) {
+        width = atoi(widthStr.c_str());
+        height = atoi(heightStr.c_str());
+    }
+    std::string strTempStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
+    int32_t strTemp = 0;
+    if (MtpDataUtils::IsNumber(strTempStr)) {
+        strTemp = atoi(strTempStr.c_str());
+    }
+    if (strTemp == ROTATE_ANGLE_90 || strTemp == ROTATE_ANGLE_270) {
+        std::swap(width, height);
+    }
 }
 
 int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
