@@ -101,19 +101,19 @@ napi_value RegisterUnregisterHandlerFunctions::CheckRegisterCallbackArgs(napi_en
     GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
 
     if (context->argc != ARGS_TWO) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "requires one or two parameters.");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "requires one or two parameters.");
         return nullptr;
     }
 
     if (thisVar == nullptr || context->argv[PARAM0] == nullptr || context->argv[PARAM1] == nullptr) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
         return nullptr;
     }
 
     napi_valuetype valueType = napi_undefined;
     if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_object ||
             napi_typeof(env, context->argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
-            NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
             return nullptr;
     }
     return thisVar;
@@ -127,7 +127,7 @@ napi_value RegisterUnregisterHandlerFunctions::CheckSingleUnregisterCallbackArgs
     GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
 
     if (context->argc < ARGS_ZERO || context->argc > ARGS_TWO) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "requires one or two parameters.");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "requires one or two parameters.");
         return nullptr;
     }
     return thisVar;
@@ -315,7 +315,7 @@ static int32_t CheckIsObjectType(napi_env env, napi_value value,
     napi_valuetype valueType = napi_undefined;
     if (napi_typeof(env, value, &valueType) != napi_ok || valueType != napi_object) {
         NAPI_ERR_LOG("%s", errMsg.c_str());
-        return E_PERMISSION_DENIED;
+        return JS_E_PARAM_INVALID;
     }
     return E_OK;
 }
@@ -326,7 +326,7 @@ static int32_t CheckIsFunctionType(napi_env env, napi_value value,
     napi_valuetype valueType = napi_null;
     if (napi_typeof(env, value, &valueType) != napi_ok || valueType != napi_function) {
         NAPI_ERR_LOG("get param type failed: %s", errMsg.c_str());
-        return E_PERMISSION_DENIED;
+        return JS_E_PARAM_INVALID;
     }
     return E_OK;
 }
@@ -336,7 +336,7 @@ static int32_t CreateCallbackRef(napi_env env, napi_value cbValue, napi_ref& cbR
     const int32_t refCount = 1;
     if (napi_create_reference(env, cbValue, refCount, &cbRef) != napi_ok) {
         NAPI_ERR_LOG("create callback reference failed");
-        return E_PERMISSION_DENIED;
+        return JS_E_PARAM_INVALID;
     }
     return E_OK;
 }
