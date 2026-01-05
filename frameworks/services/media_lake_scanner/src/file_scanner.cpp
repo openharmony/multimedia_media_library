@@ -136,10 +136,10 @@ void FileScanner::GetInsertAssetInfo(MediaLakeNotifyInfo &fileInfo, FileParser &
     // 获取插入信息
     auto valueBucket = fileParser.TransFileInfoToBucket(albumInfo.albumId, albumInfo.bundleName, albumInfo.albumName);
     if (!valueBucket.IsEmpty()) {
-        insertFileInfos_.push_back(valueBucket);
         MEDIA_ERR_LOG("Fail to insert AssetBucket");
         return;
     }
+    insertFileInfos_.push_back(valueBucket);
     auto innerFileInfo = fileParser.GetFileInfo();
     inodes_.push_back(innerFileInfo.inode);
     albumIds_.push_back(to_string(albumInfo.albumId));
