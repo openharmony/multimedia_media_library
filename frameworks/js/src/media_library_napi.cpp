@@ -9320,7 +9320,7 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
-        if (!PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType())) {
+        if (!PhotoAlbum::IsUserPhotoAlbumByType(obj->GetPhotoAlbumType())) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
