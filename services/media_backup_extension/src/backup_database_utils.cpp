@@ -1506,6 +1506,5 @@ void BackupDatabaseUtils::UpdateVideoTotalFaceId(
     CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateVideoTotalFaceId failed, ret=%{public}d", errCode);
     MEDIA_DEBUG_LOG("succeed to UpdateVideoTotalFaceId");
 }
-
 } // namespace Media
 } // namespace OHOS
