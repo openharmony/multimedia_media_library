@@ -650,8 +650,14 @@ int32_t MediaFuseManager::UMountFuse()
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, E_FAIL, "Get system ability mgr failed.");
+
     auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
+    CHECK_AND_RETURN_RET_LOG(remote != nullptr, E_FAIL, "GetSystemAbility Service Failed.");
+
     sptr<StorageManager::IStorageManager> proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
+    CHECK_AND_RETURN_RET_LOG(proxy_ != nullptr, E_FAIL, "Create IStorageManager Proxy failed.");
+
     int32_t err = proxy_->UMountMediaFuse(userId);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err,
         "UMount failed for media fuse daemon, err = %{public}d", err);
