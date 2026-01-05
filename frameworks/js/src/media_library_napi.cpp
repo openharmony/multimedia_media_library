@@ -12823,7 +12823,7 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
         NAPI_ERR_LOG("napi_set_named_property selectedRecommendationType failed");
     }
 
-    getPhotoPickerContextRecoveryInfoExtend(env, status, context, recoverInfo)
+    getPhotoPickerContextRecoveryInfoExtend(env, status, context, recoverInfo);
 
     status = napi_set_named_property(env, result, "contextRecoveryInfo", recoverInfo);
     if (status != napi_ok) {
