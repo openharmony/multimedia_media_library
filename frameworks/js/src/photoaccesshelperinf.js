@@ -1228,7 +1228,7 @@ async function checkInteractAcrossLocalAccounts() {
 }
 
 function GridPinchMode() {
-  this.gridPinchModeType = GridPinchModeType.FULL_FUNCTION_GRID;
+  this.gridPinchModeType = undefined;
   this.defaultGridLevel = GridLevel.STANDARD;
 }
 
