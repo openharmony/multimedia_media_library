@@ -118,7 +118,6 @@ private:
     EXPORT void TryToStartSync();
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType, SmartDataProcessingMode mode);
-    EXPORT int32_t ClearDeletedMapData();
     EXPORT std::vector<int32_t> QueryEmptyAlbumsAndBackup();
     EXPORT std::string BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds);
 private:

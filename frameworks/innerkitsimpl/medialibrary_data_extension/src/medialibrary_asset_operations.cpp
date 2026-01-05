@@ -57,8 +57,6 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
 #endif
-#include "scanner_map_code_utils.h"
-#include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
 #include "file_utils.h"
@@ -3104,12 +3102,6 @@ static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const boo
     return deletedRows;
 }
 
-static inline int32_t DeleteMapCodeByIds(vector<string> &ids, const bool compatible)
-{
-    MEDIA_INFO_LOG("DeleteMapCodeByIds ids size %{public}zu", ids.size());
-    return PhotoMapCodeOperation::RemovePhotosMapCodes(ids);
-}
-
 static void GetAlbumNamesById(DeletedFilesParams &filesParams)
 {
     MediaLibraryTracer tracer;
@@ -3201,9 +3193,6 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
         deletedRows, fileParams.ids.size());
-
-    int32_t mapCodeRet = DeleteMapCodeByIds(fileParams.ids, compatible);
-    MEDIA_DEBUG_LOG("DeleteMapCodeByIds mapCodeRet %{public}d", mapCodeRet);
 
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
     assetRefresh->RefreshAlbum();

@@ -35,7 +35,6 @@
 #include "album_accurate_refresh.h"
 #include "cloud_media_photos_delete_service.h"
 #include "media_operate_result.h"
-#include "cloud_map_code_dao.h"
 #include "cloud_media_asset_retain_compare_dao.h"
 
 namespace OHOS::Media::CloudSync {
@@ -125,15 +124,11 @@ private:
     std::string GetCloudPath(const std::string &filePath);
     void RefreshAnalysisAlbum(const std::string &cloudId);
     int32_t RemoveLocalFile(const CloudMediaPullDataDto &pullData);
-    void HandleRecordStepTwo(std::set<std::string> &refreshAlbums);
     void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const PhotosPo &photo);
     int32_t FindPhotoAlbum(CloudMediaPullDataDto &pullData);
     int32_t PullRecycleUpdate(
         CloudMediaPullDataDto &pullData, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
 
-    int32_t MapUpdate(const CloudMediaPullDataDto &pullData);
-    int32_t MapDelete(const CloudMediaPullDataDto &pullData);
-    int32_t MapInsert(const std::vector<CloudMediaPullDataDto> &pullData, std::vector<std::string> &failedRecords);
     bool IsIgnoreMatch(
         const CloudMediaPullDataDto &mergeData, const KeyData &cloudKeyData, const KeyData &localKeyData);
     int32_t CleanDuplicatePhotosAssets(const std::vector<DuplicatePhotoInfo> &cloudFileInfolist);
@@ -160,7 +155,6 @@ private:
     CloudMediaPhotoServiceProcessor processor_;
     CloudMediaPhotosDao photosDao_;
     CloudMediaCommonDao commonDao_;
-    CloudMapCodeDao     mapCodeDao_;
     CloudMediaPhotosDeleteService photosDeleteService_;
     CloudMediaAssetCompareDao assetCompareDao_;
     bool needRecoverSmartData_{false};
