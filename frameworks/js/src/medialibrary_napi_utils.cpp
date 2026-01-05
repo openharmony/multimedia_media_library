@@ -47,6 +47,7 @@
 #include "vision_label_column.h"
 #include "photo_album_napi.h"
 #include "parameters.h"
+#include "js_interface_helper.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -444,12 +445,19 @@ static void MakeLpathParamsCaseInsensitive(vector<OperationItem>& operations,
         { item.operation, newSingleParams, newMultiParams });
 }
 
+static void PrintPredicateSafe(const shared_ptr<DataShareAbsPredicates>& predicate)
+{
+    string predicatesStr = JsInterfaceHelper::PredicateToStringSafe(predicate);
+    NAPI_INFO_LOG("Handle predicate: %{public}s", predicatesStr.c_str());
+}
+
 template <class AsyncContext>
 bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType, vector<OperationItem> operations)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
+    PrintPredicateSafe(predicate);
     auto &items = predicate->GetOperationList();
     bool hasUri = false;
     for (auto &item : items) {
