@@ -590,9 +590,6 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     ret = instance.UpdateBothLocalAndCloudAssets();
     EXPECT_EQ(ret, E_OK);
 
-    ret = instance.ClearDeletedMapData();
-    EXPECT_EQ(ret, E_OK);
-
     ret = instance.ClearDeletedDbData();
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_015 End");

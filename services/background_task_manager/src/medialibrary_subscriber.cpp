@@ -78,7 +78,6 @@
 #include "enhancement_manager.h"
 #include "cloud_enhancement_checker.h"
 #endif
-#include "map_code_upload_checker.h"
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "medialibrary_aspect_ratio_operation.h"
 #include "database_adapter.h"
@@ -1069,7 +1068,6 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
-    MapCodeUploadChecker::RepairNoMapCodePhoto();
     MediaLibraryAspectRatioOperation::UpdateAspectRatioValue();
     backgroundTaskFactory_.Execute();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT

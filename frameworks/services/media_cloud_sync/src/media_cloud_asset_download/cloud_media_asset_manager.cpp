@@ -37,12 +37,6 @@
 #include "medialibrary_subscriber.h"
 #include "background_cloud_batch_selected_file_processor.h"
 #include "settings_data_manager.h"
-#include "scanner_map_code_utils.h"
-#include "photos_po.h"
-#include "result_set_reader.h"
-#include "photos_po_writer.h"
-#include "photo_map_code_column.h"
-#include "photo_map_code_operation.h"
 #include "media_album_order_back.h"
 #include "settings_data_manager.h"
 #include "cloud_media_retain_smart_data.h"
@@ -820,66 +814,11 @@ int32_t CloudMediaAssetManager::ClearDeletedDbData()
     return OHOS::Media::E_OK;
 }
 
-int32_t CloudMediaAssetManager::ClearDeletedMapData()
-{
-    MEDIA_INFO_LOG("start ClearDeletedMapData.");
-    MediaLibraryTracer tracer;
-    tracer.Start("ClearDeletedMapData");
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "ClearDeletedMapData failed. rdbStore is null.");
-
-    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)));
-    predicates.Limit(CloudSync::LIMIT_SIZE);
-
-    const std::vector<std::string> COLUMNS_QUERY = {
-        PhotoColumn::MEDIA_ID,
-    };
-    auto resultSet = rdbStore->Query(predicates, COLUMNS_QUERY);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "ClearDeletedMapData Failed to query.");
-    std::vector<ORM::PhotosPo> photosPos;
-    int32_t ret = ORM::ResultSetReader<ORM::PhotosPoWriter, ORM::PhotosPo>(resultSet).ReadRecords(photosPos);
-    if (photosPos.empty()) {
-        MEDIA_ERR_LOG("DeleteMapCodesByPullDatas to-deleted idList size equals to 0");
-        return OHOS::Media::E_OK;
-    }
-
-    vector<string> fileIds;
-    for (const auto &photoPo : photosPos) {
-        if (!(photoPo.fileId.has_value())) {
-            MEDIA_ERR_LOG("DeleteMapCodesByPullData photosPos is null");
-            continue;
-        }
-        int32_t fileId = photoPo.fileId.value();
-        fileIds.push_back(std::to_string(fileId));
-    }
-
-    if (fileIds.empty()) {
-        MEDIA_ERR_LOG("DeleteMapCodesByPullDatas to-deleted fileIds size equals to 0");
-        return OHOS::Media::E_OK;
-    }
-
-    int32_t deletedRows = -1;
-    std::string mapTableName = PhotoMapCodeColumn::PHOTOS_MAP_CODE_TABLE;
-    NativeRdb::RdbPredicates rdbPredicate(mapTableName);
-    rdbPredicate.In(PhotoMapCodeColumn::MAPCODE_FILE_ID, fileIds);
-    ret = rdbStore->Delete(deletedRows, rdbPredicate);
-
-    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && deletedRows >= 0), E_ERR,
-        "Failed to ClearDeletedDbData, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
-    MEDIA_INFO_LOG("ClearDeletedDbData successfully. ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
-    return OHOS::Media::E_OK;
-}
-
 int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets(CloudMediaRetainType retainType)
 {
     MEDIA_INFO_LOG("start UpdateBothLocalAndCloudAssets.");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateBothLocalAndCloudAssets");
-
-    int32_t deleteMapRet = ClearDeletedMapData();
-    MEDIA_INFO_LOG("ClearDeletedMapData result. deleteMapRet %{public}d.", deleteMapRet);
 
     int32_t deleteRet = ClearDeletedDbData();
     CHECK_AND_PRINT_LOG(deleteRet == E_OK, "ClearDeletedDbData failed. ret %{public}d.", deleteRet);
