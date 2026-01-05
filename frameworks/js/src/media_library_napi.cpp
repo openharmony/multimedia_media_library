@@ -12816,8 +12816,7 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
 
 static void getPhotoPickerContextRecoveryInfoExtend(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value recoverInfo) {
     napi_value gridLevel = nullptr;
-    const string &jsGridLevel = context->pickerCallBack->gridLevel;
-    napi_create_string_utf8(env, jsGridLevel.c_str(), NAPI_AUTO_LENGTH, &gridLevel);
+    napi_create_int32(env, context->pickerCallBack->gridLevel, &gridLevel);
     status = napi_set_named_property(env, recoverInfo, "gridLevel", gridLevel);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property gridLevel failed");
