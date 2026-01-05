@@ -12762,6 +12762,23 @@ static void StartPhotoPickerExecute(napi_env env, void *data)
     }
 }
 
+static void getPhotoPickerContextRecoveryInfoExtend(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value recoverInfo) {
+    napi_value gridLevel = nullptr;
+    napi_create_int32(env, context->pickerCallBack->gridLevel, &gridLevel);
+    status = napi_set_named_property(env, recoverInfo, "gridLevel", gridLevel);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property gridLevel failed");
+    }
+
+    napi_value version = nullptr;
+    std::string recoverSceneVersion = "1.0";
+    napi_create_string_utf8(env, recoverSceneVersion.c_str(), NAPI_AUTO_LENGTH, &version);
+    status = napi_set_named_property(env, recoverInfo, "version", version);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property version failed");
+    }
+}
+
 static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value result)
 {
     NAPI_INFO_LOG("getPhotoPickerContextRecoveryInfo start");
@@ -12806,13 +12823,7 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
         NAPI_ERR_LOG("napi_set_named_property selectedRecommendationType failed");
     }
 
-    napi_value version = nullptr;
-    std::string recoverSceneVersion = "1.0";
-    napi_create_string_utf8(env, recoverSceneVersion.c_str(), NAPI_AUTO_LENGTH, &version);
-    status = napi_set_named_property(env, recoverInfo, "version", version);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("napi_set_named_property version failed");
-    }
+    getPhotoPickerContextRecoveryInfoExtend(env, status, context, recoverInfo);
 
     status = napi_set_named_property(env, result, "contextRecoveryInfo", recoverInfo);
     if (status != napi_ok) {
@@ -12877,6 +12888,12 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     }
     getPhotoPickerSelectUris(env, result, context);
     getPhotoPickerMovingPhotoBadgeStates(env, result, context);
+    napi_value gridLevel = nullptr;
+    napi_create_int32(env, context->pickerCallBack->gridLevel, &gridLevel);
+    status = napi_set_named_property(env, result, "gridLevel", gridLevel);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property gridLevel failed");
+    }
     napi_value isOrigin = nullptr;
     napi_get_boolean(env, context->pickerCallBack->isOrigin, &isOrigin);
     status = napi_set_named_property(env, result, "isOrigin", isOrigin);

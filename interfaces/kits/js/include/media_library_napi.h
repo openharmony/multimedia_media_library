@@ -531,6 +531,7 @@ struct PickerCallBack {
     int32_t recommendationType;
     int32_t selectedRecommendationType;
     vector<int32_t> movingPhotoBadgeStates;
+    int32_t gridLevel;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
