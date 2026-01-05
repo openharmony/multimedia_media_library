@@ -15,8 +15,8 @@
 
 #include "media_uri_utils_test.h"
 
+#include "media_log.h"
 #include "media_uri_utils.h"
-
 
 namespace OHOS {
 namespace Media {
@@ -97,6 +97,76 @@ HWTEST_F(MediaUriUtilsUnitTest, medialib_get_file_id_test_001, TestSize.Level1)
     EXPECT_EQ(id2, -1);
 }
 
+/**
+ * @tc.name: CheckUri_test01
+ * @tc.desc: 有效的uri
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test01");
+    std::string validUri = "file://media/Photo/1/IMG_123456789_000/test.jpg";
+    EXPECT_EQ(MediaUriUtils::CheckUri(validUri), true);
+    MEDIA_INFO_LOG("end CheckUri_test01");
+}
 
+/**
+ * @tc.name: CheckUri_test02
+ * @tc.desc: 包含"../"的URI
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test02");
+    std::string invalidUri = "file://media/Photo/1/../path";
+    EXPECT_EQ(MediaUriUtils::CheckUri(invalidUri), false);
+    MEDIA_INFO_LOG("end CheckUri_test02");
+}
+
+/**
+ * @tc.name: CheckUri_test03
+ * @tc.desc: 不以"file://media"开头的URI
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test03, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test03");
+    std::string invalidUri = "file://other/path";
+    EXPECT_EQ(MediaUriUtils::CheckUri(invalidUri), false);
+    MEDIA_INFO_LOG("end CheckUri_test03");
+}
+
+/**
+ * @tc.name: CheckUri_test04
+ * @tc.desc:  空字符串
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test04, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test04");
+    std::string emptyUri = "";
+    EXPECT_EQ(MediaUriUtils::CheckUri(emptyUri), false);
+    MEDIA_INFO_LOG("end CheckUri_test04");
+}
+
+/**
+ * @tc.name: CheckUri_test05
+ * @tc.desc: 只有前缀没有路径
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test05, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test05");
+    std::string uri = "file://media";
+    EXPECT_EQ(MediaUriUtils::CheckUri(uri), true);
+    MEDIA_INFO_LOG("end CheckUri_test05");
+}
+
+/**
+ * @tc.name: CheckUri_test06
+ * @tc.desc: 大小写敏感测试
+ */
+HWTEST_F(MediaUriUtilsUnitTest, CheckUri_test06, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter CheckUri_test06");
+    std::string uri = "FILE://MEDIA/some/path";
+    EXPECT_EQ(MediaUriUtils::CheckUri(uri), false);
+    MEDIA_INFO_LOG("end CheckUri_test06");
+}
 } // namespace Media
 } // namespace OHOS

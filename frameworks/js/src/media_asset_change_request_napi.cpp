@@ -26,6 +26,7 @@
 #include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "media_asset_edit_data_napi.h"
+#include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "permission_utils.h"
 #include "photo_proxy_napi.h"

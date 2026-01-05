@@ -61,40 +61,6 @@
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 namespace OHOS::Media::CloudSync {
-int32_t CloudMediaPhotosService::MapUpdate(const CloudMediaPullDataDto &pullData)
-{
-    MEDIA_INFO_LOG("CloudMediaPhotosService::MapUpdate");
-    return mapCodeDao_.UpdateDataToMapCode(pullData);
-}
-
-int32_t CloudMediaPhotosService::MapDelete(const CloudMediaPullDataDto &pullData)
-{
-    MEDIA_INFO_LOG("CloudMediaPhotosService::MapDelete");
-    return mapCodeDao_.DeleteMapCodesByPullData(pullData);
-}
-
-int32_t CloudMediaPhotosService::MapInsert(const std::vector<CloudMediaPullDataDto> &pullDatas,
-    std::vector<std::string> &failedRecords)
-{
-    std::vector<CloudMediaPullDataDto> allPullDatas(pullDatas);
-    MEDIA_INFO_LOG("CloudMediaPhotosService::MapInsert pullDatas size %{public}zu, allPullDatas size %{public}zu \
-        failedRecords size %{public}zu", pullDatas.size(), allPullDatas.size(), failedRecords.size());
-    for (auto mergeData = allPullDatas.begin(); mergeData != allPullDatas.end();) {
-        std::string id = mergeData->cloudId;
-        auto it = std::find(failedRecords.begin(), failedRecords.end(), id);
-        if (it == failedRecords.end()) {
-            MEDIA_INFO_LOG("MapInsert GetLocalKey Data failed");
-            mergeData++;
-        } else {
-            mergeData = allPullDatas.erase(mergeData);  // 把合一数据剔除，剩下的就是纯新增数据
-        }
-    }
-    MEDIA_INFO_LOG("CloudMediaPhotosService::MapInsert allPullDatas size %{public}zu \
-        to InsertDatasToMapCode", allPullDatas.size());
-    int32_t ret = mapCodeDao_.InsertDatasToMapCode(allPullDatas);
-    return ret;
-}
-
 int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, std::set<std::string> &refreshAlbums,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
@@ -568,12 +534,6 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
     return E_OK;
 }
 
-void CloudMediaPhotosService::HandleRecordStepTwo(std::set<std::string> &refreshAlbums)
-{
-    this->photosDao_.UpdateAlbumInternal(refreshAlbums);
-    MediaGallerySyncNotify::GetInstance().FinalNotify();
-}
-
 int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cloudIds,
     std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap, std::vector<PhotosDto> &newData,
     std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords)
@@ -609,7 +569,6 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
                 // 需要更新
                 ret = PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
                 changeType = ChangeType::UPDATE;
-                MapUpdate(pullData);
             }
         }
         if (ret == E_STOP) {
@@ -631,7 +590,8 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     ret = CreateEntry(insertPullDatas, refreshAlbums, newData, stats, failedRecords, photoRefresh);
     photoRefresh->RefreshAlbumNoDateModified();
     photoRefresh->Notify();
-    HandleRecordStepTwo(refreshAlbums);
+    this->photosDao_.UpdateAlbumInternal(refreshAlbums);
+    MediaGallerySyncNotify::GetInstance().FinalNotify();
     return ret;
 }
 
@@ -747,11 +707,7 @@ int32_t CloudMediaPhotosService::HandleCloudDeleteRecord(
 int32_t CloudMediaPhotosService::OnDentryFileInsert(
     const std::vector<CloudMediaPullDataDto> &pullDatas, std::vector<std::string> &failedRecords)
 {
-    int32_t ret = PullInsert(pullDatas, failedRecords);
-    int32_t retMap = MapInsert(pullDatas, failedRecords);
-    MEDIA_INFO_LOG("CloudMediaPhotosService::OnDentryFileInsert. ret %{public}d pullDatas size \
-        %{public}zu MapInsert retMap %{public}d", ret, pullDatas.size(), retMap);
-    return ret;
+    return PullInsert(pullDatas, failedRecords);
 }
 
 int32_t CloudMediaPhotosService::GetRetryRecords(std::vector<std::string> &cloudIds)

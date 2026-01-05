@@ -333,40 +333,46 @@ void SourceLoader::SetCurrentStateFunction()
     IsSizeLargeEnough = stateFunc.IsSizeLargeEnough;
 }
 
-bool SourceLoader::GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize)
+bool SourceLoader::SetImageInfo(const unique_ptr<ImageSource> &imageSource)
 {
-    DecodingOptionsForPicture pictureOpts;
-    pictureOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
-    uint32_t errorCode = ERR_OK;
-    auto picturePtr = imageSource->CreatePicture(pictureOpts, errorCode);
-    if (errorCode != E_OK || picturePtr == nullptr) {
-        MEDIA_ERR_LOG("Failed to GeneratePictureSource, CreatePicture failed, err: %{public}d, path %{public}s",
-            errorCode, DfxUtils::GetSafePath(data_.path).c_str());
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "ImageSource is null");
+    uint32_t err = imageSource->GetImageInfo(0, imageInfo_);
+    CHECK_AND_EXECUTE(err == E_OK, {
+        MEDIA_ERR_LOG("ImageSource::GetImageInfo err: %{public}d", err);
+        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, err);
+        error_ = E_ERR;
         return false;
+    });
+    return true;
+}
+
+bool SourceLoader::LoadHdrSource(const unique_ptr<ImageSource> &imageSource, const Size &targetSize)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "ImageSource is null");
+    CHECK_AND_RETURN_RET_LOG(targetSize.width > 0 && targetSize.height > 0, false,
+        "Invalid target size, weith: %{public}d height: %{public}d", targetSize.width, targetSize.height);
+    ImageHdrType hdrType = imageSource->CheckHdrType();
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsAdaptedHdrType(hdrType),
+        false, "Not adapted hdr type: %{public}d", hdrType);
+    if (ThumbnailImageFrameWorkUtils::IsSinglePixelMapHdrType(hdrType)) {
+        MEDIA_INFO_LOG("Single pixel map hdr type: %{public}d", hdrType);
+        uint32_t err = E_OK;
+        DecodeOptions decodeOpts;
+        decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+        decodeOpts.desiredSize = targetSize;
+        decodeOpts.desiredPixelFormat = PixelFormat::RGBA_1010102;
+        auto ret = ThumbnailImageFrameWorkUtils::CreatePixelMap(imageSource, decodeOpts, err);
+        CHECK_AND_EXECUTE(ret != nullptr, {
+            MEDIA_ERR_LOG("Create hdr pixel map failed");
+            DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
+            return false;
+        });
+        data_.source.SetPixelMap(ret);
+        return true;
     }
-    std::shared_ptr<Picture> picture = std::move(picturePtr);
-    auto pixelMap = picture->GetMainPixel();
-    auto gainMap = picture->GetGainmapPixelMap();
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("Failed to GeneratePictureSource, main pixelMap is nullptr, path %{public}s",
-            DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
-    }
-    if (gainMap == nullptr) {
-        MEDIA_ERR_LOG("Failed to GeneratePictureSource, gainmap is nullptr, path %{public}s",
-            DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
-    }
-    if (pixelMap->GetWidth() * pixelMap->GetHeight() == 0) {
-        MEDIA_ERR_LOG("Failed to GeneratePictureSource, pixelMap size invalid, width: %{public}d, height: %{public}d,"
-            "path %{public}s", pixelMap->GetWidth(), pixelMap->GetHeight(), DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
-    }
-    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
-    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
-    pixelMap->resize(widthScale, heightScale);
-    gainMap->resize(widthScale, heightScale);
-    data_.source.SetPicture(picture);
+    auto ret = ThumbnailImageFrameWorkUtils::CreatePicture(imageSource, targetSize);
+    CHECK_AND_RETURN_RET_LOG(ret != nullptr, false, "Create picture failed");
+    data_.source.SetPicture(ret);
     return true;
 }
 
@@ -407,39 +413,22 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     tracer.Start("SourceLoader CreateImagePixelMap");
     uint32_t err = 0;
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourcePath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("SourceLoader LoadImageSource error:%{public}d, errorno:%{public}d", err, errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "LoadImageSource err: %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "LoadImageSource err: imageSource is nullptr");
 
-    ImageInfo imageInfo;
-    if (!IsSizeAcceptable(imageSource, imageInfo)) {
-        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap size not acceptable, status:%{public}s, path:%{public}s",
-            STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(SetImageInfo(imageSource), false, "Set image info faild");
 
-    Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
-    Size sourceSize = imageInfo.size;
+    CHECK_AND_RETURN_RET_LOG(IsSizeAcceptable(), false, "Size not acceptable, status:%{public}s, path:%{public}s",
+        STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
 
-    // When encode picture, if mainPixel width or height is odd, hardware encode would fail.
-    // For the safety of encode process, only those of even desiredSize are allowed to generate througth picture.
-    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
-    bool isGenerateSucceed = shouldGeneratePicture ?
-        GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
-    if (!isGenerateSucceed && shouldGeneratePicture) {
-        MEDIA_ERR_LOG("SourceLoader generate picture source failed, generate pixelmap instead, path:%{public}s",
-            DfxUtils::GetSafePath(data_.path).c_str());
-        std::unique_ptr<ImageSource> retryImageSource = LoadImageSource(sourcePath, err);
-        if (err != E_OK || retryImageSource == nullptr) {
-            MEDIA_ERR_LOG("LoadImageSource retryImageSource error:%{public}d, errorno:%{public}d", err, errno);
-            return false;
-        }
-        isGenerateSucceed = GeneratePixelMapSource(retryImageSource, sourceSize, targetSize);
-    }
-    if (!isGenerateSucceed) {
-        MEDIA_ERR_LOG("ImagePixelMap generate failed, path:%{public}s", DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
+    Size targetSize = ConvertDecodeSize(data_, imageInfo_.size, desiredSize_);
+    Size sourceSize = imageInfo_.size;
+
+    if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
+        CHECK_AND_RETURN_RET_LOG(LoadHdrSource(imageSource, targetSize), false, "LoadHdrSource failed");
+    } else {
+        CHECK_AND_RETURN_RET_LOG(GeneratePixelMapSource(imageSource, sourceSize, targetSize),
+            false, "Create sdr pixel map failed");
     }
     tracer.Finish();
 
@@ -448,9 +437,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         CHECK_AND_WARN_LOG(MediaImageFrameWorkUtils::GetExifRotate(imageSource, data_.exifRotate) == E_OK,
             "SourceLoader Failed to get exif rotate, path: %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
     }
-
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
-        imageInfo.size.height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo_.size.width,
+        imageInfo_.size.height);
     return true;
 }
 
@@ -618,29 +606,22 @@ bool SourceLoader::RunLoading()
     return true;
 }
 
-bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo)
+bool SourceLoader::IsSizeAcceptable()
 {
-    uint32_t err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, err);
-        error_ = E_ERR;
-        return false;
-    }
-
     if (IsSizeLargeEnough == nullptr) {
         MEDIA_ERR_LOG("IsSizeLargeEnough is nullptr.");
         return false;
     }
 
-    int32_t minSize = imageInfo.size.width < imageInfo.size.height ? imageInfo.size.width : imageInfo.size.height;
+    int32_t minSize = imageInfo_.size.width < imageInfo_.size.height ? imageInfo_.size.width : imageInfo_.size.height;
     if (!IsSizeLargeEnough(data_, minSize)) {
-        MEDIA_DEBUG_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
-            imageInfo.size.height);
+        MEDIA_DEBUG_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo_.size.width,
+            imageInfo_.size.height);
         return false;
     }
 
-    data_.stats.sourceWidth = imageInfo.size.width;
-    data_.stats.sourceHeight = imageInfo.size.height;
+    data_.stats.sourceWidth = imageInfo_.size.width;
+    data_.stats.sourceHeight = imageInfo_.size.height;
     return true;
 }
 

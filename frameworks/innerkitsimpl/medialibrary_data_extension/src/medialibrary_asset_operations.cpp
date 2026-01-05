@@ -57,8 +57,6 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
 #endif
-#include "scanner_map_code_utils.h"
-#include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
 #include "file_utils.h"
@@ -972,8 +970,10 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
 
 static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
+#ifdef MEDIA_NATIVE_SA_APP_TEST
     CHECK_AND_RETURN_LOG(PermissionUtils::IsNativeSAApp(),
         "do not have permission to set burst_key or burst_cover_level");
+#endif
 
     string burstKey;
     ValueObject value;
@@ -1043,10 +1043,12 @@ static void UpdateEnhanceParam(MediaLibraryCommand &cmd, ValuesBucket &outValues
 
 static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, const FileAsset &fileAsset)
 {
+#ifdef MEDIA_NATIVE_SA_APP_TEST
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set is_temp");
         return;
     }
+#endif
 
     ValueObject value;
     bool isTemp = 0;
@@ -3100,12 +3102,6 @@ static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const boo
     return deletedRows;
 }
 
-static inline int32_t DeleteMapCodeByIds(vector<string> &ids, const bool compatible)
-{
-    MEDIA_INFO_LOG("DeleteMapCodeByIds ids size %{public}zu", ids.size());
-    return PhotoMapCodeOperation::RemovePhotosMapCodes(ids);
-}
-
 static void GetAlbumNamesById(DeletedFilesParams &filesParams)
 {
     MediaLibraryTracer tracer;
@@ -3197,9 +3193,6 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
         deletedRows, fileParams.ids.size());
-
-    int32_t mapCodeRet = DeleteMapCodeByIds(fileParams.ids, compatible);
-    MEDIA_DEBUG_LOG("DeleteMapCodeByIds mapCodeRet %{public}d", mapCodeRet);
 
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
     assetRefresh->RefreshAlbum();

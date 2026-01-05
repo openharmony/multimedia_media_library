@@ -185,7 +185,7 @@ public:
 
 private:
     EXPORT void SetCurrentStateFunction();
-    EXPORT bool IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo);
+    EXPORT bool IsSizeAcceptable();
     EXPORT bool CreateSourcePixelMap();
     EXPORT bool CreateImagePixelMap(const std::string &sourcePath);
     EXPORT bool CreateVideoFramePixelMap();
@@ -196,6 +196,8 @@ private:
     EXPORT bool CreateSourceWithWholeOriginalPicture();
     EXPORT bool CreateSourceWithOriginalPictureMainPixel();
     EXPORT bool IsLoadingOriginalSource();
+    EXPORT bool SetImageInfo(const std::unique_ptr<ImageSource> &imageSource);
+    EXPORT bool LoadHdrSource(const std::unique_ptr<ImageSource> &imageSource, const Size &targetSize);
 
     bool IsFinal();
 
@@ -206,6 +208,7 @@ private:
     ThumbnailData &data_;
     Size &desiredSize_;
     SourceState state_ { SourceState::BEGIN };
+    ImageInfo imageInfo_;
 };
 
 } // namespace Media

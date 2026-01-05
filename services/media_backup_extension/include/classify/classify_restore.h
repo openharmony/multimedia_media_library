@@ -42,8 +42,12 @@ private:
     int32_t BatchInsertWithRetry(const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
     void GetMaxIds();
-    void ProcessLabelInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    void ProcessLabelInfo(std::unordered_map<std::string, GalleryLabelInfo> &galleryLabelInfoMap,
         const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void ProcessImageCollectionInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::unordered_map<std::string, GalleryLabelInfo> &galleryLabelInfoMap, std::string &hash);
+    void ProcessGalleryMediaInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::unordered_map<std::string, GalleryLabelInfo> &galleryLabelInfoMap);
     void RestoreLabel(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void ReportRestoreTask();
     void TransferLabelInfo(GalleryLabelInfo &info);
@@ -65,6 +69,7 @@ private:
     void HandleOcrHelper(const std::vector<int32_t> &fileIds);
     void AddIdCardAlbum(OcrAggregateType type, std::unordered_set<int32_t> &fileIdsToUpdateSet);
     void ProcessCategoryAlbums();
+    int64_t GetShouldEndTime(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:
     int32_t sceneCode_ {-1};
@@ -73,6 +78,7 @@ private:
     std::atomic<int32_t> successInsertLabelCnt_ {0};
     std::atomic<int32_t> failInsertLabelCnt_ {0};
     std::atomic<int32_t> duplicateLabelCnt_ {0};
+    std::atomic<int32_t> exitCode_ {-1};
     std::string taskId_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -80,17 +86,45 @@ private:
     std::unordered_map<std::string, int32_t> albumIdCache_;
 
 private:
-    const std::string QUERY_LABEL_SQL = " \
+    const std::string QUERY_LABEL_SQL_PART_ONE = " \
         SELECT \
-            image_collection.category_id, \
-            image_collection.sub_label, \
-            image_collection.prob, \
-            image_collection.version, \
-            gallery_media._id \
-        FROM \
-            image_collection \
-        INNER JOIN gallery_media ON image_collection.hash = gallery_media.hash \
-        GROUP BY image_collection.hash HAVING gallery_media._id IN (";
+            category_id, \
+            sub_label, \
+            prob, \
+            version, \
+            hash \
+        FROM image_collection \
+        WHERE hash > ? \
+        ORDER BY hash LIMIT ?;";
+    
+    const std::string QUERY_LABEL_SQL_PART_TWO = " \
+        SELECT \
+            _id, \
+            hash \
+        FROM ( \
+            SELECT \
+                gm._id, \
+                gm.hash, \
+                ROW_NUMBER() OVER ( \
+                    PARTITION BY gm.hash \
+                    ORDER BY \
+                        CASE \
+                            WHEN COALESCE(gm.recycleFlag, 0) NOT IN (2, -1, 1, -2, -4) \
+                            AND COALESCE(gm.albumId, '') NOT IN (SELECT albumId FROM gallery_album WHERE hide =1) \
+                            THEN 1 \
+                            ELSE 2 \
+                        END ASC \
+                ) AS rn \
+            FROM gallery_media gm \
+            WHERE gm.hash IN ( \
+                SELECT hash \
+                FROM image_collection \
+                WHERE hash > ? \
+                ORDER BY hash \
+                LIMIT ? \
+            ) \
+        ) sub \
+        WHERE rn = 1;";
 
     const std::string QUERY_OCR_TEXT_SQL = "SELECT tab_analysis_ocr.file_id FROM tab_analysis_ocr WHERE ";
 };

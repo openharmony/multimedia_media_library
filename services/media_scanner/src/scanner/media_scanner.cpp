@@ -39,7 +39,6 @@
 #include "asset_accurate_refresh.h"
 #include "medialibrary_photo_operations.h"
 #include "refresh_business_name.h"
-#include "scanner_map_code_utils.h"
 #include "metadata_extractor.h"
 
 namespace OHOS {
@@ -802,7 +801,6 @@ int32_t MediaScannerObj::CleanupDirectory()
 
         if (!deleteIdList.empty()) {
             mediaScannerDb_->DeleteMetadata(deleteIdList, table);
-            ScannerMapCodeUtils::DeleteMapCodesByFileIds(deleteIdList);
         }
     }
 

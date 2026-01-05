@@ -78,13 +78,14 @@
 #include "enhancement_manager.h"
 #include "cloud_enhancement_checker.h"
 #endif
-#include "map_code_upload_checker.h"
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "medialibrary_aspect_ratio_operation.h"
 #include "database_adapter.h"
 #include "product_info.h"
 #include "permission_whitelist_utils.h"
 #include "cloud_media_retain_smart_data.h"
+#include "power_mgr_client.h"
+#include "power_mode_info.h"
 
 using namespace OHOS::AAFwk;
 
@@ -157,12 +158,16 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
     EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT,
     EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
+    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
     CLOUD_UPDATE_EVENT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
     {EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING, StatusEventType::CHARGING},
     {EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING, StatusEventType::DISCHARGING},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED, StatusEventType::POWER_CONNECTED},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED, StatusEventType::POWER_DISCONNECTED},
     {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF, StatusEventType::SCREEN_OFF},
     {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON, StatusEventType::SCREEN_ON},
     {EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED, StatusEventType::BATTERY_CHANGED},
@@ -449,6 +454,15 @@ void MedialibrarySubscriber::WalCheckPointAsync()
     std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
 }
 
+bool MedialibrarySubscriber::GetPowerConnected()
+{
+    auto& service = OHOS::PowerMgr::BatterySrvClient::GetInstance();
+    PowerMgr::BatteryChargeState chargeState = service.GetChargingStatus();
+    bool isPowerConnected = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE||
+            chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
+    return isPowerConnected;
+}
+
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     const AAFwk::Want &want, const StatusEventType statusEventType)
 {
@@ -463,6 +477,12 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             isCharging_ = true;
             break;
         case StatusEventType::DISCHARGING:
+            isCharging_ = false;
+            break;
+        case StatusEventType::POWER_CONNECTED:
+            isCharging_ = true;
+            break;
+        case StatusEventType::POWER_DISCONNECTED:
             isCharging_ = false;
             break;
         case StatusEventType::BATTERY_CHANGED:
@@ -1048,7 +1068,6 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
-    MapCodeUploadChecker::RepairNoMapCodePhoto();
     MediaLibraryAspectRatioOperation::UpdateAspectRatioValue();
     backgroundTaskFactory_.Execute();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT

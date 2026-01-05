@@ -157,11 +157,18 @@ config("napi_config_photoaccesshelpernative") {
 
 config("public_napi_config") {
   include_dirs = [
+    "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
-    "${MEDIALIB_INNERIMPL_PATH}/camera/include",
     "${MEDIALIB_INNERIMPL_PATH}/notification/include",
   ]
+
+  camera_include_dirs = [
+    "${MEDIALIB_INNERIMPL_PATH}/camera/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_camera_helper/include/enum",
+  ]
+
+  include_dirs += camera_include_dirs
 }
 
 ohos_shared_library("medialibrary_nutils") {
@@ -214,6 +221,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/transfer_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/js_interface_helper.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_change_request_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/register_unregister_handler_functions.cpp",
@@ -232,7 +240,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_completed_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/asset_change_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/submit_cache_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/add_image_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/src/vo/add_image_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/save_camera_photo_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_assets_vo.cpp",
@@ -817,6 +825,7 @@ ohos_shared_library("recentphotocomponent") {
 
 ohos_shared_library("sendablephotoaccesshelper") {
   include_dirs = [
+    "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
@@ -846,9 +855,11 @@ ohos_shared_library("sendablephotoaccesshelper") {
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_medialibrary_napi_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_access_helper_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_album_napi.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/js_interface_helper.cpp",
   ]
 
   deps = [
+    "${MEDIALIB_COMMON_PATH}:media_library_common",
     ":medialibrary_nutils",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
   ]

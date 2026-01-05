@@ -19,7 +19,9 @@
 #include <ctime>
 #include <iostream>
 
+#define private public
 #include "media_photo_asset_proxy.h"
+#undef private
 
 namespace OHOS {
 namespace Media {

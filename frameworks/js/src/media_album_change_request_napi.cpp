@@ -506,7 +506,7 @@ static napi_value DealWithDeletedAlbumsDefault(napi_env env, vector<napi_value>&
         CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
         CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
         CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsUserPhotoAlbumByType(obj->GetPhotoAlbumType()) ||
             PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
             PhotoAlbum::IsSourceAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
             "Only user, source and highlight album can be deleted");
@@ -696,29 +696,23 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value CheckPhotoAlbumType(napi_env env, ParameterType parameterType,
-    shared_ptr<PhotoAlbum> targetAlbum,
-    napi_value arg, vector<string> &assetUriArray)
+napi_value CheckPhotoAlbumType(napi_env env, shared_ptr<PhotoAlbum> photoAlbum,
+    shared_ptr<PhotoAlbum> targetAlbum)
 {
+    CHECK_NULLPTR_RET(photoAlbum);
     CHECK_NULLPTR_RET(targetAlbum);
-    if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_ARGS_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
-            targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source and Portrait albums can be set as target album.");
-        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, arg, assetUriArray),
-            "Failed to parse uri");
-    } else {
-        CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
-            targetAlbum->GetPhotoAlbumSubType()),
-            "Only user and source albums and Portrait can be set as target album.");
-        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, arg, assetUriArray),
-            "Failed to parse assets");
+
+    bool isUserOrSourceAlbum = PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+        targetAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(),
+        targetAlbum->GetPhotoAlbumSubType());
+
+    bool isSmartPortrait = PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(),
+        photoAlbum->GetPhotoAlbumSubType()) &&
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(),
+        targetAlbum->GetPhotoAlbumSubType());
+    if (!isUserOrSourceAlbum && !isSmartPortrait) {
+        return nullptr;
     }
     RETURN_NAPI_TRUE(env);
 }
@@ -747,9 +741,15 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    CHECK_ARGS_WITH_MESSAGE(env,
-        CheckPhotoAlbumType(env, parameterType, targetAlbum, asyncContext->argv[PARAM0], assetUriArray),
-        "checkAlbumType error");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env,
+            CheckPhotoAlbumType(env, photoAlbum, targetAlbum) != nullptr, "checkAlbumType error");
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray), "Fail get uri");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env,
+            CheckPhotoAlbumType(env, photoAlbum, targetAlbum) != nullptr, "checkAlbumType error");
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray), "Fail parse");
+    }
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {

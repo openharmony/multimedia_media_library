@@ -20,6 +20,7 @@
 #include "create_tmp_compatible_dup_vo.h"
 #include "create_tmp_compatible_dup_dto.h"
 #include "media_assets_controller_service.h"
+#include "media_file_utils.h"
 #include "message_parcel.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_data_manager.h"
