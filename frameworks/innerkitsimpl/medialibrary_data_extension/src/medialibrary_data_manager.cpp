@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -118,7 +118,6 @@
 #include "medialibrary_upgrade_utils.h"
 #include "settings_data_manager.h"
 #include "media_image_framework_utils.h"
-#include "photo_map_code_operation.h"
 #include "global_scanner.h"
 
 using namespace std;
@@ -993,14 +992,6 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false);
     }
 
-    if (oldVersion < VERSION_ADD_MAP_CODE_TABLE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MAP_CODE_TABLE, false)) {
-        MediaLibraryRdbStore::AddPhotoMapTableIndex(rdbStore);
-        MediaLibraryRdbStore::AddPhotoMapTableData(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_MAP_CODE_TABLE);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, false);
-    }
-
     if (oldVersion < VERSION_ADD_3DGS_MODE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
         UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
@@ -1075,7 +1066,6 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
     }
-
     HandleUpgradeRdbAsyncPart4(rdbStore, oldVersion);
     // !! Do not add upgrade code here !!
 }
@@ -2421,7 +2411,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibrary
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
         " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
         MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
-
+    
     auto resultSet = rdbStore->QueryByStep(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("failed to acquire result from visitor query.");
@@ -2471,7 +2461,7 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
     string globCoverStr1 = globMemberStr1 + "_COVER";
     string globCoverStr2 = globMemberStr2 + "_COVER";
-
+    
     auto resultSet = QueryBurst(rdbStore_, globCoverStr1, globCoverStr2);
     int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
     if (ret != E_SUCCESS) {
@@ -2726,7 +2716,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
     const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
     bool cond = (whereArgs.empty() || whereArgs.front().empty());
     CHECK_AND_RETURN_RET_LOG(!cond, queryResult, "Query Geographic Information can not get info");
-
+ 
     if (isForce) {
         std::vector<std::string> geoInfo;
         while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
