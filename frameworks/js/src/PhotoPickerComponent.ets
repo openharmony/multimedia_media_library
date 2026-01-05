@@ -55,6 +55,7 @@ export struct PhotoPickerComponent {
   preselectedInfos = undefined;
   onScrollStopAtStart: onScrollStopAtStartCallback;
   onScrollStopAtEnd: onScrollStopAtEndCallback;
+  onPinchGridSwitched = undefined;
   dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
   badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
@@ -291,7 +292,8 @@ export struct PhotoPickerComponent {
             isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
             isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
             autoPlayScenes: this.parseAutoPlayScenes(this.pickerOptions?.autoPlayScenes as Array<photoAccessHelper.AutoPlayScene>),
-            appAlbumFilters: this.parseAppAlbumFilters(this.pickerOptions?.appAlbumFilters as Array<string>)
+            appAlbumFilters: this.parseAppAlbumFilters(this.pickerOptions?.appAlbumFilters as Array<string>)，
+            grindPinchMode: this.pickerOptions?.grindPinchMode
           }
         },
         {
@@ -359,6 +361,11 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'onMovingPhotoBadgeStateChange') {
       this.onMovingPhotoBadgeStateChangeSend(wantParam)
       console.info('PhotoPickerComponent onReceive: onMovingPhotoBadgeStateChangeSend');
+    } else if (dataType === 'onGridLevelChanged') {
+      if (this.onPinchGridSwitched) {
+        this.onPinchGridSwitched(e.gridLevel);
+      }
+    }
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -1036,6 +1043,13 @@ export class UpdatablePickerConfigs {
   appAlbumFilters?: Array<string>;
 }
 
+export class GridPinchMode {
+  constructor() {
+    this.gridPinchModeType = undefined;
+    this.defaultGridLevel = GridLevel.STANDARD;
+  }
+}
+
 export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
@@ -1110,6 +1124,16 @@ export enum DataType {
   SET_ALBUM_URI = 2,
   SET_SELECTED_INFO = 3,
   SET_ITEM_CLICK_RESULT = 5
+}
+
+export enum GridPinchModeType {
+  FULL_FUNCTION_GRID = 0,
+}
+
+export enum GridLevel {
+  SPACIOUS = 0,
+  STANDARD = 1,
+  COMPACT = 2,
 }
 
 export enum ItemType {

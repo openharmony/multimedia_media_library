@@ -153,6 +153,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.preselectedInfos = void 0;
         this.onScrollStopAtStart = void 0;
         this.onScrollStopAtEnd = void 0;
+        this.onPinchGridSwitched = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
@@ -179,6 +180,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.pickerOptions?.preselectedInfos && (this.preselectedInfos = e.pickerOptions?.preselectedInfos);
         void 0 !== e.onScrollStopAtStart && (this.onScrollStopAtStart = e.onScrollStopAtStart);
         void 0 !== e.onScrollStopAtEnd && (this.onScrollStopAtEnd = e.onScrollStopAtEnd);
+        void 0 !== e.onPinchGridSwitched && (this.onPinchGridSwitched = e.onPinchGridSwitched);
         void 0 !== e.onPhotoBrowserChangeStart && (this.onPhotoBrowserChangeStart = e.onPhotoBrowserChangeStart);
         void 0 !== e.onError && (this.onError = e.onError);
         this.__pickerController.set(e.pickerController);
@@ -464,6 +466,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                     autoPlayScenes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : this.parseAutoPlayScenes(z.autoPlayScenes),
                     appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters),
+                    grindPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.grindPinchMode,
                     globalMovingPhotoState:  null === (state = this.pickerOptions) || void 0 === state ? void 0 : state.globalMovingPhotoState,
                 }
             }
@@ -592,6 +595,10 @@ export class PhotoPickerComponent extends ViewPU {
         } else if ('onScrollStopAtEnd' === o) {
             if (this.onScrollStopAtEnd) {
                 this.onScrollStopAtEnd();
+            }
+        } else if ('onGridLevelChanged' === o) {
+            if (this.onPinchGridSwitched) {
+                this.onPinchGridSwitched(e.gridLevel);
             }
         } else {
             console.info('PhotoPickerComponent onReceive: other case');
@@ -1192,6 +1199,13 @@ let PickerController = class {
 };
 PickerController = __decorate([Observed], PickerController);
 
+export class GridPinchMode {
+    constructor() {
+        this.gridPinchModeType = undefined;
+        this.defaultGridLevel = GridLevel.STANDARD;
+    }
+}
+
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
 }
 
@@ -1240,6 +1254,18 @@ export class SingleLineConfig {
 export class BadgeConfig {
 
 }
+
+export var GridPinchModeType;
+!function(e) {
+    e[e.FULL_FUNCTION_GRID = 0] = 'FULL_FUNCTION_GRID';
+}(GridPinchModeType || (GridPinchModeType = {}));
+
+export var GridLevel;
+!function(e) {
+    e[e.SPACIOUS = 0] = 'SPACIOUS';
+    e[e.STANDARD = 1] = 'STANDARD';
+    e[e.COMPACT = 2] = 'COMPACT';
+}(GridLevel || (GridLevel = {}));
 
 export var DataType;
 !function(e) {
