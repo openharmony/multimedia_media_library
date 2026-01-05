@@ -73,9 +73,6 @@ group("media_library_fuzztest") {
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
-    "medialibrarycloudmediamapcodedao_fuzzer:MediaLibraryCloudMediaMapCodeDaoFuzzTest",
-    "medialibrarycloudmapcodechecker_fuzzer:MediaLibraryCloudMapCodeCheckerFuzzTest",
-    "medialibrary_mapcode_fuzzer:MediaLibraryMapCodeFuzzTest",
   ]
 
   deps_cloud_sync_fuzztest = [
