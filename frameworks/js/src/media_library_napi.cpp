@@ -219,6 +219,7 @@ const std::string CONFIRM_BOX_APP_ID = "appId";
 const std::string CONFIRM_BOX_IMAGE_FULLY_DISPLAYED = "isImageFullyDisplayed";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
+const std::string REQUEST_PHOTO_URIS_READPERMISSIONEX = "requestPhotoUrisReadPermissionEx";
 
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
@@ -480,6 +481,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
         DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
         DECLARE_NAPI_STATIC_FUNCTION("requestPhotoUrisReadPermission", RequestPhotoUrisReadPermission),
+        DECLARE_NAPI_STATIC_FUNCTION("requestPhotoUrisReadPermissionEx", RequestPhotoUrisReadPermissionEx),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -12751,6 +12753,90 @@ napi_value MediaLibraryNapi::RequestPhotoUrisReadPermission(napi_env env, napi_c
     return result;
 }
 
+static bool InitRequestPhotoAllUrisReadPermissionRequest(OHOS::AAFwk::Want &want,
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
+{
+    NAPI_INFO_LOG("InitRequestPhotoUrisReadPermission enter.");
+    if (argsLen < ARGS_FOUR) {
+        return false;
+    }
+ 
+    std::string targetType = "photoPicker";
+    want.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
+    std::string requestPhotoUrisTag = "requestPhotoUrisPage";
+    want.SetParam(TARGET_PAGE, requestPhotoUrisTag);
+ 
+     // second param: Array<string>
+    if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
+        NAPI_ERR_LOG("FileUriArray check failed.");
+        return false;
+    }
+ 
+    string appName;
+    bool uriReadPermissonFlag = true;
+    if (!ParseString(env, args[PARAM2], appName)) {
+        NAPI_ERR_LOG("appName check failed.");
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_NAME, appName);
+    want.SetParam(REQUEST_PHOTO_URIS_READPERMISSIONEX, uriReadPermissonFlag);
+    callback->SetFunc(args[PARAM3]);
+    return true;
+}
+ 
+napi_value MediaLibraryNapi::RequestPhotoUrisReadPermissionEx(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermissionEx enter");
+    size_t argc = ARGS_FOUR;
+    napi_value args[ARGS_FOUR] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
+ 
+    // first param: context, check whether context is abilityContext from stage mode
+    Ace::UIContent *uiContent = nullptr;
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "Context is null.");
+ 
+    shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    if (abilityContext == nullptr) {
+        auto uiExtensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
+        if (uiExtensionContext == nullptr) {
+            NAPI_ERR_LOG("Fail to convert to abilityContext or uiExtensionContext");
+            return nullptr;
+        }
+        uiContent = uiExtensionContext->GetUIContent();
+    } else {
+        // get uiContent from abilityContext
+        uiContent = abilityContext->GetUIContent();
+    }
+    NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
+ 
+    // set want
+    OHOS::AAFwk::Want want;
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> callback =
+        make_shared<RequestPhotoUrisReadPermissionCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitRequestPhotoAllUrisReadPermissionRequest(want, callback, env, args, sizeof(args)),
+            "Parse RequestPhotoUrisReadPermissionEx input fail.");
+ 
+    // regist callback and config
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResultEx(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnErrorEx(arg1, arg2, arg3); }),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermissionEx regist callback and config success.");
+ 
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+    callback->SetSessionId(sessionId);
+    return result;
+}
 
 static void StartPhotoPickerExecute(napi_env env, void *data)
 {
