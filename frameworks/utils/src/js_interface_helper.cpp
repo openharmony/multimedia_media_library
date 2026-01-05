@@ -94,14 +94,14 @@ static string VectorToString(const vector<T>& vector, bool needsRedact, bool isU
         }
 
         if constexpr (std::is_same_v<T, std::string>) {
-            if (needsRedact && isUri) {
-                out += '"' + JsInterfaceHelper::GetSafeUri(vector[i]) + '"';
-            } else if (needsRedact && isDisplayName) {
-                out += '"' + JsInterfaceHelper::GetSafeDisplayName(vector[i]) + '"';
-            } else if (needsRedact) {
-                out += '"' + JsInterfaceHelper::MaskString(vector[i]) + '"';
-            } else {
+            if (!needsRedact) {
                 out += '"' + vector[i] + '"';
+            } else if (isUri) {
+                out += '"' + JsInterfaceHelper::GetSafeUri(vector[i]) + '"';
+            } else if (isDisplayName) {
+                out += '"' + JsInterfaceHelper::GetSafeDisplayName(vector[i]) + '"';
+            } else {
+                out += '"' + JsInterfaceHelper::MaskString(vector[i]) + '"';
             }
         } else {
             out += std::to_string(vector[i]);
@@ -144,14 +144,14 @@ static string SingleValueTypeToString(const DataShare::SingleValue::Type& single
         } else if constexpr (std::is_same_v<T, bool>) {
             return value ? "bool::true" : "bool::false";
         } else if constexpr (std::is_same_v<T, std::string>) {
-            if (needsRedact && isUri) {
-                return '"' + JsInterfaceHelper::GetSafeUri(value) + '"';
-            } else if (needsRedact && isDisplayName) {
-                return '"' + JsInterfaceHelper::GetSafeDisplayName(value) + '"';
-            } else if (needsRedact) {
-                return '"' + JsInterfaceHelper::MaskString(value) + '"';
-            } else {
+            if (!needsRedact) {
                 return '"' + value + '"';
+            } else if (isUri) {
+                return '"' + JsInterfaceHelper::GetSafeUri(value) + '"';
+            } else if (isDisplayName) {
+                return '"' + JsInterfaceHelper::GetSafeDisplayName(value) + '"';
+            } else {
+                return '"' + JsInterfaceHelper::MaskString(value) + '"';
             }
         } else {
             return std::to_string(value);
