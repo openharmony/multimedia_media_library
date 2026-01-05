@@ -327,6 +327,17 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId,
     return E_SUCCESS;
 }
 
+int32_t MediaFuseManager::DoMedialibraryReadPermission(const string &fileId, const string &target, uid_t uid)
+{
+    string bundleName;
+    AccessTokenID tokenCaller = INVALID_TOKENID;
+    PermissionUtils::GetClientBundle(uid, bundleName);
+    string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
+    class MediafusePermCheckInfo info(target, MEDIA_FILEMODE_READONLY, fileId, appId, uid);
+    int32_t permGranted = info.CheckPermission(tokenCaller);
+    return permGranted;
+}
+
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
@@ -359,6 +370,9 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
         int64_t changeTime = 0;
         ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
+        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_comtext returned nullptr");
+        int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
+        CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
         ret = lstat(target.c_str(), stbuf);
         if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
