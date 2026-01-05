@@ -1066,20 +1066,8 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
     }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false)) {
-        MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(rdbStore, VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
-        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false);
-    }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false)) {
-        MediaLibraryRdbStore::AddIndexForCloudAndPitaya(rdbStore, VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
-        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false);
-    }
+    HandleUpgradeRdbAsyncPart4(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -1228,7 +1216,7 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
     }
-    
+
     if (oldVersion < VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL) {
         MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL);
