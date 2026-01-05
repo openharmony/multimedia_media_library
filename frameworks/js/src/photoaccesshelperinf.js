@@ -1185,7 +1185,7 @@ async function photoPickerSelect(...args) {
   if (globalMovingPhotoState) {
     let isGlobalMovingPhotoStateInvalid = checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState);
     if (isGlobalMovingPhotoStateInvalid) {
-      console.error(`[picker] config: globalMovingPhotoState has value but invalid`);
+      console.error('[picker] config: globalMovingPhotoState has value but invalid');
       throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
     }
   }

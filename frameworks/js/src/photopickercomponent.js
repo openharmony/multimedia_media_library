@@ -136,6 +136,8 @@ export class PhotoPickerComponent extends ViewPU {
         this.onItemClickedNotify = void 0;
         this.onEnterPhotoBrowser = void 0;
         this.onExitPhotoBrowser = void 0;
+        this.onPhotoBrowserChangeStart = void 0;
+        this.onError = void 0;
         this.onPickerControllerReady = void 0;
         this.onPhotoBrowserChanged = void 0;
         this.onSelectedItemsDeleted = void 0;
@@ -151,9 +153,6 @@ export class PhotoPickerComponent extends ViewPU {
         this.preselectedInfos = void 0;
         this.onScrollStopAtStart = void 0;
         this.onScrollStopAtEnd = void 0;
-        this.onPhotoBrowserChangeStart = void 0;
-        this.onError = void 0;
-        this.isSetMovingPhotoStateError = false;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
@@ -696,7 +695,7 @@ export class PhotoPickerComponent extends ViewPU {
         o.photoSubType = e.photoSubType;
         o.movingPhotoBadgeState = e.movingPhotoBadgeState;
         if (this.onPhotoBrowserChangeStart) {
-            this.onPhotoBrowserChangeStart(e);
+            this.onPhotoBrowserChangeStart(o);
         }
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserChangeStart = ' 
             + this.pickerController.encrypt(o.uri));
@@ -704,14 +703,11 @@ export class PhotoPickerComponent extends ViewPU {
 
     handleOnError(e) {
         let pickerError = new PickerError();
-        pickerError.interfaceName = e.interfaceName;
+        pickerError.functionName = e.functionName;
         pickerError.errorCode = e.errorCode;
-        pickerError.errorMessage = e.errorMessage;
+        pickerError.message = e.errorMessage;
         console.info('PhotoPickerComponent onReceive: onError: ' 
             + JSON.stringify(e));
-        if (this.isSetMovingPhotoStateError === false) {
-            this.isSetMovingPhotoStateError = true;
-        }
         if (this.onError) {
             this.onError(pickerError);
         }
@@ -768,7 +764,7 @@ export class PhotoPickerComponent extends ViewPU {
     parseIsMovingPhotoBadgeShown(isMovingPhotoBadgeShown) {
         console.log('PhotoPickerComponent, isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid
             + ',isMovingPhotoBadgeShown=' + isMovingPhotoBadgeShown);
-        if (isMovingPhotoBadgeShown === undefined) {
+        if (isMovingPhotoBadgeShown === undefined || void 0 === isMovingPhotoBadgeShown) {
             return undefined;
         }
         if (isMovingPhotoBadgeShown === true) {
@@ -1019,7 +1015,8 @@ let PickerController = class {
         if (e !== MovingPhotoBadgeStateType.ADD_DATA && e !== MovingPhotoBadgeStateType.DELETE_DATA) {
             throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
         }
-        console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) + ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
+        console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) +
+         ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
         if (!isPhotoBrowserShow || isMovingPhotoBadgeShownValid) {
             throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
         }
