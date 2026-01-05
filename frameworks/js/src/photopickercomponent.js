@@ -431,7 +431,8 @@ export class PhotoPickerComponent extends ViewPU {
                     isOnScrollStopAtStartSet: !!this.onScrollStopAtStart,
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                     autoPlayScenes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : this.parseAutoPlayScenes(z.autoPlayScenes),
-                    appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters)
+                    appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters),
+                    grindPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.grindPinchMode,
                 }
             }
             ,{
@@ -1098,6 +1099,13 @@ let PickerController = class {
 };
 PickerController = __decorate([Observed], PickerController);
 
+export class GridPinchMode {
+    constructor() {
+        this.gridPinchModeType = undefined;
+        this.defaultGridLevel = GridLevel.STANDARD;
+    }
+}
+
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
 }
 
@@ -1142,6 +1150,18 @@ export class SingleLineConfig {
 export class BadgeConfig {
 
 }
+
+export var GridPinchModeType;
+!function(e) {
+    e[e.FULL_FUNCTION_GRID = 0] = 'FULL_FUNCTION_GRID';
+}(GridPinchModeType || (GridPinchModeType = {}));
+
+export var GridLevel;
+!function(e) {
+    e[e.SPACIOUS = 0] = 'SPACIOUS';
+    e[e.STANDARD = 1] = 'STANDARD';
+    e[e.COMPACT = 1] = 'COMPACT';
+}(GridLevel || (GridLevel = {}));
 
 export var DataType;
 !function(e) {
