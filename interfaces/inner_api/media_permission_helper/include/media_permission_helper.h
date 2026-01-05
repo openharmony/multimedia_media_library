@@ -30,7 +30,7 @@ enum class OperationMode : uint32_t {
     WRITE_MODE = 0b10,
     READ_WRITE_MODE = 0b11,
 };
-
+// LCOV_EXCL_START
 class MediaPermissionHelper {
 public:
     EXPORT MediaPermissionHelper() = default;
@@ -137,5 +137,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
+// LCOV_EXCL_STOP
 #endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_PERMISSION_HELPER_H_

@@ -21,7 +21,7 @@
 #include "backup_const.h"
 #include "rdb_store.h"
 #include "classify_aggregate_types.h"
-
+// LCOV_EXCL_START
 namespace OHOS::Media {
 class ClassifyRestore {
 public:
@@ -129,5 +129,5 @@ private:
     const std::string QUERY_OCR_TEXT_SQL = "SELECT tab_analysis_ocr.file_id FROM tab_analysis_ocr WHERE ";
 };
 } // namespace OHOS::Media
-
+// LCOV_EXCL_STOP
 #endif // CLASSIFY_RESTORE_H

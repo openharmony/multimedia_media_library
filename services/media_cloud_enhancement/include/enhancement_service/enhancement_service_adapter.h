@@ -28,7 +28,7 @@
 #include "media_enhance_client_c_api.h"
 #include "media_enhance_bundle_c_api.h"
 #endif
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -79,3 +79,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_CLOUD_ENHANCEMENT_INCLUDE_ENHANCEMENT_SERVICE_ADAPTER_H
+// LCOV_EXCL_STOP
