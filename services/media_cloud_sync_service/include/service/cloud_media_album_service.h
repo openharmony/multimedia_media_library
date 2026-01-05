@@ -34,7 +34,8 @@ namespace OHOS::Media::CloudSync {
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 class EXPORT CloudMediaAlbumService {
 public:
-    std::vector<PhotoAlbumPo> GetAlbumCreatedRecords(int32_t size);
+    int32_t GetCreatedRecords(
+        int32_t size, const bool isCloudSpaceFull, std::vector<PhotoAlbumPo> &albumInfoList);
     std::vector<PhotoAlbumPo> GetAlbumMetaModifiedRecords(int32_t size);
     std::vector<PhotoAlbumPo> GetAlbumFileModifiedRecords(int32_t size);  // it's not exist
     std::vector<PhotoAlbumPo> GetAlbumDeletedRecords(int32_t size);
@@ -70,6 +71,9 @@ private:
     int32_t ConvertToSingleScreenshots(PhotoAlbumDto &album, std::vector<PhotoAlbumDto> &records);
     int32_t HandleFetchOldRecordNew(
         PhotoAlbumDto &record, AAFwk::ChangeInfo::ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);
+    bool IsSpaceFullAndSkipCreatedAlbum(const int32_t albumId, const bool isCloudSpaceFull);
+    int32_t GetCreatedRecordsWithCondition(const int32_t size, const bool isCloudSpaceFull,
+        const std::vector<PhotoAlbumPo> &albumInfoList, std::vector<PhotoAlbumPo> &resultList);
     int32_t PullInsert(const PhotoAlbumDto &record, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);
     int32_t PullUpdate(const PhotoAlbumDto &record, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);
     int32_t PullDelete(const PhotoAlbumDto &record, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);

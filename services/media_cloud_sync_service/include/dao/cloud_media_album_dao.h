@@ -60,7 +60,7 @@ public:
     int32_t InsertCloudByCloudId(PhotoAlbumDto &record,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);
     int32_t OnDeleteAlbums(std::vector<std::string> &failedAlbumIds);
-    int32_t GetCreatedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
+    int32_t GetCreatedRecords(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
     int32_t GetMetaModifiedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
     int32_t GetDeletedRecordsAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
     int32_t HandleNotExistAlbumRecord(const PhotoAlbumDto &album);
@@ -86,6 +86,7 @@ public:
     int32_t ReportAbnormalLocalRecords();
     int32_t UpdateAlbumOrderInfo(const PhotoAlbumDto &record, NativeRdb::ValuesBucket &values);
     int32_t GetPhotoAlbum(const std::string &lPath, std::optional<PhotoAlbumPo> &albumInfoOp);
+    int32_t GetAlbumCloudAssetCount(const int32_t albumId, int32_t &count);
 
 private:
     int32_t InsertAlbums(const PhotoAlbumDto &record,
