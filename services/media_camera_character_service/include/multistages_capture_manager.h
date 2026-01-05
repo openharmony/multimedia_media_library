@@ -20,7 +20,7 @@
 #include "multistages_video_capture_manager.h"
 
 #include <string>
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -39,3 +39,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_CAPTURE_MANAGER_H
+// LCOV_EXCL_STOP

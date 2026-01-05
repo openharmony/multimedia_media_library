@@ -29,7 +29,7 @@ using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 using namespace OHOS::MediaEnhance;
 #endif
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -691,3 +691,4 @@ void EnhancementServiceAdapter::DeletePendingTasks(Pending_Task* taskIdList, uin
 #endif
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_START

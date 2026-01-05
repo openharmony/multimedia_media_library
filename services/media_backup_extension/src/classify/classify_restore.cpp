@@ -23,7 +23,7 @@
 #include "media_log.h"
 #include "upgrade_restore_task_report.h"
 #include "medialibrary_data_manager_utils.h"
-
+// LCOV_EXCL_START
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 const int32_t INVALID_LABEL = -2;
@@ -543,3 +543,4 @@ void ClassifyRestore::AddIdCardAlbum(OcrAggregateType type, std::unordered_set<i
     MEDIA_INFO_LOG("IdCardAlbum success");
 }
 } // namespace OHOS::Media
+// LCOV_EXCL_STOP

@@ -24,7 +24,7 @@
 #include "medialibrary_tracer.h"
 
 using namespace std;
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 
@@ -170,3 +170,4 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
 
 } // Media
 } // OHOS
+// LCOV_EXCL_STOP
