@@ -276,6 +276,16 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_permission_helper:media_permission_helper"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_camera_helper/include",
+                "header_files": [
+                  "media_library_camera_manager.h",
+                  "media_photo_asset_proxy.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_camera_helper:media_library_camera_helper"
             }
         ],
         "test": [

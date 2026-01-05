@@ -32,6 +32,7 @@
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
+#include "media_file_utils.h"
 #include "media_change_request_napi.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
@@ -192,10 +193,6 @@ const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
 const std::string TITLE = "title";
 const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
     { TITLE, MediaColumn::MEDIA_TITLE }
-};
-
-const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
-    { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
 };
 
 const std::string EXTENSION = "fileNameExtension";
@@ -8032,6 +8029,9 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         context->analysisType) == napi_ok, "analysisType invalid");
     CHECK_COND_WITH_MESSAGE(env, context->analysisType > AnalysisType::ANALYSIS_INVALID,
         "analysisType invalid:" + std::to_string(context->analysisType));
+    const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
+        { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
+    };
     CHECK_COND_WITH_MESSAGE(env,
         FOREGROUND_ANALYSIS_ASSETS_MAP.find(context->analysisType) != FOREGROUND_ANALYSIS_ASSETS_MAP.end(),
         "analysisType is not supported:" + std::to_string(context->analysisType));
@@ -9320,7 +9320,7 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
-        if (!PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType())) {
+        if (!PhotoAlbum::IsUserPhotoAlbumByType(obj->GetPhotoAlbumType())) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
