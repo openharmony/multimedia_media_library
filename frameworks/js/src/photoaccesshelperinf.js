@@ -38,6 +38,12 @@ const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
 const ERROR_MSG_OHOS_INNER_FAIL = 'Internal system error';
+const ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE = 
+'Invalid call context. Possible causes:' +
+'  1. The API is called outside the photo browsing scenario.' +
+'  2. The API is called when isMovingPhotoBadgeShown is already set to true.'
+
+const ILLEGAL_SCENARIO_CALL_ERROR_CODE = 23800202;
 
 const SECONDS_OF_ONE_DAY = 24 * 60 * 60;
 const DELAY_MILLSECONDS = 33;
@@ -1042,6 +1048,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.contextRecoveryInfo = option.contextRecoveryInfo;
     config.parameters.subWindowName = option.subWindowName;
+    config.parameters.globalMovingPhotoState = option.globalMovingPhotoState;
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
@@ -1056,7 +1063,6 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isDestroyedWithNavigation = option.isDestroyedWithNavigation;
     config.parameters.isReturnToPhotoBrowserEnable = option.isReturnToPhotoBrowserEnable;
     config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
-    config.parameters.globalMovingPhotoState = option.globalMovingPhotoState;
   }
 
   return config;
@@ -1180,8 +1186,7 @@ async function photoPickerSelect(...args) {
     let isGlobalMovingPhotoStateInvalid = checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState);
     if (isGlobalMovingPhotoStateInvalid) {
       console.error(`[picker] config: globalMovingPhotoState has value but invalid`);
-      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
-      
+      throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
     }
   }
   

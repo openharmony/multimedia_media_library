@@ -101,6 +101,30 @@ const PickerFilterPhotoKeys = {
     ASPECT_RATIO: 'aspect_ratio',
   }
 
+var isPhotoBrowserShow = false;
+var isMovingPhotoBadgeShownValid = false;
+
+const PARAMETERS_VALIDATE_FAILED_MESSAGE = 
+'Scene parameters validate failed, possible causes:' +
+'  1. An invalid enumeration value was passed. Only MOVING_PHOTO_ENABLE and' +
+'  MOVING_PHOTO_DISABLE are supported for configuration;';
+
+const ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE = 
+'Invalid call context. Possible causes:' +
+'  1. The API is called outside the photo browsing scenario.' +
+'  2. The API is called when isMovingPhotoBadgeShown is already set to true.'
+
+const PARAMETERS_VALIDATE_FAILED_CODE = 23800151;
+const ILLEGAL_SCENARIO_CALL_ERROR_CODE = 23800202;
+const PERMISSION_DENNIED = 401;
+
+class BusinessError extends Error {
+    constructor(msg, code) {
+        super(msg);
+        this.code = code || PERMISSION_DENNIED;
+    }
+}
+
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
         super(e, t, i);
@@ -431,7 +455,7 @@ export class PhotoPickerComponent extends ViewPU {
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
-                    isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
+                    isMovingPhotoBadgeShown:  this.parseIsMovingPhotoBadgeShown(null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown),
                     isSlidingSupported:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSlidingSupported,
                     assetFilter:  null === (predicate = this.pickerOptions) || void 0 === predicate ? void 0 : predicate.assetFilter,
                     edgeEffect: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.edgeEffect,
@@ -647,6 +671,11 @@ export class PhotoPickerComponent extends ViewPU {
         t.animatorParams.duration = e.duration;
         t.animatorParams.curve = e.curve;
         o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
+        if (o) {
+            isPhotoBrowserShow = true;
+        } else {
+            isPhotoBrowserShow = false;
+        }
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + o);
     }
 
@@ -734,7 +763,22 @@ export class PhotoPickerComponent extends ViewPU {
         }
 
         return appAlbumFilters;
-    }     
+    }   
+    
+    parseIsMovingPhotoBadgeShown(isMovingPhotoBadgeShown) {
+        console.log('PhotoPickerComponent, isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid
+            + ',isMovingPhotoBadgeShown=' + isMovingPhotoBadgeShown);
+        if (isMovingPhotoBadgeShown === undefined) {
+            return undefined;
+        }
+        if (isMovingPhotoBadgeShown === true) {
+            isMovingPhotoBadgeShownValid = true;
+        } else {
+            isMovingPhotoBadgeShownValid = false;
+        }
+        return isMovingPhotoBadgeShown;
+        
+    }
 
     parseMimeTypeFilter(filter) {
         if (!filter) {
@@ -972,6 +1016,13 @@ let PickerController = class {
     }
 
     async setMovingPhotoState(e) {
+        if (e !== MovingPhotoBadgeStateType.ADD_DATA && e !== MovingPhotoBadgeStateType.DELETE_DATA) {
+            throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
+        }
+        console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) + ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
+        if (!isPhotoBrowserShow || isMovingPhotoBadgeShownValid) {
+            throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
+        }
         if (e !== undefined) {
             this.data = new Map([['SET_MOVINGPHOTO_STATE', e]]);
             console.info('PhotoPickerComponent SET_MOVINGPHOTO_STATE: ' + this.encrypt(JSON.stringify(e)));
