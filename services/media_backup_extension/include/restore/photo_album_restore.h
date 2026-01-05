@@ -127,6 +127,7 @@ private:
     int32_t UpdateAlbums(const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos);
     GalleryAlbumRowData BuildAlbumInfoOfGalleryRecorders(const int32_t uploadStatus);
     int32_t ReadResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, GalleryAlbumRowData &albumInfo);
+    void DetermineAlbumTypeByLPath(PhotoAlbumDao::PhotoAlbumRowData &albumRowData, const std::string &lPath);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
