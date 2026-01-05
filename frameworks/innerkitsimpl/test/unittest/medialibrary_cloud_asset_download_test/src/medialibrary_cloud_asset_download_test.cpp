@@ -64,7 +64,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> number(0);
 static const int32_t EXIT_TASK = 1;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-static constexpr int32_t ALBUM_FROM_CLOUD = 2;
+static constexpr int32_t ALBUM_FROMCLOUD = 2;
 
 static const std::string CLOUD_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.cloud.status";
 static const std::string HDC_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.hdc.status";
@@ -201,7 +201,7 @@ int32_t InsertCloudAlbumINDb()
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
-    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, ALBUM_FROM_CLOUD);
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, ALBUM_FROMCLOUD);
     int32_t ret = g_rdbStore->Insert(albumId, PhotoAlbumColumns::TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("Insert cloud albumId is %{public}s", to_string(albumId).c_str());
@@ -347,7 +347,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     ret = InsertCloudAssetINDb(fileId3, data3);
     EXPECT_EQ(ret, E_OK);
     idVec.push_back(std::to_string(fileId3));
-    
+
     ret = CloudMediaAssetManager::GetInstance().DeleteBatchCloudFile(idVec);
     EXPECT_EQ(ret, E_OK);
     idVec.clear();
@@ -580,7 +580,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     EXPECT_EQ(ret, E_OK);
     ret = instance.UpdateLocalAlbums();
     EXPECT_EQ(ret, E_OK);
-    
+
     ret = instance.UpdateBothLocalAndCloudAssets();
     EXPECT_EQ(ret, E_OK);
     int64_t fileId3 = 0;
@@ -621,7 +621,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     EXPECT_EQ(ret, E_OK);
     ret = instance.UpdateLocalAlbums();
     EXPECT_EQ(ret, E_OK);
-    
+
     ret = instance.UpdateBothLocalAndCloudAssets(CloudMediaRetainType::HDC_RETAIN_FORCE);
     EXPECT_EQ(ret, E_OK);
     int64_t fileId3 = 0;
@@ -723,7 +723,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     });
     EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::RETAIN_FORCE,
         true), E_OK);
-    
+
     EXPECT_EQ(system::GetIntParameter(CLOUD_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(CLOUDSYNC_SWITCH_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
@@ -748,7 +748,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     });
     EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
         ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
-    
+
     EXPECT_EQ(system::GetIntParameter(CLOUD_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(CLOUDSYNC_SWITCH_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
