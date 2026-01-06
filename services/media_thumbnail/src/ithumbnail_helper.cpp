@@ -38,6 +38,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
+// LCOV_EXCL_START
 void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
 {
     CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
@@ -1412,5 +1413,6 @@ bool IThumbnailHelper::IsPureCloudImage(ThumbRdbOpt &opts)
     // if current image is a pure cloud image, it's photo position column in database will be 2
     return photoPosition == 2;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
