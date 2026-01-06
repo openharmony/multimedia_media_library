@@ -33,21 +33,21 @@ private:
     int32_t CreateIndex(NativeRdb::RdbStore &store);
  
 private:
-    const std::string TABLE_NAME = "tab_facard_photos";
-    const std::string CREATE_TABLE_SQL = "\
-        CREATE TABLE IF NOT EXISTS tab_facard_photos ( \
-            form_id     TEXT, \
-            asset_uri   TEXT \
-        );";
-    const std::string INDEX_FORM_ID = "\
-        CREATE INDEX IF NOT EXISTS idx_form_id_on_tab_facard_photos ON tab_facard_photos ( \
-            form_id \
-        );";
-    const std::string INDEX_ASSET_URI = "\
-        CREATE INDEX IF NOT EXISTS idx_asset_uri_on_tab_facard_photos ON tab_facard_photos ( \
-            asset_uri \
-        );";
-    const std::vector<std::string> CREATE_INDEX_SQLS = {INDEX_FORM_ID, INDEX_ASSET_URI};
+    const std::string_view CREATE_TABLE_SQL = "CREATE TABLE "
+                                              "IF"
+                                              "  NOT EXISTS tab_facard_photos ( form_id TEXT, asset_uri TEXT );";
+
+    const std::string_view INDEX_FORM_ID =
+        "CREATE INDEX "
+        "IF"
+        "  NOT EXISTS idx_form_id_on_tab_facard_photos ON tab_facard_photos ( form_id );";
+
+    const std::string_view INDEX_ASSET_URI =
+        "CREATE INDEX "
+        "IF"
+        "  NOT EXISTS idx_asset_uri_on_tab_facard_photos ON tab_facard_photos ( asset_uri );";
+
+    const std::vector<std::string_view> CREATE_INDEX_SQLS = {INDEX_FORM_ID, INDEX_ASSET_URI};
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_TAB_FACARD_PHOTOS_EVENT_HANDLER_H

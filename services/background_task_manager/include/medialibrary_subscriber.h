@@ -159,6 +159,10 @@ private:
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
     void ResetCloneFlagAfterOneDay();
+
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
+    void InitFaCardAfterDataShareReady(const std::string &action);
+#endif
 };
 }  // namespace Media
 }  // namespace OHOS

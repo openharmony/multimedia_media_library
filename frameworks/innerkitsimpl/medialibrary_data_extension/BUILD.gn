@@ -238,11 +238,17 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_analysis_data_client_vo
   include_dirs += include_media_analysis_data_extension
 
+  if (media_library_facard_enable) {
+    include_facard = [ "${MEDIALIB_FACARD_PATH}/include/operation" ]
+    include_dirs += include_facard
+  }
+
   if (media_library_cloud_sync_enable) {
     include_dirs += include_cloud_sync_server
   } else {
     include_cloud_sync_server = []
   }
+
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
       "${MEDIALIB_ROOT_SERVICES_PATH}/media_cloud_enhancement/include",
@@ -284,6 +290,10 @@ config("media_data_extension_public_config") {
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
   defines = []
+
+  if (media_library_facard_enable) {
+    defines += [ "MEDIALIBRARY_FACARD_SUPPORT" ]
+  }
 
   if (media_library_feature_cloud_enhancement) {
     defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
@@ -333,11 +343,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_THUMBNAIL_PATH}/src/thumbnail_source_loading.cpp",
     "${MEDIALIB_THUMBNAIL_PATH}/src/thumbnail_uri_utils.cpp",
     "${MEDIALIB_THUMBNAIL_PATH}/src/thumbnail_utils.cpp",
-  ]
-
-  media_facard_source = [
-    "${MEDIALIB_FACARD_PATH}/src/medialibrary_facard_operations.cpp",
-    "${MEDIALIB_FACARD_PATH}/src/tab_facard_photos_table_event_handler.cpp",
   ]
 
   media_cloud_sync_source = [
@@ -808,6 +813,7 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources = [
+    "${MEDIALIB_FACARD_PATH}/src/tab_facard_photos_table_event_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_anco_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/common_event_utils.cpp",
@@ -959,7 +965,6 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_scan_source
   sources += media_fuse_source
   sources += media_thumbnail_source
-  sources += media_facard_source
   sources += media_cloud_sync_source
   sources += media_rdb_utils_source
   sources += media_multistages_capture_source
@@ -1003,6 +1008,13 @@ ohos_shared_library("medialibrary_data_extension") {
   } else {
     media_cloud_sync_server_source = []
     media_cloud_sync_server_source_dto = []
+  }
+
+  if (media_library_facard_enable) {
+    media_facard_source = [
+      "${MEDIALIB_FACARD_PATH}/src/operation/medialibrary_facard_operations.cpp",
+    ]
+    sources += media_facard_source
   }
 
   if (media_library_feature_cloud_download) {

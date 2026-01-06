@@ -32,11 +32,11 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 std::mutex MediaLibraryFaCardOperations::mutex_;
-const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
-const string CLOUD_SYNC_PROXY_URI = "datashareproxy://com.huawei.hmos.clouddrive/sync_switch";
+const std::string_view MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
+const std::string_view CLOUD_SYNC_PROXY_URI = "datashareproxy://com.huawei.hmos.clouddrive/sync_switch";
 
-const std::string ASSET_URI_PREFIX = "file://media/";
-const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
+const std::string_view ASSET_URI_PREFIX = "file://media/";
+const std::string_view CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
 
 static unordered_map<string, unordered_set<string>> g_uriMapFormIds;
 static unordered_map<string, unordered_set<string>> g_formIdMapUris;
@@ -217,14 +217,14 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     if (isAssetUri) {
         auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
         CHECK_AND_RETURN_LOG(cardAssetUriObserver != nullptr, "cardAssetUriObserver is nullptr");
-        auto dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+        auto dataShareHelper = DataShare::DataShareHelper::Creator(string(MEDIA_LIBRARY_PROXY_URI), options);
         CHECK_AND_RETURN_LOG(dataShareHelper != nullptr, "dataShareHelper is nullptr");
         dataShareHelper->RegisterObserverExt(notifyUri, cardAssetUriObserver, true);
         g_formAssetObserversMap.emplace(registerUri, cardAssetUriObserver);
     } else {
         sptr<FaCloudSyncSwitchObserver> cloudSwitchObserver(new (std::nothrow) FaCloudSyncSwitchObserver(registerUri));
         CHECK_AND_RETURN_LOG(cloudSwitchObserver != nullptr, "cloudSwitchObserver is nullptr");
-        auto dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+        auto dataShareHelper = DataShare::DataShareHelper::Creator(string(CLOUD_SYNC_PROXY_URI), options);
         CHECK_AND_RETURN_LOG(dataShareHelper != nullptr, "dataShareHelper is nullptr");
         dataShareHelper->RegisterObserver(notifyUri, cloudSwitchObserver);
         g_formCloudSyncObserversMap.emplace(registerUri, cloudSwitchObserver);
@@ -234,21 +234,16 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
 void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
 {
     MEDIA_INFO_LOG("formId: %{public}s", formId.c_str());
-    if (formId.empty()) {
-        MEDIA_ERR_LOG("parameter is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!formId.empty(), "formId is empty");
     lock_guard<mutex> lock(mutex_);
     auto formIdMapUrisIt = g_formIdMapUris.find(formId);
-    if (formIdMapUrisIt == g_formIdMapUris.end()) {
-        MEDIA_WARN_LOG("formId: %{public}s has been unregistered", formId.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(
+        formIdMapUrisIt != g_formIdMapUris.end(), "formId: %{public}s has been unregistered", formId.c_str());
     CreateOptions options;
     options.enabled_ = true;
-    auto libHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+    auto libHelper = DataShare::DataShareHelper::Creator(string(MEDIA_LIBRARY_PROXY_URI), options);
     CHECK_AND_RETURN_LOG(libHelper != nullptr, "libHelper is nullptr");
-    auto syncHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+    auto syncHelper = DataShare::DataShareHelper::Creator(string(CLOUD_SYNC_PROXY_URI), options);
     CHECK_AND_RETURN_LOG(syncHelper != nullptr, "syncHelper is nullptr");
     for (const auto &uri : formIdMapUrisIt->second) {
         if (g_uriMapFormIds.count(uri)) {
@@ -263,15 +258,25 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
         g_uriMapFormIds.erase(uri);
         Uri notifyUri(uri);
         if (uri.find(ASSET_URI_PREFIX) == 0) {
-            auto &cardAssetUriObserver = g_formAssetObserversMap[uri];
-            CHECK_AND_RETURN_LOG(cardAssetUriObserver != nullptr, "cardAssetUriObserver is nullptr");
-            libHelper->UnregisterObserverExt(notifyUri, cardAssetUriObserver);
-            g_formAssetObserversMap.erase(uri);
+            auto it = g_formAssetObserversMap.find(uri);
+            CHECK_AND_CONTINUE_ERR_LOG(
+                it != g_formAssetObserversMap.end(), "uri: %{public}s, cardAssetUriObserver not find", uri.c_str());
+            if (it->second != nullptr) {
+                libHelper->UnregisterObserverExt(notifyUri, it->second);
+            } else {
+                MEDIA_ERR_LOG("uri: %{public}s, cardAssetUriObserver is nullptr", uri.c_str());
+            }
+            g_formAssetObserversMap.erase(it);
         } else {
-            sptr<FaCloudSyncSwitchObserver> &cloudSwitchObserver = g_formCloudSyncObserversMap[uri];
-            CHECK_AND_RETURN_LOG(cloudSwitchObserver != nullptr, "cloudSwitchObserver is nullptr");
-            syncHelper->UnregisterObserver(notifyUri, cloudSwitchObserver);
-            g_formCloudSyncObserversMap.erase(uri);
+            auto it = g_formCloudSyncObserversMap.find(uri);
+            CHECK_AND_CONTINUE_ERR_LOG(
+                it != g_formCloudSyncObserversMap.end(), "uri: %{public}s, cloudSwitchObserver not find", uri.c_str());
+            if (it->second != nullptr) {
+                syncHelper->UnregisterObserver(notifyUri, it->second);
+            } else {
+                MEDIA_ERR_LOG("uri: %{public}s, cloudSwitchObserver is nullptr", uri.c_str());
+            }
+            g_formCloudSyncObserversMap.erase(it);
         }
     }
     g_formIdMapUris.erase(formIdMapUrisIt);
