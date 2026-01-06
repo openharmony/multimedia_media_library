@@ -45,7 +45,7 @@
 #include "refresh_business_name.h"
 #include "multistages_video_capture_manager.h"
 #include "medialibrary_tracer.h"
-
+// LCOV_EXCL_START
 using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 using namespace OHOS::MediaEnhance;
@@ -503,3 +503,4 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
 #endif
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

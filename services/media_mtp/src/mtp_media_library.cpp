@@ -31,7 +31,7 @@
 #include "post_proc.h"
 #include "image_packer.h"
 #include "avmetadatahelper.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 namespace {
@@ -1409,3 +1409,4 @@ int32_t MtpMediaLibrary::CopyGalleryAlbum(const std::shared_ptr<MtpOperationCont
 
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

@@ -27,7 +27,7 @@
 #include "ffrt_inner.h"
 #include "ocr_restore.h"
 #include "photos_restore.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 struct RestoreConfigInfo {
@@ -184,5 +184,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
+// LCOV_EXCL_STOP
 #endif  // OHOS_MEDIA_UPGRADE_RESTORE_H

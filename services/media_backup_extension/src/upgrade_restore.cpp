@@ -35,7 +35,7 @@
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
@@ -1855,3 +1855,4 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
 
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

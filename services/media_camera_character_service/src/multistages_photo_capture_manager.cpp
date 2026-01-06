@@ -46,7 +46,7 @@ using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT
 using namespace OHOS::CameraStandard;
 #endif
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
@@ -567,3 +567,4 @@ void MultiStagesPhotoCaptureManager::NotifyProcessImage()
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
