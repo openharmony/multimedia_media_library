@@ -96,17 +96,14 @@ void RequestPhotoUrisReadPermissionCallback::OnResultEx(int32_t resultCode, cons
             CHECK_ARGS_RET_VOID(this->env_, true, JS_INNER_FAIL);
             return;
         }
- 
-         // check if the invalidUris exsit
-        if (!want.HasParameter(REQUEST_PHOTO_URIS_INVALID_URIS)) {
-            NAPI_ERR_LOG("Can't get invalidUris from want.");
-            CHECK_ARGS_RET_VOID(this->env_, true, JS_INNER_FAIL);
-            return;
-        }
- 
-        // get desFileUris and invalidUris from want
+         // get desFileUris from want
         desFileUris = want.GetStringArrayParam(REQUEST_PHOTO_URIS_DES_FILE_URIS);
-        invalidUris = want.GetStringArrayParam(REQUEST_PHOTO_URIS_INVALID_URIS);
+ 
+        // check if the invalidUris exsit
+        if (want.HasParameter(REQUEST_PHOTO_URIS_INVALID_URIS)) {
+            // get invalidUris from want
+            invalidUris = want.GetStringArrayParam(REQUEST_PHOTO_URIS_INVALID_URIS);
+        }
         for (std::string mem : desFileUris) {
             NAPI_INFO_LOG("mem %{public}s", mem.c_str());
         }
