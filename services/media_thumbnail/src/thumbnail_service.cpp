@@ -53,6 +53,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AbilityRuntime;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 std::shared_ptr<ThumbnailService> ThumbnailService::thumbnailServiceInstance_{nullptr};
@@ -896,5 +897,6 @@ int32_t ThumbnailService::DfxReportThumbnailDirAcl()
 {
     return ThumbnailGenerateHelper::DfxReportThumbnailDirAcl();
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

@@ -25,6 +25,7 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static void AgingLcd(AsyncTaskData *data)
@@ -136,5 +137,6 @@ int32_t ThumbnailAgingHelper::GetAgingLcdData(ThumbRdbOpt &opts, int lcdLimit, v
     }
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

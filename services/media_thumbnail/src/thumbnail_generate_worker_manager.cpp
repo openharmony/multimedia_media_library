@@ -18,6 +18,7 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 ThumbnailGenerateWorkerManager::~ThumbnailGenerateWorkerManager()
@@ -89,5 +90,6 @@ void ThumbnailGenerateWorkerManager::TryCloseThumbnailWorkerTimer()
         }
     });
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

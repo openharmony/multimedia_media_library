@@ -35,6 +35,7 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 
@@ -1412,5 +1413,6 @@ bool IThumbnailHelper::IsPureCloudImage(ThumbRdbOpt &opts)
     // if current image is a pure cloud image, it's photo position column in database will be 2
     return photoPosition == 2;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

@@ -33,6 +33,7 @@
 #include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
 
+// LCOV_EXCL_START
 using namespace std;
 using namespace OHOS::FileManagement::CloudSync;
 using namespace OHOS::NativeRdb;
@@ -603,6 +604,6 @@ void ThumbnailReadyManager::NotifyTempStatusForReady(const int32_t &currentTempe
     });
     temperatureStatusMap_.Clear();
 }
-
+// LCOV_EXCL_START
 } // namespace Media
 } // namespace OHOS

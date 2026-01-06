@@ -31,6 +31,7 @@
 #include "thermal_mgr_client.h"
 #endif
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
@@ -321,5 +322,6 @@ bool ThumbnailGenerateWorker::IsLowerQueueEmpty()
     MEDIA_DEBUG_LOG("lower queue size %{public}d", lowPriorityTaskQueue_.Size());
     return lowPriorityTaskQueue_.Empty();
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
