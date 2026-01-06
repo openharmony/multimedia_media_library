@@ -261,13 +261,24 @@ int32_t CloudMediaAlbumService::OnDeleteAlbums(std::vector<std::string> &failedA
     return this->albumDao_.OnDeleteAlbums(failedAlbumIds);
 }
 
-std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumCreatedRecords(int32_t size)
+int32_t CloudMediaAlbumService::GetCreatedRecords(
+    int32_t size, const bool isCloudSpaceFull, std::vector<PhotoAlbumPo> &albumInfoList)
 {
-    MEDIA_INFO_LOG("CloudMediaAlbumService::GetAlbumCreatedRecords enter");
+    MEDIA_INFO_LOG("CloudMediaAlbumService::GetCreatedRecords enter");
+    int32_t tempSize = size;
     std::vector<PhotoAlbumPo> photoAlbumList;
-    int32_t ret = this->albumDao_.GetCreatedAlbum(size, photoAlbumList);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "failed to get createdAlbum record");
-    return photoAlbumList;
+    int32_t ret = this->albumDao_.GetCreatedRecords(tempSize, photoAlbumList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to get createdAlbum record");
+    ret = this->GetCreatedRecordsWithCondition(size, isCloudSpaceFull, photoAlbumList, albumInfoList);
+    MEDIA_INFO_LOG("GetCreatedRecords completed, "
+                   "ret: %{public}d, size: %{public}d, isCloudSpaceFull: %{public}d, "
+                   "db-size: %{public}zu, result-size: %{public}zu",
+        ret,
+        size,
+        isCloudSpaceFull,
+        photoAlbumList.size(),
+        albumInfoList.size());
+    return E_OK;
 }
 
 std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumMetaModifiedRecords(int32_t size)
@@ -735,6 +746,34 @@ int32_t CloudMediaAlbumService::PullDelete(
     CHECK_AND_RETURN_RET_LOG(
         ret == E_OK, ret, "fail to notify, ret: %{public}d, cloudId: %{public}s", ret, record.cloudId.c_str());
     MEDIA_INFO_LOG("PullDelete completed, ret: %{public}d, cloudId: %{public}s", ret, record.cloudId.c_str());
+    return E_OK;
+}
+
+bool CloudMediaAlbumService::IsSpaceFullAndSkipCreatedAlbum(const int32_t albumId, const bool isCloudSpaceFull)
+{
+    CHECK_AND_RETURN_RET(isCloudSpaceFull, false);
+    int32_t cloudAssetCount = 0;
+    int32_t ret = this->albumDao_.GetAlbumCloudAssetCount(albumId, cloudAssetCount);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "GetAlbumCloudAssetCount fail, ret: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(cloudAssetCount == 0, false, "cloudAssetCount: %{public}d", cloudAssetCount);
+    return true;
+}
+
+int32_t CloudMediaAlbumService::GetCreatedRecordsWithCondition(const int32_t size, const bool isCloudSpaceFull,
+    const std::vector<PhotoAlbumPo> &albumInfoList, std::vector<PhotoAlbumPo> &resultList)
+{
+    int32_t albumId = 0;
+    bool isSkip = false;
+    for (const auto &albumInfo : albumInfoList) {
+        albumId = albumInfo.albumId.value_or(0);
+        isSkip = this->IsSpaceFullAndSkipCreatedAlbum(albumId, isCloudSpaceFull);
+        CHECK_AND_CONTINUE_INFO_LOG(!isSkip,
+            "isSkipFullAndSkipCreatedAlbum, albumId: %{public}d, cloudId: %{public}s",
+            albumId,
+            albumInfo.cloudId.value_or("").c_str());
+        resultList.emplace_back(albumInfo);
+        CHECK_AND_BREAK(resultList.size() < size);
+    }
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

@@ -162,6 +162,7 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
 {
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     reqBody.size = size;
+    reqBody.isCloudSpaceFull = this->IsCloudSpaceFull();
     CloudMdkRecordPhotoAlbumRespBody respBody;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_GET_CREATED_RECORDS);
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)

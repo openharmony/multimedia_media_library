@@ -71,11 +71,25 @@ void CloudMediaSyncServiceTest::SetUp() {}
 
 void CloudMediaSyncServiceTest::TearDown() {}
 
-HWTEST_F(CloudMediaSyncServiceTest, AlbumService_GetAlbumCreatedRecords_Test_001, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTest, AlbumService_GetCreatedRecords_Test_001, TestSize.Level1)
 {
     CloudMediaAlbumService service;
     int32_t size = 0;
-    std::vector<PhotoAlbumPo> photoAlbumList = service.GetAlbumCreatedRecords(size);
+    int32_t ret = 0;
+    std::vector<PhotoAlbumPo> photoAlbumList;
+    bool isCloudSpaceFull = true;
+    ret = service.GetCreatedRecords(size, isCloudSpaceFull, photoAlbumList);
+    EXPECT_EQ(photoAlbumList.size(), 0);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, AlbumService_GetCreatedRecords_Test_002, TestSize.Level1)
+{
+    CloudMediaAlbumService service;
+    int32_t size = 0;
+    int32_t ret = 0;
+    std::vector<PhotoAlbumPo> photoAlbumList;
+    bool isCloudSpaceFull = false;
+    ret = service.GetCreatedRecords(size, isCloudSpaceFull, photoAlbumList);
     EXPECT_EQ(photoAlbumList.size(), 0);
 }
 
