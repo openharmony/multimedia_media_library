@@ -97,7 +97,7 @@ public:
     static ani_object PhotoAccessHelperGetEditData(ani_env *env, ani_object object);
     static ani_object PhotoAccessHelperCloneAsset(ani_env *env, ani_object object, ani_string title);
     static ani_object PhotoAccessHelperConvertFormat(ani_env *env, ani_object object, ani_string title,
-        ani_object imageFormat);
+        ani_enum_item imageFormat);
     static ani_int PhotoAccessHelperRequestSource(ani_env *env, ani_object object);
     static void PhotoAccessHelperCommitEditedAsset(ani_env *env, ani_object object,
         ani_string editData, ani_string uri);

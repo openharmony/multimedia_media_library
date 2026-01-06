@@ -1853,7 +1853,7 @@ static void PhotoAccessHelperConvertFormatExecute(ani_env *env, unique_ptr<FileA
 }
 
 ani_object FileAssetAni::PhotoAccessHelperConvertFormat(ani_env *env, ani_object object, ani_string title,
-    ani_object imageFormat)
+    ani_enum_item imageFormat)
 {
     ANI_INFO_LOG("PhotoAccessHelperConvertFormat start");
     ani_object ConvertAssetObj{};
@@ -1865,9 +1865,11 @@ ani_object FileAssetAni::PhotoAccessHelperConvertFormat(ani_env *env, ani_object
     auto context = make_unique<FileAssetContext>();
     CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     string extension;
-    MediaLibraryAniUtils::GetOptionalEnumStringField(env, imageFormat, "imageFormat", extension);
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueString(env,
+        imageFormat, extension) == ANI_OK, nullptr, "Failed to get imageFormat");
     string titleStr;
-    MediaLibraryAniUtils::GetString(env, title, titleStr);
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryAniUtils::GetString(env, title, titleStr) == ANI_OK,
+        nullptr, "Failed to call GetString");
     int32_t fileId = fileAssetAni->GetFileId();
     ANI_INFO_LOG("ConvertFormat title: %{public}s, extension: %{public}s", titleStr.c_str(), extension.c_str());
     if (!CheckConvertFormatParams(titleStr, extension)) {
@@ -1881,13 +1883,8 @@ ani_object FileAssetAni::PhotoAccessHelperConvertFormat(ani_env *env, ani_object
     context->extension = extension;
     context->objectPtr = fileAssetAni->fileAssetPtr;
     PhotoAccessHelperConvertFormatExecute(env, context);
-    if (context->assetId == 0) {
-        ANI_ERR_LOG("Clone file asset failed");
-        return nullptr;
-    } else {
-        ConvertAssetObj = CreateClonePhotoAsset(env, context);
-    }
-
+    ConvertAssetObj = CreateClonePhotoAsset(env, context);
+    CHECK_COND_RET(ConvertAssetObj != nullptr, nullptr, "ConvertAssetObj is nullptr");
     CloneAssetHandlerCompleteCallback(env, context);
     return ConvertAssetObj;
 }

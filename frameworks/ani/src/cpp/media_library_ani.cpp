@@ -2555,6 +2555,7 @@ static ani_object GetPhotoAlbumsOrderComplete(ani_env *env, unique_ptr<MediaLibr
         ANI_ERR_LOG("No fetch file result found!");
         context->HandleError(env, errorObj);
     } else {
+        context->fetchAlbumOrderResult->SetResultNapiType(context->resultNapiType);
         fetchRes = FetchFileResultAni::CreateFetchFileResult(env, move(context->fetchAlbumOrderResult));
         if (fetchRes == nullptr) {
             MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_MEM_ALLOCATION,

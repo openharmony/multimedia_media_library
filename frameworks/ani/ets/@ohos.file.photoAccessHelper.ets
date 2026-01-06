@@ -356,6 +356,37 @@ export namespace photoAccessHelper {
     orderStatus: int;
   }
 
+  export class AlbumOrderHandle implements AlbumOrder {
+    albumId: int;
+    albumOrder: int;
+    orderSection: int;
+    orderType: int;
+    orderStatus: int;
+    private nativeAlbumOrder: long = 0;
+
+    constructor(nativePtr: long) {
+      if (this.nativeAlbumOrder == 0) {
+          this.nativeAlbumOrder = nativePtr;
+          this.albumId = this.getAlbumId();
+          this.albumOrder = this.getAlbumOrder();
+          this.orderSection = this.getOrderSection();
+          this.orderType = this.getOrderType();
+          this.orderStatus = this.getOrderStatus();
+      }
+    }
+
+    native getAlbumId(): int;
+    native getAlbumOrder(): int;
+    native getOrderSection(): int;
+    native getOrderType(): int;
+    native getOrderStatus(): int;
+    native setAlbumId(): int;
+    native setAlbumOrder(): int;
+    native setOrderSection(): int;
+    native setOrderType(): int;
+    native setOrderStatus(): int;
+}
+
   export class MediaAssetManager {
     static onMediaAssetDataPrepared(data: MediaAssetDataType,
       dataHandler: MediaAssetDataHandler<MediaAssetDataType>, map?: Map<string, string>): void {
@@ -5046,6 +5077,26 @@ export namespace photoAccessHelper {
     readonly fileId: int;
     readonly shareCount: int;
     readonly lcdJumpCount: int;
+  }
+
+  export class PhotoAssetCustomRecordHandle implements PhotoAssetCustomRecord {
+    readonly fileId: int;
+    readonly shareCount: int;
+    readonly lcdJumpCount: int;
+    private nativePhotoAssetCustomRecord: long = 0;
+
+    constructor(nativeHandle: long) {
+      if (this.nativePhotoAssetCustomRecord == 0) {
+          this.nativePhotoAssetCustomRecord = nativeHandle;
+          this.fileId = this.getFileId();
+          this.shareCount = this.getShareCount();
+          this.lcdJumpCount = this.getLcdJumpCount();
+      }
+    }
+
+    native getFileId(): int;
+    native getShareCount(): int;
+    native getLcdJumpCount(): int;
   }
 
   export class PhotoAssetCustomRecordManager {
