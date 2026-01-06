@@ -105,7 +105,7 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
         }
     }
     if (!MediaFileUtils::IsFileExists(parentDir)) {
-        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", parentDir.c_str());
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str());
         return false;
     }
     std::error_code ec;
@@ -113,7 +113,7 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
         std::filesystem::directory_options::skip_permission_denied, ec);
     if (ec) {
         MEDIA_WARN_LOG("directory_iterator error for %{public}s, skip. ec: %{public}s",
-            parentDir.c_str(), ec.message().c_str());
+            GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str(), ec.message().c_str());
         return false;
     }
 
