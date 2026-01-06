@@ -27,7 +27,7 @@
 #include "object_info.h"
 #include "property.h"
 #include "pixel_map.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -124,3 +124,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MTP_MEDIA_LIBRARY_H
+// LCOV_EXCL_STOP

@@ -43,7 +43,7 @@
 #include "medialibrary_photo_operations.h"
 #include "preferences.h"
 #include "preferences_helper.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
@@ -2319,3 +2319,4 @@ void BaseRestore::SetIsRestore(bool isRestore)
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

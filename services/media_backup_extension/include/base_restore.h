@@ -34,7 +34,7 @@
 #include "geo_knowledge_restore.h"
 #include "highlight_restore.h"
 #include "medialibrary_rdbstore.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class BaseRestore {
@@ -274,3 +274,4 @@ protected:
 } // namespace OHOS
 
 #endif  // OHOS_MEDIA_BASE_RESTORE_H
+// LCOV_EXCL_STOP

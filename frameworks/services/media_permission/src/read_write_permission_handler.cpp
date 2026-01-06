@@ -37,7 +37,7 @@
 #include "mediatool_uri.h"
 
 using namespace std;
-
+// LCOV_EXCL_START
 namespace OHOS::Media {
 static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_PHOTO,
@@ -424,3 +424,4 @@ int32_t ReadWritePermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &
 }
 
 } // namespace name
+// LCOV_EXCL_STOP

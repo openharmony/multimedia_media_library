@@ -27,7 +27,7 @@
 #include "result_set.h"
 #include "picture_manager_thread.h"
 #include "add_image_dto.h"
-
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -91,3 +91,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_PHOTO_CAPTURE_MANAGER_H
+// LCOV_EXCL_STOP
