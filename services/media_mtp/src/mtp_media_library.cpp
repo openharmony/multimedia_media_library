@@ -561,7 +561,7 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
             resultMap.find(AVMetadataCode::AV_KEY_VIDEO_HEIGHT) == resultMap.end()) {
             break;
         }
-        HaveRotateToChangeWidthHeight(width, height);
+        HaveRotateToChangeWidthHeight(width, height, resultMap);
     } while (false);
     CHECK_AND_PRINT_LOG(ResizeThumb(width, height), "resize thumb fail");
     PixelMapParams param = {
@@ -580,15 +580,11 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
     return MTP_SUCCESS;
 }
 
-void MtpMediaLibrary::HaveRotateToChangeWidthHeight(int32_t &width, int32_t &height)
+void MtpMediaLibrary::HaveRotateToChangeWidthHeight(int32_t &width, int32_t &height,
+    std::unordered_map<int32_t, std::string> &resultMap)
 {
-    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    CHECK_AND_RETURN_LOG(avMetadataHelper != nullptr, "avMetadataHelper is nullptr");
-    auto resultMap = avMetadataHelper->ResolveMetadata();
     if (resultMap.empty()) {
-        return;
-    }
-    if (resultMap.find(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION) == resultMap.end()) {
+        MEDIA_ERR_LOG("resultMap is empty.");
         return;
     }
     std::string widthStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH);
@@ -596,6 +592,9 @@ void MtpMediaLibrary::HaveRotateToChangeWidthHeight(int32_t &width, int32_t &hei
     if (MtpDataUtils::IsNumber(widthStr) && MtpDataUtils::IsNumber(heightStr)) {
         width = atoi(widthStr.c_str());
         height = atoi(heightStr.c_str());
+    }
+    if (resultMap.find(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION) == resultMap.end()) {
+        return;
     }
     std::string strTempStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
     int32_t strTemp = 0;
