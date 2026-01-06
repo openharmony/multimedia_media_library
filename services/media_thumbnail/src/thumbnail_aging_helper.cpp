@@ -25,7 +25,6 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
-
 namespace OHOS {
 namespace Media {
 // LCOV_EXCL_START
