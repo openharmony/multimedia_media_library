@@ -466,7 +466,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isOnScrollStopAtEndSet: !!this.onScrollStopAtEnd,
                     autoPlayScenes: null === (z = this.pickerOptions) || void 0 === z ? void 0 : this.parseAutoPlayScenes(z.autoPlayScenes),
                     appAlbumFilters: null === (u = this.pickerOptions) || void 0 === u ? void 0 : this.parseAppAlbumFilters(u.appAlbumFilters),
-                    grindPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.grindPinchMode,
+                    gridPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.gridPinchMode,
                     globalMovingPhotoState:  null === (state = this.pickerOptions) || void 0 === state ? void 0 : state.globalMovingPhotoState,
                 }
             }
