@@ -38,6 +38,7 @@
 #include "hi_audit.h"
 #include "photo_owner_album_id_operation.h"
 #include "lake_file_utils.h"
+#include "photo_album_upload_status_operation.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -1032,8 +1033,13 @@ int32_t CloudMediaPhotosDao::GetCreatedRecords(int32_t size, std::vector<PhotosP
     /* build predicates */
     std::string fileIdNotIn = CloudMediaDaoUtils::ToStringWithComma(this->photoCreateFailSet_.ToVector());
     MEDIA_INFO_LOG("GetCreatedRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
+    bool notSupport = !PhotoAlbumUploadStatusOperation::IsSupportUploadStatus();
+    std::vector<std::string> params = {
+        fileIdNotIn,
+        std::to_string(notSupport)
+    };
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, {fileIdNotIn});
+    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, params);
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");

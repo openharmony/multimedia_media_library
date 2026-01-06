@@ -63,6 +63,7 @@
 #include "medialibrary_tracer.h"
 #include "media_file_change_manager.h"
 #include "product_info.h"
+#include "photo_album_upload_status_operation.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -279,6 +280,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
     dataManager->RestoreInvalidHDCCloudDataPos();
+    PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
 }
 
 void MediaDataShareExtAbility::OnStop()

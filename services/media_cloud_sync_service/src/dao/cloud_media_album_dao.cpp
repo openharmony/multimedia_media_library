@@ -882,9 +882,15 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->albumCreateFailSet_);
     std::string lpathNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->albumInsertFailSet_);
+    bool notSupport = !PhotoAlbumUploadStatusOperation::IsSupportUploadStatus();
+    std::vector<std::string> params = {
+        cloudIdNotIn,
+        lpathNotIn,
+        std::to_string(notSupport)
+    };
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql =
-        CloudMediaDaoUtils::FillParams(this->SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM, {cloudIdNotIn, lpathNotIn});
+        CloudMediaDaoUtils::FillParams(this->SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM, params);
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords(resultList);
     MEDIA_INFO_LOG("QueryCreatedAlbums, ret: %{public}d, resultList size: %{public}zu", ret, resultList.size());

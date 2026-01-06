@@ -21,6 +21,8 @@
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 #include "photo_album_column.h"
 #include "photo_album_upload_status_operation.h"
 #include "settings_data_manager.h"
@@ -33,6 +35,8 @@ static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_THREE_SECONDS = 3;
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
+const std::string ABILITY_ENABLE_XML = "/data/storage/el2/base/preferences/ability_enable.xml";
+const std::string HISTORY_UPLOAD_ALBUM_ENABLE = "history_upload_album_enable";
 
 static int32_t ClearTable(const string &table)
 {
@@ -56,6 +60,27 @@ static int32_t InsertPhotoAlbum(const string &albumName, const int32_t albumType
     int32_t ret = g_rdbStore->Insert(albumId, PhotoAlbumColumns::TABLE, values);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhotoAlbum albumId is %{public}s", to_string(albumId).c_str());
+    return E_OK;
+}
+
+static int32_t GetHistoryUploadAlbumEnable()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ABILITY_ENABLE_XML, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs, E_ERR, "Get preferences error: %{public}d", errCode);
+    int32_t historyEnable = prefs->GetInt(HISTORY_UPLOAD_ALBUM_ENABLE, -1);
+    return historyEnable;
+}
+
+static int32_t SetHistoryUploadAlbumEnable(const int32_t historyEnable)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ABILITY_ENABLE_XML, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs, E_ERR, "Get preferences error: %{public}d", errCode);
+    prefs->PutInt(HISTORY_UPLOAD_ALBUM_ENABLE, historyEnable);
+    prefs->FlushSync();
     return E_OK;
 }
 
@@ -131,5 +156,35 @@ HWTEST_F(PhotoAlbumUploadStatusOperationTest, album_upload_status_operation_test
     SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload();
     result = PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath("/Pictures/Users/album1");
     EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(PhotoAlbumUploadStatusOperationTest, album_upload_status_operation_test_003, TestSize.Level0)
+{
+    bool isSupport = PhotoAlbumUploadStatusOperation::IsSupportUploadStatus();
+
+    int32_t historyEnable = static_cast<int32_t>(EnableUploadStatus::DEFAULT);
+    SetHistoryUploadAlbumEnable(historyEnable);
+    int32_t ret = PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
+    EXPECT_EQ(ret, E_OK);
+    int32_t enableResult = GetHistoryUploadAlbumEnable();
+    int32_t expectResult = isSupport ? static_cast<int32_t>(EnableUploadStatus::DEFAULT) :
+        static_cast<int32_t>(EnableUploadStatus::OFF);
+    EXPECT_EQ(enableResult, expectResult);
+
+    historyEnable = static_cast<int32_t>(EnableUploadStatus::ON);
+    SetHistoryUploadAlbumEnable(historyEnable);
+    ret = PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
+    EXPECT_EQ(ret, E_OK);
+    enableResult = GetHistoryUploadAlbumEnable();
+    EXPECT_EQ(enableResult, static_cast<int32_t>(EnableUploadStatus::ON));
+
+    historyEnable = static_cast<int32_t>(EnableUploadStatus::OFF);
+    SetHistoryUploadAlbumEnable(historyEnable);
+    ret = PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
+    EXPECT_EQ(ret, E_OK);
+    enableResult = GetHistoryUploadAlbumEnable();
+    expectResult = isSupport ? static_cast<int32_t>(EnableUploadStatus::ON) :
+        static_cast<int32_t>(EnableUploadStatus::OFF);
+    EXPECT_EQ(enableResult, expectResult);
 }
 }  // namespace OHOS::Media
