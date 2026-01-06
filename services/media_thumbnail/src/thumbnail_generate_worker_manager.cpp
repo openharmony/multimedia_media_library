@@ -18,7 +18,6 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 
-
 namespace OHOS {
 namespace Media {
 // LCOV_EXCL_START
