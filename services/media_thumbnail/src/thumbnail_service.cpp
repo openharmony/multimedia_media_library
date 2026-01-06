@@ -53,9 +53,10 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AbilityRuntime;
 
-// LCOV_EXCL_START
+
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 std::shared_ptr<ThumbnailService> ThumbnailService::thumbnailServiceInstance_{nullptr};
 std::mutex ThumbnailService::instanceLock_;
 ThumbnailService::ThumbnailService(void)

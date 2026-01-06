@@ -25,9 +25,10 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
-// LCOV_EXCL_START
+
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 static void AgingLcd(AsyncTaskData *data)
 {
     if (data == nullptr) {

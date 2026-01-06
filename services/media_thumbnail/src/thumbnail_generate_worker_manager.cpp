@@ -18,9 +18,10 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 
-// LCOV_EXCL_START
+
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 ThumbnailGenerateWorkerManager::~ThumbnailGenerateWorkerManager()
 {
     thumbnailWorkerMap_.Clear();
