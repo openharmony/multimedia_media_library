@@ -32,9 +32,6 @@ public:
     // Table columns: form_id and uri
     static const std::string FACARD_PHOTOS_FORM_ID EXPORT;
     static const std::string FACARD_PHOTOS_ASSET_URI EXPORT;
-    
-    // columns only in tab_facard_photos
-    static const std::set<std::string> DEFAULT_FACARD_PHOTOS_COLUMNS EXPORT;
 };
 } // namespace Media
 } // namespace OHOS

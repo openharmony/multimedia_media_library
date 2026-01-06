@@ -65,7 +65,6 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_library_tab_old_photos_client_test.cpp",
     "./src/medialibrary_album_fusion_utils_test.cpp",
-    "./src/medialibrary_facard_operations_test.cpp",
     "./src/medialibrary_formmap_operations_test.cpp",
     "./src/medialibrary_photo_edit_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
@@ -83,6 +82,13 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/photo_album_operation/photo_album_merge_operation_test.cpp",
     "./src/photo_album_operation/photo_album_upload_status_operation_test.cpp",
   ]
+
+  if (media_library_facard_enable) {
+    media_facard_test_source = [
+      "./src/medialibrary_facard_operations_test.cpp",
+    ]
+    sources += media_facard_test_source
+  }
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
