@@ -43,6 +43,8 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include "album_order_ani.h"
+#include "photo_asset_custom_record_ani.h"
 
 namespace OHOS {
 namespace Media {
@@ -993,6 +995,53 @@ ani_status MediaLibraryAniUtils::ToPhotoAlbumAniArray(ani_env *env, std::vector<
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAlbum failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
             "Call method $_set failed.");
+    }
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToAlbumOrderAniArray(ani_env *env, std::vector<unique_ptr<AlbumOrder>> &array,
+    ani_object &aniArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
+
+    AniAlbumOrderOperator albumOrderOperator;
+    albumOrderOperator.clsName = PAH_ANI_CLASS_ALBUM_ORDER_HANDLE;
+    CHECK_STATUS_RET(AlbumOrderAni::InitAniAlbumOrderOperator(env, albumOrderOperator),
+        "InitAniAlbumOrderOperator fail");
+
+    for (size_t i = 0; i < array.size(); i++) {
+        ani_object value = AlbumOrderAni::CreateAlbumOrderAni(env, std::move(array[i]), albumOrderOperator);
+        CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreateAlbumOrderAni failed");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
+            "Call method $_set failed.");
+    }
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToPhotoAssetCustomRecordAniArray(ani_env *env,
+    std::vector<unique_ptr<PhotoAssetCustomRecord>> &array, ani_object &aniArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
+
+    AniPhotoAssetCustomRecordOperator photoAlbumOperator;
+    photoAlbumOperator.clsName = PAH_ANI_CLASS_PHOTO_ASSET_CUSTOM_RECORD_HANDLE;
+    CHECK_STATUS_RET(PhotoAssetCustomRecordAni::InitAniPhotoAssetCustomRecordOperator(env, photoAlbumOperator),
+        "InitAniPhotoAssetCustomRecordOperator fail");
+
+    for (size_t i = 0; i < array.size(); i++) {
+        ani_object value = PhotoAssetCustomRecordAni::CreatePhotoAssetCustomRecordAni(
+            env, std::move(array[i]), photoAlbumOperator);
+        CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAssetCustomRecordAni failed");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
+            "Call method $set failed.");
     }
     return ANI_OK;
 }

@@ -244,8 +244,8 @@ static ani_object AddCustomRecordComplete(ani_env *env, std::unique_ptr<CustomRe
     ani_object result {};
     ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
-        if (MediaLibraryAniUtils::ToAniNumberArray(env, context->fileIds, result) != ANI_OK) {
-            ANI_ERR_LOG("ToAniInt32Array fileIds fail");
+        if (MediaLibraryAniUtils::ToAniNumberArray(env, context->failFileIds, result) != ANI_OK) {
+            ANI_ERR_LOG("ToAniNumberArray failFileIds fail");
         }
     } else {
         context->HandleError(env, errorObj);
@@ -287,7 +287,7 @@ ani_object PhotoAssetCustomRecordManagerAni::AddShareCount(ani_env *env, ani_obj
         return nullptr;
     }
     auto aniContext = make_unique<CustomRecordAsyncAniContext>();
-    CHECK_COND_RET(ParserArgsCustomRecordsFileIds(env, ids, aniContext) != ANI_OK, nullptr, "Failed to parse ids");
+    CHECK_COND_RET(ParserArgsCustomRecordsFileIds(env, ids, aniContext) == ANI_OK, nullptr, "Failed to parse ids");
     AniAddShareCountExecute(env, aniContext.get());
     return AddCustomRecordComplete(env, aniContext);
 }
@@ -414,7 +414,7 @@ ani_object PhotoAssetCustomRecordManagerAni::SetCustomRecords(ani_env *env, ani_
         return nullptr;
     }
     auto aniContext = make_unique<CustomRecordAsyncAniContext>();
-    CHECK_COND_RET(ParseArgsCustomRecords(env, aniObject, customRecords, aniContext) != ANI_OK, nullptr,
+    CHECK_COND_RET(ParseArgsCustomRecords(env, aniObject, customRecords, aniContext) == ANI_OK, nullptr,
         "Failed to parse ids");
     AniSetCustomRecordsExecute(env, aniContext.get());
     return AddCustomRecordComplete(env, aniContext);

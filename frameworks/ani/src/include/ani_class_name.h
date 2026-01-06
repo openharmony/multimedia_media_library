@@ -90,6 +90,9 @@ static const std::string PAH_ANI_CLASS_PHOTO_ASSET_CHANGE_INFOS_HANDLE =
     PAH_CLASS_SPACE + "PhotoAssetChangeInfosHandle";
 static const std::string PAH_ANI_CLASS_PHOTO_ASSET_CHANGE_DATA_HANDLE = PAH_CLASS_SPACE + "PhotoAssetChangeDataHandle";
 static const std::string PAH_ANI_CLASS_PHOTO_ASSET_CHANGE_INFO_HANDLE = PAH_CLASS_SPACE + "PhotoAssetChangeInfoHandle";
+static const std::string PAH_ANI_CLASS_ALBUM_ORDER_HANDLE = PAH_CLASS_SPACE + "AlbumOrderHandle";
+static const std::string PAH_ANI_CLASS_PHOTO_ASSET_CUSTOM_RECORD_HANDLE =
+    PAH_CLASS_SPACE + "PhotoAssetCustomRecordHandle";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_ANI_SRC_INCLUDE_ANI_CLASSNAME_H
