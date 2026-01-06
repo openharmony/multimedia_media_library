@@ -604,6 +604,6 @@ void ThumbnailReadyManager::NotifyTempStatusForReady(const int32_t &currentTempe
     });
     temperatureStatusMap_.Clear();
 }
-// LCOV_EXCL_START
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
