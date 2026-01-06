@@ -95,27 +95,38 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
     }
 
     string parentDir = filesystem::path(curPath).parent_path().string();
-    transform(curPath.begin(), curPath.end(), curPath.begin(), ::tolower);
+    string lowerCurPath = curPath;
+    transform(lowerCurPath.begin(), lowerCurPath.end(), lowerCurPath.begin(), ::tolower);
     {
         std::lock_guard<std::mutex> guard(mapMutex);
-        if (pathMap.find(curPath) != pathMap.end()) {
-            resultPath.replace(0, curPath.length(), pathMap[curPath]);
+        if (pathMap.find(lowerCurPath) != pathMap.end()) {
+            resultPath.replace(0, curPath.length(), pathMap[lowerCurPath]);
             return true;
         }
     }
     if (!MediaFileUtils::IsFileExists(parentDir)) {
-        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", parentDir.c_str());
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.",
+            BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str());
         return false;
     }
-    for (const auto &entry : filesystem::directory_iterator(parentDir,
-        std::filesystem::directory_options::skip_permission_denied)) {
-        string entryPath = entry.path();
-        transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
-        if (entryPath == curPath) {
-            resultPath.replace(0, curPath.length(), entry.path());
+    std::error_code ec;
+    auto iter = filesystem::directory_iterator(parentDir,
+        std::filesystem::directory_options::skip_permission_denied, ec);
+    if (ec) {
+        MEDIA_WARN_LOG("directory_iterator error for %{public}s, skip. ec: %{public}s",
+            BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str(), ec.message().c_str());
+        return false;
+    }
+
+    for (const auto &entry : iter) {
+        string entryPath = entry.path().string();
+        string lowerEntryPath = entryPath;
+        transform(lowerEntryPath.begin(), lowerEntryPath.end(), lowerEntryPath.begin(), ::tolower);
+        if (lowerEntryPath == lowerCurPath) {
+            resultPath.replace(0, curPath.length(), entry.path().string());
             {
                 std::lock_guard<std::mutex> guard(mapMutex);
-                pathMap[curPath] = entry.path();
+                pathMap[lowerCurPath] = entry.path().string();
             }
             return true;
         }
@@ -671,7 +682,7 @@ bool BackupFileUtils::IsAppTwinData(const std::string &path)
 int32_t BackupFileUtils::GetUserId(const std::string &path)
 {
     int32_t userId = -1;
-     if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
+    if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
         return userId;
     }
     std::string tmpPath = path.substr(INTERNAL_PREFIX.size());
