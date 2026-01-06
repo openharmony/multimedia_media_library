@@ -45,7 +45,9 @@
 #include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
 #include "medialibrary_facard_operations.h"
+#endif
 #include "medialibrary_inotify.h"
 #include "medialibrary_kvstore_manager.h"
 #ifdef META_RECOVERY_SUPPORT
@@ -550,8 +552,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    CHECK_AND_EXECUTE(action != EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
-        MediaLibraryFaCardOperations::InitFaCard());
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
+    InitFaCardAfterDataShareReady(action);
+#endif
     bool cond = action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
                 action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK;
     CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
@@ -1364,5 +1367,13 @@ void MedialibrarySubscriber::ResetCloneFlagAfterOneDay()
         CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
 }
+
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
+void MedialibrarySubscriber::InitFaCardAfterDataShareReady(const std::string &action)
+{
+    CHECK_AND_EXECUTE(action != EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
+        MediaLibraryFaCardOperations::InitFaCard());
+}
+#endif
 }  // namespace Media
 }  // namespace OHOS

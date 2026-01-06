@@ -28,7 +28,6 @@
 #include "rdb_predicates.h"
 #include "datashare_helper.h"
 #include "data_ability_observer_stub.h"
-#include "rdb_utils.h"
 #include "rdb_predicates.h"
 #include <unordered_set>
 #include "event_handler.h"

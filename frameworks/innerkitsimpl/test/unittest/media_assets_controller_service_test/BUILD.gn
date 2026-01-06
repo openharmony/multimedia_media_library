@@ -133,7 +133,6 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/custom_restore_test.cpp",
     "./src/delete_asset_test.cpp",
     "./src/delete_photos_completed_test.cpp",
-    "./src/form_info_test.cpp",
     "./src/get_asset_analysis_data_test.cpp",
     "./src/get_assets_test.cpp",
     "./src/get_cloud_enhancement_pair_test.cpp",
@@ -166,6 +165,14 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/acquire_debug_database_test.cpp",
     "./src/release_debug_database_test.cpp",
   ]
+
+  if (media_library_facard_enable) {
+    media_facard_test_source = [
+      "./src/form_info_test.cpp",
+    ]
+    sources += media_facard_test_source
+  }
+
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",

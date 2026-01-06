@@ -49,7 +49,6 @@
 #include "media_file_utils.h"
 #include "media_old_photos_column.h"
 #include "media_old_albums_column.h"
-#include "media_facard_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
@@ -99,7 +98,9 @@
 #include "photo_storage_operation.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
 #include "medialibrary_facard_operations.h"
+#endif
 #include "vision_db_sqls_more.h"
 #include "parameters.h"
 #include "uuid.h"
@@ -1537,8 +1538,16 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
             }
             return E_OK;
         }
-        case OperationObject::TAB_FACARD_PHOTO:
+
+        case OperationObject::TAB_FACARD_PHOTO: {
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
             return MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd);
+#else
+            MEDIA_ERR_LOG("unsupported OperationObject: %{public}d", cmd.GetOprnObject());
+            return E_FAIL;
+#endif
+        }
+
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
@@ -1786,22 +1795,17 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
                 MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RELATIVE_PATH };
             auto fileAsset = MediaLibraryObjectUtils::GetFileAssetByPredicates(*cmd.GetAbsRdbPredicates(), columns);
             CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_ARGUMENTS, "Get fileAsset failed.");
-            if (fileAsset->GetRelativePath() == "") {
-                return E_DELETE_DENIED;
-            }
+            CHECK_AND_RETURN_RET_LOG(!fileAsset->GetRelativePath().empty(), E_DELETE_DENIED, "relative_path is empty");
             return (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) ?
                 MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset)) :
                 MediaLibraryObjectUtils::DeleteDirObj(move(fileAsset));
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
-        }
-        case OperationObject::HIGHLIGHT_DELETE: {
+        case OperationObject::HIGHLIGHT_DELETE:
             return MediaLibraryAlbumOperations::DeleteHighlightAlbums(rdbPredicate);
-        }
-        case OperationObject::PHOTO_MAP: {
+        case OperationObject::PHOTO_MAP:
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
-        }
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             if (CheckIsDismissAsset(rdbPredicate)) {
                 return PhotoMapOperations::DismissAssets(rdbPredicate);
@@ -1809,19 +1813,25 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             break;
         }
         case OperationObject::MEDIA_APP_URI_PERMISSION:
-        case OperationObject::APP_URI_PERMISSION_INNER: {
+        case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
-        }
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
-        }
-        case OperationObject::PAH_FORM_MAP: {
+        case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
-        }
+
         case OperationObject::TAB_FACARD_PHOTO: {
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
             return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
+#else
+            MEDIA_ERR_LOG("unsupported OperationObject: %{public}d", cmd.GetOprnObject());
+            return E_FAIL;
+#endif
         }
+
+        case OperationObject::ASSET_ALBUM_OPERATION:
+            return MediaLibraryTableAssetAlbumOperations::Delete(rdbPredicate);
         default:
             return DeleteInRdbPredicatesMore(cmd, rdbPredicate);
     }
@@ -1852,28 +1862,23 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         return E_FAIL;
     }
     switch (cmd.GetOprnObject()) {
-        case OperationObject::VISION_START ... OperationObject::VISION_END: {
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
-        }
+
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
-        case OperationObject::GEO_PHOTO: {
+        case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
-        case OperationObject::ANALYSIS_PROGRESS: {
+        case OperationObject::ANALYSIS_PROGRESS:
             return MediaLibraryStoryOperations::DeleteOperation(cmd);
-        }
-        case OperationObject::SEARCH_TOTAL: {
+
+        case OperationObject::SEARCH_TOTAL:
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
-        }
-        case OperationObject::ASSET_ALBUM_OPERATION: {
-            return MediaLibraryTableAssetAlbumOperations::Delete(rdbPredicate);
-        }
         default:
             break;
     }

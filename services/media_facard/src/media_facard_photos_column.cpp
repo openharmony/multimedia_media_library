@@ -22,10 +22,5 @@ const std::string TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE = "tab_facard_photo
  
 const std::string TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID = "form_id";
 const std::string TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI = "asset_uri";
- 
-const std::set<std::string> TabFaCardPhotosColumn::DEFAULT_FACARD_PHOTOS_COLUMNS = {
-    FACARD_PHOTOS_FORM_ID, FACARD_PHOTOS_ASSET_URI
-};
- 
 } // namespace Media
 } // namespace OHOS
