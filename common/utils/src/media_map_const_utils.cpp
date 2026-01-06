@@ -161,7 +161,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "text/x-python", { "py" } },
 };
 
-std::unordered_map<std::string, std::vector<std::string>> MediaMapConstUtils::GetMimeTypeMap()
+const std::unordered_map<std::string, std::vector<std::string>>& MediaMapConstUtils::GetMimeTypeMap()
 {
     return MEDIA_MIME_TYPE_MAP;
 }
