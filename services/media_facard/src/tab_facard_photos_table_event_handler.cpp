@@ -21,6 +21,7 @@
  
 #include "rdb_store.h"
 #include "rdb_errno.h"
+#include "media_facard_photos_column.h"
 #include "media_log.h"
  
 namespace OHOS::Media {
@@ -30,13 +31,13 @@ namespace OHOS::Media {
  */
 int32_t TabFaCardPhotosTableEventHandler::OnCreate(NativeRdb::RdbStore &store)
 {
-    MEDIA_INFO_LOG("OnCreate begin create %{public}s table", this->TABLE_NAME.c_str());
+    MEDIA_INFO_LOG("OnCreate begin create %{public}s table", TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE.c_str());
     int32_t ret = this->CreateTable(store);
     if (ret != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
     this->CreateIndex(store);
-    MEDIA_INFO_LOG("OnCreate end create %{public}s table", this->TABLE_NAME.c_str());
+    MEDIA_INFO_LOG("OnCreate end create %{public}s table", TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE.c_str());
     return NativeRdb::E_OK;
 }
  
@@ -51,10 +52,11 @@ int32_t TabFaCardPhotosTableEventHandler::OnUpgrade(NativeRdb::RdbStore &store, 
  
 int32_t TabFaCardPhotosTableEventHandler::CreateTable(NativeRdb::RdbStore &store)
 {
-    int32_t ret = store.ExecuteSql(this->CREATE_TABLE_SQL);
+    int32_t ret = store.ExecuteSql(std::string(this->CREATE_TABLE_SQL));
     if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Library: CreateTable failed, ret=%{public}d, sql=%{public}s", ret,
-            this->CREATE_TABLE_SQL.c_str());
+        MEDIA_ERR_LOG("Media_Library: CreateTable failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            std::string(this->CREATE_TABLE_SQL).c_str());
         return NativeRdb::E_ERROR;
     }
     return NativeRdb::E_OK;
@@ -62,10 +64,11 @@ int32_t TabFaCardPhotosTableEventHandler::CreateTable(NativeRdb::RdbStore &store
  
 int32_t TabFaCardPhotosTableEventHandler::CreateIndex(NativeRdb::RdbStore &store)
 {
-    for (const std::string &sql : this->CREATE_INDEX_SQLS) {
-        int32_t ret = store.ExecuteSql(sql);
+    for (const std::string_view &sql : this->CREATE_INDEX_SQLS) {
+        int32_t ret = store.ExecuteSql(std::string(sql));
         if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Library: CreateIndex failed, ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+            MEDIA_ERR_LOG(
+                "Media_Library: CreateIndex failed, ret=%{public}d, sql=%{public}s", ret, std::string(sql).c_str());
             return NativeRdb::E_ERROR;
         }
     }
