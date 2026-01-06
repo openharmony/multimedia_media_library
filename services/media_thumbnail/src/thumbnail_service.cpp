@@ -53,7 +53,6 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AbilityRuntime;
 
-
 namespace OHOS {
 namespace Media {
 // LCOV_EXCL_START
