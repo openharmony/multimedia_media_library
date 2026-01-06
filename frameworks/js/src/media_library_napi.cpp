@@ -11483,7 +11483,7 @@ napi_value MediaLibraryNapi::SinglePhotoAccessRegisterCallback(napi_env env, nap
     const int32_t refCount = 1;
     napi_ref cbOnRef = nullptr;
     if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
         return undefinedResult;
     }
 
@@ -11532,7 +11532,7 @@ napi_value MediaLibraryNapi::SinglePhotoAlbumRegisterCallback(napi_env env, napi
     const int32_t refCount = 1;
     napi_ref cbOnRef = nullptr;
     if (napi_create_reference(env, context->argv[PARAM1], refCount, &cbOnRef) != napi_ok) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE);
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
         return undefinedResult;
     }
 
