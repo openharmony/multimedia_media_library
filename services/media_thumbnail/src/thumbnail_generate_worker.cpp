@@ -31,9 +31,9 @@
 #include "thermal_mgr_client.h"
 #endif
 
-// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
 static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
 static constexpr int32_t THREAD_NUM_ASYNC_UPDATE_RDB = 1;

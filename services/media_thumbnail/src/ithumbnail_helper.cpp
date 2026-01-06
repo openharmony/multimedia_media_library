@@ -35,10 +35,11 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
-// LCOV_EXCL_START
+
 namespace OHOS {
 namespace Media {
 
+// LCOV_EXCL_START
 void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
 {
     CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;

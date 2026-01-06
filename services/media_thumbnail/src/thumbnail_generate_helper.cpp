@@ -56,9 +56,10 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
-// LCOV_EXCL_START
+
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string SQL_REFRESH_THUMBNAIL_READY =
     " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
