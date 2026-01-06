@@ -1047,6 +1047,22 @@ void GetIsMeLeftJoinPredicates(RdbPredicates &rdbPredicates)
     rdbPredicates.LeftOuterJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
 }
 
+static void ApplyLimitOffsetFromAbs(NativeRdb::RdbPredicates &rdbPredicates,
+    const NativeRdb::AbsRdbPredicates *absPredicates)
+{
+    if (absPredicates == nullptr) {
+        return;
+    }
+    int limit = absPredicates->GetLimit();
+    if (limit >= 0) {
+        rdbPredicates.Limit(limit);
+    }
+    int offset = absPredicates->GetOffset();
+    if (offset >= 0) {
+        rdbPredicates.Offset(offset);
+    }
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
     const std::vector<std::string> &columns)
 {
@@ -1078,6 +1094,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         return nullptr;
     }
     auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
+    ApplyLimitOffsetFromAbs(rdbPredicates, predicates);
     if (whereClause.find(IS_ME) != string::npos &&
         GetPortraitSubtype(IS_ME, whereClause, whereArgs) == QUERY_PROB_IS_ME_VALUE) {
         GetIsMeLeftJoinPredicates(rdbPredicates);
