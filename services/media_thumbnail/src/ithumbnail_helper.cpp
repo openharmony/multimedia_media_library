@@ -35,7 +35,6 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
-
 namespace OHOS {
 namespace Media {
 
