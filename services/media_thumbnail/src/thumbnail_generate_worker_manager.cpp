@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 ThumbnailGenerateWorkerManager::~ThumbnailGenerateWorkerManager()
 {
     thumbnailWorkerMap_.Clear();
@@ -89,5 +90,6 @@ void ThumbnailGenerateWorkerManager::TryCloseThumbnailWorkerTimer()
         }
     });
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

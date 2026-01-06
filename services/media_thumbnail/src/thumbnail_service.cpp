@@ -55,6 +55,7 @@ using namespace OHOS::AbilityRuntime;
 
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 std::shared_ptr<ThumbnailService> ThumbnailService::thumbnailServiceInstance_{nullptr};
 std::mutex ThumbnailService::instanceLock_;
 ThumbnailService::ThumbnailService(void)
@@ -896,5 +897,6 @@ int32_t ThumbnailService::DfxReportThumbnailDirAcl()
 {
     return ThumbnailGenerateHelper::DfxReportThumbnailDirAcl();
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

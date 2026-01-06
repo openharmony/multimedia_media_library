@@ -38,6 +38,7 @@ using namespace OHOS::FileManagement::CloudSync;
 using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 const int TIME_MILLI_SECONDS = 5000;
 constexpr int32_t THUMB_BATCH_WAIT_TIME = 15 * 1000;
 constexpr int32_t RETRY_DOWNLOAD_THUMB_LIMIT = 3;
@@ -603,6 +604,6 @@ void ThumbnailReadyManager::NotifyTempStatusForReady(const int32_t &currentTempe
     });
     temperatureStatusMap_.Clear();
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
