@@ -56,6 +56,7 @@ using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
@@ -1070,5 +1071,6 @@ int32_t ThumbnailGenerateHelper::DfxReportThumbnailDirAcl()
     MEDIA_INFO_LOG("Finish DfxReportThumbnailDirAcl, xattr info:%{public}s", info.xattrInfo.c_str());
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
