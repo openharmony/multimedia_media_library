@@ -56,6 +56,8 @@ public:
     EXPORT int32_t RemoveSingleObserverSingleIds(ObserverInfo &singleObserverInfo, const std::string &singleId);
     EXPORT bool IsSingleIdDataPresentInSingleObserver(const std::unordered_set<std::string> &observedUris,
         const std::string &singleId);
+    EXPORT bool CheckSingleListenSize(const NotifyUriType &registerUri);
+    EXPORT bool CheckSingleProcessSize(const NotifyUriType &registerUri);
 private:
     int32_t RemoveObsDeathRecipient(const wptr<IRemoteObject> &object);
     void ExeForReconnect(const NotifyUriType &registerUri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
