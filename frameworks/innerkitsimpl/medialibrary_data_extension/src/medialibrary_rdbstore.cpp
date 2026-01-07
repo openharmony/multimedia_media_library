@@ -3620,14 +3620,38 @@ void AddCriticalTypeColumns(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-            PhotoColumn::PHOTO_IS_CRITICAL + " INT DEFAULT 0 NOT NULL",
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-            PhotoColumn::PHOTO_CRITICAL_TYPE + " INT DEFAULT 0 NOT NULL",
+            PhotoColumn::PHOTO_IS_CRITICAL + " INT DEFAULT 0 NOT NULL"
     };
 
-    MEDIA_INFO_LOG("add Photos critical_type column starts");
-    ExecSqlsWithDfx(sqls, store, version);
-    MEDIA_INFO_LOG("add Photos critical_type column ends");
+    MEDIA_INFO_LOG("add Photos is_critical column starts");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, version);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute SQLs, error code: %d", ret);
+        return;
+    }
+    MEDIA_INFO_LOG("add Photos is_critical column ends");
+}
+
+void AddPhotoRiskStatusColumnsAndDeleteCritical(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_RISK_STATUS + " INT DEFAULT 0 NOT NULL"
+    };
+
+    MEDIA_INFO_LOG("add Photos photo_risk_status column starts");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, version);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to execute SQLs, error code: %d", ret);
+    MEDIA_INFO_LOG("add Photos photo_risk_status column ends");
+
+    const vector<string> sqlsDrop = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP COLUMN " + PhotoColumn::PHOTO_CRITICAL_TYPE
+    };
+
+    MEDIA_INFO_LOG("drop Photos critical_type column starts");
+    ret = ExecSqlsWithDfx(sqlsDrop, store, version);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Failed to execute SQLs, error code: %d", ret);
+    MEDIA_INFO_LOG("drop Photos critical_type column ends");
 }
 
 void AddLcdAndThumbSizeColumns(RdbStore &store)
@@ -5735,6 +5759,12 @@ static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true)) {
         AddCriticalTypeColumns(store, VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CRITICAL_TYPE_COLUMN_ON_PHOTOS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_RISK_STATUS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_RISK_STATUS, true)) {
+        AddPhotoRiskStatusColumnsAndDeleteCritical(store, VERSION_ADD_PHOTO_RISK_STATUS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_RISK_STATUS, true);
     }
 }
 
