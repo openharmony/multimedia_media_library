@@ -30,6 +30,11 @@ MediaObserverManager::~MediaObserverManager() {}
 
 std::shared_ptr<Media::Notification::MediaObserverManager> MediaObserverManager::observerManager_ = nullptr;
 std::mutex MediaObserverManager::instanceMutex_;
+constexpr size_t MAX_SINGLE_ASSET = 1000 - 1;
+constexpr size_t MAX_SINGLE_ALBUM = 250 - 1;
+constexpr size_t MAX_SINGLE_ASSET_PROCESS = 50;
+constexpr size_t MAX_SINGLE_ALBUM_PROCESS = 50;
+static const int32_t MEDIA_LIBRARY_PARAM_INVALID = 23800151;
 
 std::shared_ptr<Notification::MediaObserverManager> MediaObserverManager::GetObserverManager()
 {
@@ -66,7 +71,8 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
     obsInfo.observer = dataObserver;
     obsInfo.isSystem = permissionHandle.isSystemApp();
     obsInfo.callingTokenId = IPCSkeleton::GetCallingTokenID();
-
+    auto retVal = CheckSingleProcessSize(uri);
+    CHECK_AND_RETURN_RET_LOG(retVal, MEDIA_LIBRARY_PARAM_INVALID, "Exceeds single register specification limit");
     std::lock_guard<std::mutex> lock(mutex_);
     if (observers_.find(uri) == observers_.end()) {
         observers_[uri].push_back(obsInfo);
@@ -246,6 +252,8 @@ int32_t MediaObserverManager::ProcessSingleObserverSingleIds(const NotifyUriType
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
     ret = permissionHandle.SinglePermissionCheck(registerUri, singleId);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
+    auto retVal = CheckSingleListenSize(registerUri);
+    CHECK_AND_RETURN_RET_LOG(retVal, MEDIA_LIBRARY_PARAM_INVALID, "Exceeds single register specification limit");
     auto uriIter = observers_.find(registerUri);
     if (uriIter == observers_.end()) {
         MEDIA_ERR_LOG("the registerUri not registered");
@@ -315,5 +323,46 @@ bool MediaObserverManager::IsSingleIdDataPresentInSingleObserver(
     }
     MEDIA_INFO_LOG("The target singleObserverInfo does not exist");
     return false;
+}
+
+bool MediaObserverManager::CheckSingleListenSize(const NotifyUriType &registerUri)
+{
+    if (registerUri != NotifyUriType::SINGLE_PHOTO_URI &&
+        registerUri != NotifyUriType::SINGLE_PHOTO_ALBUM_URI) {
+        return true;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::size_t listenSize = 0;
+    auto it = observers_.find(registerUri);
+    if (it != observers_.end()) {
+        const std::vector<ObserverInfo>& observerList = it->second;
+        for (const auto& observer : observerList) {
+            listenSize += observer.singleIds.size();
+        }
+    }
+    MEDIA_INFO_LOG("CheckSingleListenSize: listenSize is %{public}" PRId64, static_cast<int64_t>(listenSize));
+    if (registerUri == NotifyUriType::SINGLE_PHOTO_URI) {
+        return listenSize < MAX_SINGLE_ASSET;
+    }
+    return listenSize < MAX_SINGLE_ALBUM;
+}
+
+bool MediaObserverManager::CheckSingleProcessSize(const NotifyUriType &registerUri)
+{
+    if (registerUri != NotifyUriType::SINGLE_PHOTO_URI &&
+        registerUri != NotifyUriType::SINGLE_PHOTO_ALBUM_URI) {
+        return true;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::size_t processSize = 0;
+    auto it = observers_.find(registerUri);
+    if (it != observers_.end()) {
+        processSize = it->second.size();
+    }
+    MEDIA_INFO_LOG("CheckSingleRegisterSize: processSize is %{public}" PRId64, static_cast<int64_t>(processSize));
+    if (registerUri == NotifyUriType::SINGLE_PHOTO_URI) {
+        return processSize < MAX_SINGLE_ASSET_PROCESS;
+    }
+    return processSize < MAX_SINGLE_ALBUM_PROCESS;
 }
 } // OHOS::Media
