@@ -145,6 +145,7 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/inner_get_result_set_from_photos_extend_test.cpp",
     "./src/inner_photo_uri_permission_test.cpp",
     "./src/media_assets_controller_test.cpp",
+    "./src/mock_thumbnail_wifi_test.cpp",
     "./src/modify_assets_test.cpp",
     "./src/query_cloud_enhancement_task_state_test.cpp",
     "./src/query_edit_asset_status_test.cpp",
