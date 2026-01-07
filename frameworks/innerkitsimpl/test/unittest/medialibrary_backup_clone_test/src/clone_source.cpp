@@ -53,6 +53,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { ANALYSIS_BEAUTY_SCORE_TABLE, CREATE_AESTHETICS_SCORE_TBL },
     { ANALYSIS_VIDEO_FACE_TABLE, CREATE_VIDEO_FACE_TBL },
     { ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE },
+    { VISION_VIDEO_TOTAL_TABLE, CREATE_TAB_ANALYSIS_VIDEO_TOTAL},
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -72,6 +73,7 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { ANALYSIS_SEARCH_INDEX_TABLE, InsertType::ANALYSIS_SEARCH_INDEX },
     { ANALYSIS_BEAUTY_SCORE_TABLE, InsertType::BEAUTY_SCORE_TBL },
     { ANALYSIS_VIDEO_FACE_TABLE, InsertType::VIDEO_FACE_TBL },
+    { ANALYSIS_VIDEO_TOTAL_TABLE, InsertType::TAB_ANALYSIS_VIDEO_TOTAL},
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
