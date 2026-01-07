@@ -879,14 +879,14 @@ int32_t FileAsset::GetCritical() const
     return GetInt32Member(PhotoColumn::PHOTO_IS_CRITICAL);
 }
 
-void FileAsset::SetCriticalType(int32_t IsCriticalType)
+void FileAsset::SetRiskStatus(int32_t photoRiskStatus)
 {
-    member_[PhotoColumn::PHOTO_CRITICAL_TYPE] = IsCriticalType;
+    member_[PhotoColumn::PHOTO_RISK_STATUS] = photoRiskStatus;
 }
 
-int32_t FileAsset::GetCriticalType() const
+int32_t FileAsset::GetRiskStatus() const
 {
-    return GetInt32Member(PhotoColumn::PHOTO_CRITICAL_TYPE);
+    return GetInt32Member(PhotoColumn::PHOTO_RISK_STATUS);
 }
 }  // namespace Media
 }  // namespace OHOS
