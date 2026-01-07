@@ -26,6 +26,7 @@
 #include "medialibrary_errno.h"
 #include "observer_info.h"
 #include "media_datashare_stub_impl.h"
+#include "medialibrary_tracer.h"
 
 #include <map>
 #include <unordered_set>
@@ -163,6 +164,8 @@ static void FilterForRecheckChanges(MediaChangeInfo& outerElem, std::vector<Noti
 static void MergeNotifyInfoForSingleType(std::vector<MediaChangeInfo>& changeInfos,
     std::vector<NotifyInfo>& notifyInfos, bool isPhotoAsset)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MergeNotifyInfoForSingleType");
     auto manager = MediaObserverManager::GetObserverManager();
     Notification::NotifyUriType sourceUri = isPhotoAsset ?
         NotifyUriType::PHOTO_URI : NotifyUriType::PHOTO_ALBUM_URI;
@@ -247,6 +250,8 @@ std::vector<NotifyInfo> NotificationMerging::ProcessNotifyInfos(const std::vecto
 std::vector<NotifyInfo> NotificationMerging::MergeNotifyInfo(std::vector<MediaChangeInfo> changeInfos)
 {
     MEDIA_INFO_LOG("Merging notification information");
+    MediaLibraryTracer tracer;
+    tracer.Start("Merging notification information");
     CHECK_AND_RETURN_RET_LOG(!changeInfos.empty(), {}, "changeInfos is null");
     std::vector<NotifyInfo> notifyInfos = ProcessNotifyInfos(changeInfos);
     MergeNotifyInfoForSingleType(changeInfos, notifyInfos, true);
