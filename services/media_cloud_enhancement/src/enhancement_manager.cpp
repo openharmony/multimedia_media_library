@@ -43,6 +43,7 @@
 #include "photo_file_utils.h"
 #include "image_source.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_related_system_state_manager.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -375,8 +376,8 @@ void EnhancementManager::InitPhotosSettingsMonitor()
     photosWaterMarkObserver_ = std::make_unique<PhotosWaterMarkObserver>().release();
     SettingsMonitor::RegisterSettingsObserver(autoOptionUri, photosAutoOptionObserver_);
     SettingsMonitor::RegisterSettingsObserver(waterMarknUri, photosWaterMarkObserver_);
-    isWifiConnected_ = MedialibrarySubscriber::IsWifiConnected();
-    isCellularNetConnected_ = MedialibrarySubscriber::IsCellularNetConnected();
+    isWifiConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected();
+    isCellularNetConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnected();
     shouldAddWaterMark_ = SettingsMonitor::QueryPhotosWaterMark();
     photosAutoOption_ = SettingsMonitor::QueryPhotosAutoOption();
     HandleAutoAddOperation(true);

@@ -90,6 +90,7 @@ group("test") {
     "unittest/media_lake_load_test:unittest",
     "unittest/media_common_utils_test:unittest",
     "unittest/media_permission_helper_test:unittest",
+    "unittest/media_library_related_system_state_test:unittest",
   ]
 
   deps_cloud_sync_unittest = [

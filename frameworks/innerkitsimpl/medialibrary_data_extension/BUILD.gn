@@ -865,6 +865,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_photo_operations.cpp",
     "src/medialibrary_ptp_operations.cpp",
     "src/medialibrary_rdbstore.cpp",
+    "src/medialibrary_related_system_state_manager.cpp",
     "src/medialibrary_restore.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",

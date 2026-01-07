@@ -66,9 +66,6 @@
 #include "shooting_mode_album_operation.h"
 #include "parameters.h"
 #include "height_width_correct_operation.h"
-#ifdef HAS_WIFI_MANAGER_PART
-#include "wifi_device.h"
-#endif
 #include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
@@ -93,7 +90,7 @@ using namespace OHOS::AAFwk;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 shared_ptr<MedialibrarySubscriber> MedialibrarySubscriber::subscriber_ = nullptr;
 std::future<bool> MedialibrarySubscriber::subscribeAsyncTask_;
 std::mutex MedialibrarySubscriber::subscribeLock_;
@@ -184,22 +181,6 @@ bool GetNowLocalTime(std::tm &nowLocalTime)
     return localtime_r(&nowTime, &nowLocalTime) != nullptr;
 }
 
-void MedialibrarySubscriber::RefreshCellularNetStatus()
-{
-    NetManagerStandard::NetHandle handle;
-    int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
-    CHECK_AND_RETURN_LOG(ret == 0, "GetDefaultNet failed, err:%{public}d", ret);
-    NetManagerStandard::NetAllCapabilities netAllCap;
-    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
-    CHECK_AND_RETURN_LOG(ret == 0, "GetNetCapabilities failed, err:%{public}d", ret);
-    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
-    if (types.count(NetManagerStandard::BEARER_CELLULAR)) {
-        MEDIA_INFO_LOG("init cellular status success: %{public}d", isCellularNetConnected_);
-        isCellularNetConnected_ = true;
-    }
-    return;
-}
-
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
 {
@@ -219,18 +200,8 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
     isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
 #endif
-#ifdef HAS_WIFI_MANAGER_PART
-    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
-    if (wifiDevicePtr == nullptr) {
-        MEDIA_ERR_LOG("MedialibrarySubscriber wifiDevicePtr is null");
-    } else {
-        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected_);
-        if (ret != Wifi::WIFI_OPT_SUCCESS) {
-            MEDIA_ERR_LOG("MedialibrarySubscriber Get-IsConnected-fail: -%{public}d", ret);
-        }
-    }
-#endif
-    MedialibrarySubscriber::RefreshCellularNetStatus();
+    isWifiConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime();
+    isCellularNetConnected_ = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime();
     MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(
         isScreenOff_ && isCharging_ && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY
         && isDeviceTemperatureProper_);
@@ -265,7 +236,8 @@ void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
         if (isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
         }
-        if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn) {
+        if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() &&
+            !isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck(); // 批量下载立即停止
         }
     }
@@ -533,16 +505,6 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     }
 }
 
-bool MedialibrarySubscriber::IsCellularNetConnected()
-{
-    return isCellularNetConnected_;
-}
-
-bool MedialibrarySubscriber::IsWifiConnected()
-{
-    return isWifiConnected_;
-}
-
 bool MedialibrarySubscriber::IsCurrentStatusOn()
 {
     return currentStatus_;
@@ -578,8 +540,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         MediaLibraryBundleManager::GetInstance()->Clear();
         PermissionUtils::ClearBundleInfoInCache();
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
-        // when turn off gallery switch or quit account, clear the download lastest finished flag,
-        // so we can download lastest images for the subsequent login new account
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
 #endif
@@ -594,10 +554,18 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
-
-    std::string type = want.GetStringParam(CLOUD_EVENT_INFO_TYPE);
-    if (action == CLOUD_UPDATE_EVENT && type == CLOUD_EVENT_INFO_TYPE_VALUE) {
+    if (action == CLOUD_UPDATE_EVENT && want.GetStringParam(CLOUD_EVENT_INFO_TYPE) == CLOUD_EVENT_INFO_TYPE_VALUE) {
         PermissionWhitelistUtils::OnReceiveEvent();
+    }
+    HandleNetInfoChange(action);
+}
+
+void MedialibrarySubscriber::HandleNetInfoChange(std::string &action)
+{
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
+        action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
+            MedialibraryRelatedSystemStateManager::GetInstance()->SetCellularNetConnected(isCellularNetConnected_);
+            MedialibraryRelatedSystemStateManager::GetInstance()->SetWifiConnected(isWifiConnected_);
     }
 }
 
@@ -1375,5 +1343,6 @@ void MedialibrarySubscriber::InitFaCardAfterDataShareReady(const std::string &ac
         MediaLibraryFaCardOperations::InitFaCard());
 }
 #endif
+// LCOV_EXCL_STOP
 }  // namespace Media
 }  // namespace OHOS
