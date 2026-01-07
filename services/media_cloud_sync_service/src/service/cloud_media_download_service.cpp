@@ -299,7 +299,8 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &
     assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.mediaType = photosPo.mediaType.value_or(0);
     assetData.exifRotate = CloudMediaSyncUtils::GetExifRotate(assetData.mediaType, assetData.localPath);
-    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0;
+    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0 || photosPo.editTime.value_or(0) > 0 ||
+        photosPo.movingPhotoEffectMode.value_or(0) > 0;
     return assetData;
 }
 
@@ -328,7 +329,8 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadLakeAssetData(Photos
     assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
         (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
     assetData.lakeInfo = lakeInfos.at(photosPo.cloudId.value_or(""));
-    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0;
+    assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0 || photosPo.editTime.value_or(0) > 0 ||
+        photosPo.movingPhotoEffectMode.value_or(0) > 0;
     return assetData;
 }
 

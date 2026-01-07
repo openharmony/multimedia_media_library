@@ -433,8 +433,7 @@ void CloudMediaDownloadDao::FillHdrModeInfo(NativeRdb::ValuesBucket &values,
 {
     bool isValid = scanResult.scanSuccess;
     CHECK_AND_RETURN(isValid);
-    bool isNeedFill = isNeedUpdate && scanResult.hdrMode != static_cast<int32_t>(HdrMode::DEFAULT);
-    CHECK_AND_RETURN(isNeedFill);
+    CHECK_AND_RETURN(isNeedUpdate);
     values.PutInt(PhotoColumn::PHOTO_HDR_MODE, scanResult.hdrMode);
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 }
