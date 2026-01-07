@@ -39,9 +39,8 @@
 #include "photos_po_writer.h"
 #include "photos_po.h"
 #include "lake_file_utils.h"
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-#include "background_cloud_batch_selected_file_processor.h"
-#endif
+#include "medialibrary_related_system_state_manager.h"
+
 
 namespace OHOS::Media::Background {
 // LCOV_EXCL_START
@@ -119,7 +118,6 @@ void RepairFutureDateTask::UpdateFutureDate(
 
 void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &terminate, const std::vector<PhotosPo> &photos)
 {
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     for (const PhotosPo &photosPo : photos) {
         if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
             MEDIA_INFO_LOG("Break repair future date cause invalid status");
@@ -138,10 +136,8 @@ void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &termina
             continue;
         }
 
-        bool netValidated = BackgroundCloudBatchSelectedFileProcessor::IsNetValidated();
-        bool isWifiAvailable = netValidated && (MedialibrarySubscriber::IsWifiConnected() &&
-                                                   !MedialibrarySubscriber::IsCellularNetConnected());
-        if (position == static_cast<int32_t>(PhotoPosition::POSITION_CLOUD) && !isWifiAvailable) {
+        if (position == static_cast<int32_t>(PhotoPosition::POSITION_CLOUD) &&
+            !MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableInOnlyWifiCondition()) {
             MEDIA_INFO_LOG("Break repair future date cause wifi is invalid");
             terminate = true;
             return;
@@ -160,7 +156,6 @@ void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &termina
         }
         this_thread::sleep_for(chrono::milliseconds(dateRepairInterval));
     }
-#endif
 }
 
 void RepairFutureDateTask::Execute()

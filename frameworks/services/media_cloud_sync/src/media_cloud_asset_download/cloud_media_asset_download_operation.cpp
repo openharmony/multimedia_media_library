@@ -28,6 +28,8 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "net_conn_client.h"
+#include "userfile_manager_types.h"
+#include "medialibrary_related_system_state_manager.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -135,12 +137,6 @@ void CloudMediaAssetDownloadOperation::ClearData(CloudMediaAssetDownloadOperatio
 bool CloudMediaAssetDownloadOperation::IsDataEmpty(CloudMediaAssetDownloadOperation::DownloadFileData &data)
 {
     return data.fileDownloadMap.IsEmpty();
-}
-
-bool CloudMediaAssetDownloadOperation::IsNetworkAvailable()
-{
-    return (IsWifiConnected() ||
-        (IsCellularNetConnected() && isUnlimitedTrafficStatusOn_));
 }
 
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDownloadFilesNeeded(
@@ -322,10 +318,7 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
 
 void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &isForeground)
 {
-    isUnlimitedTrafficStatusOn_ = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
-    MEDIA_INFO_LOG("isUnlimitedTrafficStatusOn_ is %{public}d", static_cast<int32_t>(isUnlimitedTrafficStatusOn_));
-
-    if (!isForeground && !IsWifiConnected()) {
+    if (!isForeground && !MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected()) {
         MEDIA_WARN_LOG("Failed to init startDownloadTaskStatus, wifi is not connected.");
         SetTaskStatus(Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE);
         return;
@@ -336,8 +329,8 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
         return;
     }
-    if (!IsNetworkAvailable()) {
-        Status status = IsCellularNetConnected() ?
+    if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition()) {
+        Status status = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnected() ?
             Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
         SetTaskStatus(status);
         MEDIA_ERR_LOG("No wifi and no cellular data.");
@@ -565,7 +558,6 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
 
     isThumbnailUpdate_ = true;
     isBgDownloadPermission_ = false;
-    isUnlimitedTrafficStatusOn_ = false;
 
     totalCount_ = 0;
     totalSize_ = 0;
@@ -702,7 +694,8 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            if (!IsNetworkAvailable() || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
+            if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition()
+                || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
                 PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
             }
             MoveDownloadFileToCache(progress, true);
@@ -770,20 +763,5 @@ void CloudMediaAssetDownloadOperation::HandleOnRemoteDied()
     CancelDownloadTask();
 }
 
-bool CloudMediaAssetDownloadOperation::IsWifiConnected()
-{
-    if (netObserver_ == nullptr) {
-        return CommonEventUtils::IsWifiConnected();
-    }
-    return netObserver_->IsWifiConnected();
-}
-
-bool CloudMediaAssetDownloadOperation::IsCellularNetConnected()
-{
-    if (netObserver_ == nullptr) {
-        return CommonEventUtils::IsCellularNetConnected();
-    }
-    return netObserver_->IsCellularNetConnected();
-}
 } // namespace Media
 } // namespace OHOS
