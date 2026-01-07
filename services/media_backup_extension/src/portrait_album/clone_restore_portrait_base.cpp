@@ -36,6 +36,8 @@
 #include "upgrade_restore_task_report.h"
 
 namespace OHOS::Media {
+static const std::string ANALYSIS_COL_EDIT_OPERATION = "edit_operation";
+
 void CloneRestorePortraitBase::GetMaxAlbumId()
 {
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_ALBUM_TABLE, "album_id");
