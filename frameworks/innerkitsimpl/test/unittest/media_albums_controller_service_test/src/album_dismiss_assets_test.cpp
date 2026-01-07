@@ -37,6 +37,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "medialibrary_data_manager.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -53,7 +54,7 @@ struct PortraitData {
 };
 
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     PhotoAlbumColumns::CREATE_TABLE,
     CREATE_TAB_IMAGE_FACE,
     CREATE_ANALYSIS_ALBUM_MAP,

@@ -30,6 +30,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_data_manager.h"
 #include "media_column.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;

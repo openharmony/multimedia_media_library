@@ -54,6 +54,8 @@
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 namespace OHOS {
@@ -2466,7 +2468,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
                           ", -1 AS " + MediaColumn::MEDIA_TYPE +
                           " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
 
-    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
+    string mediaVolumeQuery = PhotoUpgrade::QUERY_MEDIA_VOLUME + " UNION ALL " +
                               AudioColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
                               thumbSizeSql;
 

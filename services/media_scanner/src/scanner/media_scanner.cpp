@@ -40,6 +40,7 @@
 #include "medialibrary_photo_operations.h"
 #include "refresh_business_name.h"
 #include "metadata_extractor.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

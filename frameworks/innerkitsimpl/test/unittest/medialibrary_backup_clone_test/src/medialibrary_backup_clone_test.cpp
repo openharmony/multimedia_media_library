@@ -57,6 +57,8 @@
 #include "parameters.h"
 #include "media_config_info_column.h"
 #include "values_bucket.h"
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS;
@@ -97,7 +99,7 @@ const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 const int32_t PAGE_SIZE = 200;
 
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     PhotoAlbumColumns::CREATE_TABLE,
     PhotoMap::CREATE_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
@@ -1369,7 +1371,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
 
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     ASSERT_NE(store, nullptr);
-    store->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    store->ExecuteSql(PhotoUpgrade::CREATE_PHOTO_TABLE);
     store->ExecuteSql(string("INSERT INTO Photos (file_id, data, display_name, size, owner_album_id") +
         ") VALUES (1, 'test', 'test.jpg', 100, 0)");
 

@@ -48,6 +48,7 @@
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

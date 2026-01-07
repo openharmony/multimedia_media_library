@@ -41,6 +41,7 @@
 #undef private
 #undef protected
 #include "mimetype_utils.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS;

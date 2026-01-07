@@ -120,6 +120,7 @@
 #include "settings_data_manager.h"
 #include "media_image_framework_utils.h"
 #include "global_scanner.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -509,11 +510,11 @@ static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
 {
     MEDIA_INFO_LOG("Start to add shooting mode album index");
     const vector<string> sqls = {
-        PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
-        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
-        PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
-        PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
-        PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
     };
     for (const auto& sql : sqls) {
         int ret = store->ExecuteSql(sql);
@@ -526,8 +527,8 @@ static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
 {
     MEDIA_INFO_LOG("Start to Update burst mode album index");
     const vector<string> sqls = {
-        PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX,
-        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+        PhotoUpgrade::DROP_BURST_MODE_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
     };
     for (size_t i = 0; i < sqls.size(); i++) {
         int ret = store->ExecuteSql(sqls[i]);
