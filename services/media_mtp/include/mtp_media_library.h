@@ -116,7 +116,8 @@ private:
         std::shared_ptr<UInt8List> &outThumb);
     void CondCloseFd(const bool condition, const int fd);
     void CorrectStorageId(const std::shared_ptr<MtpOperationContext> &context);
-    void HaveRotateToChangeWidthHeight(int32_t &width, int32_t &height);
+    void HaveRotateToChangeWidthHeight(int32_t &width, int32_t &height,
+        std::unordered_map<int32_t, std::string> &resultMap);
 
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;
