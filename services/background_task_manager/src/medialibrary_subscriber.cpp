@@ -540,8 +540,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         MediaLibraryBundleManager::GetInstance()->Clear();
         PermissionUtils::ClearBundleInfoInCache();
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
-        // when turn off gallery switch or quit account, clear the download lastest finished flag,
-        // so we can download lastest images for the subsequent login new account
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
 #endif
