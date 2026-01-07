@@ -556,9 +556,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
-
-    std::string type = want.GetStringParam(CLOUD_EVENT_INFO_TYPE);
-    if (action == CLOUD_UPDATE_EVENT && type == CLOUD_EVENT_INFO_TYPE_VALUE) {
+    if (action == CLOUD_UPDATE_EVENT && want.GetStringParam(CLOUD_EVENT_INFO_TYPE) == CLOUD_EVENT_INFO_TYPE_VALUE) {
         PermissionWhitelistUtils::OnReceiveEvent();
     }
     HandleNetInfoChange(action);
