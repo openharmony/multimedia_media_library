@@ -212,7 +212,7 @@ static void SetPullDataFromPhotosPoTest()
 }
 
 static void HandleCloudDeleteRecordTest()
-{   
+{
     CloudMediaPullDataDto pullData;
     pullData.localPath = provider->ConsumeBytesAsString(NUM_BYTES);
     pullData.basicIsDelete = provider->ConsumeBool();
