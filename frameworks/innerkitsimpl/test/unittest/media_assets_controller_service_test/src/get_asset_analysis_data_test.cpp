@@ -35,6 +35,7 @@
 #include "vision_total_column.h"
 #include "vision_db_sqls.h"
 #include "vision_aesthetics_score_column.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -51,7 +52,7 @@ static std::string Quote(const std::string &str)
 
 static std::vector<std::string> createTableSqlLists = {
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
 };
 
 static std::vector<std::string> testTables = {

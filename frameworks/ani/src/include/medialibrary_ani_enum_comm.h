@@ -29,6 +29,7 @@
 #include "photo_album_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

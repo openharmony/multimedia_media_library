@@ -37,6 +37,7 @@
 #include "vision_db_sqls.h"
 #include "vision_photo_map_column.h"
 #include "medialibrary_data_manager.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -53,7 +54,7 @@ static string g_title = "cam_pic";
 
 static std::vector<std::string> createTableSqlLists = {
     PhotoAlbumColumns::CREATE_TABLE,
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_ANALYSIS_ALBUM,
     CREATE_ANALYSIS_ALBUM_MAP,
 };

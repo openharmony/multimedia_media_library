@@ -64,6 +64,7 @@
 #include "media_file_change_manager.h"
 #include "product_info.h"
 #include "photo_album_upload_status_operation.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

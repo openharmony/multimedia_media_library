@@ -47,6 +47,7 @@
 #include "data_secondary_directory_uri.h"
 #include "image_source.h"
 #include "image_packer.h"
+#include "media_audio_column.h"
 
 using namespace std;
 

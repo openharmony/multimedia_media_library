@@ -75,6 +75,7 @@
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
 #include "medialibrary_notify_callback_wrapper_ani.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

@@ -58,6 +58,7 @@
 #include "media_enhance_bundle_c_api.h"
 #include "photo_file_utils.h"
 #endif
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -134,7 +135,7 @@ void CleanTestTables()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         CREATE_MEDIA_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {

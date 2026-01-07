@@ -36,6 +36,7 @@
 #include "cloud_enhancement_uri.h"
 #include "smart_album_column.h"
 #include "custom_record_uri.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

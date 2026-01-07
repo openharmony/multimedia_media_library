@@ -44,6 +44,7 @@
 #include "image_format_convert.h"
 #include "highlight_column.h"
 #include "lake_file_utils.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;

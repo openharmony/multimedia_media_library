@@ -28,6 +28,7 @@
 #include "medialibrary_uripermission_operations.h"
 #include "permission_utils.h"
 #include "dfx_utils.h"
+#include "media_audio_column.h"
 
 using namespace std;
 namespace OHOS {
