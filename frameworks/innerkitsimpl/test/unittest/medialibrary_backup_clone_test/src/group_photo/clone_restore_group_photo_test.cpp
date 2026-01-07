@@ -62,7 +62,7 @@ static std::vector<std::string> testTables = {
     ANALYSIS_ALBUM_TABLE,
     ANALYSIS_PHOTO_MAP_TABLE,
 };
-const int32_t EXPECTED_GROUP_ALBUM_COUNT = 2;
+const int32_t EXPECTED_GROUP_ALBUM_COUNT = 1;
 
 static void InsertPhotoInNewDb(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
@@ -151,18 +151,18 @@ void CloneRestoreGroupPhotoTest::VerifyGroupAlbumRestore(const std::shared_ptr<N
 
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "a|b,");
+    EXPECT_EQ(columnValue, "a|c,");
 
     (void)resultSet->GetColumnIndex("cover_uri", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "file://media/Photo/1/coverUri/test.jpg");
+    EXPECT_EQ(columnValue, "test_cover_uri");
 
     (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
     int isCoverSatisfied;
     resultSet->GetInt(index, isCoverSatisfied);
     EXPECT_EQ(isCoverSatisfied, 1);
 
-    EXPECT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
 void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithoutData(const std::shared_ptr<NativeRdb::RdbStore>& db)

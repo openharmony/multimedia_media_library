@@ -90,15 +90,24 @@ static std::shared_ptr<MediaLibraryMockHapToken> hapToken = nullptr;
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
 MediaPermissionHelper* mediaPermissionHelper = MediaPermissionHelper::GetMediaPermissionHelper();
 
+void mockToken(const std::vector<std::string>& perms, shared_ptr<MediaLibraryMockHapToken>& token)
+{
+    // mock tokenID
+    token = make_shared<MediaLibraryMockHapToken>("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
+}
 
 void MediaPermissionHelperTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("MediaPermissionHelperTest::SetUpTestCase:: invoked");
-    CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    if (sDataShareHelper_ == nullptr) {
-        exit(0);
-    }
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
+    CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+    ASSERT_NE(sDataShareHelper_, nullptr);
     // make sure board is empty
     ClearAllFile();
 
@@ -108,6 +117,9 @@ void MediaPermissionHelperTest::SetUpTestCase(void)
     sDataShareHelper_->Insert(scanUri, valuesBucket);
     sleep(SCAN_WAIT_TIME);
     mediaPermissionHelper->InitMediaPermissionHelper();
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
     MEDIA_INFO_LOG("MediaPermissionHelperTest::SetUpTestCase:: Finish");
 }
 
@@ -121,15 +133,6 @@ void MediaPermissionHelperTest::TearDownTestCase(void)
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
-
-void mockToken(const std::vector<std::string>& perms, shared_ptr<MediaLibraryMockHapToken>& token)
-{
-    // mock tokenID
-    token = make_shared<MediaLibraryMockHapToken>("com.ohos.medialibrary.medialibrarydata", perms);
-    for (auto &perm : perms) {
-        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
-    }
 }
 
 // SetUp:Execute before each test case
