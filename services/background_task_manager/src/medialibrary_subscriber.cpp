@@ -90,7 +90,7 @@ using namespace OHOS::AAFwk;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 shared_ptr<MedialibrarySubscriber> MedialibrarySubscriber::subscriber_ = nullptr;
 std::future<bool> MedialibrarySubscriber::subscribeAsyncTask_;
 std::mutex MedialibrarySubscriber::subscribeLock_;
@@ -1347,5 +1347,6 @@ void MedialibrarySubscriber::InitFaCardAfterDataShareReady(const std::string &ac
         MediaLibraryFaCardOperations::InitFaCard());
 }
 #endif
+// LCOV_EXCL_STOP
 }  // namespace Media
 }  // namespace OHOS
