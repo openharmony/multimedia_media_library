@@ -40,7 +40,7 @@ ohos_unittest("media_library_asset_helper_capi_test") {
   ]
 
   sources = [
-    "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/media_library_asset_helper_capi_test.cpp",
   ]
 

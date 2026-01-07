@@ -1096,7 +1096,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDownloadControllerService_On
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_MEDIA_CLOUD_ARGS_INVAILD);
+    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDownloadControllerService_OnDownloadThms_Test_002, TestSize.Level1)
@@ -1113,7 +1113,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDownloadControllerService_On
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_EQ(ret, E_MEDIA_CLOUD_ARGS_INVAILD);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDownloadControllerService_OnDownloadThms_Test_003, TestSize.Level1)

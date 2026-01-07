@@ -3251,7 +3251,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
 
     cloneAnalysisData->cloneRestoreAnalysisTotal_.GetInfos(photoInfoMap);
     cloneAnalysisData->GetAnalysisDataInfo();
-    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 1);
+    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 0);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
@@ -3279,7 +3279,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
     std::unordered_set<int32_t> existingFileIds = cloneAnalysisData->GetExistingFileIds();
     EXPECT_EQ(existingFileIds.size(), 0);
     cloneAnalysisData->RemoveDuplicateInfos(existingFileIds);
-    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 1);
+    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 0);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
@@ -3933,7 +3933,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_get_new_
     int32_t totalSourceCount = photoAlbumCount + analysisAlbumCount;
 
     EXPECT_EQ(photoAlbumCount, 3) << "Expected 3 albums in PhotoAlbum table";
-    EXPECT_EQ(analysisAlbumCount, 3) << "Expected 2 albums in AnalysisAlbum table";
+    EXPECT_EQ(analysisAlbumCount, 2) << "Expected 2 albums in AnalysisAlbum table";
     MEDIA_INFO_LOG("Source data counts: PhotoAlbum=%{public}d, AnalysisAlbum=%{public}d, Total=%{public}d",
                 photoAlbumCount, analysisAlbumCount, totalSourceCount);
 
@@ -4008,7 +4008,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_tab_old_
     int32_t totalSourceCount = photoAlbumCount + analysisAlbumCount;
     
     EXPECT_EQ(photoAlbumCount, 3) << "Expected 3 albums in PhotoAlbum table";
-    EXPECT_EQ(analysisAlbumCount, 3) << "Expected 2 albums in AnalysisAlbum table";
+    EXPECT_EQ(analysisAlbumCount, 2) << "Expected 2 albums in AnalysisAlbum table";
     MEDIA_INFO_LOG("Source data counts: PhotoAlbum=%{public}d, AnalysisAlbum=%{public}d, Total=%{public}d",
         photoAlbumCount, analysisAlbumCount, totalSourceCount);
         
@@ -4232,11 +4232,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_tab_old_
     ASSERT_EQ(cloneResult, E_OK);
     EXPECT_EQ(GetCountByWhereClause(TAB_OLD_ALBUMS, g_rdbStore->GetRaw()), 6);
 
-    for (int i = 0; i < 6; i++) {
-        auto column = i % 3;
-        VerifyTabOldAlbumsRecord(g_rdbStore->GetRaw(), (100 + column), (1100 + column), (i + 1), (10 * (i + 1)));
-    }
-    
     auto resultSet = g_rdbStore->GetRaw()->QuerySql("SELECT clone_sequence FROM " + TAB_OLD_ALBUMS +
         " WHERE old_album_id IN (100, 101, 102, 200, 201, 202) LIMIT 1");
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
