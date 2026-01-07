@@ -247,6 +247,9 @@ const std::string PET_FACE_COL_BEAUTY_BOUNDER_WIDTH = "beauty_bounder_width";
 const std::string PET_FACE_COL_BEAUTY_BOUNDER_HEIGHT = "beauty_bounder_height";
 const std::string PET_FACE_COL_DATE_MODIFIED = "date_modified";
 
+// tab_analysis_video_total TBL COL_NAME
+const std::string ANALYSIS_VIDEO_TOTAL_TABLE = "tab_analysis_video_total";
+
 // Relationship
 enum RelationshipIndex {
     INDEX_ME = 0,
