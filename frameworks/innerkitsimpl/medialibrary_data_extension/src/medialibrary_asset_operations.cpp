@@ -3099,7 +3099,9 @@ static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const boo
         MediaLibraryRestore::GetInstance().CheckRestore(err);
         return E_HAS_DB_ERROR;
     }
-    CloudSyncHelper::GetInstance()->StartSync();
+    bool isValid = (table == PhotoColumn::PHOTOS_TABLE) || (table == PhotoAlbumColumns::TABLE);
+    isValid = isValid && (deletedRows > 0);
+    CHECK_AND_EXECUTE(!isValid, CloudSyncHelper::GetInstance()->StartSync());
     return deletedRows;
 }
 
