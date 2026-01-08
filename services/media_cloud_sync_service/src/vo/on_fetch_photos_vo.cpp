@@ -88,8 +88,8 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     CHECK_AND_RETURN_RET(parcel.WriteBool(this->isDelete), false);
     CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
     CHECK_AND_RETURN_RET(parcel.WriteString(this->storagePath), false);
-    // Safe Album: critical type for children's watch
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->criticalType), false);
+    // Safe Album: risk status for children's watch
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->photoRiskStatus), false);
     CHECK_AND_RETURN_RET(parcel.WriteInt32(this->isCritical), false);
     return true;
 }
@@ -158,8 +158,8 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     CHECK_AND_RETURN_RET(parcel.ReadBool(this->isDelete), false);
     CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
     CHECK_AND_RETURN_RET(parcel.ReadString(this->storagePath), false);
-    // Safe Album: critical type for children's watch
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->criticalType), false);
+    // Safe Album: risk status for children's watch
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->photoRiskStatus), false);
     CHECK_AND_RETURN_RET(parcel.ReadInt32(this->isCritical), false);
     return true;
 }
@@ -249,7 +249,7 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"videoMode\": \"" << videoMode << "\","
        << "\"fileSourceType\": \"" << fileSourceType << "\","
        << "\"storagePath\": \"" << storagePath << "\","
-       << "\"criticalType\": \"" << criticalType << "\","
+       << "\"photoRiskStatus\": \"" << photoRiskStatus << "\","
        << "\"isCritical\": \"" << isCritical << "\",";
     return;
 }
