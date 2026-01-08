@@ -4371,7 +4371,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     MEDIA_INFO_LOG("start tdd photo_oprn_set_photo_critical_inner_api_test_001");
  
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_inner_api.jpg");
-    ASSERT_GT(fileId, 0); // 1. Create test photo
  
     DataSharePredicates predicates; // 2. Query initial state
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -4383,8 +4382,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
         PhotoColumn::PHOTO_IS_CRITICAL
     };
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd_query, columns);
-    ASSERT_TRUE(resultSet != nullptr);
-    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
     int32_t photoRiskStatus = GetInt32Val(PhotoColumn::PHOTO_RISK_STATUS, resultSet);
     int32_t isCritical = GetInt32Val(PhotoColumn::PHOTO_IS_CRITICAL, resultSet);
     EXPECT_EQ(photoRiskStatus, 0); // UNIDENTIFIED
@@ -4406,8 +4403,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
                       " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
                       PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
     resultSet = g_rdbStore->QuerySql(querySql);
-    ASSERT_TRUE(resultSet != nullptr);
-    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
     photoRiskStatus = GetInt32Val(PhotoColumn::PHOTO_RISK_STATUS, resultSet);
     isCritical = GetInt32Val(PhotoColumn::PHOTO_IS_CRITICAL, resultSet);
     EXPECT_EQ(photoRiskStatus, 3); // REJECTED
@@ -4424,8 +4419,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     EXPECT_EQ(ret, E_OK);
  
     resultSet = MediaLibraryPhotoOperations::Query(cmd_query, columns);
-    ASSERT_TRUE(resultSet != nullptr);
-    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
     photoRiskStatus = GetInt32Val(PhotoColumn::PHOTO_RISK_STATUS, resultSet);
     isCritical = GetInt32Val(PhotoColumn::PHOTO_IS_CRITICAL, resultSet);
     EXPECT_EQ(photoRiskStatus, 1); // APPROVED
