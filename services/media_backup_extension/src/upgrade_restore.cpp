@@ -1006,6 +1006,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, PhotoRiskStatus::UNIDENTIFIED);
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
@@ -1067,7 +1068,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     } else {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     }
-    values.PutInt(PhotoColumn::PHOTO_CRITICAL_TYPE, CriticalType::UNKNOWN_CRITICAL_TYPE);
     return values;
 }
 
