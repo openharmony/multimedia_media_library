@@ -25,6 +25,7 @@
 #include "userfilemgr_uri.h"
 #include "post_event_utils.h"
 #include "photo_file_utils.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

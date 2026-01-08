@@ -36,6 +36,7 @@
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "medialibrary_business_code.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -49,7 +50,7 @@ const std::string RELATIONSHIP = "relationship";
 static string g_albumName = "test01";
 
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     PhotoAlbumColumns::CREATE_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
 };

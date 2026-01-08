@@ -32,6 +32,7 @@
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "photo_album_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -430,7 +431,7 @@ bool MediaLibraryUnitTestUtils::CreateBasicTables(const std::shared_ptr<MediaLib
     }
     std::vector<std::string> testTables = {
         PhotoAlbumColumns::CREATE_TABLE,
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         // add more
     };
     for (const auto& table : testTables) {

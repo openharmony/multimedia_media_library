@@ -63,6 +63,7 @@
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_file_utils.h"
 #include "cloud_media_common.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

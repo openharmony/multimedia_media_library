@@ -53,6 +53,7 @@
 #include "cloud_media_asset_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "parameters.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -97,7 +98,7 @@ void CleanTestTables()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         CREATE_MEDIA_TABLE,
         PhotoAlbumColumns::CREATE_TABLE,
     };

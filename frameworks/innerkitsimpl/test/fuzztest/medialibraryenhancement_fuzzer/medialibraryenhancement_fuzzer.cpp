@@ -55,6 +55,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "runtime.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 using namespace std;
@@ -315,7 +316,7 @@ static MediaEnhance::MediaEnhanceBundleHandle* FuzzMediaEnhanceBundle(string pho
 
 void SetTables()
 {
-    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    vector<string> createTableSqlList = { Media::PhotoUpgrade::CREATE_PHOTO_TABLE };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {

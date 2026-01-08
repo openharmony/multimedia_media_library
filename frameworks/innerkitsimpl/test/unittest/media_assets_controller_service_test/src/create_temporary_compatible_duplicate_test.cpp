@@ -29,6 +29,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace testing::ext;
@@ -52,7 +53,7 @@ static void ClearPhotosTables()
 static void CreatePhotoTable()
 {
     std::vector<std::string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE
+        PhotoUpgrade::CREATE_PHOTO_TABLE
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
