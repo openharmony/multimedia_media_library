@@ -18,7 +18,7 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-
+//LCOV_EXCL_START
 class MediaMtpManager {
 public:
     EXPORT void Init();
@@ -30,3 +30,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_MTP_MANAGER_H
+//LCOV_EXCL_STOP

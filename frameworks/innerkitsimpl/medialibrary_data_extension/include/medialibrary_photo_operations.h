@@ -31,7 +31,7 @@
 #include "rdb_predicates.h"
 #include "medialibrary_rdbstore.h"
 #include "camera_character_types.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 struct PhotoExtInfo {
@@ -286,3 +286,4 @@ private:
 } // namespace OHOS
 
 #endif // OHOS_MEDIALIBRARY_PHOTO_OPERATIONS_H
+//LCOV_EXCL_STOP

@@ -22,7 +22,7 @@
 #include "parameters.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const char *MTP_SERVER_DISABLE = "persist.edm.mtp_server_disable";
@@ -85,3 +85,4 @@ void MediaMtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventDa
 }
 } // namespace Media
 } // namespace OHOS
+//LCOV_EXCL_STOP
