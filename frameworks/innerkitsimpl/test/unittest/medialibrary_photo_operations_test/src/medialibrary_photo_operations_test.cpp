@@ -4352,7 +4352,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_file_asset_critical_test_00
  
     // 4. Verify FileAsset properties are correctly stored (via DB query)
     string querySql = "SELECT " + PhotoColumn::PHOTO_RISK_STATUS + ", " + PhotoColumn::PHOTO_IS_CRITICAL +
-                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+                      PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
     resultSet = g_rdbStore->QuerySql(querySql);
     ASSERT_TRUE(resultSet != nullptr);
     ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
@@ -4363,7 +4364,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_file_asset_critical_test_00
  
     MEDIA_INFO_LOG("end tdd photo_oprn_file_asset_critical_test_001");
 }
- 
+
 // Test SetPhotoCritical inner API function directly
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_api_test_001, TestSize.Level1)
 {
@@ -4418,7 +4419,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     predicates = DataSharePredicates {};
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     cmd_set_critical.SetDataSharePred(predicates);
- 
+
     ret = MediaLibraryPhotoOperations::SetPhotoCritical(cmd_set_critical);
     EXPECT_EQ(ret, E_OK);
  
