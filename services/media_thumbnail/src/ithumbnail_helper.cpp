@@ -31,6 +31,7 @@
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
 #include "medialibrary_object_utils.h"
+#include "media_audio_column.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;

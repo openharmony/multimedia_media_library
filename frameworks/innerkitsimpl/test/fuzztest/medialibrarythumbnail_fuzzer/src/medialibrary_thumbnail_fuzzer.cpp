@@ -50,6 +50,7 @@
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #undef private
+#include "media_upgrade.h"
 
 namespace OHOS {
 using namespace std;
@@ -482,7 +483,7 @@ static void ThumbnailRdbUtilsTest()
 }
 void SetTables()
 {
-    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    vector<string> createTableSqlList = { Media::PhotoUpgrade::CREATE_PHOTO_TABLE };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {

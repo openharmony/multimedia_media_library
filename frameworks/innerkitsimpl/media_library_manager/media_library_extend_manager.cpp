@@ -39,6 +39,7 @@
 #include "notify_asset_sended_vo.h"
 #include "open_asset_compress_vo.h"
 #include "get_compress_asset_size_vo.h"
+#include "media_audio_column.h"
 
 using namespace std;
 

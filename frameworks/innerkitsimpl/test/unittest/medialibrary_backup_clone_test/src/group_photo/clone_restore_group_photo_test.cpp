@@ -52,7 +52,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
 static unique_ptr<CloneRestore> restoreService = nullptr;
 static CloneGroupPhotoSource cloneSource;
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
 };

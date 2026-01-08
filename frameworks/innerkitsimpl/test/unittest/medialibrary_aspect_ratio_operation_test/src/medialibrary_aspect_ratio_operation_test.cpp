@@ -32,6 +32,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_aspect_ratio_operation.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -54,7 +55,7 @@ static void CleanTestTables()
 
 static void SetTables()
 {
-    int32_t ret = g_rdbStore->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    int32_t ret = g_rdbStore->ExecuteSql(PhotoUpgrade::CREATE_PHOTO_TABLE);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute photo table creation SQL failed");
         return;

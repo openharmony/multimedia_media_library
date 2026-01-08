@@ -37,6 +37,7 @@
 #include "album_accurate_refresh.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 using namespace std;
@@ -264,7 +265,7 @@ void SetTables()
         return;
     }
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         PhotoAlbumColumns::TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {

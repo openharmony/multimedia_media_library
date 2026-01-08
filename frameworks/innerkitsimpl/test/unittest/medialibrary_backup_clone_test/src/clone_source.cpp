@@ -28,6 +28,8 @@
 #include "vision_column.h"
 #include "vision_db_sqls_more.h"
 #include "media_config_info_column.h"
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 
@@ -35,7 +37,7 @@ namespace OHOS {
 namespace Media {
 const std::string SEGMENTATION_ANALYSIS_TABLE = "tab_analysis_segmentation";
 const unordered_map<string, string> TABLE_CREATE_MAP = {
-    { PhotoColumn::PHOTOS_TABLE, PhotoColumn::CREATE_PHOTO_TABLE },
+    { PhotoColumn::PHOTOS_TABLE, PhotoUpgrade::CREATE_PHOTO_TABLE },
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CREATE_TABLE },
     { PhotoMap::TABLE, PhotoMap::CREATE_TABLE },
     { ANALYSIS_ALBUM_TABLE, CREATE_ANALYSIS_ALBUM_FOR_ONCREATE },

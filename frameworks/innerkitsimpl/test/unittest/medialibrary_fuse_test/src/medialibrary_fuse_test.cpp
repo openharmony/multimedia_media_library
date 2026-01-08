@@ -64,6 +64,7 @@
 #include "medialibrary_object_utils.h"
 #include "parameter.h"
 #include "heif_transcoding_check_utils.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS;
@@ -156,7 +157,7 @@ void PrepareUniqueNumberTable()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
         AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE,
     };

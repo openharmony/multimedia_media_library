@@ -26,6 +26,7 @@
 #include "photo_map_column.h"
 #include "vision_column.h"
 #include "settings_data_manager.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {

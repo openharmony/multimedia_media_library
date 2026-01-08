@@ -108,6 +108,8 @@
 #include "register_unregister_handler_functions.h"
 #include "get_albumid_by_lpath_vo.h"
 #include "report_event.h"
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1396,7 +1398,7 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaUpgrade::ASSETS_QUERY_FILTER);
     MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs, MEDIA_DATA_DB_RELATIVE_PATH,
         MEDIA_DATA_DB_RELATIVE_PATH, ReplaceSelectionMode::ADD_DOCS_TO_RELATIVE_PATH);
 #else

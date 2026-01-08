@@ -39,6 +39,7 @@
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_kvstore_manager.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 using namespace std;
@@ -166,7 +167,7 @@ static void MediaLibraryMediaPhotoAssetProxyTest()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        Media::PhotoColumn::CREATE_PHOTO_TABLE,
+        Media::PhotoUpgrade::CREATE_PHOTO_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
