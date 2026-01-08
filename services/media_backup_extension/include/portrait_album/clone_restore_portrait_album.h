@@ -85,6 +85,7 @@ private:
     void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     void ReportPortraitCloneStat(int32_t sceneCode);
     void RestoreAnalysisTotalFaceStatus();
+    void UpdatePortraitTblAlbumId(std::vector<AnalysisAlbumTbl> &portraitAlbumTbl, int32_t minId);
 
 public:
     std::vector<CoverUriInfo> coverUriInfo_;
