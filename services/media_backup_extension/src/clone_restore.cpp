@@ -974,35 +974,46 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     MEDIA_INFO_LOG("singleClone MoveMigrateCloudFile end");
 }
 
-bool CloneRestore::CheckDestDbHasCriticalTypeColumn()
+bool CloneRestore::CheckDestDbHasRiskStatusColumn()
 {
     unordered_map<string, string> dstColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_,
         PhotoColumn::PHOTOS_TABLE);
-    return HasColumn(dstColumnInfoMap, PhotoColumn::PHOTO_CRITICAL_TYPE);
+    return HasColumn(dstColumnInfoMap, PhotoColumn::PHOTO_RISK_STATUS);
 }
- 
-bool CloneRestore::CheckSrcDbHasCriticalTypeColumn()
+
+bool CloneRestore::CheckSrcDbHasRiskStatusColumn()
 {
     unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
         PhotoColumn::PHOTOS_TABLE);
-    return HasColumn(srcColumnInfoMap, PhotoColumn::PHOTO_CRITICAL_TYPE);
+    return HasColumn(srcColumnInfoMap, PhotoColumn::PHOTO_RISK_STATUS);
 }
- 
-void CloneRestore::UpdateCriticalTypeForSamePhotos(vector<FileInfo> &fileInfos)
+
+void CloneRestore::UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos)
 {
     for (FileInfo &fileInfo : fileInfos) {
         if (fileInfo.fileIdNew <= 0 || fileInfo.isNew) {
             continue;
         }
 
-        if (CheckSrcDbHasCriticalTypeColumn() &&
-            fileInfo.criticalType != static_cast<int32_t>(CriticalType::UNKNOWN_CRITICAL_TYPE)) {
-            auto ret = mediaLibraryRdb_->ExecuteSql("UPDATE Photos SET critical = " +
-                                            std::to_string(fileInfo.criticalType) +
-                                            " WHERE file_id " + std::to_string(fileInfo.fileIdNew));
-            if (ret != NativeRdb::E_OK) {
+        if (CheckSrcDbHasRiskStatusColumn() &&
+            fileInfo.photoRiskStatus != static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED)) {
+            NativeRdb::ValuesBucket values;
+            values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, fileInfo.photoRiskStatus);
+            int32_t isCritical = (fileInfo.photoRiskStatus == static_cast<int32_t>(PhotoRiskStatus::SUSPICIOUS)
+                                  || fileInfo.photoRiskStatus == static_cast<int32_t>(PhotoRiskStatus::REJECTED))
+                                     ? 1
+                                     : 0;
+            values.PutInt(PhotoColumn::PHOTO_IS_CRITICAL, isCritical);
+
+            std::string whereClause = PhotoColumn::MEDIA_ID + " = ?";
+            std::vector<std::string> whereArgs = {std::to_string(fileInfo.fileIdNew)};
+
+            int32_t changedRows = 0;
+            auto ret = mediaLibraryRdb_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+            if (ret != NativeRdb::E_OK)
+            {
                 MEDIA_ERR_LOG("Update failed for file_id: %{public}d with critical_type: %{public}d, error: %{public}d",
-                              fileInfo.fileIdNew, fileInfo.criticalType, ret);
+                              fileInfo.fileIdNew, fileInfo.photoRiskStatus, ret);
                 continue;
             }
         }
@@ -1015,7 +1026,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty");
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
-    UpdateCriticalTypeForSamePhotos(fileInfos);
+    UpdateRiskStatusForSamePhotos(fileInfos);
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
@@ -1557,6 +1568,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, PhotoRiskStatus::UNIDENTIFIED);
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
@@ -1584,8 +1596,8 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     GetThumbnailInsertValue(fileInfo, values);
     GetInsertValueFromValMap(fileInfo, values);
-    if (CheckDestDbHasCriticalTypeColumn()) {
-        values.PutInt(PhotoColumn::PHOTO_CRITICAL_TYPE, fileInfo.criticalType);
+    if (CheckDestDbHasRiskStatusColumn()) {
+        values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, fileInfo.photoRiskStatus);
     }
     return values;
 }
@@ -2409,10 +2421,10 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         string columnType = it->second;
         GetValFromResultSet(resultSet, fileInfo.valMap, columnName, columnType);
     }
-    int32_t criticalTypeValue = CheckSrcDbHasCriticalTypeColumn() ?
-                                GetInt32Val(PhotoColumn::PHOTO_CRITICAL_TYPE, resultSet) :
-                                static_cast<int32_t>(CriticalType::UNKNOWN_CRITICAL_TYPE);
-    fileInfo.criticalType = criticalTypeValue;
+    int32_t riskStatusValue = CheckSrcDbHasRiskStatusColumn() ?
+                                GetInt32Val(PhotoColumn::PHOTO_RISK_STATUS, resultSet) :
+                                static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED);
+    fileInfo.photoRiskStatus = riskStatusValue;
     return true;
 }
 
