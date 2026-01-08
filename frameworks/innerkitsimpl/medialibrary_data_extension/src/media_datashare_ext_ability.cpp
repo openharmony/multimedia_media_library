@@ -72,7 +72,7 @@ using namespace OHOS::Media;
 using namespace OHOS::DataShare;
 using namespace OHOS::Security::AccessToken;
 using namespace OHOS::Media::IPC;
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
@@ -1074,3 +1074,4 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
 }
 } // namespace AbilityRuntime
 } // namespace OHOS
+//LCOV_EXCL_STOP

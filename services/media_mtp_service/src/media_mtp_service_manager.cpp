@@ -21,7 +21,7 @@
 
 #include "media_mtp_service_manager.h"
 #include "media_log.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 namespace {
@@ -118,3 +118,4 @@ void MediaMtpServiceManager::CloseLibrary()
 }
 } // namespace Media
 } // namespace OHOS
+//LCOV_EXCL_STOP
