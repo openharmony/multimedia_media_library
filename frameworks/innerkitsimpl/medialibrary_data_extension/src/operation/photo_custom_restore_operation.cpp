@@ -330,7 +330,7 @@ void PhotoCustomRestoreOperation::HandleBatchCustomRestore(const unordered_map<s
     int32_t fileNum = static_cast<int32_t>(subFiles.size());
     UniqueNumber uniqueNumber;
     int32_t errCode = E_OK;
-    if (!subFiles.empty() && TlvUtil::ValidateTlvFile(subFiles[0]) == E_OK) {
+    if (!subFiles.empty() && HasTlvFiles(subFiles)) {
         errCode = HandleTlvRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
     } else {
         errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
@@ -431,6 +431,40 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(const unordered_map<str
     return E_OK;
 }
 
+int32_t PhotoCustomRestoreOperation::ProcessExtractTlvFile(const std::string &tlvFilePath, std::string &destDir,
+    std::unordered_map<TlvTag, std::string> &extractedFiles)
+{
+    extractedFiles.clear();
+    destDir = "";
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(tlvFilePath), E_ERR, "tlvFilePath is empty");
+    MEDIA_DEBUG_LOG("tlv file path: %{public}s", DfxUtils::GetSafePath(tlvFilePath).c_str());
+    destDir = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvFilePath);
+    CHECK_AND_RETURN_RET_LOG(!destDir.empty(), E_ERR, "destDir is empty");
+    MEDIA_DEBUG_LOG("Decode tlv dir: %{public}s", DfxUtils::GetSafePath(destDir).c_str());
+    string originFileName = MediaFileUtils::GetFileName(tlvFilePath);
+    CHECK_AND_RETURN_RET_LOG(!originFileName.empty(), E_ERR, "origin file name is empty");
+    int32_t ret = TlvUtil::ExtractTlv(tlvFilePath, destDir, extractedFiles, originFileName);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ExtractTlv failed, ret: %{public}d", ret);
+        auto it = extractedFiles.find(TlvTag::TLV_TAG_ORIGIN);
+        CHECK_AND_RETURN_RET_LOG(it != extractedFiles.end(), E_ERR, "origin file not in tlv");
+        std::string originPath = it->second;
+        CHECK_AND_RETURN_RET_LOG(!originPath.empty(), E_ERR, "origin file path is empty");
+        extractedFiles.clear();
+        extractedFiles[TlvTag::TLV_TAG_ORIGIN] = originPath;
+    }
+    return E_OK;
+}
+
+bool PhotoCustomRestoreOperation::DeleteDirectoryIfExists(const std::string &dirPath)
+{
+    if (MediaFileUtils::IsDirExists(dirPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(dirPath), false, "delete dir failed: %{public}s",
+            DfxUtils::GetSafePath(dirPath).c_str());
+    }
+    return true;
+}
+
 int32_t PhotoCustomRestoreOperation::HandleTlvRestore(const unordered_map<string, TimeInfo> &timeInfoMap,
     RestoreTaskInfo &restoreTaskInfo, const vector<string> &filePathVector, bool isFirst, UniqueNumber &uniqueNumber)
 {
@@ -440,40 +474,46 @@ int32_t PhotoCustomRestoreOperation::HandleTlvRestore(const unordered_map<string
     int32_t totalSuccess = 0;
     int32_t sameFileNum = 0;
     int32_t ret = E_OK;
-    std::string originFileName = "";
     std::string decodeTlvDir = "";
     std::unordered_map<TlvTag, std::string> decodeTlvPathMap;
+    vector<string> fallbackFiles;
+    UniqueNumber tempUniqueNumber;
     for (const auto &tlvPath : filePathVector) {
-        decodeTlvPathMap.clear();
-        decodeTlvDir = "";
-        decodeTlvDir = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvPath);
-        CHECK_AND_CONTINUE_ERR_LOG(!decodeTlvDir.empty(), "decodeTlvDir is empty");
-        MEDIA_DEBUG_LOG("Decode tlv dir: %{public}s", DfxUtils::GetSafePath(decodeTlvDir).c_str());
-        originFileName = MediaFileUtils::GetFileName(tlvPath);
-        CHECK_AND_CONTINUE_ERR_LOG(!originFileName.empty(), "origin file name is empty");
-        ret = TlvUtil::ExtractTlv(tlvPath, decodeTlvDir, decodeTlvPathMap, originFileName);
-        MediaFileUtils::DeleteFile(tlvPath);
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::IsFileExists(tlvPath), "tlvPath is not exist: %{public}s",
+            DfxUtils::GetSafePath(tlvPath).c_str());
+        if (TlvUtil::ValidateTlvFile(tlvPath) != E_OK) {
+            MEDIA_WARN_LOG("not tlv file, path: %{public}s", DfxUtils::GetSafePath(tlvPath).c_str());
+            fallbackFiles.push_back(tlvPath);
+            continue;
+        }
+        ret = ProcessExtractTlvFile(tlvPath, decodeTlvDir, decodeTlvPathMap);
         if (ret != E_OK) {
-            MEDIA_ERR_LOG("ExtractTlv failed, ret: %{public}d", ret);
-            MediaFileUtils::DeleteDir(decodeTlvDir);
+            MEDIA_ERR_LOG("ProcessExtractTlvFile failed, ret: %{public}d", ret);
+            CHECK_AND_PRINT_LOG(DeleteDirectoryIfExists(decodeTlvDir), "delete decode tlv dir failed.");
+            fallbackFiles.push_back(tlvPath);
             continue;
         }
-        ret = HandleTlvSingleRestore(decodeTlvPathMap, timeInfoMap, restoreTaskInfo, isFirst, uniqueNumber);
-        MediaFileUtils::DeleteDir(decodeTlvDir);
-        if (ret == E_OK) {
-            totalSuccess++;
-        } else if (ret == E_FILE_EXIST) {
-            sameFileNum++;
-        } else {
-            MEDIA_ERR_LOG("HandleTlvSingleRestore failed, ret: %{public}d", ret);
-            continue;
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tlvPath), "delete tlv file failed, path: %{public}s",
+            DfxUtils::GetSafePath(tlvPath).c_str());
+        tempUniqueNumber.clear();
+        ret = HandleTlvSingleRestore(decodeTlvPathMap, timeInfoMap, restoreTaskInfo, isFirst, tempUniqueNumber);
+        uniqueNumber = uniqueNumber + tempUniqueNumber;
+        CHECK_AND_PRINT_LOG(DeleteDirectoryIfExists(decodeTlvDir), "delete decode tlv dir failed.");
+        CHECK_AND_PRINT_LOG(ret == E_FILE_EXIST || ret == E_OK, "HandleTlvSingleRestore failed, ret: %{public}d", ret);
+        CHECK_AND_EXECUTE(ret != E_FILE_EXIST, sameFileNum++);
+        CHECK_AND_EXECUTE(ret != E_OK, totalSuccess++);
     }
     int32_t totalFileNum = static_cast<int32_t>(filePathVector.size());
     successNum_.fetch_add(totalSuccess);
     failNum_.fetch_add(totalFileNum - totalSuccess - sameFileNum);
-    MEDIA_INFO_LOG("HandleTlvRestore end, totalNum: %{public}d, totalSuccess: %{public}d",
-        totalFileNum, totalSuccess);
+    if (!fallbackFiles.empty()) {
+        tempUniqueNumber.clear();
+        ret = HandleCustomRestore(timeInfoMap, restoreTaskInfo, fallbackFiles, isFirst, tempUniqueNumber);
+        uniqueNumber = uniqueNumber + tempUniqueNumber;
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleCustomRestore failed in fallback, ret: %{public}d", ret);
+    }
+    MEDIA_INFO_LOG("HandleTlvRestore end, totalNum: %{public}d, totalSuccess: %{public}d, fallbackNum: %{public}d",
+        totalFileNum, successNum_.load(), static_cast<int32_t>(fallbackFiles.size()));
     return E_OK;
 }
 
@@ -569,8 +609,6 @@ int32_t PhotoCustomRestoreOperation::HandleTlvSingleRestore(const std::unordered
 void PhotoCustomRestoreOperation::RestoreTlvRollback(const std::string &assetPath)
 {
     MEDIA_INFO_LOG("RestoreTlvRollback begin");
-    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(assetPath), MediaFileUtils::DeleteFile(assetPath));
-    DeleteDatabaseRecord(assetPath);
 
     string sourcePhotoPath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
     CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(sourcePhotoPath), MediaFileUtils::DeleteFile(sourcePhotoPath));
@@ -1482,4 +1520,14 @@ void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
     closedir(dir);
 }
 
+bool PhotoCustomRestoreOperation::HasTlvFiles(const vector<string> &files)
+{
+    CHECK_AND_RETURN_RET_LOG(!files.empty(), false, "files is empty");
+    for (const auto &file : files) {
+        if (TlvUtil::ValidateTlvFile(file) == E_OK) {
+            return true;
+        }
+    }
+    return false;
+}
 }  // namespace OHOS::Media
