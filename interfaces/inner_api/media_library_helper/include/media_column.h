@@ -58,11 +58,11 @@ enum class SouthDeviceType : int32_t {
     SOUTH_DEVICE_HDC = 2
 };
 
-enum CriticalType : int32_t {
-    UNKNOWN_CRITICAL_TYPE = 0,
-    NOT_CRITICAL_TYPE = 1,
-    SUSPECTED_CRITICAL_TYPE = 2,
-    CRITICAL_TYPE = 3,
+enum PhotoRiskStatus : int32_t {
+    UNIDENTIFIED = 0,
+    APPROVED = 1,
+    SUSPICIOUS = 2,
+    REJECTED = 3,
 };
 
 class MediaColumn {
@@ -182,6 +182,7 @@ public:
     static const std::string PHOTO_ASPECT_RATIO EXPORT;
     static const std::string PHOTO_IS_CRITICAL EXPORT;
     static const std::string PHOTO_CRITICAL_TYPE EXPORT;
+    static const std::string PHOTO_RISK_STATUS EXPORT;
     static const std::string PHOTO_CHANGE_TIME EXPORT;
     static const std::string PHOTO_EDIT_DATA_EXIST EXPORT;
 
