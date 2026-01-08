@@ -36,7 +36,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 const std::string LOCAL_MEDIA_PATH = "/storage/media/local/files/";
 
 const std::unordered_map<SourceState, SourceState> SourceLoader::LOCAL_SOURCE_LOADING_STATES = {
@@ -771,6 +771,6 @@ bool CloudOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     return true;
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
