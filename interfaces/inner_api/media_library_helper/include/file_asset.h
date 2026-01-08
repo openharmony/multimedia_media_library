@@ -140,7 +140,7 @@ public:
     EXPORT int64_t GetDateTrashed() const;
     EXPORT void SetDateTrashed(int64_t dateTrashed);
 
-    EXPORT std::string GetPhotoId() const;
+    EXPORT std::string GetPhotoId() const; 
     EXPORT void SetPhotoId(const std::string &photoId);
 
     EXPORT std::pair<std::string, int> GetPhotoIdAndQuality() const;
@@ -197,9 +197,6 @@ public:
     EXPORT const std::string &GetFrontCamera() const;
     EXPORT void SetFrontCamera(const std::string &frontCamera);
 
-    EXPORT const std::string &GetXtStyleTemplateName() const;
-    EXPORT void SetXtStyleTemplateName(const std::string &xtStyleTemplateName);
-
     EXPORT const std::string &GetUserComment() const;
     EXPORT void SetUserComment(const std::string &userComment);
 
@@ -221,29 +218,29 @@ public:
     EXPORT int32_t GetBurstCoverLevel() const;
     EXPORT void SetBurstCoverLevel(int32_t burstCoverLevel);
 
-    EXPORT int32_t GetCEAvailable() const;
-    EXPORT void SetCEAvailable(int32_t ceAvailable);
-
     EXPORT const std::string &GetDetailTime() const;
     EXPORT void SetDetailTime(const std::string &detailTime);
 
+    EXPORT int32_t GetCEAvailable() const;
+    EXPORT void SetCEAvailable(int32_t ceAvailable);
+
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
-    EXPORT int32_t GetSupportedDeferredEffects() const;
-    EXPORT void SetSupportedDeferredEffects(int32_t deferredEffects);
-    EXPORT int32_t GetDeferredEffectsStatus() const;
-    EXPORT void SetDeferredEffectsStatus(int32_t deferredEffectStatus);
 
     EXPORT int32_t GetHasAppLink() const;
     EXPORT void SetHasAppLink(int32_t hasAppLink);
+ 
     EXPORT const std::string &GetAppLink() const;
-    EXPORT void SetAppLink(const std::string &appLink);
+    EXPORT void SetAppLink(const std::string appLink);
+
     EXPORT int32_t GetCompositeDisplayStatus() const;
     EXPORT void SetCompositeDisplayStatus(int32_t compositeDisplayStatus);
 
     EXPORT int32_t GetIsAuto() const;
     EXPORT void SetIsAuto(int32_t isAuto);
 
+    EXPORT int32_t GetFileResourceType() const;
+    EXPORT void SetFileResourceType(int32_t fileResourceType);
     EXPORT int32_t GetFileSourceType() const;
     EXPORT void SetFileSourceType(int32_t fileSourceType);
 
@@ -272,9 +269,6 @@ public:
     EXPORT int32_t GetExistCompatibleDuplicate() const;
     EXPORT void SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate);
 
-    EXPORT int32_t GetEditDataExist() const;
-    EXPORT void SetEditDataExist(int32_t editDataExist);
-
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;
 
@@ -284,9 +278,6 @@ public:
     EXPORT void SetExifRotate(int32_t exifRotate);
     EXPORT int32_t GetExifRotate() const;
 
-    EXPORT void SetVideoMode(int32_t videoMode);
-    EXPORT int32_t GetVideoMode() const;
-    
     // Safe Album: critical type for children's watch
     EXPORT void SetCritical(int32_t IsCritical);
     EXPORT int32_t GetCritical() const;
@@ -301,7 +292,7 @@ private:
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
-    std::shared_mutex  resultTypeMapMutex_;
+    std::mutex resultTypeMapMutex_;
     std::unordered_map<std::string, ResultSetDataType> resultTypeMap_;
 };
 } // namespace Media
