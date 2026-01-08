@@ -4369,12 +4369,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_set_photo_critical_inner_api_test_001");
  
-    // 1. Create test photo
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_inner_api.jpg");
-    ASSERT_GT(fileId, 0);
+    ASSERT_GT(fileId, 0); // 1. Create test photo
  
-    // 2. Query initial state
-    DataSharePredicates predicates;
+    DataSharePredicates predicates; // 2. Query initial state
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     MediaLibraryCommand cmd_query(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -4390,8 +4388,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     int32_t isCritical = GetInt32Val(PhotoColumn::PHOTO_IS_CRITICAL, resultSet);
     EXPECT_EQ(photoRiskStatus, 0); // UNIDENTIFIED
     EXPECT_EQ(isCritical, 0);
- 
-    // 3. Call SetPhotoCritical directly with isCritical = true
+
     MediaLibraryCommand cmd_set_critical(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
         MediaLibraryApi::API_10);
     ValuesBucket valuesBucket;
@@ -4403,10 +4400,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
  
     int32_t ret = MediaLibraryCriticalPhotoOperations::SetPhotoCritical(cmd_set_critical);
     EXPECT_EQ(ret, E_OK);
- 
-    // 4. Verify critical state (should be REJECTED = 3, is_critical = 1)
+
     string querySql = "SELECT " + PhotoColumn::PHOTO_RISK_STATUS + ", " + PhotoColumn::PHOTO_IS_CRITICAL +
-                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+                      PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
     resultSet = g_rdbStore->QuerySql(querySql);
     ASSERT_TRUE(resultSet != nullptr);
     ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
@@ -4414,9 +4411,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     isCritical = GetInt32Val(PhotoColumn::PHOTO_IS_CRITICAL, resultSet);
     EXPECT_EQ(photoRiskStatus, 3); // REJECTED
     EXPECT_EQ(isCritical, 1);
- 
-    // 5. Call SetPhotoCritical with isCritical = false
-    valuesBucket = ValuesBucket {};
+
+    valuesBucket = ValuesBucket {}; // 5. Call SetPhotoCritical with isCritical = false
     valuesBucket.Put(PhotoColumn::PHOTO_IS_CRITICAL, 0); // Set isCritical = false
     cmd_set_critical.SetValueBucket(valuesBucket);
     predicates = DataSharePredicates {};
@@ -4426,7 +4422,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     ret = MediaLibraryCriticalPhotoOperations::SetPhotoCritical(cmd_set_critical);
     EXPECT_EQ(ret, E_OK);
  
-    // 6. Verify not critical state (should be APPROVED = 1, is_critical = 0)
     resultSet = MediaLibraryPhotoOperations::Query(cmd_query, columns);
     ASSERT_TRUE(resultSet != nullptr);
     ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
