@@ -280,8 +280,8 @@ public:
     // Safe Album: critical type for children's watch
     EXPORT void SetCritical(int32_t IsCritical);
     EXPORT int32_t GetCritical() const;
-    EXPORT void SetCriticalType(int32_t IsCriticalType);
-    EXPORT int32_t GetCriticalType() const;
+    EXPORT void SetRiskStatus(int32_t photoRiskStatus);
+    EXPORT int32_t GetRiskStatus() const;
 
 private:
     int32_t userId_ = -1;
