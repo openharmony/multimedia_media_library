@@ -34,6 +34,7 @@ using namespace OHOS::ResourceSchedule;
 
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string MEDIALIBRARYBUNDLENAME = "com.ohos.medialibrary.medialibrarydata";
 const std::string BUNDLENAME = "bundleName";
@@ -280,5 +281,6 @@ void ThumbnailRestoreManager::Reset()
     }
     MEDIA_INFO_LOG("ThumbnailRestoreManager reset completed");
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

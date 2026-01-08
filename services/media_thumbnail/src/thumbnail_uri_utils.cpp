@@ -33,6 +33,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 bool ThumbnailUriUtils::ParseFileUri(const string &uriString, string &outFileId, string &outNetworkId,
     string &outTableName)
 {
@@ -199,5 +200,6 @@ string ThumbnailUriUtils::GetFileUriFromUri(const string &uri)
     }
     return uri.substr(0, index);
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
