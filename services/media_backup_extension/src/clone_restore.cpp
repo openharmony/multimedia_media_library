@@ -1010,8 +1010,7 @@ void CloneRestore::UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos)
 
             int32_t changedRows = 0;
             auto ret = mediaLibraryRdb_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-            if (ret != NativeRdb::E_OK)
-            {
+            if (ret != NativeRdb::E_OK) {
                 MEDIA_ERR_LOG("Update failed for file_id: %{public}d with critical_type: %{public}d, error: %{public}d",
                               fileInfo.fileIdNew, fileInfo.photoRiskStatus, ret);
                 continue;
