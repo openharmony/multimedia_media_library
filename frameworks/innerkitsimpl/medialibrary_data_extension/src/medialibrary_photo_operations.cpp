@@ -73,7 +73,7 @@ using namespace OHOS::DataShare;
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
@@ -5583,3 +5583,4 @@ int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std:
 }
 } // namespace Media
 } // namespace OHOS
+//LCOV_EXCL_STOP

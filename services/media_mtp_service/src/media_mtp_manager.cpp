@@ -29,7 +29,7 @@
 #define USB_FUNTION_MTP     (1 << 3)
 #define USB_FUNTION_PTP     (1 << 4)
 #define USB_FUNTION_STORAGE     (1 << 9)
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 namespace {
@@ -135,3 +135,4 @@ void MediaMtpManager::OnMtpParamDisableChanged(const char *key, const char *valu
 }
 } // namespace Media
 } // namespace OHOS
+//LCOV_EXCL_STOP

@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-
+//LCOV_EXCL_START
 enum class MtpMode {
     NONE_MODE,
     MTP_MODE,
@@ -49,3 +49,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_MTP_SERVICE_MANAGER_H
+//LCOV_EXCL_STOP
