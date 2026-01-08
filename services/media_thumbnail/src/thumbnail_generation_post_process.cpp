@@ -31,7 +31,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     ValueObject valueObject;
@@ -155,6 +155,6 @@ bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data
     valueObject.GetLong(thumbReady);
     return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

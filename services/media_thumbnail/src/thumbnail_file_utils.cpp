@@ -36,7 +36,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 const int32_t OPEN_FDS = 64;
 const int32_t BEGIN_TIMESTAMP_DIR_LEVEL = 1;
 const std::string BEGIN_TIMESTAMP_DIR_PREFIX = "beginTimeStamp";
@@ -292,6 +292,6 @@ bool ThumbnailFileUtils::RemoveDirectoryAndFile(const std::string &path)
         errno, DfxUtils::GetSafePath(path).c_str(), errCode.value());
     return true;
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

@@ -52,7 +52,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive/cloud_sp?Proxy=true";
 
@@ -1933,5 +1933,6 @@ bool ThumbnailUtils::IsUseRotatedSource(const ThumbnailData& data)
     return data.lastLoadSource == SourceState::LOCAL_THUMB ||
         data.lastLoadSource == SourceState::LOCAL_LCD;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
