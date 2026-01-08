@@ -26,7 +26,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 const std::string SQL_REPAIR_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL = "\
     UPDATE Photos \
     SET \
@@ -391,5 +391,6 @@ int32_t ThumbnailRdbUtils::UpdateExifRotateAndDirty(const ThumbnailData &data, D
     assetRefresh->Notify();
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

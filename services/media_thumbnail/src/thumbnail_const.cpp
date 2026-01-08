@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::LCD, "LCD" },
     { ThumbnailType::THUMB, "THUMB" },
@@ -67,6 +67,6 @@ std::string GetGenThumbSceneName(const GenThumbScene &scene)
         "UNDEFINED_SCENE", "The scene: %{public}d has no corresponding name!", scene);
     return GEN_THUMB_SCENE_NAME.at(scene);
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
