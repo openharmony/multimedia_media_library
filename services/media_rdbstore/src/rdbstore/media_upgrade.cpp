@@ -128,7 +128,7 @@ const std::string PhotoUpgrade::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS
     PhotoColumn::PHOTO_CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
     PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE + " INT NOT NULL DEFAULT 0, " +
     PhotoColumn::PHOTO_IS_CRITICAL + " INT NOT NULL DEFAULT 0," +
-    PhotoColumn::PHOTO_CRITICAL_TYPE + " INT NOT NULL DEFAULT 0" +
+    PhotoColumn::PHOTO_RISK_STATUS + " INT NOT NULL DEFAULT 0" +
     ") ";
 
 const std::string PhotoUpgrade::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
