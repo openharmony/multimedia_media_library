@@ -553,17 +553,6 @@ void FileAsset::SetAllExif(const string &allExif)
     member_[PhotoColumn::PHOTO_ALL_EXIF] = allExif;
 }
 
-int32_t FileAsset::GetIsStylePhoto() const
-{
-    return GetInt32Member(PhotoColumn::IS_STYLE_PHOTO);
-}
-
-void FileAsset::SetIsStylePhoto(int32_t isStylePhoto)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::IS_STYLE_PHOTO] = isStylePhoto;
-}
-
 const std::string &FileAsset::GetFrontCamera() const
 {
     return GetStrMember(PhotoColumn::PHOTO_FRONT_CAMERA);
@@ -573,17 +562,6 @@ void FileAsset::SetFrontCamera(const string &frontCamera)
 {
     std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
     member_[PhotoColumn::PHOTO_FRONT_CAMERA] = frontCamera;
-}
-
-const std::string &FileAsset::GetXtStyleTemplateName() const
-{
-    return GetStrMember(PhotoColumn::PHOTO_XT_STYLE_TEMPLATE_NAME);
-}
-
-void FileAsset::SetXtStyleTemplateName(const string &xtStyleTemplateName)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::PHOTO_XT_STYLE_TEMPLATE_NAME] = xtStyleTemplateName;
 }
 
 const std::string &FileAsset::GetUserComment() const
@@ -701,22 +679,6 @@ void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
-int32_t FileAsset::GetSupportedDeferredEffects() const
-{
-    return GetInt32Member(PhotoColumn::SUPPORTED_DEFERRED_EFFECTS);
-}
-
-void FileAsset::SetSupportedDeferredEffects(int32_t deferredEffects)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::SUPPORTED_DEFERRED_EFFECTS] = deferredEffects;
-}
-
-int32_t FileAsset::GetDeferredEffectsStatus() const
-{
-    return GetInt32Member(PhotoColumn::DEFERRED_EFFECT_STATUS);
-}
-
 int32_t FileAsset::GetHasAppLink() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_HAS_APPLINK);
@@ -733,16 +695,9 @@ const std::string &FileAsset::GetAppLink() const
     return GetStrMember(PhotoColumn::PHOTO_APPLINK);
 }
  
-void FileAsset::SetAppLink(const string &appLink)
+void FileAsset::SetAppLink(const string appLink)
 {
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
     member_[PhotoColumn::PHOTO_APPLINK] = appLink;
-}
-
-void FileAsset::SetDeferredEffectsStatus(int32_t deferredEffectsStatus)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::DEFERRED_EFFECT_STATUS] = deferredEffectsStatus;
 }
 
 int32_t FileAsset::GetCompositeDisplayStatus() const
@@ -765,6 +720,16 @@ void FileAsset::SetIsAuto(int32_t isAuto)
 {
     std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
     member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
+}
+
+int32_t FileAsset::GetFileResourceType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+}
+
+void FileAsset::SetFileResourceType(int32_t fileResourceType)
+{
+    member_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = fileResourceType;
 }
 
 int32_t FileAsset::GetFileSourceType() const
@@ -868,17 +833,6 @@ void FileAsset::SetUserId(int32_t userId)
     userId_ = userId;
 }
 
-void FileAsset::SetChangeTime(const int64_t changeTime)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::PHOTO_CHANGE_TIME] = changeTime;
-}
-
-int64_t FileAsset::GetChangeTime() const
-{
-    return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
-}
-
 int32_t FileAsset::GetExistCompatibleDuplicate() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
@@ -890,20 +844,19 @@ void FileAsset::SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate)
     member_[PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE] = existCompatibleDuplicate;
 }
 
-int32_t FileAsset::GetEditDataExist() const
+void FileAsset::SetChangeTime(const int64_t changeTime)
 {
-    return GetInt32Member(PhotoColumn::PHOTO_EDIT_DATA_EXIST);
+    member_[PhotoColumn::PHOTO_CHANGE_TIME] = changeTime;
 }
 
-void FileAsset::SetEditDataExist(int32_t editDataExist)
+int64_t FileAsset::GetChangeTime() const
 {
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::PHOTO_EDIT_DATA_EXIST] = editDataExist;
+    return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
 }
 
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
-    std::unique_lock lock(resultTypeMapMutex_);
+    lock_guard<mutex> lock(resultTypeMapMutex_);
     if (resultTypeMap_.count(colName) != 0) {
         return;
     }
@@ -912,7 +865,6 @@ void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 
 string FileAsset::GetAssetJson()
 {
-    std::shared_lock lock(resultTypeMapMutex_);
     json jsonObject;
     for (auto &[colName, _]  : member_) {
         if (resultTypeMap_.count(colName) == 0) {
@@ -968,17 +920,6 @@ void FileAsset::SetExifRotate(int32_t exifRotate)
 int32_t FileAsset::GetExifRotate() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_EXIF_ROTATE);
-}
-
-void FileAsset::SetVideoMode(int32_t videoMode)
-{
-    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
-    member_[PhotoColumn::PHOTO_VIDEO_MODE] = videoMode;
-}
-
-int32_t FileAsset::GetVideoMode() const
-{
-    return GetInt32Member(PhotoColumn::PHOTO_VIDEO_MODE);
 }
 
 void FileAsset::SetCritical(int32_t isCritical)
