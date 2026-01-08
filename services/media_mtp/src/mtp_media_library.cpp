@@ -553,16 +553,7 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
     auto resultMap = avMetadataHelper->ResolveMetadata();
     int32_t width = NORMAL_WIDTH;
     int32_t height = NORMAL_HEIGHT;
-    do {
-        if (resultMap.empty()) {
-            break;
-        }
-        if (resultMap.find(AVMetadataCode::AV_KEY_VIDEO_WIDTH) == resultMap.end() ||
-            resultMap.find(AVMetadataCode::AV_KEY_VIDEO_HEIGHT) == resultMap.end()) {
-            break;
-        }
-        HaveRotateToChangeWidthHeight(width, height, resultMap);
-    } while (false);
+    HaveRotateToChangeWidthHeight(width, height, resultMap);
     CHECK_AND_PRINT_LOG(ResizeThumb(width, height), "resize thumb fail");
     PixelMapParams param = {
         .dstWidth = width,
@@ -585,6 +576,10 @@ void MtpMediaLibrary::HaveRotateToChangeWidthHeight(int32_t &width, int32_t &hei
 {
     if (resultMap.empty()) {
         MEDIA_ERR_LOG("resultMap is empty.");
+        return;
+    }
+    if (resultMap.find(AVMetadataCode::AV_KEY_VIDEO_WIDTH) == resultMap.end() ||
+        resultMap.find(AVMetadataCode::AV_KEY_VIDEO_HEIGHT) == resultMap.end()) {
         return;
     }
     std::string widthStr = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH);
