@@ -67,7 +67,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 mutex g_uniqueNumberLock;
@@ -3595,3 +3595,4 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
 }
 } // namespace Media
 } // namespace OHOS
+//LCOV_EXCL_STOP
