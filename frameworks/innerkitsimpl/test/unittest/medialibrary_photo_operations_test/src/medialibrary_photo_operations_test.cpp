@@ -4398,7 +4398,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     cmd_set_critical.SetDataSharePred(predicates);
  
-    int32_t ret = MediaLibraryCriticalPhotoOperations::SetPhotoCritical(cmd_set_critical);
+    int32_t ret = MediaLibraryPhotoOperations::SetPhotoCritical(cmd_set_critical);
     EXPECT_EQ(ret, E_OK);
 
     string querySql = "SELECT " + PhotoColumn::PHOTO_RISK_STATUS + ", " + PhotoColumn::PHOTO_IS_CRITICAL +
@@ -4419,7 +4419,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_inner_ap
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     cmd_set_critical.SetDataSharePred(predicates);
  
-    ret = MediaLibraryCriticalPhotoOperations::SetPhotoCritical(cmd_set_critical);
+    ret = MediaLibraryPhotoOperations::SetPhotoCritical(cmd_set_critical);
     EXPECT_EQ(ret, E_OK);
  
     resultSet = MediaLibraryPhotoOperations::Query(cmd_query, columns);
