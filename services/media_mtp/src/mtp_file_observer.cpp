@@ -115,8 +115,6 @@ void MtpFileObserver::DealWatchMap(const inotify_event &event, const std::string
 void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
     string fileName = path + "/" + event.name;
-    std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
-    CHECK_AND_RETURN_LOG(eventPtr != nullptr, "MtpFileObserver SendEvent eventPtr is null");
     uint32_t handle = 0;
     auto mtpMedialibrary = MtpMediaLibrary::GetInstance();
     CHECK_AND_RETURN_LOG(mtpMedialibrary != nullptr, "MtpFileObserver SendEvent mtpMedialibrary is null");
