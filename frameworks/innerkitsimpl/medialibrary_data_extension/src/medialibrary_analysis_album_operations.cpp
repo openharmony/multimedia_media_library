@@ -47,7 +47,6 @@ constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
-static std::mutex updateGroupPhotoAlbumMutex;
 const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE WHEN user_display_level = 3 THEN 1 ELSE 2 END ";
 const string GROUP_ALBUM_USER_NAME_ORDER_CLAUSE = " CASE WHEN rename_operation = 2 THEN 1 ELSE 2 END ";
 const string GROUP_ALBUM_SYSTEM_NAME_ORDER_CLAUSE =

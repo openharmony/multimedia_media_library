@@ -783,8 +783,8 @@ const std::string ADD_CHECK_SPACE_FLAG_COLUMN = "ALTER TABLE " + TAB_ANALYSIS_PR
 const std::string ADD_PET_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
     PET_STATUS + " INT NOT NULL DEFAULT 0";
 const std::string PET_INDEX = "pet_index";
-const std::string CREATE_PET_INDEX = "CREATE UNIQUE INDEX " + PET_INDEX + " ON " + VISION_PET_FACE_TABLE + " (" +
-    FILE_ID + "," + PET_ID + ")";
+const std::string CREATE_PET_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + PET_INDEX + " ON " +
+    VISION_PET_FACE_TABLE + " (" + FILE_ID + "," + PET_ID + ")";
 
 const std::string PET_TAG_ID_INDEX = "pet_tag_id_index";
 const std::string CREATE_PET_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " + PET_TAG_ID_INDEX + " ON " +

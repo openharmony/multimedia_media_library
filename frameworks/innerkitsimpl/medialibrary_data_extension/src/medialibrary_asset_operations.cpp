@@ -63,6 +63,7 @@
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_file_utils.h"
 #include "cloud_media_common.h"
+#include "media_audio_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -273,7 +274,7 @@ int32_t MediaLibraryAssetOperations::CreateOperation(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Create(cmd);
         case OperationObject::FILESYSTEM_ASSET:
-            MEDIA_ERR_LOG("create asset by FileSysetm_Asset is deperated");
+            MEDIA_ERR_LOG("create asset by FileSysetm_Asset is deprecated");
             return E_INVALID_VALUES;
         default:
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
@@ -290,7 +291,7 @@ int32_t MediaLibraryAssetOperations::DeleteOperation(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Delete(cmd);
         case OperationObject::FILESYSTEM_ASSET:
-            MEDIA_ERR_LOG("delete asset by FILESYSTEM_ASSET is deperated");
+            MEDIA_ERR_LOG("delete asset by FILESYSTEM_ASSET is deprecated");
             return E_INVALID_VALUES;
         default:
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
@@ -335,7 +336,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Update(cmd);
         case OperationObject::FILESYSTEM_ASSET:
-            MEDIA_ERR_LOG("create asset by FILESYSTEM_ASSET is deperated");
+            MEDIA_ERR_LOG("create asset by FILESYSTEM_ASSET is deprecated");
             return E_INVALID_VALUES;
         default:
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
@@ -360,7 +361,7 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
         case OperationObject::HIGHLIGHT_URI:
             return MediaLibraryAssetOperations::OpenHighlightVideo(cmd, mode);
         case OperationObject::FILESYSTEM_ASSET:
-            MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
+            MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deprecated");
             return E_INVALID_VALUES;
         default:
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
@@ -378,7 +379,7 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Close(cmd);
         case OperationObject::FILESYSTEM_ASSET:
-            MEDIA_ERR_LOG("close by FILESYSTEM_ASSET is deperated");
+            MEDIA_ERR_LOG("close by FILESYSTEM_ASSET is deprecated");
             return E_INVALID_VALUES;
         default:
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());

@@ -194,6 +194,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/include",
   ]
 
+  include_event_handler = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/include/event_handler",
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -201,7 +205,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/photo_album_operation",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
@@ -213,6 +216,8 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
     "${MEDIALIB_FACARD_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/include/rdbstore",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/include",
   ]
   include_dirs += include_common_utils
   include_dirs += include_fuse
@@ -237,6 +242,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_analysis_data_server
   include_dirs += include_media_analysis_data_client_vo
   include_dirs += include_media_analysis_data_extension
+  include_dirs += include_event_handler
 
   if (media_library_facard_enable) {
     include_facard = [ "${MEDIALIB_FACARD_PATH}/include/operation" ]
@@ -352,7 +358,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_rdb_utils_source = [
     "src/medialibrary_rdb_utils.cpp",
-    "src/medialibrary_rdb_transaction.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/medialibrary_rdb_transaction.cpp",
   ]
 
   media_multistages_capture_source = [
@@ -742,6 +748,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_file_manager_temp_file_aging_task.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_video_mode_task.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/medialibrary_subscriber.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/medialibrary_backgroud_task_continue_clone.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/moving_photo_processor.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/medialibrary_aspect_ratio_operation.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/height_width_correct_operation.cpp",
@@ -812,6 +819,17 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_analysis_process_vo.cpp",
   ]
 
+  event_handler_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/album_plugin_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/database_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/download_resources_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/photo_map_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/tab_cloned_old_photos_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/tab_old_albums_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/tab_old_photos_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/table_event_handler.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_FACARD_PATH}/src/tab_facard_photos_table_event_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp",
@@ -823,16 +841,12 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/media_upgrade.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/medialibrary_rdbstore.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/medialibrary_restore.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/medialibrary_upgrade_utils.cpp",
     "src/asset_compress_version_manager.cpp",
     "src/custom_record_operations.cpp",
-    "src/event_handler/album_plugin_table_event_handler.cpp",
-    "src/event_handler/database_utils.cpp",
-    "src/event_handler/download_resources_table_event_handler.cpp",
-    "src/event_handler/photo_map_table_event_handler.cpp",
-    "src/event_handler/tab_cloned_old_photos_table_event_handler.cpp",
-    "src/event_handler/tab_old_albums_table_event_handler.cpp",
-    "src/event_handler/tab_old_photos_table_event_handler.cpp",
-    "src/event_handler/table_event_handler.cpp",
     "src/foreground_analysis_meta.cpp",
     "src/heif_transcoding_check_utils.cpp",
     "src/hi_audit.cpp",
@@ -848,7 +862,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_asset_operations.cpp",
     "src/medialibrary_astc_stat.cpp",
     "src/medialibrary_audio_operations.cpp",
-    "src/medialibrary_backgroud_task_continue_clone.cpp",
     "src/medialibrary_bundle_manager.cpp",
     "src/medialibrary_command.cpp",
     "src/medialibrary_data_manager.cpp",
@@ -864,13 +877,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_object_utils.cpp",
     "src/medialibrary_photo_operations.cpp",
     "src/medialibrary_ptp_operations.cpp",
-    "src/medialibrary_rdbstore.cpp",
     "src/medialibrary_related_system_state_manager.cpp",
-    "src/medialibrary_restore.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",
     "src/medialibrary_tab_old_albums_operations.cpp",
-    "src/medialibrary_upgrade_utils.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/operation/display_name_info.cpp",
@@ -1002,6 +1012,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_analysis_data_client_vo_source
   sources += media_analysis_extension_source
   sources += media_cloud_sync_server_source_vo
+  sources += event_handler_source
 
   if (media_library_cloud_sync_enable) {
     media_cloud_sync_server_source += media_cloud_sync_server_source_dto

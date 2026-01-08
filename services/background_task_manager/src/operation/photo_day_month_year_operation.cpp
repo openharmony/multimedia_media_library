@@ -29,6 +29,7 @@
 #include "preferences_helper.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 namespace Media {
@@ -249,22 +250,22 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(const std::shared_ptr<Me
     CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
-    auto ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_DAY_INDEX);
+    auto ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_DAY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_day failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_DAY_INDEX);
+    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_DAY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_day failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_MONTH_COUNT_READY_INDEX);
+    ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_MONTH_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_month failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX);
+    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_MONTH_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_month failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_YEAR_COUNT_READY_INDEX);
+    ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_YEAR_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_year failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX);
+    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_YEAR_COUNT_READY_INDEX);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "create idx date_year failed, ret=%{public}d", ret);
 
     MEDIA_INFO_LOG("update photos date idx end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
