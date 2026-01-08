@@ -4258,7 +4258,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_test_001
  
     // 4. Verify critical state
     string querySql = "SELECT " + PhotoColumn::PHOTO_RISK_STATUS + ", " + PhotoColumn::PHOTO_IS_CRITICAL +
-                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+                      PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
     resultSet = g_rdbStore->QuerySql(querySql);
     ASSERT_TRUE(resultSet != nullptr);
     ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
@@ -4301,7 +4302,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_test_002
         PhotoColumn::PHOTO_IS_CRITICAL
     };
     string querySql = "SELECT " + PhotoColumn::PHOTO_RISK_STATUS + ", " + PhotoColumn::PHOTO_IS_CRITICAL +
-                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+                      " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+                      PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
     auto resultSet = g_rdbStore->QuerySql(querySql);
     ASSERT_TRUE(resultSet != nullptr);
     ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
