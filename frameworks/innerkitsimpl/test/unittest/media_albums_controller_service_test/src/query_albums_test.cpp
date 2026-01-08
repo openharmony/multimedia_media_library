@@ -31,6 +31,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
 #include "vision_column.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -45,7 +46,7 @@ static std::vector<std::string> ALBUM_FETCH_COLUMNS = {
 
 static std::vector<std::string> createTableSqlLists = {
     PhotoAlbumColumns::CREATE_TABLE,
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_ANALYSIS_ALBUM,
 };
 

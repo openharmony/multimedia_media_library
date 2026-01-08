@@ -36,6 +36,7 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_FACARD_PATH}/include",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/table",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/include",
   ]
 
   user_ipc_client_include_dirs = [
@@ -75,9 +76,6 @@ ohos_shared_library("media_library") {
     "src/medialibrary_album_helper.cpp",
     "src/medialibrary_business_record_column.cpp",
     "src/medialibrary_helper_container.cpp",
-    "src/medialibrary_kvstore.cpp",
-    "src/medialibrary_kvstore_manager.cpp",
-    "src/medialibrary_kvstore_utils.cpp",
     "src/medialibrary_operation.cpp",
     "src/mimetype_utils.cpp",
     "src/moving_photo_file_utils.cpp",
@@ -90,8 +88,12 @@ ohos_shared_library("media_library") {
     "src/photo_query_filter.cpp",
     "src/shooting_mode_column.cpp",
     "src/smart_album_asset.cpp",
+    "src/media_audio_column.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/src/medialibrary_kvstore.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/src/medialibrary_kvstore_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/src/medialibrary_kvstore_manager.cpp",
   ]
 
   user_ipc_client_source = [

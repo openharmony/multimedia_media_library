@@ -30,6 +30,7 @@ ohos_fuzztest("MediaLibraryPhotoDayMonthYearOperationFuzzTest") {
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/photo_day_month_year_operation.cpp",
     "./medialibraryphotodaymonthyearoperation_fuzzer.cpp",
     "./mock_medialibrary_subscriber.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/media_upgrade.cpp",
   ]
 
   deps = [

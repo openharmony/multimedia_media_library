@@ -34,6 +34,7 @@
 #include "userfile_manager_types.h"
 #include "media_column.h"
 #include "download_resources_column.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 namespace Media {
@@ -81,7 +82,7 @@ void CleanTestTables()
 void ResetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         // CREATE_MEDIA_TABLE,
         // PhotoAlbumColumns::CREATE_TABLE,
         DownloadResourcesColumn::CREATE_TABLE,

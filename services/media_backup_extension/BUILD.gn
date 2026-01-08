@@ -58,7 +58,7 @@ ohos_shared_library("mediabackup") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/album_plugin_table_event_handler.cpp",
     "./src/analysis_album/beauty_score_clone.cpp",
     "./src/analysis_album/search_index_clone.cpp",
     "./src/analysis_album/video_face_clone.cpp",

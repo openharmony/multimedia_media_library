@@ -108,6 +108,8 @@
 #include "register_unregister_handler_functions.h"
 #include "get_albumid_by_lpath_vo.h"
 #include "report_event.h"
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1396,7 +1398,7 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaUpgrade::ASSETS_QUERY_FILTER);
     MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs, MEDIA_DATA_DB_RELATIVE_PATH,
         MEDIA_DATA_DB_RELATIVE_PATH, ReplaceSelectionMode::ADD_DOCS_TO_RELATIVE_PATH);
 #else
@@ -11293,11 +11295,11 @@ std::string MediaLibraryNapiUtils::GetSingleIdFromNapiAssets(
         return "";
     }
     std::string fileId = to_string(obj->GetFileId());
-    if (!obj->GetFileId()) {
-        NAPI_ERR_LOG("Got empty asset ID from asset object");
+    if (obj->GetFileId() == 0) {
+        NAPI_ERR_LOG("Get invalid asset ID from asset object");
         NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary assets invalid");
     } else {
-        NAPI_INFO_LOG("Successfully extracted album URI: %{private}s", fileId.c_str());
+        NAPI_INFO_LOG("Successfully extracted asset Id: %{private}s", fileId.c_str());
     }
     return fileId;
 }
@@ -11322,9 +11324,11 @@ std::string MediaLibraryNapiUtils::GetSingleIdFromNapiPhotoAlbum(
     }
 
     std::string albumId = to_string(obj->GetAlbumId());
-    if (albumId.empty()) {
-        NAPI_ERR_LOG("Got empty album Id from photo album object");
+    if (obj->GetAlbumId() == 0) {
+        NAPI_ERR_LOG("Get invalid  album Id from photo album object");
         NapiError::ThrowError(env, JS_E_PARAM_INVALID,"Ordinary Album invalid");
+    } else {
+        NAPI_INFO_LOG("Successfully extracted album Id: %{private}s", albumId.c_str());
     }
     return albumId;
 }

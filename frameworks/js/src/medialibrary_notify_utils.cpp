@@ -814,7 +814,7 @@ napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos(napi_env en
 {
     NAPI_INFO_LOG("MediaLibraryNotifyUtils::BuildSinglePhotoAssetChangeInfos");
     MediaLibraryTracer tracer;
-    tracer.Start("BuildPhotoAssetChangeInfos");
+    tracer.Start("BuildSinglePhotoAssetChangeInfos");
     if (changeInfo == nullptr) {
         NAPI_ERR_LOG("Invalid changeInfo");
         return nullptr;
@@ -919,9 +919,9 @@ napi_value MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos(napi
         NAPI_ERR_LOG("set array named property error: type");
         return nullptr;
     }
-    status = SetValueNull(env, "assetChangeData", result);
+    status = SetValueNull(env, "assetChangeDatas", result);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("set array named property error: assetChangeData");
+        NAPI_ERR_LOG("set array named property error: assetChangeDatas");
         return nullptr;
     }
     status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);

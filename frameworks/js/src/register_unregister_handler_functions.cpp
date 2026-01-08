@@ -21,12 +21,14 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "photo_album_napi.h"
 
 namespace OHOS {
 namespace Media {
 
 const std::string URI_SEPARATOR = "file:media";
-constexpr size_t maxSingleRegistrationLimit = 1000;
+constexpr size_t maxSingleAssetRegistrationLimit = 200;
+constexpr size_t maxSingleAlbumRegistrationLimit = 50;
 
 bool RegisterUnregisterHandlerFunctions::CheckSingleRegisterCount(ChangeListenerNapi &listObj,
     const Notification::NotifyUriType uriType)
@@ -41,7 +43,10 @@ bool RegisterUnregisterHandlerFunctions::CheckSingleRegisterCount(ChangeListener
         for (const auto& innerPair : innerMap) {
             size_t validCount = innerPair.second.size();
             Count += validCount;
-            if (Count >= maxSingleRegistrationLimit) {
+            if ((uriType == Notification::NotifyUriType::SINGLE_PHOTO_URI &&
+                Count >= maxSingleAssetRegistrationLimit) ||
+                (uriType == Notification::NotifyUriType::SINGLE_PHOTO_ALBUM_URI &&
+                Count >= maxSingleAlbumRegistrationLimit)) {
                 return false;
             }
         }
@@ -341,6 +346,43 @@ static int32_t CreateCallbackRef(napi_env env, napi_value cbValue, napi_ref& cbR
     return E_OK;
 }
 
+std::string GetUnRegisterSingleIdFromNapiAssets(napi_env env, const napi_value &napiAsset)
+{
+    FileAssetNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiAsset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+        return "";
+    }
+    std::string fileId = to_string(obj->GetFileId());
+    if (obj->GetFileId() == 0) {
+        NAPI_ERR_LOG("Get invalid asset ID from asset object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Ordinary assets invalid");
+    } else {
+        NAPI_INFO_LOG("Successfully extracted assets URI: %{private}s", fileId.c_str());
+    }
+    return fileId;
+}
+
+std::string GetUnRegisterSingleIdFromNapiPhotoAlbum(napi_env env, const napi_value &napiPhotoAlbum)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, napiPhotoAlbum, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+
+    if (obj == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get album napi object");
+        return "";
+    }
+    std::string albumId = to_string(obj->GetAlbumId());
+    if (obj->GetAlbumId() == 0) {
+        NAPI_ERR_LOG("Get invalid album Id from photo album object");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Ordinary Album invalid");
+    } else {
+        NAPI_INFO_LOG("Successfully extracted album URI: %{private}s", albumId.c_str());
+    }
+    return albumId;
+}
+
 static int32_t HandleSingleIdArgs(napi_env env, const MediaLibraryAsyncContext& context,
     Notification::NotifyUriType uriType, std::string& singleId, napi_ref& cbOffRef)
 {
@@ -350,8 +392,8 @@ static int32_t HandleSingleIdArgs(napi_env env, const MediaLibraryAsyncContext& 
             ret = CheckIsObjectType(env, context.argv[PARAM0], "ARGS_ONE: First param is not object");
             CHECK_AND_RETURN_RET(ret == E_OK, ret);
             singleId = (uriType == Notification::NotifyUriType::SINGLE_PHOTO_URI)
-                ? MediaLibraryNapiUtils::GetSingleIdFromNapiAssets(env, context.argv[PARAM0])
-                : MediaLibraryNapiUtils::GetSingleIdFromNapiPhotoAlbum(env, context.argv[PARAM0]);
+                ? GetUnRegisterSingleIdFromNapiAssets(env, context.argv[PARAM0])
+                : GetUnRegisterSingleIdFromNapiPhotoAlbum(env, context.argv[PARAM0]);
             break;
         case ARGS_TWO:
             ret = CheckIsObjectType(env, context.argv[PARAM0], "ARGS_TWO: First param is not object");
@@ -359,8 +401,8 @@ static int32_t HandleSingleIdArgs(napi_env env, const MediaLibraryAsyncContext& 
             ret = CheckIsFunctionType(env, context.argv[PARAM1], "ARGS_TWO: second param is not function");
             CHECK_AND_RETURN_RET(ret == E_OK, ret);
             singleId = (uriType == Notification::NotifyUriType::SINGLE_PHOTO_URI)
-                ? MediaLibraryNapiUtils::GetSingleIdFromNapiAssets(env, context.argv[PARAM0])
-                : MediaLibraryNapiUtils::GetSingleIdFromNapiPhotoAlbum(env, context.argv[PARAM0]);
+                ? GetUnRegisterSingleIdFromNapiAssets(env, context.argv[PARAM0])
+                : GetUnRegisterSingleIdFromNapiPhotoAlbum(env, context.argv[PARAM0]);
             ret = CreateCallbackRef(env, context.argv[PARAM1], cbOffRef);
             CHECK_AND_RETURN_RET(ret == E_OK, ret);
             break;

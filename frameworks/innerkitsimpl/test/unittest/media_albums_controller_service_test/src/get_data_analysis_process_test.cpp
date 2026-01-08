@@ -44,7 +44,8 @@
 #include "vision_column.h"
 #include "get_analysis_process_vo.h"
 #include "query_result_vo.h"
- 
+#include "media_upgrade.h"
+
 namespace OHOS::Media {
 using namespace std;
 using namespace testing::ext;
@@ -54,7 +55,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     CREATE_HIGHLIGHT_ALBUM_TABLE,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,

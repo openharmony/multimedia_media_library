@@ -204,6 +204,8 @@ static napi_value ProcessSinglePhotoIdNotifications(napi_env env, napi_handle_sc
     NewJsOnChangeCallbackWrapper* wrapper, const shared_ptr<Notification::MediaChangeInfo> &changeInfo)
 {
     NAPI_DEBUG_LOG("ProcessSinglePhotoIdNotifications");
+    MediaLibraryTracer singlePhotoIdTracer;
+    singlePhotoIdTracer.Start("ProcessSinglePhotoIdNotifications");
     napi_value buildResult = nullptr;
     for (const auto& [singlePhotoId, changeData] : wrapper->singleAssetClientChangeInfo_) {
         buildResult = changeData == nullptr ? MediaLibraryNotifyUtils::BuildSinglePhotoAssetRecheckChangeInfos(env) :
@@ -221,6 +223,8 @@ static napi_value ProcessSinglePhotoIdNotifications(napi_env env, napi_handle_sc
         if (obsIt == wrapper->singleClientObservers_.end()) {
             continue ;
         }
+        MediaLibraryTracer observerTracer;
+        observerTracer.Start("SendJsCallback");
         for (auto& observer : obsIt->second) {
             napi_value jsCallback = nullptr;
             napi_status status = napi_get_reference_value(env, observer->ref_, &jsCallback);

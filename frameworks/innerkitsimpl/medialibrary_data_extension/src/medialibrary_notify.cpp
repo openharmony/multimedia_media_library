@@ -32,6 +32,7 @@
 #include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "uri.h"
+#include "media_audio_column.h"
 
 using namespace std;
 

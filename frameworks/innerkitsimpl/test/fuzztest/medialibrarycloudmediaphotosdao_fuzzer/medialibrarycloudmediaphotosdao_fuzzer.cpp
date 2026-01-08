@@ -33,6 +33,7 @@
 #include "photo_map_column.h"
 #include "medialibrary_kvstore_manager.h"
 #include "hi_audit.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 using namespace std;
@@ -701,7 +702,7 @@ static void MediaLibraryCloudMediaPhotosDaoFuzzer()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoMap::CREATE_TABLE,
     };

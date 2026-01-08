@@ -57,6 +57,8 @@
 #include "parameters.h"
 #include "media_config_info_column.h"
 #include "values_bucket.h"
+#include "media_audio_column.h"
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace OHOS;
@@ -97,7 +99,7 @@ const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 const int32_t PAGE_SIZE = 200;
 
 static std::vector<std::string> createTableSqlLists = {
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     PhotoAlbumColumns::CREATE_TABLE,
     PhotoMap::CREATE_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
@@ -113,6 +115,7 @@ static std::vector<std::string> createTableSqlLists = {
     CREATE_VIDEO_FACE_TBL,
     CREATE_AESTHETICS_SCORE_TBL,
     ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
+    CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
 };
 
 static std::vector<std::string> testTables = {
@@ -133,6 +136,7 @@ static std::vector<std::string> testTables = {
     ANALYSIS_BEAUTY_SCORE_TABLE,
     ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME,
     TAB_OLD_ALBUMS,
+    ANALYSIS_VIDEO_TOTAL_TABLE,
 };
 
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
@@ -1369,7 +1373,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
 
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     ASSERT_NE(store, nullptr);
-    store->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    store->ExecuteSql(PhotoUpgrade::CREATE_PHOTO_TABLE);
     store->ExecuteSql(string("INSERT INTO Photos (file_id, data, display_name, size, owner_album_id") +
         ") VALUES (1, 'test', 'test.jpg', 100, 0)");
 
@@ -3212,6 +3216,87 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_fa
     VerifyVideoFaceRestore(g_rdbStore->GetRaw(), photoInfoMap);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
     MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_video_face_test_001");
+}
+
+static void VerifyVideoTotalRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+    int32_t expectFileId, int32_t expectFace, int32_t expectLabel, int32_t expectStatus)
+{
+    if (!destRdb) {
+        MEDIA_ERR_LOG("Destination RDB store is null for verification");
+        return;
+    }
+
+    std::string querySql = "SELECT * FROM " + VISION_VIDEO_TOTAL_TABLE + " WHERE file_id = "
+        + std::to_string(expectFileId);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB for video face verification";
+
+    std::unordered_map<int32_t, std::vector<VideoFaceTbl>> destVideoFaces;
+    int32_t index = -1;
+    int32_t currentFileid = -1;
+    int32_t currentFace = -1;
+    int32_t currentLabel = -1;
+    int32_t currentStatus;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        resultSet->GetColumnIndex("file_id", index);
+        resultSet->GetInt(index, currentFileid);
+        resultSet->GetColumnIndex("face", index);
+        resultSet->GetInt(index, currentFace);
+        resultSet->GetColumnIndex("label", index);
+        resultSet->GetInt(index, currentLabel);
+        resultSet->GetColumnIndex("status", index);
+        resultSet->GetInt(index, currentStatus);
+    }
+    EXPECT_EQ(currentFileid, expectFileId);
+    EXPECT_EQ(currentFace, expectFace);
+    EXPECT_EQ(currentLabel, expectLabel);
+    EXPECT_EQ(currentStatus, expectStatus);
+
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_face_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_video_face_test_002");
+    CloneSource cloneSource;
+    vector<string> tableList = { ANALYSIS_VIDEO_FACE_TABLE, PhotoColumn::PHOTOS_TABLE, VISION_TOTAL_TABLE,
+        ANALYSIS_VIDEO_TOTAL_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 101;
+    int32_t newFileId = 11;
+    photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "DROP TABLE IF EXISTS tab_analysis_video_total;",
+        CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
+        "DROP TABLE IF EXISTS tab_analysis_video_face;",
+        CREATE_VIDEO_FACE_TBL,
+     });
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "INSERT OR REPLACE INTO Photos (file_id, media_type) VALUES (101,2);",
+        "INSERT OR REPLACE INTO tab_analysis_video_total (file_id, status, label, face) VALUES (101,1,2,3);",
+        "INSERT OR REPLACE INTO tab_analysis_video_face (file_id, face_id) VALUES (101, 3);",
+    });
+
+    MEDIA_INFO_LOG("Start executesql distance");
+
+    ExecuteSqls(g_rdbStore->GetRaw(), {
+        "INSERT OR REPLACE INTO tab_analysis_video_total (file_id, status, label, face) VALUES (10,1,2,3);",
+        "INSERT OR REPLACE INTO tab_analysis_video_total (file_id, status, label, face) VALUES (11,0,0,3);",
+    });
+
+    VideoFaceClone videoFaceClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    bool cloneSuccess = videoFaceClone.CloneVideoFaceInfo();
+    ASSERT_TRUE(cloneSuccess) << "VideoFaceClone::CloneVideoFaceInfo failed";
+    VerifyVideoTotalRestore(g_rdbStore->GetRaw(), 10, 0, 2, 0);
+    VerifyVideoTotalRestore(g_rdbStore->GetRaw(), 11, 3, 0, 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_video_face_test_002");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_001, TestSize.Level2)

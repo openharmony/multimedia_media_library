@@ -34,6 +34,7 @@
 #undef private
 
 #include "accurate_refresh_test_util.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 namespace Media {
@@ -124,7 +125,7 @@ void SetTables()
     // 创建Photos/PhotoAlbum表
     vector<string> createTableSqlList = {
         PhotoAlbumColumns::CREATE_TABLE,
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {
         if (g_rdbStore == nullptr) {

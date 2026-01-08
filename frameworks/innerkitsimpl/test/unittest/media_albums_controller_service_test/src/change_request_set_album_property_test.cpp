@@ -45,6 +45,7 @@
 #include "media_assets_controller_service.h"
 #include "set_subtitle_vo.h"
 #include "set_highlight_user_action_data_vo.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -56,7 +57,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 static std::vector<std::string> createTableSqlLists = {
     PhotoAlbumColumns::CREATE_TABLE,
-    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
     CREATE_HIGHLIGHT_ALBUM_TABLE,

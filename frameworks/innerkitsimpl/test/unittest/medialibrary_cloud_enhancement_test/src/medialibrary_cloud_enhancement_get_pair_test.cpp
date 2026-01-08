@@ -50,6 +50,7 @@
 #include "enhancement_database_operations.h"
 #undef private
 #undef protected
+#include "media_upgrade.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -94,7 +95,7 @@ void CleanTestTables()
 void SetTables()
 {
     vector<string> createTableSqlList = {
-        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
         CREATE_MEDIA_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {

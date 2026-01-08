@@ -45,6 +45,7 @@
 #include "userfilemgr_uri.h"
 #include "album_order_ani.h"
 #include "photo_asset_custom_record_ani.h"
+#include "media_audio_column.h"
 
 namespace OHOS {
 namespace Media {
