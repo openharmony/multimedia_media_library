@@ -287,6 +287,7 @@ private:
     int32_t userId_ = -1;
     std::string albumUri_;
     ResultNapiType resultNapiType_;
+    mutable std::shared_mutex memberMapMutex_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
