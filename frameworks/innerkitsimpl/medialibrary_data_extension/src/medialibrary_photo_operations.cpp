@@ -5077,6 +5077,8 @@ int32_t MediaLibraryPhotoOperations::OpenAssetCompress(MediaLibraryCommand &cmd,
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true, queryColumns, pendingStatus);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Get FileAsset From Uri Failed");
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_VIDEO, E_INVALID_ARGUMENTS,
+        "video type not support compress open");
     CHECK_AND_RETURN_RET_LOG(CheckPermissionToOpenFileAsset(fileAsset), E_PERMISSION_DENIED, "Open not allowed");
 
     UpdateLastVisitTime(cmd, id);
@@ -5404,14 +5406,13 @@ bool MediaLibraryPhotoOperations::SafeAccumulateSize(int64_t add, int64_t &acc)
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int64_t &size, vector<string> &movingPhotoExtraDataFiles, const unordered_map<string, int32_t> &duplicateIdMap,
-    int64_t &transcodeTotalSize)
+    FileSizeResult &result)
 {
     MEDIA_DEBUG_LOG("ProcessFileSizeWithResultSet start");
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
-    bool hasDuplicateIds = !duplicateIdMap.empty();
+    bool hasDuplicateIds = !result.duplicateIdMap.empty();
     int64_t fileSize = 0;
-    transcodeTotalSize = 0;
+    result.transcodeTotalSize = 0;
     int64_t transcodeSize = 0;
     string extraDataPath;
     string fileId;
@@ -5419,10 +5420,16 @@ int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_p
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(fileSize >= 0, E_ERR, "Invalid size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, size), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, result.size), E_ERR);
+        fileId = to_string(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
+        MEDIA_DEBUG_LOG("fileId: %{public}s, file size: %{public}" PRIu64 " bytes", fileId.c_str(), fileSize);
+        if (GetInt32Val(PhotoColumn::MEDIA_TYPE, resultSet) == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            result.validIds.erase(std::remove(result.validIds.begin(), result.validIds.end(), fileId),
+                result.validIds.end());
+        }
         transcodeSize = GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(transcodeSize >= 0, E_ERR, "Invalid transcode size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, transcodeTotalSize), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, result.transcodeTotalSize), E_ERR);
         needProcessMovingPhoto =
             GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
             GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) ==
@@ -5430,89 +5437,86 @@ int32_t MediaLibraryPhotoOperations::ProcessFileSizeWithResultSet(const shared_p
         if (needProcessMovingPhoto) {
             extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(
                 GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet));
-            movingPhotoExtraDataFiles.push_back(extraDataPath);
+            result.movingPhotoExtraDataFiles.push_back(extraDataPath);
         }
         CHECK_AND_CONTINUE(hasDuplicateIds);
-        fileId = to_string(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
-        CHECK_AND_CONTINUE(duplicateIdMap.count(fileId) > 0);
-        for (int32_t i = 0; i < duplicateIdMap.at(fileId); ++i) {
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, size), E_ERR);
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, transcodeTotalSize), E_ERR);
-            CHECK_AND_EXECUTE(!needProcessMovingPhoto, movingPhotoExtraDataFiles.push_back(extraDataPath));
+        CHECK_AND_CONTINUE(result.duplicateIdMap.count(fileId) > 0);
+        for (int32_t i = 0; i < result.duplicateIdMap.at(fileId); ++i) {
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(fileSize, result.size), E_ERR);
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(transcodeSize, result.transcodeTotalSize), E_ERR);
+            CHECK_AND_EXECUTE(!needProcessMovingPhoto, result.movingPhotoExtraDataFiles.push_back(extraDataPath));
         }
     }
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetFileSizeByIds(const vector<string> &validIds, int64_t &size,
-    vector<string> &movingPhotoExtraDataFiles, const std::unordered_map<std::string, int32_t> &duplicateIdMap,
-    int64_t &transcodeTotalSize)
+int32_t MediaLibraryPhotoOperations::GetFileSizeByIds(FileSizeResult &result)
 {
     MEDIA_DEBUG_LOG("GetFileSizeByIds start");
-    size = 0;
-    CHECK_AND_RETURN_RET_LOG(!validIds.empty(), E_INVALID_VALUES, "validIds is empty");
+    result.size = 0;
+    CHECK_AND_RETURN_RET_LOG(!result.validIds.empty(), E_INVALID_VALUES, "validIds is empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    vector<string> queryColumns = { MediaColumn::MEDIA_SIZE, PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE };
+    vector<string> queryColumns = { MediaColumn::MEDIA_SIZE, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE,
+        MediaColumn::MEDIA_ID };
     AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.In(MediaColumn::MEDIA_ID, validIds);
+    predicates.In(MediaColumn::MEDIA_ID, result.validIds);
     auto resultSet = rdbStore->Query(predicates, queryColumns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
-    int32_t ret = ProcessFileSizeWithResultSet(resultSet, size, movingPhotoExtraDataFiles, duplicateIdMap,
-        transcodeTotalSize);
+    int32_t ret = ProcessFileSizeWithResultSet(resultSet, result);
     if (ret != E_OK) {
         resultSet->Close();
         return ret;
     }
     resultSet->Close();
-    MEDIA_INFO_LOG("GetFileSizeByIds end, total size: %{public}" PRIu64 " bytes", size);
+    MEDIA_INFO_LOG("GetFileSizeByIds end, total size: %{public}" PRIu64 " bytes", result.size);
     return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int64_t &size, const unordered_map<string, int32_t> &duplicateIdMap)
+    FileSizeResult &result)
 {
     MEDIA_DEBUG_LOG("ProcessEditDataSizeWithResultSet start");
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
-    bool hasDuplicateIds = !duplicateIdMap.empty();
+    bool hasDuplicateIds = !result.duplicateIdMap.empty();
     int64_t editdataSize = 0;
     string fileId;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         editdataSize = GetInt64Val(PhotoExtColumn::EDITDATA_SIZE, resultSet);
         CHECK_AND_RETURN_RET_LOG(editdataSize >= 0, E_ERR, "Invalid size value");
-        CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, size), E_ERR);
+        CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, result.totalEditDataSize), E_ERR);
         CHECK_AND_CONTINUE(hasDuplicateIds);
         fileId = to_string(GetInt32Val(PhotoExtColumn::PHOTO_ID, resultSet));
-        CHECK_AND_CONTINUE(duplicateIdMap.count(fileId) > 0);
-        for (int32_t i = 0; i < duplicateIdMap.at(fileId); ++i) {
-            CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, size), E_ERR);
+        MEDIA_DEBUG_LOG("fileId: %{public}s, editdataSize: %{public}" PRIu64 " bytes", fileId.c_str(), editdataSize);
+        CHECK_AND_CONTINUE(result.duplicateIdMap.count(fileId) > 0);
+        for (int32_t i = 0; i < result.duplicateIdMap.at(fileId); ++i) {
+            CHECK_AND_RETURN_RET(SafeAccumulateSize(editdataSize, result.totalEditDataSize), E_ERR);
         }
     }
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::GetEditDataSizeByIds(const std::vector<std::string> &validIds, int64_t &size,
-    const std::unordered_map<std::string, int32_t> &duplicateIdMap)
+int32_t MediaLibraryPhotoOperations::GetEditDataSizeByIds(FileSizeResult &result)
 {
     MEDIA_DEBUG_LOG("GetEditDataSizeByIds start");
-    size = 0;
-    CHECK_AND_RETURN_RET_LOG(!validIds.empty(), E_INVALID_VALUES, "validIds is empty");
+    result.totalEditDataSize = 0;
+    CHECK_AND_RETURN_RET_INFO_LOG(!result.validIds.empty(), E_OK, "validIds is empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RdbStore is null");
 
     NativeRdb::AbsRdbPredicates predicates(PhotoExtColumn::PHOTOS_EXT_TABLE);
-    predicates.In(PhotoExtColumn::PHOTO_ID, validIds);
-    std::vector<std::string> columns = { PhotoExtColumn::EDITDATA_SIZE };
+    predicates.In(PhotoExtColumn::PHOTO_ID, result.validIds);
+    std::vector<std::string> columns = { PhotoExtColumn::EDITDATA_SIZE, PhotoExtColumn::PHOTO_ID };
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is null.");
-    int32_t ret = ProcessEditDataSizeWithResultSet(resultSet, size, duplicateIdMap);
+    int32_t ret = ProcessEditDataSizeWithResultSet(resultSet, result);
     if (ret != E_OK) {
         resultSet->Close();
         return ret;
     }
     resultSet->Close();
-    MEDIA_INFO_LOG("GetEditDataSizeByIds end, size: %{public}" PRIu64 " bytes", size);
+    MEDIA_INFO_LOG("GetEditDataSizeByIds end, size: %{public}" PRIu64 " bytes", result.totalEditDataSize);
     return E_OK;
 }
 
@@ -5540,40 +5544,36 @@ int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std:
     size = 0;
     CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_INVALID_VALUES, "uris is empty");
     string id;
-    vector<string> validIds;
-    unordered_map<string, int32_t> duplicateIdMap;
+    FileSizeResult result;
     std::unordered_set<std::string> idSet;
     for (const auto &uri : uris) {
         id = MediaFileUtils::GetIdFromUri(uri);
         CHECK_AND_RETURN_RET_LOG(!uri.empty() && MediaLibraryDataManagerUtils::IsNumber(id), E_INVALID_URI,
             "Invalid uri: %{public}s", uri.c_str());
-        validIds.push_back(id);
-        CHECK_AND_EXECUTE(idSet.insert(id).second, duplicateIdMap[id]++);
+        result.validIds.push_back(id);
+        CHECK_AND_EXECUTE(idSet.insert(id).second, result.duplicateIdMap[id]++);
     }
-    vector<string> movingPhotoExtraDataFiles;
-    int64_t totalFileSize = 0;
-    int64_t transcodeTotalSize = 0;
-    int32_t ret = GetFileSizeByIds(validIds, totalFileSize, movingPhotoExtraDataFiles, duplicateIdMap,
-        transcodeTotalSize);
+    int32_t ret = GetFileSizeByIds(result);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Get total file size by ids failed");
 
-    int64_t totalEditDataSize = 0;
-    ret = GetEditDataSizeByIds(validIds, totalEditDataSize, duplicateIdMap);
+    ret = GetEditDataSizeByIds(result);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Get total edit data size by ids failed");
 
     // enable process transcode file size when it is included in editdata_size
     if (PROCESS_TRANSCODE_SIZE) {
-        CHECK_AND_RETURN_RET_LOG(totalEditDataSize > transcodeTotalSize, E_ERR, "Invalid edit data size value");
-        totalEditDataSize -= transcodeTotalSize;
+        CHECK_AND_RETURN_RET_LOG(result.totalEditDataSize > result.transcodeTotalSize, E_ERR,
+            "Invalid edit data size value");
+        result.totalEditDataSize -= result.transcodeTotalSize;
     }
-    CHECK_AND_RETURN_RET_LOG(validIds.size() <= UINT64_MAX / FIXED_PADDING_BYTES, E_ERR, "Padding size overflow");
-    int64_t sumSize = FIXED_PADDING_BYTES * validIds.size();
-    CHECK_AND_RETURN_RET(SafeAccumulateSize(totalEditDataSize, sumSize), E_ERR);
-    CHECK_AND_RETURN_RET(SafeAccumulateSize(totalFileSize, sumSize), E_ERR);
+    CHECK_AND_RETURN_RET_LOG(result.validIds.size() <= UINT64_MAX / FIXED_PADDING_BYTES, E_ERR,
+        "Padding size overflow");
+    int64_t sumSize = FIXED_PADDING_BYTES * result.validIds.size();
+    CHECK_AND_RETURN_RET(SafeAccumulateSize(result.totalEditDataSize, sumSize), E_ERR);
+    CHECK_AND_RETURN_RET(SafeAccumulateSize(result.size, sumSize), E_ERR);
     size = sumSize;
-    if (!movingPhotoExtraDataFiles.empty()) {
+    if (!result.movingPhotoExtraDataFiles.empty()) {
         int64_t totalExtraDataSize = 0;
-        ret = GetSizeByFiles(movingPhotoExtraDataFiles, totalExtraDataSize);
+        ret = GetSizeByFiles(result.movingPhotoExtraDataFiles, totalExtraDataSize);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Calculate moving photo extra data size failed");
         CHECK_AND_RETURN_RET_LOG(size > totalExtraDataSize, E_ERR, "Invalid size value");
         size -= totalExtraDataSize;
