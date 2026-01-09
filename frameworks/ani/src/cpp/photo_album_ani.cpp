@@ -603,7 +603,7 @@ static ani_status ParseArgsCommitModify(ani_env *env, ani_object object, unique_
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
-    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY);
+    context->businessCode = static_cast<int32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY);
     return ANI_OK;
 }
 
@@ -618,7 +618,7 @@ static void CommitModifyIPCExecute(unique_ptr<PhotoAlbumAniContext> &context)
     }
     auto photoAlbum = objectInfo->GetPhotoAlbumInstance();
     AlbumCommitModifyReqBody reqBody;
-    reqBody.businessCode = context->businessCode;
+    reqBody.businessCode = static_cast<uint32_t>(context->businessCode);
     if (reqBody.businessCode == static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY)) {
         reqBody.albumName = photoAlbum->GetAlbumName();
         reqBody.albumType = photoAlbum->GetPhotoAlbumType();
@@ -1221,7 +1221,7 @@ static ani_status ParseArgsSetCoverUri(ani_env *env, ani_object object, ani_stri
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return ANI_INVALID_ARGS;
     }
-    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI);
+    context->businessCode = static_cast<int32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
     return ANI_OK;
