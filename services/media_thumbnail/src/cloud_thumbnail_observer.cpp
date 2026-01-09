@@ -22,7 +22,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+// LCOV_EXCL_START
 static inline bool IsFileIdValid(const std::string& fileId)
 {
     if (fileId.empty()) {
@@ -67,5 +67,6 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
         MEDIA_DEBUG_LOG("change type is %{public}d, not insert", changeInfo.changeType_);
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

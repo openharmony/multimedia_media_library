@@ -901,6 +901,9 @@ int32_t MediaLibraryRdbStore::DoDeleteFromPredicates(const AbsRdbPredicates &pre
                 predicates.GetWhereArgs());
         });
     }
+    bool isValid = (tableName == PhotoColumn::PHOTOS_TABLE) || (tableName == PhotoAlbumColumns::TABLE);
+    isValid = isValid && (deletedRows > 0);
+    CHECK_AND_EXECUTE(!isValid, CloudSyncHelper::GetInstance()->StartSync());
     return ret;
 }
 
@@ -915,7 +918,6 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
-    CloudSyncHelper::GetInstance()->StartSync();
     return ret;
 }
 
@@ -1252,7 +1254,6 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
         MediaLibraryRestore::GetInstance().CheckRestore(err);
         return E_HAS_DB_ERROR;
     }
-    CloudSyncHelper::GetInstance()->StartSync();
     return deletedRows;
 }
 

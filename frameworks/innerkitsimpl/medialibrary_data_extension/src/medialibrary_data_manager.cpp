@@ -154,6 +154,7 @@ const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
 const int32_t ERROR_OLD_FILE_ID_OFFSET = -1000000;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
+constexpr double EPSILON_DOUBLE = 1e-9;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
@@ -2650,6 +2651,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryAnalysisAlbum(Med
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
 }
 
+inline bool CheckLatitudeAndLongitudeVal(double latitudeVal, double longitudeVal)
+{
+    return !(std::abs(latitudeVal) < EPSILON_DOUBLE && std::abs(longitudeVal) < EPSILON_DOUBLE);
+}
+
 inline bool CheckLatitudeAndLongitude(const string &latitude, const string &longitude)
 {
     return latitude != "" && longitude != "" && !(latitude == "0" && longitude == "0");
@@ -2678,14 +2684,17 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryGeo(const RdbPred
     CHECK_AND_RETURN_RET_LOG(queryResult->GoToNextRow() == NativeRdb::E_OK, queryResult,
         "Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
 
-    string latitude = ConvertDoubleToString(GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult));
-    string longitude = ConvertDoubleToString(GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult));
+    double latitudeVal = GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+    double longitudeVal = GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
     string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
     MEDIA_INFO_LOG(
-        "QueryGeo, fileId: %{public}s, latitude: %{private}s, longitude: %{private}s, addressDescription: %{private}s",
-        fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
+        "QueryGeo, fileId: %{public}s, latitude: %{private}f, longitude: %{private}f, addressDescription: %{private}s",
+        fileId.c_str(), latitudeVal, longitudeVal, addressDescription.c_str());
 
-    if (CheckLatitudeAndLongitude(latitude, longitude) && addressDescription.empty()) {
+    if (CheckLatitudeAndLongitudeVal(latitudeVal, longitudeVal) && addressDescription.empty()) {
+        string latitude = ConvertDoubleToString(latitudeVal);
+        string longitude = ConvertDoubleToString(longitudeVal);
+        CHECK_AND_RETURN_RET(latitude != "" && longitude != "", queryResult);
         std::packaged_task<bool()> pt(
             [=] { return MediaAnalysisHelper::ParseGeoInfo({ fileId + "," + latitude + "," + longitude }, false); });
         std::future<bool> futureResult = pt.get_future();

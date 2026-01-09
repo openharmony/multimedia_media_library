@@ -39,7 +39,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "asset_accurate_refresh.h"
 #include "cloud_sync_manager.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -287,3 +287,4 @@ private:
 } // namespace OHOS
 
 #endif // MEDIALIBRARY_FILE_OPERATIONS
+//LCOV_EXCL_STOP

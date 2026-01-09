@@ -74,6 +74,24 @@ struct UniqueNumber {
     int32_t videoTotalNumber = 0;
     int32_t imageCurrentNumber = 0;
     int32_t videoCurrentNumber = 0;
+
+    UniqueNumber operator+(const UniqueNumber &other) const
+    {
+        UniqueNumber result;
+        result.imageTotalNumber = this->imageTotalNumber + other.imageTotalNumber;
+        result.videoTotalNumber = this->videoTotalNumber + other.videoTotalNumber;
+        result.imageCurrentNumber = this->imageCurrentNumber + other.imageCurrentNumber;
+        result.videoCurrentNumber = this->videoCurrentNumber + other.videoCurrentNumber;
+        return result;
+    }
+
+    void clear()
+    {
+        imageTotalNumber = 0;
+        videoTotalNumber = 0;
+        imageCurrentNumber = 0;
+        videoCurrentNumber = 0;
+    }
 };
 
 struct TimeInfo {
@@ -187,7 +205,11 @@ private:
     int32_t HandleMovingPhotoVideoSourceRestore(const std::string &srcPath, const std::string &assetPath);
     int32_t HandleMovingPhotoVideoSourceBackRestore(const std::string &srcPath, const std::string &assetPath);
     static int32_t MoveFile(const std::string &srcPath, const std::string &destPath);
+    static bool DeleteDirectoryIfExists(const std::string &dirPath);
     static bool CheckNeedProcessMovingPhotoSize(const NativeRdb::ValuesBucket &values);
+    bool HasTlvFiles(const vector<string> &files);
+    int32_t ProcessExtractTlvFile(const std::string &tlvFilePath, std::string &destDir,
+        std::unordered_map<TlvTag, std::string> &extractedFiles);
 
 private:
     std::atomic<bool> isRunning_{false};

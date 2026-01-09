@@ -12,22 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MEDIA_MTP_MANAGER_H
-#define OHOS_MEDIA_MTP_MANAGER_H
+
+#include "thumbnail_utils.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-//LCOV_EXCL_START
-class MediaMtpManager {
-public:
-    EXPORT void Init();
-    EXPORT static MediaMtpManager &GetInstance();
-    void RegisterMtpParamListener();
-    void RemoveMtpParamListener();
-    static void OnMtpParamDisableChanged(const char *key, const char *value, void *context);
-};
-} // namespace Media
-} // namespace OHOS
-#endif // OHOS_MEDIA_MTP_MANAGER_H
-//LCOV_EXCL_STOP
+bool ThumbnailUtils::IsMobileNetworkEnabled()
+{
+    MEDIA_INFO_LOG("IsMobileNetworkEnabled test return true");
+    return true;
+}
+}  // namespace Media
+}  // namespace OHOS
