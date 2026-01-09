@@ -29,6 +29,7 @@ const int DEFAULT_USER_ID_INNER = -1;
 
 const std::string PHOTO_BUCKET_INNER = "Photo";
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files";
+const std::string URI_PREFIX_INNER = "file://media/";
 const std::string PHOTO_URI_PREFIX_INNER = "file://media/Photo/";
 const std::string MULTI_USER_URI_FLAG = "user";
 
@@ -148,15 +149,16 @@ int32_t MediaUriUtils::GetFileId(const std::string &uri)
 std::string MediaUriUtils::GetFileIdStr(const std::string &uri)
 {
     const static std::string ERROR = "-1";
-    if (PHOTO_URI_PREFIX_INNER.size() >= uri.size()) {
-        MEDIA_ERR_LOG("photo uri is too short");
+    if (URI_PREFIX_INNER.size() >= uri.size()) {
+        MEDIA_ERR_LOG("uri is too short");
         return ERROR;
     }
-    if (uri.substr(0, PHOTO_URI_PREFIX_INNER.size()) != PHOTO_URI_PREFIX_INNER) {
-        MEDIA_ERR_LOG("only photo uri is valid");
+    if (uri.substr(0, URI_PREFIX_INNER.size()) != URI_PREFIX_INNER) {
+        MEDIA_ERR_LOG("invalid media uri prefix");
         return ERROR;
     }
-    std::string tmp = uri.substr(PHOTO_URI_PREFIX_INNER.size());
+    std::string tmp = uri.substr(URI_PREFIX_INNER.size());
+    tmp = tmp.substr(tmp.find_first_of('/') + 1);
     std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
     if (fileIdStr.empty()) {
         MEDIA_ERR_LOG("fileId is empty");
