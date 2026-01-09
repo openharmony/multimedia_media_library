@@ -2933,14 +2933,10 @@ int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SetPhotoCritical");
 
-    // System app check: Only system apps can call this interface
-    bool cond = (!(PermissionUtils::IsSystemApp() || PermissionUtils::IsNativeSAApp() ||
-        (PermissionUtils::IsHdcShell() &&
-        OHOS::system::GetBoolParameter("const.security.developermode.state", true))));
-
     // Get critical state from ValuesBucket
     bool isCritical = false;
     int32_t ret = GetCriticalState(cmd.GetValueBucket(), isCritical);
+    MEDIA_INFO_LOG("SetPhotoCritical isCritical:%{public}d", isCritical);
     CHECK_AND_RETURN_RET(ret == E_OK, ret);
 
     // Convert isCritical to critical_type and is_critical values
@@ -2957,6 +2953,7 @@ int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
     values.Put(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalInt);
 
     int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
+    MEDIA_INFO_LOG("SetPhotoCritical changedRows:%{public}d", changedRows);
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
 
     // Send notification
