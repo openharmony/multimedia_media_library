@@ -1534,7 +1534,12 @@ static void GetEditDataString(const char* editDataBuffer, string& result)
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
         editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
         // edit data saved by media change request
-        result = editDataJson.at(EDIT_DATA);
+        if (editDataJson[EDIT_DATA].is_string()) {
+            result = editDataJson[EDIT_DATA].get<std::string>();
+        } else {
+            result = "";
+            ANI_WARN_LOG("EDIT_DATA is not a string type");
+        }
     } else {
         // edit data saved by commitEditedAsset
         result = editDataStr;

@@ -292,14 +292,14 @@ ani_status MediaLibraryNotifyAniUtils::SetValueNull(ani_env* env, const char* na
 ani_status MediaLibraryNotifyAniUtils::InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find escompat.Array.");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find std.core.Array.");
 
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "i:", &(arrayOperator.ctorMethod)),
-        "Can't find method <ctor> in escompat.Array.");
+        "Can't find method <ctor> in std.core.Array.");
 
-    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iC{std.core.Object}:",
-        &(arrayOperator.setMethod)), "Can't find method $_set in escompat.Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iY:",
+        &(arrayOperator.setMethod)), "Can't find method $_set in std.core.Array.");
     return ANI_OK;
 }
 

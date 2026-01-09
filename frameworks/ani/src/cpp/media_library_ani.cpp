@@ -76,6 +76,7 @@
 #include "set_photo_album_order_vo.h"
 #include "medialibrary_notify_callback_wrapper_ani.h"
 #include "media_audio_column.h"
+#include <charconv>
 
 namespace OHOS {
 namespace Media {
@@ -909,7 +910,11 @@ static ani_status CheckFormId(string &formId)
             return ANI_INVALID_ARGS;
         }
     }
-    uint64_t num = stoull(formId);
+    uint64_t num;
+    auto [ptr, ec] = std::from_chars(formId.data(), formId.data() + formId.size(), num);
+    if (ec != std::errc{} || ptr != formId.data() + formId.size()) {
+        return ANI_INVALID_ARGS;
+    }
     if (num > MAX_INT64) {
         return ANI_INVALID_ARGS;
     }
@@ -4901,6 +4906,11 @@ static std::string GetFaceAnalysisProgress()
         return "";
     }
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    if (!curJsonObj.contains("totalCount")) {
+        ret->Close();
+        ANI_ERR_LOG("curJsonObj does not contain totalCount");
+        return "";
+    }
     int preTotalCount = curJsonObj["totalCount"];
     if (to_string(preTotalCount) != curTotalCount) {
         ANI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
