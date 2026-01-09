@@ -125,8 +125,7 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumRestore::GetAlbumsToRest
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> result;
     for (const PhotoAlbumRestore::GalleryAlbumRowData &galleryAlbum : filteredAlbums) {
         PhotoAlbumDao::PhotoAlbumRowData albumRowData;
-        albumRowData.albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
-        albumRowData.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+        DetermineAlbumTypeByLPath(albumRowData, galleryAlbum.lPath);
         albumRowData.albumName = galleryAlbum.albumName;
         albumRowData.bundleName = galleryAlbum.bundleName;
         albumRowData.lPath = galleryAlbum.lPath;
@@ -218,5 +217,22 @@ PhotoAlbumRestore::GalleryAlbumRowData PhotoAlbumRestore::BuildAlbumInfoOfGaller
     albumInfo.priority = 1;
     albumInfo.uploadStatus = uploadStatus;
     return albumInfo;
+}
+
+void PhotoAlbumRestore::DetermineAlbumTypeByLPath(
+    PhotoAlbumDao::PhotoAlbumRowData &albumRowData, const std::string &lPath)
+{
+    albumRowData.albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
+    albumRowData.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+
+    std::string target = "/Pictures/Users/";
+    std::transform(target.begin(), target.end(), target.begin(), ::tolower);
+    std::string lPathLower = lPath;
+    std::transform(lPathLower.begin(), lPathLower.end(), lPathLower.begin(), ::tolower);
+
+    CHECK_AND_RETURN_RET_LOG(
+        lPathLower.find(target) == 0, , "lPath does not start with target path: %{public}s", lPath.c_str());
+    albumRowData.albumType = static_cast<int32_t>(PhotoAlbumType::USER);
+    albumRowData.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC);
 }
 }  // namespace OHOS::Media

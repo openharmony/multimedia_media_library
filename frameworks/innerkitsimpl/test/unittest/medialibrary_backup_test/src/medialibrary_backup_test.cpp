@@ -2948,5 +2948,57 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test003, Te
     bool flag = result == expected;
     EXPECT_TRUE(flag);
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_move_file_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_base_restore_move_file_001 start");
+    int32_t ret = restoreService->BaseRestore::MoveFile("", "");
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_duration_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_base_restore_insert_file_duration_001 start");
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFileDuration(1);
+    NativeRdb::ValuesBucket value;
+    FileInfo fileInfo;
+    restoreService->BaseRestore::InsertFileDuration(data, value, fileInfo);
+    int32_t duration = 0;
+    NativeRdb::ValueObject valueObject;
+    if (value.GetObject(MediaColumn::MEDIA_DURATION, valueObject)) {
+        valueObject.GetInt(duration);
+    }
+    EXPECT_EQ(duration, 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_duration_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_base_restore_insert_file_duration_002 start");
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFileDuration(1);
+    NativeRdb::ValuesBucket value;
+    value.PutInt(MediaColumn::MEDIA_DURATION, 1);
+    FileInfo fileInfo;
+    restoreService->BaseRestore::InsertFileDuration(data, value, fileInfo);
+    int32_t duration = 0;
+    NativeRdb::ValueObject valueObject;
+    if (value.GetObject(MediaColumn::MEDIA_DURATION, valueObject)) {
+        valueObject.GetInt(duration);
+    }
+    EXPECT_EQ(duration, 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_database_helper_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_database_helper_001 start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    FileInfo fileInfo;
+    int32_t errCode = 0;
+    fileInfo.isInternal = false;
+    upgrade->backupDatabaseHelper_.Init(DUAL_FRAME_CLONE_RESTORE_ID, false, "");
+    EXPECT_EQ(upgrade->CheckInvalidFile(fileInfo, errCode), "");
+}
 } // namespace Media
 } // namespace OHOS

@@ -16,7 +16,7 @@
 #define OHOS_MEDIA_MTP_SUBSCRIBER_H
 
 #include "common_event_subscriber.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -31,3 +31,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_MTP_SUBSCRIBER_H
+//LCOV_EXCL_STOP
