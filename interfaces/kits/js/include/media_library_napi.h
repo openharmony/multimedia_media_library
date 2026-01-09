@@ -287,7 +287,7 @@ private:
     EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
     EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
-    EXPORT static napi_value CreateCriticalTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePhotoRiskStatusEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
@@ -472,7 +472,7 @@ private:
     static thread_local napi_ref sVirtualAlbumTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
     static thread_local napi_ref sPrivateAlbumEnumRef_;
-    static thread_local napi_ref sCriticalTypeEnumRef_;
+    static thread_local napi_ref sRiskStatusEnumRef_;
 
     static thread_local napi_ref sUserFileMgrFileKeyEnumRef_;
     static thread_local napi_ref sAudioKeyEnumRef_;

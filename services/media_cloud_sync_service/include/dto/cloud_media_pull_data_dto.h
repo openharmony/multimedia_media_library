@@ -93,7 +93,7 @@ public:
     std::string attributesStoragePath;            /* storage_path */
     
     // Safe Album: critical type for children's watch
-    int32_t attributesCriticalType{0};            /* critical_type */
+    int32_t attributesRiskStatus{0};              /* photo_risk_status */
     int32_t attributesIsCritical{0};              /* is_critical */
 
     // "properties"
