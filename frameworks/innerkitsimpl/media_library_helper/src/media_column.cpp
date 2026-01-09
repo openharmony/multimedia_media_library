@@ -125,7 +125,8 @@ const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
 const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE = "file_source_type";
 const std::string PhotoColumn::PHOTO_VIDEO_MODE = "video_mode";
 const std::string PhotoColumn::PHOTO_IS_CRITICAL =  "is_critical";
-const std::string PhotoColumn::PHOTO_CRITICAL_TYPE =  "critical_type";
+const std::string PhotoColumn::PHOTO_CRITICAL_TYPE =  "critical_type";  // abandoned
+const std::string PhotoColumn::PHOTO_RISK_STATUS =  "photo_risk_status";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
 const std::string PhotoColumn::PHOTO_APPLINK = "applink";
@@ -239,7 +240,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
     PhotoColumn::PHOTO_HDR_MODE,
     PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_ASPECT_RATIO,
-    PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_CRITICAL_TYPE,
+    PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_RISK_STATUS,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

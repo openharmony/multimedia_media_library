@@ -1484,7 +1484,7 @@ export default {
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
-  CriticalType: photoAccessHelper.CriticalType,
+  PhotoRiskStatus: photoAccessHelper.PhotoRiskStatus,
   CloudEnhancement: photoAccessHelper.CloudEnhancement,
   CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
   CloudEnhancementState: photoAccessHelper.CloudEnhancementState,

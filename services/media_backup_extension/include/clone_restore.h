@@ -231,9 +231,9 @@ private:
     void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void SetAggregateBitThird();
     bool ShouldRestoreFromCloud();
-    void UpdateCriticalTypeForSamePhotos(vector<FileInfo> &fileInfos);
-    bool CheckDestDbHasCriticalTypeColumn();
-    bool CheckSrcDbHasCriticalTypeColumn();
+    void UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos);
+    bool CheckDestDbHasRiskStatusColumn();
+    bool CheckSrcDbHasRiskStatusColumn();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,

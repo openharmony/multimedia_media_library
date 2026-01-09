@@ -284,7 +284,7 @@ thread_local napi_ref MediaLibraryNapi::sCompositeDisplayModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
-thread_local napi_ref MediaLibraryNapi::sCriticalTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sRiskStatusEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -396,7 +396,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("CriticalType", CreateCriticalTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PhotoRiskStatus", CreatePhotoRiskStatusEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1132,9 +1132,9 @@ static napi_value CreateStringEnumProperty(napi_env env, vector<pair<string, str
     return result;
 }
 
-napi_value MediaLibraryNapi::CreateCriticalTypeEnum(napi_env env)
+napi_value MediaLibraryNapi::CreatePhotoRiskStatusEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, criticalTypeEnum, sCriticalTypeEnumRef_);
+    return CreateNumberEnumProperty(env, photoRiskStatusEnum, sRiskStatusEnumRef_);
 }
 
 static void DealWithCommonParam(napi_env env, napi_value arg,

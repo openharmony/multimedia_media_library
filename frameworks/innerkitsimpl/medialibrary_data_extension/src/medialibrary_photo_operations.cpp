@@ -2913,15 +2913,15 @@ static int32_t GetCriticalState(const ValuesBucket& values, bool &isCritical)
         CHECK_AND_RETURN_RET(!cond, E_INVALID_VALUES);
         isCritical = (isCriticalInt == 1);
     } else {
-        // If is_critical is not provided, derive from critical_type
-        ValueObject criticalTypeValObj;
-        bool hasCriticalType = values.GetObject(PhotoColumn::PHOTO_CRITICAL_TYPE, criticalTypeValObj);
-        CHECK_AND_RETURN_RET(hasCriticalType, E_INVALID_VALUES);
-        int32_t criticalType = -1;
-        int ret = criticalTypeValObj.GetInt(criticalType);
+        // If is_critical is not provided, derive from photo_risk_status
+        ValueObject photoRiskStatusValObj;
+        bool hasPhotoRiskStatus = values.GetObject(PhotoColumn::PHOTO_RISK_STATUS, photoRiskStatusValObj);
+        CHECK_AND_RETURN_RET(hasPhotoRiskStatus, E_INVALID_VALUES);
+        int32_t riskStatus = -1;
+        int ret = photoRiskStatusValObj.GetInt(riskStatus);
         CHECK_AND_RETURN_RET(ret == E_OK, E_INVALID_VALUES);
-        // SUSPECTED_CRITICAL_TYPE (2) and CRITICAL_TYPE (3) are critical
-        isCritical = (criticalType == 2 || criticalType == 3);
+        // SUSPICIOUS (2) and REJECTED (3) are critical
+        isCritical = (riskStatus == 2 || riskStatus == 3);
     }
     return E_OK;
 }
@@ -2933,18 +2933,14 @@ int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SetPhotoCritical");
 
-    // System app check: Only system apps can call this interface
-    bool cond = (!(PermissionUtils::IsSystemApp() || PermissionUtils::IsNativeSAApp() ||
-        (PermissionUtils::IsHdcShell() &&
-        OHOS::system::GetBoolParameter("const.security.developermode.state", true))));
-
     // Get critical state from ValuesBucket
     bool isCritical = false;
     int32_t ret = GetCriticalState(cmd.GetValueBucket(), isCritical);
+    MEDIA_INFO_LOG("SetPhotoCritical isCritical:%{public}d", isCritical);
     CHECK_AND_RETURN_RET(ret == E_OK, ret);
 
     // Convert isCritical to critical_type and is_critical values
-    int32_t criticalType = isCritical ? 3 : 1; // CRITICAL_TYPE (3) or NOT_CRITICAL_TYPE (1)
+    int32_t photoRiskStatus = isCritical ? 3 : 1; // REJECTED (3) or APPROVED (1)
     int32_t isCriticalInt = isCritical ? 1 : 0;
 
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
@@ -2953,10 +2949,11 @@ int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
 
     ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_CRITICAL_TYPE, criticalType);
+    values.Put(PhotoColumn::PHOTO_RISK_STATUS, photoRiskStatus);
     values.Put(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalInt);
 
     int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
+    MEDIA_INFO_LOG("SetPhotoCritical changedRows:%{public}d", changedRows);
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
 
     // Send notification

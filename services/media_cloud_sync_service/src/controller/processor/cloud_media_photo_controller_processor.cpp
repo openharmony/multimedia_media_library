@@ -265,8 +265,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesStrongAssociation = photosVo.strongAssociation;
     data.attributesFileSourceType = photosVo.fileSourceType;
     data.attributesStoragePath = photosVo.storagePath;
-    // Safe Album: critical type for children's watch
-    data.attributesCriticalType = photosVo.criticalType;
+    // Safe Album: risk status for children's watch
+    data.attributesRiskStatus = photosVo.photoRiskStatus;
     data.attributesIsCritical = photosVo.isCritical;
     return true;
 }

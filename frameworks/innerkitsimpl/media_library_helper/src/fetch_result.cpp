@@ -114,8 +114,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, TYPE_INT32 },
         { PhotoColumn::PHOTO_ASPECT_RATIO, TYPE_DOUBLE },
         { PhotoColumn::PHOTO_CHANGE_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_CRITICAL_TYPE, TYPE_INT32 },
         { PhotoColumn::PHOTO_IS_CRITICAL, TYPE_INT32 },
+        { PhotoColumn::PHOTO_RISK_STATUS, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }
