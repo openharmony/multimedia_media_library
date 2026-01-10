@@ -4421,8 +4421,6 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
     MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::YUV_READY);
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::YUV_READY_BUSSINESS_NAME);
-    CHECK_AND_RETURN_RET_LOG(assetRefresh != nullptr, E_ERR,
-        "Failed to init assetRefresh");
     return assetRefresh->NotifyYuvReady(fileId);
 }
 
