@@ -101,8 +101,6 @@ const PickerFilterPhotoKeys = {
     ASPECT_RATIO: 'aspect_ratio',
   }
 
-var isPhotoBrowserShow = false;
-var isMovingPhotoBadgeShownValid = false;
 
 const PARAMETERS_VALIDATE_FAILED_MESSAGE = 
 'Scene parameters validate failed, possible causes:' +
@@ -158,6 +156,14 @@ export class PhotoPickerComponent extends ViewPU {
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.setInitiallyProvidedValue(o);
+        this.__pickerController.get().isPhotoBrowserShowCallback = ()=>{
+            console.log('WECHAT_MOVINGPHOTO, isPhotoBrowserShowCallback init');
+            return false;
+        }
+        this.__pickerController.get().isMovingPhotoBadgeShownValidCallback = ()=>{
+            console.log('WECHAT_MOVINGPHOTO, isMovingPhotoBadgeShownValidCallback init');
+            return false;
+        }
         this.declareWatch('pickerController', this.onChanged);
     }
 
@@ -679,10 +685,12 @@ export class PhotoPickerComponent extends ViewPU {
         t.animatorParams.duration = e.duration;
         t.animatorParams.curve = e.curve;
         o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
-        if (o) {
-            isPhotoBrowserShow = true;
-        } else {
-            isPhotoBrowserShow = false;
+        this.__pickerController.get().isPhotoBrowserShowCallback = () =>{
+            if (o) {
+                return true;
+            } else {
+                return false;
+            }
         }
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + o);
     }
@@ -771,15 +779,16 @@ export class PhotoPickerComponent extends ViewPU {
     }   
     
     parseIsMovingPhotoBadgeShown(isMovingPhotoBadgeShown) {
-        console.log('PhotoPickerComponent, isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid
-            + ',isMovingPhotoBadgeShown=' + isMovingPhotoBadgeShown);
+        console.log('isMovingPhotoBadgeShown=' + isMovingPhotoBadgeShown);
         if (isMovingPhotoBadgeShown === undefined || void 0 === isMovingPhotoBadgeShown) {
             return undefined;
         }
-        if (isMovingPhotoBadgeShown === true) {
-            isMovingPhotoBadgeShownValid = true;
-        } else {
-            isMovingPhotoBadgeShownValid = false;
+        this.__pickerController.get().isMovingPhotoBadgeShownValidCallback = ()=>{
+            if (isMovingPhotoBadgeShown === true) {
+                return true;
+            } else {
+                return false;
+            }
         }
         return isMovingPhotoBadgeShown;
         
@@ -945,6 +954,10 @@ let PickerController = class {
         this.saveCallbackMap = new Map();
         this.createCallbackMap = new Map();
         this.saveCallbackPromises = new Map();
+        this.isPhotoBrowserShowCallback = function() {
+        }; // 用于监听是否进大图浏览，true表示进入，false表示推出。
+        this.isMovingPhotoBadgeShownValidCallback = function() {
+        }; // 用于监听是否配置了显示动图照片角标（isMovingPhotoBadgeShown）。true表示显示，false表示不显示。
     }
     setData(e, o) {
         if (o === undefined) {
@@ -1024,6 +1037,8 @@ let PickerController = class {
         if (e !== MovingPhotoBadgeStateType.ADD_DATA && e !== MovingPhotoBadgeStateType.DELETE_DATA) {
             throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
         }
+        let isPhotoBrowserShow = this?.isPhotoBrowserShowCallback();
+        let isMovingPhotoBadgeShownValid = this?.isMovingPhotoBadgeShownValidCallback();
         console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) +
          ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
         if (!isPhotoBrowserShow || isMovingPhotoBadgeShownValid) {
