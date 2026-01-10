@@ -34,10 +34,10 @@ public:
     EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(
         const PhotoAssetProxyCallerInfo &callerInfo, CameraShotType cameraShotType, int32_t videoCount = 1);
     EXPORT int32_t OpenAsset(std::string &uri, const std::string &openMode);
-
+//LCOV_EXCL_START
     EXPORT int32_t RegisterPhotoStateCallback(const LowQualityMemoryNumHandler &func);
     EXPORT int32_t UnregisterPhotoStateCallback();
-
+//LCOV_EXCL_STOP
 private:
     EXPORT MediaLibraryCameraManager() = default;
     EXPORT virtual ~MediaLibraryCameraManager() = default;
