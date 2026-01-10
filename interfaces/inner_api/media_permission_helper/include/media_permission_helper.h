@@ -19,7 +19,7 @@
 #include "datashare_helper.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
-
+//LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -139,3 +139,4 @@ private:
 } // namespace OHOS
 // LCOV_EXCL_STOP
 #endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_PERMISSION_HELPER_H_
+//LCOV_EXCL_STOP
