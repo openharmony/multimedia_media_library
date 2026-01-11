@@ -25,6 +25,7 @@
 #include "result_set_utils.h"
 #include "media_log.h"
 #include "medialibrary_rdb_transaction.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media {
 
@@ -141,6 +142,60 @@ int32_t AlbumPluginTableEventHandler::OnUpgrade(NativeRdb::RdbStore &store, int 
     }
     int32_t ret = OnCreate(store);
     MEDIA_INFO_LOG("OnUpgrade end upgrade %{public}s table.", TABLE_NAME.c_str());
+    return ret;
+}
+
+int32_t AlbumPluginTableEventHandler::FindMinecraftPE(std::optional<AlbumPlugin::AlbumPluginRowData> &objOp)
+{
+    bool isValid = false;
+    for (const auto &node : AlbumPlugin::ALBUM_PLUGIN_DATA) {
+        isValid = node.lpath == this->LPATH_MINECRAFT_PE;
+        CHECK_AND_CONTINUE(isValid);
+        objOp = node;
+        break;
+    }
+    return E_OK;
+}
+
+std::string AlbumPluginTableEventHandler::ToString(const AlbumPlugin::AlbumPluginRowData &data) const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"lpath\": \"" << data.lpath << "\","
+       << "\"album_name\": \"" << data.album_name << "\","
+       << "\"album_name_en\": \"" << data.album_name_en << "\","
+       << "\"bundle_name\": \"" << data.bundle_name << "\","
+       << "\"cloud_id\": \"" << data.cloud_id << "\","
+       << "\"dual_album_name\": \"" << data.dual_album_name << "\","
+       << "\"priority\": " << data.priority << "}";
+    return ss.str();
+}
+
+int32_t AlbumPluginTableEventHandler::FixMinecraftPE(NativeRdb::RdbStore &store, int32_t oldVersion, int32_t newVersion)
+{
+    std::optional<AlbumPlugin::AlbumPluginRowData> mineCraftOp;
+    this->FindMinecraftPE(mineCraftOp);
+    bool isValid = mineCraftOp.has_value();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_OK, "Can not find %{public}s to fix.", this->LPATH_MINECRAFT_PE.c_str());
+    AlbumPlugin::AlbumPluginRowData mineCraftInfo = mineCraftOp.value();
+    isValid = !mineCraftInfo.lpath.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_OK, "invalid object, lpath: %{public}s.", this->LPATH_MINECRAFT_PE.c_str());
+    NativeRdb::AbsRdbPredicates predicates(this->TABLE_NAME);
+    predicates.EqualTo(this->COLUMN_LPATH, mineCraftInfo.lpath);
+    NativeRdb::ValuesBucket value;
+    value.PutString(this->COLUMN_ALBUM_NAME, mineCraftInfo.album_name);
+    value.PutString(this->COLUMN_ALBUM_NAME_EN, mineCraftInfo.album_name_en);
+    value.PutString(this->COLUMN_DUAL_ALBUM_NAME, mineCraftInfo.dual_album_name);
+    int32_t changedRows = -1;
+    int32_t ret = store.Update(changedRows, value, predicates);
+    MEDIA_INFO_LOG("FixMinecraftPE completed, "
+        "oldVersion: %{public}d, newVersion: %{public}d, "
+        "ret: %{public}d, changedRows: %{public}d, object: %{public}s",
+        oldVersion,
+        newVersion,
+        ret,
+        changedRows,
+        this->ToString(mineCraftInfo).c_str());
     return ret;
 }
 }  // namespace OHOS::Media
