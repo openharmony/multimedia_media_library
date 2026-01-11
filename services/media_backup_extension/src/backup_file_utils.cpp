@@ -95,41 +95,43 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
     }
 
     string parentDir = filesystem::path(curPath).parent_path().string();
-    string lowerCurPath = curPath;
-    transform(lowerCurPath.begin(), lowerCurPath.end(), lowerCurPath.begin(), ::tolower);
+    transform(curPath.begin(), curPath.end(), curPath.begin(), ::tolower);
     {
         std::lock_guard<std::mutex> guard(mapMutex);
-        if (pathMap.find(lowerCurPath) != pathMap.end()) {
-            resultPath.replace(0, curPath.length(), pathMap[lowerCurPath]);
+        if (pathMap.find(curPath) != pathMap.end()) {
+            resultPath.replace(0, curPath.length(), pathMap[curPath]);
             return true;
         }
     }
     if (!MediaFileUtils::IsFileExists(parentDir)) {
-        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.",
-            BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str());
-        return false;
-    }
-    std::error_code ec;
-    auto iter = filesystem::directory_iterator(parentDir,
-        std::filesystem::directory_options::skip_permission_denied, ec);
-    if (ec) {
-        MEDIA_WARN_LOG("directory_iterator error for %{public}s, skip. ec: %{public}s",
-            BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str(), ec.message().c_str());
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", parentDir.c_str());
         return false;
     }
 
-    for (const auto &entry : iter) {
-        string entryPath = entry.path().string();
-        string lowerEntryPath = entryPath;
-        transform(lowerEntryPath.begin(), lowerEntryPath.end(), lowerEntryPath.begin(), ::tolower);
-        if (lowerEntryPath == lowerCurPath) {
-            resultPath.replace(0, curPath.length(), entry.path().string());
+    std::error_code ec;
+    auto iter = filesystem::directory_iterator(parentDir,
+        std::filesystem::directory_options::skip_permission_denied, ec);
+    while (iter != filesystem::directory_iterator()) {
+        if (ec) {
+            MEDIA_WARN_LOG("Failed to open directory: %{public}s, skip. ec: %{public}d, msg: %{public}s",
+                BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str(),
+                ec.value(), ec.message().c_str());
+            ec.clear();
+            iter.increment(ec);
+            continue;
+        }
+        const auto &entry = *iter;
+        string entryPath = entry.path();
+        transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
+        if (entryPath == curPath) {
+            resultPath.replace(0, curPath.length(), entry.path());
             {
                 std::lock_guard<std::mutex> guard(mapMutex);
-                pathMap[lowerCurPath] = entry.path().string();
+                pathMap[curPath] = entry.path();
             }
             return true;
         }
+        iter.increment(ec);
     }
 
     return false;
