@@ -5768,6 +5768,12 @@ static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
         AddPhotoRiskStatusColumnsAndDeleteCritical(store, VERSION_ADD_PHOTO_RISK_STATUS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_RISK_STATUS, true);
     }
+
+    if (oldVersion < VERSION_FIX_MINECRAFT_PE && !RdbUpgradeUtils::HasUpgraded(VERSION_FIX_MINECRAFT_PE, true)) {
+        int32_t ret = AlbumPluginTableEventHandler().FixMinecraftPE(store, oldVersion, MEDIA_RDB_VERSION);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_MINECRAFT_PE, true);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_FIX_MINECRAFT_PE, 0, ret);
+    }
 }
 
 static void UpgradeExtensionPart13(RdbStore &store, int32_t oldVersion)
