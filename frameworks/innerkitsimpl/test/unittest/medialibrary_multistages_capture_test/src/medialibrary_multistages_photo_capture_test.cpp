@@ -1083,5 +1083,34 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, BeginSynchronize_test_001, Tes
     EXPECT_NE(adapter.deferredPhotoProcSession_, nullptr);
     adapter.BeginSynchronize();
 }
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, CheckMovingPhotoFlag_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("CheckMovingPhotoFlag_test_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
+    callback->NotifyIfTempFile(fileAsset);
+
+    NativeRdb::ValuesBucket updateValues;
+    uint32_t cloudImageEnhanceFlag = 5;
+    callback->UpdateCEAvailable(fileId, cloudImageEnhanceFlag, updateValues, 0);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t result = DatabaseAdapter::Update(updateCmd);
+    EXPECT_EQ(result, 0);
+
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_SESSION_SYNC_NEEDED);
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_INTERRUPTED);
+    callback->OnStateChanged(CameraStandard::SESSION_STATE_RUNNALBE);
+    delete callback;
+    MEDIA_INFO_LOG("CheckMovingPhotoFlag_test_001 End");
+}
 }
 }
