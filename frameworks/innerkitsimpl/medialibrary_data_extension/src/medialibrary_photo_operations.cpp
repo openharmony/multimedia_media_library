@@ -4752,9 +4752,6 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     CHECK_AND_RETURN_RET_LOG(rowId >= 0, rowId, "Update Photo In database failed, rowId=%{public}d", rowId);
 
     assetRefresh.RefreshAlbum();
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_EXECUTE(watch == nullptr, watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-        NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId));
     assetRefresh.Notify();
     return rowId;
 }
