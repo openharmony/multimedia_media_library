@@ -685,7 +685,7 @@ export class PhotoPickerComponent extends ViewPU {
         t.animatorParams.duration = e.duration;
         t.animatorParams.curve = e.curve;
         o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
-        this.__pickerController.get().isPhotoBrowserShowCallback = () =>{
+        this.pickerController.isPhotoBrowserShowCallback = () =>{
             if (o) {
                 return true;
             } else {
@@ -783,7 +783,7 @@ export class PhotoPickerComponent extends ViewPU {
         if (isMovingPhotoBadgeShown === undefined || void 0 === isMovingPhotoBadgeShown) {
             return undefined;
         }
-        this.__pickerController.get().isMovingPhotoBadgeShownValidCallback = ()=>{
+        this.pickerController.isMovingPhotoBadgeShownValidCallback = ()=>{
             if (isMovingPhotoBadgeShown === true) {
                 return true;
             } else {
