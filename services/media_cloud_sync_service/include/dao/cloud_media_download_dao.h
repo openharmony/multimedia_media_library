@@ -59,6 +59,7 @@ private:
         bool isNeedUpdate);
     void FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult,
         bool isNeedUpdate);
+    void FillScanedHeightWidth(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult);
 
 private:
     const std::vector<std::string> DOWNLOAD_THUMBNAIL_COLUMNS = {

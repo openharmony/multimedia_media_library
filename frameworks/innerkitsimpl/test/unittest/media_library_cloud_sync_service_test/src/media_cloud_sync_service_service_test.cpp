@@ -1907,10 +1907,10 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1918,11 +1918,11 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.fileId = 1;
     photo.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1930,12 +1930,12 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.fileId = 1;
     photo.exifRotate = 0;
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
-    assetData.mediaType = MediaType::MEDIA_TYPE_IMAGE;
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    scanResult.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1943,12 +1943,12 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.fileId = 1;
     photo.exifRotate = 0;
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::RIGHT_TOP);
-    assetData.mediaType = MediaType::MEDIA_TYPE_VIDEO;
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::RIGHT_TOP);
+    scanResult.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1956,12 +1956,12 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.fileId = 1;
     photo.exifRotate = 0;
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
-    assetData.mediaType = MediaType::MEDIA_TYPE_IMAGE;
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    scanResult.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1969,12 +1969,12 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
 {
     CloudMediaDownloadService service;
     ORM::PhotosPo photo;
-    OnDownloadAssetData assetData;
+    CloudMediaScanService::ScanResult scanResult;
     photo.fileId = 1;
     photo.exifRotate = 0;
-    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
-    assetData.mediaType = MediaType::MEDIA_TYPE_VIDEO;
-    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    scanResult.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    scanResult.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
 
