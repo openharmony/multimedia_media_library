@@ -156,12 +156,12 @@ export class PhotoPickerComponent extends ViewPU {
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
         this.setInitiallyProvidedValue(o);
-        this.__pickerController.get().isPhotoBrowserShowCallback = ()=>{
-            console.log('WECHAT_MOVINGPHOTO, isPhotoBrowserShowCallback init');
+        this.pickerController.isPhotoBrowserShowCallback = ()=>{
+            console.log('PhotoPickerComponent, isPhotoBrowserShowCallback init');
             return false;
         }
-        this.__pickerController.get().isMovingPhotoBadgeShownValidCallback = ()=>{
-            console.log('WECHAT_MOVINGPHOTO, isMovingPhotoBadgeShownValidCallback init');
+        this.pickerController.isMovingPhotoBadgeShownValidCallback = ()=>{
+            console.log('PhotoPickerComponent, isMovingPhotoBadgeShownValidCallback init');
             return false;
         }
         this.declareWatch('pickerController', this.onChanged);
