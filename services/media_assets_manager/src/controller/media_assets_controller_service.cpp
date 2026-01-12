@@ -632,6 +632,7 @@ int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data,
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -643,6 +644,10 @@ int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data,
         ret = MediaAssetsService::GetInstance().RemoveGalleryFormInfo(reqBody.formIds.front());
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+#else
+    MEDIA_ERR_LOG("unsupported operation, operationCode: %{public}u", operationCode);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+#endif
 }
 
 int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParcel &reply)
@@ -677,6 +682,7 @@ int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, M
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -703,6 +709,10 @@ int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, M
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+#else
+    MEDIA_ERR_LOG("unsupported operation, operationCode: %{public}u", operationCode);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+#endif
 }
 
 int32_t MediaAssetsControllerService::CommitEditedAsset(MessageParcel &data, MessageParcel &reply)
@@ -1766,10 +1776,11 @@ int32_t MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, Mess
 
 int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
+    MEDIA_INFO_LOG("enter UpdateGalleryFormInfo");
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::UPDATE_GALLERY_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
-    MEDIA_INFO_LOG("enter UpdateGalleryFormInfo");
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1800,6 +1811,10 @@ int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data,
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+#else
+    MEDIA_ERR_LOG("unsupported operation, operationCode: %{public}u", operationCode);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+#endif
 }
 
 int32_t MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
