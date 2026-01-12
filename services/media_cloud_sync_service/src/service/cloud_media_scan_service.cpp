@@ -113,6 +113,11 @@ int32_t CloudMediaScanService::ScanDownloadedFile(const string& path, CloudMedia
     result.dateMonth = data->GetDateMonth();
     result.dateDay = data->GetDateDay();
     result.subType = data->GetPhotoSubType();
+    result.mediaType = data->GetFileMediaType();
+    result.height = data->GetFileHeight();
+    result.width = data->GetFileWidth();
+    result.aspectRatio = data->GetFileAspectRatio();
+    result.exifRotate = data->GetExifRotate();
     result.scanSuccess = true;
     MEDIA_INFO_LOG("ScanDownloadedFile, result: %{public}s", result.ToString().c_str());
     return E_OK;
