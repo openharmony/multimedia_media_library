@@ -679,14 +679,15 @@ bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string LocalOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    std::string tmpPath = GetLocalThumbnailPath(data.path, "");
-    if (IsLocalSourceAvailable(tmpPath)) {
-        return tmpPath;
+    std::string tmpPath = LakeFileUtils::GetAssetRealPath(data.path);
+    if (tmpPath.find(ROOT_MEDIA_DIR) != std::string::npos) {
+        tmpPath = GetLocalThumbnailPath(tmpPath, "");
     }
-    tmpPath = LakeFileUtils::GetAssetRealPath(data.path);
-    MEDIA_DEBUG_LOG("##### file path is %{private}s", tmpPath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{private}s", tmpPath.c_str());
     if (!IsLocalSourceAvailable(tmpPath)) {
-        MEDIA_ERR_LOG("GetSourcePath failed 2, path:%{public}s", data.path.c_str());
+        MEDIA_ERR_LOG("IsLocalSourceAvailable failed, path:%{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return "";
     }
     return tmpPath;
 }
