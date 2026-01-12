@@ -103,8 +103,13 @@ int32_t MediaAssetsService::RemoveFormInfo(const string& formId)
 
 int32_t MediaAssetsService::RemoveGalleryFormInfo(const string& formId)
 {
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
     MEDIA_INFO_LOG("MediaAssetsService::RemoveGalleryFormInfo, formId:%{public}s", formId.c_str());
     return this->rdbOperation_.RemoveGalleryFormInfo(formId);
+#else
+    MEDIA_ERR_LOG("unsupported operation, formId: %{public}s", formId.c_str());
+    return E_FAIL;
+#endif
 }
 
 int32_t MediaAssetsService::SaveFormInfo(const FormInfoDto& formInfoDto)
@@ -116,7 +121,12 @@ int32_t MediaAssetsService::SaveFormInfo(const FormInfoDto& formInfoDto)
 
 int32_t MediaAssetsService::SaveGalleryFormInfo(const FormInfoDto& formInfoDto)
 {
+#ifdef MEDIALIBRARY_FACARD_SUPPORT
     return this->rdbOperation_.SaveGalleryFormInfo(formInfoDto.formIds, formInfoDto.fileUris);
+#else
+    MEDIA_ERR_LOG("unsupported operation, formIds size: %{public}zu", formInfoDto.formIds.size());
+    return E_FAIL;
+#endif
 }
 
 int32_t MediaAssetsService::CommitEditedAsset(const CommitEditedAssetDto& commitEditedAssetDto)
