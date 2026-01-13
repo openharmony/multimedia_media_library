@@ -83,7 +83,7 @@ static void DeleteHighlightAlbumsFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->DeleteHighlightAlbums(data, reply);
+    analysisDataControllerService->DeleteHighlightAlbums(data, reply);
 }
 
 static void DeletePhotoAlbumsFuzzer()
@@ -122,7 +122,7 @@ static void SetSubtitleFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->SetSubtitle(data, reply);
+    analysisDataControllerService->SetSubtitle(data, reply);
 }
 
 static void SetHighlightUserActionDataFuzzer()
@@ -136,7 +136,7 @@ static void SetHighlightUserActionDataFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->SetHighlightUserActionData(data, reply);
+    analysisDataControllerService->SetHighlightUserActionData(data, reply);
 }
 
 static void ChangeRequestSetAlbumNameFuzzer()
@@ -177,7 +177,7 @@ static void ChangeRequestSetIsMeFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestSetIsMe(data, reply);
+    analysisDataControllerService->ChangeRequestSetIsMe(data, reply);
 }
 
 static void ChangeRequestSetDisplayLevelFuzzer()
@@ -190,7 +190,7 @@ static void ChangeRequestSetDisplayLevelFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestSetDisplayLevel(data, reply);
+    analysisDataControllerService->ChangeRequestSetDisplayLevel(data, reply);
 }
 
 static void ChangeRequestDismissFuzzer()
@@ -203,7 +203,7 @@ static void ChangeRequestDismissFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestDismiss(data, reply);
+    analysisDataControllerService->ChangeRequestDismiss(data, reply);
 }
 
 static void AddAssetsFuzzer()
@@ -278,7 +278,7 @@ static void DismissAssetsFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->DismissAssets(data, reply);
+    analysisDataControllerService->DismissAssets(data, reply);
 }
 
 static void MergeAlbumFuzzer()
@@ -290,7 +290,7 @@ static void MergeAlbumFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->MergeAlbum(data, reply);
+    analysisDataControllerService->MergeAlbum(data, reply);
 }
 
 static void PlaceBeforeFuzzer()
@@ -304,7 +304,7 @@ static void PlaceBeforeFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->PlaceBefore(data, reply);
+    analysisDataControllerService->PlaceBefore(data, reply);
 }
 
 static void SetOrderPositionFuzzer()
@@ -468,7 +468,7 @@ static void GetHighlightAlbumInfoFuzzer()
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
-    mediaAlbumsControllerService->GetHighlightAlbumInfo(data, reply);
+    analysisDataControllerService->GetHighlightAlbumInfo(data, reply);
 }
 
 static void AlbumGetAssetsFuzzer()

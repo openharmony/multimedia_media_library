@@ -23,6 +23,7 @@
 #define private public
 #define protected public
 #include "media_albums_controller_service.h"
+#include "media_analysis_data_controller_service.h"
 #undef private
 #undef protected
 
@@ -371,7 +372,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_006, TestSize.
     ASSERT_NE(result, false);
 
     MessageParcel reply;
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->ChangeRequestSetIsMe(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> respVo;
@@ -406,7 +407,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_007, TestSize.
     ASSERT_NE(result, false);
 
     MessageParcel reply;
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->ChangeRequestSetDisplayLevel(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> respVo;
@@ -442,7 +443,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_008, TestSize.
     ASSERT_NE(result, false);
 
     MessageParcel reply;
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->ChangeRequestDismiss(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> respVo;
@@ -480,7 +481,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_009, TestSize.
     ASSERT_NE(result, false);
 
     MessageParcel reply;
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->SetHighlightUserActionData(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> respVo;
@@ -519,7 +520,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_010, TestSize.
     ASSERT_NE(result, false);
 
     MessageParcel reply;
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->SetSubtitle(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> respVo;

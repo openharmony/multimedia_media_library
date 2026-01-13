@@ -26,25 +26,16 @@ namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class EXPORT MediaAlbumsControllerService : public IPC::IMediaControllerService {
 public:
-    EXPORT int32_t DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t DeletePhotoAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
-    int32_t SetSubtitle(MessageParcel &data, MessageParcel &reply);
-    int32_t SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
-    int32_t ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
-    int32_t ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
-    int32_t ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AddAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RemoveAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t MoveAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RecoverAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t DeleteAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t DismissAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t MergeAlbum(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t PlaceBefore(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AlbumCommitModify(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AlbumAddAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
@@ -55,7 +46,6 @@ public:
     EXPORT int32_t QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAlbumsByIds(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetPhotoIndex(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t QueryAlbumsLpaths(MessageParcel &data, MessageParcel &reply);

@@ -23,6 +23,7 @@
 #define private public
 #define protected public
 #include "media_albums_controller_service.h"
+#include "media_analysis_data_controller_service.h"
 #undef private
 #undef protected
 
@@ -257,7 +258,7 @@ HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_001, TestSize.Level0)
     if (reqBody.Marshalling(data) != true) {
         MEDIA_ERR_LOG("reqBody.Marshalling failed");
     }
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->DismissAssets(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> resp;
@@ -291,7 +292,7 @@ HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_002, TestSize.Level0)
     std::to_string(poraitData[4].fileId)};
     ASSERT_TRUE(reqBody.Marshalling(data));
 
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->DismissAssets(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> resp;
