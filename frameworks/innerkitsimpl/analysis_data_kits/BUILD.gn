@@ -36,7 +36,16 @@ ohos_shared_library("analysis_data_kits") {
     "./vo/get_relationship_vo.cpp",
     "./vo/get_face_id_vo.cpp",
     "./vo/get_analysis_process_vo.cpp",
-    "${MEDIALIB_COMMON_PATH}/utils/src/media_time_utils.cpp",
+    "./vo/change_request_dismiss_assets_vo.cpp",
+    "./vo/change_request_dismiss_vo.cpp",
+    "./vo/change_request_merge_album_vo.cpp",
+    "./vo/change_request_place_before_vo.cpp",
+    "./vo/change_request_set_display_level_vo.cpp",
+    "./vo/change_request_set_is_me_vo.cpp",
+    "./vo/delete_highlight_albums_vo.cpp",
+    "./vo/get_highlight_album_info_vo.cpp",
+    "./vo/set_highlight_user_action_data_vo.cpp",
+    "./vo/set_subtitle_vo.cpp",
   ]
  
   include_dirs = [

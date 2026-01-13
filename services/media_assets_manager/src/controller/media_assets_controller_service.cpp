@@ -60,7 +60,6 @@
 #include "log_cinematic_access_vo.h"
 #include "get_photo_index_vo.h"
 #include "query_photo_vo.h"
-#include "get_highlight_album_info_vo.h"
 #include "get_analysis_process_vo.h"
 #include "medialibrary_rdb_utils.h"
 #include "permission_common.h"

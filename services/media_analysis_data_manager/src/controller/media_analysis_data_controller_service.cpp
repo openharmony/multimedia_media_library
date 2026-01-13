@@ -33,6 +33,17 @@
 #include "get_analysis_process_vo.h"
 #include "query_result_vo.h"
 #include "get_face_id_vo.h"
+#include "get_highlight_album_info_vo.h"
+#include "set_highlight_user_action_data_vo.h"
+#include "story_album_column.h"
+#include "set_subtitle_vo.h"
+#include "media_file_utils.h"
+#include "delete_highlight_albums_vo.h"
+#include "parameter_utils.h"
+#include "change_request_set_is_me_vo.h"
+#include "change_request_set_display_level_vo.h"
+#include "change_request_dismiss_assets_vo.h"
+#include "change_request_dismiss_vo.h"
  
 namespace OHOS::Media::AnalysisData {
 using namespace std;
@@ -265,5 +276,243 @@ int32_t MediaAnalysisDataControllerService::GetFaceId(MessageParcel &data, Messa
     ret = MediaAnalysisDataService::GetInstance().GetFaceId(reqBody.albumId, groupTag);
     respBody.groupTag = groupTag;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    GetHighlightAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetHighlightAlbumInfo Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    QueryResultRespBody respBody;
+    ret = MediaAnalysisDataService::GetInstance().GetHighlightAlbumInfo(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    SetHighlightUserActionDataReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetHighlightUserActionData Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
+        { INSERTED_PIC_COUNT, HIGHLIGHT_INSERT_PIC_COUNT },
+        { REMOVED_PIC_COUNT, HIGHLIGHT_REMOVE_PIC_COUNT },
+        { SHARED_SCREENSHOT_COUNT, HIGHLIGHT_SHARE_SCREENSHOT_COUNT },
+        { SHARED_COVER_COUNT, HIGHLIGHT_SHARE_COVER_COUNT },
+        { RENAMED_COUNT, HIGHLIGHT_RENAME_COUNT },
+        { CHANGED_COVER_COUNT, HIGHLIGHT_CHANGE_COVER_COUNT },
+        { RENDER_VIEWED_TIMES, HIGHLIGHT_RENDER_VIEWED_TIMES },
+        { RENDER_VIEWED_DURATION, HIGHLIGHT_RENDER_VIEWED_DURATION },
+        { ART_LAYOUT_VIEWED_TIMES, HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES },
+        { ART_LAYOUT_VIEWED_DURATION, HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION },
+    };
+    if (HIGHLIGHT_USER_ACTION_MAP.find(reqBody.userActionType) == HIGHLIGHT_USER_ACTION_MAP.end()) {
+        MEDIA_ERR_LOG("Invalid highlightUserActionType");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    string userActionColumn = HIGHLIGHT_USER_ACTION_MAP.at(reqBody.userActionType);
+    if (!PhotoAlbum::IsHighlightAlbum(GetPhotoAlbumType(reqBody.albumType),
+        GetPhotoAlbumSubType(reqBody.albumSubType))) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    SetHighlightUserActionDataDto dto;
+    dto.albumId = reqBody.albumId;
+    dto.userActionType = userActionColumn;
+    dto.actionData = reqBody.actionData;
+    ret = MediaAnalysisDataService::GetInstance().SetHighlightUserActionData(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::SetSubtitle(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    SetSubtitleReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetSubtitle Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    bool cond = MediaFileUtils::CheckHighlightSubtitle(reqBody.subtitle) == E_OK &&
+        PhotoAlbum::IsHighlightAlbum(GetPhotoAlbumType(reqBody.albumType),
+        GetPhotoAlbumSubType(reqBody.albumSubType));
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    ret = MediaAnalysisDataService::GetInstance().SetSubtitle(reqBody.albumId, reqBody.subtitle);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter DeleteHighlightAlbums");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    DeleteHighLightAlbumsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DeleteHighlightAlbums Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    size_t albumIdSize = reqBody.albumIds.size();
+    size_t photoAlbumTypeSize = reqBody.photoAlbumTypes.size();
+    size_t photoAlbumSubtypeSize = reqBody.photoAlbumSubtypes.size();
+    vector<string> albumIds;
+    bool checkResult = ParameterUtils::CheckHighlightAlbum(reqBody, albumIds);
+
+    bool cond = checkResult && (albumIdSize == photoAlbumTypeSize) && (photoAlbumTypeSize == photoAlbumSubtypeSize)
+        && (albumIdSize > 0) && (photoAlbumTypeSize > 0) && (photoAlbumSubtypeSize > 0);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is not valid, checkResult:%{public}d", checkResult);
+        ret = E_GET_PRAMS_FAIL;
+    }
+    if (ret == E_OK) {
+        ret = MediaAnalysisDataService::GetInstance().DeleteHighlightAlbums(albumIds);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestSetIsMeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetIsMe Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    int32_t albumId = atoi(reqBody.albumId.c_str());
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    ret = MediaAnalysisDataService::GetInstance().ChangeRequestSetIsMe(albumId);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestSetDisplayLevelReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetIsMe Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    int32_t albumId = atoi(reqBody.albumId.c_str());
+    bool cond = (PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsPetAlbum(albumType, albumSubtype)) &&
+        MediaFileUtils::CheckDisplayLevel(reqBody.displayLevel) && albumId > 0;
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    ret = MediaAnalysisDataService::GetInstance().ChangeRequestSetDisplayLevel(reqBody.displayLevel, albumId);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::DismissAssets(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter DismissAssets");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestDismissAssetsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DismissAssets Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ChangeRequestDismissAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAnalysisDataService::GetInstance().DismissAssets(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::MergeAlbum(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MergeAlbum");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestMergeAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MergeAlbum Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ChangeRequestMergeAlbumDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAnalysisDataService::GetInstance().MergeAlbum(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::PlaceBefore(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter PlaceBefore");
+    ChangeRequestPlaceBeforeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("PlaceBefore Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ChangeRequestPlaceBeforeDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAnalysisDataService::GetInstance().PlaceBefore(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequesDismissReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestDismiss Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    int32_t albumId = atoi(reqBody.albumId.c_str());
+    bool cond = PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media::AnalysisData
