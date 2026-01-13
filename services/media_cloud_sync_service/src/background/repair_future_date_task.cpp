@@ -41,7 +41,6 @@
 #include "lake_file_utils.h"
 #include "medialibrary_related_system_state_manager.h"
 
-
 namespace OHOS::Media::Background {
 // LCOV_EXCL_START
 
@@ -128,7 +127,8 @@ void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &termina
         int32_t fileId = photosPo.fileId.value_or(0);
         std::string path = photosPo.data.value_or("");
         int32_t position = photosPo.position.value_or(0);
-        if (fileId <= 0 || path.empty() || position <= 0) {
+        if (path.empty() || position <= 0) {
+            currentRecord = fileId;
             MEDIA_ERR_LOG("Data anomaly, fileId:%{public}d, path:%{public}s, position:%{public}d",
                 fileId,
                 path.c_str(),
@@ -191,7 +191,7 @@ void RepairFutureDateTask::Execute()
         CHECK_AND_BREAK_INFO_LOG(
             !terminate && MedialibrarySubscriber::IsCurrentStatusOn(), "Current conditions are not met, break");
 
-        photos = {};
+        photos.clear();
         ret = GetRepairDateData(currentRecord, photos);
         CHECK_AND_RETURN_LOG(ret == CloudSync::E_OK, "GetRepairDateData failed, ret: %{public}d", ret);
     } while (!photos.empty());
