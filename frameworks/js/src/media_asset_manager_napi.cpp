@@ -186,6 +186,7 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
 {
     if (handler == nullptr) {
+        NAPI_WARN_LOG("handler is invalid");
         return;
     }
     if (handler->progressRef != nullptr && env != nullptr) {
