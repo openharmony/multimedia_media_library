@@ -33,7 +33,6 @@
 #include "get_photo_index_vo.h"
 #include "get_relationship_vo.h"
 #include "query_result_vo.h"
-#include "get_highlight_album_info_vo.h"
 #include "query_albums_dto.h"
 #include "set_photo_album_order_dto.h"
 #include "change_request_move_assets_vo.h"
@@ -62,16 +61,10 @@ class MediaAlbumsService {
 public:
     static MediaAlbumsService &GetInstance();
 
-    int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
     int32_t DeletePhotoAlbums(const std::vector<std::string> &albumIds);
     int32_t CreatePhotoAlbum(const std::string& albumName);
-    int32_t SetSubtitle(const std::string& highlightAlbumId, const std::string& albumSubtitle);
-    int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
     int32_t ChangeRequestSetAlbumName(const ChangeRequestSetAlbumNameDto& dto);
     int32_t ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto);
-    int32_t ChangeRequestSetDisplayLevel(int32_t displayLevelValue, int32_t albumId);
-    int32_t ChangeRequestSetIsMe(int32_t albumId);
-    int32_t ChangeRequestDismiss(int32_t albumId);
     int32_t ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubtype);
     int32_t AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode);
     int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
@@ -84,16 +77,12 @@ public:
     int32_t QueryAlbumsLpath(QueryAlbumsDto &dto);
     int32_t QueryAlbumsLpaths(QueryAlbumsDto &dto);
     int32_t GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRespBody &respBody);
-    int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRespBody &respBody);
     int32_t UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto& setPhotoAlbumOrderDto);
     int32_t MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
     int32_t AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, ChangeRequestAddAssetsRespBody &respBody);
     int32_t RemoveAssets(ChangeRequestRemoveAssetsDto &removeAssetsDto, ChangeRequestRemoveAssetsRespBody &respBody);
     int32_t RecoverAssets(ChangeRequestRecoverAssetsDto &recoverAssetsDto);
     int32_t DeleteAssets(ChangeRequestDeleteAssetsDto &deleteAssetsDto);
-    int32_t DismissAssets(ChangeRequestDismissAssetsDto &dismissAssetsDto);
-    int32_t MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto);
-    int32_t PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto);
     int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody);
     int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
     int32_t ChangeRequestSetUploadStatus(const ChangeRequestSetUploadStatusDto &setUploadStatusDto);
