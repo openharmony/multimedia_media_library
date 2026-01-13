@@ -51,6 +51,7 @@
 #include "submit_cache_vo.h"
 #include "save_camera_photo_vo.h"
 #include "add_image_vo.h"
+#include <charconv>
 
 namespace OHOS::Media {
 namespace {
@@ -335,6 +336,7 @@ MediaAssetChangeRequestAni::MediaAssetChangeRequestAni(FileAssetAni *fileAssetAn
         return;
     }
     fileAsset_ = fileAsset;
+    imageFileType_ = 0;
 }
 
 bool StrIsNumber(const string &str)
@@ -1073,7 +1075,9 @@ bool PrepareAssetDeletion(ani_env *env, const std::vector<std::string>& uris,
 {
     for (const auto& uri : uris) {
         std::string userId = MediaLibraryAniUtils::GetUserIdFromUri(uri);
-        context.userId_ = StrIsNumber(userId) ? stoi(userId) : -1;
+        int32_t userIdInt = -1;
+        auto [ptr, ec] = std::from_chars(userId.data(), userId.data() + userId.size(), userIdInt);
+        context.userId_ = (ec == std::errc{} && ptr == userId.data() + userId.size()) ? userIdInt : -1;
         if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
             ANI_INFO_LOG("uri error");
             return false;
