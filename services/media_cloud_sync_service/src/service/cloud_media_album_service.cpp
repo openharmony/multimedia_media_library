@@ -518,11 +518,12 @@ void PrepareForNextCloud(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     string updateCondition = PhotoAlbumColumns::ALBUM_ID + "=" + to_string(albumId);
     predicates.SetWhereClause(updateCondition);
     int32_t changeRows = -1;
-    int32_t ret = rdbStore->Update(changeRows, values, predicates);
-    CHECK_AND_RETURN_LOG((ret == E_OK && changeRows > 0),
-        "Failed to UpdateDirtyForCloudClone, ret:%{public}d, updateRow:%{public}d", ret, changeRows);
+    auto albumRefresh = std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    albumRefresh->Update(changeRows, values, predicates);
+    albumRefresh->Notify();
+    CHECK_AND_RETURN_LOG((changeRows > 0),
+        "Failed to PrepareForNextCloud, changeRows:%{public}d", changeRows);
     MEDIA_DEBUG_LOG("PrepareForNextCloud: albumId:%{public}d", albumId);
-    CHECK_AND_PRINT_LOG(changeRows >= 0, "PrepareForNextCloud failed:%{public}d", changeRows);
 }
 
 bool IsCoverUriExistCloudId(string &coverUri, string &coverCloudId)
