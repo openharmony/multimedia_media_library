@@ -697,9 +697,9 @@ void CloneRestoreClassify::HandleOldVersionData()
     std::vector<int32_t> videoFileIds = cloneRestoreAnalysisTotal_.GetSuccessVideoFileIds();
     CHECK_AND_RETURN(!videoFileIds.empty());
 
-    for (size_t index = 0; index < videoFileIds.size(); index += static_cast<int32_t>(PAGE_SIZE)) {
+    for (size_t index = 0; index < videoFileIds.size(); index += static_cast<size_t>(PAGE_SIZE)) {
         std::vector<int32_t> batchFileIds(videoFileIds.begin() + index,
-            videoFileIds.begin() + std::min(index + static_cast<int32_t>(PAGE_SIZE), videoFileIds.size()));
+            videoFileIds.begin() + std::min(index + static_cast<size_t>(PAGE_SIZE), videoFileIds.size()));
         std::string fileIdInClause = BackupDatabaseUtils::JoinValues(batchFileIds, ",");
 
         std::string updateVideoTotalSql =
