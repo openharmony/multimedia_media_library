@@ -46,6 +46,7 @@
 #include "album_order_ani.h"
 #include "photo_asset_custom_record_ani.h"
 #include "media_audio_column.h"
+#include "media_string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -625,7 +626,7 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_object &aniArray, ani_method &setMethod)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    CHECK_COND_RET(size < std::numeric_limits<int>::max(), ANI_ERROR, "size is too large");
+    CHECK_COND_RET(size < std::numeric_limits<unsigned int>::max(), ANI_ERROR, "size is too large");
     ani_class cls {};
     static const std::string className = "std.core.Array";
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Array");
@@ -1077,8 +1078,13 @@ int32_t MediaLibraryAniUtils::GetFileIdFromPhotoUri(const std::string &uri)
         ANI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
-        return std::atoi(fileIdStr.c_str());
+    int fileId = 0;
+    if (MediaStringUtils::ConvertToInt(fileIdStr, fileId)) {
+        if (fileId <= 0) {
+            ANI_ERR_LOG("fileId is invalid");
+            return ERROR;
+        }
+        return fileId;
     }
 
     ANI_ERR_LOG("asset fileId is invalid");
