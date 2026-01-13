@@ -17,6 +17,7 @@
 #define OHOS_ANALYSIS_DATA_ALBUM_DAO_H
 
 #include <string>
+#include "set_highlight_user_action_data_dto.h"
 
 namespace OHOS::Media::AnalysisData {
 class AnalysisDataAlbumDao {
@@ -25,6 +26,8 @@ public:
     ~AnalysisDataAlbumDao() = default;
 
     int32_t GetFaceIdByAlbumId(int32_t albumId, std::string& groupTag);
+    int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
+    int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
 };
 } // OHOS::Media::AnalysisData
 #endif // OHOS_ANALYSIS_DATA_ALBUM_DAO_H

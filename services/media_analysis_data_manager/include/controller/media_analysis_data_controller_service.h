@@ -42,6 +42,16 @@ public:
     EXPORT int32_t GetRelationship(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAnalysisProcess(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetFaceId(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
+    int32_t SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply);
+    int32_t SetSubtitle(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DismissAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t MergeAlbum(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t PlaceBefore(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
 
 private:
     int32_t GetPermissionPolicy(
@@ -83,6 +93,46 @@ private:
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID),
             &MediaAnalysisDataControllerService::GetFaceId
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO),
+            &MediaAnalysisDataControllerService::GetHighlightAlbumInfo
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA),
+            &MediaAnalysisDataControllerService::SetHighlightUserActionData
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE),
+            &MediaAnalysisDataControllerService::SetSubtitle
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS),
+            &MediaAnalysisDataControllerService::DeleteHighlightAlbums
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME),
+            &MediaAnalysisDataControllerService::ChangeRequestSetIsMe
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL),
+            &MediaAnalysisDataControllerService::ChangeRequestSetDisplayLevel
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS),
+            &MediaAnalysisDataControllerService::DismissAssets
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM),
+            &MediaAnalysisDataControllerService::MergeAlbum
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_PLACE_BEFORE),
+            &MediaAnalysisDataControllerService::PlaceBefore
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS),
+            &MediaAnalysisDataControllerService::ChangeRequestDismiss
         },
     };
 };

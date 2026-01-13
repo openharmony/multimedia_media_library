@@ -46,6 +46,16 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), {{READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME), {{SYSTEMAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL), {{SYSTEMAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_PLACE_BEFORE), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS), {{SYSTEMAPI_PERM}}},
 };
  
  

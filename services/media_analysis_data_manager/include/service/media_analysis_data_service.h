@@ -29,6 +29,11 @@
 #include "get_analysis_process_vo.h"
 #include "analysis_data_album_dao.h"
 #include "query_result_vo.h"
+#include "get_highlight_album_info_vo.h"
+#include "set_highlight_user_action_data_dto.h"
+#include "change_request_dismiss_assets_dto.h"
+#include "change_request_merge_album_dto.h"
+#include "change_request_place_before_dto.h"
  
 namespace OHOS::Media::AnalysisData {
 class MediaAnalysisDataService {
@@ -46,6 +51,16 @@ public:
     int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
     int32_t GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRespBody &respBody);
     int32_t GetFaceId(int32_t albumId, std::string& groupTag);
+    int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRespBody &respBody);
+    int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
+    int32_t SetSubtitle(const std::string& highlightAlbumId, const std::string& albumSubtitle);
+    int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
+    int32_t ChangeRequestSetIsMe(int32_t albumId);
+    int32_t ChangeRequestSetDisplayLevel(int32_t displayLevelValue, int32_t albumId);
+    int32_t DismissAssets(ChangeRequestDismissAssetsDto &dismissAssetsDto);
+    int32_t MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto);
+    int32_t PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto);
+    int32_t ChangeRequestDismiss(int32_t albumId);
 
 private:
     MediaAnalysisDataService() = default;
