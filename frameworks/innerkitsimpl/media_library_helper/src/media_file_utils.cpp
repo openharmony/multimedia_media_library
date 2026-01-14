@@ -62,6 +62,8 @@ static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
 constexpr int32_t HAS_APPLINK_MIN = 0;
 constexpr int32_t HAS_APPLINK_MAX = 2;
+constexpr int32_t APPLINK_STATE_MIN = 0;
+constexpr int32_t APPLINK_STATE_MAX = 2;
 constexpr size_t APPLINK_MAX = 512;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
@@ -1257,6 +1259,11 @@ int32_t MediaFileUtils::CheckAppLink(const string &link)
 bool MediaFileUtils::CheckHasAppLink(int32_t hasLink)
 {
     return hasLink >= HAS_APPLINK_MIN && hasLink <= HAS_APPLINK_MAX;
+}
+
+bool MediaFileUtils::CheckAppLinkState(int32_t appLinkState)
+{
+    return appLinkState >= APPLINK_STATE_MIN && appLinkState <= APPLINK_STATE_MAX;
 }
 
 int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
