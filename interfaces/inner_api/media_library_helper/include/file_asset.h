@@ -230,6 +230,9 @@ public:
     EXPORT int32_t GetHasAppLink() const;
     EXPORT void SetHasAppLink(int32_t hasAppLink);
  
+    EXPORT int32_t GetAppLinkState() const;
+    EXPORT void SetAppLinkState(int32_t appLinkState);
+
     EXPORT const std::string &GetAppLink() const;
     EXPORT void SetAppLink(const std::string appLink);
 

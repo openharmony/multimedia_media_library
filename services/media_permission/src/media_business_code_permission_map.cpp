@@ -92,6 +92,7 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE),
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HAS_APPLINK),
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK_STATE),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CLOSE_ASSET),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE),

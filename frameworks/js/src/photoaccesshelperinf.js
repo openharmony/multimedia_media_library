@@ -1525,5 +1525,6 @@ export default {
   GridPinchModeType: GridPinchModeType,
   GridLevel: GridLevel,
   GridPinchMode: GridPinchMode,
-  CloudDownloadNetworkPolicy: photoAccessHelper.CloudDownloadNetworkPolicy
+  CloudDownloadNetworkPolicy: photoAccessHelper.CloudDownloadNetworkPolicy,
+  AppLinkState: photoAccessHelper.AppLinkState
 };
