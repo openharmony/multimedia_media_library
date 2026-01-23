@@ -1538,6 +1538,8 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
     values.Delete(PhotoAlbumColumns::ALBUM_CLOUD_ID);
     values.Delete(PhotoAlbumColumns::ALBUM_DIRTY);
+    values.Delete(PhotoAlbumColumns::CHANGE_TIME);
+    values.PutLong(PhotoAlbumColumns::CHANGE_TIME, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
 static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
