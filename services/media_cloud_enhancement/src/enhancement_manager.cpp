@@ -44,6 +44,7 @@
 #include "image_source.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_related_system_state_manager.h"
+#include "net_conn_client.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -736,9 +737,29 @@ bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
     return false;
 }
 
+void EnhancementManager::RefreshDefaultCellularNetStatus()
+{
+    CHECK_AND_RETURN(!isCellularNetConnected_);
+    NetManagerStandard::NetHandle handle;
+    int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
+    CHECK_AND_RETURN_LOG(ret == 0, "GetDefaultNet failed, err:%{public}d", ret);
+    NetManagerStandard::NetAllCapabilities netAllCap;
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    CHECK_AND_RETURN_LOG(ret == 0, "GetNetCapabilities failed, err:%{public}d", ret);
+    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
+    const std::set<NetManagerStandard::NetCap>& caps = netAllCap.netCaps_;
+    if (types.count(NetManagerStandard::BEARER_CELLULAR) &&
+        !caps.count(NetManagerStandard::NET_CAPABILITY_INTERNAL_DEFAULT)) {
+        MEDIA_INFO_LOG("Refresh cellular status success: %{public}d", isCellularNetConnected_);
+        isCellularNetConnected_ = true;
+    }
+    return;
+}
+
 int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
+    RefreshDefaultCellularNetStatus();
     CHECK_AND_RETURN_RET(IsAutoTaskEnabled(), E_ERR);
     int32_t errCode = E_OK;
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
