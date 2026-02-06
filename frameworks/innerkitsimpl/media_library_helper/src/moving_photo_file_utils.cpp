@@ -169,7 +169,7 @@ static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 
 static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
 {
-    bool cond = (fileSize < 0 || offset < 0 || needSize < 0);
+    bool cond = (fileSize < 0 || offset < 0 || needSize < 0 || needSize >= std::numeric_limits<off_t>::max());
     CHECK_AND_RETURN_RET_LOG(!cond, "", "failed to check fileSize: %{public}" PRId64
         ", offset: %{public}" PRId64 ", needSize: %{public}" PRId64, fileSize, offset, needSize);
 
