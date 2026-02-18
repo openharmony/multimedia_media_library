@@ -20,21 +20,22 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 
 bool MediaOperateResultRespBodyResultNode::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt32(this->errorCode);
-    parcel.ReadString(this->errorMsg);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->errorCode), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->errorMsg), false);
     return true;
 }
 bool MediaOperateResultRespBodyResultNode::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt32(this->errorCode);
-    parcel.WriteString(this->errorMsg);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->errorCode), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->errorMsg), false);
     return true;
 }
 

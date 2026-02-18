@@ -25,16 +25,16 @@
 namespace OHOS::Media::CloudSync {
 bool CloudFileDataVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->filePath);
-    parcel.ReadInt64(this->size);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->filePath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
     return true;
 }
 bool CloudFileDataVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->filePath);
-    parcel.WriteInt64(this->size);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->filePath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
     return true;
 }
 

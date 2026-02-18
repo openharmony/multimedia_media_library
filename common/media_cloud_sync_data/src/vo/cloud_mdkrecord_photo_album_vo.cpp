@@ -25,45 +25,45 @@
 namespace OHOS::Media::CloudSync {
 bool CloudMdkRecordPhotoAlbumVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(albumId);
-    parcel.WriteInt32(albumType);
-    parcel.WriteString(albumName);
-    parcel.WriteString(lpath);
-    parcel.WriteString(cloudId);
-    parcel.WriteInt32(albumSubtype);
-    parcel.WriteInt64(dateAdded);
-    parcel.WriteInt64(dateModified);
-    parcel.WriteString(bundleName);
-    parcel.WriteString(localLanguage);
-    parcel.WriteString(albumPluginCloudId);
-    parcel.WriteString(albumNameEn);
-    parcel.WriteString(dualAlbumName);
-    parcel.WriteInt32(priority);
-    parcel.WriteBool(isInWhiteList);
-    parcel.WriteInt32(coverUriSource);
-    parcel.WriteString(coverCloudId);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(albumName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(lpath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumSubtype), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(dateAdded), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(dateModified), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(bundleName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(localLanguage), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(albumPluginCloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(albumNameEn), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(dualAlbumName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(priority), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(isInWhiteList), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(coverUriSource), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(coverCloudId), false);
     return true;
 }
 
 bool CloudMdkRecordPhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(albumId);
-    parcel.ReadInt32(albumType);
-    parcel.ReadString(albumName);
-    parcel.ReadString(lpath);
-    parcel.ReadString(cloudId);
-    parcel.ReadInt32(albumSubtype);
-    parcel.ReadInt64(dateAdded);
-    parcel.ReadInt64(dateModified);
-    parcel.ReadString(bundleName);
-    parcel.ReadString(localLanguage);
-    parcel.ReadString(albumPluginCloudId);
-    parcel.ReadString(albumNameEn);
-    parcel.ReadString(dualAlbumName);
-    parcel.ReadInt32(priority);
-    parcel.ReadBool(isInWhiteList);
-    parcel.ReadInt32(coverUriSource);
-    parcel.ReadString(coverCloudId);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(albumName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(lpath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumSubtype), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(dateAdded), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(dateModified), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(bundleName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(localLanguage), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(albumPluginCloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(albumNameEn), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(dualAlbumName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(priority), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(isInWhiteList), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(coverUriSource), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(coverCloudId), false);
     return true;
 }
 

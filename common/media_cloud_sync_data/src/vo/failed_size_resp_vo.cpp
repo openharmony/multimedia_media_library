@@ -20,17 +20,18 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool FailedSizeResp::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->failedSize);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failedSize), false);
     return true;
 }
 
 bool FailedSizeResp::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->failedSize);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failedSize), false);
     return true;
 }
 

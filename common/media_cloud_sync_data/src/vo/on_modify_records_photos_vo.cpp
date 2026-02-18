@@ -20,40 +20,43 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnModifyRecord::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadString(this->path);
-    parcel.ReadString(this->fileName);
-    parcel.ReadInt32(this->fileId);
-    parcel.ReadInt64(this->modifyTime);
-    parcel.ReadInt64(this->metaDateModified);
-    parcel.ReadInt64(this->version);
-    parcel.ReadBool(this->isSuccess);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->modifyTime), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->metaDateModified), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
     int32_t copyRecordErrorType;
-    parcel.ReadInt32(copyRecordErrorType);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
-    parcel.ReadInt32(this->serverErrorCode);
-    IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
+        this->errorDetails, parcel), false);
     return true;
 }
 
 bool OnModifyRecord::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteString(this->path);
-    parcel.WriteString(this->fileName);
-    parcel.WriteInt32(this->fileId);
-    parcel.WriteInt64(this->modifyTime);
-    parcel.WriteInt64(this->metaDateModified);
-    parcel.WriteInt64(this->version);
-    parcel.WriteBool(this->isSuccess);
-    parcel.WriteInt32(static_cast<int32_t>(this->errorType));
-    parcel.WriteInt32(this->serverErrorCode);
-    IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->modifyTime), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->metaDateModified), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(
+        IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
     return true;
 }
 
@@ -88,12 +91,13 @@ std::string OnModifyRecord::ToString() const
 
 bool OnModifyRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    return true;
 }
 
 bool OnModifyRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
     return true;
 }
 

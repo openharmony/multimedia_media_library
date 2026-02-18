@@ -20,16 +20,18 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetCheckRecordsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel), false);
+    return true;
 }
 
 bool GetCheckRecordsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    IPC::ITypeMediaUtil::Marshalling(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling(this->cloudIds, parcel), false);
     return true;
 }
 
@@ -51,27 +53,27 @@ std::string GetCheckRecordsReqBody::ToString() const
 
 bool GetCheckRecordsRespBodyCheckData::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt64(this->size);
-    parcel.ReadString(this->data);
-    parcel.ReadString(this->displayName);
-    parcel.ReadString(this->fileName);
-    parcel.ReadInt32(this->mediaType);
-    parcel.ReadInt32(this->cloudVersion);
-    parcel.ReadInt32(this->position);
-    parcel.ReadInt64(this->dateModified);
-    parcel.ReadInt32(this->dirty);
-    parcel.ReadInt32(this->thmStatus);
-    parcel.ReadInt32(this->syncStatus);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->data), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->displayName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->mediaType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->cloudVersion), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->position), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->dateModified), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->dirty), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->thmStatus), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->syncStatus), false);
     int32_t attachmentSize;
-    parcel.ReadInt32(attachmentSize);
-    parcel.ReadInt32(this->fileSourceType);
-    parcel.ReadString(this->storagePath);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(attachmentSize), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->storagePath), false);
     for (int32_t i = 0; i < attachmentSize; ++i) {
         CloudFileDataVo vo;
         std::string key;
-        parcel.ReadString(key);
-        vo.Unmarshalling(parcel);
+        CHECK_AND_RETURN_RET(parcel.ReadString(key), false);
+        CHECK_AND_RETURN_RET(vo.Unmarshalling(parcel), false);
         this->attachment[key] = vo;
     }
     return true;
@@ -79,24 +81,24 @@ bool GetCheckRecordsRespBodyCheckData::Unmarshalling(MessageParcel &parcel)
 
 bool GetCheckRecordsRespBodyCheckData::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt64(this->size);
-    parcel.WriteString(this->data);
-    parcel.WriteString(this->displayName);
-    parcel.WriteString(this->fileName);
-    parcel.WriteInt32(this->mediaType);
-    parcel.WriteInt32(this->cloudVersion);
-    parcel.WriteInt32(this->position);
-    parcel.WriteInt64(this->dateModified);
-    parcel.WriteInt32(this->dirty);
-    parcel.WriteInt32(this->thmStatus);
-    parcel.WriteInt32(this->syncStatus);
-    parcel.WriteInt32(this->attachment.size());
-    parcel.WriteInt32(this->fileSourceType);
-    parcel.WriteString(this->storagePath);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->data), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->displayName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->mediaType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->cloudVersion), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->position), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->dateModified), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->dirty), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->thmStatus), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->syncStatus), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->attachment.size()), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->storagePath), false);
     for (auto &[key, value] : attachment) {
-        parcel.WriteString(key);
-        value.Marshalling(parcel);
+        CHECK_AND_RETURN_RET(parcel.WriteString(key), false);
+        CHECK_AND_RETURN_RET(value.Marshalling(parcel), false);
     }
     return true;
 }
@@ -132,15 +134,15 @@ std::string GetCheckRecordsRespBodyCheckData::ToString() const
 bool GetCheckRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     int32_t size = 0;
-    parcel.ReadInt32(size);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(size), false);
     if (size <= 0) {
         return true;
     }
     for (int32_t i = 0; i < size; ++i) {
         GetCheckRecordsRespBodyCheckData data;
         std::string key;
-        parcel.ReadString(key);
-        data.Unmarshalling(parcel);
+        CHECK_AND_RETURN_RET(parcel.ReadString(key), false);
+        CHECK_AND_RETURN_RET(data.Unmarshalling(parcel), false);
         this->checkDataList[key] = data;
     }
     return true;
@@ -148,9 +150,9 @@ bool GetCheckRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 
 bool GetCheckRecordsRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->checkDataList.size());
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->checkDataList.size()), false);
     for (auto [key, value] : this->checkDataList) {
-        parcel.WriteString(key);
+        CHECK_AND_RETURN_RET(parcel.WriteString(key), false);
         if (!value.Marshalling(parcel)) {
             return false;
         }

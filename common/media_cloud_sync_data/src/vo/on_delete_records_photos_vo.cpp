@@ -20,20 +20,21 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDeleteRecordsPhoto::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->dkRecordId);
-    parcel.ReadString(this->cloudId);
-    parcel.ReadBool(this->isSuccess);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->dkRecordId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
     return true;
 }
 bool OnDeleteRecordsPhoto::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->dkRecordId);
-    parcel.WriteString(this->cloudId);
-    parcel.WriteBool(this->isSuccess);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->dkRecordId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
     return true;
 }
 
@@ -61,11 +62,15 @@ std::vector<OnDeleteRecordsPhoto> OnDeleteRecordsPhotosReqBody::GetDeleteRecords
 
 bool OnDeleteRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteRecordsPhoto>(
+        this->records, parcel), false);
+    return true;
 }
 bool OnDeleteRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteRecordsPhoto>(
+        this->records, parcel), false);
+    return true;
 }
 
 std::string OnDeleteRecordsPhotosReqBody::ToString() const
@@ -86,13 +91,13 @@ std::string OnDeleteRecordsPhotosReqBody::ToString() const
 
 bool OnDeleteRecordsPhotosRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->failSize);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failSize), false);
     return true;
 }
 
 bool OnDeleteRecordsPhotosRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->failSize);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failSize), false);
     return true;
 }
 
