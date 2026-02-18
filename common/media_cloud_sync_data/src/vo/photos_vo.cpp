@@ -25,43 +25,43 @@
 namespace OHOS::Media::CloudSync {
 bool PhotosVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->fileId);
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt64(this->size);
-    parcel.ReadInt64(this->modifiedTime);
-    parcel.ReadString(this->path);
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->localPath);
-    parcel.ReadString(this->originalCloudId);
-    parcel.ReadInt32(this->type);
-    parcel.ReadInt32(this->orientation);
-    parcel.ReadInt32(this->fileSourceType);
-    parcel.ReadString(this->storagePath);
-    parcel.ReadInt32(this->hidden);
-    parcel.ReadInt64(this->dateTrashed);
-    parcel.ReadInt32(this->attributesMediaType);
-    CloudFileDataVo::Unmarshalling(this->attachment, parcel);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->modifiedTime), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->localPath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->originalCloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->type), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->orientation), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->storagePath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->hidden), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->dateTrashed), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->attributesMediaType), false);
+    CHECK_AND_RETURN_RET(CloudFileDataVo::Unmarshalling(this->attachment, parcel), false);
     return true;
 }
 
 bool PhotosVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->fileId);
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt64(this->size);
-    parcel.WriteInt64(this->modifiedTime);
-    parcel.WriteString(this->path);
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->localPath);
-    parcel.WriteString(this->originalCloudId);
-    parcel.WriteInt32(this->type);
-    parcel.WriteInt32(this->orientation);
-    parcel.WriteInt32(this->fileSourceType);
-    parcel.WriteString(this->storagePath);
-    parcel.WriteInt32(this->hidden);
-    parcel.WriteInt64(this->dateTrashed);
-    parcel.WriteInt32(this->attributesMediaType);
-    CloudFileDataVo::Marshalling(this->attachment, parcel);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->modifiedTime), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->localPath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->originalCloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->type), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->orientation), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->storagePath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->hidden), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->dateTrashed), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->attributesMediaType), false);
+    CHECK_AND_RETURN_RET(CloudFileDataVo::Marshalling(this->attachment, parcel), false);
     return true;
 }
 

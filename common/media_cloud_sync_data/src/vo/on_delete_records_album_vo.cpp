@@ -20,18 +20,19 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDeleteAlbumData::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadBool(this->isSuccess);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
     return true;
 }
 bool OnDeleteAlbumData::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteBool(this->isSuccess);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
     return true;
 }
 
@@ -52,12 +53,14 @@ bool OnDeleteRecordsAlbumReqBody::AddSuccessResult(OnDeleteAlbumData &albumData)
 
 bool OnDeleteRecordsAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false);
+    return true;
 }
 
 bool OnDeleteRecordsAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false);
+    return true;
 }
 
 std::string OnDeleteRecordsAlbumReqBody::ToString() const
@@ -78,13 +81,13 @@ std::string OnDeleteRecordsAlbumReqBody::ToString() const
 
 bool OnDeleteRecordsAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->failSize);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failSize), false);
     return true;
 }
 
 bool OnDeleteRecordsAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->failSize);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failSize), false);
     return true;
 }
 

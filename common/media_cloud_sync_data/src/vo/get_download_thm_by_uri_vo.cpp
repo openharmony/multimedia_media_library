@@ -20,18 +20,21 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetDownloadThmsByUriReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->thmType);
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->thmType), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel), false);
+    return true;
 }
 
 bool GetDownloadThmsByUriReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->thmType);
-    return IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->thmType), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel), false);
+    return true;
 }
 
 std::string GetDownloadThmsByUriReqBody::ToString() const

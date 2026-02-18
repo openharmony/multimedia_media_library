@@ -20,46 +20,49 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 
 bool OnCopyRecord::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt32(this->fileId);
-    parcel.ReadInt32(this->rotation);
-    parcel.ReadInt32(this->fileType);
-    parcel.ReadInt64(this->size);
-    parcel.ReadInt64(this->createTime);
-    parcel.ReadString(this->path);
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->sourcePath);
-    parcel.ReadInt64(this->version);
-    parcel.ReadInt32(this->serverErrorCode);
-    parcel.ReadBool(this->isSuccess);
-    IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->rotation), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->createTime), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->sourcePath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
+        this->errorDetails, parcel), false);
     int32_t copyRecordErrorType;
-    parcel.ReadInt32(copyRecordErrorType);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 bool OnCopyRecord::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt32(this->fileId);
-    parcel.WriteInt32(this->rotation);
-    parcel.WriteInt32(this->fileType);
-    parcel.WriteInt64(this->size);
-    parcel.WriteInt64(this->createTime);
-    parcel.WriteString(this->path);
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->sourcePath);
-    parcel.WriteInt64(this->version);
-    parcel.WriteInt32(this->serverErrorCode);
-    parcel.WriteBool(this->isSuccess);
-    IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
-    parcel.WriteInt32(static_cast<int32_t>(this->errorType));
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->rotation), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->createTime), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->sourcePath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(
+        this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
     return true;
 }
 
@@ -84,12 +87,13 @@ std::string OnCopyRecord::ToString() const
 
 bool OnCopyRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    return true;
 }
 
 bool OnCopyRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
     return true;
 }
 

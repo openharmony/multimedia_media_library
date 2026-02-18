@@ -20,61 +20,64 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 
 bool OnCreateRecord::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt32(this->fileId);
-    parcel.ReadInt32(this->localId);
-    parcel.ReadInt32(this->rotation);
-    parcel.ReadInt32(this->fileType);
-    parcel.ReadInt64(this->size);
-    parcel.ReadInt64(this->createTime);
-    parcel.ReadInt64(this->modifiedTime);
-    parcel.ReadInt64(this->editedTimeMs);
-    parcel.ReadInt64(this->metaDateModified);
-    parcel.ReadString(this->path);
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->sourcePath);
-    parcel.ReadString(this->livePhotoCachePath);
-    parcel.ReadInt64(this->version);
-    parcel.ReadInt32(this->serverErrorCode);
-    parcel.ReadBool(this->isSuccess);
-    parcel.ReadInt32(this->fileSourceType);
-    parcel.ReadString(this->storagePath);
-    IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->localId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->rotation), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->createTime), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->modifiedTime), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->editedTimeMs), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->metaDateModified), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->sourcePath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->livePhotoCachePath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->storagePath), false);
+    CHECK_AND_RETURN_RET(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
     int32_t copyRecordErrorType;
-    parcel.ReadInt32(copyRecordErrorType);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 
 bool OnCreateRecord::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt32(this->fileId);
-    parcel.WriteInt32(this->localId);
-    parcel.WriteInt32(this->rotation);
-    parcel.WriteInt32(this->fileType);
-    parcel.WriteInt64(this->size);
-    parcel.WriteInt64(this->createTime);
-    parcel.WriteInt64(this->modifiedTime);
-    parcel.WriteInt64(this->editedTimeMs);
-    parcel.WriteInt64(this->metaDateModified);
-    parcel.WriteString(this->path);
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->sourcePath);
-    parcel.WriteString(this->livePhotoCachePath);
-    parcel.WriteInt64(this->version);
-    parcel.WriteInt32(this->serverErrorCode);
-    parcel.WriteBool(this->isSuccess);
-    parcel.WriteInt32(this->fileSourceType);
-    parcel.WriteString(this->storagePath);
-    IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
-    parcel.WriteInt32(static_cast<int32_t>(this->errorType));
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->localId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->rotation), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->createTime), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->modifiedTime), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->editedTimeMs), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->metaDateModified), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->sourcePath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->livePhotoCachePath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->storagePath), false);
+    CHECK_AND_RETURN_RET(
+        IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
     return true;
 }
 
@@ -112,12 +115,13 @@ std::string OnCreateRecord::ToString() const
 
 bool OnCreateRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    return true;
 }
 
 bool OnCreateRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
     return true;
 }
 

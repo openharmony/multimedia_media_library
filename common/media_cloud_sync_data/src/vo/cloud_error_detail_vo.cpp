@@ -20,29 +20,30 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool CloudErrorDetail::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(domain);
-    parcel.ReadString(reason);
-    parcel.ReadString(errorCode);
-    parcel.ReadString(description);
-    parcel.ReadString(errorPos);
-    parcel.ReadString(errorParam);
-    parcel.ReadInt32(detailCode);
+    CHECK_AND_RETURN_RET(parcel.ReadString(domain), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(reason), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(errorCode), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(description), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(errorPos), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(errorParam), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(detailCode), false);
     return true;
 }
 
 bool CloudErrorDetail::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(domain);
-    parcel.WriteString(reason);
-    parcel.WriteString(errorCode);
-    parcel.WriteString(description);
-    parcel.WriteString(errorPos);
-    parcel.WriteString(errorParam);
-    parcel.WriteInt32(detailCode);
+    CHECK_AND_RETURN_RET(parcel.WriteString(domain), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(reason), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(errorCode), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(description), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(errorPos), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(errorParam), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(detailCode), false);
     return true;
 }
 

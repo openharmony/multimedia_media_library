@@ -20,29 +20,30 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool PhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->albumId);
-    parcel.ReadInt32(this->albumType);
-    parcel.ReadInt32(this->albumSubType);
-    parcel.ReadString(this->albumName);
-    parcel.ReadString(this->lPath);
-    parcel.ReadString(this->bundleName);
-    parcel.ReadInt32(this->priority);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumId), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumSubType), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->albumName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->lPath), false);
+    CHECK_AND_RETURN_RET(parcel.ReadString(this->bundleName), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->priority), false);
     return true;
 }
 
 bool PhotoAlbumVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->albumId);
-    parcel.WriteInt32(this->albumType);
-    parcel.WriteInt32(this->albumSubType);
-    parcel.WriteString(this->albumName);
-    parcel.WriteString(this->lPath);
-    parcel.WriteString(this->bundleName);
-    parcel.WriteInt32(this->priority);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumId), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumSubType), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->albumName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->lPath), false);
+    CHECK_AND_RETURN_RET(parcel.WriteString(this->bundleName), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->priority), false);
     return true;
 }
 

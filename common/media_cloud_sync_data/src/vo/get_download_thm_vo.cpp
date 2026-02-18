@@ -20,23 +20,24 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetDownloadThmReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->size);
-    parcel.ReadInt32(this->type);
-    parcel.ReadInt32(this->offset);
-    parcel.ReadBool(this->isDownloadDisplayFirst);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->type), false);
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->offset), false);
+    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isDownloadDisplayFirst), false);
     return true;
 }
 
 bool GetDownloadThmReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->size);
-    parcel.WriteInt32(this->type);
-    parcel.WriteInt32(this->offset);
-    parcel.WriteBool(this->isDownloadDisplayFirst);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->size), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->type), false);
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->offset), false);
+    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isDownloadDisplayFirst), false);
     return true;
 }
 
@@ -54,12 +55,14 @@ std::string GetDownloadThmReqBody::ToString() const
 
 bool GetDownloadThmRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return PhotosVo::Unmarshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET(PhotosVo::Unmarshalling(this->photos, parcel), false);
+    return true;
 }
 
 bool GetDownloadThmRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return PhotosVo::Marshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET(PhotosVo::Marshalling(this->photos, parcel), false);
+    return true;
 }
 
 std::string GetDownloadThmRespBody::ToString() const
