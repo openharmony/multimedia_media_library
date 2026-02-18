@@ -19,7 +19,10 @@
 #include <thread>
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "media_file_utils.h"
+#define private public
 #include "mimetype_utils.h"
+#undef public
 
 using std::string;
 using namespace std;
@@ -305,6 +308,123 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromContent_Test_001, TestSize.Le
     string filePath2 = "/storage/media/cloud/files/Photo/test.jpg";
     string mimetype2 = MimeTypeUtils::GetMimeTypeFromContent(filePath2);
     ASSERT_EQ(mimetype2, "image/jpeg");
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromContent_Test_002, TestSize.Level1)
+{
+    string dirPath = "/data/test/MimeTypeTest";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string filePath = dirPath + "/test1.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+    string mimetype = MimeTypeUtils::GetMimeTypeFromContent(filePath);
+    ASSERT_EQ(mimetype, "image/jpeg");
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetImageMimetype_Test_001, TestSize.Level1)
+{
+    auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension("jpg");
+    string filePath1 = "";
+    auto imgMimetype1 = MimeTypeUtils::GetImageMimetype(filePath1, mimeType);
+    EXPECT_EQ(imgMimetype1, E_INVALID_VALUES);
+    string dirPath = "/data/test/MimeTypeTest";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string filePath2 = dirPath + "/test2.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath2), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+    auto imgMimetype2 = MimeTypeUtils::GetImageMimetype(filePath2, mimeType);
+    ASSERT_EQ(imgMimetype2, E_OK);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetVideoMimetype_Test_001, TestSize.Level1)
+{
+    auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension("mp4");
+    string dirPath = "/data/test/MimeTypeTest";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string filePath = dirPath + "/testVideo1.mp4";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+    EXPECT_EQ(MimeTypeUtils::GetVideoMimetype(filePath, mimeType), E_OK);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_IsMimeTypeMapEmpty_Test_001, TestSize.Level1)
+{
+    bool isEmpty = MimeTypeUtils::IsMimeTypeMapEmpty();
+    ASSERT_EQ(isEmpty, true);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_IsMimeTypeMapEmpty_Test_002, TestSize.Level1)
+{
+    int32_t ret = MimeTypeUtils::InitMimeTypeMap();
+    ASSERT_EQ(ret, E_OK);
+    bool isEmpty = MimeTypeUtils::IsMimeTypeMapEmpty();
+    ASSERT_EQ(isEmpty, false);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_WithMap_Test_001, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::vector<std::string>> testMap = {
+        {"image/jpeg", {"jpg", "jpeg"}},
+        {"video/mp4", {"mp4", "m4v"}},
+        {"audio/mpeg", {"mp3"}}
+    };
+    
+    auto mimeType1 = MimeTypeUtils::GetMimeTypeFromExtension("jpg", testMap);
+    ASSERT_EQ(mimeType1, "image/jpeg");
+    
+    auto mimeType2 = MimeTypeUtils::GetMimeTypeFromExtension("MP4", testMap);
+    ASSERT_EQ(mimeType2, "video/mp4");
+    
+    auto mimeType3 = MimeTypeUtils::GetMimeTypeFromExtension("mp3", testMap);
+    ASSERT_EQ(mimeType3, "audio/mpeg");
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_WithMap_Test_002, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::vector<std::string>> testMap = {
+        {"image/jpeg", {"jpg", "jpeg"}}
+    };
+    
+    auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension("png", testMap);
+    ASSERT_EQ(mimeType, "application/octet-stream");
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaType_Test_001, TestSize.Level1)
+{
+    string dirPath = "/data/test/MimeTypeTest";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    
+    string imagePath = dirPath + "/test.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(imagePath), true);
+    auto mediaType1 = MimeTypeUtils::GetMediaType(imagePath);
+    ASSERT_EQ(mediaType1, MEDIA_TYPE_IMAGE);
+    
+    string videoPath = dirPath + "/test.mp4";
+    EXPECT_EQ(MediaFileUtils::CreateFile(videoPath), true);
+    auto mediaType2 = MimeTypeUtils::GetMediaType(videoPath);
+    ASSERT_EQ(mediaType2, MEDIA_TYPE_VIDEO);
+    
+    string audioPath = dirPath + "/test.mp3";
+    EXPECT_EQ(MediaFileUtils::CreateFile(audioPath), true);
+    auto mediaType3 = MimeTypeUtils::GetMediaType(audioPath);
+    ASSERT_EQ(mediaType3, MEDIA_TYPE_AUDIO);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaType_Test_002, TestSize.Level1)
+{
+    auto mediaType = MimeTypeUtils::GetMediaType("");
+    ASSERT_EQ(mediaType, MEDIA_TYPE_ALL);
+}
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaType_Test_003, TestSize.Level1)
+{
+    string dirPath = "/data/test/MimeTypeTest";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    
+    string filePath = dirPath + "/test.txt";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    auto mediaType = MimeTypeUtils::GetMediaType(filePath);
+    ASSERT_EQ(mediaType, MEDIA_TYPE_FILE);
 }
 } // namespace Media
 } // namespace OHOS
