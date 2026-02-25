@@ -102,9 +102,6 @@ const PickerFilterPhotoKeys = {
     
     DATE_TAKEN_MS: 'date_taken_ms',
   }
-  
-var isPhotoBrowserShow = false; 
-var isMovingPhotoBadgeShownValid = false;
 
 const PARAMETERS_VALIDATE_FAILED_MESSAGE = 
 'Scene parameters validate failed, possible causes:' +
@@ -724,9 +721,9 @@ export class PhotoPickerComponent extends ViewPU {
         t.animatorParams.curve = e.curve;
         o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
         if (o) {	 
-             isPhotoBrowserShow = true;	 
+             this.pickerController.isPhotoBrowserShow = true;	 
          } else {	 
-             isPhotoBrowserShow = false;	 
+             this.pickerController.isPhotoBrowserShow = false;	 
          }
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + o);
     }
@@ -820,9 +817,9 @@ export class PhotoPickerComponent extends ViewPU {
             return undefined;
         }
         if (isMovingPhotoBadgeShown === true) {	 
-             isMovingPhotoBadgeShownValid = true;	 
+             this.pickerController.isMovingPhotoBadgeShownValid = true;	 
          } else {	 
-             isMovingPhotoBadgeShownValid = false;	 
+             this.pickerController.isMovingPhotoBadgeShownValid = false;	 
          }
         return isMovingPhotoBadgeShown;
     }
@@ -987,6 +984,8 @@ let PickerController = class {
         this.saveCallbackMap = new Map();
         this.createCallbackMap = new Map();
         this.saveCallbackPromises = new Map();
+        this.isPhotoBrowserShow = false;
+        this.isMovingPhotoBadgeShownValid = false;
     }
     setData(e, o) {
         if (o === undefined) {
@@ -1066,9 +1065,9 @@ let PickerController = class {
         if (e !== MovingPhotoBadgeStateType.ADD_DATA && e !== MovingPhotoBadgeStateType.DELETE_DATA) {
             throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
         }
-        console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) +
-         ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
-        if (!isPhotoBrowserShow || isMovingPhotoBadgeShownValid) {
+        console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(this.isPhotoBrowserShow) +
+         ', this.isMovingPhotoBadgeShownValid=' + this.isMovingPhotoBadgeShownValid);
+        if (!this.isPhotoBrowserShow || this.isMovingPhotoBadgeShownValid) {
             throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
         }
         if (e !== undefined) {
