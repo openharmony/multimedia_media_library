@@ -26,28 +26,30 @@ namespace OHOS::Media::CloudSync {
 
 bool OnCreateRecordsAlbumReqBodyAlbumData::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->newCloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->localPath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(
-        IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->newCloudId), false, "newCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
     int32_t copyRecordErrorType;
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(copyRecordErrorType), false, "copyRecordErrorType");
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 bool OnCreateRecordsAlbumReqBodyAlbumData::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->newCloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->localPath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(
-        IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->newCloudId), false, "newCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false, "errorType");
     return true;
 }
 
@@ -73,15 +75,19 @@ std::string OnCreateRecordsAlbumReqBodyAlbumData::ToString() const
 
 bool OnCreateRecordsAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<
-        OnCreateRecordsAlbumReqBodyAlbumData>(this->albums, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<OnCreateRecordsAlbumReqBodyAlbumData>(this->albums, parcel),
+        false,
+        "albums");
     return true;
 }
 
 bool OnCreateRecordsAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<
-        OnCreateRecordsAlbumReqBodyAlbumData>(this->albums, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<OnCreateRecordsAlbumReqBodyAlbumData>(this->albums, parcel),
+        false,
+        "albums");
     return true;
 }
 

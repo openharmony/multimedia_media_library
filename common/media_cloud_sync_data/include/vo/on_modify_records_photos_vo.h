@@ -52,7 +52,7 @@ public:  // basic functions
 
 class EXPORT OnModifyRecordsPhotosReqBody : public IPC::IMediaParcelable {
 private:
-    std::vector<OnModifyRecord> records;
+    std::vector<OnModifyRecord> records_;
 
 public:
     int32_t AddModifyRecord(const OnModifyRecord &record);

@@ -25,15 +25,16 @@
 namespace OHOS::Media::CloudSync {
 bool GetDownloadThmsByUriReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->thmType), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->thmType), false, "thmType");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel), false, "pathList");
     return true;
 }
 
 bool GetDownloadThmsByUriReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->thmType), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->thmType), false, "thmType");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel), false, "pathList");
     return true;
 }
 
@@ -45,12 +46,14 @@ std::string GetDownloadThmsByUriReqBody::ToString() const
 
 bool GetDownloadThmsByUriRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return PhotosVo::Unmarshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Unmarshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 bool GetDownloadThmsByUriRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return PhotosVo::Marshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Marshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 std::string GetDownloadThmsByUriRespBody::ToString() const

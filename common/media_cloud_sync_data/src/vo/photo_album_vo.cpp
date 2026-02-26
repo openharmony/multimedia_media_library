@@ -25,25 +25,25 @@
 namespace OHOS::Media::CloudSync {
 bool PhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->albumSubType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->albumName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->lPath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->bundleName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->priority), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->lPath), false, "lPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->priority), false, "priority");
     return true;
 }
 
 bool PhotoAlbumVo::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->albumSubType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->albumName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->lPath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->bundleName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->priority), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->lPath), false, "lPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->priority), false, "priority");
     return true;
 }
 

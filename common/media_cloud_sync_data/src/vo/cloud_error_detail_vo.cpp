@@ -25,25 +25,25 @@
 namespace OHOS::Media::CloudSync {
 bool CloudErrorDetail::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(domain), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(reason), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(errorCode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(description), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(errorPos), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(errorParam), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(detailCode), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(domain), false, "domain");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(reason), false, "reason");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(description), false, "description");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(errorPos), false, "errorPos");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(errorParam), false, "errorParam");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(detailCode), false, "detailCode");
     return true;
 }
 
 bool CloudErrorDetail::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(domain), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(reason), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(errorCode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(description), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(errorPos), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(errorParam), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(detailCode), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(domain), false, "domain");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(reason), false, "reason");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(description), false, "description");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(errorPos), false, "errorPos");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(errorParam), false, "errorParam");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(detailCode), false, "detailCode");
     return true;
 }
 

@@ -27,12 +27,18 @@
 namespace OHOS::Media::CloudSync {
 bool OnFetchRecordsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<OnFetchPhotosVo>(this->onFetchPhotos, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<OnFetchPhotosVo>(this->onFetchPhotos, parcel),
+                             false,
+                             "onFetchPhotos");
+    return true;
 }
 
 bool OnFetchRecordsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<OnFetchPhotosVo>(this->onFetchPhotos, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<OnFetchPhotosVo>(this->onFetchPhotos, parcel),
+                             false,
+                             "onFetchPhotos");
+    return true;
 }
 
 int32_t OnFetchRecordsReqBody::AddOnFetchPhotoData(const OnFetchPhotosVo &data)
@@ -54,18 +60,26 @@ std::string OnFetchRecordsReqBody::ToString() const
 
 bool OnFetchRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->newDatas, parcel), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false);
-    return IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->newDatas, parcel), false, "newDatas");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false, "fdirtyDatas");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel), false, "stats");
+    return true;
 }
 
 bool OnFetchRecordsRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->newDatas, parcel), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false);
-    return IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->newDatas, parcel), false, "newDatas");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false, "fdirtyDatas");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel), false, "stats");
+    return true;
 }
 
 std::string OnFetchRecordsRespBody::ToString() const
@@ -104,7 +118,7 @@ std::string OnFetchRecordsRespBody::ToString() const
 
 bool OnFetchRecordsReqBody::SplitBy20K(std::vector<OnFetchRecordsReqBody> &reqBodyList) const
 {
-    CHECK_AND_RETURN_RET(!this->onFetchPhotos.empty(), false);
+    CHECK_AND_RETURN_RET_LOG(!this->onFetchPhotos.empty(), true, "!this->onFetchPhotos.empty()");
     const size_t parcelGap = 4800;
     const size_t parcelCapacity = 204800 - parcelGap;
     size_t parcelSize = 0;
@@ -118,25 +132,25 @@ bool OnFetchRecordsReqBody::SplitBy20K(std::vector<OnFetchRecordsReqBody> &reqBo
             this->onFetchPhotos[index].Marshalling(data);
             parcelSize = data.GetDataSize();
             CHECK_AND_BREAK_INFO_LOG(parcelSize <= parcelCapacity,
-                "exceed capacity, split it. parcelSize: %{public}zu, parcelCapacity: %{public}zu",
-                parcelSize,
-                parcelCapacity);
+                                     "exceed capacity, split it. parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+                                     parcelSize,
+                                     parcelCapacity);
             childList.emplace_back(this->onFetchPhotos[index]);
         }
         CHECK_AND_BREAK_ERR_LOG(!childList.empty(),
-            "dead loop detected, "
-            "currIndex: %{public}zu, index: %{public}zu",
-            currIndex,
-            index);
+                                "dead loop detected, "
+                                "currIndex: %{public}zu, index: %{public}zu",
+                                currIndex,
+                                index);
         currIndex = index;
         reqBodyList.emplace_back(reqBody);
     }
     MEDIA_INFO_LOG("SplitBy20K completed, totalSize: %{public}zu, splited size: %{public}zu",
-        this->onFetchPhotos.size(),
-        reqBodyList.size());
+                   this->onFetchPhotos.size(),
+                   reqBodyList.size());
     return true;
 }
- 
+
 void OnFetchRecordsRespBody::MergeRespBody(const OnFetchRecordsRespBody &respBody)
 {
     this->failedRecords.insert(this->failedRecords.end(), respBody.failedRecords.begin(), respBody.failedRecords.end());

@@ -25,45 +25,45 @@
 namespace OHOS::Media::CloudSync {
 bool CloudMdkRecordPhotoAlbumVo::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(albumName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(lpath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(albumSubtype), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(dateAdded), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(dateModified), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(bundleName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(localLanguage), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(albumPluginCloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(albumNameEn), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(dualAlbumName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(priority), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(isInWhiteList), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(coverUriSource), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(coverCloudId), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(lpath), false, "lpath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(albumSubtype), false, "albumSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateAdded), false, "dateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(localLanguage), false, "localLanguage");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumPluginCloudId), false, "albumPluginCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumNameEn), false, "albumNameEn");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(dualAlbumName), false, "dualAlbumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(priority), false, "priority");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(isInWhiteList), false, "isInWhiteList");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(coverUriSource), false, "coverUriSource");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(coverCloudId), false, "coverCloudId");
     return true;
 }
 
 bool CloudMdkRecordPhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(albumName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(lpath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(albumSubtype), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(dateAdded), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(dateModified), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(bundleName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(localLanguage), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(albumPluginCloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(albumNameEn), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(dualAlbumName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(priority), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(isInWhiteList), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(coverUriSource), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(coverCloudId), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(lpath), false, "lpath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(albumSubtype), false, "albumSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateAdded), false, "dateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(localLanguage), false, "localLanguage");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumPluginCloudId), false, "albumPluginCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumNameEn), false, "albumNameEn");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(dualAlbumName), false, "dualAlbumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(priority), false, "priority");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(isInWhiteList), false, "isInWhiteList");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(coverUriSource), false, "coverUriSource");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(coverCloudId), false, "coverCloudId");
     return true;
 }
 
@@ -74,19 +74,15 @@ std::string CloudMdkRecordPhotoAlbumVo::ToString() const
 
 bool CloudMdkRecordPhotoAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadInt32(this->size);
-    CHECK_AND_RETURN_RET(status, status);
-    status = parcel.ReadBool(this->isCloudSpaceFull);
-    CHECK_AND_RETURN_RET(status, status);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isCloudSpaceFull), false, "isCloudSpaceFull");
     return true;
 }
 
 bool CloudMdkRecordPhotoAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteInt32(this->size);
-    CHECK_AND_RETURN_RET(status, status);
-    status = parcel.WriteBool(this->isCloudSpaceFull);
-    CHECK_AND_RETURN_RET(status, status);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isCloudSpaceFull), false, "isCloudSpaceFull");
     return true;
 }
 
@@ -97,19 +93,18 @@ std::string CloudMdkRecordPhotoAlbumReqBody::ToString() const
 
 std::vector<CloudMdkRecordPhotoAlbumVo> CloudMdkRecordPhotoAlbumRespBody::GetPhotoAlbumRecords()
 {
-    return this->baseAlbumUploadVo;
+    return this->baseAlbumUploadVo_;
 }
 
 bool CloudMdkRecordPhotoAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    if (baseAlbumUploadVo.size() == 0) {
+    if (baseAlbumUploadVo_.size() == 0) {
         return false;
     }
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(baseAlbumUploadVo.size())), false);
-    for (const auto &entry : baseAlbumUploadVo) {
-        if (!entry.Marshalling(parcel)) {
-            return false;
-        }
+    CHECK_AND_RETURN_RET_LOG(
+        parcel.WriteInt32(static_cast<int32_t>(baseAlbumUploadVo_.size())), false, "baseAlbumUploadVo.size()");
+    for (const auto &entry : baseAlbumUploadVo_) {
+        CHECK_AND_RETURN_RET_LOG(entry.Marshalling(parcel), false, "CloudMdkRecordPhotoAlbumVo");
     }
     return true;
 }
@@ -128,18 +123,16 @@ bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhot
     }
 
     val.clear();
-    bool isValid;
     for (size_t i = 0; i < size; i++) {
         CloudMdkRecordPhotoAlbumVo nodeObj;
-        isValid = nodeObj.Unmarshalling(parcel);
-        CHECK_AND_RETURN_RET(isValid, false);
+        CHECK_AND_RETURN_RET_LOG(nodeObj.Unmarshalling(parcel), false, "CloudMdkRecordPhotoAlbumVo");
         val.emplace_back(nodeObj);
     }
     return true;
 }
 bool CloudMdkRecordPhotoAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return GetRecords(this->baseAlbumUploadVo, parcel);
+    return GetRecords(this->baseAlbumUploadVo_, parcel);
 }
 
 std::string CloudMdkRecordPhotoAlbumRespBody::ToString() const

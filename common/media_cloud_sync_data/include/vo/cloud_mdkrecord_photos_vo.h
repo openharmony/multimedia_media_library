@@ -134,11 +134,11 @@ public:  // basic functions
 
 class EXPORT CloudMdkRecordPhotosRespBody : public IPC::IMediaParcelable {
 private:
-    std::vector<CloudMdkRecordPhotosVo> cloudPhotosUploadRecord;
+    std::vector<CloudMdkRecordPhotosVo> cloudPhotosUploadRecord_;
 
 public:
     CloudMdkRecordPhotosRespBody() = default;
-    CloudMdkRecordPhotosRespBody(std::vector<CloudMdkRecordPhotosVo> record) : cloudPhotosUploadRecord(record)
+    CloudMdkRecordPhotosRespBody(std::vector<CloudMdkRecordPhotosVo> record) : cloudPhotosUploadRecord_(record)
     {}
     std::vector<CloudMdkRecordPhotosVo> GetPhotosRecords();
     bool GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel);

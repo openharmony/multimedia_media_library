@@ -25,17 +25,18 @@
 namespace OHOS::Media::CloudSync {
 bool UpdatePositionReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->position), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
     return true;
 }
 
 bool UpdatePositionReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->position), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
     return true;
 }
 
