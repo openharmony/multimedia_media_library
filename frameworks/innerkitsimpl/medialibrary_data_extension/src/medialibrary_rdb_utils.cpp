@@ -651,11 +651,7 @@ static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const Upda
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumData &data,
     ValuesBucket &values, const bool hiddenState)
 {
-    string newCover;
-    int32_t newCount = GetFileCount(fileResult);
-    if (newCount != 0) {
-        newCover = MediaLibraryRdbUtils::GetCover(fileResult);
-    }
+    string newCover = MediaLibraryRdbUtils::GetCover(fileResult);
     const string &targetColumn = hiddenState ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = hiddenState ? data.hiddenCover : data.albumCoverUri;
     if (oldCover != newCover) {
@@ -1573,6 +1569,39 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
         SetImageVideoCount(newCount, fileResultVideo, data, values);
         fileResultVideo->Close();
     }
+
+    // album datemodified can be update only when the number of user and source album is updated.
+    if (data.shouldUpdateDateModified) {
+        values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryRdbUtils::SetUpdateCoverValues(UpdateAlbumData &data, ValuesBucket &values,
+    const bool hiddenState)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
+    PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_HIDDEN_TIME,
+        PhotoColumn::MEDIA_DATE_ADDED,
+        PhotoColumn::MEDIA_DATE_TAKEN
+    };
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    MediaLibraryRdbUtils::GetAlbumCountAndCoverPredicates(data, predicates, hiddenState, true);
+    MediaLibraryRdbUtils::DetermineQueryOrder(predicates, data, hiddenState, columns);
+    predicates.Limit(1);
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
+
+    if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS &&
+        IsNeedSetCover(data, subtype, hiddenState)) {
+        SetCover(fileResult, data, values, hiddenState);
+    }
+    fileResult->Close();
 
     // album datemodified can be update only when the number of user and source album is updated.
     if (data.shouldUpdateDateModified) {
