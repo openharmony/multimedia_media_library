@@ -20,17 +20,18 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool CloudSyncUnPreparedDataRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(count);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(count), false, "count");
     return true;
 }
 
 bool CloudSyncUnPreparedDataRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(count);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(count), false, "count");
     return true;
 }
 

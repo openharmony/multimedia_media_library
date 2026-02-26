@@ -20,23 +20,24 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetAgingFileReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt64(this->time);
-    parcel.ReadInt32(this->mediaType);
-    parcel.ReadInt32(this->sizeLimit);
-    parcel.ReadInt32(this->offset);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->time), false, "time");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->sizeLimit), false, "sizeLimit");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->offset), false, "offset");
     return true;
 }
 
 bool GetAgingFileReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt64(this->time);
-    parcel.WriteInt32(this->mediaType);
-    parcel.WriteInt32(this->sizeLimit);
-    parcel.WriteInt32(this->offset);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->time), false, "time");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->sizeLimit), false, "sizeLimit");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->offset), false, "offset");
     return true;
 }
 
@@ -53,12 +54,14 @@ std::string GetAgingFileReqBody::ToString() const
 
 bool GetAgingFileRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return PhotosVo::Unmarshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Unmarshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 bool GetAgingFileRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return PhotosVo::Marshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Marshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 std::string GetAgingFileRespBody::ToString() const
