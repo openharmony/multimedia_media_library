@@ -78,6 +78,9 @@ private:
     // 从Photos表中获取相册信息
     int32_t GetUpdateValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden,
         OHOS::Media::NotifyType &type);
+    // 获取选择封面后的ValueBuckets
+    int32_t SetForceSelectCoverValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo,
+        bool isHidden);
 
     bool IsValidCover(const PhotoAssetChangeInfo &assetInfo);
 
@@ -85,6 +88,10 @@ private:
     void ClearAlbumInfo(AlbumChangeInfo &albumInfo);
     // 清空albumInfo中隐藏信息，执行后增量刷新不刷新隐藏信息字段
     void ClearHiddenAlbumInfo(AlbumChangeInfo &albumInfo);
+    // 清空albumInfo中普通封面信息，执行后增量刷新不刷新普通封面信息字段
+    void ClearAlbumCoverInfo(AlbumChangeInfo &albumInfo);
+    // 清空albumInfo中隐藏封面信息，执行后增量刷新不刷新隐藏封面信息字段
+    void ClearHiddenAlbumCoverInfo(AlbumChangeInfo &albumInfo);
 
     // 老通知发送
     void CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType, const AlbumChangeInfo &albumInfo,
