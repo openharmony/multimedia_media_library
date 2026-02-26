@@ -25,13 +25,13 @@
 namespace OHOS::Media::CloudSync {
 bool FailedSizeResp::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failedSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->failedSize), false, "failedSize");
     return true;
 }
 
 bool FailedSizeResp::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failedSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->failedSize), false, "failedSize");
     return true;
 }
 

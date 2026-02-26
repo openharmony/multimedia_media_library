@@ -27,42 +27,43 @@ namespace OHOS::Media::CloudSync {
 
 bool OnCopyRecord::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->rotation), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->createTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->sourcePath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
-        this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->rotation), false, "rotation");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileType), false, "fileType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->createTime), false, "createTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->sourcePath), false, "sourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
+        this->errorDetails, parcel), false, "errorDetails");
     int32_t copyRecordErrorType;
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(copyRecordErrorType), false, "copyRecordErrorType");
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 bool OnCopyRecord::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->rotation), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->createTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->sourcePath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(
-        this->errorDetails, parcel), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->rotation), false, "rotation");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileType), false, "fileType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->createTime), false, "createTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->sourcePath), false, "sourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false, "errorType");
     return true;
 }
 
@@ -87,37 +88,37 @@ std::string OnCopyRecord::ToString() const
 
 bool OnCopyRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 bool OnCopyRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 int32_t OnCopyRecordsPhotosReqBody::AddCopyRecord(const OnCopyRecord &record)
 {
-    this->records.push_back(record);
+    this->records_.push_back(record);
     return E_OK;
 }
 
 std::vector<OnCopyRecord> OnCopyRecordsPhotosReqBody::GetRecords()
 {
-    return records;
+    return records_;
 }
 
 std::string OnCopyRecordsPhotosReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "{\"records\":[";
-    for (uint32_t i = 0; i < records.size(); ++i) {
-        if (i != records.size() - 1) {
-            ss << records[i].ToString() << ",";
+    for (uint32_t i = 0; i < records_.size(); ++i) {
+        if (i != records_.size() - 1) {
+            ss << records_[i].ToString() << ",";
             continue;
         }
-        ss << records[i].ToString();
+        ss << records_[i].ToString();
     }
     ss << "]}";
     return ss.str();

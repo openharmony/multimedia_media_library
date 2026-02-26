@@ -25,15 +25,15 @@
 namespace OHOS::Media::CloudSync {
 bool UpdateSyncStatusReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->syncStatus), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->syncStatus), false, "syncStatus");
     return true;
 }
 
 bool UpdateSyncStatusReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->syncStatus), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->syncStatus), false, "syncStatus");
     return true;
 }
 

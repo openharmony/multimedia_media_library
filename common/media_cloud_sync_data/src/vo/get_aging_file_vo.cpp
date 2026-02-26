@@ -25,19 +25,19 @@
 namespace OHOS::Media::CloudSync {
 bool GetAgingFileReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->time), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->mediaType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->sizeLimit), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->offset), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->time), false, "time");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->sizeLimit), false, "sizeLimit");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->offset), false, "offset");
     return true;
 }
 
 bool GetAgingFileReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->time), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->mediaType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->sizeLimit), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->offset), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->time), false, "time");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->sizeLimit), false, "sizeLimit");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->offset), false, "offset");
     return true;
 }
 
@@ -54,13 +54,13 @@ std::string GetAgingFileReqBody::ToString() const
 
 bool GetAgingFileRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(PhotosVo::Unmarshalling(this->photos, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Unmarshalling(this->photos, parcel), false, "photos");
     return true;
 }
 
 bool GetAgingFileRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(PhotosVo::Marshalling(this->photos, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Marshalling(this->photos, parcel), false, "photos");
     return true;
 }
 

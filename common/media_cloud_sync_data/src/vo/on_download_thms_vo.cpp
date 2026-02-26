@@ -25,15 +25,15 @@
 namespace OHOS::Media::CloudSync {
 bool OnDownloadThmsReqBody::DownloadThmsData::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->thumbStatus), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->thumbStatus), false, "thumbStatus");
     return true;
 }
 
 bool OnDownloadThmsReqBody::DownloadThmsData::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->thumbStatus), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->thumbStatus), false, "thumbStatus");
     return true;
 }
 
@@ -49,15 +49,19 @@ std::string OnDownloadThmsReqBody::DownloadThmsData::ToString() const
 
 bool OnDownloadThmsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<DownloadThmsData>(
-        this->downloadThmsDataList, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel),
+        false,
+        "downloadThmsDataList");
     return true;
 }
 
 bool OnDownloadThmsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<DownloadThmsData>(
-        this->downloadThmsDataList, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel),
+        false,
+        "downloadThmsDataList");
     return true;
 }
 

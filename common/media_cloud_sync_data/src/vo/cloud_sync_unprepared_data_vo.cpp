@@ -25,13 +25,13 @@
 namespace OHOS::Media::CloudSync {
 bool CloudSyncUnPreparedDataRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(count), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(count), false, "count");
     return true;
 }
 
 bool CloudSyncUnPreparedDataRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(count), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(count), false, "count");
     return true;
 }
 

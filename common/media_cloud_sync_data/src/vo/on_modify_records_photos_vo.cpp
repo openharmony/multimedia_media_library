@@ -26,37 +26,39 @@
 namespace OHOS::Media::CloudSync {
 bool OnModifyRecord::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->path), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->modifyTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->metaDateModified), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->modifyTime), false, "modifyTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
     int32_t copyRecordErrorType;
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(copyRecordErrorType), false, "copyRecordErrorType");
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
-        this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
     return true;
 }
 
 bool OnModifyRecord::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->path), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->modifyTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->metaDateModified), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(
-        IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->modifyTime), false, "modifyTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false, "errorType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
     return true;
 }
 
@@ -91,25 +93,25 @@ std::string OnModifyRecord::ToString() const
 
 bool OnModifyRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 bool OnModifyRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 int32_t OnModifyRecordsPhotosReqBody::AddModifyRecord(const OnModifyRecord &record)
 {
-    this->records.push_back(record);
+    this->records_.push_back(record);
     return E_OK;
 }
 
 std::vector<OnModifyRecord> OnModifyRecordsPhotosReqBody::GetModifyRecords()
 {
-    return records;
+    return records_;
 }
 
 std::string OnModifyRecordsPhotosReqBody::ToString() const

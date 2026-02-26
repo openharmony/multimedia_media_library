@@ -25,19 +25,19 @@
 namespace OHOS::Media::CloudSync {
 bool GetDownloadThmReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->type), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->offset), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isDownloadDisplayFirst), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->type), false, "type");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->offset), false, "offset");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDownloadDisplayFirst), false, "isDownloadDisplayFirst");
     return true;
 }
 
 bool GetDownloadThmReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->type), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->offset), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isDownloadDisplayFirst), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->type), false, "type");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->offset), false, "offset");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDownloadDisplayFirst), false, "isDownloadDisplayFirst");
     return true;
 }
 
@@ -55,13 +55,13 @@ std::string GetDownloadThmReqBody::ToString() const
 
 bool GetDownloadThmRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(PhotosVo::Unmarshalling(this->photos, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Unmarshalling(this->photos, parcel), false, "photos");
     return true;
 }
 
 bool GetDownloadThmRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(PhotosVo::Marshalling(this->photos, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Marshalling(this->photos, parcel), false, "photos");
     return true;
 }
 

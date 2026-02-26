@@ -25,14 +25,14 @@
 namespace OHOS::Media::CloudSync {
 bool OnDeleteAlbumData::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
     return true;
 }
 bool OnDeleteAlbumData::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
     return true;
 }
 
@@ -53,13 +53,15 @@ bool OnDeleteRecordsAlbumReqBody::AddSuccessResult(OnDeleteAlbumData &albumData)
 
 bool OnDeleteRecordsAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false, "albums");
     return true;
 }
 
 bool OnDeleteRecordsAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteAlbumData>(this->albums, parcel), false, "albums");
     return true;
 }
 
@@ -81,13 +83,13 @@ std::string OnDeleteRecordsAlbumReqBody::ToString() const
 
 bool OnDeleteRecordsAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->failSize), false, "failSize");
     return true;
 }
 
 bool OnDeleteRecordsAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->failSize), false, "failSize");
     return true;
 }
 

@@ -45,19 +45,19 @@ ReportFailureReqBody &ReportFailureReqBody::SetCloudId(const std::string &cloudI
 }
 bool ReportFailureReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->apiCode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->errorCode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->apiCode), false, "apiCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
     return true;
 }
 
 bool ReportFailureReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->apiCode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->errorCode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->apiCode), false, "apiCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
     return true;
 }
 

@@ -26,167 +26,169 @@
 namespace OHOS::Media::CloudSync {
 bool OnFetchPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->fileSourcePath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->mimeType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->firstVisitTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->detailTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->frontCamera), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->editDataCamera), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->title), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->relativePath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->virtualPath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->dateYear), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->dateMonth), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->dateDay), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->shootingMode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->shootingModeTag), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->burstKey), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->localPath), false);
-    CHECK_AND_RETURN_RET(parcel.WriteDouble(this->latitude), false);
-    CHECK_AND_RETURN_RET(parcel.WriteDouble(this->longitude), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->description), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->source), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileSourcePath), false, "fileSourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->mimeType), false, "mimeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->firstVisitTime), false, "firstVisitTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->detailTime), false, "detailTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->frontCamera), false, "frontCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->editDataCamera), false, "editDataCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->title), false, "title");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->relativePath), false, "relativePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->virtualPath), false, "virtualPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->dateYear), false, "dateYear");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->dateMonth), false, "dateMonth");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->dateDay), false, "dateDay");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->shootingMode), false, "shootingMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->shootingModeTag), false, "shootingModeTag");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->burstKey), false, "burstKey");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteDouble(this->latitude), false, "latitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteDouble(this->longitude), false, "longitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->description), false, "description");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->source), false, "source");
     return true;
 }
 
 bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->mediaType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->rotation), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->photoHeight), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->photoWidth), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->duration), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->hidden), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->burstCoverLevel), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->subtype), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->originalSubtype), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->dynamicRangeType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->hdrMode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->videoMode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->movingPhotoEffectMode), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->supportedWatermarkType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->strongAssociation), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->fixVersion), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->lcdSize), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->thmSize), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->createTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->metaDateModified), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->dualEditTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->editTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->editedTimeMs), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->recycledTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->hiddenTime), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt64(this->coverPosition), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->isRectificationCover), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->exifRotate), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isDelete), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->fileSourceType), false);
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->storagePath), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileType), false, "fileType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->rotation), false, "rotation");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->photoHeight), false, "photoHeight");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->photoWidth), false, "photoWidth");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->duration), false, "duration");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->burstCoverLevel), false, "burstCoverLevel");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->subtype), false, "subtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->originalSubtype), false, "originalSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->dynamicRangeType), false, "dynamicRangeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->hdrMode), false, "hdrMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->videoMode), false, "videoMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->movingPhotoEffectMode), false, "movingPhotoEffectMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->supportedWatermarkType), false, "supportedWatermarkType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->strongAssociation), false, "strongAssociation");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->fixVersion), false, "fixVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->lcdSize), false, "lcdSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->thmSize), false, "thmSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->createTime), false, "createTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->dualEditTime), false, "dualEditTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->editTime), false, "editTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->editedTimeMs), false, "editedTimeMs");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->recycledTime), false, "recycledTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->hiddenTime), false, "hiddenTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->coverPosition), false, "coverPosition");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->isRectificationCover), false, "isRectificationCover");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->exifRotate), false, "exifRotate");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDelete), false, "isDelete");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
     // Safe Album: risk status for children's watch
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->photoRiskStatus), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->isCritical), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->photoRiskStatus), false, "photoRiskStatus");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->isCritical), false, "isCritical");
     return true;
 }
 
 bool OnFetchPhotosVo::ReadBasicInfo(Parcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileName), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->fileSourcePath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->mimeType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->firstVisitTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->detailTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->frontCamera), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->editDataCamera), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->title), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->relativePath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->virtualPath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->dateYear), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->dateMonth), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->dateDay), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->shootingMode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->shootingModeTag), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->burstKey), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->localPath), false);
-    CHECK_AND_RETURN_RET(parcel.ReadDouble(this->latitude), false);
-    CHECK_AND_RETURN_RET(parcel.ReadDouble(this->longitude), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->description), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->source), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileSourcePath), false, "fileSourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->mimeType), false, "mimeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->firstVisitTime), false, "firstVisitTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->detailTime), false, "detailTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->frontCamera), false, "frontCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->editDataCamera), false, "editDataCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->title), false, "title");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->relativePath), false, "relativePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->virtualPath), false, "virtualPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->dateYear), false, "dateYear");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->dateMonth), false, "dateMonth");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->dateDay), false, "dateDay");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->shootingMode), false, "shootingMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->shootingModeTag), false, "shootingModeTag");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->burstKey), false, "burstKey");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadDouble(this->latitude), false, "latitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadDouble(this->longitude), false, "longitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->description), false, "description");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->source), false, "source");
     return true;
 }
 
 bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->mediaType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->rotation), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->photoHeight), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->photoWidth), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->duration), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->hidden), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->burstCoverLevel), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->subtype), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->originalSubtype), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->dynamicRangeType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->hdrMode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->videoMode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->movingPhotoEffectMode), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->supportedWatermarkType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->strongAssociation), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->fixVersion), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->version), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->size), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->lcdSize), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->thmSize), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->createTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->metaDateModified), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->dualEditTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->editTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->editedTimeMs), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->recycledTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->hiddenTime), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt64(this->coverPosition), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->isRectificationCover), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->exifRotate), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isDelete), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->fileSourceType), false);
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->storagePath), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileType), false, "fileType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->rotation), false, "rotation");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->photoHeight), false, "photoHeight");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->photoWidth), false, "photoWidth");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->duration), false, "duration");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->burstCoverLevel), false, "burstCoverLevel");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->subtype), false, "subtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->originalSubtype), false, "originalSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->dynamicRangeType), false, "dynamicRangeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->hdrMode), false, "hdrMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->videoMode), false, "videoMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->movingPhotoEffectMode), false, "movingPhotoEffectMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->supportedWatermarkType), false, "supportedWatermarkType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->strongAssociation), false, "strongAssociation");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->fixVersion), false, "fixVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->version), false, "version");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->lcdSize), false, "lcdSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->thmSize), false, "thmSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->createTime), false, "createTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->dualEditTime), false, "dualEditTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->editTime), false, "editTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->editedTimeMs), false, "editedTimeMs");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->recycledTime), false, "recycledTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->hiddenTime), false, "hiddenTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->coverPosition), false, "coverPosition");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->isRectificationCover), false, "isRectificationCover");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->exifRotate), false, "exifRotate");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDelete), false, "isDelete");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
     // Safe Album: risk status for children's watch
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->photoRiskStatus), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->isCritical), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->photoRiskStatus), false, "photoRiskStatus");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->isCritical), false, "isCritical");
     return true;
 }
 
 bool OnFetchPhotosVo::Unmarshalling(MessageParcel &parcel)
 {
-    this->ReadBasicInfo(parcel);
-    this->ReadAttributesInfo(parcel);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->hasAttributes), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->hasproperties), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isFavorite), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isRecycle), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->sourceAlbumIds, parcel), false);
-    CHECK_AND_RETURN_RET(ITypesUtil::Unmarshalling(stringfields, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(this->ReadBasicInfo(parcel), false, "ReadBasicInfo");
+    CHECK_AND_RETURN_RET_LOG(this->ReadAttributesInfo(parcel), false, "ReadAttributesInfo");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->hasAttributes), false, "hasAttributes");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->hasproperties), false, "hasproperties");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isFavorite), false, "isFavorite");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isRecycle), false, "isRecycle");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->sourceAlbumIds, parcel), false, "sourceAlbumIds");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(stringfields, parcel), false, "stringfields");
     return true;
 }
 
 bool OnFetchPhotosVo::Marshalling(MessageParcel &parcel) const
 {
-    this->MarshallingBasicInfo(parcel);
-    this->MarshallingAttributesInfo(parcel);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->hasAttributes), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->hasproperties), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isFavorite), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isRecycle), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->sourceAlbumIds, parcel), false);
-    CHECK_AND_RETURN_RET(ITypesUtil::Marshalling(stringfields, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(this->MarshallingBasicInfo(parcel), false, "MarshallingBasicInfo");
+    CHECK_AND_RETURN_RET_LOG(this->MarshallingAttributesInfo(parcel), false, "MarshallingAttributesInfo");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->hasAttributes), false, "hasAttributes");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->hasproperties), false, "hasproperties");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isFavorite), false, "isFavorite");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isRecycle), false, "isRecycle");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->sourceAlbumIds, parcel), false, "sourceAlbumIds");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshalling(stringfields, parcel), false, "stringfields");
     return true;
 }
 

@@ -26,25 +26,27 @@
 namespace OHOS::Media::CloudSync {
 bool OnMdirtyAlbumRecord::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.ReadBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(
-        this->errorDetails, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
     int32_t copyRecordErrorType;
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(copyRecordErrorType), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(copyRecordErrorType), false, "copyRecordErrorType");
     this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 
 bool OnMdirtyAlbumRecord::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteString(this->cloudId), false);
-    CHECK_AND_RETURN_RET(parcel.WriteBool(this->isSuccess), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->serverErrorCode), false);
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(
-        this->errorDetails, parcel), false);
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->serverErrorCode), false, "serverErrorCode");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
+                             false,
+                             "errorDetails");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(this->errorType)), false, "errorType");
     return true;
 }
 
@@ -69,25 +71,25 @@ std::string OnMdirtyAlbumRecord::ToString() const
 
 bool OnMdirtyRecordsAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 bool OnMdirtyRecordsAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable(this->records, parcel), false);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable(this->records_, parcel), false, "records");
     return true;
 }
 
 int32_t OnMdirtyRecordsAlbumReqBody::AddMdirtyRecord(const OnMdirtyAlbumRecord &record)
 {
-    this->records.push_back(record);
+    this->records_.push_back(record);
     return E_OK;
 }
 
 std::vector<OnMdirtyAlbumRecord> OnMdirtyRecordsAlbumReqBody::GetMdirtyRecords()
 {
-    return records;
+    return records_;
 }
 
 std::string OnMdirtyRecordsAlbumReqBody::ToString() const
@@ -95,9 +97,9 @@ std::string OnMdirtyRecordsAlbumReqBody::ToString() const
     std::stringstream ss;
     ss << "{"
        << "\"records\": [";
-    for (size_t i = 0; i < records.size(); i++) {
-        ss << records[i].ToString();
-        if (i != records.size() - 1) {
+    for (size_t i = 0; i < records_.size(); i++) {
+        ss << records_[i].ToString();
+        if (i != records_.size() - 1) {
             ss << ", ";
         }
     }
@@ -108,12 +110,12 @@ std::string OnMdirtyRecordsAlbumReqBody::ToString() const
 
 bool OnMdirtyRecordsAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(this->failSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->failSize), false, "failSize");
     return true;
 }
 bool OnMdirtyRecordsAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(this->failSize), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->failSize), false, "failSize");
     return true;
 }
 

@@ -57,7 +57,7 @@ class EXPORT CloudMdkRecordPhotoAlbumReqBody : public IPC::IMediaParcelable {
 public:
     int32_t size;
     bool isCloudSpaceFull = false;
-    
+
 public:  // functions of Parcelable.
     virtual ~CloudMdkRecordPhotoAlbumReqBody() = default;
     bool Unmarshalling(MessageParcel &parcel) override;
@@ -70,11 +70,11 @@ public:  // basic functions
 // 资产处理，相册后续填充
 class EXPORT CloudMdkRecordPhotoAlbumRespBody : public IPC::IMediaParcelable {
 private:
-    std::vector<CloudMdkRecordPhotoAlbumVo> baseAlbumUploadVo;
+    std::vector<CloudMdkRecordPhotoAlbumVo> baseAlbumUploadVo_;
 
 public:
     CloudMdkRecordPhotoAlbumRespBody() = default;
-    CloudMdkRecordPhotoAlbumRespBody(std::vector<CloudMdkRecordPhotoAlbumVo> record) : baseAlbumUploadVo(record)
+    CloudMdkRecordPhotoAlbumRespBody(std::vector<CloudMdkRecordPhotoAlbumVo> record) : baseAlbumUploadVo_(record)
     {}
     std::vector<CloudMdkRecordPhotoAlbumVo> GetPhotoAlbumRecords();
     bool GetRecords(std::vector<CloudMdkRecordPhotoAlbumVo> &val, MessageParcel &parcel);
