@@ -23,64 +23,64 @@
 #include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
-bool OnDownloadThmsReqBody::DownloadThmsData::Unmarshalling(
-    MessageParcel &parcel) {
-  CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
-  CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->thumbStatus), false,
-                           "thumbStatus");
-  return true;
+bool OnDownloadThmsReqBody::DownloadThmsData::Unmarshalling(MessageParcel &parcel)
+{
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->thumbStatus), false, "thumbStatus");
+    return true;
 }
 
-bool OnDownloadThmsReqBody::DownloadThmsData::Marshalling(
-    MessageParcel &parcel) const {
-  CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
-  CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->thumbStatus), false,
-                           "thumbStatus");
-  return true;
+bool OnDownloadThmsReqBody::DownloadThmsData::Marshalling(MessageParcel &parcel) const
+{
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->thumbStatus), false, "thumbStatus");
+    return true;
 }
 
-std::string OnDownloadThmsReqBody::DownloadThmsData::ToString() const {
-  std::stringstream ss;
-  ss << "{"
-     << "\"cloudId\": \"" << this->cloudId << "\", "
-     << "\"thumbStatus\": " << this->thumbStatus << "\""
-     << "}";
-  return ss.str();
+std::string OnDownloadThmsReqBody::DownloadThmsData::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"cloudId\": \"" << this->cloudId << "\", "
+       << "\"thumbStatus\": " << this->thumbStatus << "\""
+       << "}";
+    return ss.str();
 }
 
-bool OnDownloadThmsReqBody::Unmarshalling(MessageParcel &parcel) {
-  CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->sceneCode), false,
-                           "sceneCode");
-  CHECK_AND_RETURN_RET_LOG(
-      IPC::ITypeMediaUtil::UnmarshallingParcelable<DownloadThmsData>(
-          this->downloadThmsDataList, parcel),
-      false, "downloadThmsDataList");
-  return true;
+bool OnDownloadThmsReqBody::Unmarshalling(MessageParcel &parcel)
+{
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->sceneCode), false, "sceneCode");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel),
+        false,
+        "downloadThmsDataList");
+    return true;
 }
 
-bool OnDownloadThmsReqBody::Marshalling(MessageParcel &parcel) const {
-  CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->sceneCode), false,
-                           "sceneCode");
-  CHECK_AND_RETURN_RET_LOG(
-      IPC::ITypeMediaUtil::MarshallingParcelable<DownloadThmsData>(
-          this->downloadThmsDataList, parcel),
-      false, "downloadThmsDataList");
-  return true;
+bool OnDownloadThmsReqBody::Marshalling(MessageParcel &parcel) const
+{
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->sceneCode), false, "sceneCode");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel),
+        false,
+        "downloadThmsDataList");
+    return true;
 }
 
-std::string OnDownloadThmsReqBody::ToString() const {
-  std::stringstream ss;
-  ss << "{"
-     << "\"sceneCode\": " << this->sceneCode << ", "
-     << "\"DownloadThmsData\": [";
-  for (size_t i = 0; i < this->downloadThmsDataList.size(); i++) {
-    ss << this->downloadThmsDataList[i].ToString();
-    if (i != this->downloadThmsDataList.size() - 1) {
-      ss << ", ";
+std::string OnDownloadThmsReqBody::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"sceneCode\": " << this->sceneCode << ", "
+       << "\"DownloadThmsData\": [";
+    for (size_t i = 0; i < this->downloadThmsDataList.size(); i++) {
+        ss << this->downloadThmsDataList[i].ToString();
+        if (i != this->downloadThmsDataList.size() - 1) {
+            ss << ", ";
+        }
     }
-  }
-  ss << "]"
-     << "}";
-  return ss.str();
+    ss << "]"
+       << "}";
+    return ss.str();
 }
-} // namespace OHOS::Media::CloudSync
+}  // namespace OHOS::Media::CloudSync
