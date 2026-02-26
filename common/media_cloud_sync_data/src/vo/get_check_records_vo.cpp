@@ -152,10 +152,8 @@ bool GetCheckRecordsRespBody::Marshalling(MessageParcel &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->checkDataList.size()), false, "checkDataList.size()");
     for (auto [key, value] : this->checkDataList) {
-        CHECK_AND_RETURN_RET_LOG(parcel.WriteString(key), false, "key");
-        if (!value.Marshalling(parcel)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(parcel.WriteString(key), false, "GetCheckRecordsRespBodyCheckData key");
+        CHECK_AND_RETURN_RET_LOG(value.Marshalling(parcel), false, "GetCheckRecordsRespBodyCheckData value");
     }
     return true;
 }
