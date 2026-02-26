@@ -25,45 +25,42 @@
 namespace OHOS::Media::CloudSync {
 bool CloudFileDataVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->filePath);
-    parcel.ReadInt64(this->size);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->filePath), false, "filePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->size), false, "size");
     return true;
 }
 bool CloudFileDataVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->filePath);
-    parcel.WriteInt64(this->size);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->filePath), false, "filePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->size), false, "size");
     return true;
 }
 
 bool CloudFileDataVo::Marshalling(const std::map<std::string, CloudFileDataVo> &result, MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(result.size())), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(result.size())), false, "result.size()");
     for (const auto &entry : result) {
-        if (!parcel.WriteString(entry.first) || !entry.second.Marshalling(parcel)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(parcel.WriteString(entry.first), false, "entry.first");
+        CHECK_AND_RETURN_RET_LOG(entry.second.Marshalling(parcel), false, "entry.second");
     }
     return true;
 }
 bool CloudFileDataVo::Unmarshalling(std::map<std::string, CloudFileDataVo> &val, MessageParcel &parcel)
 {
     int32_t size = 0;
-    CHECK_AND_RETURN_RET(parcel.ReadInt32(size), false);
-    CHECK_AND_RETURN_RET(size >= 0, false);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(size >= 0, false, "size invalid");
     size_t readAbleSize = parcel.GetReadableBytes();
     if ((static_cast<size_t>(size) > readAbleSize) || static_cast<size_t>(size) > val.max_size()) {
         return false;
     }
-    bool isValid;
     for (int32_t i = 0; i < size; i++) {
         std::string key;
-        CHECK_AND_RETURN_RET(parcel.ReadString(key), false);
+        CHECK_AND_RETURN_RET_LOG(parcel.ReadString(key), false, "CloudFileDataVo key");
         CloudFileDataVo nodeObj;
-        isValid = nodeObj.Unmarshalling(parcel);
-        CHECK_AND_RETURN_RET(isValid, false);
+        CHECK_AND_RETURN_RET_LOG(nodeObj.Unmarshalling(parcel), false, "CloudFileDataVo value");
         val.emplace(key, nodeObj);
     }
     return true;

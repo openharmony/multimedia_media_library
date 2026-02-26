@@ -65,7 +65,7 @@ std::string QueryDataRespBody::ToString() const
             if (!isFirstEntry) {
                 ss << ",";
             }
-            ss << entry.first << ": " <<entry.second;
+            ss << entry.first << ": " << entry.second;
             isFirstEntry = false;
         }
         ss << "}";

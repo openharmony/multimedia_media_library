@@ -20,16 +20,18 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetCheckRecordsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel), false, "cloudIds");
+    return true;
 }
 
 bool GetCheckRecordsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    IPC::ITypeMediaUtil::Marshalling(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling(this->cloudIds, parcel), false, "cloudIds");
     return true;
 }
 
@@ -51,27 +53,27 @@ std::string GetCheckRecordsReqBody::ToString() const
 
 bool GetCheckRecordsRespBodyCheckData::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt64(this->size);
-    parcel.ReadString(this->data);
-    parcel.ReadString(this->displayName);
-    parcel.ReadString(this->fileName);
-    parcel.ReadInt32(this->mediaType);
-    parcel.ReadInt32(this->cloudVersion);
-    parcel.ReadInt32(this->position);
-    parcel.ReadInt64(this->dateModified);
-    parcel.ReadInt32(this->dirty);
-    parcel.ReadInt32(this->thmStatus);
-    parcel.ReadInt32(this->syncStatus);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->data), false, "data");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->displayName), false, "displayName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->cloudVersion), false, "cloudVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->dirty), false, "dirty");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->thmStatus), false, "thmStatus");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->syncStatus), false, "syncStatus");
     int32_t attachmentSize;
-    parcel.ReadInt32(attachmentSize);
-    parcel.ReadInt32(this->fileSourceType);
-    parcel.ReadString(this->storagePath);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(attachmentSize), false, "attachmentSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
     for (int32_t i = 0; i < attachmentSize; ++i) {
         CloudFileDataVo vo;
         std::string key;
-        parcel.ReadString(key);
-        vo.Unmarshalling(parcel);
+        CHECK_AND_RETURN_RET_LOG(parcel.ReadString(key), false, "CloudFileDataVo key");
+        CHECK_AND_RETURN_RET_LOG(vo.Unmarshalling(parcel), false, "CloudFileDataVo value");
         this->attachment[key] = vo;
     }
     return true;
@@ -79,24 +81,24 @@ bool GetCheckRecordsRespBodyCheckData::Unmarshalling(MessageParcel &parcel)
 
 bool GetCheckRecordsRespBodyCheckData::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt64(this->size);
-    parcel.WriteString(this->data);
-    parcel.WriteString(this->displayName);
-    parcel.WriteString(this->fileName);
-    parcel.WriteInt32(this->mediaType);
-    parcel.WriteInt32(this->cloudVersion);
-    parcel.WriteInt32(this->position);
-    parcel.WriteInt64(this->dateModified);
-    parcel.WriteInt32(this->dirty);
-    parcel.WriteInt32(this->thmStatus);
-    parcel.WriteInt32(this->syncStatus);
-    parcel.WriteInt32(this->attachment.size());
-    parcel.WriteInt32(this->fileSourceType);
-    parcel.WriteString(this->storagePath);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->data), false, "data");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->displayName), false, "displayName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->cloudVersion), false, "cloudVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->dirty), false, "dirty");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->thmStatus), false, "thmStatus");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->syncStatus), false, "syncStatus");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->attachment.size()), false, "attachmentSize");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
     for (auto &[key, value] : attachment) {
-        parcel.WriteString(key);
-        value.Marshalling(parcel);
+        CHECK_AND_RETURN_RET_LOG(parcel.WriteString(key), false, "CloudFileDataVo key");
+        CHECK_AND_RETURN_RET_LOG(value.Marshalling(parcel), false, "CloudFileDataVo value");
     }
     return true;
 }
@@ -132,15 +134,15 @@ std::string GetCheckRecordsRespBodyCheckData::ToString() const
 bool GetCheckRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     int32_t size = 0;
-    parcel.ReadInt32(size);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(size), false, "size");
     if (size <= 0) {
         return true;
     }
     for (int32_t i = 0; i < size; ++i) {
         GetCheckRecordsRespBodyCheckData data;
         std::string key;
-        parcel.ReadString(key);
-        data.Unmarshalling(parcel);
+        CHECK_AND_RETURN_RET_LOG(parcel.ReadString(key), false, "key");
+        CHECK_AND_RETURN_RET_LOG(data.Unmarshalling(parcel), false, "data");
         this->checkDataList[key] = data;
     }
     return true;
@@ -148,9 +150,9 @@ bool GetCheckRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 
 bool GetCheckRecordsRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->checkDataList.size());
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->checkDataList.size()), false, "checkDataList.size()");
     for (auto [key, value] : this->checkDataList) {
-        parcel.WriteString(key);
+        CHECK_AND_RETURN_RET_LOG(parcel.WriteString(key), false, "key");
         if (!value.Marshalling(parcel)) {
             return false;
         }

@@ -19,6 +19,9 @@
 
 #include <sstream>
 
+#include "media_itypes_utils.h"
+#include "media_log.h"
+
 namespace OHOS::Media::CloudSync {
 ReportFailureReqBody &ReportFailureReqBody::SetApiCode(int32_t apiCode)
 {
@@ -42,18 +45,20 @@ ReportFailureReqBody &ReportFailureReqBody::SetCloudId(const std::string &cloudI
 }
 bool ReportFailureReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->apiCode);
-    parcel.ReadInt32(this->errorCode);
-    parcel.ReadInt32(this->fileId);
-    return parcel.ReadString(this->cloudId);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->apiCode), false, "apiCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    return true;
 }
 
 bool ReportFailureReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->apiCode);
-    parcel.WriteInt32(this->errorCode);
-    parcel.WriteInt32(this->fileId);
-    return parcel.WriteString(this->cloudId);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->apiCode), false, "apiCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->errorCode), false, "errorCode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    return true;
 }
 
 std::string ReportFailureReqBody::ToString() const

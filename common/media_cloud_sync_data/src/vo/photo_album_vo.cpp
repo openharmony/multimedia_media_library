@@ -20,29 +20,30 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool PhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->albumId);
-    parcel.ReadInt32(this->albumType);
-    parcel.ReadInt32(this->albumSubType);
-    parcel.ReadString(this->albumName);
-    parcel.ReadString(this->lPath);
-    parcel.ReadString(this->bundleName);
-    parcel.ReadInt32(this->priority);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->lPath), false, "lPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->priority), false, "priority");
     return true;
 }
 
 bool PhotoAlbumVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->albumId);
-    parcel.WriteInt32(this->albumType);
-    parcel.WriteInt32(this->albumSubType);
-    parcel.WriteString(this->albumName);
-    parcel.WriteString(this->lPath);
-    parcel.WriteString(this->bundleName);
-    parcel.WriteInt32(this->priority);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->lPath), false, "lPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->bundleName), false, "bundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->priority), false, "priority");
     return true;
 }
 
