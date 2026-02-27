@@ -69,6 +69,7 @@ private:
         CloudEnhancementThreadTask& task, shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
     EXPORT static int32_t UpdateCloudEnhancementMovingPhotoInfo(int32_t fileId,
         shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+    EXPORT static void SaveExif(const string &filePath, const std::string &fieldName);
 #endif
 };
 } // namespace Media
