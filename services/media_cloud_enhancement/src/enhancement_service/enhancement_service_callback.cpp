@@ -136,6 +136,19 @@ static void RemoveVideo(int32_t stageVideoTaskStatus, const string &photoId)
     MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(photoId, false);
 }
 
+void EnhancementServiceCallback::SaveExif(const string &filePath, const std::string &fieldName)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, errorCode);
+    if (imageSource != nullptr) {
+        // 修改 exif 字段
+        errorCode = imageSource->ModifyImageProperty(0, fieldName, to_string(1), filePath);
+        CHECK_AND_PRINT_LOG(static_cast<int32_t>(errorCode) == E_OK,
+            "modify image property HwMnoteCloudEnhancementMode fail %{public}d", errorCode);
+    }
+}
+
 int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEnhancementFileInfo> info,
     CloudEnhancementThreadTask& task, shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
@@ -158,7 +171,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         }
     }
 
-    string primarySourcePath = MediaFileUtils::IsFileExists(editDataCameraPath) ? editDataSourcePath : info->filePath;
+    string primarySourcePath = MediaFileUtils::IsFileExists(editDataSourcePath) ? editDataSourcePath : info->filePath;
     MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", primarySourcePath.c_str());
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(primarySourcePath, editDataSourceBackPath), E_ERR,
         "Fail to move %{public}s to %{public}s", primarySourcePath.c_str(), editDataSourceBackPath.c_str());
@@ -167,14 +180,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         ret, errno);
         
     // 为 primarySourcePath 加exif
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(primarySourcePath, opts, errorCode);
-    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, E_ERR, "imageSource is nullptr err: %{public}d", errorCode);
-
-    // 修改 exif 字段
-    ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_CLOUD_ENHANCE_MODE, to_string(1), primarySourcePath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "modify image property longitude fail %{public}d", ret);
+    SaveExif(primarySourcePath, PHOTO_DATA_CLOUD_ENHANCE_MODE);
 
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
         string extension = MediaFileUtils::GetExtensionFromPath(info->filePath);
