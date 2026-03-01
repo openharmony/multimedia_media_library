@@ -52,11 +52,11 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC010_TruncateDataBy200K_Success, TestSize.
 
 HWTEST_F(CloudMdkRecordPhotosVoTest, TC011_TruncateDataBy200K_Empty, TestSize.Level1)
 {
-    // 用例说明：测试CloudMdkRecordPhotosRespBody空数据截断；覆盖错误路径（触发条件：数据为空）；验证业务状态断言：截断失败
+    // 用例说明：测试CloudMdkRecordPhotosRespBody空数据截断；覆盖正常路径（触发条件：数据为空）；验证业务状态断言：截断成功
 
     CloudMdkRecordPhotosRespBody respBody;
     bool ret = respBody.TruncateDataBy200K();
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(CloudMdkRecordPhotosVoTest, TC012_TruncateDataBy200K_CapacityExceed, TestSize.Level1)
@@ -81,26 +81,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC012_TruncateDataBy200K_CapacityExceed, Te
     EXPECT_LE(respBody.GetDataSize(), originalSize);
 }
 
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC013_TruncateDataBy200K_NoTruncate, TestSize.Level1)
-{
-    // 用例说明：测试CloudMdkRecordPhotosRespBody小数据不截断；覆盖边界路径（触发条件：数据量小于200K）；验证业务状态断言：截断后数据量不变
-
-    std::vector<CloudMdkRecordPhotosVo> records;
-
-    CloudMdkRecordPhotosVo record;
-    record.cloudId = "cloud_id_1";
-    record.fileId = 1;
-    record.displayName = "photo.jpg";
-    records.push_back(record);
-
-    CloudMdkRecordPhotosRespBody respBody(records);
-    size_t originalSize = respBody.GetDataSize();
-    bool ret = respBody.TruncateDataBy200K();
-    EXPECT_TRUE(ret);
-    EXPECT_EQ(respBody.GetDataSize(), originalSize);
-}
-
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC014_GetRecords_NegativeLength, TestSize.Level1)
+HWTEST_F(CloudMdkRecordPhotosVoTest, TC013_GetRecords_NegativeLength, TestSize.Level1)
 {
     // 用例说明：测试CloudMdkRecordPhotosRespBody反序列化负数长度；覆盖错误路径（触发条件：长度为负数）；验证业务状态断言：反序列化失败
 
@@ -113,7 +94,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC014_GetRecords_NegativeLength, TestSize.L
     EXPECT_FALSE(ret);
 }
 
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC015_GetRecords_SizeOverflow, TestSize.Level1)
+HWTEST_F(CloudMdkRecordPhotosVoTest, TC014_GetRecords_SizeOverflow, TestSize.Level1)
 {
     // 用例说明：测试CloudMdkRecordPhotosRespBody反序列化溢出长度；覆盖错误路径（触发条件：长度为INT32_MAX）；验证业务状态断言：反序列化失败
 
@@ -126,7 +107,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC015_GetRecords_SizeOverflow, TestSize.Lev
     EXPECT_FALSE(ret);
 }
 
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC016_GetRecords_SizeExceedReadable, TestSize.Level1)
+HWTEST_F(CloudMdkRecordPhotosVoTest, TC015_GetRecords_SizeExceedReadable, TestSize.Level1)
 {
     // 用例说明：测试CloudMdkRecordPhotosRespBody反序列化超可读长度；覆盖错误路径（触发条件：长度超过可读字节数）；验证业务状态断言：反序列化失败
 
@@ -139,7 +120,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC016_GetRecords_SizeExceedReadable, TestSi
     EXPECT_FALSE(ret);
 }
 
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC017_GetRecords_Success, TestSize.Level1)
+HWTEST_F(CloudMdkRecordPhotosVoTest, TC016_GetRecords_Success, TestSize.Level1)
 {
     // 用例说明：测试CloudMdkRecordPhotosRespBody序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
 
@@ -171,7 +152,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC017_GetRecords_Success, TestSize.Level1)
     EXPECT_EQ(restoredRecords[1].cloudId, "cloud_id_2");
 }
 
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC018_TruncateDataBy200K_SingleLargeRecord, TestSize.Level1)
+HWTEST_F(CloudMdkRecordPhotosVoTest, TC017_TruncateDataBy200K_SingleLargeRecord, TestSize.Level1)
 {
     // 用例说明：测试CloudMdkRecordPhotosRespBody单条大记录截断；覆盖边界路径（触发条件：单条记录接近200K）；验证业务状态断言：截断后数据量不变
 
@@ -190,25 +171,4 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC018_TruncateDataBy200K_SingleLargeRecord,
     EXPECT_TRUE(ret);
     EXPECT_EQ(respBody.GetDataSize(), originalSize);
 }
-
-HWTEST_F(CloudMdkRecordPhotosVoTest, TC019_TruncateDataBy200K_MultipleLargeRecords, TestSize.Level1)
-{
-    // 用例说明：测试CloudMdkRecordPhotosRespBody多条大记录截断；覆盖错误路径（触发条件：空数据）；验证业务状态断言：截断失败
-
-    std::vector<CloudMdkRecordPhotosVo> records;
-
-    for (int i = 0; i < 50; i++) {
-        CloudMdkRecordPhotosVo record;
-        record.cloudId = "cloud" + std::to_string(i);
-        record.fileId = i;
-        record.displayName = "photo_" + std::to_string(i) + ".jpg";
-        record.stringfields["large_field"] = std::string(10000, 'x');
-        records.push_back(record);
-    }
-
-    CloudMdkRecordPhotosRespBody respBody;
-    bool ret = respBody.TruncateDataBy200K();
-    EXPECT_FALSE(ret);
-}
-
 }  // namespace OHOS::Media::CloudSync

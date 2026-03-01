@@ -50,6 +50,44 @@ HWTEST_F(OnFetchRecordsVoTest, TC007_SplitBy20K_Success, TestSize.Level1)
     for (auto &body : reqBodyList) {
         totalRecords += body.GetOnFetchPhotoData().size();
     }
+    EXPECT_EQ(totalRecords, 2);
+    EXPECT_GT(reqBodyList.size(), 1u);
+}
+
+HWTEST_F(OnFetchRecordsVoTest, TC015_SplitBy20K_Empty, TestSize.Level1)
+{
+    // 用例说明：测试空数据处理；覆盖边界路径（触发条件：输入为空）；验证业务状态断言：处理成功或失败
+
+    OnFetchRecordsReqBody reqBody;
+    std::vector<OnFetchRecordsReqBody> reqBodyList;
+    bool ret = reqBody.SplitBy20K(reqBodyList);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(reqBodyList.size(), 0);
+}
+
+HWTEST_F(OnFetchRecordsVoTest, TC016_SplitBy20K_CapacityExceed, TestSize.Level1)
+{
+    // 用例说明：测试基本功能；覆盖正常路径（触发条件：正常输入）；验证业务状态断言：功能正常
+
+    OnFetchRecordsReqBody reqBody;
+
+    for (int i = 0; i < 100; i++) {
+        OnFetchPhotosVo photo;
+        photo.cloudId = "cloud_id_" + std::to_string(i);
+        photo.fileName = "photo_" + std::to_string(i) + ".jpg";
+        photo.fileId = i;
+        photo.stringfields["large_field"] = std::string(5000, 'x');
+        reqBody.AddOnFetchPhotoData(photo);
+    }
+
+    std::vector<OnFetchRecordsReqBody> reqBodyList;
+    bool ret = reqBody.SplitBy20K(reqBodyList);
+    ASSERT_TRUE(ret);
+
+    size_t totalRecords = 0;
+    for (auto &body : reqBodyList) {
+        totalRecords += body.GetOnFetchPhotoData().size();
+    }
     EXPECT_EQ(totalRecords, 100);
     EXPECT_GT(reqBodyList.size(), 1u);
 }

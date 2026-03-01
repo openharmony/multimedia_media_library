@@ -133,22 +133,22 @@ bool OnFetchRecordsReqBody::SplitBy20K(std::vector<OnFetchRecordsReqBody> &reqBo
             this->onFetchPhotos[index].Marshalling(data);
             parcelSize = data.GetDataSize();
             CHECK_AND_BREAK_INFO_LOG(parcelSize <= parcelCapacity,
-                                     "exceed capacity, split it. parcelSize: %{public}zu, parcelCapacity: %{public}zu",
-                                     parcelSize,
-                                     parcelCapacity);
+                "exceed capacity, split it. parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+                parcelSize,
+                parcelCapacity);
             childList.emplace_back(this->onFetchPhotos[index]);
         }
         CHECK_AND_BREAK_ERR_LOG(!childList.empty(),
-                                "dead loop detected, "
-                                "currIndex: %{public}zu, index: %{public}zu",
-                                currIndex,
-                                index);
+            "dead loop detected, "
+            "currIndex: %{public}zu, index: %{public}zu",
+            currIndex,
+            index);
         currIndex = index;
         reqBodyList.emplace_back(reqBody);
     }
     MEDIA_INFO_LOG("SplitBy20K completed, totalSize: %{public}zu, splited size: %{public}zu",
-                   this->onFetchPhotos.size(),
-                   reqBodyList.size());
+        this->onFetchPhotos.size(),
+        reqBodyList.size());
     return true;
 }
 
