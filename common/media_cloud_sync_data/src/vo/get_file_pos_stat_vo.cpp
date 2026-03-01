@@ -20,16 +20,19 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetFilePosStatRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling(this->statList, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Unmarshalling(this->statList, parcel), false, "statList");
+    return true;
 }
 
 bool GetFilePosStatRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling(this->statList, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling(this->statList, parcel), false, "statList");
+    return true;
 }
 
 std::string GetFilePosStatRespBody::ToString() const

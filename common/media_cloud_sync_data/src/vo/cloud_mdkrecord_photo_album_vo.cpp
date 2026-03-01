@@ -98,9 +98,6 @@ std::vector<CloudMdkRecordPhotoAlbumVo> CloudMdkRecordPhotoAlbumRespBody::GetPho
 
 bool CloudMdkRecordPhotoAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    if (baseAlbumUploadVo_.size() == 0) {
-        return false;
-    }
     CHECK_AND_RETURN_RET_LOG(
         parcel.WriteInt32(static_cast<int32_t>(baseAlbumUploadVo_.size())), false, "baseAlbumUploadVo.size()");
     for (const auto &entry : baseAlbumUploadVo_) {
@@ -112,16 +109,11 @@ bool CloudMdkRecordPhotoAlbumRespBody::Marshalling(MessageParcel &parcel) const
 bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhotoAlbumVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
-    if (len < 0) {
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
-    if ((size > readAbleSize) || (size > val.max_size())) {
-        return false;
-    }
-
+    bool isInValid = (size > readAbleSize) || (size > val.max_size());
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     val.clear();
     for (size_t i = 0; i < size; i++) {
         CloudMdkRecordPhotoAlbumVo nodeObj;
@@ -130,6 +122,7 @@ bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhot
     }
     return true;
 }
+
 bool CloudMdkRecordPhotoAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
     return GetRecords(this->baseAlbumUploadVo_, parcel);

@@ -77,6 +77,7 @@ group("test") {
     "unittest/medialibrary_photo_enhance_test:unittest",
     "unittest/medialibrary_cloud_asset_batch_download_test:unittest",
     "unittest/medialibrary_client_report_test:unittest",
+    "unittest/media_cloud_sync_data_vo_test:unittest",
   ]
 
   deps_custom_restore_unittest = [

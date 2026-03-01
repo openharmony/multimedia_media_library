@@ -81,10 +81,8 @@ bool PhotosVo::Unmarshalling(std::vector<PhotosVo> &val, MessageParcel &parcel)
 
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
-    if ((size > readAbleSize) || (size > val.max_size())) {
-        return false;
-    }
-
+    bool isInValid = (size > readAbleSize) || (size > val.max_size());
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     val.clear();
     for (size_t i = 0; i < size; i++) {
         PhotosVo nodeObj;

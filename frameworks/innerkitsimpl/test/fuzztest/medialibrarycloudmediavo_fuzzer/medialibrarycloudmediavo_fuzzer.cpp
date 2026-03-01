@@ -51,7 +51,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "on_modify_file_dirty_vo.h"
 #include "on_modify_records_photos_vo.h"
-#include "photo_album_vo.h"
 #include "photos_vo.h"
 #include "update_dirty_vo.h"
 #include "update_local_file_dirty_vo.h"
@@ -613,16 +612,6 @@ static void OnModifyRecordsPhotosVoFuzzer()
     onModifyRecordsPhotosReqBody->GetModifyRecords();
 }
 
-static void PhotoAlbumVoFuzzer()
-{
-    MessageParcel parcel;
-    shared_ptr<PhotoAlbumVo> photoAlbumVo = make_shared<PhotoAlbumVo>();
-    CHECK_AND_RETURN_LOG(photoAlbumVo != nullptr, "photoAlbumVo is nullptr");
-    photoAlbumVo->Marshalling(parcel);
-    photoAlbumVo->Unmarshalling(parcel);
-    photoAlbumVo->ToString();
-}
-
 static void PhotosVoFuzzer()
 {
     MessageParcel parcel;
@@ -737,7 +726,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnMdirtyRecordsAlbumVoFuzzer();
     OHOS::OnModifyFileDirtyVoFuzzer();
     OHOS::OnModifyRecordsPhotosVoFuzzer();
-    OHOS::PhotoAlbumVoFuzzer();
     OHOS::PhotosVoFuzzer();
     OHOS::UpdateDirtyVoFuzzer();
     OHOS::UpdateLocalFileDirtyVoFuzzer();

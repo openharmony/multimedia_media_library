@@ -135,9 +135,6 @@ bool GetCheckRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     int32_t size = 0;
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(size), false, "size");
-    if (size <= 0) {
-        return true;
-    }
     for (int32_t i = 0; i < size; ++i) {
         GetCheckRecordsRespBodyCheckData data;
         std::string key;
