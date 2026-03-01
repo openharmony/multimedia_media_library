@@ -14,6 +14,7 @@
  */
 
 #include "on_download_asset_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

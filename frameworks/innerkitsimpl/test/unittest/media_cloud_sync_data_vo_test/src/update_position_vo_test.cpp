@@ -14,6 +14,7 @@
  */
 
 #include "update_position_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

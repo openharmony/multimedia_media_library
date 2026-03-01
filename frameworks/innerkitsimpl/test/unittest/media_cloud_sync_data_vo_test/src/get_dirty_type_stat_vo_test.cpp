@@ -14,6 +14,7 @@
  */
 
 #include "get_dirty_type_stat_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 
