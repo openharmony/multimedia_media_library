@@ -23,6 +23,7 @@
 #include "cloud_media_sync_const.h"
 #include "media_log.h"
 #include "message_parcel.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnFetchRecordsReqBody::Unmarshalling(MessageParcel &parcel)
@@ -44,7 +45,7 @@ bool OnFetchRecordsReqBody::Marshalling(MessageParcel &parcel) const
 int32_t OnFetchRecordsReqBody::AddOnFetchPhotoData(const OnFetchPhotosVo &data)
 {
     this->onFetchPhotos.push_back(data);
-    return 0;
+    return E_OK;
 }
 
 std::vector<OnFetchPhotosVo> OnFetchRecordsReqBody::GetOnFetchPhotoData()

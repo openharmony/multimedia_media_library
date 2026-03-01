@@ -322,15 +322,11 @@ bool CloudMdkRecordPhotosRespBody::Marshalling(MessageParcel &parcel) const
 bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
-    if (len < 0) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
-    if ((size > readAbleSize) || (size > val.max_size())) {
-        return false;
-    }
-
+    bool isInValid = (size > readAbleSize) || (size > val.max_size());
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     val.clear();
     for (size_t i = 0; i < size; i++) {
         CloudMdkRecordPhotosVo nodeObj;

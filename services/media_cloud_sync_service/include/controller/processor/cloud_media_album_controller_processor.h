@@ -24,7 +24,6 @@
 #include "on_create_records_album_vo.h"
 #include "on_mdirty_records_album_vo.h"
 #include "photo_album_dto.h"
-#include "photo_album_vo.h"
 #include "report_failure_vo.h"
 #include "report_failure_dto.h"
 #include "cloud_media_define.h"

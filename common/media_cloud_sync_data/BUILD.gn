@@ -60,7 +60,6 @@ ohos_shared_library("media_cloud_sync_data") {
     "./src/vo/on_mdirty_records_album_vo.cpp",
     "./src/vo/on_modify_file_dirty_vo.cpp",
     "./src/vo/on_modify_records_photos_vo.cpp",
-    "./src/vo/photo_album_vo.cpp",
     "./src/vo/photos_vo.cpp",
     "./src/vo/query_data_vo.cpp",
     "./src/vo/update_data_vo.cpp",

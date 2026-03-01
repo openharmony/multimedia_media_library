@@ -21,6 +21,7 @@
 
 #include "media_itypes_utils.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDeleteRecordsPhoto::Unmarshalling(MessageParcel &parcel)
@@ -52,7 +53,7 @@ std::string OnDeleteRecordsPhoto::ToString() const
 int32_t OnDeleteRecordsPhotosReqBody::AddDeleteRecord(const OnDeleteRecordsPhoto &record)
 {
     this->records.push_back(record);
-    return 0;
+    return E_OK;
 }
 
 std::vector<OnDeleteRecordsPhoto> OnDeleteRecordsPhotosReqBody::GetDeleteRecords()

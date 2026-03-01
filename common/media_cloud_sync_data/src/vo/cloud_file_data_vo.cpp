@@ -51,11 +51,10 @@ bool CloudFileDataVo::Unmarshalling(std::map<std::string, CloudFileDataVo> &val,
 {
     int32_t size = 0;
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(size), false, "size");
-    CHECK_AND_RETURN_RET_LOG(size >= 0, false, "size invalid");
+    CHECK_AND_RETURN_RET_LOG(size >= 0, false, "size >= 0");
     size_t readAbleSize = parcel.GetReadableBytes();
-    if ((static_cast<size_t>(size) > readAbleSize) || static_cast<size_t>(size) > val.max_size()) {
-        return false;
-    }
+    bool isInValid = (static_cast<size_t>(size) > readAbleSize) || static_cast<size_t>(size) > val.max_size();
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     for (int32_t i = 0; i < size; i++) {
         std::string key;
         CHECK_AND_RETURN_RET_LOG(parcel.ReadString(key), false, "CloudFileDataVo key");
