@@ -105,7 +105,8 @@ bool CloudMdkRecordPhotoAlbumRespBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhotoAlbumVo> &val, MessageParcel &parcel)
+bool CloudMdkRecordPhotoAlbumRespBody::UnmarshallRecords(std::vector<CloudMdkRecordPhotoAlbumVo> &val,
+                                                         MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
     CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
@@ -124,7 +125,8 @@ bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhot
 
 bool CloudMdkRecordPhotoAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return GetRecords(this->baseAlbumUploadVo_, parcel);
+    CHECK_AND_RETURN_RET_LOG(UnmarshallRecords(this->baseAlbumUploadVo_, parcel), false, "baseAlbumUploadVo_");
+    return true;
 }
 
 std::string CloudMdkRecordPhotoAlbumRespBody::ToString() const

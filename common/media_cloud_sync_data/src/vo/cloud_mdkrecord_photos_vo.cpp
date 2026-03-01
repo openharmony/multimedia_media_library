@@ -318,7 +318,7 @@ bool CloudMdkRecordPhotosRespBody::Marshalling(MessageParcel &parcel) const
 }
 
 // 服务端->客户端；在客户端反序列化
-bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
+bool CloudMdkRecordPhotosRespBody::UnmarshallRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
     CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
@@ -337,7 +337,9 @@ bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo
 
 bool CloudMdkRecordPhotosRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return GetRecords(this->cloudPhotosUploadRecord_, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        UnmarshallRecords(this->cloudPhotosUploadRecord_, parcel), false, "cloudPhotosUploadRecord_");
+    return true;
 }
 
 std::string CloudMdkRecordPhotosRespBody::ToString() const

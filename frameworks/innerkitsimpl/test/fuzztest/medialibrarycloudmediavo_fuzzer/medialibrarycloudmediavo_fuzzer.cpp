@@ -106,11 +106,9 @@ static void CloudMdkrecordPhotoAlbumVoFuzzer()
     shared_ptr<CloudMdkRecordPhotoAlbumRespBody> cloudMdkRecordPhotoAlbumRespBody =
         make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     CHECK_AND_RETURN_LOG(cloudMdkRecordPhotoAlbumRespBody != nullptr, "cloudMdkRecordPhotoAlbumRespBody is nullptr");
-    vector<CloudMdkRecordPhotoAlbumVo> val;
     cloudMdkRecordPhotoAlbumRespBody->baseAlbumUploadVo = { CloudMdkRecordPhotoAlbumVo() };
     cloudMdkRecordPhotoAlbumRespBody->GetPhotoAlbumRecords();
     cloudMdkRecordPhotoAlbumRespBody->Marshalling(parcel);
-    cloudMdkRecordPhotoAlbumRespBody->GetRecords(val, parcel);
     cloudMdkRecordPhotoAlbumRespBody->Unmarshalling(parcel);
 }
 
@@ -139,8 +137,6 @@ static void CloudMdkrecordPhotosVoFuzzer()
     shared_ptr<CloudMdkRecordPhotosRespBody> cloudMdkRecordPhotosRespBody =
         make_shared<CloudMdkRecordPhotosRespBody>();
     CHECK_AND_RETURN_LOG(cloudMdkRecordPhotosRespBody != nullptr, "cloudMdkRecordPhotosRespBody is nullptr");
-    vector<CloudMdkRecordPhotosVo> val;
-    cloudMdkRecordPhotosRespBody->GetRecords(val, parcel);
     cloudMdkRecordPhotosRespBody->Marshalling(parcel);
     cloudMdkRecordPhotosRespBody->Unmarshalling(parcel);
     cloudMdkRecordPhotosRespBody->ToString();

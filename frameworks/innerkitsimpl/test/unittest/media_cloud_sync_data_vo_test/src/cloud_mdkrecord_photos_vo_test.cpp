@@ -90,8 +90,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC013_GetRecords_NegativeLength, TestSize.L
     parcel.WriteInt32(-1);
 
     parcel.RewindRead(0);
-    std::vector<CloudMdkRecordPhotosVo> val;
-    bool ret = CloudMdkRecordPhotosRespBody().GetRecords(val, parcel);
+    bool ret = CloudMdkRecordPhotosRespBody().Unmarshalling(parcel);
     EXPECT_FALSE(ret);
 }
 
@@ -103,8 +102,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC014_GetRecords_SizeOverflow, TestSize.Lev
     parcel.WriteInt32(INT32_MAX);
 
     parcel.RewindRead(0);
-    std::vector<CloudMdkRecordPhotosVo> val;
-    bool ret = CloudMdkRecordPhotosRespBody().GetRecords(val, parcel);
+    bool ret = CloudMdkRecordPhotosRespBody().Unmarshalling(parcel);
     EXPECT_FALSE(ret);
 }
 
@@ -116,8 +114,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC015_GetRecords_SizeExceedReadable, TestSi
     parcel.WriteInt32(1000);
 
     parcel.RewindRead(0);
-    std::vector<CloudMdkRecordPhotosVo> val;
-    bool ret = CloudMdkRecordPhotosRespBody().GetRecords(val, parcel);
+    bool ret = CloudMdkRecordPhotosRespBody().Unmarshalling(parcel);
     EXPECT_FALSE(ret);
 }
 
@@ -139,15 +136,15 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC016_GetRecords_Success, TestSize.Level1)
     record2.displayName = "photo2.jpg";
     originalRecords.push_back(record2);
 
+    CloudMdkRecordPhotosRespBody respBody(originalRecords);
     OHOS::MessageParcel parcel;
-    bool ret = CloudMdkRecordPhotosRespBody(originalRecords).Marshalling(parcel);
+    bool ret = respBody.Marshalling(parcel);
     ASSERT_TRUE(ret);
 
-    parcel.RewindRead(0);
-    std::vector<CloudMdkRecordPhotosVo> restoredRecords;
-    ret = CloudMdkRecordPhotosRespBody().GetRecords(restoredRecords, parcel);
+    ret = respBody.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
+    std::vector<CloudMdkRecordPhotosVo> restoredRecords = respBody.GetPhotosRecords();
     EXPECT_EQ(restoredRecords.size(), 2);
     EXPECT_EQ(restoredRecords[0].cloudId, "cloud_id_1");
     EXPECT_EQ(restoredRecords[1].cloudId, "cloud_id_2");
