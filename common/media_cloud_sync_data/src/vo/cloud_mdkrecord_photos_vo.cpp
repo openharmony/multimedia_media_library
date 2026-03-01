@@ -308,7 +308,6 @@ std::vector<CloudMdkRecordPhotosVo> CloudMdkRecordPhotosRespBody::GetPhotosRecor
 
 bool CloudMdkRecordPhotosRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET_LOG(cloudPhotosUploadRecord_.size() >= 0, false, "CcloudPhotosUploadRecord_.size() >= 0");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(cloudPhotosUploadRecord_.size())),
                              false,
                              "cloudPhotosUploadRecord.size()");
@@ -364,7 +363,7 @@ size_t CloudMdkRecordPhotosRespBody::GetDataSize() const
 
 bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
 {
-    CHECK_AND_RETURN_RET_LOG(!this->cloudPhotosUploadRecord_.empty(), false, "cloudPhotosUploadRecord not empty");
+    CHECK_AND_RETURN_RET_LOG(!this->cloudPhotosUploadRecord_.empty(), true, "cloudPhotosUploadRecord not empty");
     constexpr size_t PARCEL_GAP = 4800;
     constexpr size_t MAX_CAPACITY = 204800;
     const size_t parcelCapacity = MAX_CAPACITY - PARCEL_GAP;

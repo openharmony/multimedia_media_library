@@ -52,6 +52,7 @@ HWTEST_F(OnDentryFileVoTest, TC014_SplitBy20K_Success, TestSize.Level1)
         totalRecords += body.GetOnDentryFileRecord().size();
     }
     EXPECT_EQ(totalRecords, 2);
+    EXPECT_GT(reqBodyList.size(), 1u);
 }
 
 HWTEST_F(OnDentryFileVoTest, TC015_SplitBy20K_Empty, TestSize.Level1)
