@@ -141,7 +141,6 @@ public:
     CloudMdkRecordPhotosRespBody(std::vector<CloudMdkRecordPhotosVo> record) : cloudPhotosUploadRecord_(record)
     {}
     std::vector<CloudMdkRecordPhotosVo> GetPhotosRecords();
-    bool GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel);
 
 public:  // functions of Parcelable.
     virtual ~CloudMdkRecordPhotosRespBody() = default;
@@ -154,6 +153,9 @@ public:  // basic functions
 public:  // member functions
     size_t GetDataSize() const;
     bool TruncateDataBy200K();
+
+private:
+    bool UnmarshallRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MDKRECORD_PHOTOS_VO_H
