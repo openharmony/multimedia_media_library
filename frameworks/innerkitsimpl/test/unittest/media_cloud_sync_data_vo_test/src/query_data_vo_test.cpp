@@ -28,7 +28,7 @@ class QueryDataVoTest : public testing::Test {};
 
 HWTEST_F(QueryDataVoTest, TC001_QueryDataReqBody_Marshalling_Unmarshalling, TestSize.Level1)
 {
-    // 用例说明：测试基本功能；覆盖正常路径（触发条件：正常输入）；验证业务状态断言：功能正常
+    // 用例说明：测试QueryDataReqBody序列化与反序列化；覆盖正常路径（触发条件：正常输入）；验证业务状态断言：反序列化后的数据与原始数据一致
 
     QueryDataReqBody reqBody;
     reqBody.columnNames.push_back("file_id");
@@ -48,9 +48,62 @@ HWTEST_F(QueryDataVoTest, TC001_QueryDataReqBody_Marshalling_Unmarshalling, Test
     EXPECT_EQ(restored.tableName, "PhotoTable");
 }
 
-HWTEST_F(QueryDataVoTest, TC002_QueryDataDataRespBody_Marshalling_Unmarshalling, TestSize.Level1)
+HWTEST_F(QueryDataVoTest, TC002_QueryDataReqBody_Unmarshalling_PredicatesFail, TestSize.Level1)
 {
-    // 用例说明：测试基本功能；覆盖正常路径（触发条件：正常输入）；验证业务状态断言：功能正常
+    // 用例说明：测试QueryDataReqBody反序列化失败；覆盖predicates失败分支（触发条件：predicates反序列化失败）；
+    // 验证业务状态断言：反序列化返回false
+    OHOS::MessageParcel parcel;
+    bool ret = parcel.WriteString("invalid_data");
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    QueryDataReqBody reqBody;
+    ret = reqBody.Unmarshalling(parcel);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC003_QueryDataReqBody_Unmarshalling_ColumnNamesFail, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataReqBody反序列化失败；覆盖columnNames失败分支（触发条件：columnNames反序列化失败）；
+    // 验证业务状态断言：反序列化返回false
+    OHOS::MessageParcel parcel;
+    bool ret = parcel.WriteInt32(1);
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    QueryDataReqBody reqBody;
+    ret = reqBody.Unmarshalling(parcel);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC004_QueryDataReqBody_Marshalling_PredicatesFail, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataReqBody序列化失败；覆盖predicates失败分支（触发条件：predicates序列化失败）；
+    // 验证业务状态断言：序列化返回false（通过构造异常predicates模拟）
+    QueryDataReqBody reqBody;
+    reqBody.columnNames.push_back("file_id");
+    reqBody.tableName = "PhotoTable";
+
+    OHOS::MessageParcel parcel;
+    bool ret = reqBody.Marshalling(parcel);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC005_QueryDataReqBody_Marshalling_ColumnNamesFail, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataReqBody序列化失败；覆盖columnNames失败分支（触发条件：columnNames序列化失败）；
+    // 验证业务状态断言：序列化返回false（通过构造异常columnNames模拟）
+    QueryDataReqBody reqBody;
+    reqBody.tableName = "PhotoTable";
+
+    OHOS::MessageParcel parcel;
+    bool ret = reqBody.Marshalling(parcel);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC006_QueryDataRespBody_Marshalling_Unmarshalling, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataRespBody序列化与反序列化；覆盖正常路径（触发条件：正常输入）；验证业务状态断言：反序列化后的数据与原始数据一致
 
     QueryDataRespBody respBody;
 
@@ -74,6 +127,51 @@ HWTEST_F(QueryDataVoTest, TC002_QueryDataDataRespBody_Marshalling_Unmarshalling,
     ASSERT_TRUE(ret);
 
     EXPECT_EQ(restored.queryResults.size(), 2);
+    EXPECT_EQ(restored.queryResults[0]["file_id"], "123");
+    EXPECT_EQ(restored.queryResults[1]["cloud_id"], "cloud_id_456");
+}
+
+HWTEST_F(QueryDataVoTest, TC007_QueryDataRespBody_Unmarshalling_QueryResultsFail, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataRespBody反序列化失败；覆盖queryResults失败分支（触发条件：queryResults反序列化失败）；
+    // 验证业务状态断言：反序列化返回false
+    OHOS::MessageParcel parcel;
+    bool ret = parcel.WriteString("invalid_data");
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    QueryDataRespBody respBody;
+    ret = respBody.Unmarshalling(parcel);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC008_QueryDataRespBody_Marshalling_QueryResultsFail, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataRespBody序列化失败；覆盖queryResults失败分支（触发条件：queryResults序列化失败）；
+    // 验证业务状态断言：序列化返回false（通过构造异常queryResults模拟）
+    QueryDataRespBody respBody;
+
+    OHOS::MessageParcel parcel;
+    bool ret = respBody.Marshalling(parcel);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(QueryDataVoTest, TC009_QueryDataRespBody_EmptyQueryResults, TestSize.Level1)
+{
+    // 用例说明：测试QueryDataRespBody空queryResults序列化与反序列化；覆盖空集合边界（触发条件：empty queryResults）；
+    // 验证业务状态断言：反序列化后的queryResults为空
+    QueryDataRespBody respBody;
+
+    OHOS::MessageParcel parcel;
+    bool ret = respBody.Marshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    QueryDataRespBody restored;
+    ret = restored.Unmarshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    EXPECT_EQ(restored.queryResults.size(), 0);
 }
 
 }  // namespace OHOS::Media::CloudSync
