@@ -14,6 +14,7 @@
  */
 
 #include "update_local_file_dirty_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

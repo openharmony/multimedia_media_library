@@ -19,7 +19,6 @@
 
 #include <sstream>
 
-#include "media_itypes_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media::CloudSync {

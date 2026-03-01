@@ -14,6 +14,7 @@
  */
 
 #include "on_delete_records_album_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

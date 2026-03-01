@@ -14,6 +14,7 @@
  */
 
 #include "get_video_to_cache_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

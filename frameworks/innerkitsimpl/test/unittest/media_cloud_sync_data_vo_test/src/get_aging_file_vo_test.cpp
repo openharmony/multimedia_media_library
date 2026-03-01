@@ -14,6 +14,7 @@
  */
 
 #include "get_aging_file_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

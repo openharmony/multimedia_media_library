@@ -14,6 +14,7 @@
  */
 
 #include "on_copy_records_photos_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

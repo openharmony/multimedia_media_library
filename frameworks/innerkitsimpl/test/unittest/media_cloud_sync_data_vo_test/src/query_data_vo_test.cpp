@@ -14,6 +14,7 @@
  */
 
 #include "query_data_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

@@ -14,6 +14,7 @@
  */
 
 #include "on_fetch_records_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

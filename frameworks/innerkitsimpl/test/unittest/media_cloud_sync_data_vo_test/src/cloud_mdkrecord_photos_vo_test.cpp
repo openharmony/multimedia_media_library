@@ -14,6 +14,7 @@
  */
 
 #include "cloud_mdkrecord_photos_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 

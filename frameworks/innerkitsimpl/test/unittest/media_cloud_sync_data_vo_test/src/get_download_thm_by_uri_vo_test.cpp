@@ -14,6 +14,7 @@
  */
 
 #include "get_download_thm_by_uri_vo.h"
+
 #include <gtest/gtest.h>
 #include <message_parcel.h>
 
