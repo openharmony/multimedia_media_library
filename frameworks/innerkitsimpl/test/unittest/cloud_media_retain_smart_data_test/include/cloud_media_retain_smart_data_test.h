@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
-#define MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
+#ifndef FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_RETAIN_SMART_DATA_TEST_H
+#define FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_RETAIN_SMART_DATA_TEST_H
 
 #include <gtest/gtest.h>
- 
-namespace OHOS::Media::Background {
-class MediaLibraryThumbnailAclTaskTest : public testing::Test {
+
+namespace OHOS {
+namespace Media {
+class CloudMediaRetainSmartDataTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
 };
-}  // namespace OHOS::Media::Background
+} // namespace Media
+} // namespace OHOS
 
-#endif // MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
+#endif // FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_RETAIN_SMART_DATA_TEST_H

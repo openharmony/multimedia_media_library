@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_BACKGROUND_I_MEDIA_BACKGROUND_TASK_H
-#define OHOS_MEDIA_BACKGROUND_I_MEDIA_BACKGROUND_TASK_H
+#ifndef COMMON_UTILS_TEST_MADVISE_UTILS_TEST_H_
+#define COMMON_UTILS_TEST_MADVISE_UTILS_TEST_H_
 
-namespace OHOS::Media::Background {
-class IMediaBackGroundTask {
+#include <gtest/gtest.h>
+
+namespace OHOS {
+namespace Media {
+
+class MadviseUtilsTest : public testing::Test {
 public:
-    virtual bool Accept() = 0;
-    virtual void Execute() = 0;
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp();
+    void TearDown();
 };
-}  // namespace OHOS::Media::Background
-#endif  // OHOS_MEDIA_BACKGROUND_I_MEDIA_BACKGROUND_TASK_H
+
+} 
+} 
+
+#endif // COMMON_UTILS_TEST_MADVISE_UTILS_TEST_H_
