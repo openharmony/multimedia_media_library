@@ -36,6 +36,7 @@
 #include "picture.h"
 #include "image_type.h"
 #include "media_edit_utils.h"
+#include "mimetype_utils.h"
 
 using namespace std;
 
