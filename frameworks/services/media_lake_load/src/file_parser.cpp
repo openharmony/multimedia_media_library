@@ -496,7 +496,6 @@ void FileParser::SetByPhotosRowData(const PhotosRowData &rowData)
     SetFileId(rowData.fileId);
     SetAlbumInfo(rowData.ownerAlbumId, rowData.ownerPackage, rowData.packageName);
     fileInfo_.cloudPath = rowData.data;
-    fileInfo_.dateTaken = rowData.dateTaken;
     fileInfo_.editTime = rowData.editTime;
 }
 
@@ -522,6 +521,7 @@ NativeRdb::ValuesBucket FileParser::GetAssetUpdateValues()
 {
     NativeRdb::ValuesBucket values = GetAssetCommonValues();
     SetAssetEditValues(values);
+    values.Put(MediaColumn::MEDIA_DATE_TAKEN, fileInfo_.dateTaken);
     return values;
 }
 
