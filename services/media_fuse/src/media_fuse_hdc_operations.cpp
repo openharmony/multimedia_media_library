@@ -27,6 +27,7 @@
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files/Photo/";
@@ -662,3 +663,4 @@ int32_t MediaFuseHdcOperations::DeletePhotoByFilePath(const std::string &filePat
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

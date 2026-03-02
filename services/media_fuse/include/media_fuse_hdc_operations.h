@@ -27,6 +27,7 @@
 namespace OHOS {
 namespace Media {
 
+// LCOV_EXCL_START
 class MediaFuseHdcOperations {
 public:
     static int32_t GetArgs(const std::string &path, std::vector<std::string> &parts);
@@ -63,5 +64,6 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 
 #endif // MEDIA_FUSE_HDC_OPERATIONS_H

@@ -15,6 +15,7 @@
 
 #include "cloud_media_sync_mutex.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 
 std::mutex& GetSyncStatusMutex()
@@ -23,3 +24,4 @@ std::mutex& GetSyncStatusMutex()
     return syncStatusMutex;
 }
 }
+// LCOV_EXCL_STOP

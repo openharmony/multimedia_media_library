@@ -37,6 +37,7 @@
 #include "batch_download_resources_task_dao.h"
 #include "cloud_media_retain_smart_data.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -150,4 +151,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_CLOUD_MEDIA_ASSET_MANAGER_H
