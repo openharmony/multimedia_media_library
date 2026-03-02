@@ -41,6 +41,7 @@
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
 #include "medialibrary_unistore_manager.h"
+#include "lake_file_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "media_edit_utils.h"
@@ -464,6 +465,9 @@ int32_t CloudMediaDownloadService::GetFileId(const PhotosPo &photosPo)
  
 void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoVec)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+    std::vector<std::string> logFileIds;
     for (const auto &photosPo : photosPoVec) {
         int32_t mediaTypePhoto = photosPo.mediaType.value_or(0);
         if (mediaTypePhoto != static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
@@ -484,15 +488,23 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
         CHECK_AND_CONTINUE_INFO_LOG(videoMode == static_cast<int32_t>(VideoMode::DEFAULT), "photosPo has scannered");
         string logVideoPath = photosPo.data.value_or("");
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
-        videoModeData->SetFilePath(logVideoPath);
+        string realPath = LakeFileUtils::GetAssetRealPath(logVideoPath);
+        string absVideoPath;
+        if (!PathToRealPath(realPath, absVideoPath)) {
+            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            continue;
+        }
+        videoModeData->SetFilePath(realPath);
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
         CHECK_AND_CONTINUE_INFO_LOG(err == E_OK, "Failed to extract metadata for photosPo: %{public}s",
             DfxUtils::GetSafePath(logVideoPath).c_str());
         int32_t videoModeUpdate = videoModeData->GetVideoMode();
         MEDIA_INFO_LOG("photosPo videoMode=%{public}d", videoModeUpdate);
-        auto photoRet = PhotoVideoModeOperation::UpdatePhotosVideoMode(videoModeUpdate, fileId);
-        CHECK_AND_RETURN_LOG(photoRet == NativeRdb::E_OK,
-            "UpdatePhotosVideoMod photostab failed, error id: %{public}d", photoRet);
+        if (videoModeUpdate == static_cast<int32_t>(VideoMode::LOG_VIDEO)) {
+            logFileIds.push_back(std::to_string(fileId));
+        }
+        auto ret = PhotoVideoModeOperation::BatchUpdatePhotosVideoMode(rdbStore, logFileIds);
+        CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to UpdatePhotosVideoMode, ret: %{public}d", ret);
     }
 }
 
