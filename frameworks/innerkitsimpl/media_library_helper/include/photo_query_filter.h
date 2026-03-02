@@ -45,6 +45,7 @@ public:
         ConfigType burstCoverOnly = ConfigType::INCLUDE;
         ConfigType syncStatusConfig = ConfigType::EXCLUDE;
         ConfigType cleanFlagConfig = ConfigType::EXCLUDE;
+        ConfigType criticalConfig = ConfigType::EXCLUDE;
     };
 
     static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option);
