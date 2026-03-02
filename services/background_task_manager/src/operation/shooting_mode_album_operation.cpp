@@ -196,7 +196,6 @@ static int32_t ExtractMetadata(std::unique_ptr<Metadata> &data, const CheckedSho
     data->SetFileMediaType(photoInfo.mediaType);
     if (data->GetFileMediaType() == MediaType::MEDIA_TYPE_IMAGE) {
         err = MetadataExtractor::ExtractImageMetadata(data);
-        data->SetVideoMode(0);
     } else {
         err = MetadataExtractor::ExtractAVMetadata(data);
     }

@@ -48,6 +48,7 @@ Metadata::Metadata()
     lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
     dynamicRangeType_(FILE_DYNAMIC_RANGE_TYPE_DEFAULT),
     hdrMode_(FILE_HDR_MODE_DEFAULT),
+    videoMode_(FILE_VIDEO_MODE_DEFAULT),
     aspectRatio_(FILE_ASPECT_RATIO_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
@@ -62,8 +63,7 @@ Metadata::Metadata()
     frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
     detailTime_(FILE_DETAIL_TIME_DEFAULT), burstCoverLevel_(BURST_COVER_LEVEL_DEFAULT),
     stageVideoTaskStatus_(STAGE_VIDEO_TASK_STATUS),
-    fileSourceType_(FILE_FILE_SOURCE_TYPE_DEFAULT),
-    videoMode_(FILE_VIDEO_MODE_DEFAULT)
+    fileSourceType_(FILE_FILE_SOURCE_TYPE_DEFAULT)
 {
     Init();
 }
