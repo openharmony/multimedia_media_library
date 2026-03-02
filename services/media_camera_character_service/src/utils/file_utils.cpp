@@ -355,7 +355,9 @@ void FileUtils::SavePhotoWithFilters(const std::string &inputPath, const std::st
 
     // 3.添加水印
     tracer.Start("MediaChangeEffect::TakeEffect");
-    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
+    int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
     tracer.Finish();
     if (ret != E_OK) {
         // 若失败, 则用裸图代替
