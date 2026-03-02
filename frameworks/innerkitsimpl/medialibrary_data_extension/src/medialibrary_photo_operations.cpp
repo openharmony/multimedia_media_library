@@ -3327,6 +3327,15 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     int32_t errCode = CheckFileAssetStatus(fileAsset);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     int32_t fileId = fileAsset->GetId();
+    int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(subtype,
+        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType());
+    string fileIdStr = to_string(fileId);
+    if (isMovingPhoto && fileAsset->GetPhotoEditTime() == 0) {
+        // For non-edited moving photo, when switching effect mode to default,
+        // thumbnail needs to be deleted before CHECK_AND_RETURN.
+        ThumbnailService::GetInstance()->HasInvalidateThumbnail(fileIdStr, PhotoColumn::PHOTOS_TABLE);
+    }
     CHECK_AND_RETURN_RET_INFO_LOG(fileAsset->GetPhotoEditTime() !=0, E_OK, "File %{public}d is not edit", fileId);
 
     string path = fileAsset->GetFilePath();
@@ -3335,7 +3344,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
 
-    int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
     bool revertMovingPhotoGraffiti = false;
     if (fileAsset->GetOriginalSubType() == movingPhotoSubtype &&
@@ -3362,8 +3370,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Failed to delete asset, path:%{private}s", path.c_str());
     }
 
-    if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
-        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
+    if (isMovingPhoto) {
         RemoveMovingPhotoVideo(sourcePath, path);
     }
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
@@ -3373,7 +3380,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
-    string fileIdStr = to_string(fileId);
     ThumbnailService::GetInstance()->HasInvalidateThumbnail(fileIdStr, PhotoColumn::PHOTOS_TABLE);
     ScanFile(path, true, true, true);
     if (revertMovingPhotoGraffiti) {
