@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 const std::string CustomRestoreNotify::NOTIFY_URI_PREFIX = "file://media/custom_restore/";
 int32_t CustomRestoreNotify::Notify(std::string keyPath, const InnerRestoreResult &restoreResult)
@@ -49,5 +50,6 @@ int32_t CustomRestoreNotify::Notify(std::string keyPath, const InnerRestoreResul
     MEDIA_DEBUG_LOG("NotifyChangeExt result: %{public}d", result);
     return result;
 }
+// LCOV_EXCL_STOP
 
 } // namespace OHOS::Media

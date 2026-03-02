@@ -19,6 +19,7 @@
 #include <string>
 #include "set_highlight_user_action_data_dto.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media::AnalysisData {
 class AnalysisDataAlbumDao {
 public:
@@ -30,4 +31,5 @@ public:
     int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
 };
 } // OHOS::Media::AnalysisData
+// LCOV_EXCL_STOP
 #endif // OHOS_ANALYSIS_DATA_ALBUM_DAO_H

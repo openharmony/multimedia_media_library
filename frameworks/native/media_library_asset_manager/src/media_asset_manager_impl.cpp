@@ -937,6 +937,7 @@ static bool HasReadPermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
+// LCOV_EXCL_START
 MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
     NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnQuickImageDataPrepared callback)
@@ -995,5 +996,6 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAs
         return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

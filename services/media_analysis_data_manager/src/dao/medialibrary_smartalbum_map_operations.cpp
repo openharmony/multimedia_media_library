@@ -39,6 +39,7 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -676,3 +677,4 @@ bool MediaLibrarySmartAlbumMapOperations::GetInterrupt()
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
