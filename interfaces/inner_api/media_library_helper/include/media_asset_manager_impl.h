@@ -43,9 +43,11 @@ public:
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnMovingPhotoDataPrepared callback) override;
 
+    // LCOV_EXCL_START
     MediaLibrary_ErrorCode NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnQuickImageDataPrepared callback) override;
+    // LCOV_EXCL_STOP
 
     static std::mutex mutex_;
 

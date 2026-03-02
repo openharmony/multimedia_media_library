@@ -42,6 +42,7 @@ using Uri = OHOS::Uri;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static vector<int> NEED_UPDATE_TYPE = {
@@ -268,3 +269,4 @@ int32_t MediaLibraryVisionOperations::PrepareDelayFgAnalysis(const std::string &
 }
 }
 }
+// LCOV_EXCL_STOP

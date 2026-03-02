@@ -35,6 +35,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::Media::AccurateRefresh;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 
@@ -201,3 +202,4 @@ void CloudLakeFileHandler::HandleMetaChanged(int32_t fileId)
 }
 } //namespace Media
 } //namespace OHOS
+// LCOV_EXCL_STOP

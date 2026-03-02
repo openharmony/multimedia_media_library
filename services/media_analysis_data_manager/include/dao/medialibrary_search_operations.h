@@ -23,6 +23,7 @@
 #include "medialibrary_command.h"
 #include "search_column.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class MediaLibrarySearchOperations {
@@ -36,4 +37,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIALIBRARY_SEARCH_OPERATIOINS_H

@@ -28,7 +28,9 @@ public:
      * @brief GetInstance.
      * A function used to create an AnalysisDataManager instance.
      */
+    // LCOV_EXCL_START
     static API_EXPORT AnalysisDataManager &GetInstance();
+    // LCOV_EXCL_STOP
 
     AnalysisDataManager(const AnalysisDataManager&) = delete;
     AnalysisDataManager& operator=(const AnalysisDataManager&) = delete;

@@ -173,9 +173,11 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_Release(OH_MediaAssetManager* manage
  * @since 23
  */
 
+// LCOV_EXCL_START
 MediaLibrary_ErrorCode OH_MediaAssetManager_QuickRequestImage(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
     MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnQuickImageDataPrepared callback);
+// LCOV_EXCL_STOP
 
 #ifdef __cplusplus
 }

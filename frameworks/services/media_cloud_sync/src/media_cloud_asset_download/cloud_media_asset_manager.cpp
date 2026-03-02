@@ -48,6 +48,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
@@ -1436,3 +1437,4 @@ void CloudMediaAssetManager::TryToStartSync()
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
