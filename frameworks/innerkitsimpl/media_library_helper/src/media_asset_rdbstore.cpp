@@ -27,11 +27,15 @@
 #include "vision_column.h"
 #include "rdb_sql_utils.h"
 #include "media_string_utils.h"
+#include "media_column.h"
+#include "ipc_skeleton.h"
+#include "permission_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
 using namespace OHOS::Media::MediaOperation;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -40,6 +44,7 @@ const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.
 constexpr uint32_t BASE_USER_RANGE = 200000;
 const int32_t ARG_COUNT = 2;
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+static const std::string CONST_MEDIA_SECURE_ALBUM = "const.media.secure_album";
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
     OperationObject::UFM_AUDIO,
@@ -222,10 +227,23 @@ static string GetQueryFilter(const string &tableName)
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     }
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
-        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        std::string filter = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
             PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
             to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+            // Check if the caller has MANAGE_RISK_PHOTOS permission
+            AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+            int res = AccessTokenKit::VerifyAccessToken(tokenCaller, MANAGE_RISK_PHOTOS);
+            if (res != PermissionState::PERMISSION_GRANTED) {
+                filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
+                MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission denied, filter: %{public}s", filter.c_str());
+            }
+        }
+#endif
+        MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission granted, filter: %{public}s", filter.c_str());
+        return filter;
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
