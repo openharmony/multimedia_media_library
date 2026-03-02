@@ -407,30 +407,6 @@ bool SendableMediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
     return true;
 }
 
-static bool CheckKeyInPhotoAlbumEnum(const std::string &inputKey, FetchOptionType fetchOptType)
-{
-    static const std::unordered_set<std::string> photoValidKeys = []() {
-        std::unordered_set<std::string> keys;
-        keys.reserve(IMAGEVIDEOKEY_ENUM_PROPERTIES.size());
-        for (const auto& pair : IMAGEVIDEOKEY_ENUM_PROPERTIES) {
-            keys.insert(pair.second);
-        }
-        return keys;
-    } ();
-    static const std::unordered_set<std::string> albumValidKeys = []() {
-        std::unordered_set<std::string> keys;
-        keys.reserve(ALBUMKEY_ENUM_PROPERTIES.size());
-        for (const auto& pair : ALBUMKEY_ENUM_PROPERTIES) {
-            keys.insert(pair.second);
-        }
-        return keys;
-    } ();
-    if (fetchOptType == ASSET_FETCH_OPT) {
-        return photoValidKeys.find(inputKey) != photoValidKeys.end();
-    }
-    return albumValidKeys.find(inputKey) != albumValidKeys.end();
-}
-
 static bool CheckPublicKey(const std::string &inputKey, FetchOptionType fetchOptType)
 {
     if (fetchOptType == ASSET_FETCH_OPT) {
@@ -455,11 +431,7 @@ bool SendableMediaLibraryNapiUtils::IsPredicateValid(shared_ptr<DataShareAbsPred
         CHECK_COND_RET(std::holds_alternative<std::string>(item.GetSingle(FIELD_IDX).value), false,
             "IsPredicateValid: 23+ operation %{public}d field(key) is not string type", item.operation);
         std::string key = static_cast<string>(item.GetSingle(FIELD_IDX));
-        if (MediaLibraryNapiUtils::IsSystemApp()) {
-            CHECK_COND_RET(CheckKeyInPhotoAlbumEnum(key, fetchOptType), false,
-                "IsPredicateValid: system app operation %{public}d has invalid key %{public}s fetch type %{public}d",
-                item.operation, key.c_str(), fetchOptType);
-        } else {
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
             CHECK_COND_RET(CheckPublicKey(key, fetchOptType), false,
                 "IsPredicateValid: operation %{public}d has invalid key %{public}s fetch type %{public}d",
                 item.operation, key.c_str(), fetchOptType);
