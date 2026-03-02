@@ -636,6 +636,7 @@ int32_t CloudMediaDataClientHandler::CleanAttachment(const std::vector<std::stri
     CleanAttachmentReqBody reqBody;
     CleanAttachmentRespBody respBody;
     reqBody.cloudIdList = cloudIdList;
+    respBody.attachmentSize = 0;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_CLEAN_ATTACHMENT);
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
             .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
