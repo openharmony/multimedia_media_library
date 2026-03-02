@@ -115,6 +115,9 @@ static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
 
+const int32_t PACKOPTION_QUALITY = 90;
+const int32_t PACKOPTION_QUALITY_HEIF = 95;
+
 enum ImageFileType : int32_t {
     JPEG = 1,
     HEIF = 2
@@ -4681,7 +4684,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
     tracer.Start("MediaChangeEffect::TakeEffect");
-    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
+    int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
     tracer.Finish();
     if (ret != E_OK) {
         HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} MultistagesCapture, TakeEffect error. ret = %{public}d",
