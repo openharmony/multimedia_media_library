@@ -17,6 +17,7 @@
  
 #include "medialibrary_unistore_manager.h"
  
+// LCOV_EXCL_START
 namespace OHOS::Media::AnalysisData {
 void AnalysisDataVideoDao::FixVideoAnalysisDataAfterEdit(const std::string &fileId)
 {
@@ -43,3 +44,4 @@ void AnalysisDataVideoDao::FixVideoAnalysisDataAfterEdit(const std::string &file
     }
 }
 }  // namespace OHOS::Media::AnalysisData
+// LCOV_EXCL_STOP

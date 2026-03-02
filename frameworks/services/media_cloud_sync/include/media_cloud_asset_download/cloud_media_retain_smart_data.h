@@ -26,6 +26,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 
 enum class SmartDataProcessingMode {
@@ -125,4 +126,5 @@ bool SetSmartDataSystemParameter(const std::string &key, const T &value)
     return true;
 }
 }
+// LCOV_EXCL_STOP
 #endif

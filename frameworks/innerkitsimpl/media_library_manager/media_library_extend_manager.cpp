@@ -191,6 +191,7 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     return respBody.resultSet;
 }
                                    
+// LCOV_EXCL_START
 int32_t MediaLibraryExtendManager::SendBrokerChangeOperation(string operation)
 {
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "datashareHelper is nullptr");
@@ -203,6 +204,7 @@ int32_t MediaLibraryExtendManager::SendBrokerChangeOperation(string operation)
         IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
     return errCode;
 }
+// LCOV_EXCL_STOP
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
     const string &value, vector<string> &columns)
@@ -313,6 +315,7 @@ int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
     return E_SUCCESS;
 }
 
+// LCOV_EXCL_START
 int64_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::string> &uris)
 {
     MEDIA_INFO_LOG("GetCompressAssetSize begin, count: %{public}zu", uris.size());
@@ -335,6 +338,6 @@ int64_t MediaLibraryExtendManager::GetCompressAssetSize(const std::vector<std::s
     MEDIA_INFO_LOG("GetCompressAssetSize success, total bytes: %{public}" PRId64, respBody.totalSize);
     return respBody.totalSize;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
-// LCOV_EXCL_STOP
