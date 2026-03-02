@@ -694,7 +694,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         ret = OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
     } else {
-        ret = OpenAsset(fileAsset, mode, cmd.GetApi(), type);
+        ret = OpenAsset(fileAsset, mode, cmd.GetApi(), isMovingPhotoVideo, type);
     }
     if (err == 0 && ret >= 0) {
         MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
@@ -5498,7 +5498,7 @@ int32_t MediaLibraryPhotoOperations::HandleOpenAsset(const shared_ptr<FileAsset>
     if (cmdUri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         ret = OpenAsset(fileAsset, MEDIA_FILEMODE_READONLY, MediaLibraryApi::API_10, isMovingPhoto, type);
     } else {
-        ret = OpenAsset(fileAsset, MEDIA_FILEMODE_READONLY, cmd.GetApi(), type);
+        ret = OpenAsset(fileAsset, MEDIA_FILEMODE_READONLY, cmd.GetApi(), isMovingPhoto, type);
     }
     return ret;
 }
