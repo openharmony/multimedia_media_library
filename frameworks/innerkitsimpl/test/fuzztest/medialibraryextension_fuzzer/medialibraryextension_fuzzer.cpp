@@ -43,6 +43,7 @@ using namespace DataShare;
 static const int32_t NUM_BYTES = 1;
 static const int32_t DEFAULT_URI_LISTS = 1;
 static const int32_t DEFAULT_MEDIA_OPEN_MODES = 1;
+static const int32_t HIGH_QUALITY_MODE = 1;
 FuzzedDataProvider *provider = nullptr;
 
 static inline vector<int32_t> FuzzVectorInt32()
@@ -174,7 +175,9 @@ static inline void DeleteFuzzer(MediaDataShareExtAbility &extension)
 
 static inline void QueryFuzzer(MediaDataShareExtAbility &extension)
 {
-    auto columns = FuzzVectorString();
+    int fileId = provider->ConsumeIntegral<uint32_t>();
+    int deliveryMode = HIGH_QUALITY_MODE;
+    vector<string> columns = {std::to_string(fileId), to_string(deliveryMode)};
     auto error = FuzzDataShareBusinessError();
     extension.Query(FuzzUri(), FuzzDataSharePredicates(), columns, error);
 }
