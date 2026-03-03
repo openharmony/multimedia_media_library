@@ -263,7 +263,7 @@ std::string OnFetchPhotosVo::ToString() const
     this->GetBasicInfo(ss);
     this->GetAttributesInfo(ss);
     this->GetAttributesHashMap(ss);
-    ss << "AlbumIds:[";
+    ss << "\"AlbumIds\":[";
     for (uint32_t i = 0; i < sourceAlbumIds.size(); i++) {
         if (i != sourceAlbumIds.size() - 1) {
             ss << "\"" << sourceAlbumIds[i] << "\",";

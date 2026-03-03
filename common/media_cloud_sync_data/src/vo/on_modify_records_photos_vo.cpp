@@ -76,13 +76,12 @@ std::string OnModifyRecord::ToString() const
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "[";
     for (uint32_t i = 0; i < errorDetails.size(); ++i) {
-        ss << "{\"reason\": " << errorDetails[i].reason << "\","
-           << "\"errorCode\": " << errorDetails[i].errorCode << "\","
-           << "\"description\": " << errorDetails[i].description << "\","
-           << "\"errorPos\": " << errorDetails[i].errorPos << "\","
-           << "\"errorParam\": " << errorDetails[i].errorParam << "\","
-           << "\"detailCode\": " << errorDetails[i].detailCode << "\""
-           << "}";
+        ss << "{\"reason\": \"" << errorDetails[i].reason << "\","
+           << "\"errorCode\": \"" << errorDetails[i].errorCode << "\","
+           << "\"description\": \"" << errorDetails[i].description << "\","
+           << "\"errorPos\": \"" << errorDetails[i].errorPos << "\","
+           << "\"errorParam\": \"" << errorDetails[i].errorParam << "\","
+           << "\"detailCode\": " << errorDetails[i].detailCode << "}";
         if (i != errorDetails.size() - 1) {
             ss << ",";
         }

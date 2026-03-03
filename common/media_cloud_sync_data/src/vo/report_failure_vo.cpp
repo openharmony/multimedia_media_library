@@ -64,10 +64,10 @@ std::string ReportFailureReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "{";
-    ss << "\"apiCode\":" << this->apiCode << ", "
-       << "\"errorCode\":" << this->errorCode << ", "
-       << "\"fileId\":" << this->fileId << ", "
-       << "\"cloudId\":\"" << this->cloudId << "\"";
+    ss << "\"apiCode\": " << this->apiCode << ","
+       << "\"errorCode\": " << this->errorCode << ","
+       << "\"fileId\": " << this->fileId << ","
+       << "\"cloudId\": \"" << this->cloudId << "\"";
     ss << "}";
     return ss.str();
 }

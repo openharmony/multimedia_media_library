@@ -43,9 +43,9 @@ std::string MediaOperateResultRespBodyResultNode::ToString() const
 {
     std::stringstream ss;
     ss << "{";
-    ss << "cloudId:" << this->cloudId << ",";
-    ss << "errorCode:" << this->errorCode << ",";
-    ss << "errorMsg:" << this->errorMsg;
+    ss << "\"cloudId\": \"" << this->cloudId << "\",";
+    ss << "\"errorCode\": \"" << this->errorCode << "\",";
+    ss << "\"errorMsg\": \"" << this->errorMsg << "\"";
     ss << "}";
     return ss.str();
 }

@@ -107,16 +107,16 @@ std::string GetCheckRecordsRespBodyCheckData::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"cloudId\": \"" << this->cloudId << "\", "
-       << "\"size\": " << this->size << ", "
-       << "\"data\": \"" << this->data << "\", "
-       << "\"mediaType\": " << this->mediaType << ", "
-       << "\"cloudVersion\": " << this->cloudVersion << ", "
-       << "\"dateModified\": " << this->dateModified << ", "
-       << "\"dirty\": " << this->dirty << "\""
-       << "\"thmStatus\": " << this->thmStatus << "\""
-       << "\"syncStatus\": " << this->syncStatus << "\""
-       << "\"fileSourceType\": " << this->fileSourceType << "\""
+       << "\"cloudId\": \"" << this->cloudId << "\","
+       << "\"size\": " << this->size << ","
+       << "\"data\": \"" << this->data << "\","
+       << "\"mediaType\": " << this->mediaType << ","
+       << "\"cloudVersion\": " << this->cloudVersion << ","
+       << "\"dateModified\": " << this->dateModified << ","
+       << "\"dirty\": " << this->dirty << ","
+       << "\"thmStatus\": " << this->thmStatus << ","
+       << "\"syncStatus\": " << this->syncStatus << ","
+       << "\"fileSourceType\": " << this->fileSourceType << ","
        << "\"storagePath\": " << this->storagePath << "\"";
     ss << ",[";
     uint32_t index = 0;

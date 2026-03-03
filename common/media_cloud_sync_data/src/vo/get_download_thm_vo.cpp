@@ -48,8 +48,7 @@ std::string GetDownloadThmReqBody::ToString() const
        << "\"size\": " << this->size << ","
        << "\"type\": " << this->type << ","
        << "\"offset\": " << this->offset << ","
-       << "\"isDownloadDisplayFirst\": " << this->isDownloadDisplayFirst << ""
-       << "}";
+       << "\"isDownloadDisplayFirst\": " << this->isDownloadDisplayFirst << "}";
     return ss.str();
 }
 

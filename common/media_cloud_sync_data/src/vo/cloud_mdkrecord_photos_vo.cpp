@@ -178,8 +178,8 @@ bool CloudMdkRecordPhotosVo::Unmarshalling(MessageParcel &parcel)
 
 void CloudMdkRecordPhotosVo::GetAlbumInfo(std::stringstream &ss) const
 {
-    ss << "\"albumCloudId\": " << albumCloudId << "\","
-       << "\"albumLPath\": " << albumLPath << ",";
+    ss << "\"albumCloudId\": \"" << albumCloudId << "\","
+       << "\"albumLPath\": \"" << albumLPath << "\"";
 }
 
 void CloudMdkRecordPhotosVo::GetBasicInfo(std::stringstream &ss) const
@@ -214,7 +214,7 @@ void CloudMdkRecordPhotosVo::GetPropertiesInfo(std::stringstream &ss) const
 void CloudMdkRecordPhotosVo::GetCloudInfo(std::stringstream &ss) const
 {
     ss << "\"recordType\": \"" << recordType << "\","
-       << "\"recordId\": \"" << recordId << ",\""
+       << "\"recordId\": \"" << recordId << "\","
        << "\"isNew\": " << isNew << ","
        << "\"baseVersion\": " << baseVersion << ","
        << "\"originalSubtype\": " << originalSubtype << ","
@@ -295,8 +295,8 @@ std::string CloudMdkRecordPhotosReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "{";
-    ss << "\"size\":" << this->size << ",";
-    ss << "\"dirtyType\":" << this->dirtyType << ",";
+    ss << "\"size\": " << this->size << ",";
+    ss << "\"dirtyType\": " << this->dirtyType << ",";
     ss << "}";
     return ss.str();
 }
@@ -352,10 +352,9 @@ void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
     ss << "\"stringfields\": {";
     for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
-        ss << "\"" << node.second << "\", ";
+        ss << "\"" << node.second << "\"";
     }
     ss << "}";
-    return;
 }
 
 size_t CloudMdkRecordPhotosRespBody::GetDataSize() const
