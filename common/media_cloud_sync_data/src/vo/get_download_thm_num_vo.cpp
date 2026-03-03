@@ -60,7 +60,7 @@ std::string GetDownloadThmNumRespBody::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"type\": " << this->type << "\"num\": " << this->totalNum << "}";
+       << "\"type\": " << this->type << ", \"num\": " << this->totalNum << "}";
     return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync

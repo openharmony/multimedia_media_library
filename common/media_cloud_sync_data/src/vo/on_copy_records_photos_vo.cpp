@@ -81,8 +81,7 @@ std::string OnCopyRecord::ToString() const
        << "\"version\": " << version << ","
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "\"isSuccess\": " << std::to_string(isSuccess) << ","
-       << "\"errorType\": " << static_cast<int32_t>(errorType) << ""
-       << "}";
+       << "\"errorType\": " << static_cast<int32_t>(errorType) << "}";
     return ss.str();
 }
 

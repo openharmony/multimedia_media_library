@@ -43,10 +43,9 @@ std::string OnDeleteRecordsPhoto::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"dkRecordId\": \"" << dkRecordId << "\", "
-       << "\"cloudId\": \"" << cloudId << "\""
-       << "\"isSeccuss\": \"" << isSuccess << "\""
-       << "}";
+       << "\"dkRecordId\": \"" << dkRecordId << "\","
+       << "\"cloudId\": \"" << cloudId << "\","
+       << "\"isSuccess\": " << std::to_string(isSuccess) << "}";
     return ss.str();
 }
 
