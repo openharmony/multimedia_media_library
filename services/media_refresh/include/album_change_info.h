@@ -70,6 +70,8 @@ public:
     std::string cloudId_ = EMPTY_STR;
     int32_t isLocal_ = INVALID_INT32_VALUE;
     int32_t hidden_ = 0;
+    bool needForceSelectCover = false;
+    bool needForceSelectHiddenCover = false;
 
     NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
     std::string ToString(bool isDetail = false) const;
