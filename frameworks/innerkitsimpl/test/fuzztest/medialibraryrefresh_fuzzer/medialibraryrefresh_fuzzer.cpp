@@ -105,18 +105,12 @@ void SetTables()
 
 static void Init()
 {
-    MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
     SetTables();
-}
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 
 Media::AccurateRefresh::PhotoAssetChangeInfo GetPhotoAssetChangeInfo()
@@ -415,6 +409,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::AssetAccurateRefreshFuzzerTest();
     OHOS::AlbumAccurateRefreshFuzzerTest();
-    OHOS::ClearKvStore();
     return 0;
 }
