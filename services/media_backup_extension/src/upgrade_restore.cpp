@@ -1331,7 +1331,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     std::unordered_set<std::string> needQuerySet;
     std::string querySql = "SELECT hash FROM ("
         " SELECT mf.hash, "
-        " ROW_NUMBER() OVER (PARTITION BY mf.hash ORDER BY mf.face_id) as rn "
+        " ROW_NUMBER() OVER (PARTITION BY mf.hash ORDER BY mf.face_id) as rownum "
         " FROM merge_face mf "
         " INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
         " INNER JOIN gallery_media gm ON mf.hash = gm.hash "
@@ -1339,7 +1339,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         " WHERE (gm.recycleFlag IS NULL OR gm.recycleFlag NOT IN (?, ?, ?, ?, ?)) "
         " AND ga.albumId IS NULL "
         " AND gm._id IN (" + selection + ")"
-        ") WHERE rn = 1 ";
+        ") WHERE rownum = 1 ";
     std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
         RECYCLE_FLAG_DELETE_UNSYNCED, RECYCLE_FLAG_HARD_DELETE_UNSYNCED };
 
