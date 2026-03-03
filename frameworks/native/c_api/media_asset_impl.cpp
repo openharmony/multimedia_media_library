@@ -15,6 +15,7 @@
 
 #include "media_asset_impl.h"
 
+#include "media_file_utils.h"
 #include "media_log.h"
 #include <securec.h>
 #include "nocopyable.h"
@@ -134,7 +135,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetDisplayName(const char** displayName)
     int32_t len = displayNameLen < MAX_DISPLAY_NAME_LENGTH ? displayNameLen : MAX_DISPLAY_NAME_LENGTH - 1;
     strncpy_s(displayName_, MAX_DISPLAY_NAME_LENGTH, display.c_str(), len);
     MEDIA_INFO_LOG("MediaAssetImpl::GetDisplayName, display name: %{public}s, return display name: %{public}s",
-        display.c_str(), displayName_);
+        MediaFileUtils::DesensitizeName(display).c_str(), MediaFileUtils::DesensitizeName(displayName_).c_str());
     *displayName = displayName_;
     return MEDIA_LIBRARY_OK;
 }
@@ -232,7 +233,9 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetTitle(const char** title)
     int32_t titleLen = static_cast<int32_t>(titleStr.length());
     int32_t len = titleLen < MAX_TITLE_LENGTH ? titleLen : MAX_TITLE_LENGTH - 1;
     strncpy_s(title_, MAX_TITLE_LENGTH, titleStr.c_str(), len);
-    MEDIA_INFO_LOG("GetTitle, title: %{public}s, return title: %{public}s", titleStr.c_str(), title_);
+    MEDIA_INFO_LOG("GetTitle, title: %{public}s, return title: %{public}s",
+        MediaFileUtils::DesensitizeName(titleStr).c_str(),
+        MediaFileUtils::DesensitizeName(title_).c_str());
     *title = title_;
     return MEDIA_LIBRARY_OK;
 }

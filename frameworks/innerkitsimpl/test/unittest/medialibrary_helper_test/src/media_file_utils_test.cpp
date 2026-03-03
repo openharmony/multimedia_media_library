@@ -1244,7 +1244,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
         std::string expect = testCase.second;
-        std::string actual = MediaFileUtils::DesensitizeDisplayName(displayName);
+        std::string actual = MediaFileUtils::DesensitizeName(displayName);
         MEDIA_DEBUG_LOG("DisplayName: %{public}s, Actual: %{public}s", displayName.c_str(), actual.c_str());
         EXPECT_EQ(actual, expect);
     }
@@ -1262,7 +1262,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
         std::string expect = testCase.second;
-        std::string actual = MediaFileUtils::DesensitizeDisplayName(displayName);
+        std::string actual = MediaFileUtils::DesensitizeName(displayName);
         MEDIA_DEBUG_LOG("DisplayName: %{public}s, Actual: %{public}s", displayName.c_str(), actual.c_str());
         EXPECT_EQ(actual, expect);
     }
@@ -1283,7 +1283,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
         std::string expect = testCase.second;
-        std::string actual = MediaFileUtils::DesensitizeDisplayName(displayName);
+        std::string actual = MediaFileUtils::DesensitizeName(displayName);
         MEDIA_DEBUG_LOG("DisplayName: %{public}s, Actual: %{public}s", displayName.c_str(), actual.c_str());
         EXPECT_EQ(actual, expect);
     }
@@ -1304,7 +1304,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
         std::string expect = testCase.second;
-        std::string actual = MediaFileUtils::DesensitizeDisplayName(displayName);
+        std::string actual = MediaFileUtils::DesensitizeName(displayName);
         MEDIA_DEBUG_LOG("DisplayName: %{public}s, Actual: %{public}s", displayName.c_str(), actual.c_str());
         EXPECT_EQ(actual, expect);
     }

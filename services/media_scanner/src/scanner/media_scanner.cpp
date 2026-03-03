@@ -298,7 +298,7 @@ int32_t MediaScannerObj::Commit()
             }
         }
     } else {
-        MEDIA_INFO_LOG("insert new file: %{public}s", data_->GetFilePath().c_str());
+        MEDIA_INFO_LOG("insert new file: %{public}s", MediaFileUtils::DesensitizePath(data_->GetFilePath()).c_str());
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_, assetRefresh);
         assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
             NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
