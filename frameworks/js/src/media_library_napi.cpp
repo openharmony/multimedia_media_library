@@ -12886,9 +12886,10 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property resultCode failed");
     }
+    NAPI_ERR_LOG("pickerCallBack");
     if (context->pickerCallBack == nullptr) {
         NAPI_ERR_LOG("pickerCallBack is null");
-        CHECK_NULL_PTR_RETURN_VOID(context->PickerCallBack, "Async context is null");
+        CHECK_NULL_PTR_RETURN_VOID(context->PickerCallBack, "pickerCallBack is null");
     }
     getPhotoPickerSelectUris(env, result, context);
     getPhotoPickerMovingPhotoBadgeStates(env, result, context);
