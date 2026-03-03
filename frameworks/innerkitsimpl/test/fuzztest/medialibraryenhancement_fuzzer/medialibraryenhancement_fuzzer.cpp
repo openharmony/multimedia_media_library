@@ -471,9 +471,9 @@ static void EnhancementServiceCallbackTest()
 
     uint32_t bufferSize = static_cast<uint32_t>(sizeof(Media::BUFFER));
     uint8_t* buffer = new uint8_t[bufferSize];
-    for (uint32_t i = 0; i < bufferSize; i++) {
-        buffer[i] = Media::BUFFER[i];
-    }
+    errno_t strncpyResult = memcpy_s(buffer, bufferSize, Media::BUFFER, bufferSize);
+    CHECK_AND_RETURN_LOG(strncpyResult == E_OK, "strncpy failed");
+
     string displayName = provider->ConsumeBytesAsString(NUM_BYTES) + ".jpg";
     int32_t hidden = provider->ConsumeBool() ? YES : NO;
     int32_t fileId = provider->ConsumeIntegral<int32_t>();

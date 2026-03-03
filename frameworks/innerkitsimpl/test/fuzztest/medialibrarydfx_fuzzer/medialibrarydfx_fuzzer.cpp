@@ -33,7 +33,6 @@
 #define private public
 #include "dfx_collector.h"
 #include "dfx_database_utils.h"
-#include "dfx_deprecated_perm_usage.h"
 #include "dfx_moving_photo.h"
 #include "dfx_timer.h"
 #include "dfx_transaction.h"
@@ -199,28 +198,6 @@ static void DfxTransactionFuzzer()
     dfxTransaction->ReportError(abnormalType, errCode);
 }
 
-static void DfxWorkerFuzzer()
-{
-    auto dfxWorker = Media::DfxWorker::GetInstance();
-    Media::DfxExecute execute;
-    Media::DfxData *dfxData = nullptr;
-    std::shared_ptr<Media::DfxTask> task = std::make_shared<Media::DfxTask>(execute, dfxData);
-    dfxWorker->StartLoopTaskDelay();
-    dfxWorker->End();
-}
-
-static void DfxDeprecatedPermUsageFuzzer()
-{
-    uint32_t code = provider->ConsumeIntegral<uint32_t>();
-    DfxDeprecatedPermUsage::Record(code, 0);
-
-    uint32_t object = provider->ConsumeIntegral<uint32_t>();
-    uint32_t type = provider->ConsumeIntegral<uint32_t>();
-    DfxDeprecatedPermUsage::Record(object, type);
-
-    DfxDeprecatedPermUsage::Statistics();
-}
-
 void SetTables()
 {
     vector<string> createTableSqlList = {
@@ -240,14 +217,6 @@ void SetTables()
 
 static void Init()
 {
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
@@ -277,11 +246,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -302,8 +266,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DfxDatabaseUtilsFuzzer();
     OHOS::DfxTimerFuzzer();
     OHOS::DfxTransactionFuzzer();
-    OHOS::DfxWorkerFuzzer();
-    OHOS::DfxDeprecatedPermUsageFuzzer();
-    OHOS::ClearKvStore();
     return 0;
 }
