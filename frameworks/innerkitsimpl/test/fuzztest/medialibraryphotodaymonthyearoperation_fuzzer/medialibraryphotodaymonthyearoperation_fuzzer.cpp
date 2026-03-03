@@ -248,14 +248,6 @@ void SetTables()
 
 static void Init()
 {
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(
-        abilityContextImpl, abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
@@ -285,11 +277,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 }  // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -307,6 +294,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     OHOS::RepairDateTimeFuzzer();
-    OHOS::ClearKvStore();
     return 0;
 }

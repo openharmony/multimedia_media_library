@@ -219,23 +219,12 @@ static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension)
 static int InitExtention(MediaDataShareExtAbility &extension)
 {
     extension.InitPermissionHandler();
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
-        sceneCode);
 }
 
 static inline MediaDataShareExtAbility Init()
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
     return {(*runtime)};
-}
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 } // namespace OHOS
 
@@ -267,6 +256,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DenormalizeUriFuzzer(extension);
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
-    OHOS::ClearKvStore();
     return 0;
 }

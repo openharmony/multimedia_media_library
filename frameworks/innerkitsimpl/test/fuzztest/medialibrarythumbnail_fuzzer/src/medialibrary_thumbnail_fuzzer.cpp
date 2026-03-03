@@ -496,14 +496,6 @@ void SetTables()
 
 static void Init()
 {
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
@@ -511,11 +503,6 @@ static void Init()
     }
     g_rdbStore = rdbStore;
     SetTables();
-}
-
-static void Finish()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 
 static void ThumhnailTest()
@@ -719,6 +706,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::ThumbnailGenerationPostProcessTest();
     OHOS::ThumbnailRestoreManagerTest();
     OHOS::ThumbnailRdbUtilsTest();
-    OHOS::Finish();
     return 0;
 }
