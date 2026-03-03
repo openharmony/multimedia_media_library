@@ -110,6 +110,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/report/photos_count_statistic_test.cpp",
     "./src/report/upgrade_restore_gallery_media_task_test.cpp",
     "./src/report/upgrade_restore_task_report_test.cpp",
+    "./src/restore/classify_restore_test.cpp",
     "./src/restore/cloud_backup_restore_test.cpp",
     "./src/restore/db_upgrade_utils_test.cpp",
     "./src/restore/highlight_restore_test.cpp",
@@ -181,6 +182,14 @@ ohos_unittest("medialibrary_backup_test") {
     defines += [ "CLOUD_SYNC_MANAGER" ]
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
   }
+
+  cflags = [
+    "-fno-access-control",  # Ignore Private Member Access Control
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  cflags_cc = cflags
 
   sanitize = {
     cfi = true
