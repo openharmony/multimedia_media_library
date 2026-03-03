@@ -213,7 +213,7 @@ public:
     EXPORT static std::string GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
         const std::string &path);
     EXPORT static bool ConvertFormatCopy(const std::string &srcFile, const std::string &dstFile,
-        const std::string &extension);
+        const std::string &extension, int32_t width = 0, int32_t height = 0);
     EXPORT static bool ConvertFormatExtraDataDirectory(const std::string &srcDir, const std::string &dstDir,
         const std::string &extension);
     EXPORT static int64_t GetFileModificationTime(const std::string &path);

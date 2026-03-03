@@ -58,6 +58,8 @@ const std::string ALBUM_FUSION_UPGRADE_STATUS_FLAG = "persist.multimedia.mediali
 const int32_t ALBUM_FUSION_UPGRADE_SUCCESS = 1;
 const int32_t ALBUM_FUSION_UPGRADE_FAIL = 0;
 const int32_t ALBUM_FUSION_BATCH_COUNT = 200;
+const int32_t HIGH_PIXEL_SCALE = 2;
+const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 const string SQL_GET_DUPLICATE_PHOTO = "SELECT p.file_id FROM Photos p "
             "LEFT JOIN PhotoAlbum a ON p.owner_album_id = a.album_id "
             "WHERE p.dirty = 7 AND a.album_id IS NULL LIMIT 500";
@@ -2218,8 +2220,24 @@ static int32_t UpdateTranscodeTime(int32_t fileId)
     return E_OK;
 }
 
+static bool IsHighPixelPicture(int32_t width, int32_t height)
+{
+    if (width * height >= HIGH_PIXEL_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static void GetDesireSize(int32_t &width, int32_t &height)
+{
+    while (IsHighPixelPicture(width, height)) {
+        width /= HIGH_PIXEL_SCALE;
+        height /= HIGH_PIXEL_SCALE;
+    }
+}
+
 static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int32_t fileId, int32_t &dupExist)
+    int32_t fileId, int32_t &dupExist, int32_t &width, int32_t &height)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INNER_FAIL,
         "no matched data.");
@@ -2228,9 +2246,15 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
         MEDIA_INFO_LOG("compatible duplicate file is exists");
         return UpdateTranscodeTime(fileId);
     }
+    width = GetInt32Val(PhotoColumn::PHOTO_WIDTH, resultSet);
+    height = GetInt32Val(PhotoColumn::PHOTO_HEIGHT, resultSet);
     std::string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    CHECK_AND_RETURN_RET_LOG(mimeType == "image/heic" || mimeType == "image/heif", E_PARAM_CONVERT_FORMAT,
+    CHECK_AND_RETURN_RET_LOG(mimeType == "image/heic" || mimeType == "image/heif" ||
+        IsHighPixelPicture(width, height), E_PARAM_CONVERT_FORMAT,
         "mimeType is invalid, mimeType: %{public}s", mimeType.c_str());
+
+    GetDesireSize(width, height);
+
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
         "pure cloud asset is invalid, position: %{public}d", position);
@@ -2264,17 +2288,19 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     }
 
     const std::string querySql = R"(SELECT exist_compatible_duplicate, position, is_temp, time_pending, hidden,
-        date_trashed, date_deleted, mime_type FROM Photos WHERE file_id = ?)";
+        date_trashed, date_deleted, mime_type, height, width FROM Photos WHERE file_id = ?)";
     std::vector<NativeRdb::ValueObject> params = { fileId };
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     dupExist = 0;
-    auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist);
+    int32_t width = 0;
+    int32_t height = 0;
+    auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist, width, height);
     CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
     if (dupExist > 0) {
         return err;
     }
     if (err == E_OK) {
-        return PhotoFileOperation().CreateTmpCompatibleDup(path, size);
+        return PhotoFileOperation().CreateTmpCompatibleDup(path, size, width, height);
     }
     MEDIA_ERR_LOG("CheckTmpCompatibleDup fail %{public}d", err);
     dfxManager->HandleTranscodeFailed(INNER_FAILED);
