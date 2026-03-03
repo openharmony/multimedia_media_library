@@ -568,7 +568,7 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
             return E_INNER_FAIL;
         }
         CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
-        "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
+            "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
     }
     filePath = tempPath;
     return E_OK;
