@@ -40,14 +40,14 @@ public:
     static const std::string MEDIA_AUTO_PAUSE_REASON EXPORT;
     static const std::string MEDIA_COVER_LEVEL EXPORT;
     static const std::string TABLE EXPORT;
-    static const std::string MEDIA_TASK_SEQ EXPORT;
-    static const std::string MEDIA_NETWORK_POLICY EXPORT;
+
     static const std::string CREATE_TABLE EXPORT;
 
     // index in DownloadResources
     static const std::string IDSTATUS_INDEX EXPORT;
 
     static const std::string INDEX_DRTR_ID_STATUS EXPORT;
+
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_DOWNLOAD_RESOURCE_COLUMN_H_
