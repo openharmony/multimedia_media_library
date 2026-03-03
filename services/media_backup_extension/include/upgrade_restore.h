@@ -181,6 +181,7 @@ protected:
     RestoreConfigInfo restoreConfig_;
     RestorePhotosAlbumHidden restorePhotosAlbumHidden_;
     bool isNeedCloneIsMe_ = false;
+    std::unordered_set<std::string> processGlobalHashes_;
 
 private:
     void BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlbumIds, int32_t &deleteRows);
