@@ -395,8 +395,8 @@ int32_t PhotoFileOperation::CopyPhotoFile(const PhotoFileOperation::PhotoAssetIn
     }
     MediaFileUtils::ModifyFile(targetPath, dateModified / MSEC_TO_SEC);
     MEDIA_INFO_LOG("Media_Operation: CopyPhotoFile success, srcPath: %{public}s, targetPath: %{public}s",
-        srcPath.c_str(),
-        targetPath.c_str());
+        MediaFileUtils::DesensitizePath(srcPath).c_str(),
+        MediaFileUtils::DesensitizePath(targetPath).c_str());
     return E_OK;
 }
 
@@ -424,8 +424,8 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
         targetVideoPath.c_str());
     MediaFileUtils::ModifyFile(targetVideoPath, dateModified / MSEC_TO_SEC);
     MEDIA_INFO_LOG("Media_Operation: CopyPhotoRelatedVideoFile success, srcPath: %{public}s, targetPath: %{public}s",
-        srcVideoPath.c_str(),
-        targetVideoPath.c_str());
+        MediaFileUtils::DesensitizePath(srcVideoPath).c_str(),
+        MediaFileUtils::DesensitizePath(targetVideoPath).c_str());
     return E_OK;
 }
 
@@ -850,8 +850,8 @@ int32_t PhotoFileOperation::MovePhotoFile(const PhotoFileOperation::PhotoAssetIn
         targetPath.c_str());
     MediaFileUtils::ModifyFile(targetPath, dateModified / MSEC_TO_SEC);
     MEDIA_INFO_LOG("Media_Operation: MovePhotoFile success, srcPath: %{public}s, targetPath: %{public}s",
-        srcPath.c_str(),
-        targetPath.c_str());
+        MediaFileUtils::DesensitizePath(srcPath).c_str(),
+        MediaFileUtils::DesensitizePath(targetPath).c_str());
     return E_OK;
 }
 
@@ -881,8 +881,8 @@ int32_t PhotoFileOperation::MovePhotoRelatedVideoFile(const PhotoFileOperation::
         targetVideoPath.c_str());
     MediaFileUtils::ModifyFile(targetVideoPath, dateModified / MSEC_TO_SEC);
     MEDIA_INFO_LOG("Media_Operation: MovePhotoRelatedVideoFile success, srcPath: %{public}s, targetPath: %{public}s",
-        srcVideoPath.c_str(),
-        targetVideoPath.c_str());
+        MediaFileUtils::DesensitizePath(srcVideoPath).c_str(),
+        MediaFileUtils::DesensitizePath(targetVideoPath).c_str());
     return E_OK;
 }
 

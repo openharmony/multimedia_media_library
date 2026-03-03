@@ -23,6 +23,7 @@
 #include "cloud_mdkrecord_photos_vo.h"
 #include "get_retey_records_vo.h"
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_req_vo.h"
 #include "media_resp_vo.h"
@@ -78,6 +79,9 @@ int32_t CloudMediaPhotoHandler::OnFetchRecordsInner(
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnFetchRecordsInner failed, ret: %{public}d", ret);
         for (const auto &data : nodeRespBody.fdirtyDatas) {
             if (data.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+                MEDIA_INFO_LOG("Need clear VideoCache, attributesMediaType: %{public}d, localPath: %{public}s",
+                    data.attributesMediaType,
+                    MediaFileUtils::DesensitizePath(data.localPath).c_str());
                 CloudMediaClientUtils::InvalidVideoCache(data.localPath);
             }
         }

@@ -170,60 +170,55 @@ std::string MediaFileUtils::DesensitizePath(const std::string &path)
     return result.replace(0, CLOUD_FILE_PATH.length(), "*");
 }
 
-std::string MediaFileUtils::DesensitizeDisplayName(const std::string &displayName)
+std::string MediaFileUtils::DesensitizeName(const std::string &name)
 {
-    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), displayName, "displayName is empty");
+    CHECK_AND_RETURN_RET_LOG(!name.empty(), name, "name is empty");
 
     UErrorCode status = U_ZERO_ERROR;
     const icu::Normalizer2 *normalizer = icu::Normalizer2::getNFCInstance(status);
-    CHECK_AND_RETURN_RET_LOG(!U_FAILURE(status), displayName, "getNFCInstance failed, status:%{public}d", status);
+    CHECK_AND_RETURN_RET_LOG(
+        normalizer != nullptr && !U_FAILURE(status), name, "getNFCInstance failed, status:%{public}d", status);
 
-    icu::UnicodeString uName =
-        icu::UnicodeString::fromUTF8(icu::StringPiece(displayName.data(), (int32_t)displayName.length()));
-    CHECK_AND_RETURN_RET_LOG(!uName.isBogus(), displayName, "uName is Bogus");
+    icu::UnicodeString uName = icu::UnicodeString::fromUTF8(icu::StringPiece(name.data(), (int32_t)name.length()));
+    CHECK_AND_RETURN_RET_LOG(!uName.isBogus(), name, "uName is Bogus");
 
-    icu::UnicodeString norm = normalizer->normalize(uName, status);
-    CHECK_AND_RETURN_RET_LOG(!U_FAILURE(status), displayName, "normalize failed, status:%{public}d", status);
+    icu::UnicodeString norm;
+    normalizer->normalize(uName, norm, status);
+    CHECK_AND_RETURN_RET_LOG(
+        !U_FAILURE(status) && !norm.isBogus(), name, "normalize failed, status:%{public}d", status);
 
-    const int32_t len = norm.length();
     const int32_t dotPos = norm.lastIndexOf(DOT);
-    const bool hasExt = (dotPos > 0 && dotPos < len - 1);
-    const int32_t baseEnd = hasExt ? dotPos : len;
+    const bool hasExt = (dotPos > 0 && dotPos < norm.length() - 1);
+    const int32_t baseEnd = hasExt ? dotPos : norm.length();
 
     std::unique_ptr<icu::BreakIterator> it(icu::BreakIterator::createCharacterInstance(icu::Locale::getRoot(), status));
-    CHECK_AND_RETURN_RET_LOG(!U_FAILURE(status), displayName, "create iterator failed, status:%{public}d", status);
+    CHECK_AND_RETURN_RET_LOG(
+        it != nullptr && !U_FAILURE(status), name, "create character iterator failed, status:%{public}d", status);
+
     it->setText(norm);
 
-    int32_t clusterCount = 0;
-    int32_t firstEnd = 0;
-    int32_t lastStart = 0;
-
-    for (int32_t start = it->first(), end = it->next(); end != icu::BreakIterator::DONE && end <= baseEnd;
-         start = end, end = it->next()) {
-        if (clusterCount == 0) {
-            firstEnd = end;
-        }
-        lastStart = start;
-        clusterCount++;
+    std::vector<int32_t> boundaries;
+    for (int32_t pos = it->first(); pos != icu::BreakIterator::DONE && pos <= baseEnd; pos = it->next()) {
+        boundaries.push_back(pos);
     }
+    const int32_t clusterCount = static_cast<int32_t>(boundaries.size()) - 1;
+    CHECK_AND_RETURN_RET_LOG(clusterCount > 0, name, "clusterCount is zero");
 
-    CHECK_AND_RETURN_RET_LOG(clusterCount != 0, displayName, "clusterCount is zero");
+    // desensitization strategy (1,2,3 -> 1*; 4 -> 2*; 5+ -> 3*)
+    const int32_t maskCount = (clusterCount >= 5) ? 3 : (clusterCount == 4 ? 2 : 1);
+    const int32_t displayCount = clusterCount - maskCount;
+    const int32_t prefixCount = displayCount / 2;
+    const int32_t suffixCount = displayCount - prefixCount;
 
     icu::UnicodeString out;
-    const int32_t displayCount = 2;
+    if (prefixCount > 0) {
+        out.append(norm.tempSubStringBetween(0, boundaries[prefixCount]));
+    }
 
-    if (clusterCount == 1) {
-        out.append(MASK);
-    } else if (clusterCount == displayCount) {
-        out.append(norm.tempSubStringBetween(0, firstEnd)).append(MASK);
-    } else {
-        out.append(norm.tempSubStringBetween(0, firstEnd));
+    out.append(icu::UnicodeString(maskCount, MASK, maskCount));
 
-        for (int32_t i = 0; i < clusterCount - displayCount; ++i) {
-            out.append(MASK);
-        }
-
-        out.append(norm.tempSubStringBetween(lastStart, baseEnd));
+    if (suffixCount > 0) {
+        out.append(norm.tempSubStringBetween(boundaries[clusterCount - suffixCount], baseEnd));
     }
 
     if (hasExt) {

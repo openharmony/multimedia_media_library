@@ -2847,7 +2847,8 @@ static bool SetAppLinkExecute(MediaAssetChangeRequestAsyncContext &context)
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
-    NAPI_INFO_LOG("enter SetAppLinkExecute: %{public}s", fileAsset->GetAppLink().c_str());
+    NAPI_INFO_LOG(
+        "enter SetAppLinkExecute: %{public}s", MediaFileUtils::DesensitizeName(fileAsset->GetAppLink()).c_str());
 
     AssetChangeReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
