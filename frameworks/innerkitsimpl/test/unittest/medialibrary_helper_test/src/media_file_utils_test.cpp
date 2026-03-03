@@ -1311,5 +1311,759 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
 
     MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_04 end");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileAndDelSrc_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_CopyFileAndDelSrc_Test_001 Start");
+    string dirPath = "/data/test/CopyFileAndDelSrc";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string srcFile = dirPath + "/test1.jpg";
+    string destFile = dirPath + "/test2.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(destFile), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+
+    // When dest file not exist
+    EXPECT_EQ(MediaFileUtils::CopyFileAndDelSrc(srcFile, destFile), true);
+    MEDIA_INFO_LOG("MediaFileUtils_CopyFileAndDelSrc_Test_001 End");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileAndDelSrc_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_CopyFileAndDelSrc_Test_002 Start");
+    string dirPath = "/data/test/CopyFileAndDelSrc";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string srcFile = dirPath + "/test1.jpg";
+    string destFile = dirPath + "/test1.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+
+    // When src and dest are same file, operation should fail
+    EXPECT_EQ(MediaFileUtils::CopyFileAndDelSrc(srcFile, destFile), false);
+    MEDIA_INFO_LOG("MediaFileUtils_CopyFileAndDelSrc_Test_002 End");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatCopy_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_001 Start");
+    string dirPath = "/data/test/CopyFileAndDelSrc";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string srcFile = dirPath + "/test3.jpg";
+    string destFile = dirPath + "/test4.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(destFile), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
+    auto result = MediaFileUtils::ConvertFormatCopy(srcFile, destFile, "jpg");
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_001 End");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatCopy_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_002 Start");
+    string dirPath = "/data/test/";
+    dirPath.resize(4100, 'a');
+    string srcFile = dirPath + "/test3.jpg";
+    auto result = MediaFileUtils::ConvertFormatCopy(srcFile, "", "jpg");
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_002 End");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatCopy_Test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_003 Start");
+    string dirPath = "/data/test/x/y/z/x/y/z";
+    string srcFile = "../../..";
+    auto result = MediaFileUtils::ConvertFormatCopy(srcFile, "", "jpg");
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_003 End");
+}
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatCopy_Test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_004 Start");
+    auto result = MediaFileUtils::ConvertFormatCopy("", "", "jpg");
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_004 End");
+}
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatCopy_Test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_005 Start");
+    string dirPath = "/data/test/";
+    string srcFile = dirPath + "/test5.jpg";
+    auto result = MediaFileUtils::ConvertFormatCopy(srcFile, "", "jpg");
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("MediaFileUtils_ConvertFormatCopy_Test_005 End");
+}
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileValid_Test_001, TestSize.Level1)
+{
+    string filePath = "/data/test/isfilevalid_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::IsFileValid(filePath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileValid_Test_002, TestSize.Level1)
+{
+    string filePath = "/data/test/isfilevalid_002";
+    EXPECT_EQ(MediaFileUtils::IsFileValid(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileValid_Test_003, TestSize.Level1)
+{
+    string dirPath = "/data/test/isfilevalid_003";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    EXPECT_EQ(MediaFileUtils::IsFileValid(dirPath), false);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteFileWithRetry_Test_001, TestSize.Level1)
+{
+    string filePath = "/data/test/deletefilewithretry_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFileWithRetry(filePath), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteFileWithRetry_Test_002, TestSize.Level1)
+{
+    string filePath = "/data/test/deletefilewithretry_002";
+    EXPECT_EQ(MediaFileUtils::DeleteFileWithRetry(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetParentPath_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/file.txt";
+    string parentPath = MediaFileUtils::GetParentPath(path);
+    EXPECT_EQ(parentPath, "/data/test");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetParentPath_Test_002, TestSize.Level1)
+{
+    string path = "file.txt";
+    string parentPath = MediaFileUtils::GetParentPath(path);
+    EXPECT_EQ(parentPath, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetParentPath_Test_003, TestSize.Level1)
+{
+    string path = "";
+    string parentPath = MediaFileUtils::GetParentPath(path);
+    EXPECT_EQ(parentPath, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirectory_Test_001, TestSize.Level1)
+{
+    string dirPath = "/data/test/isdirectory_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(dirPath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirectory_Test_002, TestSize.Level1)
+{
+    string filePath = "/data/test/isdirectory_002";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(filePath), false);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirectory_Test_003, TestSize.Level1)
+{
+    string path = "/data/test/isdirectory_003";
+    EXPECT_EQ(MediaFileUtils::IsDirectory(path), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileUtil_Test_001, TestSize.Level1)
+{
+    string srcFile = "/data/test/copyfileutil_001_src";
+    string dstFile = "/data/test/copyfileutil_001_dst";
+    string testString = "test content";
+    
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(srcFile, testString), true);
+    EXPECT_EQ(MediaFileUtils::CopyFileUtil(srcFile, dstFile), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(dstFile), true);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteFile(srcFile), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(dstFile), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileUtil_Test_002, TestSize.Level1)
+{
+    string srcFile = "/data/test/copyfileutil_002_src";
+    string dstFile = "/data/test/copyfileutil_002_dst";
+    
+    EXPECT_EQ(MediaFileUtils::CopyFileUtil(srcFile, dstFile), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_001, TestSize.Level1)
+{
+    string albumName = "Test Album";
+    EXPECT_EQ(MediaFileUtils::CheckAlbumName(albumName), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_002, TestSize.Level1)
+{
+    string albumName = "";
+    EXPECT_LT(MediaFileUtils::CheckAlbumName(albumName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_003, TestSize.Level1)
+{
+    string albumName = "Test/Album";
+    EXPECT_LT(MediaFileUtils::CheckAlbumName(albumName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckHighlightSubtitle_Test_001, TestSize.Level1)
+{
+    string subtitle = "Test Subtitle";
+    EXPECT_EQ(MediaFileUtils::CheckHighlightSubtitle(subtitle), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckHighlightSubtitle_Test_002, TestSize.Level1)
+{
+    string subtitle = "";
+    int32_t result = MediaFileUtils::CheckHighlightSubtitle(subtitle);
+    EXPECT_EQ(result, E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDentryName_Test_001, TestSize.Level1)
+{
+    string dentryName = "valid_name";
+    EXPECT_EQ(MediaFileUtils::CheckDentryName(dentryName), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDentryName_Test_002, TestSize.Level1)
+{
+    string dentryName = "invalid/name";
+    EXPECT_LT(MediaFileUtils::CheckDentryName(dentryName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_001, TestSize.Level1)
+{
+    string title = "valid_title";
+    EXPECT_EQ(MediaFileUtils::CheckTitle(title), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_002, TestSize.Level1)
+{
+    string title = "invalid/title";
+    EXPECT_LT(MediaFileUtils::CheckTitle(title), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitleCompatible_Test_001, TestSize.Level1)
+{
+    string title = "valid_title";
+    EXPECT_EQ(MediaFileUtils::CheckTitleCompatible(title), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitleCompatible_Test_002, TestSize.Level1)
+{
+    string title = "invalid/title";
+    EXPECT_LT(MediaFileUtils::CheckTitleCompatible(title), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileAssetUri_Test_001, TestSize.Level1)
+{
+    string fileAssetData = "/storage/cloud/files/Photo/1/test";
+    string displayName = "test.jpg";
+    int32_t fileId = 123;
+    string uri = MediaFileUtils::GetFileAssetUri(fileAssetData, displayName, fileId);
+    EXPECT_FALSE(uri.empty());
+    EXPECT_NE(uri.find(to_string(fileId)), string::npos);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckRelativePath_Test_001, TestSize.Level1)
+{
+    string relativePath = "Photo/test";
+    EXPECT_EQ(MediaFileUtils::CheckRelativePath(relativePath), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckRelativePath_Test_002, TestSize.Level1)
+{
+    string relativePath = "";
+    EXPECT_LT(MediaFileUtils::CheckRelativePath(relativePath), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckRelativePath_Test_003, TestSize.Level1)
+{
+    string relativePath = "Photo//test";
+    EXPECT_LT(MediaFileUtils::CheckRelativePath(relativePath), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtilsFormatRelativePath_Test_001, TestSize.Level1)
+{
+    string relativePath = "Photo/test";
+    MediaFileUtils::FormatRelativePath(relativePath);
+    EXPECT_EQ(relativePath, "Photo/test/");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_FormatRelativePath_Test_002, TestSize.Level1)
+{
+    string relativePath = "/Photo/test";
+    MediaFileUtils::FormatRelativePath(relativePath);
+    EXPECT_EQ(relativePath, "Photo/test/");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_FormatRelativePath_Test_003, TestSize.Level1)
+{
+    string relativePath = "";
+    MediaFileUtils::FormatRelativePath(relativePath);
+    EXPECT_EQ(relativePath, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRootDirFromRelativePath_Test_001, TestSize.Level1)
+{
+    string relativePath = "Photo/test";
+    string rootDir;
+    MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDir);
+    EXPECT_EQ(rootDir, "Photo/");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRootDirFromRelativePath_Test_002, TestSize.Level1)
+{
+    string relativePath = "/Photo/test";
+    string rootDir;
+    MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDir);
+    EXPECT_EQ(rootDir, "Photo/");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRootDirFromRelativePath_Test_003, TestSize.Level1)
+{
+    string relativePath = "";
+    string rootDir;
+    MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDir);
+    EXPECT_EQ(rootDir, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UTCTimeMilliSeconds_Test_001, TestSize.Level1)
+{
+    int64_t time = MediaFileUtils::UTCTimeMilliSeconds();
+    EXPECT_GT(time, 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UTCTimeNanoSeconds_Test_001, TestSize.Level1)
+{
+    int64_t time = MediaFileUtils::UTCTimeNanoSeconds();
+    EXPECT_GT(time, 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetIdFromUri_Test_001, TestSize.Level1)
+{
+    string uri = "datashare:///media/Photo/123";
+    string id = MediaFileUtils::GetIdFromUri(uri);
+    EXPECT_EQ(id, "123");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetIdFromUri_Test_002, TestSize.Level1)
+{
+    string uri = "";
+    string id = MediaFileUtils::GetIdFromUri(uri);
+    EXPECT_EQ(id, "-1");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeNotSupported_Test_001, TestSize.Level1)
+{
+    string filePath = "test.mid";
+    MediaType type = MediaFileUtils::GetMediaTypeNotSupported(filePath);
+    EXPECT_EQ(type, MEDIA_TYPE_AUDIO);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitByChar_Test_001, TestSize.Level1)
+{
+    string str = "path/to/file.txt";
+    char split = '/';
+    string result = MediaFileUtils::SplitByChar(str, split);
+    EXPECT_EQ(result, "file.txt");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitByChar_Test_002, TestSize.Level1)
+{
+    string str = "file.txt";
+    char split = '/';
+    string result = MediaFileUtils::SplitByChar(str, split);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetExtensionFromPath_Test_001, TestSize.Level1)
+{
+    string path = "test.JPG";
+    string ext = MediaFileUtils::GetExtensionFromPath(path);
+    EXPECT_EQ(ext, "jpg");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetExtensionFromPath_Test_002, TestSize.Level1)
+{
+    string path = "test";
+    string ext = MediaFileUtils::GetExtensionFromPath(path);
+    EXPECT_EQ(ext, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMode_Test_001, TestSize.Level1)
+{
+    string mode = MEDIA_FILEMODE_READONLY;
+    EXPECT_EQ(MediaFileUtils::CheckMode(mode), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMode_Test_002, TestSize.Level1)
+{
+    string mode = "invalid";
+    EXPECT_EQ(MediaFileUtils::CheckMode(mode), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_FindIgnoreCase_Test_001, TestSize.Level1)
+{
+    string str = "Hello World";
+    string key = "world";
+    size_t pos = MediaFileUtils::FindIgnoreCase(str, key);
+    EXPECT_NE(pos, string::npos);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_FindIgnoreCase_Test_002, TestSize.Level1)
+{
+    string str = "Hello World";
+    string key = "xyz";
+    size_t pos = MediaFileUtils::FindIgnoreCase(str, key);
+    EXPECT_EQ(pos, string::npos);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetVirtualIdByType_Test_001, TestSize.Level1)
+{
+    int32_t id = 10;
+    MediaType type = MEDIA_TYPE_IMAGE;
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(id, type);
+    EXPECT_GT(virtualId, 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealIdByTable_Test_001, TestSize.Level1)
+{
+    int32_t virtualId = 45;
+    string tableName = "Photos";
+    double realId = MediaFileUtils::GetRealIdByTable(virtualId, tableName);
+    EXPECT_GT(realId, 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetVirtualUriFromRealUri_Test_001, TestSize.Level1)
+{
+    string uri = "datashare:///media/Photo/123";
+    string virtualUri = MediaFileUtils::GetVirtualUriFromRealUri(uri);
+    EXPECT_FALSE(virtualUri.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ReplaceAll_Test_001, TestSize.Level1)
+{
+    string str = "hello world hello";
+    string from = "hello";
+    string to = "hi";
+    MediaFileUtils::ReplaceAll(str, from, to);
+    EXPECT_EQ(str, "hi world hi");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetExtraUri_Test_001, TestSize.Level1)
+{
+    string displayName = "test.jpg";
+    string path = "/storage/cloud/files/Photo/1/test.jpg";
+    string extraUri = MediaFileUtils::GetExtraUri(displayName, path, false);
+    EXPECT_FALSE(extraUri.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_AddDocsToRelativePath_Test_001, TestSize.Level1)
+{
+    string relativePath = "Documents/test";
+    string result = MediaFileUtils::AddDocsToRelativePath(relativePath);
+    EXPECT_EQ(result, "Docs/Documents/test");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveDocsFromRelativePath_Test_001, TestSize.Level1)
+{
+    string relativePath = "/storage/cloud/files/Documents/test";
+    string result = MediaFileUtils::RemoveDocsFromRelativePath(relativePath);
+    EXPECT_EQ(result, "/storage/cloud/files/Documents/test");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Timespec2Millisecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 1;
+    time.tv_nsec = 500000000;
+    int64_t milliseconds = MediaFileUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(milliseconds, 1500);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTempOriMovingPhotoVideoPath_Test_001, TestSize.Level1)
+{
+    string imagePath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
+    string videoPath = MediaFileUtils::GetTempMovingPhotoVideoPath(imagePath);
+    EXPECT_FALSE(videoPath.empty());
+    EXPECT_EQ(videoPath, "/storage/cloud/files/.editData/Photo/1/IMG_test.jpg/temp_source.mp4");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMovingPhotoMimeType_Test_001, TestSize.Level1)
+{
+    string mimeType = "image/jpeg";
+    EXPECT_EQ(MediaFileUtils::IsMovingPhotoMimeType(mimeType), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMovingPhotoMimeType_Test_002, TestSize.Level1)
+{
+    string mimeType = "image/png";
+    EXPECT_EQ(MediaFileUtils::IsMovingPhotoMimeType(mimeType), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_PrintStatInformation_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/printstat_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    MediaFileUtils::PrintStatInformation(path);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MediaFileDeletionRecord_Test_001, TestSize.Level1)
+{
+    MediaFileUtils::MediaFileDeletionRecord();
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SetDeletionRecord_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/setdeletionrecord_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd >= 0) {
+        MediaFileUtils::SetDeletionRecord(fd, "test");
+        close(fd);
+    }
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_BackupPhotoDir_Test_001, TestSize.Level1)
+{
+    MediaFileUtils::BackupPhotoDir();
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RecoverMediaTempDir_Test_001, TestSize.Level1)
+{
+    MediaFileUtils::RecoverMediaTempDir();
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizePath_Test_001, TestSize.Level1)
+{
+    string path = "/storage/cloud/files/Photo/test.jpg";
+    string result = MediaFileUtils::DesensitizePath(path);
+    EXPECT_NE(result.find("*"), string::npos);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizePath_Test_002, TestSize.Level1)
+{
+    string path = "/data/test/test.jpg";
+    string result = MediaFileUtils::DesensitizePath(path);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDirStatus_Test_001, TestSize.Level1)
+{
+    std::unordered_set<std::string> dirCheckSet = {"/data/test"};
+    string dir = "/data/test";
+    MediaFileUtils::CheckDirStatus(dirCheckSet, dir);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectoryAndCopyFiles_Test_001, TestSize.Level1)
+{
+    string srcDir = "/data/test/createdirectoryandcopyfiles_src";
+    string dstDir = "/data/test/createdirectoryandcopyfiles_dst";
+    
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(srcDir), true);
+    string srcFile = srcDir + "/test.txt";
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    
+    int32_t ret = MediaFileUtils::CreateDirectoryAndCopyFiles(srcDir, dstDir);
+    EXPECT_EQ(ret, E_OK);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteDir(srcDir), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dstDir), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyFile_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/modifyfile_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    int64_t modifiedTime = 1234567890;
+    MediaFileUtils::ModifyFile(path, modifiedTime);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriWithoutDisplayname_Test_001, TestSize.Level1)
+{
+    string uri = "datashare:///media/Photo/123/test.jpg";
+    string result = MediaFileUtils::GetUriWithoutDisplayname(uri);
+    EXPECT_EQ(result, "datashare:///media/Photo/123/");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveDirectory_Test_001, TestSize.Level1)
+{
+    string srcDir = "/data/test/movedirectory_src";
+    string dstDir = "/data/test/movedirectory_dst";
+    
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(srcDir), true);
+    int32_t ret = MediaFileUtils::MoveDirectory(srcDir, dstDir);
+    EXPECT_EQ(ret, E_OK);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dstDir), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatExtraDataDirectory_Test_001, TestSize.Level1)
+{
+    string srcDir = "/data/test/convertformatextradatadirectory_src";
+    string dstDir = "/data/test/convertformatextradatadirectory_dst";
+    
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(srcDir), true);
+    bool ret = MediaFileUtils::ConvertFormatExtraDataDirectory(srcDir, dstDir, "jpg");
+    EXPECT_EQ(ret, E_OK);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteDir(srcDir), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dstDir), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetReplacedPathByPrefix_Test_001, TestSize.Level1)
+{
+    string srcPrefix = "/storage/cloud";
+    string dstPrefix = "/storage/local";
+    string path = "/storage/cloud/files/Photo/test.jpg";
+    string result = MediaFileUtils::GetReplacedPathByPrefix(srcPrefix, dstPrefix, path);
+    EXPECT_EQ(result, "/storage/local/files/Photo/test.jpg");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetLocalPath_Test_001, TestSize.Level1)
+{
+    string path = "/storage/cloud/files/Photo/test.jpg";
+    string result = MediaFileUtils::GetLocalPath(path);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/test.jpg");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetLocalPath_Test_002, TestSize.Level1)
+{
+    string path = "/data/test/test.jpg";
+    string result = MediaFileUtils::GetLocalPath(path);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsCalledBySelf_Test_001, TestSize.Level1)
+{
+    bool result = MediaFileUtils::IsCalledBySelf();
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CloseAsset_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/closeasset_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    
+    int32_t fd = open(path.c_str(), O_RDONLY);
+    if (fd >= 0) {
+        int32_t ret = MediaFileUtils::CloseAsset(fd);
+        EXPECT_EQ(ret, 0);
+    }
+    
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteFileOrFolder_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/deletefileorfolder_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFileOrFolder(path, true), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(path), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteFileOrFolder_Test_002, TestSize.Level1)
+{
+    string path = "/data/test/deletefileorfolder_002";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(path), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFileOrFolder(path, false), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(path), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirAndDelSrc_Test_001, TestSize.Level1)
+{
+    string srcPath = "/data/test/copydiranddelsrc_src";
+    string destPath = "/data/test/copydiranddelsrc_dst";
+    
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(srcPath), true);
+    string srcFile = srcPath + "/test.txt";
+    EXPECT_EQ(MediaFileUtils::CreateFile(srcFile), true);
+    
+    bool ret = MediaFileUtils::CopyDirAndDelSrc(srcPath, destPath);
+    EXPECT_EQ(ret, true);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteDir(destPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdateModifyTimeInMsec_Test_001, TestSize.Level1)
+{
+    string path = "/data/test/updatemodifytimeinmsec_001";
+    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
+    
+    int64_t modifiedTime = 1234567890;
+    int32_t ret = MediaFileUtils::UpdateModifyTimeInMsec(path, modifiedTime);
+    EXPECT_EQ(ret, E_OK);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMimeTypeFromDisplayName_Test_001, TestSize.Level1)
+{
+    string displayName = "test.jpg";
+    string mimeType = MediaFileUtils::GetMimeTypeFromDisplayName(displayName);
+    EXPECT_FALSE(mimeType.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMimeTypeFromDisplayName_Test_002, TestSize.Level1)
+{
+    string displayName = "test";
+    string mimeType = MediaFileUtils::GetMimeTypeFromDisplayName(displayName);
+    EXPECT_EQ(mimeType, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeUri_Test_001, TestSize.Level1)
+{
+    string fileUri = "datashare:///media/Photo/123/test.jpg";
+    string result = MediaFileUtils::DesensitizeUri(fileUri);
+    EXPECT_NE(result.find("*"), string::npos);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StrCreateTime_Test_001, TestSize.Level1)
+{
+    string format = "%Y-%m-%d %H:%M:%S";
+    int64_t time = 1234567890;
+    string result = MediaFileUtils::StrCreateTime(format, time);
+    EXPECT_FALSE(result.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StrCreateTimeByMilliseconds_Test_001, TestSize.Level1)
+{
+    string format = "%Y-%m-%d %H:%M:%S";
+    int64_t time = 1234567890000;
+    string result = MediaFileUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_FALSE(result.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StatDirSize_Test_001, TestSize.Level1)
+{
+    string rootPath = "/data/test/statdirsize_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(rootPath), true);
+    
+    string file1 = rootPath + "/test1.txt";
+    string file2 = rootPath + "/test2.txt";
+    EXPECT_EQ(MediaFileUtils::CreateFile(file1), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(file2), true);
+    
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(file1, "test content 1"), true);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(file2, "test content 2"), true);
+    
+    size_t totalSize = 0;
+    MediaFileUtils::StatDirSize(rootPath, totalSize);
+    EXPECT_GT(totalSize, 0);
+    
+    EXPECT_EQ(MediaFileUtils::DeleteDir(rootPath), true);
+}
 } // namespace Media
 } // namespace OHOS
