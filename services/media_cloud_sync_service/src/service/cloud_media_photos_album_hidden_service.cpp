@@ -20,15 +20,29 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
+#include "asset_accurate_refresh.h"
+#include "datashare_predicates.h"
+#include "photo_album_column.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaPhotosAlbumHiddenService::UpdateEmptyAlbumHidden()
 {
-    MEDIA_INFO_LOG("enter UpdateEmptyAlbumHidden");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateEmptyAlbumHidden get store failed.");
-    int32_t ret = rdbStore->ExecuteSql(SQL_UPDATE_EMPTY_PHOTO_ALBUM_HIDDEN);
-    MEDIA_INFO_LOG("UpdateEmptyAlbumHidden: Update albums, ret: %{public}d", ret);
-    return ret;
+    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(assetRefresh != nullptr, E_RDB_STORE_NULL,
+        "UpdateEmptyAlbumHidden get store failed.");
+    NativeRdb::ValuesBucket value;
+    value.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, 1);
+    NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_COUNT, "0");
+    rdbPredicates.NotEqualTo(PhotoAlbumColumns::HIDDEN_COUNT, "0");
+    rdbPredicates.NotEqualTo(PhotoAlbumColumns::ALBUM_HIDDEN, "1");
+    int32_t changedRows = 0;
+    int32_t err = assetRefresh->Update(changedRows, value, rdbPredicates);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "UpdateEmptyAlbumHidden failed, err: %{public}d", err);
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
+    MEDIA_INFO_LOG("UpdateEmptyAlbumHidden success, changedRows: %{public}d", changedRows);
+    return err;
 }
 } // namespace OHOS::Media::CloudSync
