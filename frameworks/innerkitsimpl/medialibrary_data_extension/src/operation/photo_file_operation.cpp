@@ -639,7 +639,8 @@ static int32_t DoTranscodeFailedDfx(const std::string &errMsg, const TranscodeEr
     return ret;
 }
 
-int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, size_t &size)
+int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, size_t &size,
+    int32_t width, int32_t height)
 {
     CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(srcPath),
         DoTranscodeFailedDfx("Origin file is not exists.", INNER_FAILED, E_PARAM_CONVERT_FORMAT));
@@ -659,8 +660,8 @@ int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, s
     tracer.Start("CreateTmpCompatibleDup");
 
     auto targetPath = std::move(editDataFolder) + duplicate;
-    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath, extension),
-        DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, targetPath));
+    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath, extension,
+        width, height), DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, targetPath));
 
     tracer.Finish();
     CHECK_AND_RETURN_RET(MediaFileUtils::GetFileSize(targetPath, size),

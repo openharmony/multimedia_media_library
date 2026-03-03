@@ -56,6 +56,7 @@
 #include "result_set_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_const.h"
+#include "medialibrary_bundle_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -80,6 +81,8 @@ static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
 static constexpr int32_t HDC_SECOND_ARGS = 1;
 static constexpr int32_t HDC_THIRD_ARGS = 2;
+const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
+
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
     { O_WRONLY, MEDIA_FILEMODE_WRITEONLY },
@@ -502,17 +505,49 @@ static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, const string
     return E_SUCCESS;
 }
 
+static bool IsHighPixelPicture(const string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    vector<string> columns;
+    columns.push_back(PhotoColumn::PHOTO_WIDTH);
+    columns.push_back(PhotoColumn::PHOTO_HEIGHT);
+
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    int32_t numRows = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get result");
+        return false;
+    }
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if (ret != NativeRdb::E_OK || numRows <= 0) {
+        MEDIA_ERR_LOG("Failed to get numRows");
+        return false;
+    }
+    int32_t width = 0;
+    int32_t height = 0;
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        width = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_WIDTH);
+        height = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_HEIGHT);
+    }
+    if (width * height >= HIGH_PIXEL_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static bool NeedTranscodeHighPixelPicture(bool isHighPixel)
+{
+    if (isHighPixel && !PermissionUtils::IsSystemApp()) {
+        return true;
+    }
+    return false;
+}
+
 static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode)
 {
-    if (MediaFileUtils::GetExtensionFromPath(filePath) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(filePath) != "heic") {
-        MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
-        return E_INNER_FAIL;
-    }
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, filePath: %{private}s", filePath.c_str());
-    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
-        "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
     int32_t compatibleMode = 0;
     GetCompatibleModeFromFileId(compatibleMode, fileId);
     CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
@@ -523,6 +558,18 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
     MEDIA_INFO_LOG("GetTranscodeUri path: %{private}s", path.c_str());
     string tempPath = path + "/transcode.jpg";
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((tempPath)), E_INNER_FAIL, "transcode.jpg is not exist");
+
+    bool isHighPixel = IsHighPixelPicture(fileId);
+    bool isHeif = (MediaFileUtils::GetExtensionFromPath(filePath) == "heif" ||
+        MediaFileUtils::GetExtensionFromPath(filePath) == "heic");
+    if (!NeedTranscodeHighPixelPicture(isHighPixel)) {
+        if (!isHeif) {
+            MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
+            return E_INNER_FAIL;
+        }
+        CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
+        "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
+    }
     filePath = tempPath;
     return E_OK;
 }
