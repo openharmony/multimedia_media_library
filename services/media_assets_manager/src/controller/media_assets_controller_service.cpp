@@ -36,6 +36,8 @@
 #include "media_file_utils.h"
 #include "cloud_enhancement_vo.h"
 #include "cloud_enhancement_dto.h"
+#include "convert_format_vo.h"
+#include "convert_format_dto.h"
 #include "start_download_cloud_media_vo.h"
 #include "retain_cloud_media_asset_vo.h"
 #include "grant_photo_uri_permission_vo.h"
@@ -63,8 +65,6 @@
 #include "get_analysis_process_vo.h"
 #include "medialibrary_rdb_utils.h"
 #include "permission_common.h"
-#include "convert_format_vo.h"
-#include "convert_format_dto.h"
 #include "create_tmp_compatible_dup_vo.h"
 #include "create_tmp_compatible_dup_dto.h"
 #include "add_visit_count_vo.h"
@@ -89,13 +89,11 @@
 #include "media_app_uri_permission_column.h"
 #include "cancel_request_vo.h"
 #include "start_batch_download_cloud_resources_vo.h"
-#include "set_network_policy_batch_download_vo.h"
 #include "resume_batch_download_cloud_resources_vo.h"
 #include "pause_batch_download_cloud_resources_vo.h"
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
-#include "get_batch_download_cloud_resources_size_vo.h"
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
 #include "get_fussion_assets_vo.h"
@@ -420,10 +418,6 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::StartBatchDownloadCloudResources
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_NETWORK_POLICY_FOR_BATCH_DOWNLOAD),
-        &MediaAssetsControllerService::SetNetworkPolicyForBatchDownload
-    },
-    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::RESUME_BATCH_DOWNLOAD_CLOUD_RESOURCES),
         &MediaAssetsControllerService::ResumeBatchDownloadCloudResources
     },
@@ -442,10 +436,6 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_COUNT),
         &MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesCount
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_SIZE),
-        &MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesSize
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT),
@@ -1219,28 +1209,28 @@ int32_t MediaAssetsControllerService::SetHasAppLink(MessageParcel &data, Message
 {
     MEDIA_INFO_LOG("enter SetHasAppLink");
     AssetChangeReqBody reqBody;
-
+ 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetHasAppLink Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-
+ 
     ret = MediaAssetsService::GetInstance().SetHasAppLink(reqBody.fileId, reqBody.hasAppLink);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
-
+ 
 int32_t MediaAssetsControllerService::SetAppLink(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetAppLink");
     AssetChangeReqBody reqBody;
-
+ 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetAppLink Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-
+ 
     ret = MediaAssetsService::GetInstance().SetAppLink(reqBody.fileId, reqBody.appLink);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
@@ -2294,23 +2284,6 @@ int32_t MediaAssetsControllerService::StartBatchDownloadCloudResources(MessagePa
 #endif
 }
 
-int32_t MediaAssetsControllerService::SetNetworkPolicyForBatchDownload(MessageParcel &data, MessageParcel &reply)
-{
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-    MEDIA_INFO_LOG("enter MediaAssetsControllerService SetNetworkPolicyForBatchDownload");
-    SetNetworkPolicyForBatchDownloadReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("SetNetworkPolicyForBatchDownload Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    ret = MediaAssetsService::GetInstance().SetNetworkPolicyForBatchDownload(reqBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-#else
-    return 0;
-#endif
-}
-
 int32_t MediaAssetsControllerService::ResumeBatchDownloadCloudResources(MessageParcel &data, MessageParcel &reply)
 {
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -2398,27 +2371,6 @@ int32_t MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesCount(M
     ret = MediaAssetsService::GetInstance().GetCloudMediaBatchDownloadResourcesCount(reqBody, respBody);
     MEDIA_INFO_LOG("MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesCount count: %{public}d",
         respBody.count);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-#else
-    return 0;
-#endif
-}
-
-int32_t MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesSize(MessageParcel &data,
-    MessageParcel &reply)
-{
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-    MEDIA_INFO_LOG("enter MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesSize");
-    GetBatchDownloadCloudResourcesSizeReqBody reqBody;
-    GetBatchDownloadCloudResourcesSizeRespBody respBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetCloudMediaBatchDownloadResourcesSize Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    ret = MediaAssetsService::GetInstance().GetCloudMediaBatchDownloadResourcesSize(reqBody, respBody);
-    MEDIA_INFO_LOG("MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesSize size: %{public}" PRId64,
-        respBody.size);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 #else
     return 0;
@@ -2574,7 +2526,7 @@ int32_t MediaAssetsControllerService::GetResultSetFromDb(MessageParcel &data, Me
     getResultSetFromDbDto.columns = reqBody.columns;
     GetResultSetFromDbRespBody respBody;
     ret = MediaAssetsService::GetInstance().GetResultSetFromDb(getResultSetFromDbDto, respBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAssetsControllerService::GetResultSetFromPhotosExtend(MessageParcel &data, MessageParcel &reply)
@@ -2617,6 +2569,7 @@ int32_t MediaAssetsControllerService::GetMovingPhotoDateModified(MessageParcel &
     ret = MediaAssetsService::GetInstance().GetMovingPhotoDateModified(reqBody.fileId, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
+
 int32_t MediaAssetsControllerService::GetFilePathFromUri(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetFilePathFromUri");
