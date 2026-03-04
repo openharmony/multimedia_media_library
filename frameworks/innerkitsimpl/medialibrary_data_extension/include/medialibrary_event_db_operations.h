@@ -22,8 +22,7 @@
 namespace OHOS {
 namespace Media {
 
-class MedialibraryEventDbOperations
-{
+class MedialibraryEventDbOperations {
 public:
     enum class EventType {
         ASSET_ADD = 1,
@@ -55,7 +54,6 @@ public:
 private:
     enum { UUID_STR_LENGTH = 37 };
     static std::string EventTypeToString(EventType type);
-
 };
 } // namespace Media
 } // namespace OHOS

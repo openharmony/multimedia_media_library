@@ -20,8 +20,7 @@
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 
-namespace OHOS::Media
-{
+namespace OHOS::Media {
     using namespace std;
     using namespace NativeRdb;
 

@@ -55,15 +55,15 @@ PhotoBatchInfo MediaCriticalLabelTask::QueryPhotosBatch(std::shared_ptr<MediaLib
     
     int32_t offset = page * pageSize;
     std::string sql = "SELECT " + MediaColumn::MEDIA_ID + ", " + 
-                    MediaColumn::MEDIA_NAME + ", " + 
-                    MediaColumn::MEDIA_FILE_PATH + ", " +
-                    MediaColumn::MEDIA_TYPE + ", " +
-                    MediaColumn::MEDIA_DATE_ADDED +
-                    " FROM " + PhotoColumn::PHOTOS_TABLE +
-                    " WHERE " + PhotoColumn::PHOTO_RISK_STATUS + "= " +
-                    std::to_string(static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED)) +
-                    " LIMIT " + std::to_string(pageSize) +
-                    " OFFSET " + std::to_string(offset);
+        MediaColumn::MEDIA_NAME + ", " + 
+        MediaColumn::MEDIA_FILE_PATH + ", " +
+        MediaColumn::MEDIA_TYPE + ", " +
+        MediaColumn::MEDIA_DATE_ADDED +
+        " FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + PhotoColumn::PHOTO_RISK_STATUS + "= " +
+        std::to_string(static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED)) +
+        " LIMIT " + std::to_string(pageSize) +
+        " OFFSET " + std::to_string(offset);
 
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, batchInfo, "Query photos batch fails");
@@ -82,7 +82,7 @@ PhotoBatchInfo MediaCriticalLabelTask::QueryPhotosBatch(std::shared_ptr<MediaLib
     return batchInfo;
 }
 
-std::string MediaCriticalLabelTask::ConstructPhotoUri(const std::string &fileAssetData, 
+std::string MediaCriticalLabelTask::ConstructPhotoUri(const std::string &fileAssetData,
     const std::string &displayName, int32_t fileId)
 {
     return MediaFileUtils::GetFileAssetUri(fileAssetData, displayName, fileId);
@@ -155,7 +155,6 @@ void MediaCriticalLabelTask::HandleCriticalLabelProcessing()
         }
 
         taskData->batchInfo = batchInfo;
-        
         shared_ptr<MediaLibraryAsyncTask> criticalLabelAsyncTask = make_shared<MediaLibraryAsyncTask>(
             SendToAnlyze, taskData);
 

@@ -64,12 +64,10 @@ void MedialibraryEventDbOperations::CreateEvent(EventType type, const std::strin
 
 void MedialibraryEventDbOperations::UpdateEvent(EventType type, const std::string& unique_id)
 {
-
 }
 
 void MedialibraryEventDbOperations::DeleteEvent(EventType type, const std::string& unique_id)
 {
-
 }
 
 std::string MedialibraryEventDbOperations::GenerateUuid()
@@ -80,5 +78,4 @@ std::string MedialibraryEventDbOperations::GenerateUuid()
     uuid_unparse(uuid, str);
     return str;
 }
-
-}// namespace OHOS::Media
+} // namespace OHOS::Media
