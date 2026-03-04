@@ -459,6 +459,8 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     MediaColumn::MEDIA_SIZE,
     MediaColumn::MEDIA_NAME,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+    PhotoColumn::PHOTO_WIDTH,
+    PhotoColumn::PHOTO_HEIGHT,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
