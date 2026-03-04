@@ -482,7 +482,9 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     }
     tracer.Finish();
 
-    Uri openUri(uri_);
+    string tmpUri = uri_;
+    MediaUriUtils::AppendKeyValue(tmpUri, CONST_MEDIA_WHETHER_NEED_WATCH_NOTIFY, CONST_NO_NEED_WATCH_NOTIFY);
+    Uri openUri(tmpUri);
     int fd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
     CHECK_AND_RETURN_LOG(fd >= 0, "fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
     DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
