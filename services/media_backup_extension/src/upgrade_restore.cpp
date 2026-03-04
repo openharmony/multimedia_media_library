@@ -1329,15 +1329,17 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
     }
     std::unordered_set<std::string> needQuerySet;
-    std::string querySql = "SELECT DISTINCT mf.hash "
+    std::string querySql = "SELECT hash FROM ("
+        " SELECT mf.hash, "
+        " ROW_NUMBER() OVER (PARTITION BY mf.hash ORDER BY mf.face_id) as rownum "
         " FROM merge_face mf "
         " INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
         " INNER JOIN gallery_media gm ON mf.hash = gm.hash "
         " LEFT JOIN gallery_album ga ON gm.albumId = ga.albumId AND ga.hide = 1 "
         " WHERE (gm.recycleFlag IS NULL OR gm.recycleFlag NOT IN (?, ?, ?, ?, ?)) "
         " AND ga.albumId IS NULL "
-        " GROUP BY mf.hash, mf.face_id "
-        " HAVING gm._id IN (" + selection + ")";
+        " AND gm._id IN (" + selection + ")"
+        ") WHERE rownum = 1 ";
     std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
         RECYCLE_FLAG_DELETE_UNSYNCED, RECYCLE_FLAG_HARD_DELETE_UNSYNCED };
 
@@ -1346,7 +1348,11 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
         CHECK_AND_CONTINUE(!hash.empty());
-        needQuerySet.insert(hash);
+        std::lock_guard<ffrt::mutex> lock(processHashesMutex_);
+        if (processGlobalHashes_.find(hash) == processGlobalHashes_.end()) {
+            needQuerySet.insert(hash);
+            processGlobalHashes_.insert(hash);
+        }
     }
     resultSet->Close();
 
