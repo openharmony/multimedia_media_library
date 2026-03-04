@@ -30,6 +30,7 @@
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
+#include "medialibrary_event_db_operations.h"
 #include "medialibrary_restore.h"
 #include "medialibrary_tracer.h"
 #include "media_container_types.h"
@@ -74,6 +75,7 @@
 #include "media_edit_utils.h"
 #include "media_string_utils.h"
 #include "media_values_bucket_utils.h"
+#include "media_operation_log_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2002,6 +2004,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_PROGRESS,
     DownloadResourcesColumn::CREATE_TABLE,
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
+
+    TabOperationLogColumn::CREATE_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3699,6 +3703,24 @@ void AddLcdAndThumbSizeColumns(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_THUMB_SIZE + " TEXT",
     };
     ExecSqls(sqls, store);
+}
+
+void AddUniqueIdColumns(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::UNIQUE_ID + " TEXT DEFAULT '-1'",
+    };
+
+    MEDIA_INFO_LOG("add Photos unique_id column starts");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("add Photos unique_id column ends");
+}
+
+void CreateTabOperationLog(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("create tab_operation_log starts");
+    ExecSqlsWithDfx({TabOperationLogColumn::CREATE_TABLE}, store, version);
+    MEDIA_INFO_LOG("create tab_operation_log ends");
 }
 
 void UpdatePhotoAlbumTigger(RdbStore &store, int32_t version)
@@ -5888,6 +5910,18 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true)) {
         AddCinematicVideoAlbum(store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_OPERATION_LOG &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_OPERATION_LOG, true)) {
+        CreateTabOperationLog(store, VERSION_CREATE_TAB_OPERATION_LOG);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_OPERATION_LOG, true);
+    }
+
+    if (oldVersion < VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true)) {
+        AddUniqueIdColumns(store, VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true);
     }
 }
 

@@ -51,6 +51,7 @@
 #include "values_bucket.h"
 #include "photo_album_column.h"
 #include "duplicate_photo_operation.h"
+#include "medialibrary_critical_photo_operations.h"
 #define private public
 #include "picture_data_operations.h"
 #undef private

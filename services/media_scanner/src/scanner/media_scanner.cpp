@@ -40,6 +40,15 @@
 #include "refresh_business_name.h"
 #include "metadata_extractor.h"
 #include "media_audio_column.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_related_system_state_manager.h"
+#include "parameters.h"
+
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+#include "critical_label_task_queue.h"
+#include "watch_lite/cloud_audit_impl.h"
+#include "watch_system_handler.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -275,6 +284,45 @@ static void UpdateAndNotifyShootingModeAlbumOfAsset(std::unique_ptr<Metadata>& d
     }
 }
 
+void MediaScannerObj::FillAssetInfoWatch()
+{
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true"
+            && WatchSystemHandler::GetAllowNetworkSwitch()) {
+        MEDIA_INFO_LOG("FillAssetInfoWatch Start");
+        CHECK_AND_RETURN_LOG(data_ != nullptr, "FillAssetInfoWatch data_ is nullptr");
+                TTLPriorityQueue::AssetParams params;
+        params.display_name = data_->GetFileName();
+        params.id = 0;
+        params.priority = 2;
+        params.type = data_->GetFileMediaType();
+        params.uri =  MediaFileUtils::GetFileAssetUri(data_->GetFilePath(), data_->GetFileName(),
+            data_->GetFileId());
+        params.added_time = data_->GetFileDateAdded();
+        auto instance = MedialibraryRelatedSystemStateManager::GetInstance();
+        CHECK_AND_RETURN_LOG(instance != nullptr, "MedialibraryRelatedSystemStateManager instance is nullptr");
+        bool isNetworkSufficient = instance->IsNetAvailableInOnlyWifiCondition()
+                || (instance->IsNetValidatedAtRealTime() && instance->IsCellularNetConnected());
+        if (isNetworkSufficient) {
+            auto criticalLabelTaskQueue = TTLPriorityQueue::GetInstance();
+            CHECK_AND_RETURN_LOG(criticalLabelTaskQueue != nullptr, "criticalLabelTaskQueue is nullptr");
+            criticalLabelTaskQueue->AddElement(params);
+            MEDIA_DEBUG_LOG("realtime addElement, displayName: %{public}s", params.display_name.c_str());
+        }
+    }
+#endif
+}
+
+void CheckDuration(int64_t startTime)
+{
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t duration = endTime - startTime;
+    // 在CPU占用率80%, 运行脚本一直执行连拍100次操作, 查看极端场景下用时大于400ms的频率
+    if (duration > 400) {
+        MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %{public}" PRId64 " milliseconds", duration);
+    }
+}
+
 int32_t MediaScannerObj::Commit()
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -317,12 +365,9 @@ int32_t MediaScannerObj::Commit()
     CHECK_AND_PRINT_LOG(ret == E_OK, "CalSingleEditDataSize failed ID: %{public}d (ret code: %{public}d)", fileId, ret);
     assetRefresh->Notify();
     mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());
-    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t duration = endTime - startTime;
-    // 在CPU占用率80%, 运行脚本一直执行连拍100次操作, 查看极端场景下用时大于400ms的频率
-    if (duration > 400) {
-        MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %" PRId64 " milliseconds", duration);
-    }
+    FillAssetInfoWatch();
+    data_ = nullptr;
+    CheckDuration(startTime);
     return E_OK;
 }
 
