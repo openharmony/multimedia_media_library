@@ -1743,8 +1743,9 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
-            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s", fileAsset->GetUri().c_str(),
-                fileAsset->GetPath().c_str());
+            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s",
+                MediaFileUtils::DesensitizeUri(fileAsset->GetUri()).c_str(),
+                MediaFileUtils::DesensitizePath(fileAsset->GetPath()).c_str());
             int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
             CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
         }
@@ -3300,8 +3301,8 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
         "Photo Asset is nullptr");
     string filePath = fileAsset->GetPath();
     string displayName = fileAsset->GetDisplayName();
-    MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
-    MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
+    MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", MediaFileUtils::DesensitizeName(displayName).c_str());
+    MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
     FileUtils::DeleteTempVideoFile(filePath);
     bool res = LakeFileUtils::DeleteFile(filePath);

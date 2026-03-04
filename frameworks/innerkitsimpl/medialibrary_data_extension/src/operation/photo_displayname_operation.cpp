@@ -17,6 +17,7 @@
 #include "photo_displayname_operation.h"
 
 #include "display_name_info.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media {
 PhotoDisplayNameOperation &PhotoDisplayNameOperation::SetTargetPhotoInfo(const PhotoAssetInfo &photoAssetInfo)
@@ -51,7 +52,7 @@ std::string PhotoDisplayNameOperation::FindDislayName(
     if (photoAssetInfo.displayName != displayName) {
         MEDIA_INFO_LOG("displayName changed from %{public}s to %{public}s",
             photoAssetInfo.ToString().c_str(),
-            displayName.c_str());
+            MediaFileUtils::DesensitizeName(displayName).c_str());
     }
     return displayName;
 }

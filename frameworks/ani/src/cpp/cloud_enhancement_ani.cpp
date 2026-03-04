@@ -23,6 +23,7 @@
 #include "medialibrary_tracer.h"
 #include "media_column.h"
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "userfile_client.h"
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -478,8 +479,10 @@ static bool ParseArgPrioritize(ani_env *env, ani_object aniObject, ani_object ph
         return false;
     }
 
-    ANI_INFO_LOG("Parse Arg: %{public}d, %{private}s, %{public}s", context->fileId, context->photoUri.c_str(),
-        context->displayName.c_str());
+    ANI_INFO_LOG("Parse Arg: %{public}d, %{private}s, %{public}s",
+        context->fileId,
+        MediaFileUtils::DesensitizeUri(context->photoUri).c_str(),
+        MediaFileUtils::DesensitizeName(context->displayName).c_str());
     return true;
 }
 
@@ -661,8 +664,10 @@ static bool ParseArgQuery(ani_env *env, ani_object aniObject, ani_object photoAs
         return false;
     }
 
-    ANI_INFO_LOG("Parse Arg: %{public}d, %{private}s, %{public}s", context->fileId, context->photoUri.c_str(),
-        context->displayName.c_str());
+    ANI_INFO_LOG("Parse Arg: %{public}d, %{private}s, %{public}s",
+        context->fileId,
+        MediaFileUtils::DesensitizeUri(context->photoUri).c_str(),
+        MediaFileUtils::DesensitizeName(context->displayName).c_str());
     return true;
 }
 

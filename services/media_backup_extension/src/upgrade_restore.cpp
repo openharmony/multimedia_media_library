@@ -1175,11 +1175,12 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
         PortraitAlbumInfo portraitAlbumInfo;
         if (!ParsePortraitAlbumResultSet(resultSet, portraitAlbumInfo)) {
             MEDIA_ERR_LOG("Parse portrait album result set failed, exclude %{public}s",
-                portraitAlbumInfo.tagName.c_str());
+                MediaFileUtils::DesensitizeName(portraitAlbumInfo.tagName).c_str());
             continue;
         }
         if (!SetAttributes(portraitAlbumInfo)) {
-            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", portraitAlbumInfo.tagName.c_str());
+            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s",
+                MediaFileUtils::DesensitizeName(portraitAlbumInfo.tagName).c_str());
             continue;
         }
         if (!portraitAlbumInfo.tagName.empty()) {

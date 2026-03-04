@@ -910,7 +910,8 @@ int32_t CloudMediaPhotosDao::GetLocalKeyData(KeyData &localKeyData, std::shared_
     SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap = GetAlbumLocalToCloudMap();
     if (!localToCloudMap.Find(albumid, val)) {
         localKeyData.sourceAlbum = hiddenAlbumId_ == albumid ? HIDDEN_ALBUM_CLOUD_ID : "";
-        MEDIA_ERR_LOG("FixData: Get sourceAlbum %{public}s", localKeyData.sourceAlbum.c_str());
+        MEDIA_ERR_LOG(
+            "FixData: Get sourceAlbum %{public}s", MediaFileUtils::DesensitizeName(localKeyData.sourceAlbum).c_str());
         std::string sourcePath = Media::GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
         localKeyData.lPath = CloudMediaSyncUtils::GetLpathFromSourcePath(sourcePath);
         MEDIA_ERR_LOG(
@@ -928,7 +929,8 @@ bool CloudMediaPhotosDao::JudgeConflict(
     if (localKeyData.displayName != cloudKeyData.displayName) {
         return false;
     }
-    MEDIA_INFO_LOG("Judge duplicate files %{public}s", localKeyData.displayName.c_str());
+    MEDIA_INFO_LOG(
+        "Judge duplicate files %{public}s", MediaFileUtils::DesensitizeName(localKeyData.displayName).c_str());
     if ((localKeyData.isize != cloudKeyData.isize) ||
         ((cloudKeyData.mediaType == MediaType::MEDIA_TYPE_IMAGE) &&
             (localKeyData.exifRotateValue != cloudKeyData.exifRotateValue))) {

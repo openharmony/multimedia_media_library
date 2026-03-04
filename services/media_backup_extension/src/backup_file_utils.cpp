@@ -896,7 +896,7 @@ bool BackupFileUtils::GetAccountValid(const int32_t sceneCode, const std::string
             continue;
         } else {
             oldId = item["detail"];
-            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+            MEDIA_INFO_LOG("the old is %{public}s", MediaFileUtils::DesensitizeName(oldId).c_str());
             break;
         }
     }
