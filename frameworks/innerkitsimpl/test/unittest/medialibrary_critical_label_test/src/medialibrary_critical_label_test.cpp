@@ -38,12 +38,12 @@ using OHOS::Media::MediaType;
 
 namespace OHOS::Media::Background {
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static std::atomic<int> number(0);
+static std::atomic<int> g_number(0);
 static const int32_t SLEEP_SECONDS = 1;
 
 static int GetNumber()
 {
-    return ++number;
+    return ++g_number;
 }
 
 static std::string GetTitle(int64_t &timestamp)
