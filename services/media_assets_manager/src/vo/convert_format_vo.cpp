@@ -83,21 +83,21 @@ string MimeTypeReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-        << "\"fileId\": \"" << std::to_string(this->fileId) << "\", "
+        << "\"fileId\": \"" << std::to_string(this->fileId) << "\""
         << "}";
     return ss.str();
 }
 bool MimeTypeRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadBool(this->result);
-    CHECK_AND_RETURN_RET_LOG(status, false, "write fileId failed");
+    CHECK_AND_RETURN_RET_LOG(status, false, "read result failed");
     return true;
 }
 
 bool MimeTypeRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteBool(this->result);
-    CHECK_AND_RETURN_RET_LOG(status, false, "write fileId failed");
+    CHECK_AND_RETURN_RET_LOG(status, false, "write result failed");
     return true;
 }
 } // namespace OHOS::Media
