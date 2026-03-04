@@ -44,10 +44,14 @@
 #include "accurate_common_data.h"
 #include "lake_file_operations.h"
 #include "media_string_utils.h"
+#include "ipc_skeleton.h"
+#include "accesstoken_kit.h"
+#include "parameters.h"
 
 namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
+using namespace OHOS::Security::AccessToken;
 // LCOV_EXCL_START
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
 constexpr int32_t INVALID_INT32_VALUE = -1;
@@ -158,6 +162,7 @@ atomic<bool> MediaLibraryRdbUtils::isInRefreshTask = false;
 
 const string ANALYSIS_REFRESH_BUSINESS_TYPE = "ANALYSIS_ALBUM_REFRESH";
 const std::string MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID = "count(distinct file_id)";
+static const std::string CONST_MEDIA_SECURE_ALBUM = "const.media.secure_album";
 
 static inline string GetStringValFromColumn(const shared_ptr<ResultSet> &resultSet, const int index)
 {
@@ -324,6 +329,8 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbumBySubtype(const shared_ptr<M
 
 static string GetQueryFilter(const string &tableName)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetQueryFilter");
     if (tableName == CONST_MEDIALIBRARY_TABLE) {
         return string(CONST_MEDIALIBRARY_TABLE) + "." + CONST_MEDIA_DATA_DB_SYNC_STATUS + " = " +
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
@@ -333,9 +340,18 @@ static string GetQueryFilter(const string &tableName)
             to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
             PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
             to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
-        if (!PermissionUtils::CheckCallerPermission(PERM_MANAGE_CRITICAL_PHOTOS)) {
-            filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+            // Check if the caller has MANAGE_RISK_PHOTOS permission
+            AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+            int res = AccessTokenKit::VerifyAccessToken(tokenCaller, MANAGE_RISK_PHOTOS);
+            if (res != PermissionState::PERMISSION_GRANTED) {
+                filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
+                MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission denied, filter: %{public}s", filter.c_str());
+            }
         }
+#endif
+        MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission granted, filter: %{public}s", filter.c_str());
         return filter;
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
@@ -1434,7 +1450,7 @@ int32_t UpdateCoverUriSourceToDefault(int32_t albumId)
         PhotoAlbumColumns::COVER_URI_SOURCE + " > " + to_string(CoverUriSource::DEFAULT_COVER);
 
     newPredicates.SetWhereClause(UPDATE_CONDITION);
-    
+
     int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(values, newPredicates);
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
@@ -2105,7 +2121,7 @@ int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibr
     MEDIA_INFO_LOG("Start update highlight play info on dismiss highlight asset");
     const std::string UPDATE_HIGHLIGHT_PLAY_INFO = "UPDATE tab_highlight_play_info SET status = 1 "
         "WHERE album_id = (SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
-    
+
     int32_t ret = rdbStore->ExecuteSql(UPDATE_HIGHLIGHT_PLAY_INFO);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to execute sql:%{public}s",
         UPDATE_HIGHLIGHT_PLAY_INFO.c_str());

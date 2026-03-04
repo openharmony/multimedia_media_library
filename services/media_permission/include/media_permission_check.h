@@ -51,10 +51,12 @@ protected:
     static std::shared_ptr<PermissionCheck> BuildPermissionCheckChain(uint32_t businessCode,
         const PermissionHeaderReq &data);
     static int32_t VerifyOpenFilePermissions(uint32_t businessCode, const PermissionHeaderReq &data);
+    static bool IsCriticalPhoto(const std::string &fileId);
 public:
     virtual ~PermissionCheck() = default;
     virtual int32_t CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data) = 0;
     EXPORT static int32_t VerifyPermissions(uint32_t businessCode, const PermissionHeaderReq &data);
+    EXPORT static int32_t CheckCriticalPhotoPermission(const std::string &fileId, const uid_t &uid);
 };
 
 inline EXPORT bool (*isCalledBySelfPtr)() = MediaFileUtils::IsCalledBySelf;
