@@ -111,6 +111,7 @@ int32_t CloudMediaPhotosDeleteService::CopyAndMoveCloudAssetToTrash(
     bool isValid = ret == E_OK && targetPhotoInfoOp.has_value();
     CHECK_AND_EXECUTE(!isValid, pullData.localPhotosPoOp = targetPhotoInfoOp);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "DeleteCloudAssetSingle failed, ret: %{public}d", ret);
+    CHECK_AND_EXECUTE(!isValid, UpdatePullDataLocalInfo(pullData, targetPhotoInfoOp));
     return E_OK;
 }
 
@@ -125,5 +126,28 @@ int32_t CloudMediaPhotosDeleteService::MoveOutTrashAndMergeWithSameAsset(
         photoRefresh, localPhotosPo, targetLocalPhotosPoOp);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "MoveOutTrashAndMergeWithSameAsset failed, ret: %{public}d", ret);
     return E_OK;
+}
+
+void CloudMediaPhotosDeleteService::UpdatePullDataLocalInfo(CloudMediaPullDataDto &pullData,
+                                                            const std::optional<PhotosPo> &targetPhotoInfoOp)
+{
+    CHECK_AND_RETURN(targetPhotoInfoOp.has_value());
+    PhotosPo targetPhotoInfo = targetPhotoInfoOp.value();
+    bool isValid = targetPhotoInfo.fileId.has_value();
+    isValid = isValid && targetPhotoInfo.data.has_value();
+    isValid = isValid && targetPhotoInfo.position.has_value();
+    isValid = isValid && pullData.localFileId != targetPhotoInfo.fileId.value_or(0);
+    CHECK_AND_RETURN(isValid);
+    std::string oldData = pullData.localPath;
+    int32_t oldFileId = pullData.localFileId;
+    int32_t oldPosition = pullData.localPosition;
+    pullData.localPath = targetPhotoInfo.data.value_or("");
+    pullData.localFileId = targetPhotoInfo.fileId.value_or(0);
+    pullData.localPosition = targetPhotoInfo.position.value_or(1);
+    std::stringstream ss;
+    ss << "oldData: " << oldData << ", newData: " << pullData.localPath << ", ";
+    ss << "oldFileId: " << oldFileId << ", newFileId: " << pullData.localFileId << ", ";
+    ss << "oldPosition: " << oldPosition << ", newPosition: " << pullData.localPosition << ", ";
+    MEDIA_INFO_LOG("local info changed : %{public}s", ss.str().c_str());
 }
 }  // namespace OHOS::Media::CloudSync
