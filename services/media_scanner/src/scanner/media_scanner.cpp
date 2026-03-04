@@ -292,9 +292,10 @@ void MediaScannerObj::FillAssetInfoWatch()
         MEDIA_INFO_LOG("FillAssetInfoWatch Start");
         CHECK_AND_RETURN_LOG(data_ != nullptr, "FillAssetInfoWatch data_ is nullptr");
                 TTLPriorityQueue::AssetParams params;
+        int32_t priority = 2;
         params.display_name = data_->GetFileName();
         params.id = 0;
-        params.priority = 2;
+        params.priority = priority;
         params.type = data_->GetFileMediaType();
         params.uri =  MediaFileUtils::GetFileAssetUri(data_->GetFilePath(), data_->GetFileName(),
             data_->GetFileId());

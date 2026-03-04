@@ -33,7 +33,7 @@ std::vector<MedialibraryEventDbOperations::OperationRecord> MedialibraryEventDbO
 
 std::string MedialibraryEventDbOperations::EventTypeToString(EventType type)
 {
-    switch(type) {
+    switch (type) {
         case EventType::ASSET_ADD:           return "ASSET_ADD";
         case EventType::ASSET_UPDATE_META:   return "ASSET_UPDATE_META";
         case EventType::ASSET_UPDATE_FILE:   return "ASSET_UPDATE_FILE";

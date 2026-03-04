@@ -55,7 +55,7 @@ PhotoBatchInfo MediaCriticalLabelTask::QueryPhotosBatch(std::shared_ptr<MediaLib
     
     int32_t offset = page * pageSize;
     std::string sql = "SELECT " + MediaColumn::MEDIA_ID + ", " + 
-        MediaColumn::MEDIA_NAME + ", " + 
+        MediaColumn::MEDIA_NAME + ", " +
         MediaColumn::MEDIA_FILE_PATH + ", " +
         MediaColumn::MEDIA_TYPE + ", " +
         MediaColumn::MEDIA_DATE_ADDED +
@@ -138,26 +138,21 @@ void MediaCriticalLabelTask::HandleCriticalLabelProcessing()
             MEDIA_INFO_LOG("MediaCriticalLabelTask check condition failed, stopping at page: %{public}d", page);
             break;
         }
-
         // Query batch of photos
         PhotoBatchInfo batchInfo = QueryPhotosBatch(rdbStore, page, BATCH_SIZE);
-        
         // If batch is empty, we're done
         if (batchInfo.empty()) {
             MEDIA_INFO_LOG("No more photos to process, iteration complete");
             break;
         }
-
         CriticalLabelAsyncTaskData* taskData = new (std::nothrow) CriticalLabelAsyncTaskData();
         if (taskData == nullptr) {
             MEDIA_ERR_LOG("Failed to create new taskData");
             return;
         }
-
         taskData->batchInfo = batchInfo;
         shared_ptr<MediaLibraryAsyncTask> criticalLabelAsyncTask = make_shared<MediaLibraryAsyncTask>(
             SendToAnlyze, taskData);
-
         if (criticalLabelAsyncTask != nullptr) {
             // Process and print each photo in the batch
             asyncWorker->AddTask(criticalLabelAsyncTask, true);
@@ -168,7 +163,6 @@ void MediaCriticalLabelTask::HandleCriticalLabelProcessing()
             MEDIA_ERR_LOG("Start SendToAnlyze failed");
         }
     }
-
     MEDIA_INFO_LOG("MediaCriticalLabelTask End, total processed: %{public}d", totalProcessed);
 }
 }  // namespace OHOS::Media::Background
