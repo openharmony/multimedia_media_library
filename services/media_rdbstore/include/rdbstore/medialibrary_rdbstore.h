@@ -69,7 +69,7 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns);
     EXPORT static int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values,
         const NativeRdb::AbsRdbPredicates &predicates);
-    static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns, const std::string &id);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUriForPhotos(const NativeRdb::AbsRdbPredicates &predicates,

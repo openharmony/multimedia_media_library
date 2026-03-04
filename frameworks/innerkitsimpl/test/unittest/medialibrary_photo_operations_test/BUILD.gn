@@ -94,6 +94,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_COMMON_PATH}:media_library_common",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
@@ -128,6 +129,8 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "dfs_service:cloudsync_kit_inner",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
   ]
 
   defines = []

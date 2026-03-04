@@ -1361,7 +1361,7 @@ int32_t GetPhotoIdByFileId(int32_t fileId, std::string &photoId)
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
         E_FILE_EXIST, "result set is empty");
-    
+
     photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     return E_OK;
 }
@@ -1480,7 +1480,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
                 "update third party photo temp, dirty flag, watermark type and camera shot key fail.");
             break;
         }
- 
+
         string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
         CHECK_AND_RETURN_RET_LOG(!subTypeStr.empty(), E_ERR, "get subType fail");
         int32_t subType = stoi(subTypeStr);
@@ -1494,7 +1494,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
                 "burst photo update temp, dirty flag, watermark type and camera shot key fail.");
             break;
         }
- 
+
         updateRows = assetRefresh.UpdateWithDateTime(values, predicates);
         CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR, "update temp flag fail.");
         if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
@@ -1502,7 +1502,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "update dirty flag fail.");
         }
     } while (0);
- 
+
     assetRefresh.RefreshAlbum(static_cast<NotifyAlbumType>(SYS_ALBUM | USER_ALBUM | SOURCE_ALBUM));
     assetRefresh.Notify();
     return updateRows;
@@ -1547,7 +1547,7 @@ int32_t MediaLibraryPhotoOperations::Get500FileIdsAndPathS(const std::shared_ptr
     }
     // 一次查取500个
     queryCmd.GetAbsRdbPredicates()->Limit(500);
-        
+
     std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH};
 
     auto result = rdbStore->Query(queryCmd, columns);
@@ -1598,7 +1598,7 @@ static int32_t GetCloudFilePath(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::string sql = "SELECT " + MediaColumn::MEDIA_FILE_PATH +
                      " FROM " + PhotoColumn::PHOTOS_TABLE +
                      " WHERE " + MediaColumn::MEDIA_ID + " = ?";
-    
+
     std::vector<NativeRdb::ValueObject> params = {fileId};
     auto result = rdbStore->QuerySql(sql, params);
     if (!result) {
@@ -2270,7 +2270,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     CHECK_AND_PRINT_LOG(ret == E_OK, "move inner anco asset to system album error");
     CHECK_AND_EXECUTE(assetString.empty(), MediaAnalysisHelper::AsyncStartMediaAnalysisService(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), assetString));
-    
+
     assetRefresh.RefreshAlbum();
     for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
         MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
@@ -3006,7 +3006,7 @@ static int32_t Move(const string& srcPath, const string& destPath)
     }
     return ret;
 }
- 
+
 int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, const int32_t &fileType,
     PhotoExtInfo &photoExtInfo, ValuesBucket &updateValues)
 {
@@ -3081,70 +3081,6 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
         int32_t deleteRow = DeletePhoto(oldFileAsset, MediaLibraryApi::API_10);
         CHECK_AND_PRINT_LOG(deleteRow >= 0, "delete photo failed, deleteRow=%{public}d", deleteRow);
     }
-}
-
-static int32_t GetCriticalState(const ValuesBucket& values, bool &isCritical)
-{
-    ValueObject isCriticalValObj;
-    bool hasIsCritical = values.GetObject(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalValObj);
-    if (hasIsCritical) {
-        int32_t isCriticalInt = -1;
-        int ret = isCriticalValObj.GetInt(isCriticalInt);
-        bool cond = (ret != E_OK || (isCriticalInt != 0 && isCriticalInt != 1));
-        CHECK_AND_RETURN_RET(!cond, E_INVALID_VALUES);
-        isCritical = (isCriticalInt == 1);
-    } else {
-        // If is_critical is not provided, derive from photo_risk_status
-        ValueObject photoRiskStatusValObj;
-        bool hasPhotoRiskStatus = values.GetObject(PhotoColumn::PHOTO_RISK_STATUS, photoRiskStatusValObj);
-        CHECK_AND_RETURN_RET(hasPhotoRiskStatus, E_INVALID_VALUES);
-        int32_t riskStatus = -1;
-        int ret = photoRiskStatusValObj.GetInt(riskStatus);
-        CHECK_AND_RETURN_RET(ret == E_OK, E_INVALID_VALUES);
-        // SUSPICIOUS (2) and REJECTED (3) are critical
-        isCritical = (riskStatus == 2 || riskStatus == 3);
-    }
-    return E_OK;
-}
-
-// Safe Album: Set photo critical state (inner API)
-int32_t MediaLibraryPhotoOperations::SetPhotoCritical(MediaLibraryCommand &cmd)
-{
-    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_FILE_ASSTE_BUSSINESS_NAME);
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryPhotoOperations::SetPhotoCritical");
-
-    // Get critical state from ValuesBucket
-    bool isCritical = false;
-    int32_t ret = GetCriticalState(cmd.GetValueBucket(), isCritical);
-    MEDIA_INFO_LOG("SetPhotoCritical isCritical:%{public}d", isCritical);
-    CHECK_AND_RETURN_RET(ret == E_OK, ret);
-
-    // Convert isCritical to critical_type and is_critical values
-    int32_t photoRiskStatus = isCritical ? 3 : 1; // REJECTED (3) or APPROVED (1)
-    int32_t isCriticalInt = isCritical ? 1 : 0;
-
-    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    vector<string> notifyUris = predicates.GetWhereArgs();
-    MEDIA_INFO_LOG("SetPhotoCritical %{public}zu Photos, isCritical: %{public}d", notifyUris.size(), isCriticalInt);
-    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
-
-    ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_RISK_STATUS, photoRiskStatus);
-    values.Put(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalInt);
-
-    int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
-    MEDIA_INFO_LOG("SetPhotoCritical changedRows:%{public}d", changedRows);
-    CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
-
-    // Send notification
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    for (const auto &uri : notifyUris) {
-        watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
-    }
-    assetRefresh.Notify();
-    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
