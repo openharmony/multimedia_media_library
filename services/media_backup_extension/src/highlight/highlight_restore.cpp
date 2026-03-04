@@ -580,7 +580,7 @@ void HighlightRestore::ReportHighlightRestoreTask()
         maxCnt = maxCnt > counter.second ? maxCnt : counter.second;
         totalCnt += counter.second;
         MEDIA_INFO_LOG("UpdateMapInsertValues albumName: %{public}s, photo count: %{public}d",
-            counter.first.c_str(), counter.second);
+            MediaFileUtils::DesensitizeName(counter.first).c_str(), counter.second);
         UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
             .Report("Highlight Photo Map", std::to_string(HIGHLIGHT_STATUS_SUCCESS),
             "albumName: " + counter.first + ", photo count: " + std::to_string(counter.second));

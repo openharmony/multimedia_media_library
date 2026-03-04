@@ -272,7 +272,10 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, vector<string> &columns,
     sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
-    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(value), nullptr, "Failed to check invalid uri: %{public}s", value.c_str());
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(value),
+        nullptr,
+        "Failed to check invalid uri: %{public}s",
+        MediaFileUtils::DesensitizeUri(value).c_str());
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "datashareHelper is nullptr");
 
     GetResultSetFromPhotosExtendReqBody reqBody;
@@ -930,7 +933,8 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
             end = str.length();
         }
         userId = str.substr(pos, end - pos);
-        MEDIA_INFO_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
+        MEDIA_INFO_LOG(
+            "ReadMovingPhotoVideo for other user is %{public}s", MediaFileUtils::DesensitizeName(userId).c_str());
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ?
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) :

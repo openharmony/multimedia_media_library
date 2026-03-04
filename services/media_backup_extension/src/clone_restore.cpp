@@ -683,7 +683,7 @@ void CloneRestore::GetAccountValid()
         cond = (!item["type"].is_string() ||  item["type"] != "singleAccountId");
         CHECK_AND_CONTINUE(!cond);
         oldId = item["detail"].is_string() ? item["detail"] : "";
-        MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+        MEDIA_INFO_LOG("the old is %{public}s", MediaFileUtils::DesensitizeName(oldId).c_str());
         break;
     }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =

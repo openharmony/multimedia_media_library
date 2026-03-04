@@ -105,7 +105,9 @@ void MediaVideoModeTask::UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &
     for (size_t i = 0; i < videoModeInfo.fileIds.size(); ++i) {
         const int32_t fileId = videoModeInfo.fileIds[i];          // 第 i 个 fileId
         const std::string filePath = videoModeInfo.filePaths[i];  // 对应第 i 个 path
-        MEDIA_INFO_LOG("UpdateVideoMode fileId = %{public}d, filePath = %{public}s", fileId, filePath.c_str());
+        MEDIA_INFO_LOG("UpdateVideoMode fileId = %{public}d, filePath = %{public}s",
+            fileId,
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
         string realPath = LakeFileUtils::GetAssetRealPath(filePath);
         string absVideoPath;

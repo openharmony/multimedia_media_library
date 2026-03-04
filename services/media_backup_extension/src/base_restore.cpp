@@ -119,7 +119,7 @@ void BaseRestore::GetAccountValid()
         bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == "dualAccountId";
         CHECK_AND_CONTINUE(checkType);
         oldId = item["detail"];
-        MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+        MEDIA_INFO_LOG("the old is %{public}s", MediaFileUtils::DesensitizeName(oldId).c_str());
         break;
     }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
@@ -1524,7 +1524,9 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
         }
 
         bool cond = (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0 || fileInfo.fileIdNew <= 0);
-        CHECK_AND_CONTINUE_ERR_LOG(!cond, "AlbumMap error file name = %{public}s.", fileInfo.displayName.c_str());
+        CHECK_AND_CONTINUE_ERR_LOG(!cond,
+            "AlbumMap error file name = %{public}s.",
+            MediaFileUtils::DesensitizeName(fileInfo.displayName).c_str());
         NativeRdb::ValuesBucket value;
         value.PutInt(PhotoMap::ASSET_ID, fileInfo.fileIdNew);
         value.PutInt(PhotoMap::ALBUM_ID, fileInfo.mediaAlbumId);
@@ -1810,7 +1812,8 @@ bool BaseRestore::NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fi
             continue;
         }
         if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
-            MEDIA_ERR_LOG("Album error file name = %{public}s.", fileInfo.displayName.c_str());
+            MEDIA_ERR_LOG(
+                "Album error file name = %{public}s.", MediaFileUtils::DesensitizeName(fileInfo.displayName).c_str());
             continue;
         }
         needQuerySet.insert(fileInfo.cloudPath);

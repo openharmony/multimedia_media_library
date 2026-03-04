@@ -21,6 +21,7 @@
 #include "result_set_utils.h"
 #include "photo_album_dao.h"
 #include "backup_const.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "album_plugin_config.h"
 #include "userfile_manager_types.h"
@@ -175,9 +176,9 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &file
         lPath = this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath);
         MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
                        "lPathFromSourcePath: %{public}s, lowercase: %{public}s, FileInfo Object: %{public}s",
-            fileInfo.lPath.c_str(),
-            lPath.c_str(),
-            this->ToLower(lPath).c_str(),
+            MediaFileUtils::DesensitizePath(fileInfo.lPath).c_str(),
+            MediaFileUtils::DesensitizePath(lPath).c_str(),
+            MediaFileUtils::DesensitizePath(this->ToLower(lPath)).c_str(),
             this->ToString(fileInfo).c_str());
     }
     // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
@@ -187,8 +188,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &file
         albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
         MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
                        "lPath: %{public}s, Object: %{public}s, albumInfo: %{public}s",
-            fileInfo.lPath.c_str(),
-            lPath.c_str(),
+            MediaFileUtils::DesensitizePath(fileInfo.lPath).c_str(),
+            MediaFileUtils::DesensitizePath(lPath).c_str(),
             this->ToString(fileInfo).c_str(),
             this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
