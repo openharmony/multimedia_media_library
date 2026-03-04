@@ -43,6 +43,7 @@
 #include "cloud_media_sync_mutex.h"
 #include "medialibrary_bundle_manager.h"
 #include "hi_audit.h"
+#include "media_edit_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -348,7 +349,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
         queryPredicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NEED_CLEAN));
         queryPredicates.EqualTo(PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME, REAL_LCD_VISIT_TIME_INVALID);
         queryPredicates.EqualTo(PhotoColumn::PHOTO_POSITION,
-            to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
+        to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
     queryPredicates.EndWrap();
 
     queryPredicates.Limit(BATCH_DELETE_LIMIT_COUNT);
