@@ -115,6 +115,7 @@ private:
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
     EXPORT void TryToStartSync();
+    EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType, SmartDataProcessingMode mode);
     EXPORT std::vector<int32_t> QueryEmptyAlbumsAndBackup();
