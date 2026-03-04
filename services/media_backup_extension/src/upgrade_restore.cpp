@@ -1348,7 +1348,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
         CHECK_AND_CONTINUE(!hash.empty());
-        std::lock_guard<std::mutex> lock(processGlobalHashes_);
+        std::lock_guard<ffrt::mutex> lock(processHashesMutex_);
         if (processGlobalHashes_.find(hash) == processGlobalHashes_.end()) {
             needQuerySet.insert(hash);
             processGlobalHashes_.insert(hash);
