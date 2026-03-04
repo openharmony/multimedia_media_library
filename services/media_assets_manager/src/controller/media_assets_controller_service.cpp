@@ -1273,6 +1273,7 @@ int32_t MediaAssetsControllerService::GetAssets(
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
+        MEDIA_INFO_LOG("GetAssets by read E_PERMISSION_DB_BYPASS");
         int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
@@ -1281,6 +1282,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_PERMISSION_DB_BYPASS;
     } else if (context.GetByPassCode() == E_DOUBLE_CHECK) {
+        MEDIA_INFO_LOG("GetAssets by read E_DOUBLE_CHECK");
         int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
@@ -1289,7 +1291,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_INFO_LOG("GetAssets by read permission");
+        MEDIA_DEBUG_LOG("GetAssets by read permission");
     }
 
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
@@ -2230,7 +2232,7 @@ int32_t MediaAssetsControllerService::RequestEditData(MessageParcel &data, Messa
 
 int32_t MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter GetEditData");
+    MEDIA_DEBUG_LOG("enter GetEditData");
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
@@ -2772,7 +2774,7 @@ int32_t MediaAssetsControllerService::ReleaseDebugDatabase(MessageParcel &data, 
 int32_t MediaAssetsControllerService::DeleteLocalAssetsWithUri(MessageParcel &data, MessageParcel &reply)
 {
     DeletePhotosCompletedReqBody reqBody;
- 
+
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DeleteLocalAssetsWithUri Read Request Error");
@@ -2786,11 +2788,11 @@ int32_t MediaAssetsControllerService::DeleteLocalAssetsWithUri(MessageParcel &da
     ret = this->mediaAssetsDeleteService_.DeleteLocalAssets(reqBody.fileIds);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
- 
+
 int32_t MediaAssetsControllerService::DeleteCloudAssetsWithUri(MessageParcel &data, MessageParcel &reply)
 {
     DeletePhotosCompletedReqBody reqBody;
- 
+
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DeleteCloudAssetsWithUri Read Request Error");
@@ -2891,3 +2893,4 @@ int32_t MediaAssetsControllerService::GetCompressAssetSize(MessageParcel &data, 
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media
+
