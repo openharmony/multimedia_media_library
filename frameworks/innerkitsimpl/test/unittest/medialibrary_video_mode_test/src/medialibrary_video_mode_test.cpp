@@ -200,7 +200,7 @@ HWTEST_F(MediaLibraryVideoModeTest, MediaLibraryVideoMode_UpdateVideoMode_Test, 
     VideoModeInfo queryVideoModeInfo = mediaVideoModeTask->QueryFiles(g_rdbStore, startFileId);
     //更新数据库
     EXPECT_NE(g_rdbStore, nullptr);
-    mediaVideoModeTask->UpdateVideoMode(queryVideoModeInfo);
+    mediaVideoModeTask->UpdateVideoMode(g_rdbStore, queryVideoModeInfo);
     std::string sqlPhotos = "SELECT video_mode FROM Photos WHERE file_id = " + std::to_string(fileId);
     std::shared_ptr<NativeRdb::ResultSet> photoResultSet = g_rdbStore->QuerySql(sqlPhotos);
     ASSERT_NE(photoResultSet, nullptr);
