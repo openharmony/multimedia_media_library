@@ -672,7 +672,7 @@ static std::unique_ptr<Picture> DecodeAsset(int32_t fd, int32_t width, int32_t h
 
     DecodingOptionsForPicture decodeOptions;
     if (width > 0 && height > 0) {
-        decodeOptions.desireSizeForMainPixelMap = {
+        decodeOptions.desiredSizeForMainPixelMap = {
             .width = width,
             .height = height
         };
