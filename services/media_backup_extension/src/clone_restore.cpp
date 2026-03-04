@@ -464,7 +464,7 @@ bool CloneRestore::BackupPreprocess()
             err);
         bool ret = InvalidateHdcCloudData(backupRdb);
         MEDIA_INFO_LOG("add restore dir");
-        dirMappingList_.push_back("/data/storage/el2/database/rdb");
+        dirMappingList_.push_back("/data/storage/el2/database/rdb/");
         if (!ret) {
             MEDIA_ERR_LOG("fail to delete hdc data");
             SetErrorCode(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED);
