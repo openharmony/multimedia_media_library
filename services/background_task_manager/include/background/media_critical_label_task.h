@@ -53,7 +53,7 @@ public:
     void HandleCriticalLabelProcessing();
 
 private:
-    PhotoBatchInfo QueryPhotosBatch(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, 
+    PhotoBatchInfo QueryPhotosBatch(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
         int32_t page, int32_t pageSize);
     static void SendToAnlyze(AsyncTaskData *data);
     static std::string ConstructPhotoUri(const std::string &fileAssetData, const std::string &displayName,

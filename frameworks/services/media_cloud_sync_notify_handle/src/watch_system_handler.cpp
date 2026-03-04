@@ -73,15 +73,14 @@ void WatchSystemHandler::OnReceiveData(const std::string &msg, int32_t type)
     
     ParsePushInfo(msg, displayName, isCritical, criticalType);
     std::string updateCriticalValuesSql =
-            "UPDATE " + PhotoColumn::PHOTOS_TABLE +
-            " SET " +  PhotoColumn::PHOTO_IS_CRITICAL + " = " + std::to_string(isCritical) + ", " +
-                PhotoColumn::PHOTO_RISK_STATUS + " = " + std::to_string(criticalType) +
-                " WHERE " + MediaColumn::MEDIA_NAME + " = '" + displayName + "'";
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET " +  PhotoColumn::PHOTO_IS_CRITICAL + " = " + std::to_string(isCritical) + ", " +
+        PhotoColumn::PHOTO_RISK_STATUS + " = " + std::to_string(criticalType) +
+        " WHERE " + MediaColumn::MEDIA_NAME + " = '" + displayName + "'";
     int32_t maxRetryCount = 3;
     int32_t retryCount = 0;
     int32_t sqlResult = -1;
-    while (sqlResult != 0 && retryCount < maxRetryCount)
-    {
+    while (sqlResult != 0 && retryCount < maxRetryCount) {
         retryCount++;
         sqlResult = uniStore->ExecuteSql(updateCriticalValuesSql);
     }

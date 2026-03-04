@@ -147,10 +147,10 @@ public:
 
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     using GetInstanceNewFunc = WatchSystemService::CloudAuditImpl *(*)(void);
- 	std::shared_ptr<WatchSystemHandler> watchSystemObserver_;
- 	GetInstanceNewFunc func_;
- 	void* handler_;
- 	EXPORT WatchSystemService::CloudAuditImpl* GetCloudAuditInstance();
+    std::shared_ptr<WatchSystemHandler> watchSystemObserver_;
+    GetInstanceNewFunc func_;
+    void* handler_;
+    EXPORT WatchSystemService::CloudAuditImpl* GetCloudAuditInstance();
 private:
  	WatchSystemService::CloudAuditImpl* cloudAuditInstance_;
 #endif

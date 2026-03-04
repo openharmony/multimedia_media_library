@@ -56,7 +56,7 @@ static std::string GetDisplayName(const std::string &title)
     return title + ".jpg";
 }
 
-static int32_t InsertPhoto(int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), 
+static int32_t InsertPhoto(int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE),
     int32_t criticalType = 0)
 {
     MEDIA_INFO_LOG("InsertPhoto");

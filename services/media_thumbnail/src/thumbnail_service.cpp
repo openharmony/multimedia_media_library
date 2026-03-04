@@ -197,7 +197,7 @@ static bool CheckCriticalPhotoPermission(const shared_ptr<MediaLibraryRdbStore> 
 }
 
 static bool CheckCriticalPhotoPermission(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
- 	     const string &id, const string &table)
+    const string &id, const string &table)
 {
     if (table != PhotoColumn::PHOTOS_TABLE) {
         return true;
