@@ -348,10 +348,11 @@ static string GetQueryFilter(const string &tableName)
             if (res != PermissionState::PERMISSION_GRANTED) {
                 filter += " AND " + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_CRITICAL + " = 0";
                 MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission denied, filter: %{public}s", filter.c_str());
+            } else {
+                MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission granted, filter: %{public}s", filter.c_str());
             }
         }
 #endif
-        MEDIA_DEBUG_LOG("MANAGE_RISK_PHOTOS permission granted, filter: %{public}s", filter.c_str());
         return filter;
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
