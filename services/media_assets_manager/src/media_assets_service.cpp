@@ -537,6 +537,25 @@ int32_t MediaAssetsService::SetHasAppLink(const int32_t fileId, const int32_t ha
     return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
 }
  
+int32_t MediaAssetsService::SetAppLinkState(const int32_t fileId, const int32_t appLinkState)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_APPLINK_STATE, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_HAS_APPLINK, appLinkState);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
+}
+
 int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLink)
 {
     MediaLibraryCommand cmd(
