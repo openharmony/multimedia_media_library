@@ -25,8 +25,10 @@
 #include "media_assets_delete_service.h"
 #include "asset_accurate_refresh.h"
 #include "media_assets_recover_service.h"
+#include "photos_po.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 class EXPORT CloudMediaPhotosDeleteService {
 public:
     int32_t PullClearCloudInfo(const CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
@@ -42,6 +44,7 @@ public:
 private:
     int32_t FindPhotoAlbum(CloudMediaPullDataDto &pullData);
     bool FindAlbumUploadStatus(CloudMediaPullDataDto &pullData);
+    void UpdatePullDataLocalInfo(CloudMediaPullDataDto &pullData, const std::optional<PhotosPo> &targetPhotoInfoOp);
 
 private:
     CloudMediaPhotosDao photosDao_;
