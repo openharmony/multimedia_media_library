@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include "media_time_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +63,7 @@ private:
     bool GetSaveCameraTime(const std::string &photoId, std::string &saveCameraTime);
     bool GetResultString(const std::string &photoId,
         std::string &createAssetTime, std::string &photoCaptureTime, std::string &saveCameraTime);
-    // <photoId, <stat, <subStat, time>>>
+    // <photoId , <stat, <subStat, time>>>
     std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<int32_t, int64_t>>> dfxTimes_;
     std::mutex addTimeMutex_;
     const std::unordered_map<int32_t, std::string> AddAssetTimeStatMap = {
