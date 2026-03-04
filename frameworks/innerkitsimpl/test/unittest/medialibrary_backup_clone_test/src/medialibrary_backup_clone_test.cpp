@@ -228,6 +228,7 @@ void ClearCloneSource(CloneSource &cloneSource, const string &dbPath)
 void Init(CloneSource &cloneSource, const string &path, const vector<string> &tableList)
 {
     MEDIA_INFO_LOG("Start init clone source database");
+    NativeRdb::RdbHelper::DeleteRdbStore(path);
     cloneSource.Init(path, tableList);
 }
 
