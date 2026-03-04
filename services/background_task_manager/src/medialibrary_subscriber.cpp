@@ -32,12 +32,6 @@
 #include "common_event_utils.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_moving_photo.h"
-#ifdef MEDIALIBRARY_LAKE_SUPPORT
-#include "global_scanner.h"
-#include "media_lake_check_manager.h"
-#include "media_lake_clone_event_manager.h"
-#include "product_info.h"
-#endif
 
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -62,6 +56,8 @@
 #endif
 #include "medialibrary_restore.h"
 #include "medialibrary_subscriber_database_utils.h"
+#include "media_lake_check_manager.h"
+#include "media_lake_clone_event_manager.h"
 #include "ability_manager_client.h"
 #include "resource_type.h"
 #include "dfx_manager.h"
@@ -70,7 +66,6 @@
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "shooting_mode_album_operation.h"
-#include "video_slow_motion_operation.h"
 #include "parameters.h"
 #include "height_width_correct_operation.h"
 #include "net_conn_client.h"
@@ -83,13 +78,15 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #include "cloud_enhancement_checker.h"
-#include "photo_edit_size_operation.h"
 #endif
+#include "medialibrary_transcode_data_aging_operation.h"
 #include "medialibrary_aspect_ratio_operation.h"
 #include "database_adapter.h"
-#include "photo_video_mode_operation.h"
-#include "metadata_extractor.h"
+#include "product_info.h"
+#include "permission_whitelist_utils.h"
 #include "cloud_media_retain_smart_data.h"
+#include "power_mgr_client.h"
+#include "power_mode_info.h"
 
 using namespace OHOS::AAFwk;
 
@@ -104,7 +101,6 @@ std::mutex MedialibrarySubscriber::subscribeAsyncTaskLock_;
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL = 20;
-const int32_t PROPER_DEVICE_BATTERY_CRITICAL_LEVEL = 10;
 
 const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
 const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
@@ -139,15 +135,16 @@ const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
-bool MedialibrarySubscriber::checkCriticalTypeStatus_ = false;
 // BetaVersion will upload the DB
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 std::mutex uploadDBMutex;
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
 const int64_t TWELVE_HOUR_MS = static_cast<int64_t>(12 * 3600 * 1000);
 constexpr int32_t SUBSCRIBE_TASK_TIMEOUT_SECOND = 2;
+const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
+const string CLOUD_EVENT_INFO_TYPE = "type";
+const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
-const std::string CLONE_STATE = "persist.dataclone.state";
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -166,7 +163,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START,
     EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END,
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED
+    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
+    CLOUD_UPDATE_EVENT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -199,8 +197,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
     auto chargeState = batteryClient.GetChargingStatus();
     isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
-        (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL) ||
-        GetPowerConnected();
+        (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
     batteryCapacity_ = batteryClient.GetCapacity();
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
@@ -394,60 +391,6 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 #endif
 }
 
-void MedialibrarySubscriber::PreProcessForUpdateStatus()
-{
-    CheckOnRestoreAndTryResetFlag();
-    UpdateGlobalStatusForBgTask();
-}
-
-bool MedialibrarySubscriber::CheckOnRestoreAndTryResetFlag()
-{
-    std::string cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
-    CHECK_AND_RETURN_RET(cloneFlagStr != "0", false);
-
-    int64_t cloneStartTime = 0;
-    if (!cloneFlagStr.empty()) {
-        cloneStartTime = MediaFileUtils::StrToInt64(cloneFlagStr);
-    }
-    CHECK_AND_RETURN_RET_LOG(cloneStartTime >= 0, false,
-        "Invalid cloneFlag value: %{public}s", cloneFlagStr.c_str());
-
-    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
-    CHECK_AND_RETURN_RET_LOG(currentTime >= cloneStartTime, false,
-        "Current time earlier than clone start time, now:%{public}" PRId64
-        ", start: %{public}" PRId64, currentTime, cloneStartTime);
-
-    constexpr int64_t oneDayInSeconds = 86400;
-    if (currentTime - cloneStartTime >= oneDayInSeconds) {
-        system::SetParameter(CLONE_FLAG, "0");
-        cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
-        CHECK_AND_PRINT_LOG(cloneFlagStr == "0", "Fail to set clone flag: %{public}s", cloneFlagStr.c_str());
-        return false;
-    }
-
-    MEDIA_DEBUG_LOG("Meanwhile is on restore, cloneStartTime: %{public}" PRId64, cloneStartTime);
-    return true;
-}
-
-void MedialibrarySubscriber::UpdateGlobalStatusForBgTask()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    bool isCurrentBackgroundTaskAllowed = IsBackgroundTaskAllowed();
-    if (isBackgroundTaskAllowed_ != isCurrentBackgroundTaskAllowed) {
-        MEDIA_INFO_LOG("UpdateGlobalStatusForBgTask, isCurrentBackgroundTaskAllowed: %{public}d",
-            isCurrentBackgroundTaskAllowed);
-        isBackgroundTaskAllowed_ = isCurrentBackgroundTaskAllowed;
-    }
-}
-
-bool MedialibrarySubscriber::IsBackgroundTaskAllowed()
-{
-    // Skip background operations during restore for clone or upgrade
-    bool isCloneInProcess = system::GetParameter(CLONE_STATE, "0") != "0";
-    bool isCloneFlagInEffect = system::GetParameter(CLONE_FLAG, "0") != "0";
-    return !isCloneInProcess && !isCloneFlagInEffect;
-}
-
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -463,7 +406,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
     }
 
-    newStatus = newStatus && isBackgroundTaskAllowed_;
     if (currentStatus_ == newStatus) {
         return;
     }
@@ -491,10 +433,9 @@ void MedialibrarySubscriber::WalCheckPointAsync()
 bool MedialibrarySubscriber::GetPowerConnected()
 {
     auto& service = OHOS::PowerMgr::BatterySrvClient::GetInstance();
-    PowerMgr::BatteryPluggedType pluggedType = service.GetPluggedType();
-    bool isPowerConnected = (
-        pluggedType != PowerMgr::BatteryPluggedType::PLUGGED_TYPE_NONE &&
-        pluggedType != PowerMgr::BatteryPluggedType::PLUGGED_TYPE_BUTT);
+    PowerMgr::BatteryChargeState chargeState = service.GetChargingStatus();
+    bool isPowerConnected = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE||
+            chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
     return isPowerConnected;
 }
 
@@ -512,7 +453,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             isCharging_ = true;
             break;
         case StatusEventType::DISCHARGING:
-            isCharging_ = GetPowerConnected();
+            isCharging_ = false;
             break;
         case StatusEventType::POWER_CONNECTED:
             isCharging_ = true;
@@ -537,16 +478,9 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             return;
     }
 
-    PreProcessForUpdateStatus();
     UpdateCurrentStatus();
-#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-    UpdateCheckCriticalTypeStatus();
-#endif
     UpdateThumbnailBgGenerationStatus();
-#ifdef MEDIALIBRARY_LAKE_SUPPORT
     UpdateMediaInLakeCheckStatus();
-    UpdateGlobalScannerTemperatureStatus();
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     UpdateBackgroundTimer();
 #endif
@@ -578,11 +512,6 @@ bool MedialibrarySubscriber::IsCurrentStatusOn()
     return currentStatus_;
 }
 
-bool MedialibrarySubscriber::IsCriticalTypeStatusOn()
-{
-    return checkCriticalTypeStatus_;
-}
-
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
     const AAFwk::Want &want = eventData.GetWant();
@@ -592,10 +521,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 #endif
     bool cond = action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
                 action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK;
-    if (cond) {
-        MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
-    }
-
+    CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -614,12 +540,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
 #endif
-    }
-#ifdef MEDIALIBRARY_LAKE_SUPPORT
-    if (MediaLakeCloneEventManager::IsRestoreEvent(want)) {
+    } else if (MediaLakeCloneEventManager::IsRestoreEvent(want)) {
         MediaLakeCloneEventManager::GetInstance().HandleRestoreEvent(want);
     }
-#endif
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
         isScreenOff_ && isCharging_ && IsBetaVersion() && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         UploadDB();
@@ -630,6 +553,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
+    if (action == CLOUD_UPDATE_EVENT && want.GetStringParam(CLOUD_EVENT_INFO_TYPE) == CLOUD_EVENT_INFO_TYPE_VALUE) {
+        PermissionWhitelistUtils::OnReceiveEvent();
+    }
     OnReceiveEventSub(eventData);
     // !! Do not add code here !!
 }
@@ -757,10 +683,11 @@ static int32_t DoUpdateBurstFromGallery()
 
 static void QueryUpdateSize(AsyncTaskData *data)
 {
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
-    int32_t result = PhotoEditSizeOperation::UpdateMediaSizeFromStorage();
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr,  "dataManager is nullptr");
+
+    int32_t result = dataManager->UpdateMediaSizeFromStorage();
     CHECK_AND_PRINT_LOG(result == E_OK, "UpdateMediaSizeFromStorage failed");
-#endif
 }
 
 static int32_t UpdateAllEditDataSize()
@@ -944,12 +871,12 @@ static void PeriodicAnalyzePhotosData()
 
 void MedialibrarySubscriber::AgingTmpCompatibleDuplicates(bool isAge)
 {
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
+    auto dataAging = MediaLibraryTranscodeDataAgingOperation::GetInstance();
+    CHECK_AND_RETURN_LOG(dataAging != nullptr, "dataAging is nullptr");
     if (isAge) {
-        dataManager->AgingTmpCompatibleDuplicates();
+        dataAging->AgingTmpCompatibleDuplicates();
     } else {
-        dataManager->InterruptAgingTmpCompatibleDuplicates();
+        dataAging->InterruptAgingTmpCompatibleDuplicates();
     }
 }
 
@@ -988,12 +915,12 @@ void InsertOthersSourceAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 void InsertAndUpdateHiddenSourceAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     MEDIA_INFO_LOG("Begin InsertAndUpdateHiddenSourceAlbum");
-    const std::string CREATE_HIDDEN_ALBUM =
+    const std::string createHiddenAlbum =
         "INSERT OR REPLACE INTO " + PhotoAlbumColumns::TABLE +
             "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
             " Values ('2048', '2049', '.hiddenAlbum', 'com.hidden.album', '1', "
             "'1', strftime('%s000', 'now'), '/Pictures/hiddenAlbum', '1')";
-    int32_t ret = rdbStore->ExecuteSql(CREATE_HIDDEN_ALBUM);
+    int32_t ret = rdbStore->ExecuteSql(createHiddenAlbum);
     CHECK_AND_RETURN_WARN_LOG(ret == E_OK,
         "Can not insert hiddenAlbum into PhotoAlbum Table, ret = %{public}d", ret);
     UploadHiddenAssetsToCloud(rdbStore);
@@ -1037,7 +964,6 @@ int32_t DoRecoverCloudHiddenAssets()
     return E_SUCCESS;
 }
 
-#ifdef MEDIALIBRARY_LAKE_SUPPORT
 void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1045,7 +971,6 @@ void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
     bool newStatus = isCharging_ && isScreenOff_ && isPowerSufficientForInLakeCheck &&
         newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
 
-    newStatus = newStatus && isBackgroundTaskAllowed_;
     if (checkInLakeStatus_ == newStatus) {
         return;
     }
@@ -1059,25 +984,6 @@ void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
         MediaInLakeCheckManager::GetInstance()->Stop();
     }
 }
-
-void MedialibrarySubscriber::UpdateGlobalScannerTemperatureStatus()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    // 1. 解析当前温度等级对应的 GlobalScanner 状态（是否高温）
-    bool isHighTemperature = false;
-    if (newTemperatureLevel_ > PROPER_DEVICE_TEMPERATURE_LEVEL_40) {
-        // 温度>=40℃：标记为高温，通知 GlobalScanner 停止扫描
-        isHighTemperature = true;
-    } else {
-        // 温度<40℃：标记为常温，且通知 GlobalScanner 可续跑
-        isHighTemperature = false;
-    }
-
-    // 2. 刷新温控状态
-    GlobalScanner::GetInstance().UpdateTemperatureCondition(isHighTemperature);
-}
-#endif
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
@@ -1106,6 +1012,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update all editdata size
     ret = UpdateAllEditDataSize();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
+    CloudUploadChecker::RepairNoOriginPhoto();
 
     // recover cloud hidden assets
     ret = DoRecoverCloudHiddenAssets();
@@ -1134,6 +1041,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
@@ -1143,16 +1051,13 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 {
-    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
-    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    DfxMovingPhoto::AbnormalMovingPhotoStatistics();
+    PhotoMimetypeOperation::UpdateInvalidMimeType();
     HeightWidthCorrectOperation::UpdateHeightAndWidth();
-    VideoSlowMotionOperation::UpdateSlowMotionType();
-    CloudUploadChecker::RepairNoOriginPhoto();
     ShootingModeAlbumOperation::UpdateShootingModeAlbum();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
-    DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     MediaLibraryAspectRatioOperation::UpdateAspectRatioValue();
     backgroundTaskFactory_.Execute();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1161,7 +1066,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     int32_t ret = DoCloudMediaRetainCleanup();
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
     ThumbnailService::GetInstance()->DfxReportThumbnailDirAcl();
-    CHECK_AND_PRINT_INFO_LOG(!CheckOnRestoreAndTryResetFlag(), "Meanwhile is on restore.");
+    ResetCloneFlagAfterOneDay();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::RepairMimeType();
 #endif
@@ -1192,7 +1097,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
     HeightWidthCorrectOperation::Stop();
-    VideoSlowMotionOperation::Stop();
     MediaLibraryAspectRatioOperation::Stop();
     ShootingModeAlbumOperation::Stop();
     AgingTmpCompatibleDuplicates(false);
@@ -1203,7 +1107,7 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     std::lock_guard<std::mutex> lock(mutex_);
     bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
     bool newStatus = false;
-    if (!isBackgroundTaskAllowed_) {
+    if (system::GetParameter(CLONE_FLAG, "0") != "0") {
         newStatus = false;
     } else if (isCharging_) {
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
@@ -1242,21 +1146,6 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     }
 }
 
-#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-bool MedialibrarySubscriber::UpdateCheckCriticalTypeStatus()
-{
-    auto instance = MedialibraryRelatedSystemStateManager::GetInstance();
-    bool isNetworkSufficient =
-            instance->IsNetAvailableInOnlyWifiCondition() || (instance->IsNetValidatedAtRealTime()
-            && instance->IsCellularNetConnected());
-    bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CRITICAL_LEVEL;
-    checkCriticalTypeStatus_ = isNetworkSufficient && isCharging_ && isPowerSufficient &&
-            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 && isScreenOff_;
-
-    return checkCriticalTypeStatus_;
-}
-#endif
-
 void MedialibrarySubscriber::DoThumbnailBgOperation()
 {
     bool cond = (!thumbnailBgDelayTask_.IsDelayTaskTimeOut() || !thumbnailBgGenerationStatus_);
@@ -1267,9 +1156,6 @@ void MedialibrarySubscriber::DoThumbnailBgOperation()
 
     auto result = dataManager->GenerateThumbnailBackground();
     CHECK_AND_PRINT_LOG(result == E_OK, "GenerateThumbnailBackground faild");
-
-    result = dataManager->RepairExifRotateBackground();
-    CHECK_AND_PRINT_LOG(result == E_OK, "RepairExifRotateBackground faild");
 
     result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
     CHECK_AND_PRINT_LOG(result == E_OK, "UpgradeThumbnailBackground faild");
@@ -1315,8 +1201,6 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;
-
-    newStatus = newStatus && IsBackgroundTaskAllowed();
     if (timerStatus_ == newStatus) {
         return;
     }
@@ -1353,7 +1237,6 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
         ThumbnailService::GetInstance()->RestoreThumbnailOnScreenStateChanged(!isScreenOff_);
     }
 
-    CHECK_AND_RETURN(isBackgroundTaskAllowed_);
     if (statusEventType == StatusEventType::SCREEN_OFF || statusEventType == StatusEventType::CHARGING) {
         WalCheckPointAsync();
         CheckHalfDayMissions();
@@ -1453,6 +1336,26 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPre
     CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
     value = GetInt32Val(queryColumn, resultSet);
     return E_OK;
+}
+
+void MedialibrarySubscriber::ResetCloneFlagAfterOneDay()
+{
+    std::string cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
+    if (cloneFlagStr == "0") {
+        MEDIA_INFO_LOG("Clone flag is 0, no need to reset");
+        return;
+    }
+    int64_t cloneStartTime = 0;
+    if (!cloneFlagStr.empty()) {
+        cloneStartTime = static_cast<int64_t>(MediaFileUtils::StrToInt64(cloneFlagStr));
+    }
+    auto currentTime = MediaFileUtils::UTCTimeSeconds();
+    int64_t timeCost = currentTime - cloneStartTime;
+    const int64_t oneDayInSeconds = 86400;
+    if (timeCost >= oneDayInSeconds) {
+        bool retFlag = system::SetParameter(CLONE_FLAG, "0");
+        CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
 }
 
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
