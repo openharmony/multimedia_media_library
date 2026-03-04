@@ -99,6 +99,7 @@ unique_ptr<MediaLibraryTranscodeDataAgingOperation> MediaLibraryTranscodeDataAgi
 mutex MediaLibraryTranscodeDataAgingOperation::mutex_;
 const double TIMER_MULTIPLIER = 60.0;
 constexpr int64_t SHARE_UID = 5520;
+const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 MediaLibraryTranscodeDataAgingOperation::MediaLibraryTranscodeDataAgingOperation(void)
 {
 }
