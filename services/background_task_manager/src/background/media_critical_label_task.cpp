@@ -54,7 +54,7 @@ PhotoBatchInfo MediaCriticalLabelTask::QueryPhotosBatch(std::shared_ptr<MediaLib
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, batchInfo, "rdbStore is nullptr");
     
     int32_t offset = page * pageSize;
-    std::string sql = "SELECT " + MediaColumn::MEDIA_ID + ", " + 
+    std::string sql = "SELECT " + MediaColumn::MEDIA_ID + ", " +
         MediaColumn::MEDIA_NAME + ", " +
         MediaColumn::MEDIA_FILE_PATH + ", " +
         MediaColumn::MEDIA_TYPE + ", " +
@@ -131,8 +131,9 @@ void MediaCriticalLabelTask::HandleCriticalLabelProcessing()
 
     int32_t page = 0;
     uint32_t totalProcessed = 0;
+    bool flag = true;
 
-    while (true) {
+    while (flag) {
         // Check if task should continue
         if (!this->Accept()) {
             MEDIA_INFO_LOG("MediaCriticalLabelTask check condition failed, stopping at page: %{public}d", page);
