@@ -350,7 +350,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_009, TestSize
     MEDIA_INFO_LOG("FindDuplicatePhoto_test_009 End");
 }
 
-HWTEST_F(CloudMediaAssetRetainCompareTest.com, GetMaxFileIdBeforeCompare_test_010, TestSize.Level0)
+HWTEST_F(CloudMediaAssetRetainCompareTest, GetMaxFileIdBeforeCompare_test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("GetMaxFileIdBeforeCompare_test_010 Start");
     CloudMediaAssetCompareDao dao;
