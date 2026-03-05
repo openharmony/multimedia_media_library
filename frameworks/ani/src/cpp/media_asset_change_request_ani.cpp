@@ -52,6 +52,7 @@
 #include "save_camera_photo_vo.h"
 #include "add_image_vo.h"
 #include <charconv>
+#include "moving_photo_file_utils.h"
 
 namespace OHOS::Media {
 namespace {
@@ -1242,7 +1243,7 @@ static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 
     string durationStr = resultMap.at(AV_KEY_DURATION);
     int32_t duration = std::atoi(durationStr.c_str());
-    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(duration)) {
         ANI_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
         return false;
     }
@@ -1262,7 +1263,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByFileUri(ani_
     CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
 
     CHECK_COND(env, ParseFileUri(env, fileUri, MediaType::MEDIA_TYPE_VIDEO, aniContext), OHOS_INVALID_PARAM_CODE);
-    if (!MediaFileUtils::CheckMovingPhotoVideo(aniContext->realPath)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideo(aniContext->realPath)) {
         AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
         return nullptr;
     }
