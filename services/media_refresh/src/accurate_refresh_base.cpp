@@ -346,7 +346,7 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
         keys.push_back(key);
         ss << " " << key;
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
-    ACCURATE_DEBUG("returning total length: %{public}d, new rows: %{public}s, ret: %{public}d",
+    MEDIA_DEBUG_LOG("returning total length: %{public}d, new rows: %{public}s, ret: %{public}d",
         retWithResults.second.changed, ss.str().c_str(), retWithResults.first);
     return keys;
 }

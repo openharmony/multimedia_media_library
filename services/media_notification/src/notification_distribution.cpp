@@ -106,12 +106,12 @@ int32_t NotificationDistribution::ProcessMediaChangeInfos(
     for (const auto& mediaChangeInfo : mediaChangeInfos) {
         MEDIA_INFO_LOG("mediaChangeInfo:%{public}s", mediaChangeInfo.ToString().c_str());
         if (mediaChangeInfo.changeInfos.empty()) {
-            MEDIA_INFO_LOG("mediaChangeInfo changeInfos is null");
+            MEDIA_DEBUG_LOG("mediaChangeInfo changeInfos is null");
             continue;
         }
         MediaChangeInfo filteredInfo = FilterNotifyInfoByPermission(mediaChangeInfo, notifyUriType);
         if (filteredInfo.changeInfos.empty()) {
-            MEDIA_INFO_LOG("After filtering mediaChangeInfo changeInfos is null");
+            MEDIA_DEBUG_LOG("After filtering mediaChangeInfo changeInfos is null");
             continue;
         }
         filteredInfo.isSystem = observerInfo.isSystem;

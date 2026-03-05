@@ -1148,7 +1148,7 @@ static void GetGroupPhotoAlbumCountPredicates(const string &albumId, RdbPredicat
 static bool IsCoverValid(const shared_ptr<MediaLibraryRdbStore>& rdbStore, const string &albumId, const string &fileId)
 {
     if (fileId.empty()) {
-        MEDIA_WARN_LOG("Invalid cover: empty file_id");
+        MEDIA_DEBUG_LOG("Invalid cover: empty file_id");
         return false;
     }
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
