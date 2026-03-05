@@ -1621,18 +1621,23 @@ static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pe
     return E_OK;
 }
 
-static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
+static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset,
+    int64_t pendingTime, bool isMovingPhotoVideo = false)
 {
     int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
         return errCode;
     }
+    if (isMovingPhotoVideo) {
+        MEDIA_INFO_LOG("CreateFileAndSetPending isMovingPhotoVideo true");
+        return E_OK;
+    }
 
     return SetPendingTime(fileAsset, pendingTime);
 }
 
-static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const string &mode)
+static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, bool isMovingPhotoVideo, const string &mode)
 {
     int64_t pendingTime = fileAsset->GetTimePending();
     if (pendingTime != 0) {
@@ -1647,7 +1652,7 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
             return E_IS_PENDING_ERROR;
         }
         if (pendingTime == UNCREATE_FILE_TIMEPENDING) {
-            int32_t errCode = CreateFileAndSetPending(fileAsset, UNCLOSE_FILE_TIMEPENDING);
+            int32_t errCode = CreateFileAndSetPending(fileAsset, UNCLOSE_FILE_TIMEPENDING, isMovingPhotoVideo);
             return errCode;
         }
         if (pendingTime == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
@@ -1718,7 +1723,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
 
     string path;
     if (api == MediaLibraryApi::API_10) {
-        int32_t errCode = SolvePendingStatus(fileAsset, mode);
+        int32_t errCode = SolvePendingStatus(fileAsset, isMovingPhotoVideo, mode);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
             "Solve pending status failed, errCode=%{public}d", errCode);
         path = fileAsset->GetPath();
