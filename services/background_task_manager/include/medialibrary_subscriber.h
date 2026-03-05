@@ -151,7 +151,6 @@ private:
     void UpdateCurrentStatus();
     void UpdateThumbnailBgGenerationStatus();
     void UpdateMediaInLakeCheckStatus();
-    void UpdateGlobalScannerTemperatureStatus();
     void CheckHalfDayMissions();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     void UpdateBackgroundTimer();
@@ -160,6 +159,7 @@ private:
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
     void ResetCloneFlagAfterOneDay();
+
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);
 #endif
