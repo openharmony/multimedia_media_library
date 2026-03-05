@@ -92,6 +92,7 @@ static sptr<IRemoteObject> InitToken()
 void MediaPermissionHelper::InitMediaPermissionHelper()
 {
     int32_t activeUser =  GetCurrentAccountId();
+    MEDIA_INFO_LOG("InitMediaPermissionHelper, activeUserId is %{public}d, userId is %{public}d", activeUser, userId_);
     if (dataShareHelper_ == nullptr || activeUser != userId_) {
         auto token = InitToken();
         if (token == nullptr) {
@@ -282,6 +283,7 @@ int32_t MediaPermissionHelper::CheckPhotoUriPermission(uint32_t tokenId,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPermissionHelper::CheckPhotoUriPermission");
+    MEDIA_INFO_LOG("CheckPhotoUriPermission, userId is %{public}d", userId_);
     auto ret = CheckInputParameters(urisSource, flags);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     map<string, pair<bool, bool>> photoPermissionMap;
