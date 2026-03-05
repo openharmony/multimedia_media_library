@@ -85,6 +85,9 @@ void PhotosPo::GetAttributesInfo(std::stringstream &ss) const
        << "\"supportedWatermarkType\": " << supportedWatermarkType.value_or(0) << ", "
        << "\"isStylePhoto\": " << isStylePhoto.value_or(0) << ", "
        << "\"strongAssociation\": " << strongAssociation.value_or(0) << ", "
+       << "\"uniqueId\": " << uniqueId.value_or("") << ", "
+       << "\"packageName\": " << packageName.value_or("") << ", "
+       << "\"photoRiskStatus\": " << photoRiskStatus.value_or(0) << ", "
        << "\"southDeviceType\": " << southDeviceType.value_or(0) << ", ";
 }
 

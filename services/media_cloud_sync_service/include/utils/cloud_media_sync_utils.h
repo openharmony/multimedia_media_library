@@ -51,7 +51,8 @@ public:
     static uint32_t GenerateCloudIdWithHash(PhotoAlbumPo &record);
     static int32_t FillPhotosDto(PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
         const int32_t exifRotate, const int32_t &thumbState);
-    static int32_t FillPhotosDto(PhotosDto &photosDto, const CloudMediaPullDataDto &data);
+    static int32_t FillPhotosDto(PhotosDto &photosDto, const CloudMediaPullDataDto &data,
+        const NativeRdb::ValuesBucket &values);
     static std::string GetLpathFromSourcePath(const std::string &sourcePath);
     static std::string GetLpath(const CloudMediaPullDataDto &pullData);
     static std::string GetMovingPhotoExtraDataDir(const std::string &localPath);

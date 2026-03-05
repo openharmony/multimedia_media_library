@@ -63,9 +63,14 @@ static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
 static constexpr double DEVICE_STORAGE_FREE_RATIO_LOW = 0.05;
 
 static constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
-static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_HIGH = 1000;
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_HIGH = 100;
+    static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_LOW = 50;
+#else
+    static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_HIGH = 1000;
+    static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_LOW = 250;
+#endif
 static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_HIGH = 30;
-static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_LOW = 250;
 static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_LOW = 7;
 
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;

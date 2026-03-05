@@ -93,6 +93,8 @@ public:  // getter & setter
     void SetCoverUriSource(const int32_t &coverUriSource);
     std::optional<std::string> GetCoverCloudId() const;
     void SetCoverCloudId(const std::string &coverCloudId);
+    std::optional<std::string> GetUniqueId() const;
+    void SetUniqueId(const std::string &uniqueId);
 
 private:
     const std::string VALUE_RECORD_TYPE = "album";

@@ -809,4 +809,23 @@ void PhotosPoWriter::SetUniqueId(std::variant<int32_t, int64_t, double, std::str
     CHECK_AND_RETURN(!errConn);
     this->photosPo_.uniqueId = std::get<std::string>(val);
 }
+
+bool PhotosPoWriter::GetPhotoRiskStatus(std::string &val)
+{
+    CHECK_AND_RETURN_RET(photosPo_.photoRiskStatus.has_value(), false);
+    val = std::to_string(this->photosPo_.photoRiskStatus.value());
+    return true;
+}
+
+void PhotosPoWriter::SetPhotoRiskStatus(std::variant<int32_t, int64_t, double, std::string> &val)
+{
+    bool errConn = !std::holds_alternative<std::string>(val);
+    CHECK_AND_RETURN(!errConn);
+    std::string strRiskStatus = std::get<std::string>(val);
+    if (strRiskStatus.empty() || (!std::all_of(strRiskStatus.begin(), strRiskStatus.end(), ::isdigit)) ||
+        (strRiskStatus.length() > std::to_string(std::numeric_limits<int32_t>::max()).length())) {
+        return;
+    }
+    this->photosPo_.photoRiskStatus = std::stoi(strRiskStatus);
+}
 }  // namespace OHOS::Media::ORM

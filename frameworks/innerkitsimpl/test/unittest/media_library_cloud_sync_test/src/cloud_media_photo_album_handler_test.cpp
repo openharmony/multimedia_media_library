@@ -865,4 +865,38 @@ HWTEST_F(CloudMediaPhotoAlbumHandlerTest, AlbumDataConvert_HandleAlbumName, Test
     EXPECT_EQ(map3["albumName"].GetString(val), MDKLocalErrorCode::NO_ERROR);
     EXPECT_EQ(val, "a b c");
 }
+
+HWTEST_F(CloudMediaPhotoAlbumHandlerTest, GetCreatedRecords_Album_Unique_Id, TestSize.Level1)
+{
+    std::string tableName = "PhotoAlbum";
+    int32_t cloudType = 0;
+    int32_t userId = 100;
+    std::shared_ptr<CloudMediaDataHandler> dataHandler =
+        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
+    std::vector<MDKRecord> records;
+    int32_t size = 100;
+    int32_t ret = dataHandler->GetCreatedRecords(records, size);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(records.size(), 0);
+
+    std::vector<std::string> lpaths = {
+        "/tencent/QQ_Images",
+        "/Pictures/Screenshots",
+    };
+    std::map<std::string, std::vector<std::string>> knownAlbumInfo = {
+        {"/tencent/QQ_Images", {"test_unique_id"}},
+        {"/Tencent/MicroMsg/WeiXin", {"test_unique_id"}},
+    };
+
+    for (auto &record : records) {
+        MDKRecordAlbumData data(record);
+        auto it = knownAlbumInfo.find(data.GetCloudId().value_or(""));
+        if (it != knownAlbumInfo.end()) {
+            EXPECT_EQ(data.GetUniqueId().value_or(""), it->second[0]);
+            std::string testUniqueId = "test_unique_id_inner";
+            data.SetUniqueId(testUniqueId);
+            EXPECT_EQ(data.GetUniqueId().value_or(""), testUniqueId);
+        }
+    }
+}
 }  // namespace OHOS::Media::CloudSync

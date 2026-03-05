@@ -39,6 +39,7 @@ public:
     std::optional<int32_t> coverUriSource;
     std::optional<std::string> coverCloudId;
     std::optional<int32_t> uploadStatus;
+    std::optional<std::string> uniqueId;
 
     /* album_plugin columns */
     std::optional<std::string> albumPluginCloudId;

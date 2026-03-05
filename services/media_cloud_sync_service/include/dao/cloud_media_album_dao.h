@@ -84,6 +84,7 @@ public:
     bool GetCoverUriFromCoverCloudId(const std::string &coverCloudId, std::string &coverUri);
     bool ReplaceCoverUriCondition(const std::string &coverUri, const std::string &lPath);
     int32_t ReportAbnormalLocalRecords();
+    void HandleIncomingUniqueId(PhotoAlbumDto &album);
     int32_t UpdateAlbumOrderInfo(const PhotoAlbumDto &record, NativeRdb::ValuesBucket &values);
     int32_t GetPhotoAlbum(const std::string &lPath, std::optional<PhotoAlbumPo> &albumInfoOp);
     int32_t GetAlbumCloudAssetCount(const int32_t albumId, int32_t &count);
@@ -158,7 +159,8 @@ private:
             bundle_name, \
             local_language, \
             cover_uri_source, \
-            cover_cloud_id \
+            cover_cloud_id, \
+            unique_id \
         FROM PhotoAlbum \
         WHERE \
             dirty = 1 AND \

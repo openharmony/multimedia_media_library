@@ -62,6 +62,7 @@ int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Me
         albumDto.isDelete = album.isDelete;
         albumDto.coverUriSource = album.coverUriSource;
         albumDto.coverCloudId = album.coverCloudId;
+        albumDto.uniqueId = album.uniqueId;
         albumDtoList.emplace_back(albumDto);
         MEDIA_DEBUG_LOG("OnFetchRecords albumDto: %{public}s", albumDto.ToString().c_str());
         MEDIA_DEBUG_LOG("OnFetchRecords album: %{public}s", album.ToString().c_str());

@@ -61,7 +61,9 @@ PhotoBatchInfo MediaCriticalLabelTask::QueryPhotosBatch(std::shared_ptr<MediaLib
         MediaColumn::MEDIA_DATE_ADDED +
         " FROM " + PhotoColumn::PHOTOS_TABLE +
         " WHERE " + PhotoColumn::PHOTO_RISK_STATUS + "= " +
-        std::to_string(static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED)) +
+        std::to_string(static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED)) + " AND " +
+            PhotoColumn::PHOTO_POSITION + " != " +
+            std::to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)) +
         " LIMIT " + std::to_string(pageSize) +
         " OFFSET " + std::to_string(offset);
 

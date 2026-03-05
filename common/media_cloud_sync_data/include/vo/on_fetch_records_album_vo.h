@@ -43,6 +43,7 @@ public:
         bool isDelete;
         int32_t coverUriSource;
         std::string coverCloudId;
+        std::string uniqueId;
 
     public:  // functions of Parcelable.
         virtual ~AlbumReqData() = default;

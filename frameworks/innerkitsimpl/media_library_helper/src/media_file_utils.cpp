@@ -47,6 +47,7 @@
 #include "ptp_medialibrary_manager_uri.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
+#include "uuid.h"
 #include "data_secondary_directory_uri.h"
 #include "image_source.h"
 #include "image_packer.h"
@@ -2651,6 +2652,15 @@ void MediaFileUtils::GetAllFileNameListUnderPath(const std::filesystem::path &pa
         }
     }
     std::sort(fileNames.begin(), fileNames.end());
+}
+
+std::string MediaFileUtils::GenerateUUID()
+{
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char str[UUID_STR_LEN] = {};
+    uuid_unparse(uuid, str);
+    return std::string(str);
 }
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP

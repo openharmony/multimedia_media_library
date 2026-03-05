@@ -94,6 +94,7 @@ int32_t CloudAlbumDataConvert::HandleAttributes(std::map<std::string, MDKRecordF
         map[PhotoAlbumColumns::COVER_URI_SOURCE] = MDKRecordField(albumData.coverUriSource);
         map[PhotoAlbumColumns::COVER_CLOUD_ID] = MDKRecordField(albumData.coverCloudId);
     }
+    map[PhotoAlbumColumns::UNIQUE_ID] = MDKRecordField(albumData.uniqueId);
     /* set map */
     data["attributes"] = MDKRecordField(map);
     return E_OK;
