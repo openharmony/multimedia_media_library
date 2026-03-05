@@ -50,5 +50,22 @@ HWTEST_F(MediaLibraryKvstoreUtilsTest, MediaLibraryKvstoreUtils_Test_001, TestSi
     int32_t res = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(type, oldKey, newKey);
     EXPECT_EQ(res, E_ERR);
 }
+
+/*
+ * Feature : MediaLibraryKvstoreUtilsTest
+ * Function : CopyAstcDataToKvStoreByType
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : CopyAstcDataToKvStoreByType with YEAR_ASTC_OLD_VERSION
+ */
+HWTEST_F(MediaLibraryKvstoreUtilsTest, MediaLibraryKvstoreUtils_Test_002, TestSize.Level1)
+{
+    KvStoreValueType type = KvStoreValueType::YEAR_ASTC_OLD_VERSION;
+    std::string oldKey = "test_old_key";
+    std::string newKey = "test_new_key";
+    int32_t res = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(type, oldKey, newKey);
+    EXPECT_EQ(res, E_ERR);
+}
 } // namespace Media
 } // namespace OHOS
