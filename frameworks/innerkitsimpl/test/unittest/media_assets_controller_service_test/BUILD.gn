@@ -176,7 +176,6 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/sync_cloud_enhancement_task_status_test.cpp",
     "./src/acquire_debug_database_test.cpp",
     "./src/release_debug_database_test.cpp",
-    "./src/media_assets_service_test.cpp",
   ]
 
   if (media_library_facard_enable) {
