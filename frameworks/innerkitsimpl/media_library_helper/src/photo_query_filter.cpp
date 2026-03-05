@@ -21,6 +21,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+static const std::string CONST_MEDIA_SECURE_ALBUM = "const.media.secure_album";
 
 std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Option option)
 {
@@ -77,7 +78,15 @@ std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config& 
         whereClause += " AND burst_cover_level = " +
             string(config.burstCoverOnly == ConfigType::INCLUDE ? "1" : "0");
     }
-
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+        // Safe Album filter for children's watch - filter out critical photos
+        if (config.criticalConfig != ConfigType::IGNORE) {
+            whereClause += " AND is_critical = " +
+                string(config.criticalConfig == ConfigType::INCLUDE ? "1" : "0");
+        }
+    }
+#endif
     return whereClause;
 }
 
@@ -135,6 +144,13 @@ void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Config& config, T
     if (config.burstCoverOnly != ConfigType::IGNORE) {
         predicates.EqualTo("burst_cover_level", config.burstCoverOnly == ConfigType::INCLUDE ? 1 : 0);
     }
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+        if (config.criticalConfig != ConfigType::IGNORE) {
+            predicates.EqualTo("is_critical", config.criticalConfig == ConfigType::INCLUDE ? 1 : 0);
+        }
+    }
+#endif
 }
 
 template void PhotoQueryFilter::ModifyPredicate<DataShare::DataSharePredicates>(const PhotoQueryFilter::Option option,

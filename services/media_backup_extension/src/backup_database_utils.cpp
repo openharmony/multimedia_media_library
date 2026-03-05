@@ -22,6 +22,7 @@
 #include <safe_map.h>
 
 #include "backup_const_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "vision_video_total_column.h"
 #include "vision_image_face_column.h"
@@ -1313,7 +1314,7 @@ BackupDatabaseUtils::ConfigInfoType BackupDatabaseUtils::QueryConfigInfo(
         std::string key = GetStringVal(ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY, resultSet);
         std::string value = GetStringVal(ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE, resultSet);
         MEDIA_INFO_LOG("query backupInfo result: sceneId:%{public}d key:%{public}s value:%{public}s",
-            sceneIdInt, key.c_str(), value.c_str());
+            sceneIdInt, key.c_str(), MediaFileUtils::DesensitizeName(value).c_str());
         CHECK_AND_CONTINUE_ERR_LOG(INT_CONFIG_INFO_SCENE_ID_MAP.count(sceneIdInt),
             "fail to parse SceneId:%{public}d", sceneIdInt);
         ConfigInfoSceneId sceneId = INT_CONFIG_INFO_SCENE_ID_MAP.at(sceneIdInt);

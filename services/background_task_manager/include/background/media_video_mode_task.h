@@ -42,7 +42,7 @@ public:
 public:
     void SetBatchStatus(int32_t startFileId);
     int32_t GetBatchStatus();
-    void UpdateVideoMode(const VideoModeInfo &videoModeInfo);
+    void UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const VideoModeInfo &videoModeInfo);
     void HandleMediaFileManagerVideoMode();
     VideoModeInfo QueryFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId);
 };

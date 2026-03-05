@@ -25,6 +25,7 @@
 using namespace std;
 using namespace OHOS::NetManagerStandard;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 void NetConnectObserver::SetNetConnStatus(const NetConnStatus status)
@@ -67,3 +68,4 @@ int32_t NetConnectObserver::NetLost(sptr<NetHandle> &netHandle)
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

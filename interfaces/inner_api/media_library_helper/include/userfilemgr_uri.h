@@ -116,6 +116,8 @@ namespace Media {
 #define CONST_PHOTO_TRANSCODE_OPERATION "photo_transcode_operation"
 #define CONST_OPRN_TRANSCODE_HEIF "oprn_transcode_heif"
 #define CONST_MEDIA_FILEOPRN_OPEN_DEBUG_DB "open_debug_db"
+#define CONST_MEDIA_WHETHER_NEED_WATCH_NOTIFY "whether_need_watch_notify"
+#define CONST_NO_NEED_WATCH_NOTIFY "no_need_watch_notify"
 
 // API9 compat photo operations constants
 #define CONST_URI_CREATE_PHOTO "datashare:///media/photo_operation/create_asset"
@@ -398,6 +400,7 @@ namespace Media {
 
 #define CONST_ASSET_ALBUM_OPERATION "tab_asset_and_album_operation"
 
+#define CONST_TAB_OPERATION_LOG "tab_operation_log_table_operation"
 } // namespace Media
 } // namespace OHOS
 

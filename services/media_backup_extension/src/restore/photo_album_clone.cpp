@@ -14,6 +14,7 @@
  */
 #include "photo_album_clone.h"
 
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -91,11 +92,11 @@ void PhotoAlbumClone::TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &a
             bundleName = %{public}s, \
             priority = %{public}d",
             info.albumId,
-            info.albumName.c_str(),
+            MediaFileUtils::DesensitizeName(info.albumName).c_str(),
             info.albumType,
             info.albumSubType,
-            info.lPath.c_str(),
-            info.bundleName.c_str(),
+            MediaFileUtils::DesensitizePath(info.lPath).c_str(),
+            MediaFileUtils::DesensitizeName(info.bundleName).c_str(),
             info.priority);
     }
 }

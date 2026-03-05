@@ -19,6 +19,7 @@
 #include <cstring>
 #include "media_log.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 std::mutex MediaFuseNode::nodeDataMutex_ {};
@@ -176,3 +177,4 @@ void MediaFuseNode::ReleaseAllNodes()
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

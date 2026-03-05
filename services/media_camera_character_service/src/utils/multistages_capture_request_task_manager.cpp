@@ -76,6 +76,7 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
 {
     unique_lock<mutex> lock(mutex_);
     if (photoIdInProcess_.count(photoId) == 0) {
+        // 调试日志，合入hicamera分支删除
         MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
         return 0;
     }
@@ -128,7 +129,7 @@ int32_t MultiStagesCaptureRequestTaskManager::GetProcessingFileId(const std::str
             return E_OK;
         }
     }
-    MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
+    MEDIA_INFO_LOG("fileId not in progress. photoId=%{public}s", photoId.c_str());
     return E_ERR;
 }
 

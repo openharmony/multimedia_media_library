@@ -287,6 +287,7 @@ thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRiskStatusEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAppLinkStateRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -368,11 +369,13 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("off", UserFileMgrOffCallback),
             DECLARE_NAPI_FUNCTION("getPrivateAlbum", UserFileMgrGetPrivateAlbum),
             DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
-            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers), DECLARE_NAPI_FUNCTION("release", JSRelease),
+            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
+            DECLARE_NAPI_FUNCTION("release", JSRelease),
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
-            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex), DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
+            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -399,6 +402,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoRiskStatus", CreatePhotoRiskStatusEnum(env)),
+        DECLARE_NAPI_PROPERTY("AppLinkState", CreateAppLinkStateEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -10243,6 +10247,11 @@ napi_value MediaLibraryNapi::CreateHideSensitiveTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateDynamicRangeTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, dynamicRangeTypeEnum, sDynamicRangeType_);
+}
+
+napi_value MediaLibraryNapi::CreateAppLinkStateEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, appLinkStateEnum, sAppLinkStateRef_);
 }
 
 static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)

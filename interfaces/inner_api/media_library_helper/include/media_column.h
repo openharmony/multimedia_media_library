@@ -58,7 +58,7 @@ enum class SouthDeviceType : int32_t {
     SOUTH_DEVICE_HDC = 2
 };
 
-enum PhotoRiskStatus : int32_t {
+enum class PhotoRiskStatus : int32_t {
     UNIDENTIFIED = 0,
     APPROVED = 1,
     SUSPICIOUS = 2,
@@ -187,6 +187,7 @@ public:
     static const std::string PHOTO_DATE_ADDED_YEAR EXPORT;
     static const std::string PHOTO_DATE_ADDED_MONTH EXPORT;
     static const std::string PHOTO_DATE_ADDED_DAY EXPORT;
+    static const std::string UNIQUE_ID EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
