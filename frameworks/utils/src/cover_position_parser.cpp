@@ -17,22 +17,17 @@
 
 #include <fcntl.h>
 
-#include "dfx_utils.h"
 #include "directory_ex.h"
-#include "ffrt_inner.h"
+#include "dfx_utils.h"
 #include "media_column.h"
-#include "medialibrary_notify.h"
 #include "medialibrary_unistore_manager.h"
 #include "moving_photo_file_utils.h"
 #include "unique_fd.h"
-#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::NativeRdb;
-
-const int32_t MAX_TASK_NUM = 100;
 
 CoverPositionParser &CoverPositionParser::GetInstance()
 {
@@ -40,53 +35,15 @@ CoverPositionParser &CoverPositionParser::GetInstance()
     return instance_;
 }
 
-bool CoverPositionParser::AddTask(const string &path, const string &fileUri)
+size_t CoverPositionParser::GetMaxTaskNum() const
 {
-    lock_guard<mutex> lock(mtx_);
-    if (tasks_.size() >= MAX_TASK_NUM) {
-        MEDIA_INFO_LOG("The max queue length has been reached, ignore current task: %{public}s",
-                       DfxUtils::GetSafePath(path).c_str());
-        return false;
-    }
-    tasks_.push(make_pair(path, fileUri));
-    if (tasks_.size() == 1 && !processing_) {
-        MEDIA_DEBUG_LOG("queue has task, start process");
-        processing_ = true;
-        StartTask();
-    }
-    return true;
+    return COVER_POSITION_PARSER_MAX_TASK_NUM;
 }
 
-void CoverPositionParser::StartTask()
+void CoverPositionParser::ProcessTask(const pair<string, string> &task)
 {
-    ffrt::submit([this]() { ProcessCoverPosition(); });
-}
-
-void CoverPositionParser::ProcessCoverPosition()
-{
-    bool hasTask = true;
-    while (hasTask) {
-        pair<string, string> task = GetNextTask();
-        if (task.first.empty()) {
-            hasTask = false;
-            continue;
-        }
-        UpdateCoverPosition(task.first);
-        SendUpdateNotify(task.second);
-    }
-}
-
-pair<string, string> CoverPositionParser::GetNextTask()
-{
-    lock_guard<mutex> lock(mtx_);
-    if (tasks_.empty()) {
-        MEDIA_DEBUG_LOG("queue is empty, stop process");
-        processing_ = false;
-        return make_pair("", "");
-    }
-    pair<string, string> task = tasks_.front();
-    tasks_.pop();
-    return task;
+    UpdateCoverPosition(task.first);
+    SendUpdateNotify(task.second);
 }
 
 void CoverPositionParser::UpdateCoverPosition(const string &path)
@@ -122,16 +79,6 @@ void CoverPositionParser::UpdateCoverPosition(const string &path)
     int32_t changeRows = -1;
     int32_t ret = rdbStore->Update(changeRows, values, predicates);
     CHECK_AND_PRINT_LOG(ret == E_OK, "execute update cover_position failed, ret = %{public}d", ret);
-}
-
-void CoverPositionParser::SendUpdateNotify(const string &fileUri)
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify, fail to send new asset notify.");
-        return;
-    }
-    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
 }
 } // namespace Media
 } // namespace OHOS

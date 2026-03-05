@@ -2103,65 +2103,6 @@ bool MediaFileUtils::CheckMovingPhotoImage(const string &path)
     return CheckMovingPhotoExtension(GetExtensionFromPath(path));
 }
 
-bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
-{
-    string absFilePath;
-    if (!PathToRealPath(path, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to get real path, path: %{private}s", path.c_str());
-        return false;
-    }
-    if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to check path for %{private}s, errno: %{public}d", path.c_str(), errno);
-        return false;
-    }
-
-    string extension = GetExtensionFromPath(absFilePath);
-    if (!CheckMovingPhotoVideoExtension(extension)) {
-        MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
-        return false;
-    }
-
-    UniqueFd uniqueFd(open(absFilePath.c_str(), O_RDONLY));
-    return CheckMovingPhotoVideo(uniqueFd);
-}
-
-bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaFileUtils::CheckMovingPhotoVideo");
-
-    if (uniqueFd.Get() <= 0) {
-        MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
-        return false;
-    }
-    struct stat64 st;
-    if (fstat64(uniqueFd.Get(), &st) != 0) {
-        MEDIA_ERR_LOG("Failed to get file state, errno = %{public}d", errno);
-        return false;
-    }
-
-    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    CHECK_AND_RETURN_RET_WARN_LOG(avMetadataHelper != nullptr, true,
-        "Failed to create AVMetadataHelper, ignore checking duration");
-
-    int32_t err = avMetadataHelper->SetSource(uniqueFd.Get(), 0,
-        static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
-    CHECK_AND_RETURN_RET_LOG(err == 0, false, "SetSource failed for the given file descriptor, err = %{public}d", err);
-
-    unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
-    if (resultMap.find(AV_KEY_DURATION) == resultMap.end()) {
-        MEDIA_ERR_LOG("AV_KEY_DURATION does not exist");
-        return false;
-    }
-    string durationStr = resultMap.at(AV_KEY_DURATION);
-    int32_t duration = std::atoi(durationStr.c_str());
-    if (!CheckMovingPhotoVideoDuration(duration)) {
-        MEDIA_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
-        return false;
-    }
-    return true;
-}
-
 std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &displayName)
 {
     std::string extension;
@@ -2189,14 +2130,6 @@ bool MediaFileUtils::GetDateModified(const string &path, int64_t &dateModified)
     }
     dateModified = Timespec2Millisecond(statInfo.st_mtim);
     return true;
-}
-
-bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
-{
-    // duration of moving photo video must be 0~10 s
-    constexpr int32_t MIN_DURATION_MS = 0;
-    constexpr int32_t MAX_DURATION_MS = 10000;
-    return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
 bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)

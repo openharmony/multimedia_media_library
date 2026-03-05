@@ -180,9 +180,6 @@ public:
     EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);
     EXPORT static bool CheckMovingPhotoVideoExtension(const std::string &extension);
     EXPORT static bool CheckMovingPhotoImage(const std::string &path);
-    EXPORT static bool CheckMovingPhotoVideo(const std::string &path);
-    EXPORT static bool CheckMovingPhotoVideo(const UniqueFd &uniqueFd);
-    EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
     EXPORT static bool CheckMovingPhotoEffectMode(int32_t effectMode);
     EXPORT static bool GetFileSize(const std::string& filePath, size_t& size);
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);

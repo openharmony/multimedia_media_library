@@ -39,6 +39,7 @@ public:
     bool needScanSubtype{false};
     AdditionFileInfo lakeInfo;
     bool needScanHdrMode{false};
+    bool needParseDuration{false};
 
 public:  // basic functions
     std::string ToString() const;

@@ -157,6 +157,7 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
 
     // [special type]live photo
     SetCoverPosition(fileInfo, value);
+    SetMovingPhotoDuration(fileInfo, value);
     Set3DgsSubtype(fileInfo, value, data);
     BaseRestore::InsertVideoMode(data, value);
 }

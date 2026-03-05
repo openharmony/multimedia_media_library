@@ -3036,7 +3036,7 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode)
 
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(updateCmd, updateRows);
-    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && updateRows >= 0, E_HAS_DB_ERROR,
+    CHECK_AND_RETURN_RET_LOG((errCode == NativeRdb::E_OK && updateRows > 0), E_HAS_DB_ERROR,
         "Update effect mode failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
     return E_OK;
 }
@@ -3295,7 +3295,7 @@ int32_t MediaLibraryPhotoOperations::UpdateMovingPhotoSubtype(int32_t fileId, in
     int32_t errCode = assetRefresh.Update(updateCmd, updateRows);
     assetRefresh.RefreshAlbum();
     assetRefresh.NotifyForAnalysisInfoChange();
-    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && updateRows >= 0, E_HAS_DB_ERROR,
+    CHECK_AND_RETURN_RET_LOG((errCode == NativeRdb::E_OK && updateRows > 0), E_HAS_DB_ERROR,
         "Update subtype field failed. errCode:%{public}d, updateRows:%{public}d", errCode, updateRows);
     return E_OK;
 }
@@ -3595,7 +3595,7 @@ int32_t MediaLibraryPhotoOperations::MoveCacheFile(
     if (GetStringFromValuesBucket(cmd.GetValueBucket(), CONST_CACHE_MOVING_PHOTO_VIDEO_NAME,
         cacheMovingPhotoVideoName) && !cacheMovingPhotoVideoName.empty()) {
         string cacheVideoPath = GetAssetCacheDir() + "/" + cacheMovingPhotoVideoName;
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoVideo(cacheVideoPath), E_INVALID_MOVING_PHOTO,
+        CHECK_AND_RETURN_RET_LOG(MovingPhotoFileUtils::CheckMovingPhotoVideo(cacheVideoPath), E_INVALID_MOVING_PHOTO,
             "Failed to check video of moving photo");
         string destVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(destPath);
         int32_t errCode = LakeFileUtils::MoveFileInEditScene(cacheVideoPath, destVideoPath);
@@ -4484,7 +4484,7 @@ int32_t MediaLibraryPhotoOperations::GetMovingPhotoCachePath(MediaLibraryCommand
 
     string cacheDir = GetAssetCacheDir();
     if (!videoCacheName.empty()) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoVideo(cacheDir + "/" + videoCacheName),
+        CHECK_AND_RETURN_RET_LOG(MovingPhotoFileUtils::CheckMovingPhotoVideo(cacheDir + "/" + videoCacheName),
             E_INVALID_MOVING_PHOTO, "Failed to check cache video of moving photo");
     }
 

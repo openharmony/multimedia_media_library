@@ -15,6 +15,7 @@
 #include "medialibrary_cover_position_parser_test.h"
 
 #define private public
+#include "parser_task_queue_base.h"
 #include "cover_position_parser.h"
 #include "picture_data_operations.h"
 #undef private
@@ -350,7 +351,7 @@ HWTEST_F(MediaLibraryCoverPositionParserTest, medialib_StartTask_test_001, TestS
 HWTEST_F(MediaLibraryCoverPositionParserTest, medialib_ProcessCoverPosition_test_001, TestSize.Level1)
 {
     shared_ptr<CoverPositionParser> instance = make_shared<CoverPositionParser>();
-    instance->ProcessCoverPosition();
+    instance->ProcessTasks();
     EXPECT_TRUE(true);
 }
 
@@ -369,7 +370,7 @@ HWTEST_F(MediaLibraryCoverPositionParserTest, medialib_ProcessCoverPosition_test
     string path = "/storage/cloud/files/Photo/1/IMG_000000000_000.jpg";
     string fileUri = "file://media/Photo/38/IMG_000000000_000/111.jpg";
     instance->tasks_.push(make_pair(path, fileUri));
-    instance->ProcessCoverPosition();
+    instance->ProcessTasks();
     EXPECT_EQ(instance->tasks_.size(), 0);
 }
 
@@ -388,7 +389,7 @@ HWTEST_F(MediaLibraryCoverPositionParserTest, medialib_ProcessCoverPosition_test
     string path = "/storage/cloud/files/Photo/1/IMG_000000000_000.jpg";
     string fileUri = "file://media/Photo/38/IMG_000000000_000/111.jpg";
     bool ret = instance->AddTask(path, fileUri);
-    instance->ProcessCoverPosition();
+    instance->ProcessTasks();
     EXPECT_EQ(ret, true);
 }
 
