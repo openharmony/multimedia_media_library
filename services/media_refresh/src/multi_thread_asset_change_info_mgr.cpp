@@ -52,7 +52,7 @@ bool MultiThreadAssetChangeInfoMgr::CheckInsertAfterInfo(PhotoAssetChangeInfo& i
     if (iter == assetChangeDataMap_.end()) {
         // isAdd场景下找不到为正常逻辑，不需要打印
         if (!isAdd) {
-            MEDIA_ERR_LOG("no fileId[%{public}d]", info.fileId_);
+            MEDIA_DEBUG_LOG("no fileId[%{public}d]", info.fileId_);
         }
         return false;
     }

@@ -678,7 +678,7 @@ std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string columnName = GetStringVal("name", resultSet);
         if (GetFileAssetMemberMap().count(columnName) == 0) {
-            MEDIA_WARN_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
+            MEDIA_DEBUG_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
             continue;
         }
         columnInfo.emplace_back(columnName);

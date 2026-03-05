@@ -160,7 +160,7 @@ int32_t CloudMediaAttachmentUtils::GetThumbnail(
 int32_t CloudMediaAttachmentUtils::GetLcdThumbnail(
     const std::string &fileKey, const DownloadAssetData &downloadData, PhotosDto &photosDto)
 {
-    MEDIA_INFO_LOG("enter GetLcdThumbnail");
+    MEDIA_DEBUG_LOG("enter GetLcdThumbnail");
     bool isRotation = downloadData.orientation != ROTATE_ANGLE_0;
     std::string lcdSuffix = isRotation ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX;
     std::string lcdLocalPath = GetThumbnailPath(downloadData.path, lcdSuffix);
@@ -172,8 +172,8 @@ int32_t CloudMediaAttachmentUtils::GetLcdThumbnail(
     CloudMediaFileUtils::GetFileSizeV2(lcdLocalPath, lcdFileSize);
     lcdDto.size = static_cast<int64_t>(lcdFileSize);
     std::string lcdFileKey = "lcd";
-    MEDIA_INFO_LOG("lcdDto.path %{public}s", lcdDto.path.c_str());
-    MEDIA_INFO_LOG("lcdDto.fileName %{public}s", lcdDto.fileName.c_str());
+    MEDIA_DEBUG_LOG("lcdDto.path %{public}s", lcdDto.path.c_str());
+    MEDIA_DEBUG_LOG("lcdDto.fileName %{public}s", lcdDto.fileName.c_str());
     photosDto.attachment.insert(std::make_pair(lcdFileKey, lcdDto));
     return E_OK;
 }

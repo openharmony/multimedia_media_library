@@ -8330,7 +8330,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callba
 
 napi_value MediaLibraryNapi::PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info)
 {
-    NAPI_INFO_LOG("MediaLibraryNapi::PhotoAccessGetBurstAssets start");
+    NAPI_DEBUG_LOG("MediaLibraryNapi::PhotoAccessGetBurstAssets start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
     CHECK_NULLPTR_RET(ParseArgsGetBurstAssets(env, info, asyncContext));

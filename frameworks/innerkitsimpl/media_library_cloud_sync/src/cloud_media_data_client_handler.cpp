@@ -297,7 +297,7 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
     }
     for (auto &photosVo : respBody.photos) {
         CloudMetaData cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(photosVo);
-        MEDIA_INFO_LOG("GetDownloadThmsByUri MetaData: %{public}s", cloudMetaData.ToString().c_str());
+        MEDIA_DEBUG_LOG("MetaData: %{public}s", cloudMetaData.ToString().c_str());
         metaData.push_back(cloudMetaData);
     }
     return ret;
@@ -362,7 +362,6 @@ int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
 int32_t CloudMediaDataClientHandler::GetDownloadThms(
     std::vector<CloudMetaData> &cloudMetaDataVec, const DownloadThumPara &param)
 {
-    MEDIA_INFO_LOG("enter GetDownloadThms");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_THM);
     GetDownloadThmReqBody reqBody;
     reqBody.size = param.size;
@@ -378,10 +377,10 @@ int32_t CloudMediaDataClientHandler::GetDownloadThms(
         return ret;
     }
     for (auto &photosVo : respBody.photos) {
-        MEDIA_INFO_LOG("GetDownloadThm %{public}s.", photosVo.ToString().c_str());
+        MEDIA_DEBUG_LOG("photosVo: %{public}s.", photosVo.ToString().c_str());
         CloudMetaData cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(photosVo);
         cloudMetaDataVec.push_back(cloudMetaData);
-        MEDIA_INFO_LOG("GetDownloadThms MetaData: %{public}s", cloudMetaData.ToString().c_str());
+        MEDIA_DEBUG_LOG("MetaData: %{public}s", cloudMetaData.ToString().c_str());
     }
     MEDIA_INFO_LOG("GetDownloadThms end");
     return E_OK;

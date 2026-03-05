@@ -43,7 +43,7 @@ int32_t AssetDataManager::UpdateModifiedDatas()
 
 int32_t AssetDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &keys)
 {
-    ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
+    MEDIA_DEBUG_LOG("keys size: %{public}zu", keys.size());
     for (auto key : keys) {
         auto iter = changeDatas_.find(key);
         if (iter == changeDatas_.end()) {

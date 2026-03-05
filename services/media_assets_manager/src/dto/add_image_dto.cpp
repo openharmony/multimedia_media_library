@@ -21,7 +21,7 @@ namespace OHOS::Media {
 
 AddImageDto AddImageDto::Create(const AddImageReqBody &req)
 {
-    MEDIA_INFO_LOG("IPC::Camera addImage: %{public}s.", req.ToString().c_str());
+    MEDIA_DEBUG_LOG("IPC::Camera addImage: %{public}s.", req.ToString().c_str());
     AddImageDto dto;
     dto.fileId = req.fileId;
     dto.photoId = req.photoId;
@@ -29,7 +29,7 @@ AddImageDto AddImageDto::Create(const AddImageReqBody &req)
     dto.photoQuality = req.photoQuality;
     dto.subType = req.subType;
     dto.packageName = req.packageName;
-    MEDIA_INFO_LOG("IPC::Camera addImage: %{public}s.", dto.ToString().c_str());
+    MEDIA_DEBUG_LOG("IPC::Camera addImage: %{public}s.", dto.ToString().c_str());
     return dto;
 }
 

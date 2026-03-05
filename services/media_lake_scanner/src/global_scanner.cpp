@@ -102,7 +102,6 @@ int32_t GlobalScanner::WalkFileTree(const std::string &path)
         CHECK_AND_CONTINUE_ERR_LOG(shouldScan, "Not scan dir: %{public}s",
             LakeFileUtils::GarbleFilePath(currentDir).c_str());
         bool isSkipDirectory = FolderScannerUtils::IsSkipCurrentDirectory(currentDir);
-        MEDIA_INFO_LOG("call IsSkipCurrentDirectory");
         CHECK_AND_CONTINUE_ERR_LOG(!isSkipDirectory, "Skip dir path: %{public}s",
             LakeFileUtils::GarbleFilePath(currentDir).c_str());
 
