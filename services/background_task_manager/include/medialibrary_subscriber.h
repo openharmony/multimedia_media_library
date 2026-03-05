@@ -88,7 +88,6 @@ public:
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCurrentStatusOn();
-    EXPORT static bool IsCriticalTypeStatusOn();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -100,11 +99,9 @@ private:
     bool isDeviceTemperatureProper_{false};
     static bool isWifiConnected_;
     static bool currentStatus_;
-    static bool checkCriticalTypeStatus_;
     bool thumbnailBgGenerationStatus_{false};
     bool checkInLakeStatus_{false};
     bool timerStatus_{false};
-    bool isBackgroundTaskAllowed_{true};
     static bool isCellularNetConnected_;
     std::mutex mutex_;
     int32_t agingCount_ {0};
