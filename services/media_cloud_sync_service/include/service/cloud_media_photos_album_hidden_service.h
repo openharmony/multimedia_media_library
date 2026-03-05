@@ -25,14 +25,6 @@ namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotosAlbumHiddenService {
 public:
     int32_t UpdateEmptyAlbumHidden();
-
-private:
-const std::string SQL_UPDATE_EMPTY_PHOTO_ALBUM_HIDDEN = "\
-        UPDATE PhotoAlbum \
-        SET hidden = 1 \
-        WHERE count = 0 AND \
-            hidden_count <> 0 AND \
-            hidden <> 1;";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTOS_ALBUM_HIDDEN_SERVICE_H
