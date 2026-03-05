@@ -75,6 +75,7 @@ const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
 const int32_t FILE_FAIL = -2;
 const int32_t PHOTO_POSITION_TYPE_CLOUD = 2;
+const int32_t PERMISSION_BUNDLENAME_EMPTY = 1;
 static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
 static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
@@ -333,6 +334,10 @@ int32_t MediaFuseManager::DoMedialibraryReadPermission(const string &fileId, con
     AccessTokenID tokenCaller = INVALID_TOKENID;
     int32_t permGranted = E_PERMISSION_DENIED;
     PermissionUtils::GetClientBundle(uid, bundleName);
+    if (bundleName.empty()) {
+        MEDIA_DEBUG_LOG("Get bundleName is empty for uid %{public}d", uid);
+        return PERMISSION_BUNDLENAME_EMPTY;
+    }
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
     class MediafusePermCheckInfo infoR(target, MEDIA_FILEMODE_READONLY, fileId, appId, uid);
     permGranted = infoR.CheckPermission(tokenCaller, false);
