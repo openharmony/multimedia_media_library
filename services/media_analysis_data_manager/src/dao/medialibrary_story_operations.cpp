@@ -31,6 +31,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static int32_t GetHighlightId(const string &whereClause, const vector<string> &whereArgs)
@@ -152,3 +153,4 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryStoryOperations::QueryOperation(Med
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

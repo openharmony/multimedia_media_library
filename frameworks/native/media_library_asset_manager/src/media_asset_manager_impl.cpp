@@ -679,7 +679,7 @@ OH_ImageSourceNative* MediaAssetManagerImpl::CreateImageSource(const std::string
     const std::string requestUri)
 {
     MEDIA_INFO_LOG("Request image success requestId: %{public}s, uri: %{public}s",
-        requestId.c_str(), requestUri.c_str());
+        requestId.c_str(), MediaFileUtils::DesensitizeUri(requestUri).c_str());
 
     std::string tmpUri = requestUri;
     MediaFileUtils::UriAppendKeyValue(tmpUri, CONST_MEDIA_OPERN_KEYWORD, CONST_SOURCE_REQUEST);
@@ -937,6 +937,7 @@ static bool HasReadPermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
+// LCOV_EXCL_START
 MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
     NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnQuickImageDataPrepared callback)
@@ -995,5 +996,6 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAs
         return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

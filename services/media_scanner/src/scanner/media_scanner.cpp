@@ -298,7 +298,7 @@ int32_t MediaScannerObj::Commit()
             }
         }
     } else {
-        MEDIA_INFO_LOG("insert new file: %{public}s", data_->GetFilePath().c_str());
+        MEDIA_INFO_LOG("insert new file: %{public}s", MediaFileUtils::DesensitizePath(data_->GetFilePath()).c_str());
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_, assetRefresh);
         assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
             NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
@@ -309,13 +309,14 @@ int32_t MediaScannerObj::Commit()
         }
     }
     int32_t fileId = data_->GetFileId();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RdbStore is nullptr");
     int32_t videoMode = data_->GetVideoMode();
-    PhotoVideoModeOperation::UpdatePhotosVideoMode(videoMode, fileId);
+    PhotoVideoModeOperation::UpdatePhotosVideoMode(rdbStore, videoMode, fileId);
     int32_t ret = MediaLibraryPhotoOperations::CalSingleEditDataSize(std::to_string(fileId));
     CHECK_AND_PRINT_LOG(ret == E_OK, "CalSingleEditDataSize failed ID: %{public}d (ret code: %{public}d)", fileId, ret);
     assetRefresh->Notify();
     mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());
-    data_ = nullptr;
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t duration = endTime - startTime;
     // 在CPU占用率80%, 运行脚本一直执行连拍100次操作, 查看极端场景下用时大于400ms的频率

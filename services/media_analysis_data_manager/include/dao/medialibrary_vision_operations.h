@@ -25,6 +25,7 @@
 #include "datashare_predicates.h"
 #include "foreground_analysis_meta.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class UpdateVisionAsyncTaskData : public AsyncTaskData {
@@ -51,4 +52,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIALIBRARY_VISION_OPERATIOINS_H

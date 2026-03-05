@@ -205,6 +205,8 @@ public:
         const std::string& fileId);
     EXPORT static void BuildDoubleCheckPredicates(NativeRdb::RdbPredicates &rdbPredicate, int64_t tokenId,
         int32_t passCode);
+    EXPORT static int32_t SetUpdateCoverValues(UpdateAlbumData &data, NativeRdb::ValuesBucket &values,
+        const bool hiddenState);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

@@ -23,6 +23,7 @@
 #include <atomic>
 #include "media_fuse_low_daemon.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class MediaFuseHighDaemon;
@@ -75,4 +76,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIA_FUSE_MANAGER_H

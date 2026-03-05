@@ -37,6 +37,7 @@ public:
     int64_t size;
     int64_t dateModified;
     int32_t dirty;
+    int32_t videoMode;
     int64_t dateTrashed;
     int32_t position;
     int32_t localId;
@@ -74,7 +75,6 @@ public:
     int32_t rotation;
     int64_t version;
     bool isSuccess;
-    int32_t videoMode;
     int32_t fileSourceType;
     std::string storagePath;
     std::string localPath;

@@ -19,17 +19,30 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 namespace OHOS::Media {
-int32_t PhotoVideoModeOperation::UpdatePhotosVideoMode(const int32_t videoMode, const int32_t fileId)
+int32_t PhotoVideoModeOperation::BatchUpdatePhotosVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+                                                            const std::vector<std::string> &logFileIds)
 {
-    CHECK_AND_RETURN_RET_LOG(videoMode == static_cast<int32_t>(VideoMode::LOG_VIDEO), E_OK, "Not log video");
-    MEDIA_INFO_LOG("UpdatePhotosVideoMode: videoMode=%{public}d, fileId=%{public}d", videoMode, fileId);
-    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return {};
+    MEDIA_INFO_LOG("logFileIds size = %{public}d", static_cast<int32_t>(logFileIds.size()));
+    if (logFileIds.empty()) {
+        MEDIA_INFO_LOG("BatchUpdatePhotosVideoMode has no data need to update.");
+        return E_OK;
     }
- 
-    MEDIA_INFO_LOG("rdbStore != nullptr");
+    NativeRdb::ValuesBucket updateLogPostBucket;
+    updateLogPostBucket.Put(PhotoColumn::PHOTO_VIDEO_MODE, static_cast<int32_t>(VideoMode::LOG_VIDEO));
+    NativeRdb::AbsRdbPredicates updateLogPredicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    updateLogPredicates.In(MediaColumn::MEDIA_ID, logFileIds);
+    int32_t changeRows = -1;
+    int32_t logret = rdbStore->Update(changeRows, updateLogPostBucket, updateLogPredicates);
+    CHECK_AND_RETURN_RET_LOG((logret == E_OK && changeRows > 0), E_FAIL,
+                             "BatchUpdatePhotosVideoMode failed, logret: %{public}d, updateRows: %{public}d", logret,
+                             changeRows);
+    return E_OK;
+}
+
+int32_t PhotoVideoModeOperation::UpdatePhotosVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+                                                       const int32_t videoMode, const int32_t fileId)
+{
+    MEDIA_INFO_LOG("UpdatePhotosVideoMode: videoMode=%{public}d, fileId=%{public}d", videoMode, fileId);
     std::string fileIdStr = std::to_string(fileId);
     std::vector<std::string> fileIds = {fileIdStr};
     NativeRdb::ValuesBucket updatePostBucket;
@@ -43,10 +56,8 @@ int32_t PhotoVideoModeOperation::UpdatePhotosVideoMode(const int32_t videoMode, 
     return E_OK;
 }
  
-int32_t PhotoVideoModeOperation::GetMaxFileId()
+int32_t PhotoVideoModeOperation::GetMaxFileId(std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "GetMaxFileId Failed to get rdbStore.");
     std::string QUERY_MAX_FILE_ID = "SELECT MAX(file_id) as last_id FROM Photos";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAX_FILE_ID);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Query not match data fails");

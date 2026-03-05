@@ -204,6 +204,10 @@ const std::vector<std::string> downloadAssetsNetworkPolicyTypeEnum {
     "DEFAULT", "CELL", "WIFI"
 };
 
+const std::vector<std::string> appLinkStateEnum {
+    "DEFAULT", "HAS_NO_LINK", "HAS_LINK"
+};
+
 const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
     std::make_pair("DEFAULT",           static_cast<int32_t>(PhotoSubType::DEFAULT)),
     std::make_pair("SCREENSHOT",        static_cast<int32_t>(PhotoSubType::SCREENSHOT)),

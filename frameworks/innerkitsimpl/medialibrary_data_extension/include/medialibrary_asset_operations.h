@@ -172,7 +172,7 @@ protected:
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     EXPORT static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
-        MediaLibraryApi api, bool isMovingPhotoVideo = false, int32_t type = -1);
+        MediaLibraryApi api, bool isMovingPhotoVideo = false, int32_t type = -1, bool noNeedWatchNotify = false);
     static int32_t OpenHighlightCover(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t OpenHighlightVideo(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
@@ -194,6 +194,8 @@ protected:
         const std::string &fileId, int32_t type = -1);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
+    static void ScanFileWithoutAlbumUpdateAndThumbGeneration(const std::string &path, bool isForceScan = false,
+        int32_t fileId = 0);
 
     static std::string GetAssetCacheDir();
     static std::string GetAssetCompressJsonPath(const std::string &path);

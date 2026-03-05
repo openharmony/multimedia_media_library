@@ -57,6 +57,7 @@ enum class AssetChangeOperation {
     SET_VIDEO_ENHANCEMENT_ATTR,
     SET_COMPOSITE_DISPLAY_MODE,
     ADD_RESOURCE_FOR_PICKER,
+    SET_APPLINK_STATE,
 };
 
 enum class AddResourceMode {
@@ -154,6 +155,7 @@ private:
     EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetSupportedWatermarkType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHasAppLink(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAppLinkState(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetAppLink(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCompositeDisplayMode(napi_env env, napi_callback_info info);

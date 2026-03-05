@@ -126,6 +126,8 @@ ohos_shared_library("media_library") {
     "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
+    "access_token:libprivacy_sdk",
+    "access_token:libtokenid_sdk",
     "app_file_service:sandbox_helper_native",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",

@@ -1173,7 +1173,8 @@ static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& phot
     if (subType == PhotoAlbumSubType::SHOOTING_MODE) {
         ShootingModeAlbumType type {};
         if (!ShootingModeAlbum::AlbumNameToShootingModeAlbumType(photoAlbum->GetAlbumName(), type)) {
-            NAPI_ERR_LOG("Invalid shooting mode album name: %{public}s", photoAlbum->GetAlbumName().c_str());
+            NAPI_ERR_LOG("Invalid shooting mode album name: %{public}s",
+                MediaFileUtils::DesensitizeName(photoAlbum->GetAlbumName()).c_str());
             return E_INVALID_ARGUMENTS;
         }
         ShootingModeAlbum::GetShootingModeAlbumPredicates(type, predicates, photoAlbum->GetHiddenOnly());

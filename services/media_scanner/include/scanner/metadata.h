@@ -31,6 +31,9 @@ public:
     EXPORT ~Metadata() = default;
     using VariantData = std::variant<int32_t, std::string, int64_t, double>;
 
+    EXPORT void SetVideoMode(const VariantData &logType);
+    EXPORT int32_t GetVideoMode() const;
+
     EXPORT void SetFileId(const VariantData &id);
     EXPORT int32_t GetFileId() const;
 
@@ -191,9 +194,6 @@ public:
     EXPORT void SetFileSourceType(const VariantData &fileSourceType);
     EXPORT int32_t GetFileSourceType() const;
 
-    EXPORT void SetVideoMode(const VariantData &videoMode);
-    EXPORT int32_t GetVideoMode() const;
-
     EXPORT void Init();
     void InitV2();
 
@@ -236,6 +236,7 @@ private:
     int64_t lastVisitTime_;
     int32_t dynamicRangeType_;
     int32_t hdrMode_;
+    int32_t videoMode_ {-1};
     double aspectRatio_;
 
     // video, audio, image
@@ -291,8 +292,6 @@ private:
     int32_t stageVideoTaskStatus_;
 
     int32_t fileSourceType_;
-
-    int32_t videoMode_;
 };
 } // namespace Media
 } // namespace OHOS
