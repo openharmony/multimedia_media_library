@@ -855,7 +855,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(const int32_t
     const int32_t &highlightAlbumChangeAttribute, const std::string &value)
 {
     MEDIA_INFO_LOG("albumId: %{public}d, highlightAlbumChangeAttribute: %{public}d, value: %{public}s",
-        albumId, highlightAlbumChangeAttribute, value.c_str());
+        albumId, highlightAlbumChangeAttribute, MediaFileUtils::DesensitizeName(value).c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "get rdbStore failed");
     int32_t result = CheckHighlightAttributeValue(highlightAlbumChangeAttribute, value);

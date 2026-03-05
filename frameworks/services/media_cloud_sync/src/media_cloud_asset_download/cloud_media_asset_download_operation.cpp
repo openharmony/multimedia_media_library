@@ -35,6 +35,7 @@ using namespace std;
 using namespace OHOS::DataShare;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::NetManagerStandard;
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
@@ -764,3 +765,4 @@ void CloudMediaAssetDownloadOperation::HandleOnRemoteDied()
 
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

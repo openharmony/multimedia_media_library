@@ -334,4 +334,36 @@ HWTEST_F(CloudMediaPhotoDeleteTest, CloudMedia_PhotosPo_BuildFileUri_Test, TestS
     const std::string expectFileUri = "file://media/Photo/409/IMG_1761641838_408/IMG_20250912_225900.jpg";
     EXPECT_EQ(fileUri, expectFileUri);
 }
+
+HWTEST_F(CloudMediaPhotoDeleteTest, CloudMediaPhotoUpdatePullDataLocalInfo, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start CloudMediaPhotoUpdatePullDataLocalInfo");
+    auto service = make_shared<CloudMediaPhotosDeleteService>();
+    ASSERT_NE(service, nullptr);
+
+    CloudMediaPullDataDto pullData;
+    pullData.localPath = "/old/path";
+    pullData.localFileId = 100;
+    pullData.localPosition = 1;
+
+    std::optional<PhotosPo> targetPhotoInfoOp;
+    PhotosPo targetPhotoInfo;
+    targetPhotoInfo.data = "/new/path";
+    targetPhotoInfo.fileId = 200;
+    targetPhotoInfo.position = 2;
+    targetPhotoInfoOp = targetPhotoInfo;
+
+    service->UpdatePullDataLocalInfo(pullData, targetPhotoInfoOp);
+    EXPECT_EQ(pullData.localPath, "/new/path");
+    EXPECT_EQ(pullData.localFileId, 200);
+    EXPECT_EQ(pullData.localPosition, 2);
+
+    targetPhotoInfoOp.reset();
+    service->UpdatePullDataLocalInfo(pullData, targetPhotoInfoOp);
+    EXPECT_EQ(pullData.localPath, "/new/path");
+    EXPECT_EQ(pullData.localFileId, 200);
+    EXPECT_EQ(pullData.localPosition, 2);
+
+    MEDIA_INFO_LOG("end CloudMediaPhotoUpdatePullDataLocalInfo");
 }
+}  // namespace OHOS::Media::CloudSync

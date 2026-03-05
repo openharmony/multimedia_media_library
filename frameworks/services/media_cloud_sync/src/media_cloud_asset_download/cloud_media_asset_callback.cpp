@@ -23,6 +23,7 @@
 
 using namespace std;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& progress)
@@ -52,3 +53,4 @@ void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& pr
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

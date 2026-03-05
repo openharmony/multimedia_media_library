@@ -19,6 +19,7 @@
 #include "datashare_helper.h"
 #include "datashare_observer.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -35,4 +36,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_CLOUD_MEDIA_ASSET_OBSERVER_H

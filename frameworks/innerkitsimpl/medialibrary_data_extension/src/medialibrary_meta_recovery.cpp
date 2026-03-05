@@ -289,7 +289,7 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     for (auto it : vecPhotoAlbum) {
         oldAlbumIdToLpath[it->GetAlbumId()] = it->GetLPath();
         MEDIA_INFO_LOG("oldAlbumIdToLpath, json id %{public}d, path=%{public}s", it->GetAlbumId(),
-            DfxUtils::GetSafePath(it->GetLPath()).c_str());
+            MediaFileUtils::DesensitizePath(it->GetLPath()).c_str());
     }
     // 2. db PhotoAlbum to lpathToNewAlbumId
     NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -303,7 +303,7 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
         string lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         lpathToNewAlbumId[lPath] = albumId;
         MEDIA_INFO_LOG("lpathToNewAlbumId, path=%{public}s db id %{public}d, ",
-            DfxUtils::GetSafePath(lPath).c_str(), albumId);
+            MediaFileUtils::DesensitizePath(lPath).c_str(), albumId);
     }
     return;
 }

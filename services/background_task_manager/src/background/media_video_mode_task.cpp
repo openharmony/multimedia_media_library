@@ -28,6 +28,8 @@
 #include "result_set_utils.h"
 #include "metadata.h"
 #include "metadata_extractor.h"
+#include "lake_file_utils.h"
+#include "directory_ex.h"
  
 using namespace OHOS::NativeRdb;
  
@@ -75,38 +77,45 @@ int32_t MediaVideoModeTask::GetBatchStatus()
     return currStartFileId;
 }
  
-VideoModeInfo MediaVideoModeTask::QueryFiles(
-    std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId)
+VideoModeInfo MediaVideoModeTask::QueryFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId)
 {
     VideoModeInfo videoModeInfo;
-    std::string UPDATE_VIDEO_MODE = "SELECT * FROM Photos WHERE";
-    UPDATE_VIDEO_MODE += " sync_status = 0 AND clean_flag = 0 AND time_pending = 0 AND is_temp = 0"
+    std::string updateVideoModeSql = "SELECT file_id, data FROM Photos WHERE";
+    updateVideoModeSql += " sync_status = 0 AND clean_flag = 0 AND time_pending = 0 AND is_temp = 0"
                           " AND media_type = 2 AND file_id BETWEEN " +
                           std::to_string(startFileId) + " AND " + std::to_string(startFileId + batchSize);
-    MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode sql=%{public}s", UPDATE_VIDEO_MODE.c_str());
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(UPDATE_VIDEO_MODE);
+    updateVideoModeSql += " AND position != " + std::to_string(static_cast<int32_t>(PhotoPositionType::CLOUD));
+    MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode sql = %{public}s", updateVideoModeSql.c_str());
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(updateVideoModeSql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, {}, "Failed to query batch selected files!");
- 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         videoModeInfo.fileIds.emplace_back(fileId);
         std::string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         videoModeInfo.filePaths.emplace_back(filePath);
-        MEDIA_DEBUG_LOG("Handle fileId %{public}d, filePath %{public}s", fileId, filePath.c_str());
     }
     resultSet->Close();
     return videoModeInfo;
 }
  
-void MediaVideoModeTask::UpdateVideoMode(const VideoModeInfo &videoModeInfo)
+void MediaVideoModeTask::UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+                                         const VideoModeInfo &videoModeInfo)
 {
-    MEDIA_INFO_LOG("MediaVideoModeTask::UpdateVideoMode start");
+    std::vector<std::string> logFileIds;
     for (size_t i = 0; i < videoModeInfo.fileIds.size(); ++i) {
         const int32_t fileId = videoModeInfo.fileIds[i];          // 第 i 个 fileId
         const std::string filePath = videoModeInfo.filePaths[i];  // 对应第 i 个 path
-        MEDIA_INFO_LOG("UpdateVideoMode fileId = %{public}d, filePath = %{public}s", fileId, filePath.c_str());
+        MEDIA_INFO_LOG("UpdateVideoMode fileId = %{public}d, filePath = %{public}s",
+            fileId,
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
-        videoModeData->SetFilePath(filePath);
+        string realPath = LakeFileUtils::GetAssetRealPath(filePath);
+        string absVideoPath;
+        if (!PathToRealPath(realPath, absVideoPath)) {
+            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            continue;
+        }
+        videoModeData->SetFilePath(realPath);
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
         if (err != E_OK) {
             MEDIA_ERR_LOG("Failed to extract metadata: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
@@ -114,26 +123,27 @@ void MediaVideoModeTask::UpdateVideoMode(const VideoModeInfo &videoModeInfo)
         }
         int32_t videoMode = videoModeData->GetVideoMode();
         MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode videoMode=%{public}d", videoMode);
-        auto photoRet = PhotoVideoModeOperation::UpdatePhotosVideoMode(videoMode, fileId);
-        CHECK_AND_RETURN_LOG(photoRet == NativeRdb::E_OK,
-            "UpdatePhotosVideoMod photostab failed, error id: %{public}d", photoRet);
+        if (videoMode == static_cast<int32_t>(VideoMode::LOG_VIDEO)) {
+            logFileIds.push_back(std::to_string(fileId));
+        }
     }
-    MEDIA_INFO_LOG("UpdateVideoMode end");
+    auto ret = PhotoVideoModeOperation::BatchUpdatePhotosVideoMode(rdbStore, logFileIds);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "Failed to UpdatePhotosVideoMode, ret: %{public}d", ret);
 }
  
 void MediaVideoModeTask::HandleMediaFileManagerVideoMode()
 {
-    MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode start");
     static const int32_t batchSize = 100;
-    int32_t maxFileId = PhotoVideoModeOperation::GetMaxFileId();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbstore is nullptr");
+    int32_t maxFileId = PhotoVideoModeOperation::GetMaxFileId(rdbStore);
     MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode maxFileId = %{public}d", maxFileId);
     CHECK_AND_EXECUTE(MediaFileUtils::IsFileExists(FILE_MANAGER_VIDEO_MODE_EVENT),
         SetBatchStatus(defaultValueZero));
     int32_t currStartFileId = GetBatchStatus();
     CHECK_AND_RETURN_LOG(currStartFileId != prefsNullErrCode, "prefs is nullptr");
     int32_t startFileId = currStartFileId == defaultValueZero ? 1 : currStartFileId;
-    MEDIA_INFO_LOG("HandleMediaFileManagerVideoMode startFileId = %{public}d", startFileId);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     while (startFileId <= maxFileId) {
         MEDIA_INFO_LOG("kaishi houtai up");
         if (!this->Accept()) {
@@ -143,10 +153,9 @@ void MediaVideoModeTask::HandleMediaFileManagerVideoMode()
         }
         VideoModeInfo videoModeInfo = QueryFiles(rdbStore, startFileId);
         MEDIA_INFO_LOG("videoModeInfo size = %{public}d", static_cast<int>(videoModeInfo.fileIds.size()));
-        UpdateVideoMode(videoModeInfo);
+        UpdateVideoMode(rdbStore, videoModeInfo);
         startFileId += batchSize;
     }
     SetBatchStatus(maxFileId + 1);
 }
- 
 }

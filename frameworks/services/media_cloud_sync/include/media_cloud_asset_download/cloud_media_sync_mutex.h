@@ -18,10 +18,12 @@
 
 #include <mutex>
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 
 std::mutex& GetSyncStatusMutex();
 
 }
+// LCOV_EXCL_STOP
 
 #endif

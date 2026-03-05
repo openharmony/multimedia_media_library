@@ -264,5 +264,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_007, TestSize.Level1)
     fileAsset.SetFileResourceType(TEST_FILE_SOURCE_TYPE);
     EXPECT_EQ(fileAsset.GetFileResourceType(), TEST_FILE_SOURCE_TYPE);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_008, TestSize.Level1)
+{
+    FileAsset fileAsset;
+
+    const int32_t TEST_APP_LINK_STATE = 1;
+    fileAsset.SetAppLinkState(TEST_APP_LINK_STATE);
+    EXPECT_EQ(fileAsset.GetAppLinkState(), TEST_APP_LINK_STATE);
+}
 } // namespace Media
 } // namespace OHOS

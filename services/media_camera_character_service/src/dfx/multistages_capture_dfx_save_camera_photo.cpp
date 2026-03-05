@@ -18,7 +18,6 @@
 #include "multistages_capture_dfx_save_camera_photo.h"
 #include "media_log.h"
 #include "post_event_utils.h"
-#include "media_time_utils.h"
 
 namespace OHOS {
 namespace Media {

@@ -40,6 +40,7 @@ public:
     std::string cameraShotKey;
     NativeRdb::ValuesBucket values;
     int32_t compositeDisplayMode{0};
+    int32_t appLinkState{INT32_MIN};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

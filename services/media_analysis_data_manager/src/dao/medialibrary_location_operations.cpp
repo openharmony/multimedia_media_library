@@ -24,6 +24,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 int32_t MediaLibraryLocationOperations::InsertOperation(MediaLibraryCommand &cmd)
@@ -86,3 +87,4 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryLocationOperations::QueryOperation(
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

@@ -1137,6 +1137,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isReturnToPhotoBrowserEnabled = option.isReturnToPhotoBrowserEnabled;
     config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
     config.parameters.gridPinchMode = option.gridPinchMode;
+    config.parameters.showDateOnScrollbar = option.showDateOnScrollbar;
   }
 
   return config;
@@ -1525,5 +1526,6 @@ export default {
   GridPinchModeType: GridPinchModeType,
   GridLevel: GridLevel,
   GridPinchMode: GridPinchMode,
-  CloudDownloadNetworkPolicy: photoAccessHelper.CloudDownloadNetworkPolicy
+  CloudDownloadNetworkPolicy: photoAccessHelper.CloudDownloadNetworkPolicy,
+  AppLinkState: photoAccessHelper.AppLinkState
 };

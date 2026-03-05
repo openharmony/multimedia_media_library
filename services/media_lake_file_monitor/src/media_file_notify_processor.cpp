@@ -61,11 +61,6 @@ void MediaFileNotifyProcessor::RegisterAllProcessorsOnce()
         );
 
         registry.Register(
-            { FileNotifyObjectType::DIRECTORY, FileNotifyOperationType::ADD },
-            [] { return std::make_unique<MediaScanDirProcessor>(); }
-        );
-
-        registry.Register(
             { FileNotifyObjectType::DIRECTORY, FileNotifyOperationType::MOD },
             [this] { return std::make_unique<MediaDeleteLakeDirProcessor>(rdbStore_); },
             [] { return std::make_unique<MediaScanDirProcessor>(); }

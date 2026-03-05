@@ -261,6 +261,7 @@ private:
         ( \
             SELECT * \
             FROM Photos \
+            NOT INDEXED \
             WHERE dirty = ? AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \

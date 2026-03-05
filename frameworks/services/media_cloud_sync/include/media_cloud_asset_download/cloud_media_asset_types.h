@@ -21,6 +21,7 @@
 #include <chrono>
 #include <string>
 #include <map>
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -69,4 +70,5 @@ enum class CloudMediaTaskDownloadCloudAssetCode : int32_t {
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_CLOUD_MEDIA_ASSET_TYPES_H

@@ -515,9 +515,11 @@ static int32_t HandleAlbumMapMoveAsset(const string &targetAlbumId,
         int32_t changedRows = HandleCommonAsset(mergedAlbumInfo);
         CHECK_AND_RETURN_RET_LOG(changedRows >= 0, E_ERR, "HandleCommonAsset fail ");
     }
-    int32_t changedRet = HandleUnCommonAsset(targetAlbumId, mergedAlbumInfo);
-    CHECK_AND_RETURN_RET_LOG(changedRet == E_OK, E_ERR, "HandleUnCommonAsset fail ");
-    return changedRet;
+    if (!mergedAlbumInfo.unCommonAssets.empty()) {
+        int32_t changedRet = HandleUnCommonAsset(targetAlbumId, mergedAlbumInfo);
+        CHECK_AND_RETURN_RET_LOG(changedRet == E_OK, E_ERR, "HandleUnCommonAsset fail ");
+    }
+    return E_OK;
 }
 
 int32_t DoSmartMoveAssets(const string &albumId, const string targetAlbumId,

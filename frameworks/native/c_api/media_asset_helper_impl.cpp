@@ -248,7 +248,7 @@ void MediaAssetHelperImpl::UpdateFileAsset(std::shared_ptr<DataShare::DataShareR
     std::string title;
     resultSet->GetString(indexPos, title);
     fileAsset->SetTitle(title);
-    MEDIA_INFO_LOG("init file asset, query title: %{public}s", title.c_str());
+    MEDIA_INFO_LOG("init file asset, query title: %{public}s", MediaFileUtils::DesensitizeName(title).c_str());
 
     return;
 }

@@ -42,7 +42,8 @@ bool AssetChangeReqBody::Unmarshalling(MessageParcel &parcel)
         latitude,
         longitude,
         values,
-        compositeDisplayMode);
+        compositeDisplayMode,
+        appLinkState);
 }
 
 bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
@@ -65,7 +66,8 @@ bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
         latitude,
         longitude,
         values,
-        compositeDisplayMode);
+        compositeDisplayMode,
+        appLinkState);
 }
 
 bool AssetChangeRespBody::Unmarshalling(MessageParcel &parcel)

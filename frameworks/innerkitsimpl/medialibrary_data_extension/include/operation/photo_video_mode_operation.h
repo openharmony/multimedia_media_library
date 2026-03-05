@@ -17,12 +17,17 @@
  
 #include <cstdint>
 #include <string>
+
+#include "medialibrary_unistore_manager.h"
 namespace OHOS::Media {
  
 class PhotoVideoModeOperation {
 public:
-    static int32_t UpdatePhotosVideoMode(const int32_t videoMode, const int32_t fileId);
-    static int32_t GetMaxFileId();
+    static int32_t UpdatePhotosVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const int32_t videoMode,
+                                         const int32_t fileId);
+    static int32_t BatchUpdatePhotosVideoMode(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+                                              const std::vector<std::string> &logFileIds);
+    static int32_t GetMaxFileId(std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
 };
 }  // namespace OHOS::Media
 #endif // VIDEO_MODE_OPERATION_H

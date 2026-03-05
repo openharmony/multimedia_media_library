@@ -246,6 +246,7 @@ enum class EXPORT OperationType : uint32_t {
     QUERY_RAW_ANALYSIS_ALBUM,
     QUERY_RAW_VISION_TOTAL,
     QUERY_RAW_VISION_VIDEO_TOTAL,
+    UPDATE_APPLINK_STATE,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
