@@ -298,7 +298,7 @@ int32_t CloudMediaAlbumHandler::OnCreateRecords(
 int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnMdirtyRecords %{public}zu", map.size());
+    MEDIA_INFO_LOG("map: %{public}zu", map.size());
     CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnMdirtyRecords Album param error");
     OnMdirtyRecordsAlbumReqBody reqBody;
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_METADATA_MODIF};
@@ -308,7 +308,7 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
             MEDIA_ERR_LOG("OnMdirtyRecords Album BuildModifyRecord error");
             continue;
         }
-        MEDIA_INFO_LOG("OnMdirtyRecords Album Record:%{public}s", record.ToString().c_str());
+        CHECK_AND_PRINT_LOG(record.isSuccess, "OnMdirtyRecords Album Record:%{public}s", record.ToString().c_str());
         reqBody.AddMdirtyRecord(record);
     }
     OnMdirtyRecordsAlbumRespBody respBody;

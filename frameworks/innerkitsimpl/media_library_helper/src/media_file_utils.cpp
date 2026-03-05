@@ -2497,7 +2497,7 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
         closedir(dir);
     }
 
-    MEDIA_INFO_LOG("Directory size: %{public}lld bytes", static_cast<long long>(totalSize));
+    MEDIA_DEBUG_LOG("Directory size: %{public}lld bytes", static_cast<long long>(totalSize));
 }
 
 std::string MediaFileUtils::GetMimeTypeFromDisplayName(const std::string &displayName)
