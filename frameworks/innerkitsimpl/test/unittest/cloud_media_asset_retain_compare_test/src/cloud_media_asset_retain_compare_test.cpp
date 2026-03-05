@@ -113,7 +113,8 @@ void CloudMediaAssetRetainCompareTest::SetUpTestCase(void)
 
     vector<string> perms;
     perms.push_back("ohos.permission.GET_NETWORK_INFO");
-    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata",
+        perms);
     for (auto &perm : perms) {
         MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
     }
@@ -252,10 +253,13 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_006, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) VALUES (1, '/test/album/path');";
+    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) " \
+        "VALUES (1, '/test/album/path');";
     g_rdbStore->ExecuteSql(insertSql);
 
-    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (1, '/data/test_image.jpg', 'test_image.jpg', 1024, 1, 1, 0, 0, 0, 0);";
+    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (1, '/data/test_image.jpg', 'test_image.jpg', 1024, 1, 1, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -280,7 +284,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_007, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (2, '/data/test_image2.jpg', 'test_image2.jpg', 2048, 1, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (2, '/data/test_image2.jpg', 'test_image2.jpg', 2048, 1, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -303,7 +309,11 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_008, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, source_path, hidden, date_trashed) VALUES (3, '/data/test_image3.jpg', 'test_image3.jpg', 4096, 1, NULL, 0, 0, 0, 0, '/storage/test_image3.jpg', 1, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, " \
+        "source_path, hidden, date_trashed) " \
+        "VALUES (3, '/data/test_image3.jpg', 'test_image3.jpg', 4096, 1, NULL, " \
+               "0, 0, 0, 0, '/storage/test_image3.jpg', 1, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -346,7 +356,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest.com, GetMaxFileIdBeforeCompare_test_01
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (10, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (10, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     int32_t maxFileId = dao.GetMaxFileIdBeforeCompare();
@@ -360,7 +372,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, SetRdbStore_test_011, TestSize.Level0
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (5, '/data/test.jpg', 'test.jpg', 1021, 1, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (5, '/data/test.jpg', 'test.jpg', 1021, 1, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     int32_t maxFileId = dao.GetMaxFileIdBeforeCompare();
@@ -374,10 +388,13 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_012, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) VALUES (2, '/test/album/path2');";
+    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) " \
+        "VALUES (2, '/test/album/path2');";
     g_rdbStore->ExecuteSql(insertSql);
 
-    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (6, '/data/test.jpg', 'test.jpg', 1024, 1, 2, 90, 1, 1, 123456);";
+    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (6, '/data/test.jpg', 'test.jpg', 1024, 1, 2, 90, 1, 1, 123456);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -403,7 +420,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_013, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (7, '/data/test.jpg', 'test.jpg', 1024, 2, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (7, '/data/test.jpg', 'test.jpg', 1024, 2, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -426,7 +445,11 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_014, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, source_path, hidden, date_trashed) VALUES (8, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0, '/storage/test.jpg', 0, 1);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, " \
+        "source_path, hidden, date_trashed) " \
+        "VALUES (8, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0, " \
+        "'/storage/test.jpg', 0, 1);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -450,13 +473,18 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_015, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) VALUES (3, '/test/album/path3');";
+    string insertSql = "INSERT INTO PhotosAlbumBackupForSaveAnalysisData (album_id, lpath) " \
+        "VALUES (3, '/test/album/path3');";
     g_rdbStore->ExecuteSql(insertSql);
 
-    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (9, '/data/test.jpg', 'test.jpg', 1024, 1, 3, 0, 0, 0, 0);";
+    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (9, '/data/test.jpg', 'test.jpg', 1024, 1, 3, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
-    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (10, '/data/test.jpg', 'test.jpg', 1024, 1, 3, 0, 1, 1, 123456);";
+    insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (10, '/data/test.jpg', 'test.jpg', 1024, 1, 3, 0, 1, 1, 123456);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -480,7 +508,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_016, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (11, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (11, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -503,7 +533,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_017, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (12, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 90, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (12, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 90, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -526,7 +558,11 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_018, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, source_path, hidden, date_trashed) VALUES (13, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0, '/storage/test.jpg', 1, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time, " \
+        "source_path, hidden, date_trashed) " \
+        "VALUES (13, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0, " \
+        "'/storage/test.jpg', 1, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
@@ -561,7 +597,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_020, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) VALUES (15, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
+    string insertSql = "INSERT INTO Photos (file_id, data, display_name, size, media_type, " \
+        "owner_album_id, orientation, clean_flag, position, real_lcd_visit_time) " \
+        "VALUES (15, '/data/test.jpg', 'test.jpg', 1024, 1, NULL, 0, 0, 0, 0);";
     g_rdbStore->ExecuteSql(insertSql);
 
     CloudMediaPullDataDto pullData;
