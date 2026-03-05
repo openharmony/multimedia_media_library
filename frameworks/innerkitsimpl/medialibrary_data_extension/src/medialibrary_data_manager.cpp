@@ -129,6 +129,7 @@
 #include "media_image_framework_utils.h"
 #include "global_scanner.h"
 #include "media_upgrade.h"
+#include <functional>
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -183,6 +184,7 @@ static const std::string BROKER_START_SCAN = "start_scan";
 static const int MAX_LOOP_CNT = 10;
 static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
 static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
+static const std::string CONST_MEDIA_SECURE_ALBUM = "const.media.secure_album";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -398,6 +400,9 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
     }
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    watchSystemObserver_ = std::make_shared<WatchSystemHandler>();
+#endif
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     galleryRebuildObserver_= std::make_shared<CloudSyncObserver>();
@@ -415,7 +420,18 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         cloudGalleryPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX),
         cloudGalleryDownloadObserver_, true);
-
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+        string path = "libwatch_system_native.z.so";
+        handler_ = dlopen(path.c_str(), RTLD_NOW);
+        CHECK_AND_RETURN_RET_LOG(handler_ != nullptr, E_ERR, "Not find libwatch_system_native");
+        func_ = reinterpret_cast<GetInstanceNewFunc>(dlsym(handler_, "GetCloudAuditInstance"));
+        CHECK_AND_RETURN_RET_LOG(func_ != nullptr, E_ERR, "Cannot find WatchLiteImpl");
+        cloudAuditInstance_ = func_();
+        cloudAuditInstance_->RegisterCloudAuditCallback(watchSystemObserver_);
+        MEDIA_INFO_LOG("MEDIALIBRARY_SECURE_ALBUM_ENABLE End.");
+    }
+#endif
     HandleUpgradeRdbAsync(isInMediaLibraryOnStart);
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
@@ -1419,6 +1435,19 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
     }
     MediaLibraryUnistoreManager::GetInstance().Stop();
     extension_ = nullptr;
+
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
+        if (cloudAuditInstance_ != nullptr) {
+            cloudAuditInstance_->UnRegisterCloudAuditCallback();
+            cloudAuditInstance_ = nullptr;
+        }
+        if (handler_ != nullptr) {
+            dlclose(handler_);
+            handler_ = nullptr;
+        }
+    }
+#endif
 }
 
 int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()

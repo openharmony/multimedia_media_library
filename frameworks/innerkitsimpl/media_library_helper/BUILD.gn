@@ -97,6 +97,7 @@ ohos_shared_library("media_library") {
     "src/shooting_mode_column.cpp",
     "src/smart_album_asset.cpp",
     "src/media_audio_column.cpp",
+    "src/media_operation_log_column.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_kv_db/src/medialibrary_kvstore.cpp",
