@@ -46,6 +46,9 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetFdirtyDataVoFromDto
         fdirtyDataVo.originalCloudId = fdirtyDataDto.originalCloudId;
         fdirtyDataVo.fileSourceType = fdirtyDataDto.fileSourceType;
         fdirtyDataVo.storagePath = fdirtyDataDto.storagePath;
+        fdirtyDataVo.uniqueId = fdirtyDataDto.uniqueId;
+        fdirtyDataVo.packageName = fdirtyDataDto.packageName;
+        fdirtyDataVo.photoRiskStatus = fdirtyDataDto.photoRiskStatus;
         fdirtyDataVo.localPath = fdirtyDataDto.localPath;
         fdirtyDataVo.attributesMediaType = fdirtyDataDto.attributesMediaType;
         for (auto &nodePair : fdirtyDataDto.attachment) {
@@ -76,6 +79,9 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetNewDataVoFromDto(st
         newDataVo.originalCloudId = newDataDto.originalCloudId;
         newDataVo.fileSourceType = newDataDto.fileSourceType;
         newDataVo.storagePath = newDataDto.storagePath;
+        newDataVo.uniqueId = newDataDto.uniqueId;
+        newDataVo.packageName = newDataDto.packageName;
+        newDataVo.photoRiskStatus = newDataDto.photoRiskStatus;
         for (auto &nodePair : newDataDto.attachment) {
             CloudFileDataVo fileData;
             fileData.fileName = nodePair.second.fileName;
@@ -168,6 +174,9 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &recor
     photosVo.ownerAlbumId = record.ownerAlbumId.value_or(0);
     photosVo.fileSourceType = record.fileSourceType.value_or(0);
     photosVo.storagePath = record.storagePath.value_or("");
+    photosVo.uniqueId = record.uniqueId.value_or("");
+    photosVo.packageName = record.packageName.value_or("");
+    photosVo.photoRiskStatus = record.photoRiskStatus.value_or(0);
     return true;
 }
 
@@ -268,6 +277,8 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesStrongAssociation = photosVo.strongAssociation;
     data.attributesFileSourceType = photosVo.fileSourceType;
     data.attributesStoragePath = photosVo.storagePath;
+    data.attributesUniqueId = photosVo.uniqueId;
+    data.attributesPackageName = photosVo.packageName;
     // Safe Album: risk status for children's watch
     data.attributesRiskStatus = photosVo.photoRiskStatus;
     data.attributesIsCritical = photosVo.isCritical;

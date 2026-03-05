@@ -605,6 +605,33 @@ MDKRecordPhotosData &MDKRecordPhotosData::SetStoragePath(const std::string &stor
     this->attributes_[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(storagePath);
     return *this;
 }
+std::optional<std::string> MDKRecordPhotosData::GetUniqueId() const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, PhotoColumn::UNIQUE_ID);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetUniqueId(const std::string &uniqueId)
+{
+    this->attributes_[PhotoColumn::UNIQUE_ID] = MDKRecordField(uniqueId);
+    return *this;
+}
+std::optional<std::string> MDKRecordPhotosData::GetPackageName() const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, MediaColumn::MEDIA_PACKAGE_NAME);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetPackageName(const std::string &packageName)
+{
+    this->attributes_[MediaColumn::MEDIA_PACKAGE_NAME] = MDKRecordField(packageName);
+    return *this;
+}
+std::optional<int32_t> MDKRecordPhotosData::GetPhotoRiskStatus() const
+{
+    return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::PHOTO_RISK_STATUS);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetPhotoRiskStatus(const int32_t photoRiskStatus)
+{
+    this->attributes_[PhotoColumn::PHOTO_RISK_STATUS] = MDKRecordField(photoRiskStatus);
+    return *this;
+}
 
 std::optional<std::string> MDKRecordPhotosData::GetSourcePath() const
 {

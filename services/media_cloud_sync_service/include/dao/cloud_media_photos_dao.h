@@ -144,6 +144,8 @@ public:
     void UpdateAnalysisAlbumsCountForCloud();
 
 private:
+    void HandleIncomingCloudConflict(const CloudMediaPullDataDto &pullData,
+        NativeRdb::ValuesBucket &values);
     void UpdateAllAlbumsCountForCloud(const std::vector<std::string> &albums);
     void UpdateAlbumCountInternal(const std::vector<std::string> &subtypes);
     void GetSourceAlbumFromPath(const CloudMediaPullDataDto &pullData, int32_t &albumId, std::set<int32_t> &cloudMapIds,
@@ -239,6 +241,36 @@ private:
             LOWER(COALESCE(lpath, '')) = LOWER('/DCIM/Camera') \
         LIMIT ?  \
         ;";
+    const std::string SQL_PHOTOS_GET_CREATE_RECORDS_SECURE = "\
+        WITH DATA AS \
+        ( \
+            SELECT \
+                * \
+            FROM Photos \
+            WHERE \
+                dirty = 1 AND \
+                photo_risk_status = 1 AND \
+                thumbnail_ready >= 3 AND \
+                lcd_visit_time >= 2 AND \
+                date_trashed = 0 AND \
+                (1 = {1} OR hidden = 0) AND \
+                time_pending = 0 AND \
+                COALESCE(is_temp, 0) = 0 AND \
+                file_id NOT IN ({0}) \
+            ORDER BY size ASC \
+        ) \
+        SELECT DATA.*, \
+            PhotoAlbum.cloud_id AS album_cloud_id, \
+            PhotoAlbum.lpath AS lpath \
+        FROM DATA \
+            LEFT JOIN PhotoAlbum \
+            ON DATA.owner_album_id = PhotoAlbum.album_id \
+        WHERE \
+            COALESCE(PhotoAlbum.dirty, 0) <> 1 AND \
+            (1 = {1} OR COALESCE(upload_status, 1) = 1) OR \
+            LOWER(COALESCE(lpath, '')) = LOWER('/DCIM/Camera') \
+        LIMIT ?  \
+        ;";
     const std::string SQL_PHOTOS_GET_COPY_RECORDS = "\
         WITH DATA AS \
         ( \
@@ -276,6 +308,26 @@ private:
             LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
+    const std::string SQL_PHOTOS_GET_META_MODIFIED_RECORDS_SECURE = "\
+        WITH DATA AS \
+        ( \
+            SELECT * \
+            FROM Photos \
+            WHERE dirty IN (2, 6) AND \
+                photo_risk_status = 1 AND \
+                cloud_id <> '' AND \
+                cloud_id IS NOT NULL AND \
+                cloud_id NOT IN ({0}) \
+            ORDER BY size ASC \
+            LIMIT ? \
+        ) \
+        SELECT DATA.*, \
+            PhotoAlbum.cloud_id AS album_cloud_id, \
+            PhotoAlbum.lpath AS lpath \
+        FROM DATA \
+            LEFT JOIN PhotoAlbum \
+            ON DATA.owner_album_id = PhotoAlbum.album_id \
+        ;";
     const std::string SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS = "\
         WITH DATA AS \
         ( \
@@ -284,6 +336,30 @@ private:
             FROM Photos \
             WHERE \
                 (dirty = 3 OR dirty = 8) AND \
+                thumbnail_ready >= 3 AND \
+                lcd_visit_time >= 2 AND \
+                cloud_id <> '' AND \
+                cloud_id IS NOT NULL AND \
+                cloud_id NOT IN ({0}) \
+            ORDER BY size ASC \
+            LIMIT ? \
+        ) \
+        SELECT DATA.*, \
+            PhotoAlbum.cloud_id AS album_cloud_id, \
+            PhotoAlbum.lpath AS lpath \
+        FROM DATA \
+            LEFT JOIN PhotoAlbum \
+            ON DATA.owner_album_id = PhotoAlbum.album_id \
+        ;";
+    const std::string SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS_SECURE = "\
+        WITH DATA AS \
+        ( \
+            SELECT \
+                * \
+            FROM Photos \
+            WHERE \
+                (dirty = 3 OR dirty = 8) AND \
+                photo_risk_status = 1 AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
                 cloud_id <> '' AND \

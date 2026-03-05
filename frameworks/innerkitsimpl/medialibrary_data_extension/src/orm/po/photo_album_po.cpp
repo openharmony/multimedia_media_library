@@ -45,6 +45,7 @@ std::string PhotoAlbumPo::ToString() const
        << "\"isInWhiteList\": " << isInWhiteList.value_or(false) << ","
        << "\"coverUriSource\": " << coverUriSource.value_or(-1) << ","
        << "\"coverCloudId\": " << coverCloudId.value_or("") << ","
+       << "\"uniqueId\": " << uniqueId.value_or("") << ","
        << "}";
     return ss.str();
 }

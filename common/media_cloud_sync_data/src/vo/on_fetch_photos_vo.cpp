@@ -88,6 +88,8 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDelete), false, "isDelete");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->packageName), false, "packageName");
     // Safe Album: risk status for children's watch
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->isCritical), false, "isCritical");
@@ -158,6 +160,8 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDelete), false, "isDelete");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->packageName), false, "packageName");
     // Safe Album: risk status for children's watch
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->isCritical), false, "isCritical");
@@ -253,6 +257,8 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"videoMode\": \"" << videoMode << "\","
        << "\"fileSourceType\": \"" << fileSourceType << "\","
        << "\"storagePath\": \"" << storagePath << "\","
+       << "\"uniqueId\": \"" << uniqueId << "\","
+       << "\"packageName\": \"" << packageName << "\","
        << "\"photoRiskStatus\": \"" << photoRiskStatus << "\","
        << "\"isCritical\": \"" << isCritical << "\",";
     return;

@@ -45,6 +45,7 @@ public:
     bool isSuccess;
     int32_t coverUriSource;
     std::string coverCloudId;
+    std::string uniqueId;
     int32_t serverErrorCode;
     ErrorType errorType;
     std::vector<CloudErrorDetail> errorDetails;

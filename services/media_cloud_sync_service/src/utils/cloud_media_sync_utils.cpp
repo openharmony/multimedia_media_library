@@ -82,7 +82,8 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
 }
 
 int32_t CloudMediaSyncUtils::FillPhotosDto(
-    CloudSync::PhotosDto &photosDto, const CloudSync::CloudMediaPullDataDto &data)
+    CloudSync::PhotosDto &photosDto, const CloudSync::CloudMediaPullDataDto &data,
+    const NativeRdb::ValuesBucket &values)
 {
     constexpr uint64_t DEFAULT_SIZE = 2 * 1024 * 1024; // thumbnail and lcd default size is 2MB
     bool isRotation = data.propertiesRotate != ROTATE_ANGLE_0 ||
@@ -105,6 +106,17 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudMediaFileUtils::GetParentPathAndFilename(lcdLocalPath, dtoLcd.path, dtoLcd.fileName);
     dtoLcd.size = (data.lcdSize <= 0) ? DEFAULT_SIZE : data.lcdSize;
     photosDto.attachment["lcd"] = dtoLcd;
+
+    NativeRdb::ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::UNIQUE_ID, valueObject)) {
+        valueObject.GetString(photosDto.uniqueId);
+    }
+    if (values.GetObject(MediaColumn::MEDIA_PACKAGE_NAME, valueObject)) {
+        valueObject.GetString(photosDto.packageName);
+    }
+    if (values.GetObject(PhotoColumn::PHOTO_RISK_STATUS, valueObject)) {
+        valueObject.GetInt(photosDto.photoRiskStatus);
+    }
 
     return E_OK;
 }

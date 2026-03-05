@@ -250,4 +250,12 @@ void MDKRecordAlbumData::SetCoverCloudId(const std::string &coverCloudId)
 {
     this->attributes_[PhotoAlbumColumns::COVER_CLOUD_ID] = MDKRecordField(coverCloudId);
 }
+std::optional<std::string> MDKRecordAlbumData::GetUniqueId() const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, PhotoAlbumColumns::UNIQUE_ID);
+}
+void MDKRecordAlbumData::SetUniqueId(const std::string &uniqueId)
+{
+    this->attributes_[PhotoAlbumColumns::UNIQUE_ID] = MDKRecordField(uniqueId);
+}
 }  // namespace OHOS::Media::CloudSync

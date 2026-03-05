@@ -455,4 +455,48 @@ HWTEST_F(CloudMediaPhotoHandlerGetCreatedRecordsTest, GetCreatedRecords_no_creat
         }
     }
 }
+
+HWTEST_F(CloudMediaPhotoHandlerGetCreatedRecordsTest, GetCreatedRecords_002, TestSize.Level1)
+{
+    std::string tableName = "Photos";
+    int32_t cloudType = 0;
+    int32_t userId = 100;
+    std::shared_ptr<CloudMediaDataHandler> dataHandler =
+        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
+    std::vector<MDKRecord> records;
+    int32_t size = 20;
+    int32_t ret = dataHandler->GetCreatedRecords(records, size);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(records.size(), 0);
+    std::vector<MDKRecord> testRecords;
+    JsonFileReader reader("/data/test/cloudsync/photo_handler_get_created_record_result.json");
+    reader.ConvertToMDKRecordVector(testRecords);
+
+    std::vector<std::string> case1CloudIds = {
+        "373b364a41e54ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff96a1",
+        "373b364a41e54ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff96a3"};
+
+    std::vector<MDKRecord> target1RecordIds;
+    for (auto testRecord : testRecords) {
+        for (auto case1CloudId : case1CloudIds) {
+            if (testRecord.GetRecordId() == case1CloudId) {
+                target1RecordIds.emplace_back(testRecord);
+            }
+        }
+    }
+    EXPECT_GT(records.size(), 0);
+    EXPECT_EQ(target1RecordIds.size(), case1CloudIds.size());
+    int32_t case2Count = 0;
+    MDKRecordUtils utils;
+    std::vector<std::string> checkFields = {"unique_id", "package_name", "photo_risk_status"};
+    for (auto &record : records) {
+        for (auto &target : target1RecordIds) {
+            if (record.GetRecordId() == target.GetRecordId()) {
+                EXPECT_TRUE(utils.Equals(record, target, checkFields, MDKRecordUtils::RecordType::PHOTO));
+                case2Count++;
+            }
+        }
+    }
+    EXPECT_EQ(case2Count, target1RecordIds.size());
+}
 }  // namespace OHOS::Media::CloudSync

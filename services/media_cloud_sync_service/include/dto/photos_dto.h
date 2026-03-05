@@ -77,6 +77,9 @@ public:
     bool isSuccess;
     int32_t fileSourceType;
     std::string storagePath;
+    std::string uniqueId;
+    std::string packageName;
+    int32_t photoRiskStatus;
     std::string localPath;
     int32_t hidden;
     std::map<std::string, CloudFileDataDto> attachment;

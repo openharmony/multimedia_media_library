@@ -604,4 +604,31 @@ HWTEST_F(CloudMediaAlbumHandlerOnFetchRecordsTest, OnFetchRecords_Cloud_Modify_A
             << "id:" << album.albumId.value_or(0) << ", dirty:" << album.cloudId.value_or("");
     }
 }
+
+HWTEST_F(CloudMediaAlbumHandlerOnFetchRecordsTest, OnFetchRecords_Album_Unique_Id_Case11, TestSize.Level1)
+{
+    std::vector<std::string> albumNames = { "User000", "User001", "User002", "User003", "User004"};
+    std::map<std::string, std::vector<std::string>> sourceAlbumInfo = {
+        {"default-album-9d51ed54ff9000", {"test_unique_id"}},
+        {"default-album-9d51ed54ff9001", {"test_unique_id"}},
+        {"default-album-9d51ed54ff9002", {"test_unique_id"}},
+        {"default-album-9d51ed54ff9003", {"test_unique_id"}},
+        {"default-album-9d51ed54ff9004", {"test_unique_id"}}};
+    AlbumDao dao;
+    std::vector<PhotoAlbumPo> albumList = dao.QueryByAlbumNames(albumNames);
+    EXPECT_EQ(albumList.size(), albumNames.size());
+    for (auto &album : albumList) {
+        GTEST_LOG_(INFO) << "OnFetchRecords_Check_Added_User_Album: " << album.ToString();
+        auto it = sourceAlbumInfo.find(album.cloudId.value_or(""));
+        EXPECT_TRUE(it != sourceAlbumInfo.end())
+            << "id:" << album.albumId.value_or(-1) << ", cloudId:" << album.cloudId.value_or("");
+        if (it == sourceAlbumInfo.end()) {
+            continue;
+        }
+        std::vector<std::string> albumInfo = it->second;
+        EXPECT_TRUE(album.uniqueId.value_or("") == albumInfo[0])
+            << "id:" << album.albumId.value_or(0) << "unique_id:" << album.uniqueId.value_or("")
+            << ", unique_id2:" << albumInfo[0];
+    }
+}
 }  // namespace OHOS::Media::CloudSync
