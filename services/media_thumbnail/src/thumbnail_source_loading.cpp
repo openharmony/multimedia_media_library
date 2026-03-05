@@ -289,7 +289,7 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     tracer.Start("LoadImageSource");
 
     SourceOptions opts;
-    MEDIA_INFO_LOG("File info: %{public}s", ThumbnailFileUtils::GetFileInfo(path).c_str());
+    MEDIA_DEBUG_LOG("File info: %{public}s", ThumbnailFileUtils::GetFileInfo(path).c_str());
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK || !imageSource) {
         MEDIA_ERR_LOG("Failed to LoadImageSource, pixelmap path: %{public}s exists: %{public}d",

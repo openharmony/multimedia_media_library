@@ -97,7 +97,7 @@ int32_t PermissionCheck::VerifyOpenFilePermissions(uint32_t businessCode, const 
             PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         return E_PERMISSION_DENIED;
     }
-    MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d success", businessCode);
+    MEDIA_DEBUG_LOG("VerifyPermissions API code=%{public}d success", businessCode);
     return ret;
 }
 

@@ -127,7 +127,6 @@ int32_t CloudMediaDataService::GetVideoToCache(std::vector<PhotosDto> &photosDto
 
 std::vector<uint64_t> CloudMediaDataService::GetFilePosStat()
 {
-    MEDIA_INFO_LOG("GetFilePosStat");
     std::vector<uint64_t> filePosStat = {0, 0, 0};
 
     /* get local file status */

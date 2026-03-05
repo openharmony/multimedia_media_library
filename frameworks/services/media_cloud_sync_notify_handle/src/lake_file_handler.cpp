@@ -131,7 +131,7 @@ static int32_t GetLpath(const string &storagePath, string &lpath)
 {
     size_t lastSlash = storagePath.rfind('/');
     if (lastSlash == string::npos) {
-        MEDIA_ERR_LOG("slash not found in storage path: %{public}s", storagePath.c_str());
+        MEDIA_DEBUG_LOG("slash not found in storage path: %{public}s", storagePath.c_str());
         return E_ERR;
     }
 
@@ -152,7 +152,7 @@ static void HandleLakeFileMove(const LakeData &data, unordered_map<int32_t, vect
     string lpath;
     int errCode = GetLpath(data.storagePath, lpath);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to parse lpath from storagePath");
+        MEDIA_DEBUG_LOG("Failed to parse lpath from storagePath");
         return;
     }
 
@@ -183,7 +183,7 @@ static void HandleStoragePath(const LakeData &data)
     string lpath;
     int errCode = GetLpath(data.storagePath, lpath);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to parse lpath from storagePath");
+        MEDIA_DEBUG_LOG("Failed to parse lpath from storagePath");
         return;
     }
 

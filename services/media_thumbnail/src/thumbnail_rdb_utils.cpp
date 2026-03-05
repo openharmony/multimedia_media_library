@@ -251,7 +251,7 @@ bool ThumbnailRdbUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultS
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
         return false;
     } else if (rowCount == 0) {
-        MEDIA_INFO_LOG("CheckCount No match!");
+        MEDIA_ERR_LOG("CheckCount No match!");
         err = E_EMPTY_VALUES_BUCKET;
         return false;
     }

@@ -80,7 +80,7 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
         ret = this->albumDao_.HandleLPathAndAlbumType(album);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, FileManagement::E_STOP, "OnFetchRecords HandleLPathAndAlbumType Error");
         if (IsDoubleScreenshot(album.lPath, album.cloudId)) {
-            MEDIA_INFO_LOG("OnFetchRecords IsDoubleScreenshot");
+            MEDIA_DEBUG_LOG("OnFetchRecords IsDoubleScreenshot");
             ConvertToSingleScreenshots(album, lpathRecords);
             continue;
         }
@@ -190,7 +190,7 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
 int32_t CloudMediaAlbumService::OnFetchOldRecords(
     std::vector<PhotoAlbumDto> &records, OnFetchRecordsAlbumRespBody &resp)
 {
-    MEDIA_INFO_LOG("OnFetchOldRecords enter %{public}zu", records.size());
+    MEDIA_DEBUG_LOG("OnFetchOldRecords enter %{public}zu", records.size());
     int32_t ret = E_OK;
     for (auto &record : records) {
         bool bContinue = false;
@@ -224,7 +224,7 @@ int32_t CloudMediaAlbumService::OnFetchOldRecords(
 int32_t CloudMediaAlbumService::OnFetchLPathRecords(
     std::vector<PhotoAlbumDto> &records, OnFetchRecordsAlbumRespBody &resp)
 {
-    MEDIA_INFO_LOG("OnFetchLPathRecords enter %{public}zu", records.size());
+    MEDIA_DEBUG_LOG("OnFetchLPathRecords enter %{public}zu", records.size());
     int32_t ret = E_OK;
     for (auto &record : records) {
         std::string lpath = record.lPath;
