@@ -82,7 +82,6 @@ ohos_unittest("cloud_media_asset_retain_compare_test") {
     "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/cloud_media_asset_retain_compare_test.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_asset_retain_compare_dao.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_sync_utils.cpp",
   ]
 
   deps = [
