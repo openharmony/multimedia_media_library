@@ -93,11 +93,10 @@ private:
     EXPORT int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
     EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
-        std::vector<std::string> &dateTakens, std::vector<int64_t>& lcdVisitTimes,
-        std::vector<int32_t> &subTypes, std::vector<int32_t> &southDevices);
+        std::vector<std::string> &dateTakens, std::vector<int64_t>& lcdVisitTimes, std::vector<int32_t> &subTypes);
     static bool ProcessDeleteBatch(const std::vector<std::string> &fileIds,
         const std::vector<std::string> &paths, const std::vector<std::string> &dateTakens,
-        const std::vector<int64_t> &lcdVisitTimes, std::vector<int32_t> &subTypes, std::vector<int32_t> &southDevices);
+        const std::vector<int64_t> &lcdVisitTimes, std::vector<int32_t> &subTypes);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE,
         SmartDataProcessingMode mode = SmartDataProcessingMode::NONE);
@@ -105,6 +104,7 @@ private:
     EXPORT int32_t UpdateLocalAlbums();
     EXPORT int32_t UpdateBothLocalAndCloudAssets(
         CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
+    EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static void CleanUpFileData(const std::string& path);
     EXPORT bool HasDataForUpdate(CloudMediaRetainType retainType, std::vector<std::string> &updateFileIds,
         const std::string &lastFileId, SmartDataProcessingMode mode);
@@ -115,11 +115,11 @@ private:
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
     EXPORT void TryToStartSync();
-    EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType, SmartDataProcessingMode mode);
-    EXPORT std::vector<int32_t> QueryEmptyAlbumsAndBackup();
-    EXPORT std::string BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds);
+    EXPORT vector<int32_t> QueryEmptyAlbumsAndBackup();
+    EXPORT string BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds);
+
 private:
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation_{nullptr};
     inline static std::atomic<TaskDeleteState> doDeleteTask_{TaskDeleteState::IDLE};
