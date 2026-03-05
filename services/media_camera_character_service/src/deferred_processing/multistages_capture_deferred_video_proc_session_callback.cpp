@@ -33,6 +33,7 @@
 #include "multistages_capture_request_task_manager.h"
 #include "multistages_capture_dao.h"
 #include "multistages_capture_notify.h"
+#include "medialibrary_photo_operations.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
@@ -125,6 +126,13 @@ std::vector<std::string> GetColumns()
     return columns;
 }
 
+void CheckEditSize(std::shared_ptr<FileAsset> fileAsset)
+{
+    if (fileAsset->GetPhotoEditTime() > 0 || fileAsset->GetMovingPhotoEffectMode() > 0) {
+        MediaLibraryPhotoOperations::CalSingleEditDataSize(to_string(fileAsset->GetId()));
+    }
+}
+
 void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(const std::string& videoId)
 {
     CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
@@ -158,6 +166,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     } else {
         MediaLibraryObjectUtils::ScanFileAsync(
             fileAsset->GetFilePath(), to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
+        CheckEditSize(fileAsset);
         if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) {
             MultistagesCaptureNotify::NotifyOnProcess(fileAsset, MultistagesCaptureNotifyType::ON_PROCESS_VIDEO_DONE);
             NotifyIfTempFile(fileAsset);
