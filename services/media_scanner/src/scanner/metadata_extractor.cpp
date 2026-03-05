@@ -886,8 +886,11 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
         MEDIA_WARN_LOG("Failed to get extra data file size");
     }
     data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
-    int64_t videoDateModified = videoData->GetFileDateModified();
-    if (videoDateModified > data->GetFileDateModified()) {
+
+    int64_t videoDateModified = 0;
+    if (MediaFileUtils::GetDateModified(videoPath, videoDateModified) &&
+        videoDateModified > data->GetFileDateModified()) {
+        MEDIA_DEBUG_LOG("videoDataModified is %{public}lld", static_cast<long long>(videoDateModified));
         data->SetFileDateModified(videoDateModified);
     }
 
