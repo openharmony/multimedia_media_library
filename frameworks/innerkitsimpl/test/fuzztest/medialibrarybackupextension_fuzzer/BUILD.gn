@@ -62,8 +62,8 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/cloud_backup_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_album.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/group_photo_album/clone_restore_group_photo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/group_photo_album/group_photo_album_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/selection/clone_restore_selection.cpp",
-    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/group_photo_album/group_photo_album_restore.cpp",
 
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_total.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/geo_dictionary/clone_restore_geo_dictionary.cpp",
