@@ -176,7 +176,7 @@ protected:
             auto threadNum = ++threadNum_;
             auto pthread_slf = pthread_self();
             auto tid = gettid();
-            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}lu) enter. thread num:%{public}llu",
+            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}lu) enter. thread num:%{public}llu",
                 tid, name_.c_str(), pthread_self(), threadNum);
             func_();
             threadNum = --threadNum_;
@@ -211,7 +211,7 @@ protected:
         }
         joinable_ = true;
         active_thread_name(name_);
-        MEDIA_INFO_LOG("thread(%{public}s-%{public}lu): create thread success.", name_.c_str(), threadId_);
+        MEDIA_DEBUG_LOG("thread(%{public}s-%{public}lu): create thread success.", name_.c_str(), threadId_);
     }
 
     void active_thread_name(const std::string& name)

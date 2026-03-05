@@ -112,10 +112,10 @@ int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pul
 {
     if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs > 0) {
         std::string cloudDateModified = std::to_string(pullData.attributesEditedTimeMs);
-        MEDIA_INFO_LOG("localDateModified: %{public}s, attributesEditedTimeMs: %{public}s",
+        changed = !(pullData.localDateModified == cloudDateModified);
+        CHECK_AND_PRINT_INFO_LOG(!changed, "localDateModified: %{public}s, attributesEditedTimeMs: %{public}s",
             pullData.localDateModified.c_str(),
             cloudDateModified.c_str());
-        changed = !(pullData.localDateModified == cloudDateModified);
         return E_OK;
     }
 
@@ -136,9 +136,9 @@ int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pul
     // basicCreatedTime means date_taken, the file created time.
     // localDateAdded means the db record created time.
     std::string createTime = std::to_string(pullData.basicCreatedTime);
-    MEDIA_INFO_LOG(
-        "localDateAdded: %{public}s, cloudDateAdded: %{public}s", pullData.localDateAdded.c_str(), createTime.c_str());
     changed = !(pullData.localDateAdded == createTime);
+    CHECK_AND_PRINT_INFO_LOG(!changed,
+        "localDateAdded: %{public}s, cloudDateAdded: %{public}s", pullData.localDateAdded.c_str(), createTime.c_str());
     return E_OK;
 }
 
@@ -200,7 +200,7 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     std::string cloudId = pullData.cloudId;
-    MEDIA_INFO_LOG("Update cloudId: %{public}s.", cloudId.c_str());
+    MEDIA_DEBUG_LOG("Update cloudId: %{public}s.", cloudId.c_str());
     CHECK_AND_RETURN_RET_INFO_LOG(!CloudMediaSyncUtils::IsLocalDirty(pullData.localDirty, false),
         E_OK,
         "local record dirty, ignore cloud update");
@@ -326,7 +326,7 @@ int32_t CloudMediaPhotosService::PullRecordsDataMerge(std::vector<CloudMediaPull
         // Check the cloud data map (cache) is consistent with the cloud data list (allPullDatas)
         std::string id = mergeData->cloudId;
         if (mergeDataMap.find(id) == mergeDataMap.end()) {
-            MEDIA_INFO_LOG("PullRecordsConflictProc GetLocalKey Data failed: %{public}s", id.c_str());
+            MEDIA_DEBUG_LOG("PullRecordsConflictProc GetLocalKey Data failed: %{public}s", id.c_str());
             ++mergeData;
             continue;
         }
@@ -561,7 +561,7 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     for (auto &cloudId : cloudIds) {
         CloudMediaPullDataDto pullData = cloudIdRelativeMap.at(cloudId);
         std::string dateAdded = pullData.localDateAdded;
-        MEDIA_INFO_LOG("pulldata HandleRecord pullData: %{public}s", pullData.ToString().c_str());
+        MEDIA_INFO_LOG("pullData: %{public}s", pullData.ToString().c_str());
         // 下行机已经有数据并且不是被删除
         if (pullData.localPath.empty() && !pullData.basicIsDelete) {
             insertPullDatas.emplace_back(pullData);
@@ -683,7 +683,7 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
             MEDIA_DEBUG_LOG("OnFetchRecords CloudMediaPullData: %{public}s.", pullData.ToString().c_str());
         }
         if (!found) {
-            MEDIA_WARN_LOG("OnFetchRecords Record need insert cloudId: %{public}s.", it->first.c_str());
+            MEDIA_DEBUG_LOG("OnFetchRecords Record need insert cloudId: %{public}s.", it->first.c_str());
             it->second.localPath = "";
         }
     }
@@ -788,9 +788,9 @@ std::vector<PhotosPo> CloudMediaPhotosService::GetDeletedRecords(int32_t size)
 
 int32_t CloudMediaPhotosService::GetCopyRecords(int32_t size, std::vector<PhotosPo> &copyRecords)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetCopyRecords enter %{public}d", size);
+    MEDIA_DEBUG_LOG("CloudMediaPhotosService::GetCopyRecords enter %{public}d", size);
     int32_t ret = this->photosDao_.GetCopyRecords(size, copyRecords);
-    MEDIA_INFO_LOG(
+    MEDIA_DEBUG_LOG(
         "CloudMediaPhotosService::GetCopyRecords end, ret: %{public}d, size: %{public}zu", ret, copyRecords.size());
     return ret;
 }
