@@ -79,7 +79,7 @@ ohos_unittest("cloud_media_asset_retain_compare_test") {
   ]
 
   sanitize = {
-    c_utils:utils
+    cfi = true
     cfi_cross_dso = true
     debug = false
   }
