@@ -14,6 +14,7 @@
  */
 
 #include "media_library_duplicate_photo_operation_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <string>
@@ -151,7 +152,10 @@ static void SetTables()
 
 static void Init()
 {
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    auto rdbStore= Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr.");
         return;

@@ -26,6 +26,7 @@ ohos_fuzztest("MediaLibraryCloudMediaPhotosDaoFuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include",
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include/utils",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/include",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
   ]
 
   include_media_cloud_sync_data = [
@@ -51,6 +52,7 @@ ohos_fuzztest("MediaLibraryCloudMediaPhotosDaoFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/hi_audit.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/zip_util.cpp",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibrarycloudmediaphotosdao_fuzzer.cpp",
   ]
 

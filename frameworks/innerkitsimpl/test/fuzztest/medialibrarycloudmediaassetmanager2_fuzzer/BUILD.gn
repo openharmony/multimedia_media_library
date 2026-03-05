@@ -22,9 +22,13 @@ ohos_fuzztest("MediaLibraryCloudMediaAssetManager2FuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
   ]
 
-  sources = [ "./medialibrarycloudmediaassetmanager2_fuzzer.cpp" ]
+  sources = [
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
+    "./medialibrarycloudmediaassetmanager2_fuzzer.cpp"
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
