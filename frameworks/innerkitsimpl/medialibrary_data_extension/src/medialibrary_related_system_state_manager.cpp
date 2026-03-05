@@ -127,7 +127,7 @@ bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
     NetManagerStandard::NetAllCapabilities netAllCap;
     int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
     CHECK_AND_RETURN_RET_LOG(ret == 0, isNetValidated, "GetDefaultNet failed, err:%{public}d", ret);
-    NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
     CHECK_AND_RETURN_RET_LOG(ret == 0, isNetValidated, "GetNetCapabilities failed, err:%{public}d",
         ret);
     const std::set<NetManagerStandard::NetCap>& types = netAllCap.netCaps_;
