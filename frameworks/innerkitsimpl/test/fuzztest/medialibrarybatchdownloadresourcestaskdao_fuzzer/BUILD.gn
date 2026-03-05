@@ -18,9 +18,12 @@ ohos_fuzztest("MediaLibraryBatchDownloadResourcesTaskDaoFuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
-  include_dirs = []
+  include_dirs = [
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+  ]
 
   sources = [
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibrarybatchdownloadresourcestaskdao_fuzzer.cpp",
   ]
 
