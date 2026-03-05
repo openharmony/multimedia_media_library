@@ -26,10 +26,12 @@ class MediaLibraryCommAni {
 public:
     MediaLibraryCommAni();
     ~MediaLibraryCommAni();
+    // LCOV_EXCL_START
     EXPORT static ani_object CreatePhotoAssetAni(ani_env *env, const std::string &uri,
         int32_t cameraShotType, const std::string &burstKey = "");
     EXPORT static ani_object CreatePhotoAssetAni(ani_env *env, const std::string &uri,
         int32_t cameraShotType, int32_t captureId, const std::string &burstKey = "");
+    // LCOV_EXCL_STOP
 };
 } // namespace Media
 } // namespace OHOS

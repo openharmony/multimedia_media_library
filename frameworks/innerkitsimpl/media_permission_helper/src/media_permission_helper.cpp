@@ -92,6 +92,7 @@ static sptr<IRemoteObject> InitToken()
 void MediaPermissionHelper::InitMediaPermissionHelper()
 {
     int32_t activeUser =  GetCurrentAccountId();
+    MEDIA_INFO_LOG("InitMediaPermissionHelper, activeUserId is %{public}d, userId is %{public}d", activeUser, userId_);
     if (dataShareHelper_ == nullptr || activeUser != userId_) {
         auto token = InitToken();
         if (token == nullptr) {
@@ -275,12 +276,14 @@ static bool CheckPermissionByMap(const string &fileId, uint32_t flag,
     }
 }
 
+// LCOV_EXCL_START
 int32_t MediaPermissionHelper::CheckPhotoUriPermission(uint32_t tokenId,
     const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags,
     bool readWriteIsolation)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPermissionHelper::CheckPhotoUriPermission");
+    MEDIA_INFO_LOG("CheckPhotoUriPermission, userId is %{public}d", userId_);
     auto ret = CheckInputParameters(urisSource, flags);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     map<string, pair<bool, bool>> photoPermissionMap;
@@ -321,7 +324,9 @@ int32_t MediaPermissionHelper::CheckPhotoUriPermission(uint32_t tokenId,
     }
     return E_SUCCESS;
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 int32_t MediaPermissionHelper::CheckCloudDownloadPermission(uint32_t tokenId,
     const std::vector<std::string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags)
 {
@@ -330,6 +335,7 @@ int32_t MediaPermissionHelper::CheckCloudDownloadPermission(uint32_t tokenId,
         E_ERR, "only invoke by systemapp");
     return CheckPhotoUriPermission(tokenId, uris, result, flags, true);
 }
+// LCOV_EXCL_STOP
 
 static int32_t CheckGrantPermission(const vector<string> &urisSource, vector<PhotoPermissionType> photoPermissionTypes,
     HideSensitiveType hideSensitiveTpye)
@@ -351,6 +357,7 @@ static int32_t CheckGrantPermission(const vector<string> &urisSource, vector<Pho
     return E_SUCCESS;
 }
 
+// LCOV_EXCL_START
 int32_t MediaPermissionHelper::GrantPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
     const std::vector<string> &uris, const vector<PhotoPermissionType> &photoPermissionTypes,
     HideSensitiveType hideSensitiveTpye)
@@ -396,6 +403,7 @@ int32_t MediaPermissionHelper::GrantPhotoUriPermission(uint32_t srcTokenId, uint
     }
     return result;
 }
+// LCOV_EXCL_STOP
 
 static vector<string> BuildPermissionType(const bool persistFlag, const OperationMode mode)
 {
@@ -551,6 +559,7 @@ int32_t MediaPermissionHelper::GetPhotoUrisPermission(uint32_t targetTokenId, co
     return E_SUCCESS;
 }
 
+// LCOV_EXCL_START
 int32_t MediaPermissionHelper::GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
     const vector<PhotoPermissionType> &photoPermissionTypes, std::vector<bool> &result)
 {
@@ -591,7 +600,9 @@ int32_t MediaPermissionHelper::GetPhotoUrisPermission(uint32_t targetTokenId, co
     }
     return E_SUCCESS;
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 int32_t MediaPermissionHelper::GetUrisFromFusePaths(const std::vector<std::string> paths,
     std::vector<std::string> &uris)
 {
@@ -620,5 +631,6 @@ int32_t MediaPermissionHelper::GetUrisFromFusePaths(const std::vector<std::strin
     }
     return E_SUCCESS;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

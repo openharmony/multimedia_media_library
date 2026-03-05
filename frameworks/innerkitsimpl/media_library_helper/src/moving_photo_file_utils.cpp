@@ -169,7 +169,7 @@ static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 
 static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
 {
-    bool cond = (fileSize < 0 || offset < 0 || needSize < 0);
+    bool cond = (fileSize < 0 || offset < 0 || needSize < 0 || needSize >= std::numeric_limits<off_t>::max());
     CHECK_AND_RETURN_RET_LOG(!cond, "", "failed to check fileSize: %{public}" PRId64
         ", offset: %{public}" PRId64 ", needSize: %{public}" PRId64, fileSize, offset, needSize);
 
@@ -1022,6 +1022,28 @@ bool MovingPhotoFileUtils::IsExistsLivePhotoFiles(const std::string &imagePath)
         "file not exists, absVideoPath: %{public}s",
         MediaFileUtils::DesensitizePath(absVideoPath).c_str());
     return true;
+}
+
+int32_t MovingPhotoFileUtils::FindMovingPhotoAttachments(const std::string &cloudPath,
+    std::vector<std::string> &cloudPathList)
+{
+    std::vector<std::string> attachmentPathList = {
+        // Note. attachement does not include cloudPath.
+        // path: /storage/cloud/files/Photo/${bucketId}/${fileName}.mp4
+        GetMovingPhotoVideoPath(cloudPath),
+        // path: /storage/cloud/files/.editData/Photo/${bucketId}/${fileName}.${suffix}/source.jpg
+        MediaEditUtils::GetEditDataSourcePath(cloudPath),
+        // path: /storage/cloud/files/.editData/Photo/${bucketId}/${fileName}.${suffix}/source.mp4
+        GetSourceMovingPhotoVideoPath(cloudPath),
+        // path: /storage/cloud/files/.cache/Photo/${bucketId}/${fileName}.${suffix}/livePhoto.jpg
+        GetLivePhotoCachePath(cloudPath),
+        // path: /storage/cloud/files/.editData/Photo/${bucketId}/${fileName}.${suffix}/editData
+        MediaEditUtils::GetEditDataPath(cloudPath),
+        // path: /storage/cloud/files/.editData/Photo/${bucketId}/${fileName}.${suffix}/extraData
+        GetMovingPhotoExtraDataPath(cloudPath),
+    };
+    cloudPathList.insert(cloudPathList.end(), attachmentPathList.begin(), attachmentPathList.end());
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 } // namespace OHOS::Media

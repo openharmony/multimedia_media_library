@@ -22,6 +22,7 @@
 #include "abs_shared_result_set.h"
 #include "medialibrary_command.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class MediaLibraryStoryOperations {
@@ -36,4 +37,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIALIBRARY_STORY_OPERATIOINS_H

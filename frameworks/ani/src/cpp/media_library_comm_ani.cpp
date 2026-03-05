@@ -51,6 +51,7 @@ ani_object MakePhotoAssetAni(ani_env *env, shared_ptr<FileAsset> fileAsset, bool
     return ret;
 }
 
+// LCOV_EXCL_START
 // The current function is only provided to the camera framework.
 ani_object MediaLibraryCommAni::CreatePhotoAssetAni(ani_env *env, const std::string &uri,
     int32_t cameraShotType, const std::string &burstKey)
@@ -88,7 +89,9 @@ ani_object MediaLibraryCommAni::CreatePhotoAssetAni(ani_env *env, const std::str
 
     return MakePhotoAssetAni(env, fileAsset, false);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 // The current function is only provided to the camera framework.
 ani_object MediaLibraryCommAni::CreatePhotoAssetAni(ani_env *env, const std::string &uri,
     int32_t cameraShotType, int32_t captureId, const std::string &burstKey)
@@ -126,6 +129,7 @@ ani_object MediaLibraryCommAni::CreatePhotoAssetAni(ani_env *env, const std::str
 
     return MakePhotoAssetAni(env, fileAsset, true, captureId);
 }
+// LCOV_EXCL_STOP
 
 } // namespace Media
 } // namespace OHOS

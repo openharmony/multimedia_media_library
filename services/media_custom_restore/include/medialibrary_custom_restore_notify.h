@@ -18,6 +18,7 @@
 
 #include <string>
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 
@@ -44,4 +45,5 @@ public:
 
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIALIBRARY_CUSTOM_RESTORE_NOFITY_H

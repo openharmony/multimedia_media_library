@@ -288,6 +288,7 @@ private:
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
     EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoRiskStatusEnum(napi_env env);
+    EXPORT static napi_value CreateAppLinkStateEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
@@ -517,6 +518,7 @@ private:
     static thread_local napi_ref sSupportedImageFormatEnumRef_;
     static thread_local napi_ref sHdrModeRef_;
     static thread_local napi_ref sVideoModeRef_;
+    static thread_local napi_ref sAppLinkStateRef_;
 
     static std::mutex sOnOffMutex_;
     static std::mutex thumbnailMutex_;

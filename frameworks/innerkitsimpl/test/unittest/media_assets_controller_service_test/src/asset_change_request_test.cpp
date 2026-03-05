@@ -233,6 +233,31 @@ static int32_t SetHasAppLink(int32_t fileId, int32_t has)
     return respVo.GetErrCode();
 }
  
+static int32_t SetAppLinkState(int32_t fileId, int32_t appLinkState)
+{
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.appLinkState = appLinkState;
+ 
+    MessageParcel data;
+    if (reqBody.Marshalling(data) != true) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+        return -1;
+    }
+ 
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SetAppLinkState(data, reply);
+ 
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    if (respVo.Unmarshalling(reply) != true) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
+        return -1;
+    }
+    MEDIA_INFO_LOG("SetAppLinkState ErrCode:%{public}d", respVo.GetErrCode());
+    return respVo.GetErrCode();
+}
+
 static int32_t SetAppLink(int32_t fileId, string link)
 {
     AssetChangeReqBody reqBody;
@@ -679,6 +704,18 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_016, TestSize.Level0)
  
     int32_t result = SetAppLink(fileId, "www.baid.com");
     MEDIA_INFO_LOG("AssetChangeRequest_Test_016 result:%{public}d", result);
+    ASSERT_EQ(result, 0);
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_017, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_017 for setAppLinkState Begin");
+    InsertAsset();
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+ 
+    int32_t result = SetAppLinkState(fileId, 1);
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_017 result:%{public}d", result);
     ASSERT_EQ(result, 0);
 }
 

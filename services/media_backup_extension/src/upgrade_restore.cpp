@@ -367,7 +367,7 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t startGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
-    cloneGroupPhotoAlbum.UpdateGroupPhoto();
+    cloneGroupPhotoAlbum.RestoreGroupPhotoAlbum(photoInfoMap_);
     int64_t endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     classifyRestore_.RestoreClassify(photoInfoMap_);
     int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
@@ -984,7 +984,6 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     // Find lPath, bundleName, packageName by sourcePath, lPath
     info.lPath = this->photosRestore_.FindlPath(info);
     info.bundleName = this->photosRestore_.FindBundleName(info);
-    info.packageName = this->photosRestore_.FindPackageName(info);
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
     info.latitude = GetDoubleVal(GALLERY_LATITUDE, resultSet);
     info.longitude = GetDoubleVal(GALLERY_LONGITUDE, resultSet);
@@ -1015,7 +1014,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, PhotoRiskStatus::UNIDENTIFIED);
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED));
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
@@ -1176,11 +1175,12 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
         PortraitAlbumInfo portraitAlbumInfo;
         if (!ParsePortraitAlbumResultSet(resultSet, portraitAlbumInfo)) {
             MEDIA_ERR_LOG("Parse portrait album result set failed, exclude %{public}s",
-                portraitAlbumInfo.tagName.c_str());
+                MediaFileUtils::DesensitizeName(portraitAlbumInfo.tagName).c_str());
             continue;
         }
         if (!SetAttributes(portraitAlbumInfo)) {
-            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", portraitAlbumInfo.tagName.c_str());
+            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s",
+                MediaFileUtils::DesensitizeName(portraitAlbumInfo.tagName).c_str());
             continue;
         }
         if (!portraitAlbumInfo.tagName.empty()) {
@@ -1329,15 +1329,17 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
     }
     std::unordered_set<std::string> needQuerySet;
-    std::string querySql = "SELECT DISTINCT mf.hash "
+    std::string querySql = "SELECT hash FROM ("
+        " SELECT mf.hash, "
+        " ROW_NUMBER() OVER (PARTITION BY mf.hash ORDER BY mf.face_id) as rownum "
         " FROM merge_face mf "
         " INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
         " INNER JOIN gallery_media gm ON mf.hash = gm.hash "
         " LEFT JOIN gallery_album ga ON gm.albumId = ga.albumId AND ga.hide = 1 "
         " WHERE (gm.recycleFlag IS NULL OR gm.recycleFlag NOT IN (?, ?, ?, ?, ?)) "
         " AND ga.albumId IS NULL "
-        " GROUP BY mf.hash, mf.face_id "
-        " HAVING gm._id IN (" + selection + ")";
+        " AND gm._id IN (" + selection + ")"
+        ") WHERE rownum = 1 ";
     std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
         RECYCLE_FLAG_DELETE_UNSYNCED, RECYCLE_FLAG_HARD_DELETE_UNSYNCED };
 
@@ -1346,7 +1348,11 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
         CHECK_AND_CONTINUE(!hash.empty());
-        needQuerySet.insert(hash);
+        std::lock_guard<ffrt::mutex> lock(processHashesMutex_);
+        if (processGlobalHashes_.find(hash) == processGlobalHashes_.end()) {
+            needQuerySet.insert(hash);
+            processGlobalHashes_.insert(hash);
+        }
     }
     resultSet->Close();
 

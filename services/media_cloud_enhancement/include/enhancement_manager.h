@@ -122,6 +122,7 @@ private:
     EXPORT bool IsAddOperationEnabled(int32_t triggerMode);
     int32_t DoChangeDisplayModeFile(int32_t fileId, const string &filePath);
     int32_t CompositePhotoSetOperation(int32_t fileId, CompositePhotoOperation operation);
+    EXPORT void RefreshDefaultCellularNetStatus();
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;

@@ -56,5 +56,18 @@ void BackupDfxUtils::PostPetStat(uint32_t albumCount, uint64_t photoCount, uint6
         KEY_TOTAL_TIME_COST, totalTimeCost);
     CHECK_AND_PRINT_LOG(ret==0, "PostPetStat error:%{public}d", ret);
 }
+
+void BackupDfxUtils::PostSelectionStat(uint32_t selectionCount, uint64_t atomEventCount,
+    uint64_t totalTimeCost)
+{
+    int32_t ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_BACKUP_SELECTION_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_ALBUM_COUNT, selectionCount,
+        KEY_PHOTO_COUNT, atomEventCount,
+        KEY_TOTAL_TIME_COST, totalTimeCost);
+    CHECK_AND_PRINT_LOG(ret==0, "PostSelectionStat error:%{public}d", ret);
+}
 } // namespace Media
 } // namespace OHOS

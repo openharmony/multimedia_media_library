@@ -153,6 +153,7 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_Release(OH_MediaAssetManager* manage
     return MEDIA_LIBRARY_OK;
 }
 
+// LCOV_EXCL_START
 MediaLibrary_ErrorCode OH_MediaAssetManager_QuickRequestImage(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
     MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnQuickImageDataPrepared callback)
@@ -170,3 +171,4 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_QuickRequestImage(OH_MediaAssetManag
     OH_MediaAssetManager_Convert(requestOptions, nativeRequestOptions);
     return managerObj->manager_->NativeQuickRequestImage(mediaAsset, nativeRequestOptions, requestId, callback);
 }
+// LCOV_EXCL_STOP

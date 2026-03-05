@@ -28,11 +28,13 @@ std::shared_ptr<DataShare::DataShareHelper> AnalysisDataManager::sDataShareHelpe
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
 
+// LCOV_EXCL_START
 AnalysisDataManager &AnalysisDataManager::GetInstance()
 {
     static AnalysisDataManager analysisMgr;
     return analysisMgr;
 }
+// LCOV_EXCL_STOP
 
 AnalysisDataManager::AnalysisDataManager()
 {

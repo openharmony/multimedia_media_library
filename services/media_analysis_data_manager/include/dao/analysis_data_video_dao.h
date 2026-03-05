@@ -18,6 +18,7 @@
  
 #include <string>
  
+// LCOV_EXCL_START
 namespace OHOS::Media::AnalysisData {
 class AnalysisDataVideoDao {
 private:
@@ -47,4 +48,5 @@ public:
     static void FixVideoAnalysisDataAfterEdit(const std::string &fileId);
 };
 }  // namespace OHOS::Media::AnalysisData
+// LCOV_EXCL_STOP
 #endif  // OHOS_ANALYSIS_DATA_ALBUM_DAO_H

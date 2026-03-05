@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
-#define MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIALIBRARY_TEST_INCLUDE_MTP_OPERATION_TEST_H_
+#define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIALIBRARY_TEST_INCLUDE_MTP_OPERATION_TEST_H_
 
-#include <gtest/gtest.h>
- 
-namespace OHOS::Media::Background {
-class MediaLibraryThumbnailAclTaskTest : public testing::Test {
+#include "gtest/gtest.h"
+
+namespace OHOS {
+namespace Media {
+class MtpOperationTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
 };
-}  // namespace OHOS::Media::Background
-
-#endif // MEDIALIBRARY_THUMBNAIL_ACL_TASK_TEST_H
+} // namespace Media
+} // namespace OHOS
+#endif  // FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIALIBRARY_TEST_INCLUDE_MTP_OPERATION_TEST_H_

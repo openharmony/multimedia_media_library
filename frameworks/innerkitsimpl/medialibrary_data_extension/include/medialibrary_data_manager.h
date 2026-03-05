@@ -42,6 +42,11 @@
 #include "thumbnail_service.h"
 #include "bundle_mgr_interface.h"
 
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+#include "watch_system_handler.h"
+#include "watch_lite/cloud_audit_impl.h"
+#endif
+
 #define EXPORT __attribute__ ((visibility ("default")))
 
 namespace OHOS {
@@ -49,6 +54,9 @@ namespace AbilityRuntime {
 class MediaDataShareExtAbility;
 }
 namespace Media {
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+class WatchSystemHandler;
+#endif
 using OHOS::AbilityRuntime::MediaDataShareExtAbility;
 class MediaLibraryDataManager {
 public:
@@ -85,8 +93,8 @@ public:
 
     // restore thumbnail for date fronted 2000 photos from dual framework upgrade or clone
     EXPORT int32_t RestoreThumbnailDualFrame();
-    void InterruptBgworker();
-    void InterruptThumbnailBgWorker();
+    EXPORT void InterruptBgworker();
+    EXPORT void InterruptThumbnailBgWorker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
     /**
@@ -136,6 +144,16 @@ public:
         int32_t &fd);
     EXPORT static int32_t NotifyAssetSended(const std::string &uri);
     EXPORT static int32_t GetAssetCompressVersion();
+
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    using GetInstanceNewFunc = WatchSystemService::CloudAuditImpl *(*)(void);
+    std::shared_ptr<WatchSystemHandler> watchSystemObserver_;
+    GetInstanceNewFunc func_;
+    void* handler_;
+    EXPORT WatchSystemService::CloudAuditImpl* GetCloudAuditInstance();
+private:
+ 	WatchSystemService::CloudAuditImpl* cloudAuditInstance_;
+#endif
 
 private:
     int32_t InitMediaLibraryRdbStore();

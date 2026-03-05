@@ -772,47 +772,21 @@ static int32_t GetTransfertype(const std::string transfertypeStr)
 int32_t MetadataExtractor::ExtractAVLogMetadata(std::shared_ptr<Meta> &meta)
 {
     int32_t videoMode = static_cast<int32_t>(VideoMode::DEFAULT);
-    static const int huaweiTransfertype = 2;
     CHECK_AND_RETURN_RET_LOG(meta != nullptr, E_ERR, "meta is nullptr");
     Meta logMeta = *meta;
     auto iter = logMeta.Find("transfer_characteristics");
     if (iter == logMeta.end()) {
         return videoMode;
     }
-    string transfertypeStr;
-    logMeta.GetData("transfer_characteristics", transfertypeStr);
-    MEDIA_INFO_LOG("transfertype =%{public}s", transfertypeStr.c_str());
-    int32_t transfertype = GetTransfertype(transfertypeStr);
-    if (transfertype == huaweiTransfertype) {
-        auto iterHw = logMeta.Find("customInfo");
-        if (iterHw == logMeta.end()) {
-            return videoMode;
-        }
-        shared_ptr<Meta> customInfoMeta;
-        logMeta.GetData("customInfo", customInfoMeta);
-        Meta customInfo = *customInfoMeta;
-        auto iterCus = customInfo.Find("com.openharmony.video.sei.h_log");
-        if (iterCus != customInfo.end()) {
-            videoMode = static_cast<int32_t>(VideoMode::LOG_VIDEO);
-        }
+    shared_ptr<Meta> customInfoMeta;
+    logMeta.GetData("customInfo", customInfoMeta);
+    Meta customInfo = *customInfoMeta;
+    auto iterCus = customInfo.Find("com.openharmony.video.sei.h_log");
+    if (iterCus != customInfo.end()) {
+        videoMode = static_cast<int32_t>(VideoMode::LOG_VIDEO);
     }
     MEDIA_INFO_LOG("ExtractAVLogMetadata videoMode=%{public}d", videoMode);
     return videoMode;
-}
- 
-void MetadataExtractor::ExtractVideoMode(int32_t fileId, std::unique_ptr<Metadata> &data, std::shared_ptr<Meta> &meta)
-{
-    const int32_t NOT_EXTRAC = -1;
-    CHECK_AND_RETURN_LOG(fileId != 0, "AV metadata fileId is 0");
-    int32_t videoMode = data->GetVideoMode();
-    MEDIA_INFO_LOG("ExtractAVMetadata videoMode = %{public}d", videoMode);
-    if (videoMode != static_cast<int32_t>(VideoMode::DEFAULT)) {
-        MEDIA_INFO_LOG("video has scannered");
-        return;
-    }
-    int32_t extVideoMode = ExtractAVLogMetadata(meta);
-    data->SetVideoMode(extVideoMode);
-    MEDIA_INFO_LOG("ExtractVideoMode extVideoMode = %{public}d", extVideoMode);
 }
 
 int32_t MetadataExtractor::BuildMetaData(
@@ -855,12 +829,6 @@ int32_t MetadataExtractor::BuildMetaData(
         }
     } else {
         MEDIA_ERR_LOG("resultMap is empty, file path: %{private}s", MediaFileUtils::DesensitizePath(filePath).c_str());
-    }
-    int32_t fileId = data->GetFileId();
-    if (fileId != FILE_ID_DEFAULT) {
-        ExtractVideoMode(fileId, data, meta);
-        (void)close(fd);
-        return E_OK;
     }
     int32_t extVideoMode = ExtractAVLogMetadata(meta);
     data->SetVideoMode(extVideoMode);
@@ -918,8 +886,11 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
         MEDIA_WARN_LOG("Failed to get extra data file size");
     }
     data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
-    int64_t videoDateModified = videoData->GetFileDateModified();
-    if (videoDateModified > data->GetFileDateModified()) {
+
+    int64_t videoDateModified = 0;
+    if (MediaFileUtils::GetDateModified(videoPath, videoDateModified) &&
+        videoDateModified > data->GetFileDateModified()) {
+        MEDIA_DEBUG_LOG("videoDataModified is %{public}lld", static_cast<long long>(videoDateModified));
         data->SetFileDateModified(videoDateModified);
     }
 
@@ -935,10 +906,8 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data, bool isCamer
 {
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         int32_t ret = ExtractImageMetadata(data);
-        data->SetVideoMode(0);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
         if (IsMovingPhoto(data)) {
-            data->SetVideoMode(0);
             return CombineMovingPhotoMetadata(data, isCameraShotMovingPhoto);
         }
         return ret;

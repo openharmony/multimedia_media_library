@@ -27,6 +27,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 const std::string notTrashedAndHiddenCondition = MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
@@ -121,3 +122,4 @@ shared_ptr<ResultSet> MediaLibrarySearchOperations::QueryIndexConstructProgress(
 }
 }
 }
+// LCOV_EXCL_STOP

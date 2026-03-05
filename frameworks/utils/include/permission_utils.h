@@ -25,7 +25,6 @@
 
 #include "bundle_mgr_interface.h"
 #include "userfile_manager_types.h"
-#include "permission_used_type.h"
 #include "privacy_kit.h"
 #include "tokenid_kit.h"
 
@@ -46,7 +45,7 @@ const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM
 const std::string PERM_INTERACT_ACROSS_LOCAL_ACCOUNTS = "ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS";
 const std::string CONST_LOGSYSTEM_VERSIONTYPE = "const.logsystem.versiontype";
 const std::string PERM_ACCESS_MEDIALIB_THUMB_DB = "ohos.permission.ACCESS_MEDIALIB_THUMB_DB";
-const std::string PERM_MANAGE_CRITICAL_PHOTOS = "ohos.permission.MANAGE_CRITICAL_PHOTOS";
+const std::string MANAGE_RISK_PHOTOS = "ohos.permission.MANAGE_RISK_PHOTOS";
 const std::string E_POLICY = "E";
 constexpr int SHORT_TERM_PERMISSION_DURATION_300S = 300;
 
@@ -92,6 +91,10 @@ public:
         const Security::AccessToken::AccessTokenID &tokenCaller);
     static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms, const int &uid,
         Security::AccessToken::AccessTokenID &tokenCaller);
+    static bool CheckPhotoCallerPermissionNoRecord(const std::vector<std::string> &perms, const int &uid,
+        Security::AccessToken::AccessTokenID &tokenCaller);
+    static bool CheckPhotoCallerPermissionNoRecord(const std::string &permission,
+        const Security::AccessToken::AccessTokenID &tokenCaller);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,

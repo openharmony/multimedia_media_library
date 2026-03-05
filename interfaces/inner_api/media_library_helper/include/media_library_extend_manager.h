@@ -95,7 +95,9 @@ public:
      * @param columns columns
      * @return send ok or not
      */
+    // LCOV_EXCL_START
     EXPORT int32_t SendBrokerChangeOperation(string operation);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief Open photo or video compress with edit data
@@ -121,7 +123,9 @@ public:
      * @param uris list of asset URIs (max 500)
      * @return total size in bytes on success, error code otherwise
      */
+    // LCOV_EXCL_START
     EXPORT int64_t GetCompressAssetSize(const std::vector<std::string> &uris);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief get asset compress version

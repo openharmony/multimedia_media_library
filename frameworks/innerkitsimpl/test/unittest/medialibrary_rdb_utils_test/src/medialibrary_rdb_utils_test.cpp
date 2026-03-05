@@ -485,5 +485,18 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_CleanAmbiguousColumn_test_0
     EXPECT_NE(ret, 0);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_CleanAmbiguousColumn_test_001:stop");
 }
+
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_SetUpdateCoverValues_test_001,
+    testing::ext::TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetUpdateCoverValues_test_001:start");
+    struct UpdateAlbumData data;
+    NativeRdb::ValuesBucket values {};
+    int defaultAlbumId {1};
+    data.albumId = defaultAlbumId;
+    int32_t ret = MediaLibraryRdbUtils::SetUpdateCoverValues(data, values, false);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetUpdateCoverValues_test_001:end");
+}
 } // namespace Media
 } // namespace OHOS
