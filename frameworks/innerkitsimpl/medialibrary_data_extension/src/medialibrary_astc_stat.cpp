@@ -332,7 +332,7 @@ bool MediaLibraryAstcStat::CheckId(const std::string &id)
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (std::find(idList.begin(), idList.end(), id) != idList.end()) {
-        MEDIA_INFO_LOG("have statted id %{public}s", id.c_str());
+        MEDIA_DEBUG_LOG("have statted id %{public}s", id.c_str());
         return true;
     }
     if (idList.size() >= maxSize) {

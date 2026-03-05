@@ -122,7 +122,7 @@ int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData
         albumRefreshInfos_.insert(ownerAlbumRefreshInfos_.begin(), ownerAlbumRefreshInfos_.end());
         if (IS_ACCURATE_DEBUG) {
             for (auto const &albumInfo : albumRefreshInfos_) {
-                ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", albumInfo.first,
+                MEDIA_DEBUG_LOG("albumId: %{public}d, refreshInfo: %{public}s", albumInfo.first,
                     albumInfo.second.ToString().c_str());
             }
         }
@@ -327,7 +327,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
     for (auto &iter : refreshAlbums_) {
         DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
         auto &albumInfo = iter.second.second;
-        ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
+        MEDIA_DEBUG_LOG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
             albumInfo.albumId_);
         const auto &initIter = initAlbumInfos_.find(albumInfo.albumId_);
         if (initIter == initAlbumInfos_.end()) {
@@ -358,7 +358,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         if (albumChangeInfo.IsAlbumInfoRefresh()) {
             CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
         }
-        ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
+        MEDIA_INFO_LOG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
             albumInfo.albumId_);
         DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
         DfxRefreshHander::SetAlbumIdHander(albumInfo.albumId_, dfxRefreshManager_);
@@ -701,7 +701,7 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
     const AlbumChangeInfo &albumInfo, OHOS::Media::NotifyType type)
 {
     if (notifyAlbumType == NotifyAlbumType::NO_NOTIFY || notifyAlbumType == NotifyAlbumType::ANA_ALBUM) {
-        ACCURATE_DEBUG("no need old notification");
+        MEDIA_DEBUG_LOG("no need old notification");
         return;
     }
     if (type == OHOS::Media::NotifyType::NOTIFY_INVALID) {

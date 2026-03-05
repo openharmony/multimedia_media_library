@@ -43,8 +43,7 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const T
     
     CHECK_AND_RETURN_RET(!data.rdbUpdateCache.IsEmpty(), E_OK);
     bool hasGeneratedThumb = HasGeneratedThumb(data);
-    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d id: %{public}s, path: %{public}s",
-        hasGeneratedThumb, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("GenRes %{public}d", hasGeneratedThumb);
     int32_t err = hasGeneratedThumb ? UpdateCachedRdbValueAndNotify(data, opts) : UpdateCachedRdbValue(data, opts);
     if (err == E_RDB_UPDATE_NO_ROWS_CHANGED || err == E_RDB_QUERY_NO_RES) {
         auto deleteRes = ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data);
@@ -110,9 +109,7 @@ int32_t ThumbnailGenerationPostProcess::Notify(const ThumbnailData& data, const 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
     watch->Notify(data.fileUri, notifyType);
-    MEDIA_INFO_LOG("ThumbnailGenerationPostProcess::Notify() "
-        "id: %{public}s, path: %{public}s, notifyType: %{public}d",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), notifyType);
+    MEDIA_INFO_LOG("Notify path: %{public}s, type: %{public}d", DfxUtils::GetSafePath(data.path).c_str(), notifyType);
     return E_OK;
 }
 

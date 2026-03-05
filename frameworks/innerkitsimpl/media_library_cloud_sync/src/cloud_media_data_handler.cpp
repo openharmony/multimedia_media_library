@@ -146,7 +146,7 @@ int32_t CloudMediaDataHandler::GetCopyRecords(std::vector<MDKRecord> &records, i
 
 int32_t CloudMediaDataHandler::OnCreateRecords(const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("OnCreateRecords enter, map: %{public}zu", map.size());
+    MEDIA_INFO_LOG("map: %{public}zu", map.size());
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
