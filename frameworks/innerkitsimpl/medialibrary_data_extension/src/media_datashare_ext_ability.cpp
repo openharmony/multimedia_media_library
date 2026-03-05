@@ -198,8 +198,6 @@ void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
 #endif
-    Media::MedialibrarySubscriber::SubscribeAsync();
-    Media::HeifTranscodingCheckUtils::InitCheckList();
 }
 
 static bool CheckUnlockScene(int64_t startTime)
@@ -260,7 +258,6 @@ static void ResetThreadQos()
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
-    SetThreadQos();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     Extension::OnStart(want);
@@ -303,12 +300,13 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
     OnStartSub(want);
+    Media::MedialibrarySubscriber::SubscribeAsync();
+    Media::HeifTranscodingCheckUtils::InitCheckList();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
     dataManager->RestoreInvalidHDCCloudDataPos();
     PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
-    ResetThreadQos();
 }
 
 void MediaDataShareExtAbility::OnStop()
