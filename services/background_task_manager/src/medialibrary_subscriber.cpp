@@ -101,6 +101,7 @@ std::mutex MedialibrarySubscriber::subscribeAsyncTaskLock_;
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL = 20;
+const int32_t PROPER_DEVICE_BATTERY_CRITICAL_LEVEL = 10;
 
 const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
 const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
@@ -135,6 +136,7 @@ const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
+bool MedialibrarySubscriber::checkCriticalTypeStatus_ = false;
 // BetaVersion will upload the DB
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 std::mutex uploadDBMutex;
@@ -435,6 +437,9 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     }
 
     UpdateCurrentStatus();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    UpdateCheckCriticalTypeStatus();
+#endif
     UpdateThumbnailBgGenerationStatus();
     UpdateMediaInLakeCheckStatus();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -466,6 +471,11 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
 bool MedialibrarySubscriber::IsCurrentStatusOn()
 {
     return currentStatus_;
+}
+
+bool MedialibrarySubscriber::IsCriticalTypeStatusOn()
+{
+    return checkCriticalTypeStatus_;
 }
 
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
@@ -1101,6 +1111,19 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
         StopThumbnailBgOperation();
     }
 }
+
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+bool MedialibrarySubscriber::UpdateCheckCriticalTypeStatus()
+{
+    auto instance = MedialibraryRelatedSystemStateManager::GetInstance();
+    bool isNetworkSufficient = instance->IsNetAvailableInOnlyWifiCondition();
+    bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CRITICAL_LEVEL;
+    checkCriticalTypeStatus_ = isNetworkSufficient && isCharging_ && isPowerSufficient &&
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 && isScreenOff_;
+
+    return checkCriticalTypeStatus_;
+}
+#endif
 
 void MedialibrarySubscriber::DoThumbnailBgOperation()
 {

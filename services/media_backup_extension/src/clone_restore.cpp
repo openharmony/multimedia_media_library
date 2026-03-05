@@ -1675,7 +1675,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, PhotoRiskStatus::UNIDENTIFIED);
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED));
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);

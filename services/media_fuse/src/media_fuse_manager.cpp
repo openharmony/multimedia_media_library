@@ -372,7 +372,7 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
         int64_t changeTime = 0;
         ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
-        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_comtext returned nullptr");
+        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
         int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
         CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
