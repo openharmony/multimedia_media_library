@@ -27,13 +27,11 @@
 #include "rdb_store.h"
 #include "download_resources_column.h"
 #include "start_batch_download_cloud_resources_vo.h"
-#include "set_network_policy_batch_download_vo.h"
 #include "resume_batch_download_cloud_resources_vo.h"
 #include "pause_batch_download_cloud_resources_vo.h"
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
-#include "get_batch_download_cloud_resources_size_vo.h"
 #include "batch_download_resources_task_dao.h"
 #include "cloud_media_retain_smart_data.h"
 
@@ -72,10 +70,9 @@ public:
     EXPORT int32_t UpdateAddTaskStatus(const std::vector<std::string> &fileIds,
         const CloudMediaTaskDownloadCloudAssetCode &status, std::map<std::string, int32_t> &uriStatusMap);
     EXPORT int32_t BuildTaskValuesAndBatchInsert(
-        int64_t &insertCount, std::vector<DownloadResourcesTaskPo> &newTaskPos, int32_t taskSeq);
+        int64_t &insertCount, std::vector<DownloadResourcesTaskPo> &newTaskPos);
     EXPORT int32_t StartBatchDownloadCloudResources(StartBatchDownloadCloudResourcesReqBody &reqBody,
         StartBatchDownloadCloudResourcesRespBody &respBody);
-    EXPORT int32_t SetNetworkPolicyForBatchDownload(SetNetworkPolicyForBatchDownloadReqBody &reqBody);
     EXPORT int32_t ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody);
     EXPORT int32_t PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody);
     EXPORT int32_t CancelBatchDownloadCloudResources(CancelBatchDownloadCloudResourcesReqBody &reqBody);
@@ -83,13 +80,10 @@ public:
     GetBatchDownloadCloudResourcesStatusReqBody &reqBody, GetBatchDownloadCloudResourcesStatusRespBody &respBody);
     EXPORT int32_t GetCloudMediaBatchDownloadResourcesCount(
         GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody);
-    EXPORT int32_t GetCloudMediaBatchDownloadResourcesSize(
-        GetBatchDownloadCloudResourcesSizeReqBody &reqBody, GetBatchDownloadCloudResourcesSizeRespBody &respBody);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     EXPORT void CleanDownloadTasksTable();
 #endif
     EXPORT static int32_t DeleteEditdata(const std::string &path);
-
 private:
     CloudMediaAssetManager() {}
     ~CloudMediaAssetManager() {}
@@ -123,8 +117,8 @@ private:
     EXPORT void TryToStartSync();
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType, SmartDataProcessingMode mode);
-    EXPORT vector<int32_t> QueryEmptyAlbumsAndBackup();
-    EXPORT string BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds);
+    EXPORT std::vector<int32_t> QueryEmptyAlbumsAndBackup();
+    EXPORT std::string BuildEmptyAlbumsWhereClause(const std::vector<int32_t>& albumIds);
 
 private:
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation_{nullptr};
