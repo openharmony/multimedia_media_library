@@ -165,10 +165,7 @@ private:
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
-    void PreProcessForUpdateStatus();
-    bool CheckOnRestoreAndTryResetFlag();
-    void UpdateGlobalStatusForBgTask();
-    bool IsBackgroundTaskAllowed();
+    void ResetCloneFlagAfterOneDay();
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);
 #endif
