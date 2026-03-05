@@ -497,6 +497,9 @@ void FileParser::SetByPhotosRowData(const PhotosRowData &rowData)
     SetAlbumInfo(rowData.ownerAlbumId, rowData.ownerPackage, rowData.packageName);
     fileInfo_.cloudPath = rowData.data;
     fileInfo_.editTime = rowData.editTime;
+    if (rowData.dateTaken > 0) {
+        fileInfo_.dateTaken = rowData.dateTaken;
+    }
 }
 
 NativeRdb::ValuesBucket FileParser::GetAssetInsertValues()
