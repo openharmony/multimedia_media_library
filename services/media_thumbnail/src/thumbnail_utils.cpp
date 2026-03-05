@@ -1150,7 +1150,7 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     close(fd.Release());
 
     if (MediaFileUtils::IsFileExists(fileName)) {
-        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", DfxUtils::GetSafePath(fileName).c_str());
+        MEDIA_INFO_LOG("file: %{public}s exist, delete", DfxUtils::GetSafePath(fileName).c_str());
         if (!MediaFileUtils::DeleteFile(fileName)) {
             MEDIA_ERR_LOG("delete file: %{public}s failed", DfxUtils::GetSafePath(fileName).c_str());
             return -errno;

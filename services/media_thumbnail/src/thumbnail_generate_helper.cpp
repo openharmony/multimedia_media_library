@@ -522,7 +522,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     fileName = GetAvailablePath(data.path, thumbType);
     if (access(fileName.c_str(), F_OK) == 0) {
         // No need to create thumbnails if corresponding file exists
-        MEDIA_INFO_LOG("File exists, file info: %{public}s", ThumbnailFileUtils::GetFileInfo(fileName).c_str());
+        MEDIA_DEBUG_LOG("File exists, file info: %{public}s", ThumbnailFileUtils::GetFileInfo(fileName).c_str());
         return E_OK;
     }
 

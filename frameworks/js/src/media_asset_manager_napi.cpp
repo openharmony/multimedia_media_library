@@ -526,7 +526,7 @@ napi_status GetCompatibleMode(napi_env env, const napi_value arg, const string &
     int mode = static_cast<int>(CompatibleMode::ORIGINAL_FORMAT_MODE);
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
     if (!present) {
-        NAPI_INFO_LOG("compatible mode is null");
+        NAPI_DEBUG_LOG("compatible mode is null");
         compatibleMode = CompatibleMode::ORIGINAL_FORMAT_MODE;
         return napi_ok;
     }
@@ -558,7 +558,7 @@ napi_status GetMediaAssetProgressHandler(napi_env env, const napi_value arg, nap
     bool present = false;
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
     if (!present) {
-        NAPI_INFO_LOG("MediaAssetProgressHandler is null");
+        NAPI_DEBUG_LOG("MediaAssetProgressHandler is null");
         mediaAssetProgressHandler = nullptr;
         return napi_ok;
     }
@@ -592,7 +592,7 @@ napi_status GetMediaAssetProgressHandler(napi_env env, const napi_value arg, nap
 napi_status ParseArgGetRequestOptionMore(napi_env env, napi_value arg, CompatibleMode &compatibleMode,
     napi_value &mediaAssetProgressHandler)
 {
-    NAPI_INFO_LOG("ParseArgGetRequestOptionMore start");
+    NAPI_DEBUG_LOG("ParseArgGetRequestOptionMore start");
     CHECK_STATUS_RET(GetCompatibleMode(env, arg, "compatibleMode", compatibleMode), "Failed to parse compatibleMode");
     if (GetMediaAssetProgressHandler(env, arg, mediaAssetProgressHandler, "mediaAssetProgressHandler") != napi_ok) {
         NAPI_ERR_LOG("requestMedia GetMediaAssetProgressHandler error");
@@ -1530,7 +1530,7 @@ bool IsSaveCallbackInfoByTranscoder(napi_value napiValueOfMedia, napi_env env, A
     }
     bool isTranscoder;
     if (!isTranscoderMap_.Find(assetHandler->requestId, isTranscoder)) {
-        NAPI_INFO_LOG("not find key from map");
+        NAPI_DEBUG_LOG("not find key from map");
         isTranscoder = false;
     }
     NAPI_INFO_LOG("IsSaveCallbackInfoByTranscoder isTranscoder_ %{public}d", isTranscoder);

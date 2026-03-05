@@ -216,7 +216,7 @@ static std::string CalFileId(MediaFileUri* uri)
     }
 
     if (path.length() < LEAST_PATH_LENGTH) {
-        MEDIA_ERR_LOG("path is too short, path is %{private}s", path.c_str());
+        MEDIA_DEBUG_LOG("path is too short, path is %{private}s", path.c_str());
         return MEDIA_FILE_ID_DEFAULT;
     }
 

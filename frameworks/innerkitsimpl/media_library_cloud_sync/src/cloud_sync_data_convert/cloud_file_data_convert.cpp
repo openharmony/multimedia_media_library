@@ -87,7 +87,7 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
     /* try get file size on xxxjpg/THM_EX/THM.jpg */
     std::string thumbnailPath = GetThumbPath(path, thumbExSuffix);
     struct stat fileStat;
-    MEDIA_INFO_LOG("GetFileSize stat %{public}s", thumbnailPath.c_str());
+    MEDIA_DEBUG_LOG("GetFileSize stat %{public}s", thumbnailPath.c_str());
     int32_t err = stat(thumbnailPath.c_str(), &fileStat);
     int32_t ret = E_OK;
     if (err < 0) {
@@ -97,7 +97,7 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
             err,
             "get thumb size failed errno : " + std::to_string(errno) + ", path " +
                 ReportUtils::GetAnonyString(thumbnailPath)});
-        MEDIA_ERR_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
+        MEDIA_INFO_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
     } else {
         fileSize = fileStat.st_size;
         ret = this->CheckFileSize(thumbSuffix, fileSize);
@@ -121,7 +121,7 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
     fileSize = fileStat.st_size;
     ret = this->CheckFileSize(thumbSuffix, fileSize);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckFileSize err, %{public}d", ret);
-    MEDIA_INFO_LOG("GetFileSize stat end thumbnailPath: %{public}s, err: %{public}d, size: %{public}" PRId64,
+    MEDIA_DEBUG_LOG("GetFileSize stat end thumbnailPath: %{public}s, err: %{public}d, size: %{public}" PRId64,
         thumbnailPath.c_str(),
         err,
         fileSize);
@@ -181,7 +181,7 @@ int32_t CloudFileDataConvert::HandleExifRotate(std::map<std::string, MDKRecordFi
     const CloudMdkRecordPhotosVo &upLoadRecord)
 {
     if (upLoadRecord.exifRotate == 0) {
-        MEDIA_INFO_LOG("Upload meta data, do not upload exif rotate uncertain");
+        MEDIA_DEBUG_LOG("Upload meta data, do not upload exif rotate uncertain");
         return E_OK;
     }
     map[PhotoColumn::PHOTO_EXIF_ROTATE] = MDKRecordField(upLoadRecord.exifRotate);
@@ -359,7 +359,7 @@ int32_t CloudFileDataConvert::HandleRawFile(
     std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto)
 {
     std::string rawFilePath = PhotoFileUtils::GetEditDataSourcePath(path, userId_);
-    MEDIA_INFO_LOG("HandleEditData rawFilePath %{public}s", rawFilePath.c_str());
+    MEDIA_DEBUG_LOG("HandleEditData rawFilePath %{public}s", rawFilePath.c_str());
     if (rawFilePath.empty()) {
         return E_OK;
     }
@@ -394,9 +394,9 @@ int32_t CloudFileDataConvert::HandleRawFile(
 
 int32_t CloudFileDataConvert::HandleEditData(std::map<std::string, MDKRecordField> &data, std::string &path)
 {
-    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s", path.c_str());
+    MEDIA_DEBUG_LOG("editDataPath %{public}s", path.c_str());
     std::string editDataPath = PhotoFileUtils::GetEditDataPath(path, userId_);
-    MEDIA_INFO_LOG("HandleEditData editDataPath %{public}s", editDataPath.c_str());
+    MEDIA_DEBUG_LOG("editDataPath %{public}s", editDataPath.c_str());
     if (!editDataPath.empty()) {
         MDKAsset content;
         struct stat fileStat;
@@ -413,11 +413,11 @@ int32_t CloudFileDataConvert::HandleEditData(std::map<std::string, MDKRecordFiel
 
 int32_t CloudFileDataConvert::HandleEditDataCamera(std::map<std::string, MDKRecordField> &data, std::string &path)
 {
-    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s", path.c_str());
+    MEDIA_DEBUG_LOG("editDataPath %{public}s", path.c_str());
     std::string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(path, userId_);
 
     // -- editDataCamera as properties, append to FILE_ATTRIBUTES --
-    MEDIA_INFO_LOG("HandleEditData editDataCameraPath %{public}s", editDataCameraPath.c_str());
+    MEDIA_DEBUG_LOG("editDataCameraPath %{public}s", editDataCameraPath.c_str());
     if (!editDataCameraPath.empty() && access(editDataCameraPath.c_str(), F_OK) == 0) {
         MEDIA_INFO_LOG("HandleEditData editDataCameraPath is not empty and access success");
         if (data.find(FILE_ATTRIBUTES) == data.end()) {
@@ -440,7 +440,7 @@ int32_t CloudFileDataConvert::HandleEditDataCamera(std::map<std::string, MDKReco
 int32_t CloudFileDataConvert::HandleEditData(
     std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto)
 {
-    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s, %{public}d", path.c_str(), isMovingPhoto);
+    MEDIA_DEBUG_LOG("editDataPath %{public}s, %{public}d", path.c_str(), isMovingPhoto);
     int32_t ret = this->HandleRawFile(data, path, isMovingPhoto);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleEditData HandleRawFile err: %{public}d", ret);
     this->HandleEditData(data, path);
@@ -934,7 +934,7 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
 
 int32_t CloudFileDataConvert::ExtractPosition(const std::string &position, double &latitude, double &longitude)
 {
-    CHECK_AND_RETURN_RET_LOG(!position.empty(), E_INVALID_VALUES, "position is empty.");
+    CHECK_AND_RETURN_RET(!position.empty(), E_INVALID_VALUES);
     auto json = nlohmann::json::parse(position, nullptr, false);
     bool isValid = !json.is_discarded();
     CHECK_AND_RETURN_RET_LOG(isValid, E_INVALID_VALUES, "position json parse error, %{private}s", position.c_str());

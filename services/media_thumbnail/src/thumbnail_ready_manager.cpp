@@ -59,7 +59,7 @@ void ThumbnailCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj
     if (progress.state == DownloadProgressObj::Status::COMPLETED) {
         ThumbnailReadyManager::GetInstance().CreateAstcAfterDownloadThumbOnDemand(progress.path, thumbReadyTaskData);
     } else if (progress.state == DownloadProgressObj::Status::FAILED) {
-        MEDIA_ERR_LOG("download thumbnail file failed, file path is %{public}s", progress.path.c_str());
+        MEDIA_DEBUG_LOG("download thumbnail file failed, file path is %{public}s", progress.path.c_str());
         if (progress.downloadErrorType == DownloadProgressObj::DownloadErrorType::CONTENT_NOT_FOUND) {
             ThumbnailReadyManager::GetInstance().RecordNotFoundThumbnail(progress.path, thumbReadyTaskData);
         }
@@ -67,7 +67,7 @@ void ThumbnailCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj
     if (progress.batchState == DownloadProgressObj::Status::COMPLETED ||
         progress.batchState == DownloadProgressObj::Status::STOPPED ||
         progress.batchState == DownloadProgressObj::Status::FAILED) {
-        MEDIA_INFO_LOG("download thumbnail file, progress.batchState is %{public}d", progress.batchState);
+        MEDIA_ERR_LOG("download thumbnail file, progress.batchState is %{public}d", progress.batchState);
         ThumbnailReadyManager::GetInstance().SetDownloadEnd(pid_);
         if (progress.batchState == DownloadProgressObj::Status::COMPLETED) {
             thumbReadyTaskData->isBatchComplete = true;

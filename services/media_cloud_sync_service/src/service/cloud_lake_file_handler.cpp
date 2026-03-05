@@ -113,7 +113,7 @@ static void HandleTrashAndHiddenState(const LakeData &data,
     // 湖外文件并且不是回收站也不是隐藏     移动到湖内
     if (data.fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA) && data.dateTrashed == 0 &&
         data.hidden == 0) {
-        MEDIA_INFO_LOG("move file %{public}d to lake", data.fileId);
+        MEDIA_DEBUG_LOG("move file %{public}d to lake", data.fileId);
         moveAssetsToLakeList.push_back({to_string(data.fileId)});
     }
 }
@@ -122,7 +122,7 @@ static int32_t GetLpath(const string &storagePath, string &lpath)
 {
     size_t lastSlash = storagePath.rfind('/');
     if (lastSlash == string::npos) {
-        MEDIA_ERR_LOG("slash not found in storage path: %{public}s", storagePath.c_str());
+        MEDIA_DEBUG_LOG("slash not found in storage path: %{public}s", storagePath.c_str());
         return E_ERR;
     }
 
@@ -143,7 +143,7 @@ static void HandleLakeFileMove(const LakeData &data, unordered_map<int32_t, vect
     string lpath;
     int errCode = GetLpath(data.storagePath, lpath);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to parse lpath from storagePath");
+        MEDIA_DEBUG_LOG("Failed to parse lpath from storagePath");
         return;
     }
     // 判断是不是发生了路径变更，是的话需要加入移动文件变更的数组中
@@ -178,7 +178,7 @@ void CloudLakeFileHandler::HandleMetaChanged(int32_t fileId)
     if (errCode != E_OK) {
         return;
     }
-    MEDIA_INFO_LOG("delete the %{public}d storage_path is %{public}s, "
+    MEDIA_DEBUG_LOG("delete the %{public}d storage_path is %{public}s, "
         "trash is %{public}" PRId64 ", hidden is %{public}d",
         lakeData.fileId, lakeData.storagePath.c_str(), lakeData.dateTrashed, lakeData.hidden);
 
