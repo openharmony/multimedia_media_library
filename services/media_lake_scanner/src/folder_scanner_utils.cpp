@@ -210,7 +210,7 @@ bool FolderScannerUtils::IsSkipCurrentDirectory(const std::string &currentDir)
     fs::path currentPath(currentDir);
     std::string folderName = currentPath.filename().string();
     if (folderName.empty() || folderName[0] == '.') {
-        MEDIA_INFO_LOG("hidden currentDir: %{public}s", LakeFileUtils::GarbleFilePath(currentDir).c_str());
+        MEDIA_DEBUG_LOG("hidden currentDir: %{public}s", LakeFileUtils::GarbleFilePath(currentDir).c_str());
         return true;
     }
 

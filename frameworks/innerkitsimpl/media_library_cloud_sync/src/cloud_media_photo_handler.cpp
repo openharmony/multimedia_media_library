@@ -40,6 +40,7 @@
 #include "get_check_records_vo.h"
 #include "media_operate_result_vo.h"
 #include "cloud_media_client_utils.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPhotoHandler::SetUserId(const int32_t &userId)
@@ -147,7 +148,7 @@ int32_t CloudMediaPhotoHandler::OnDentryFileInsertInner(
 int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
     std::vector<MDKRecord> &records, std::vector<std::string> &failedRecords)
 {
-    MEDIA_INFO_LOG("OnDentryFileInsert, size: %{public}zu", records.size());
+    MEDIA_INFO_LOG("size: %{public}zu", records.size());
     CHECK_AND_RETURN_RET_LOG(!records.empty(), E_OK, "OnDentryFileInsert records is empty");
     int32_t ret;
     OnDentryFileReqBody reqBody;
@@ -159,7 +160,7 @@ int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
             MEDIA_ERR_LOG("OnDentryFileInsert ConverMDKRecordToOnFetchPhotosVo error");
             continue;
         }
-        MEDIA_INFO_LOG("OnDentryFileInsert OnFetchPhotosVo: %{public}s", onDentryRecord.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchPhotosVo: %{public}s", onDentryRecord.ToString().c_str());
         reqBody.AddOnDentryFileRecord(onDentryRecord);
     }
     ret = this->OnDentryFileInsertInner(reqBody, respBody);
@@ -284,7 +285,7 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_METADATA_MODIFY, userId_};
     for (const auto &record : metaModifiedRecord) {
         MDKRecord dkRecord;
-        MEDIA_INFO_LOG("SetUpdateSourceAlbum CloudMdkRecordPhotosVo: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("CloudMdkRecordPhotosVo: %{public}s", record.ToString().c_str());
         ret = dataConvertor.ConvertToMdkRecord(record, dkRecord);
         if (ret == E_OK) {
             records.push_back(dkRecord);
@@ -433,6 +434,7 @@ int32_t CloudMediaPhotoHandler::GetCopyRecords(std::vector<MDKRecord> &records, 
 void CloudMediaPhotoHandler::DeleteTempLivePhotoFile(std::string &livePhotoCachePath)
 {
     CHECK_AND_RETURN_LOG(!livePhotoCachePath.empty(), "livePhotoCachePath is empty");
+    CHECK_AND_RETURN(MediaFileUtils::IsFileExists(livePhotoCachePath));
     int result = unlink(livePhotoCachePath.c_str());
     CHECK_AND_RETURN_LOG(result == 0, "unlink err: %{public}d, result: %{public}d, livePhotoCachePath: %{public}s",
         errno, result, livePhotoCachePath.c_str());
@@ -441,7 +443,7 @@ void CloudMediaPhotoHandler::DeleteTempLivePhotoFile(std::string &livePhotoCache
 int32_t CloudMediaPhotoHandler::OnCreateRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("OnCreateRecords, size: %{public}zu", map.size());
+    MEDIA_DEBUG_LOG("record size: %{public}zu", map.size());
     CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnCreateRecords records is empty");
     OnCreateRecordsPhotosReqBody req;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_CREATE, userId_};
@@ -450,7 +452,7 @@ int32_t CloudMediaPhotoHandler::OnCreateRecords(
         OnCreateRecord record;
         ret = dataConvertor.ConvertToOnCreateRecord(entry.first, entry.second, record);
         CHECK_AND_CONTINUE_ERR_LOG(ret == E_OK, "OnCreateRecords ConvertToOnCreateRecord error");
-        MEDIA_INFO_LOG("OnCreateRecords Record:%{public}s", record.ToString().c_str());
+        CHECK_AND_PRINT_LOG(record.isSuccess, "OnCreateRecords Record:%{public}s", record.ToString().c_str());
         req.records.emplace_back(record);
         DeleteTempLivePhotoFile(record.livePhotoCachePath);
         DeleteTempLivePhotoFile(record.sourceLivePhoto);
@@ -478,7 +480,7 @@ int32_t CloudMediaPhotoHandler::OnMdirtyRecords(
         OnModifyRecord record;
         ret = dataConvertor.BuildModifyRecord(entry.first, entry.second, record);
         CHECK_AND_CONTINUE_ERR_LOG(ret == E_OK, "OnMdirtyRecords BuildModifyRecord error");
-        MEDIA_INFO_LOG("enter OnMdirtyRecords Record:%{public}s", record.ToString().c_str());
+        CHECK_AND_PRINT_LOG(record.isSuccess, "enter OnMdirtyRecords Record:%{public}s", record.ToString().c_str());
         req.AddModifyRecord(record);
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_MDIRTY_RECORDS);

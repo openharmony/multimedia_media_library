@@ -125,7 +125,7 @@ static int32_t AddAndNotify(
 int32_t MediaGallerySyncNotify::AddNotify(
     const std::string &uri, const ChangeType changeType, const std::string &fileAssetId)
 {
-    MEDIA_INFO_LOG(
+    MEDIA_DEBUG_LOG(
         "AddNotify uri:%{public}s, type:%{public}d, fileId:%{public}s", uri.c_str(), changeType, fileAssetId.c_str());
     return AddAndNotify(false, uri, changeType, fileAssetId);
 }
@@ -133,7 +133,7 @@ int32_t MediaGallerySyncNotify::AddNotify(
 int32_t MediaGallerySyncNotify::TryNotify(
     const std::string &uri, const ChangeType changeType, const std::string &fileAssetId)
 {
-    MEDIA_INFO_LOG(
+    MEDIA_DEBUG_LOG(
         "TryNotify uri:%{public}s, type:%{public}d, fileId:%{public}s", uri.c_str(), changeType, fileAssetId.c_str());
     return AddAndNotify(true, uri, changeType, fileAssetId);
 }

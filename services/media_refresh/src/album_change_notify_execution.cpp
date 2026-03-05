@@ -43,9 +43,8 @@ void AlbumChangeNotifyExecution::AddInfosToNewNotify()
         auto &changeDatas = item.second;
         for (auto &changeData : changeDatas) {
             notifyInfo.infos.push_back(changeData);
-            ACCURATE_INFO("notify PHOTO_ALBUM info: operationType(0x%{public}x), level(%{public}d), info(%{public}s)",
-                static_cast<int32_t>(item.first),
-                static_cast<int32_t>(notifyInfo.notifyLevel.priority), changeData.ToString().c_str());
+            MEDIA_INFO_LOG("notify PHOTO_ALBUM info: operationType(0x%{public}x), info(%{public}s)",
+                static_cast<int32_t>(item.first), changeData.ToString().c_str());
         }
         // 调用发送通知接口
         Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);

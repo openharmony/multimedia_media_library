@@ -616,7 +616,7 @@ int32_t CloudMediaAlbumDao::SetSourceValues(const PhotoAlbumDto &record, NativeR
     std::unordered_map<std::string, MediaAlbumPluginRowData> writeListMap = QueryWhiteList();
     auto it = writeListMap.find(lpath);
     if (it != writeListMap.end()) {
-        MEDIA_INFO_LOG("SetSourceValues find. "
+        MEDIA_DEBUG_LOG("SetSourceValues find. "
                        "cloudId: %{public}s, lpath: %{public}s, name: %{public}s, bundle: %{public}s",
             record.cloudId.c_str(),
             lpath.c_str(),

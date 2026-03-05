@@ -103,7 +103,7 @@ int32_t AlbumDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &k
                 after.hiddenCoverInfo_ = GetPhotoAssetInfo(coverFileId);
             }
         }
-        ACCURATE_DEBUG("coverChange[%{public}d]:[%{public}s] hiddenCoverChange[%{public}d]:[%{public}s]",
+        MEDIA_DEBUG_LOG("coverChange[%{public}d]:[%{public}s] hiddenCoverChange[%{public}d]:[%{public}s]",
             after.isCoverChange_, after.coverInfo_.ToString().c_str(), after.isHiddenCoverChange_,
             after.hiddenCoverInfo_.ToString().c_str());
     }
