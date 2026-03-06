@@ -174,6 +174,7 @@ public:  // attributes getter & setter
     std::optional<std::string> GetStoragePath() const;
     MDKRecordPhotosData &SetStoragePath(const std::string &storagePath);
     std::optional<std::string> GetAttributeFieldValue(const std::string &fieldName) const;
+    std::optional<int64_t> GetAttributeFieldLongValue(const std::string &fieldName) const;
 
 public:  // properties getter & setter - gallery expand fields
     std::optional<std::string> GetSourcePath() const;
