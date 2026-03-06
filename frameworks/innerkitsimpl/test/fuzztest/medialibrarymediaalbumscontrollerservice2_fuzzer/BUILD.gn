@@ -26,7 +26,7 @@ ohos_fuzztest("MediaLibraryMediaAlbumsControllerService2FuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/analysis_data_kits/include/vo",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   include_media_ipc_common = [

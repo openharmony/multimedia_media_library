@@ -24,7 +24,7 @@ ohos_fuzztest("MediaLibraryPhotoDayMonthYearOperationFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include/operation",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [

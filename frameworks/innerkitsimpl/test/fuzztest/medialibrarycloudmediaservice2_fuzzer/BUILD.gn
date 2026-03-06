@@ -19,7 +19,7 @@ ohos_fuzztest("MediaLibraryCloudMediaService2FuzzTest") {
   fuzz_config_file = "."
 
   include_dirs = [
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   include_media_cloud_sync_data = [

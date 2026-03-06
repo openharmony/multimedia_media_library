@@ -22,7 +22,7 @@ ohos_fuzztest("MediaLibraryThumbnailFuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [
