@@ -1820,7 +1820,7 @@ void CloudMediaPhotosDao::IsCoverContentChange(int32_t changedRows, bool mtimeCh
     CHECK_AND_RETURN_LOG(dataFileId > 0, "fileId is invalid");
     string fileId = to_string(dataFileId);
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    if (albumRefresh.IsCoverContentChange(fileId)) {
+    if (albumRefresh.IsCoverContentChange({fileId})) {
         MEDIA_INFO_LOG("album cover content has Changed, fileId: %{public}d", dataFileId);
     }
 }
