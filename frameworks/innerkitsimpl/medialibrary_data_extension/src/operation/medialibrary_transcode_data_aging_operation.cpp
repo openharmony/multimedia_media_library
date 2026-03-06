@@ -254,7 +254,6 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
 {
     CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
-    CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
@@ -276,6 +275,7 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", path.c_str());
             return E_INNER_FAIL;
         }
+        CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
         CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
             E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     }
