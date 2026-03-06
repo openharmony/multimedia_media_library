@@ -30,9 +30,9 @@
 #define private public
 #include "cloud_media_album_dao.h"
 #include "cloud_media_data_dao.h"
+#include "cloud_media_photos_dao.h"
 #undef private
 #include "cloud_media_common_dao.h"
-#include "cloud_media_photos_dao.h"
 #include "media_cloud_sync_test_utils.h"
 
 #include <iostream>
