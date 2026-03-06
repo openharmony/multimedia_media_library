@@ -1108,26 +1108,22 @@ void CloudFileDataConvert::HandlePropertyExifRotate(MDKRecordPhotosData &data, O
         onFetchPhotoVo.cloudId.c_str(), onFetchPhotoVo.exifRotate);
 }
 
-int32_t CloudFileDataConvert::HandleInt32FieldsHashMap(std::map<std::string, MDKRecordField> &data,
-                                                       const CloudMdkRecordPhotosVo &uploadRecord)
+int32_t CloudFileDataConvert::HandleInt64FieldsHashMap(
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &uploadRecord)
 {
-    for (const auto &node : uploadRecord.int32fields) {
+    for (const auto &node : uploadRecord.int64fields) {
         data[node.first] = MDKRecordField(node.second);
     }
     return E_OK;
 }
 
-void CloudFileDataConvert::ConvertInt32FieldsHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
+void CloudFileDataConvert::ConvertInt64FieldsHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
 {
-    std::optional<std::string> valueStrOp;
-    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_INT32) {
-        valueStrOp = data.GetAttributeFieldValue(fieldName);
-        CHECK_AND_CONTINUE(valueStrOp.has_value());
-        int32_t value = 0;
-        auto [ptr, ec] =
-            std::from_chars(valueStrOp.value().data(), valueStrOp.value().data() + valueStrOp.value().size(), value);
-        CHECK_AND_CONTINUE(ec == std::errc() && ptr == valueStrOp.value().data() + valueStrOp.value().size());
-        onFetchPhotoVo.int32fields[fieldName] = value;
+    std::optional<int64_t> valueLongOp;
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_INT64) {
+        valueLongOp = data.GetAttributeFieldLongValue(fieldName);
+        CHECK_AND_CONTINUE(valueLongOp.has_value());
+        onFetchPhotoVo.int64fields[fieldName] = valueLongOp.value();
     }
     return;
 }

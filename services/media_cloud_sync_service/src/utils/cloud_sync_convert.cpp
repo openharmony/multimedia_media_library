@@ -661,7 +661,7 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
     CompensatePropSourcePath(data, values);
     // attributes HashMap
     CompensateAttributesHashMap(data, values);
-    CompensateInt32FieldsHashMap(data, values);
+    CompensateInt64FieldsHashMap(data, values);
     return E_OK;
 }
 
@@ -732,10 +732,10 @@ void CloudSyncConvert::HandleDateAddedYearMonthDay(int64_t originalDateAdded, in
     }
 }
 
-int32_t CloudSyncConvert::CompensateInt32FieldsHashMap(
+int32_t CloudSyncConvert::CompensateInt64FieldsHashMap(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    for (const auto &node : data.int32fields) {
+    for (const auto &node : data.int64fields) {
         values.Put(node.first, node.second);
     }
     return E_OK;
