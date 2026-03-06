@@ -23,7 +23,6 @@ group("media_library_fuzztest") {
     "medialibraryclouduploadchecker_fuzzer:MediaLibraryCloudUploadCheckerFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
     "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
-    "medialibrarydfx2_fuzzer:MediaLibraryDfx2FuzzTest",
     "medialibrarydfxdatabaseutils_fuzzer:MediaLibraryDfxDatabaseUtilsFuzzTest",
     "medialibraryduplicatephotooperation_fuzzer:MediaLibraryDuplicatePhotoOperationFuzzTest",
     "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
