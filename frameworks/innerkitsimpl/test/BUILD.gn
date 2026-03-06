@@ -81,6 +81,7 @@ group("test") {
     "unittest/medialibrary_cloud_asset_batch_download_test:unittest",
     "unittest/medialibrary_client_report_test:unittest",
     "unittest/cloud_media_asset_retain_compare_test:unittest",
+    "unittest/media_library_cloud_sync_test:unittest",
   ]
 
   deps_custom_restore_unittest = [
