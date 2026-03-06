@@ -30,6 +30,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "cloud_media_sync_const.h"
 
 #define private public
 #define protected public
@@ -127,19 +128,31 @@ void InsertBackupAlbum(int32_t albumId, const std::string &lpath)
     ExecSqlOrAssert(ss.str());
 }
 
+struct PhotoRowOptions {
+    bool hasOwnerAlbumId {false};
+    int32_t ownerAlbumId {0};
+    int32_t orientation {0};
+    int32_t cleanFlag {0};
+    int32_t position {0};
+    int64_t realLcdVisitTime {0};
+    std::string dataPath;
+    std::string sourcePath;
+    int32_t hidden {0};
+    int64_t dateTrashed {0};
+};
+
 void InsertPhotoRow(int32_t fileId, const std::string &displayName, int64_t size, int32_t mediaType,
-    bool hasOwnerAlbumId = false, int32_t ownerAlbumId = 0, int32_t orientation = 0, int32_t cleanFlag = 0,
-    int32_t position = 0, int64_t realLcdVisitTime = 0, const std::string &dataPath = "",
-    const std::string &sourcePath = "", int32_t hidden = 0, int64_t dateTrashed = 0)
+    const PhotoRowOptions &options = PhotoRowOptions())
 {
-    std::string finalDataPath = dataPath.empty() ? ("/data/" + displayName) : dataPath;
-    std::string ownerAlbumValue = hasOwnerAlbumId ? std::to_string(ownerAlbumId) : "NULL";
+    std::string finalDataPath = options.dataPath.empty() ? ("/data/" + displayName) : options.dataPath;
+    std::string ownerAlbumValue = options.hasOwnerAlbumId ? std::to_string(options.ownerAlbumId) : "NULL";
     std::stringstream ss;
     ss << "INSERT INTO Photos (file_id, data, display_name, size, media_type, owner_album_id, orientation, "
           "clean_flag, position, real_lcd_visit_time, source_path, hidden, date_trashed) VALUES ("
        << fileId << ", '" << finalDataPath << "', '" << displayName << "', " << size << ", " << mediaType << ", "
-       << ownerAlbumValue << ", " << orientation << ", " << cleanFlag << ", " << position << ", "
-       << realLcdVisitTime << ", '" << sourcePath << "', " << hidden << ", " << dateTrashed << ");";
+       << ownerAlbumValue << ", " << options.orientation << ", " << options.cleanFlag << ", " << options.position
+       << ", " << options.realLcdVisitTime << ", '" << options.sourcePath << "', " << options.hidden << ", "
+       << options.dateTrashed << ");";
     ExecSqlOrAssert(ss.str());
 }
 
@@ -289,7 +302,10 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_006, TestSize
     dao.SetRdbStore(g_rdbStore);
 
     InsertBackupAlbum(1, "/test/album/path");
-    InsertPhotoRow(1, "test_image.jpg", 1024, 1, true, 1, 0, 0, 0, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 1;
+    InsertPhotoRow(1, "test_image.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_006", "test_image.jpg", 1024, 1);
     SetAlbumSourcePath(pullData, "/test/album/path");
@@ -309,7 +325,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_007, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(2, "test_image2.jpg", 2048, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(2, "test_image2.jpg", 2048, 1);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_007", "test_image2.jpg", 2048, 1);
     pullData.propertiesRotate = 0;
@@ -327,8 +343,13 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_008, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(3, "test_image3.jpg", 4096, 1, true, 99, 0, 0, 0, 0, "/data/test_image3.jpg",
-        "/storage/test_image3.jpg", 1, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 99;
+    options.dataPath = "/data/test_image3.jpg";
+    options.sourcePath = "/storage/test_image3.jpg";
+    options.hidden = 1;
+    InsertPhotoRow(3, "test_image3.jpg", 4096, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_008", "test_image3.jpg", 4096, 1);
     pullData.propertiesRotate = 0;
@@ -360,7 +381,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, GetMaxFileIdBeforeCompare_test_010, T
 {
     MEDIA_INFO_LOG("GetMaxFileIdBeforeCompare_test_010 Start");
     CloudMediaAssetCompareDao dao;
-    InsertPhotoRow(10, "test.jpg", 1024, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(10, "test.jpg", 1024, 1);
     dao.SetRdbStore(g_rdbStore);
 
     int32_t maxFileId = dao.GetMaxFileIdBeforeCompare();
@@ -372,11 +393,11 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, SetRdbStore_test_011, TestSize.Level0
 {
     MEDIA_INFO_LOG("SetRdbStore_test_011 Start");
     CloudMediaAssetCompareDao dao;
-    InsertPhotoRow(5, "test.jpg", 1021, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(5, "test.jpg", 1021, 1);
     dao.SetRdbStore(g_rdbStore);
     EXPECT_EQ(dao.GetMaxFileIdBeforeCompare(), 5);
 
-    InsertPhotoRow(6, "test2.jpg", 1022, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(6, "test2.jpg", 1022, 1);
     int32_t maxFileId = dao.GetMaxFileIdBeforeCompare();
     EXPECT_EQ(maxFileId, 5);
     MEDIA_INFO_LOG("SetRdbStore_test_011 End");
@@ -389,7 +410,14 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_012, TestSize
     dao.SetRdbStore(g_rdbStore);
 
     InsertBackupAlbum(2, "/test/album/path2");
-    InsertPhotoRow(6, "test.jpg", 1024, 1, true, 2, 90, 1, 1, 123456);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 2;
+    options.orientation = 90;
+    options.cleanFlag = 1;
+    options.position = 1;
+    options.realLcdVisitTime = 123456;
+    InsertPhotoRow(6, "test.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_012", "test.jpg", 1024, 1);
     SetAlbumSourcePath(pullData, "/test/album/path2");
@@ -411,7 +439,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_013, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(7, "test.jpg", 1024, 2, false, 0, 270, 0, 0, 0);
+    PhotoRowOptions options;
+    options.orientation = 270;
+    InsertPhotoRow(7, "test.jpg", 1024, 2, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_013", "test.jpg", 1024, 2);
     pullData.propertiesRotate = 0;
@@ -429,8 +459,13 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_014, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(8, "test.jpg", 1024, 1, true, 88, 0, 0, 0, 0, "/data/test.jpg",
-        "/storage/test.jpg", 0, 1);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 88;
+    options.dataPath = "/data/test.jpg";
+    options.sourcePath = "/storage/test.jpg";
+    options.dateTrashed = 1;
+    InsertPhotoRow(8, "test.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_014", "test.jpg", 1024, 1);
     pullData.propertiesRotate = 0;
@@ -450,8 +485,18 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_015, TestSize
     dao.SetRdbStore(g_rdbStore);
 
     InsertBackupAlbum(3, "/test/album/path3");
-    InsertPhotoRow(9, "test.jpg", 1024, 1, true, 3, 0, 0, 0, 0);
-    InsertPhotoRow(10, "test.jpg", 1024, 1, true, 3, 0, 1, 1, 123456);
+    PhotoRowOptions firstOptions;
+    firstOptions.hasOwnerAlbumId = true;
+    firstOptions.ownerAlbumId = 3;
+    InsertPhotoRow(9, "test.jpg", 1024, 1, firstOptions);
+
+    PhotoRowOptions secondOptions;
+    secondOptions.hasOwnerAlbumId = true;
+    secondOptions.ownerAlbumId = 3;
+    secondOptions.cleanFlag = 1;
+    secondOptions.position = 1;
+    secondOptions.realLcdVisitTime = 123456;
+    InsertPhotoRow(10, "test.jpg", 1024, 1, secondOptions);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_015", "test.jpg", 1024, 1);
     SetAlbumSourcePath(pullData, "/test/album/path3");
@@ -471,7 +516,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_016, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(11, "test.jpg", 1024, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(11, "test.jpg", 1024, 1);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_016", "test.jpg", 1024, 1);
     pullData.propertiesRotate = -1;
@@ -489,7 +534,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_017, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(12, "test.jpg", 1024, 1, false, 0, 90, 0, 0, 0);
+    PhotoRowOptions options;
+    options.orientation = 90;
+    InsertPhotoRow(12, "test.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_017", "test.jpg", 1024, 1);
     pullData.propertiesRotate = -1;
@@ -506,8 +553,13 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_018, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(13, "test.jpg", 1024, 1, true, 77, 0, 0, 0, 0, "/data/test.jpg",
-        "/storage/test.jpg", 1, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 77;
+    options.dataPath = "/data/test.jpg";
+    options.sourcePath = "/storage/test.jpg";
+    options.hidden = 1;
+    InsertPhotoRow(13, "test.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_018", "test.jpg", 1024, 1);
     pullData.propertiesRotate = -1;
@@ -537,7 +589,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_020, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
 
-    InsertPhotoRow(15, "test.jpg", 1024, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(15, "test.jpg", 1024, 1);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_020", "test.jpg", 1024, 1);
     pullData.propertiesRotate = 0;
@@ -563,9 +615,14 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindSamePhotoInAlbum_test_022, TestSi
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
     InsertBackupAlbum(21, "/Pictures/Screenrecords");
-    InsertPhotoRow(21, "screen_record.mp4", 8192, 2, true, 21, 90, 0, 0, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 21;
+    options.orientation = 90;
+    InsertPhotoRow(21, "screen_record.mp4", 8192, 2, options);
 
-    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_022", "screen_record.mp4", 8192, FILE_TYPE_VIDEO);
+    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_022", "screen_record.mp4", 8192,
+        CloudSync::FILE_TYPE_VIDEO);
     pullData.propertiesSourcePath = "/storage/emulated/0/Pictures/Screenshots/screen_record.mp4";
     pullData.propertiesRotate = 0;
     DuplicatePhotoInfo result = dao.FindSamePhotoInAlbum(pullData, 100);
@@ -577,7 +634,9 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindSamePhotoWithoutAlbum_test_023, T
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(23, "without_album.jpg", 2048, 1, false, 0, 90, 0, 0, 0);
+    PhotoRowOptions options;
+    options.orientation = 90;
+    InsertPhotoRow(23, "without_album.jpg", 2048, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_023", "without_album.jpg", 2048, 1);
     pullData.propertiesRotate = 0;
@@ -589,10 +648,12 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindSamePhotoWithoutAlbum_test_024, T
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(24, "without_album_video.mp4", 4096, 2, false, 0, 180, 0, 0, 0);
+    PhotoRowOptions options;
+    options.orientation = 180;
+    InsertPhotoRow(24, "without_album_video.mp4", 4096, 2, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_024", "without_album_video.mp4", 4096,
-        FILE_TYPE_VIDEO);
+        CloudSync::FILE_TYPE_VIDEO);
     pullData.propertiesRotate = 0;
     DuplicatePhotoInfo result = dao.FindSamePhotoWithoutAlbum(pullData, 100);
     EXPECT_TRUE(result.isValid);
@@ -613,8 +674,12 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindSamePhotoBySourcePath_test_026, T
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(26, "source_filter.jpg", 1024, 1, true, 126, 0, 0, 0, 0, "/data/source_filter.jpg",
-        "/storage/source_filter.jpg", 0, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 126;
+    options.dataPath = "/data/source_filter.jpg";
+    options.sourcePath = "/storage/source_filter.jpg";
+    InsertPhotoRow(26, "source_filter.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_026", "source_filter.jpg", 1024, 1);
     pullData.attributesStoragePath = "/storage/source_filter.jpg";
@@ -627,8 +692,14 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindSamePhotoBySourcePath_test_027, T
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(27, "source_match.jpg", 1024, 1, true, 127, 0, 0, 0, 7, "/data/source_match.jpg",
-        "/storage/source_match.jpg", 1, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 127;
+    options.realLcdVisitTime = 7;
+    options.dataPath = "/data/source_match.jpg";
+    options.sourcePath = "/storage/source_match.jpg";
+    options.hidden = 1;
+    InsertPhotoRow(27, "source_match.jpg", 1024, 1, options);
 
     CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_027", "source_match.jpg", 1024, 1);
     pullData.attributesStoragePath = "/storage/source_match.jpg";
@@ -660,8 +731,10 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, ExecuteDuplicateQuery_test_029, TestS
 HWTEST_F(CloudMediaAssetRetainCompareTest, GetMediaTypeFromPullData_test_030, TestSize.Level1)
 {
     CloudMediaAssetCompareDao dao;
-    CloudMediaPullDataDto imageData = BuildPullData("test_cloud_id_030_1", "a.jpg", 100, FILE_TYPE_IMAGE);
-    CloudMediaPullDataDto videoData = BuildPullData("test_cloud_id_030_2", "a.mp4", 100, FILE_TYPE_VIDEO);
+    CloudMediaPullDataDto imageData = BuildPullData("test_cloud_id_030_1", "a.jpg", 100,
+        CloudSync::FILE_TYPE_IMAGE);
+    CloudMediaPullDataDto videoData = BuildPullData("test_cloud_id_030_2", "a.mp4", 100,
+        CloudSync::FILE_TYPE_VIDEO);
     EXPECT_EQ(dao.GetMediaTypeFromPullData(imageData), MEDIA_TYPE_IMAGE);
     EXPECT_EQ(dao.GetMediaTypeFromPullData(videoData), MEDIA_TYPE_VIDEO);
 }
@@ -669,7 +742,7 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, GetMediaTypeFromPullData_test_030, Te
 HWTEST_F(CloudMediaAssetRetainCompareTest, GetPhotosMaxFileId_test_031, TestSize.Level1)
 {
     CloudMediaAssetCompareDao dao;
-    InsertPhotoRow(31, "max31.jpg", 100, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(31, "max31.jpg", 100, 1);
     EXPECT_EQ(dao.GetPhotosMaxFileId(), 31);
 }
 
@@ -678,10 +751,14 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_032, TestSize
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
     InsertBackupAlbum(32, "/album/priority");
-    InsertPhotoRow(3201, "same.jpg", 555, 1, true, 32, 0, 1, 0, 0);
-    InsertPhotoRow(3202, "same.jpg", 555, 1, false, 0, 0, 0, 0, 0);
+    PhotoRowOptions firstOptions;
+    firstOptions.hasOwnerAlbumId = true;
+    firstOptions.ownerAlbumId = 32;
+    firstOptions.cleanFlag = 1;
+    InsertPhotoRow(3201, "same.jpg", 555, 1, firstOptions);
+    InsertPhotoRow(3202, "same.jpg", 555, 1);
 
-    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_032", "same.jpg", 555, FILE_TYPE_IMAGE);
+    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_032", "same.jpg", 555, CloudSync::FILE_TYPE_IMAGE);
     SetAlbumSourcePath(pullData, "/album/priority");
     pullData.propertiesRotate = 0;
     DuplicatePhotoInfo result = dao.FindDuplicatePhoto(pullData, 5000);
@@ -693,9 +770,10 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_033, TestSize
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(3301, "fallback.jpg", 777, 1, false, 0, 0, 0, 0, 0);
+    InsertPhotoRow(3301, "fallback.jpg", 777, 1);
 
-    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_033", "fallback.jpg", 777, FILE_TYPE_IMAGE);
+    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_033", "fallback.jpg", 777,
+        CloudSync::FILE_TYPE_IMAGE);
     pullData.propertiesSourcePath = "/storage/emulated/0/not/exist/fallback.jpg";
     pullData.propertiesRotate = 0;
     DuplicatePhotoInfo result = dao.FindDuplicatePhoto(pullData, 5000);
@@ -707,10 +785,16 @@ HWTEST_F(CloudMediaAssetRetainCompareTest, FindDuplicatePhoto_test_034, TestSize
 {
     CloudMediaAssetCompareDao dao;
     dao.SetRdbStore(g_rdbStore);
-    InsertPhotoRow(3401, "src_only.jpg", 888, 1, true, 340, 0, 0, 0, 0, "/data/src_only.jpg",
-        "/storage/src_only.jpg", 1, 0);
+    PhotoRowOptions options;
+    options.hasOwnerAlbumId = true;
+    options.ownerAlbumId = 340;
+    options.dataPath = "/data/src_only.jpg";
+    options.sourcePath = "/storage/src_only.jpg";
+    options.hidden = 1;
+    InsertPhotoRow(3401, "src_only.jpg", 888, 1, options);
 
-    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_034", "src_only.jpg", 888, FILE_TYPE_IMAGE);
+    CloudMediaPullDataDto pullData = BuildPullData("test_cloud_id_034", "src_only.jpg", 888,
+        CloudSync::FILE_TYPE_IMAGE);
     pullData.propertiesRotate = 0;
     pullData.attributesStoragePath = "/storage/src_only.jpg";
     pullData.propertiesSourcePath = "";
