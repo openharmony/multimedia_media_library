@@ -390,16 +390,15 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
         MessageParcel tempParcel;
         // Try marshalling into MessageParcel.
         CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(tempParcel),
-                                "Marshalling error, truncate stop. "
-                                "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
-                                index,
-                                resultList.size(),
-                                originalSize);
+            "Marshalling error, truncate stop. "
+            "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
+            index,
+            resultList.size(),
+            originalSize);
         // Check the dataSize not exceed capacity.
         elementSize = tempParcel.GetDataSize();
         parcelSize += elementSize;
-        CHECK_AND_BREAK_ERR_LOG(
-            parcelSize <= parcelCapacity,
+        CHECK_AND_BREAK_ERR_LOG(parcelSize <= parcelCapacity,
             "exceed capacity, truncate it. "
             "elementSize: %{public}zu, index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
             "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
@@ -415,12 +414,12 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
     CHECK_AND_RETURN_RET(resultList.size() != originalSize, true);
     this->cloudPhotosUploadRecord = resultList;
     MEDIA_INFO_LOG("TruncateDataBy200K completed, "
-                   "resultList: %{public}zu, originalSize: %{public}zu, "
-                   "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
-                   resultList.size(),
-                   originalSize,
-                   parcelSize,
-                   parcelCapacity);
+        "resultList: %{public}zu, originalSize: %{public}zu, "
+        "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+        resultList.size(),
+        originalSize,
+        parcelSize,
+        parcelCapacity);
     return true;
 }
 }  // namespace OHOS::Media::CloudSync
