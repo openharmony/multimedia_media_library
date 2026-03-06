@@ -61,6 +61,8 @@ private:
     bool GetAlbumInfo(const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data);
     bool GetAttributesHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo);
     bool GetAttributesHashMap(const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data);
+    bool GetInt32FieldsHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo);
+    bool GetInt32FieldsHashMap(const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data);
     bool HandleUserComment(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo);
 
 private:

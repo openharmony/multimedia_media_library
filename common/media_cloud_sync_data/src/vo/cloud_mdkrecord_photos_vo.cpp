@@ -89,6 +89,7 @@ bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(MessageParcel &parcel) co
     parcel.WriteInt32(fileSourceType);
     parcel.WriteString(storagePath);
     ITypesUtil::Marshalling(stringfields, parcel);
+    ITypesUtil::Marshalling(int32fields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
@@ -156,6 +157,7 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
     parcel.ReadInt32(fileSourceType);
     parcel.ReadString(storagePath);
     ITypesUtil::Unmarshalling(stringfields, parcel);
+    ITypesUtil::Unmarshalling(int32fields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const
@@ -359,6 +361,12 @@ void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
     }
+    ss << "},";
+    ss << "\"int32fields\": {";
+    for (const auto &node : this->int32fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
+    }
     ss << "}";
     return;
 }
@@ -382,15 +390,16 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
         MessageParcel tempParcel;
         // Try marshalling into MessageParcel.
         CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(tempParcel),
-            "Marshalling error, truncate stop. "
-            "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
-            index,
-            resultList.size(),
-            originalSize);
+                                "Marshalling error, truncate stop. "
+                                "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
+                                index,
+                                resultList.size(),
+                                originalSize);
         // Check the dataSize not exceed capacity.
         elementSize = tempParcel.GetDataSize();
         parcelSize += elementSize;
-        CHECK_AND_BREAK_ERR_LOG(parcelSize <= parcelCapacity,
+        CHECK_AND_BREAK_ERR_LOG(
+            parcelSize <= parcelCapacity,
             "exceed capacity, truncate it. "
             "elementSize: %{public}zu, index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
             "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
@@ -406,12 +415,12 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
     CHECK_AND_RETURN_RET(resultList.size() != originalSize, true);
     this->cloudPhotosUploadRecord = resultList;
     MEDIA_INFO_LOG("TruncateDataBy200K completed, "
-        "resultList: %{public}zu, originalSize: %{public}zu, "
-        "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
-        resultList.size(),
-        originalSize,
-        parcelSize,
-        parcelCapacity);
+                   "resultList: %{public}zu, originalSize: %{public}zu, "
+                   "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
+                   resultList.size(),
+                   originalSize,
+                   parcelSize,
+                   parcelCapacity);
     return true;
 }
 }  // namespace OHOS::Media::CloudSync
