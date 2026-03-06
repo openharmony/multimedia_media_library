@@ -1211,13 +1211,7 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = (!portraitAlbumInfo.tagName.empty() ? RENAME_OPERATION_RENAMED : 0);
     portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
-    std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
-    if (isNeedCloneIsMe_ || oldRelationshipId != std::to_string(INDEX_ME)) {
-        auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
-        if (it != RELATIONSHIP_MAP.end()) {
-            portraitAlbumInfo.relationship = it->second;
-        }
-    }
+    
     return true;
 }
 
