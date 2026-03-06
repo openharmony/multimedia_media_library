@@ -366,9 +366,12 @@ void UpgradeRestore::RestoreSmartAlbums()
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t startGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
-    CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
-    cloneGroupPhotoAlbum.RestoreGroupPhotoAlbum(photoInfoMap_);
-    int64_t endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t endGroupPhoto = startGroupPhoto;
+    if (hasDeletedExistingAlbumData_) {
+        CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
+        cloneGroupPhotoAlbum.RestoreGroupPhotoAlbum(photoInfoMap_);
+        endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    }
     classifyRestore_.RestoreClassify(photoInfoMap_);
     int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
@@ -1686,6 +1689,7 @@ void UpgradeRestore::RestoreAnalysisAlbum()
     if (totalPortraitAlbumNumber > 0 && sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
         CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
+        hasDeletedExistingAlbumData_ = true;
     }
 
     RestoreFromGalleryPortraitAlbum();
