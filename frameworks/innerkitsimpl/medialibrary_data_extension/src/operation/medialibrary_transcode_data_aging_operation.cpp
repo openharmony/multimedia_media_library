@@ -268,8 +268,8 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
         "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     string newPath = path + "/transcode.jpg";
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-    bool isHeifType = (MediaFileUtils::GetExtensionFromPath(path) == "heif" ||
-        MediaFileUtils::GetExtensionFromPath(path) == "heic");
+    bool isHeifType = (MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heif" ||
+        MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heic");
     if (!NeedTranscodeHighPixelPicture(fileAsset->GetWidth(), fileAsset->GetHeight())) {
         if (!isHeifType) {
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", path.c_str());
