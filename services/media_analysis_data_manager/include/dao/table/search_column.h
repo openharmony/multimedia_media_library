@@ -41,6 +41,8 @@ const std::string TBL_SEARCH_CV_STATUS = "cv_status";
 const std::string TBL_SEARCH_GEO_STATUS = "geo_status";
 const std::string TBL_SEARCH_VERSION = "version";
 const std::string TBL_SEARCH_SYSTEM_LANGUAGE = "system_language";
+const std::string TBL_SEARCH_FACE_STATUS = "face_status";
+const std::string TBL_SEARCH_ALBUM_STATUS = "album_status";
 
 // Number of completed and total progress in image and video indexing construction
 const std::string PHOTO_COMPLETE_NUM = "finishedImageCount";
@@ -71,7 +73,9 @@ const std::string CREATE_SEARCH_TOTAL_TABLE = "CREATE TABLE IF NOT EXISTS " + SE
     TBL_SEARCH_CV_STATUS + " INT DEFAULT 0, " +
     TBL_SEARCH_GEO_STATUS + " INT DEFAULT 0, " +
     TBL_SEARCH_VERSION + " INT DEFAULT 0, " +
-    TBL_SEARCH_SYSTEM_LANGUAGE + " TEXT) ";
+    TBL_SEARCH_SYSTEM_LANGUAGE + " TEXT, " +
+    TBL_SEARCH_FACE_STATUS + " INT DEFAULT 0, " +
+    TBL_SEARCH_ALBUM_STATUS + " INT DEFAULT 0) ";
 
 // trigger
 // Listening of Photos: basic information
