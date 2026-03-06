@@ -44,7 +44,7 @@
 #include "cloud_media_album_cache.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaPhotosDao {
+class EXPORT CloudMediaPhotosDao {
 public:
     CloudMediaPhotosDao() = default;
     ~CloudMediaPhotosDao() = default;
