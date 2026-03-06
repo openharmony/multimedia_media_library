@@ -12988,6 +12988,11 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
+    NAPI_ERR_LOG("pickerCallBack");
+    if (context->pickerCallBack == nullptr) {
+        NAPI_ERR_LOG("pickerCallBack is null");
+        CHECK_NULL_PTR_RETURN_VOID(context->pickerCallBack, "pickerCallBack is null");
+    }
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
@@ -13000,6 +13005,7 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property resultCode failed");
     }
+
     getPhotoPickerSelectUris(env, result, context);
     getPhotoPickerMovingPhotoBadgeStates(env, result, context);
     napi_value gridLevel = nullptr;
