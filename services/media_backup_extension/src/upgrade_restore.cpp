@@ -1131,8 +1131,8 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
-
     isNeedCloneIsMe_ = CheckIsNeedCloneIsMe();
+    QueryPortraitAlbumRelationship();
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<std::string> tagNameToDeleteSelection;
         std::vector<std::string> tagIds;
@@ -1155,6 +1155,40 @@ int32_t UpgradeRestore::QueryPortraitAlbumTotalNumber()
     return BackupDatabaseUtils::QueryInt(galleryRdb_,
         (IsCloudRestoreSatisfied() ?
         QUERY_GALLERY_PORTRAIT_ALBUM_WITH_CLOUD_COUNT : QUERY_GALLERY_PORTRAIT_ALBUM_COUNT), CUSTOM_COUNT);
+}
+
+void UpgradeRestore::QueryPortraitAlbumRelationship()
+{
+    std::string querySql = "SELECT t.group_tag, t.tag_name, t.relationship, count(DISTINCT t.hash) as show_count, "
+            "MAX(t.scale_width * t.scale_height + t.beauty_score * 1000 + (CASE WHEN t.total_face == 1 "
+            "THEN 1000 ELSE 0 END) + t.is_cover * 10000) max_score "
+        "FROM (SELECT "
+            "merge_face.hash, merge_face.scale_width, merge_face.scale_height, merge_face.beauty_score, "
+            "merge_face.total_face, merge_face.is_cover, merge_tag.user_operation, merge_tag.group_tag, "
+            "merge_tag.tag_name, merge_tag.relationship, merge_tag.is_hidden "
+        "FROM merge_face "
+        "JOIN merge_tag ON(merge_face.tag_id = merge_tag.tag_id and merge_tag.album_type = 0)) t "
+        "GROUP BY t.group_tag "
+        "HAVING (((t.tag_name is NOT NULL AND t.tag_name != '') OR t.user_operation = 1 OR t.user_operation = 2 "
+            "OR (t.user_operation = 0 AND show_count >= 5)) AND show_count > 0) "
+            "AND (t.is_hidden != -3)";
+
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "query portrait album resultSql is null");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string oldGroupTag = GetStringVal("group_tag", resultSet);
+        std::string oldRelationshipId = GetStringVal("relationship", resultSet);
+        if (isNeedCloneIsMe_ || oldRelationshipId != std::to_string(INDEX_ME)) {
+            auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
+            if (it != RELATIONSHIP_MAP.end()) {
+                portraitAlbumRelationship_[oldGroupTag] = it->second;
+            }
+        }
+        MEDIA_DEBUG_LOG("oldGroupTag: %{public}s, oldRelationshipId: %{public}s, newRelationship: %{public}s",
+            oldGroupTag.c_str(), oldRelationshipId.c_str(), portraitAlbumRelationship_[oldGroupTag].c_str());
+    }
+    resultSet->Close();
+    MEDIA_DEBUG_LOG("QueryPortraitAlbumRelationship end");
 }
 
 vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset,
@@ -1211,7 +1245,11 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = (!portraitAlbumInfo.tagName.empty() ? RENAME_OPERATION_RENAMED : 0);
     portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
-    
+    // get relationship
+    auto it = portraitAlbumRelationship_.find(portraitAlbumInfo.groupTagOld);
+    if (it != portraitAlbumRelationship_.end()) {
+        portraitAlbumInfo.relationship = it->second;
+    }
     return true;
 }
 
