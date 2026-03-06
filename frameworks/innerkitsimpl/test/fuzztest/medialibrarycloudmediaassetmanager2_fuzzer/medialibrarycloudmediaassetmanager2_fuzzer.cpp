@@ -210,11 +210,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace Media
 } // namespace OHOS
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -233,6 +228,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::provider = &fdp;
     OHOS::Media::CloudMediaAssetDownloadOperationFuzzer();
     OHOS::Media::CloudMediaAssetDownloadCallbackFuzzer();
-    OHOS::Media::ClearKvStore();
     return 0;
 }
