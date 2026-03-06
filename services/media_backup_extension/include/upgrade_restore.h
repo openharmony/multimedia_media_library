@@ -147,6 +147,7 @@ protected:
     void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
         std::unique_ptr<Metadata> &data) override;
     bool CheckIsNeedCloneIsMe();
+    
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
