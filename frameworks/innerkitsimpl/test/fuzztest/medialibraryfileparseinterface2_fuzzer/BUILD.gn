@@ -27,7 +27,7 @@ ohos_fuzztest("MediaLibraryFileParseInterface2FuzzTest") {
     "${MEDIALIB_INNERIMPL_PATH}/notification/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_camera_helper/include",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [

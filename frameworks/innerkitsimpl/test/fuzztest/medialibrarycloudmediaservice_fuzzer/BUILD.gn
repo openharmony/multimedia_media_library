@@ -29,7 +29,7 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include/utils",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   include_media_cloud_sync_data = [

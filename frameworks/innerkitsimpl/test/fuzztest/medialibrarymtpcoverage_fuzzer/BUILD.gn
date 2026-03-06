@@ -24,7 +24,7 @@ ohos_fuzztest("MediaLibraryMtpCoverageFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp/include/payload_data",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   cflags = [ "-fno-access-control" ]

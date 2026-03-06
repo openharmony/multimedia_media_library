@@ -22,7 +22,7 @@ ohos_fuzztest("MediaLibraryCloudUploadCheckerFuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_dirty_handle",
-    "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [

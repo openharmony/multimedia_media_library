@@ -20,7 +20,7 @@
 
     include_dirs = [
       "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
-      "${MEDIALIB_TEST_PATH}/fuzztest/common/inlcude",
+      "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
     ]
 
     sources = [

@@ -219,7 +219,7 @@ static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension)
     extension.DenormalizeUri(FuzzUri());
 }
 
-static int InitExtention(MediaDataShareExtAbility &extension)
+static inline void InitExtention(MediaDataShareExtAbility &extension)
 {
     extension.InitPermissionHandler();
 }
