@@ -181,6 +181,7 @@ protected:
     RestoreConfigInfo restoreConfig_;
     RestorePhotosAlbumHidden restorePhotosAlbumHidden_;
     bool isNeedCloneIsMe_ = false;
+    bool hasDeletedExistingAlbumData_ = false;
     std::unordered_set<std::string> processGlobalHashes_;
     ffrt::mutex processHashesMutex_;
 
