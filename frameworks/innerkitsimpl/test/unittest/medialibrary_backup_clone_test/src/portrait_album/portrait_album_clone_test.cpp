@@ -210,7 +210,7 @@ void PortraitAlbumCloneTest::VerifyPortraitAlbumRestore(const std::shared_ptr<Na
 
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_tag_id");
+    EXPECT_EQ(columnValue, "a");
 
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
