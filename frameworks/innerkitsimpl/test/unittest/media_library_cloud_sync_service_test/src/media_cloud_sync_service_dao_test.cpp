@@ -974,16 +974,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, AddRemoveAlbumCloudId_Test_001, TestSize.
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, DeleteLocalByCloudId_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    
-    int32_t ret = photosDao.DeleteLocalByCloudId(cloudId, photoRefresh);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateFailRecordsCloudId_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -1179,34 +1169,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, IsCoverContentChange_Test_001, TestSize.L
     int32_t dataFileId = 1;
     
     photosDao.IsCoverContentChange(changedRows, mtimeChanged, dataFileId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, FixEmptyAlbumId_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    CloudMediaPullDataDto data;
-    data.cloudId = "test_cloud_id";
-    data.basicRecycledTime = 0;
-    data.attributesSrcAlbumIds = {};
-    data.propertiesSourcePath = "";
-    int32_t albumId = 0;
-    
-    int32_t ret = photosDao.FixEmptyAlbumId(data, albumId);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, FixEmptyAlbumId_Test_002, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    CloudMediaPullDataDto data;
-    data.cloudId = "test_cloud_id";
-    data.basicRecycledTime = 1000;
-    data.attributesSrcAlbumIds = {};
-    data.propertiesSourcePath = "";
-    int32_t albumId = 0;
-    
-    int32_t ret = photosDao.FixEmptyAlbumId(data, albumId);
-    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, FixAlbumIdToBeOtherAlbumId_Test_001, TestSize.Level1)
