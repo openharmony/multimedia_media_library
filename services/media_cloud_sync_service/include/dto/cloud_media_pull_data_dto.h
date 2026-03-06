@@ -30,6 +30,7 @@ class EXPORT CloudMediaPullDataDto {
 public:
     std::optional<PhotoAlbumPo> albumInfoOp;
     std::optional<PhotosPo> localPhotosPoOp;
+
 public:
     // key
     std::string cloudId;
@@ -77,7 +78,7 @@ public:
     int32_t attributesOriginalSubtype{-1};        /* original_subtype */
     int64_t attributesCoverPosition{-1};          /* cover_position */
     int32_t attributesIsRectificationCover{-1};   /* is_rectification_cover */
-    int32_t exifRotate{-1};             /* exif_rotate*/
+    int32_t exifRotate{-1};                       /* exif_rotate*/
     int32_t attributesMovingPhotoEffectMode{-1};  /* moving_photo_effect_mode */
     int32_t attributesSupportedWatermarkType{-1}; /* supported_watermark_type */
     int32_t attributesStrongAssociation{-1};      /* strong_association */
@@ -85,7 +86,7 @@ public:
     std::string attributesCloudId;                /* cloud_id */
     std::string attributesOriginCloudId;          /* origin cloud_id */
     int32_t deferredEffectsStatus{-2};            /* deferred_effect_status */
-    int64_t attributesEditedTimeMs{-1}; /* editedTime_ms */
+    int64_t attributesEditedTimeMs{-1};           /* editedTime_ms */
     int32_t attributesFixVersion{-1};
     std::string attributesEditDataCamera;
     std::vector<std::string> attributesSrcAlbumIds;
@@ -126,6 +127,7 @@ public:
     int32_t localExifRotate{-1};
     std::string localDisplayName;
     std::map<std::string, std::string> stringfields;
+    std::map<std::string, int32_t> int32fields;
 
 public:  // basic function
     std::string ToString() const;
@@ -135,6 +137,7 @@ public:  // basic function
     bool FindAlbumUploadStatus() const;
     bool GetIsRecycleUpdated() const;
     void SetIsRecycleUpdated(bool isRecycleUpdated);
+
 private:
     void GetBasicInfo(std::stringstream &ss) const;
     void GetAttributesInfo(std::stringstream &ss) const;

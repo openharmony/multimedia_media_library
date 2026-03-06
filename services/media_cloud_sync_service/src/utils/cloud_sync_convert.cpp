@@ -661,6 +661,7 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
     CompensatePropSourcePath(data, values);
     // attributes HashMap
     CompensateAttributesHashMap(data, values);
+    CompensateInt32FieldsHashMap(data, values);
     return E_OK;
 }
 
@@ -729,5 +730,14 @@ void CloudSyncConvert::HandleDateAddedYearMonthDay(int64_t originalDateAdded, in
         values.Put(PhotoColumn::PHOTO_DATE_ADDED_MONTH, dateAddedMonth);
         values.Put(PhotoColumn::PHOTO_DATE_ADDED_DAY, dateAddedDay);
     }
+}
+
+int32_t CloudSyncConvert::CompensateInt32FieldsHashMap(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    for (const auto &node : data.int32fields) {
+        values.Put(node.first, node.second);
+    }
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
