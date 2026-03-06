@@ -30,7 +30,7 @@ ohos_fuzztest("MediaLibraryRefreshManagerFuzzTest") {
     "src/medialibraryrefreshmanager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_album_handler.cpp"
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_album_handler.cpp",
     "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
   ]
 
