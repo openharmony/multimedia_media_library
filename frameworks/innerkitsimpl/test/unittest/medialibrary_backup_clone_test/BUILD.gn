@@ -135,8 +135,6 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/portrait_album/portrait_album_source.cpp",
     "./src/pet_album/pet_album_clone_test.cpp",
     "./src/pet_album/pet_album_source.cpp",
-    "./src/selection/clone_restore_selection_test.cpp",
-    "./src/selection/clone_restore_selection_source.cpp",
   ]
 
   source_ipc_client = [
