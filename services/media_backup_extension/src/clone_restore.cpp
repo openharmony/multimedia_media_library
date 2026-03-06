@@ -447,7 +447,7 @@ bool CloneRestore::BackupPreprocess()
         // create temp DB path
         CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, false, "mediaLibraryRdb_ is nullptr!");
         std::string tmpDir = backupRestoreDir_ + "/storage/media/local/files/.backup/backup/media_temp_rdb";
-        tmpDbPath_ = tmpDir + "/media_library_temp.db";
+        tmpDbPath_ = tmpDir + "/media_library.db";
         CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(tmpDir),
             MediaFileUtils::DeleteDir(tmpDir));
         CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(tmpDbPath_) == E_OK,
