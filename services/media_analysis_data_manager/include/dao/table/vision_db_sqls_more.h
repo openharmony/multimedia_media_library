@@ -80,7 +80,7 @@ const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER =
     IS_ME + ", " + ALBUM_RELATIONSHIP + ", " + COVER_URI + ", " + RANK + ", " + TAG_ID + ", " + USER_OPERATION + ", " +
     GROUP_TAG + ", " + USER_DISPLAY_LEVEL + " ON " + ANALYSIS_ALBUM_TABLE + " FOR EACH ROW WHEN (NEW." + ALBUM_SUBTYPE +
     " = " + std::to_string(PORTRAIT) + ")" + " BEGIN " + " UPDATE " + "tab_analysis_search_index" + " SET " +
-    "album_status" + " = CASE WHEN " + "album_status" + " != 0 THEN 2 ELSE " + "album_status" + " END " + " WHERE (" +
+    "album_status" + " = CASE WHEN " + "album_status" + " != 0 THEN 2 ELSE " + "album_status" + " WHERE (" +
     FILE_ID + " IN( " + " SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE (old." + ALBUM_ID +
     " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" + ")); END;";
 
