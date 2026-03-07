@@ -3452,7 +3452,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreHighlightAlbums, Te
     restoreService->galleryRdb_ = restoreService->galleryRdb_;
     restoreService->mediaLibraryRdb_ = photosStorePtr;
     restoreService->sceneCode_ = UPGRADE_RESTORE_ID;
-    restoreService->dualDeviceSoftName_ = "HarmonyOS";
+    restoreService->dualDeviceSoftName_ = "Device 4";
     restoreService->isAccountValid_ = true;
     restoreService->isSyncSwitchOn_ = true;
     restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
