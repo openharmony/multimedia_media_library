@@ -75,6 +75,7 @@ public:
         int32_t &fd);
     EXPORT static int32_t Close(MediaLibraryCommand &cmd);
     EXPORT static int32_t SubmitCache(MediaLibraryCommand &cmd);
+    EXPORT static int32_t SubmitExistFileDBRecord(MediaLibraryCommand& cmd);
     EXPORT static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
     EXPORT static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
     EXPORT static void DeleteRevertMessage(const std::string &path);
@@ -149,6 +150,10 @@ public:
         NativeRdb::RdbPredicates &predicates, const std::string &photoId, const std::string &albumId);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
         const std::string &photoId, const std::string &albumId);
+    EXPORT static int32_t SubmitExistFileDBRecordExecute(MediaLibraryCommand &cmd,
+        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    EXPORT static int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
+    EXPORT static int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
 private:
     static int32_t HandleSaveCameraPhoto(MediaLibraryCommand &cmd);
     static bool CheckAndReport(bool cond, const int32_t &fileId,
@@ -190,6 +195,7 @@ private:
     static int32_t SaveCameraPhotoWithFilters(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
+    static int32_t UpdateAssetPathInSubmitExistFile(int32_t fileId, std::string &path);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
@@ -210,6 +216,8 @@ private:
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t BatchSetRecentShow(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
+        const std::string &editdata, const std::string &photoStatus = "");
+    static int32_t AddFiltersToExistPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNeedScan);
@@ -234,8 +242,8 @@ private:
     static bool HandleScanFile(std::shared_ptr<Media::Picture> &resultPicture,
         const std::string &fileId);
     static void HandleContainsAddResource(const std::string &fileId, const std::string containsAddResource);
-
 private:
+    static int32_t GetFileIdByPathFromDB(std::string &path, int32_t &fileId);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
     static int32_t HandleOpenAssetCompress(const shared_ptr<FileAsset> &fileAsset,
