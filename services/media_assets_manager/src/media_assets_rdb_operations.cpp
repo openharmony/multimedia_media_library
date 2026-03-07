@@ -56,22 +56,6 @@ constexpr int32_t POSITION_CLOUD_FLAG = 2;
 constexpr int32_t CLOUD_COPY_DIRTY_FLAG = 7;
 
 std::mutex MediaAssetsRdbOperations::facardMutex_;
-static const string STATUS = "status";
-static const string LABEL = "label";
-static const string AESTHETICS_SCORE = "aesthetics_score";
-static const string OCR = "ocr";
-static const string SALIENCY = "saliency";
-static const string FACE = "face";
-static const string OBJECT = "object";
-static const string RECOMMENDATION = "recommendation";
-static const string SEGMENTATION = "segmentation";
-static const string HEAD = "head";
-static const string POSE = "pose";
-static const string PET_STATUS = "pet";
-
-static vector<int> NEED_UPDATE_TYPE = {
-    PhotoAlbumSubType::CLASSIFY, PhotoAlbumSubType::PORTRAIT
-};
 MediaAssetsRdbOperations::MediaAssetsRdbOperations() {}
 bool MediaAssetsRdbOperations::QueryFileIdIfExists(const string& fileId)
 {
@@ -221,89 +205,6 @@ int32_t MediaAssetsRdbOperations::CommitEditInsert(const string& editData, int32
     PhotoEditingRecord::GetInstance()->EndCommitEdit(fileId);
     MEDIA_INFO_LOG("commit edit finished, fileId=%{public}d", fileId);
     return ret;
-}
-
-static int32_t UpdateAnalysisTotal(const string& column, const string& selection)
-{
-    ValuesBucket value;
-    value.PutInt(STATUS, 0);
-    value.PutString(column, "0");
-    NativeRdb::RdbPredicates rdbPredicate(VISION_TOTAL_TABLE);
-    rdbPredicate.SetWhereClause(selection);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore");
-        return E_ERR;
-    }
-    int32_t changeRows = 0;
-    int32_t err = rdbStore->Update(changeRows, value, rdbPredicate);
-    CHECK_AND_RETURN_RET(err == NativeRdb::E_OK, err);
-    return changeRows;
-}
-
-static void DeleteFromVisionTable(const string& fileId, const string& column, const string& table,
-    const string& selection)
-{
-    int32_t updateRows = UpdateAnalysisTotal(column, selection);
-    if (updateRows <= 0) {
-        return;
-    }
-
-    NativeRdb::RdbPredicates rdbPredicate(table);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    MediaLibraryRdbStore::Delete(rdbPredicate);
-}
-
-static void DeleteFromVisionTablesForVideo(const string& fileId, const string& table)
-{
-    NativeRdb::RdbPredicates rdbPredicate(table);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    MediaLibraryRdbStore::Delete(rdbPredicate);
-}
-
-void MediaAssetsRdbOperations::DeleteFromVisionTables(const string& fileId)
-{
-#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-    string selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND label = 1";
-    DeleteFromVisionTable(fileId, LABEL, VISION_LABEL_TABLE, selectionTotal);
-    DeleteFromVisionTablesForVideo(fileId, VISION_VIDEO_LABEL_TABLE);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND aesthetics_score = 1";
-    DeleteFromVisionTable(fileId, AESTHETICS_SCORE, VISION_AESTHETICS_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND ocr = 1";
-    DeleteFromVisionTable(fileId, OCR, VISION_OCR_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND saliency = 1";
-    DeleteFromVisionTable(fileId, SALIENCY, VISION_SALIENCY_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND face IN (-2, 1, 2, 3, 4)";
-    DeleteFromVisionTable(fileId, FACE, VISION_IMAGE_FACE_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND object = 1";
-    DeleteFromVisionTable(fileId, OBJECT, VISION_OBJECT_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND recommendation = 1";
-    DeleteFromVisionTable(fileId, RECOMMENDATION, VISION_RECOMMENDATION_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND segmentation = 1";
-    DeleteFromVisionTable(fileId, SEGMENTATION, VISION_SEGMENTATION_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND head = 1";
-    DeleteFromVisionTable(fileId, HEAD, VISION_HEAD_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND affective = 1";
-    DeleteFromVisionTable(fileId, POSE, VISION_AFFECTIVE_TABLE, selectionTotal);
-
-    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND pose = 1";
-    DeleteFromVisionTable(fileId, POSE, VISION_POSE_TABLE, selectionTotal);
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdbStore");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(rdbStore, {fileId}, NEED_UPDATE_TYPE);
-
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByCoverUri(rdbStore, fileId);
-#endif
 }
 
 bool MediaAssetsRdbOperations::QueryAlbumIdIfExists(const std::string& albumId)
