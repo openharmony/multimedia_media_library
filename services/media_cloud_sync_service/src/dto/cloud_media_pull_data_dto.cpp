@@ -184,6 +184,12 @@ void CloudMediaPullDataDto::GetAttributesHashMap(std::stringstream &ss) const
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
     }
+    ss << "}, ";
+    ss << "\"int64fields\": {";
+    for (const auto &node : this->int64fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
+    }
     ss << "}";
     return;
 }
