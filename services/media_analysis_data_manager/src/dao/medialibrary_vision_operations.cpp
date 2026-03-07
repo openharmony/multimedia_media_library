@@ -35,6 +35,7 @@
 #include "vision_recommendation_column.h"
 #include "user_photography_info_column.h"
 #include "analysis_data_video_dao.h"
+#include "analysis_data_vision_dao.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
