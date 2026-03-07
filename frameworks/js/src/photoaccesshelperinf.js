@@ -836,7 +836,10 @@ const RecommendationType = {
   ARCHITECTURE: 15,
 
   // Indicates that landscape photos can be recommended
-  LANDSCAPE: 16
+  LANDSCAPE: 16,
+
+  // Indicates that GAUSSIAN_SPLAT_3D photos can be recommended
+  GAUSSIAN_SPLAT_3D: 17
 };
 
 const PhotoViewMIMETypes = {
