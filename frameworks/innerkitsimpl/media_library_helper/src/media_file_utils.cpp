@@ -2714,7 +2714,7 @@ bool MediaFileUtils::HasPrefix(const std::vector<std::string>& strings, const st
 {
     // 使用 lambda 函数来检查字符串是否以 prefix 开头
     auto it = std::find_if(strings.begin(), strings.end(),
-                           [prefix](const std::string& str) { 
+                           [prefix](const std::string& str) {
                                return str.length() >= prefix.length() && str.substr(0, prefix.length()) == prefix;
                            });
     return it != strings.end();
