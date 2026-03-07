@@ -2206,11 +2206,12 @@ bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
-bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
+bool MediaFileUtils::GetFileSize(const std::string &filePath, size_t &size)
 {
     struct stat statbuf;
     if (lstat(filePath.c_str(), &statbuf) == -1) {
-        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno,
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         size = 0;
         return false;
     }
@@ -2665,6 +2666,58 @@ int32_t MediaFileUtils::FindNormalPhotoAttachments(const std::string &cloudPath,
     };
     cloudPathList.insert(cloudPathList.end(), attachmentPathList.begin(), attachmentPathList.end());
     return E_OK;
+}
+
+void MediaFileUtils::GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders)
+{
+    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            // 检查是否为目录且非隐藏（不以.开头）
+            if (entry.is_directory() && entry.path().filename().string()[0] != '.') {
+                folders.push_back(entry.path().filename().string());
+            }
+        }
+    }
+}
+
+void MediaFileUtils::GetAllFileNameListUnderPath(const std::filesystem::path &path, std::vector<std::string> &fileNames)
+{
+    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            // 仅获取普通文件，排除目录
+            if (std::filesystem::is_regular_file(entry) && entry.path().filename().string()[0] != '.') {
+                fileNames.push_back(entry.path().filename().string());
+            }
+        }
+    }
+    std::sort(fileNames.begin(), fileNames.end());
+}
+
+std::vector<int32_t> MediaFileUtils::ConvertBucketNameVector(const std::vector<std::string> &vecStr)
+{
+    std::vector<int32_t> vecInt;
+    for (const auto& s : vecStr) {
+        if (all_of(s.begin(), s.end(), ::isdigit)) {
+            size_t processCount = 0;
+            int32_t val = std::stoi(s, &processCount);
+            if (processCount == s.length()) {
+                vecInt.push_back(val);
+            }
+        } else {
+            continue;
+        }
+    }
+    return vecInt;
+}
+
+bool MediaFileUtils::HasPrefix(const std::vector<std::string>& strings, const std::string& prefix)
+{
+    // 使用 lambda 函数来检查字符串是否以 prefix 开头
+    auto it = std::find_if(strings.begin(), strings.end(),
+                           [prefix](const std::string& str) { 
+                               return str.length() >= prefix.length() && str.substr(0, prefix.length()) == prefix;
+                           });
+    return it != strings.end();
 }
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP
