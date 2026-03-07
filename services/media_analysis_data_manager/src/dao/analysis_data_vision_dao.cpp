@@ -18,8 +18,6 @@
 #include "analysis_data_vision_dao.h"
 
 #include "analysis_data_video_dao.h"
-#include "analysis_data_selection_dao.h"
-#include "analysis_data_ai_retouch_dao.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
 
