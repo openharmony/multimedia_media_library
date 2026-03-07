@@ -150,12 +150,12 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(size), false, "size");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(baseVersion), false, "baseVersion");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(mimeType), false, "mimeType");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumCloudId), false, "albumCloudId");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumLPath), false, "albumLPath");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(recordType), false, "recordType");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(recordId), false, "recordId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumCloudId), false, "albumCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumLPath), false, "albumLPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(recordType), false, "recordType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(recordId), false, "recordId");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(fileSourceType), false, "fileSourceType");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(storagePath), false, "storagePath");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(stringfields, parcel), false, "stringfields");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(int64fields, parcel), false, "int64fields");
     return true;
