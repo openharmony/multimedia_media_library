@@ -124,9 +124,9 @@ private:
     void AddToFilesCacheSet(const std::string &val);
     void ClearFilesCacheSet();
     bool OneDayOneTimeCheck(int64_t currExecuteTime, int64_t lastExecuteTime);
-    bool IsLegalMediaAsset(const std::string & fileName);
-    bool IsIllegalEditFolderFile(int32_t curBucketNum, const std::string & folderName);
-    bool IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string & folderName);
+    bool IsLegalMediaAsset(const std::string &fileName);
+    bool IsIllegalEditFolderFile(int32_t curBucketNum, const std::string &folderName);
+    bool IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string &folderName);
     int32_t UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataEsxist);
     int32_t QueryPhotoAddTimeByPath(const std::string &path, int64_t &addTime);
     bool DealThumbsEffectAssetNotExist(int32_t curBucketNum, const std::string &folderName);
@@ -140,8 +140,8 @@ private:
     int32_t UpdatePendingInfoByPath(int32_t fileId, int64_t modifyTime, int64_t pending);
     void DealWithPendingToEffectFile(DirtyFileInfo &dirtyFileInfo);
     void MoveToNextId(int32_t &startFileId);
-
-
+    bool ProcessMovingPhotosInEditFolder(int32_t curBucketNum, const std::string &folderName,
+        DirtyFilePathInfo &dirtyFilePathInfo);
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
     std::set<std::string> filesCacheSet_; // 已处理过的文件名
