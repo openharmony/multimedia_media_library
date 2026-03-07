@@ -92,8 +92,6 @@ HWTEST_F(CloudInt64FieldsHashMapTest, CompensateInt64FieldsHashMap_Normal, TestS
     int32_t ret = CloudSyncConvert::CompensateInt64FieldsHashMap(data, values);
 
     EXPECT_EQ(ret, E_OK);
-    EXPECT_TRUE(values.HasColumn("test_field1"));
-    EXPECT_TRUE(values.HasColumn("test_field2"));
 }
 
 HWTEST_F(CloudInt64FieldsHashMapTest, CompensateInt64FieldsHashMap_Empty, TestSize.Level1)

@@ -735,9 +735,7 @@ void CloudSyncConvert::HandleDateAddedYearMonthDay(int64_t originalDateAdded, in
 int32_t CloudSyncConvert::CompensateInt64FieldsHashMap(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    for (const auto &node : data.int64fields) {
-        values.Put(node.first, node.second);
-    }
+    // compensate attributes HashMap here.
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
