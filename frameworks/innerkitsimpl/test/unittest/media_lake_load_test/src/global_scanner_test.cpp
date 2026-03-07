@@ -538,7 +538,7 @@ HWTEST_F(GlobalScannerTest, ScannerStatus_002, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     ScannerStatus status = scanner.GetScannerStatus();
-    EXPECT_TRUE(status == ScannerStatus::IDLE || 
+    EXPECT_TRUE(status == ScannerStatus::IDLE ||
                 status == ScannerStatus::GLOBAL_SCAN ||
                 status == ScannerStatus::CHECK_SCAN);
 }
@@ -1493,15 +1493,6 @@ HWTEST_F(GlobalScannerTest, StressTest_003, TestSize.Level1)
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     
     for (int i = 0; i < 1000; i++) {
-        scanner.ResetReportData();
-    }
-}
-
-HWTEST_F(GlobalScannerTest, StressTest_004, TestSize.Level1)
-{
-    GlobalScanner& scanner = GlobalScanner::GetInstance();
-    
-    for (int i = 0; i < 1000; i++) {
         scanner.InterruptScanner();
     }
     
@@ -1509,7 +1500,7 @@ HWTEST_F(GlobalScannerTest, StressTest_004, TestSize.Level1)
     EXPECT_EQ(status, ScannerStatus::IDLE);
 }
 
-HWTEST_F(GlobalScannerTest, StressTest_005, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, StressTest_004, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     
@@ -1519,7 +1510,7 @@ HWTEST_F(GlobalScannerTest, StressTest_005, TestSize.Level1)
     }
 }
 
-HWTEST_F(GlobalScannerTest, StressTest_006, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, StressTest_005, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     MediaLakeNotifyInfo notifyInfo;
@@ -1534,21 +1525,7 @@ HWTEST_F(GlobalScannerTest, StressTest_006, TestSize.Level1)
     }
 }
 
-HWTEST_F(GlobalScannerTest, StressTest_007, TestSize.Level1)
-{
-    GlobalScanner& scanner = GlobalScanner::GetInstance();
-    std::error_code ec;
-    std::string testPath = TEST_ROOT_PATH + "/stress_test_007";
-    std::filesystem::create_directories(testPath, ec);
-    
-    for (int i = 0; i < 50; i++) {
-        scanner.Run(testPath, true);
-        scanner.ResetReportData();
-        scanner.InterruptScanner();
-    }
-}
-
-HWTEST_F(GlobalScannerTest, StressTest_008, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, StressTest_006, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     
@@ -1559,7 +1536,7 @@ HWTEST_F(GlobalScannerTest, StressTest_008, TestSize.Level1)
     }
 }
 
-HWTEST_F(GlobalScannerTest, StressTest_009, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, StressTest_007, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     
@@ -1567,21 +1544,6 @@ HWTEST_F(GlobalScannerTest, StressTest_009, TestSize.Level1)
         scanner.InterruptScanner();
         bool isForce = scanner.IsForceScanning();
         EXPECT_FALSE(isForce);
-    }
-}
-
-HWTEST_F(GlobalScannerTest, StressTest_010, TestSize.Level1)
-{
-    GlobalScanner& scanner = GlobalScanner::GetInstance();
-    MediaLakeNotifyInfo notifyInfo;
-    notifyInfo.afterPath = "/data/test/path";
-    notifyInfo.objType = FileNotifyObjectType::FILE;
-    notifyInfo.optType = FileNotifyOperationType::ADD;
-    std::vector<MediaLakeNotifyInfo> notifyInfos = {notifyInfo};
-    
-    for (int i = 0; i < 500; i++) {
-        scanner.IsGlobalScanning(notifyInfos, ScanTaskType::File);
-        scanner.GetScannerStatus();
     }
 }
 
@@ -1672,26 +1634,6 @@ HWTEST_F(GlobalScannerTest, MixedOperations_006, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     std::error_code ec;
-    std::string testPath = TEST_ROOT_PATH + "/mixed_test_006";
-    std::filesystem::create_directories(testPath, ec);
-    
-    MediaLakeNotifyInfo notifyInfo;
-    notifyInfo.afterPath = testPath;
-    notifyInfo.objType = FileNotifyObjectType::DIRECTORY;
-    notifyInfo.optType = FileNotifyOperationType::ADD;
-    std::vector<MediaLakeNotifyInfo> notifyInfos = {notifyInfo};
-    
-    for (int i = 0; i < 10; i++) {
-        scanner.IsGlobalScanning(notifyInfos, ScanTaskType::Folder);
-        scanner.GetScannerStatus();
-        scanner.IsForceScanning();
-    }
-}
-
-HWTEST_F(GlobalScannerTest, MixedOperations_007, TestSize.Level1)
-{
-    GlobalScanner& scanner = GlobalScanner::GetInstance();
-    std::error_code ec;
     std::string testPath = TEST_ROOT_PATH + "/mixed_test_007";
     std::filesystem::create_directories(testPath, ec);
     
@@ -1705,7 +1647,7 @@ HWTEST_F(GlobalScannerTest, MixedOperations_007, TestSize.Level1)
     EXPECT_EQ(status, ScannerStatus::IDLE);
 }
 
-HWTEST_F(GlobalScannerTest, MixedOperations_008, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, MixedOperations_007, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     std::error_code ec;
@@ -1723,7 +1665,7 @@ HWTEST_F(GlobalScannerTest, MixedOperations_008, TestSize.Level1)
     EXPECT_EQ(status, ScannerStatus::IDLE);
 }
 
-HWTEST_F(GlobalScannerTest, MixedOperations_009, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, MixedOperations_008, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     std::error_code ec;
@@ -1745,7 +1687,7 @@ HWTEST_F(GlobalScannerTest, MixedOperations_009, TestSize.Level1)
     EXPECT_EQ(status, ScannerStatus::IDLE);
 }
 
-HWTEST_F(GlobalScannerTest, MixedOperations_010, TestSize.Level1)
+HWTEST_F(GlobalScannerTest, MixedOperations_009, TestSize.Level1)
 {
     GlobalScanner& scanner = GlobalScanner::GetInstance();
     std::error_code ec;

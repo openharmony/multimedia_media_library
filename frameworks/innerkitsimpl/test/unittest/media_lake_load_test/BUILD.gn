@@ -136,6 +136,9 @@ ohos_unittest("media_lake_load_test") {
     "usb_manager:usbsrv_client",
     "window_manager:libdm",
     "zlib:shared_libz",
+    "qos_manager:qos",
+    "qos_manager:concurrent_task_client",
+    "thermal_manager:thermalsrv_client"
   ]
  
   sanitize = {
