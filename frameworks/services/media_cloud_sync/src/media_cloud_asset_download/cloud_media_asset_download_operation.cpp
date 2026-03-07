@@ -328,7 +328,7 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         return;
     }
 
-    if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() ||
+    if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected() ||
         (MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime() &&
             CloudSyncUtils::IsUnlimitedTrafficStatusOn()))) {
         Status status = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnected() ?
@@ -697,7 +697,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() ||
+            if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected() ||
                 (MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime() &&
                     CloudSyncUtils::IsUnlimitedTrafficStatusOn()))
                 || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
