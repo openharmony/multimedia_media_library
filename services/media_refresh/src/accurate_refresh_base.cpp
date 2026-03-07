@@ -58,7 +58,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         if (trans_) {
             retWithResults = trans_->BatchInsert(cmd.GetTableName(), values, GetReturningKeyName());
             CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
-                "rdb trans BatchInsert error");
+                "rdb trans BatchInsert error.");
         } else {
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
