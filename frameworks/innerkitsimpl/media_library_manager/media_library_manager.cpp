@@ -243,7 +243,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
-    MEDIA_INFO_LOG("count = %{public}d", (int)count);
+    MEDIA_INFO_LOG("QueryTotalSize count = %{public}d", (int)count);
 
     if (count >= 0) {
         int thumbnailType = -1;
@@ -253,7 +253,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
             int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(CONST_MEDIA_DATA_DB_SIZE,
                 queryResultSet, TYPE_INT64));
             MEDIA_INFO_LOG("media_type: %{public}d, size: %{public}lld", mediatype, static_cast<long long>(size));
-            if (mediatype == MEDIA_TYPE_IMAGE || mediatype == thumbnailType) {
+            if (mediatype == static_cast<int32_t>(MEDIA_TYPE_IMAGE) || mediatype == thumbnailType) {
                 outMediaVolume.SetSize(MEDIA_TYPE_IMAGE, outMediaVolume.GetImagesSize() + size);
             } else {
                 outMediaVolume.SetSize(mediatype, size);
