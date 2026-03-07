@@ -225,6 +225,7 @@ public:
     EXPORT static int32_t UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec);
     EXPORT static double CalculateAspectRatio(int32_t height, int32_t width);
     EXPORT static std::string GetLocalPath(const std::string &path);
+    EXPORT static bool CheckLivePhoto4dStatus(int32_t livePhoto4dStatus);
     static int32_t FindNormalPhotoAttachments(const std::string &localPath, std::vector<std::string> &localPathList);
 
 private:

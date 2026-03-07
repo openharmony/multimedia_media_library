@@ -1149,6 +1149,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     HandleDateAdded(nowTime,
         cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO ? MEDIA_TYPE_PHOTO : MEDIA_TYPE_DEFAULT,
         assetInfo);
+    assetInfo.PutString(PhotoColumn::UNIQUE_ID, MedialibraryEventDbOperations::GenerateUuid());
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
         if (fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
             fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) {

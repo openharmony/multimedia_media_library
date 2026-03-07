@@ -5906,6 +5906,19 @@ static void CreateTabComPatibleInfo(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("create tab_compatible_info ends");
 }
 
+static void Add4DLivePhotoStatusAndLatestPair(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS + " INT NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR + " TEXT ",
+    };
+    MEDIA_INFO_LOG("Add live_Photo_4d_status and  livePhoto_4d_latest_pair columns start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add live_Photo_4d_status and  livePhoto_4d_latest_pair columns end");
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -5942,6 +5955,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
         CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
+    }
+
+    if (oldVersion < VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true)) {
+        Add4DLivePhotoStatusAndLatestPair(store, VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true);
     }
 }
 
