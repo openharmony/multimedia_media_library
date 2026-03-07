@@ -19,6 +19,10 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <iostream>
+#include <filesystem>
+#include <vector>
+#include <algorithm>
 
 #include "unique_fd.h"
 #include "userfile_manager_types.h"
@@ -227,6 +231,11 @@ public:
     EXPORT static std::string GetLocalPath(const std::string &path);
     EXPORT static bool CheckLivePhoto4dStatus(int32_t livePhoto4dStatus);
     static int32_t FindNormalPhotoAttachments(const std::string &localPath, std::vector<std::string> &localPathList);
+    EXPORT static void GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders);
+    EXPORT static void GetAllFileNameListUnderPath(const std::filesystem::path &path,
+        std::vector<std::string> &fileNames);
+    EXPORT static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::string> &vecStr);
+    EXPORT static bool HasPrefix(const std::vector<std::string>& strings, const std::string& prefix);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
