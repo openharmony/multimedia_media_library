@@ -51,7 +51,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "on_modify_file_dirty_vo.h"
 #include "on_modify_records_photos_vo.h"
-#include "photo_album_vo.h"
 #include "photos_vo.h"
 #include "update_dirty_vo.h"
 #include "update_local_file_dirty_vo.h"
@@ -161,7 +160,6 @@ void FillContainersPart1(std::vector<std::shared_ptr<IPC::IMediaParcelable>> &co
 
     containers.emplace_back(std::make_shared<OnModifyRecord>());
     containers.emplace_back(std::make_shared<OnModifyRecordsPhotosReqBody>());
-    containers.emplace_back(std::make_shared<PhotoAlbumVo>());
     containers.emplace_back(std::make_shared<PhotosVo>());
     containers.emplace_back(std::make_shared<UpdateDirtyReqBody>());
 
@@ -186,7 +184,6 @@ HWTEST_F(CloudMediaSyncServiceVoTest, GeneralVoBasic_Test, TestSize.Level1)
 
 HWTEST_F(CloudMediaSyncServiceVoTest, GeneralToString_Test, TestSize.Level1)
 {
-    EXPECT_FALSE(PhotoAlbumVo().ToString().empty());
     EXPECT_TRUE(GetDownloadAssetRespBody().ToString().empty());
     EXPECT_TRUE(GetDownloadAssetReqBody().ToString().empty());
     EXPECT_TRUE(GetVideoToCacheRespBody().ToString().empty());

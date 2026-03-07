@@ -28,30 +28,28 @@
 namespace OHOS::Media::CloudSync {
 bool QueryDataReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = DataShare::DataSharePredicates::Unmarshal(predicates, parcel);
-
-    CHECK_AND_RETURN_RET_LOG(status, false, "predicates Unmarshal failed");
-
-    return ITypesUtil::Unmarshal(parcel, columnNames, tableName);
+    CHECK_AND_RETURN_RET_LOG(DataShare::DataSharePredicates::Unmarshal(predicates, parcel), false, "predicates");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshal(parcel, columnNames, tableName), false, "columnNames, tableName");
+    return true;
 }
 
 bool QueryDataReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = DataShare::DataSharePredicates::Marshal(predicates, parcel);
-
-    CHECK_AND_RETURN_RET_LOG(status, false, "predicates Marshal failed");
-
-    return ITypesUtil::Marshal(parcel, columnNames, tableName);
+    CHECK_AND_RETURN_RET_LOG(DataShare::DataSharePredicates::Marshal(predicates, parcel), false, "predicates");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshal(parcel, columnNames, tableName), false, "columnNames, tableName");
+    return true;
 }
 
 bool QueryDataRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshalMapVec(queryResults, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshalMapVec(queryResults, parcel), false, "queryResults");
+    return true;
 }
 
 bool QueryDataRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshalMapVec(queryResults, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshalMapVec(queryResults, parcel), false, "queryResults");
+    return true;
 }
 
 std::string QueryDataRespBody::ToString() const
@@ -65,7 +63,7 @@ std::string QueryDataRespBody::ToString() const
             if (!isFirstEntry) {
                 ss << ",";
             }
-            ss << entry.first << ": " <<entry.second;
+            ss << entry.first << ": " << entry.second;
             isFirstEntry = false;
         }
         ss << "}";
