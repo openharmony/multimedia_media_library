@@ -2502,7 +2502,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &fileIds, const vector<int> &albumTypes)
+    const vector<string> &fileIds, const vector<int32_t> &albumTypes)
 {
     CHECK_AND_RETURN_LOG(!fileIds.empty(), "Failed to UpdateAnalysisAlbumByFile cause fileIds empty");
     MediaLibraryTracer tracer;
@@ -2518,7 +2518,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
         }
         files = files.substr(0, files.length() - 1);
         std::string subTypes;
-        for (int subtype : albumTypes) {
+        for (int32_t subtype : albumTypes) {
             subTypes.append(to_string(subtype)).append(",");
         }
         subTypes = subTypes.substr(0, subTypes.length() - 1);
