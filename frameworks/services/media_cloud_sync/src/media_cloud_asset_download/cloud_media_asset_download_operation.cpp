@@ -35,9 +35,9 @@ using namespace std;
 using namespace OHOS::DataShare;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::NetManagerStandard;
-// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 using namespace FileManagement::CloudSync;
 using Status = CloudMediaAssetDownloadOperation::Status;
 std::mutex CloudMediaAssetDownloadOperation::mutex_;
@@ -316,7 +316,7 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
 
 void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &isForeground)
 {
-    if (!isForeground && !MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnected()) {
+    if (!isForeground && !MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime()) {
         MEDIA_WARN_LOG("Failed to init startDownloadTaskStatus, wifi is not connected.");
         SetTaskStatus(Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE);
         return;
@@ -327,7 +327,10 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
         return;
     }
-    if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition()) {
+
+    if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() ||
+        (MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime() &&
+            CloudSyncUtils::IsUnlimitedTrafficStatusOn()))) {
         Status status = MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnected() ?
             Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
         SetTaskStatus(status);
@@ -612,7 +615,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
             to_string(downloadId_).c_str());
         return;
     }
-    
+
     if (size != 0) {
         remainCount_--;
         remainSize_ -= size;
@@ -694,7 +697,9 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableWithUnlimitCondition()
+            if (!(MedialibraryRelatedSystemStateManager::GetInstance()->IsWifiConnectedAtRealTime() ||
+                (MedialibraryRelatedSystemStateManager::GetInstance()->IsCellularNetConnectedAtRealTime() &&
+                    CloudSyncUtils::IsUnlimitedTrafficStatusOn()))
                 || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
                 PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
             }
@@ -762,7 +767,6 @@ void CloudMediaAssetDownloadOperation::HandleOnRemoteDied()
     CHECK_AND_RETURN_LOG(taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING, "taskStatus is not DOWNLOADING");
     CancelDownloadTask();
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
-// LCOV_EXCL_STOP
