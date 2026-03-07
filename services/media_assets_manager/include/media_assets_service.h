@@ -103,6 +103,7 @@ public:
     int32_t AssetChangeSetTitle(const int32_t fileId, const std::string &title);
     int32_t AssetChangeSetEditData(const NativeRdb::ValuesBucket &values);
     int32_t AssetChangeSubmitCache(SubmitCacheDto &dto);
+    int32_t SubmitExistFileDBRecord(SubmitCacheDto &dto);
     int32_t AssetChangeCreateAsset(AssetChangeCreateAssetDto &dto);
     int32_t AssetChangeAddImage(AddImageDto &dto);
     int32_t CameraInnerAddImage(AddImageDto &dto);
@@ -201,6 +202,8 @@ public:
     int32_t CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType);
     int32_t SetLivePhoto4dStatus(const int32_t fileId, const int32_t livePhoto4dStatus,
         const std::string &livePhoto4dLatestPair);
+    int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
+    int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);
