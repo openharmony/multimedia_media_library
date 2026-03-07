@@ -83,6 +83,17 @@ constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
+{
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr");
+    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
+    CHECK_AND_RETURN_LOG(data != nullptr, "UpdateVisionAsyncTaskData is nullptr");
+    string fileId = to_string(data->fileId_);
+    MediaAssetsRdbOperations::DeleteFromVisionTables(fileId);
+}
+#endif
+
 MediaAssetsService &MediaAssetsService::GetInstance()
 {
     static MediaAssetsService service;
@@ -1846,5 +1857,50 @@ int32_t MediaAssetsService::SetLivePhoto4dStatus(
         fileId, livePhoto4dStatus, livePhoto4dLatestPair);
     MEDIA_INFO_LOG("livePhoto4d:MediaAssetsService::SetLivePhoto4dStatus ret:%{public}d", ret);
     return ret;
+}
+
+int32_t MediaAssetsService::SubmitExistFileDBRecord(SubmitCacheDto &dto)
+{
+    MEDIA_INFO_LOG("SubmitExistFileDBRecord dto isWriteGpsAdvanced: %{public}d isOriginalImageResource: %{public}d",
+        dto.isWriteGpsAdvanced, dto.isOriginalImageResource);
+
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, dto.values, MediaLibraryApi::API_10);
+    if (dto.isWriteGpsAdvanced) {
+        cmd.SetApiParam(SET_LOCATION_KEY, SET_LOCATION_VALUE);
+    }
+
+    if (dto.isOriginalImageResource) {
+        DfxManager::GetInstance()->HandleMultishotInfoUpdOriResTimes();
+        cmd.SetApiParam(IS_ORIGINAL_IMAGE_RESOURCE, ORIGINAL_IMAGE_RESOURCE);
+    }
+
+    cmd.SetDeviceName(GetLocalDeviceName());
+    cmd.SetBundleName(GetClientBundleName());
+    int32_t ret = MediaLibraryPhotoOperations::SubmitExistFileDBRecord(cmd);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::SubmitExistFileDBRecord Failed");
+    dto.fileId = ret;
+    dto.outUri = cmd.GetResult();
+    return E_OK;
+}
+
+int32_t MediaAssetsService::ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName)
+{
+    MEDIA_INFO_LOG("ApplyEditEffectToFile CurBucketNum: %{public}d, FileName: %{public}s",
+        curBucketNum, fileName.c_str());
+
+    int32_t ret = MediaLibraryPhotoOperations::ApplyEditEffectToFile(curBucketNum, fileName);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::ApplyEditEffectToFile Failed");
+    return E_OK;
+}
+
+int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::string &path)
+{
+    MEDIA_INFO_LOG("ScanExistFileRecord FileId:%{public}d, Path: %{public}s",
+        fileId, MediaFileUtils::DesensitizePath(path).c_str());
+
+    int32_t ret = MediaLibraryPhotoOperations::ScanExistFileRecord(fileId, path);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::ScanExistFileRecord Failed");
+    return E_OK;
 }
 } // namespace OHOS::Media
