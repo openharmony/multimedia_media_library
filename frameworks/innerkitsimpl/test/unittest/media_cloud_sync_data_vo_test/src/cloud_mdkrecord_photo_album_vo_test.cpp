@@ -201,7 +201,7 @@ HWTEST_F(CloudMdkRecordPhotoAlbumVoTest, TC010_RespBody_Marshalling_Unmarshallin
     CloudMdkRecordPhotoAlbumRespBody original(records);
 
     OHOS::MessageParcel parcel;
-            bool ret = original.Marshalling(parcel);
+    bool ret = original.Marshalling(parcel);
     ASSERT_TRUE(ret);
 
     parcel.RewindRead(0);
