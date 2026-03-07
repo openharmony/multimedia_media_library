@@ -795,4 +795,18 @@ bool PhotosPoWriter::GetSouthDeviceType(std::string &val)
     val = std::to_string(this->photosPo_.southDeviceType.value());
     return true;
 }
+
+bool PhotosPoWriter::GetUniqueId(std::string &val)
+{
+    CHECK_AND_RETURN_RET(photosPo_.uniqueId.has_value(), false);
+    val = this->photosPo_.uniqueId.value();
+    return true;
+}
+
+void PhotosPoWriter::SetUniqueId(std::variant<int32_t, int64_t, double, std::string> &val)
+{
+    bool errConn = !std::holds_alternative<std::string>(val);
+    CHECK_AND_RETURN(!errConn);
+    this->photosPo_.uniqueId = std::get<std::string>(val);
+}
 }  // namespace OHOS::Media::ORM

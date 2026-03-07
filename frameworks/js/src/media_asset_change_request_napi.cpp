@@ -163,6 +163,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsWithUri", JSDeleteLocalAssetsWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("deleteCloudAssetsWithUri", JSDeleteCloudAssetsWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssetsPermanentlyWithUri", JSDeleteAssetsPermanentlyWithUri),
+            DECLARE_NAPI_FUNCTION("setLivePhoto4dStatus", JSSetLivePhoto4dStatus),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -401,6 +402,29 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
         (addResourceForPickerTimes == movingPhotoAddResourceTimes && isImageExist && isVideoExist);
 }
 
+bool MediaAssetChangeRequestNapi::CheckSetLivePhoto4dStatus(
+    napi_env env, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
+{
+    bool containsSetLivePhoto4dStatus = Contains(AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS);
+    if (containsSetLivePhoto4dStatus) {
+        NAPI_INFO_LOG("livePhoto4d:start CheckSetLivePhoto4dStatus");
+
+        int32_t livePhoto4dStatus = fileAsset_->GetLivePhoto4dStatus();
+        NAPI_INFO_LOG("livePhoto4d:livePhoto4dStatus is:%{public}d", livePhoto4dStatus);
+        if (livePhoto4dStatus == static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D)) {
+            bool isValid = false;
+            int32_t subtype = creationValuesBucket_.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+            bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
+            if (!containsAddResource || subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+                    "livePhoto4d:set asset to live photo 4d, must be combined with the add moving photo");
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
 {
     if (assetChangeOperations_.empty()) {
@@ -415,8 +439,9 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
     bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
     bool containsAddResourceForPicker = Contains(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
     bool isSaveCameraPhoto = Contains(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    bool containsSetLivePhoto4dStatus = Contains(AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS);
     if ((isCreateFromScratch || containsEdit) && !containsGetHandler && !containsAddResource &&
-        !containsAddResourceForPicker && !isSaveCameraPhoto) {
+        !containsAddResourceForPicker && !isSaveCameraPhoto && !containsSetLivePhoto4dStatus) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Cannot create or edit asset without data to write");
         return false;
     }
@@ -2586,6 +2611,35 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SetLivePhoto4dStatusExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    NAPI_ERR_LOG("livePhoto4d:enter SetLivePhoto4dStatusExecute");
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "livePhoto4d:changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "livePhoto4d:fileAsset is nullptr");
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.livePhoto4dStatus = fileAsset->GetLivePhoto4dStatus();
+    reqBody.livePhoto4dLatestPair = fileAsset->GetLivePhoto4dLatestPair();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(context.userId_).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        if (changedRows == -1) {
+            context.error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context.error = JS_E_INNER_FAIL;
+        }
+        NAPI_ERR_LOG("livePhoto4d:Failed to update livephoto_4d_status of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
@@ -3055,6 +3109,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_APPLINK, SetAppLinkExecute },
     { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
     { AssetChangeOperation::ADD_RESOURCE_FOR_PICKER, AddResourceExecute },
+    { AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS, SetLivePhoto4dStatusExecute },
 };
 
 static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)
@@ -3154,6 +3209,8 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
     asyncContext->objectInfo = this;
 
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check asset change request operations");
+    CHECK_COND_WITH_MESSAGE(env, CheckSetLivePhoto4dStatus(env, asyncContext),
+        "livePhoto4d:Failed to check asset set live photo 4d status request operations");
     asyncContext->assetChangeOperations = assetChangeOperations_;
     asyncContext->addResourceTypes = addResourceTypes_;
     if (fileAsset_ != nullptr) {
@@ -3512,5 +3569,38 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssetsPermanentlyWithUri(napi_en
     }
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestDeleteAssetsPermanentlyWithUri",
         DeleteAssetsPermanentlyWithUriExecute, DeleteAssetsPermanentlyWithUriCallback);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetLivePhoto4dStatus(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("livePhoto4d:enter JSSetLivePhoto4dStatus");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_ONE, ARGS_TWO) == napi_ok, JS_E_PARAM_INVALID, "Failed to get object info");
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    int32_t livePhoto4dStatus;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0], livePhoto4dStatus) == napi_ok,
+        JS_E_PARAM_INVALID, "livePhoto4d:Failed to parse live photo 4d status");
+ 
+    NAPI_DEBUG_LOG("livePhoto4d:set live photo 4d status : %{public}d ", livePhoto4dStatus);
+    fileAsset->SetLivePhoto4dStatus(livePhoto4dStatus);
+
+    string livePhoto4dLatestPair;
+    if (asyncContext->argc == ARGS_TWO) {
+        CHECK_COND_WITH_MESSAGE(
+            env, MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE],
+            livePhoto4dLatestPair) == napi_ok, "Failed to get livePhoto4dLatestPair");
+        fileAsset->SetLivePhoto4dLatestPair(livePhoto4dLatestPair);
+    }
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS);
+
+    RETURN_NAPI_UNDEFINED(env);
 }
 } // namespace OHOS::Media

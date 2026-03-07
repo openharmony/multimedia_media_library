@@ -225,6 +225,9 @@ const std::string PhotoColumn::CLOUD_TYPE = "cloud_type";
 
 const std::string PhotoColumn::UNIQUE_ID = "unique_id";
 
+const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS = "livephoto_4d_status";
+const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR = "livephoto_4d_latest_pair";
+
 const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE, PHOTO_BURST_KEY,
 };
@@ -249,7 +252,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, PhotoColumn::PHOTO_ASPECT_RATIO,
     PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_RISK_STATUS,
     PhotoColumn::PHOTO_DATE_ADDED_YEAR, PhotoColumn::PHOTO_DATE_ADDED_MONTH, PhotoColumn::PHOTO_DATE_ADDED_DAY,
-    PhotoColumn::UNIQUE_ID,
+    PhotoColumn::UNIQUE_ID, PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
+    PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

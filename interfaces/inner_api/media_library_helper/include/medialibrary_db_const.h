@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 412;
+const int32_t MEDIA_RDB_VERSION = 413;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -301,6 +301,7 @@ enum {
     VERSION_CREATE_TAB_OPERATION_LOG = 410,
  	VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS = 411,
     VERSION_CREATE_TAB_COMPATIBLE_INFO = 412,
+    VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS = 413,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -420,6 +421,9 @@ constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
 #define CONST_MEDIA_DATA_DB_IS_LOCAL "is_local"
 
 #define CONST_MEDIA_DATA_CALLING_UID "calling_uid"
+
+#define CONST_MEDIA_4D_LIVEPHOTO_STATUS "livephoto_4d_status"
+#define CONST_MEDIA_4D_LIVEPHOTO_LATEST_PAIR "livephoto_4d_latest_pair"
 
 const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { CONST_MEDIA_DATA_DB_DATE_MODIFIED_MS, CONST_MEDIA_DATA_DB_DATE_MODIFIED },

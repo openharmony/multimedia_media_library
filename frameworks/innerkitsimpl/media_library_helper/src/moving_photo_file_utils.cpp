@@ -1045,5 +1045,74 @@ int32_t MovingPhotoFileUtils::FindMovingPhotoAttachments(const std::string &clou
     cloudPathList.insert(cloudPathList.end(), attachmentPathList.begin(), attachmentPathList.end());
     return E_OK;
 }
+
+int32_t MovingPhotoFileUtils::ModifyExtraDataVersion(const string& extraPath, uint32_t newVersion)
+{
+    string absExtraPath;
+    if (!PathToRealPath(extraPath, absExtraPath)) {
+        MEDIA_ERR_LOG("livePhoto4d:file is not real path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+    UniqueFd fd(open(absExtraPath.c_str(), O_RDWR));
+    if (fd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("livePhoto4d:failed to open extra file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    off_t fileSize = GetFileSize(fd.Get());
+    if (fileSize < MIN_STANDARD_SIZE) {
+        MEDIA_ERR_LOG("livePhoto4d:extra file size too small: %{public}" PRId64, fileSize);
+        return E_ERR;
+    }
+
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraph = false;
+    if (MovingPhotoFileUtils::GetVersionAndFrameNum(fd.Get(), version, frameIndex, hasCinemagraph) != E_OK) {
+        MEDIA_ERR_LOG("livePhoto4d:failed to get version and frame num");
+        return E_ERR;
+    }
+    string newVersionTag;
+    if (hasCinemagraph) {
+        newVersionTag = "v" + to_string(newVersion) + "_f" + to_string(frameIndex) + "_c";
+    } else {
+        newVersionTag = "v" + to_string(newVersion) + "_f" + to_string(frameIndex);
+    }
+    uint16_t left = VERSION_TAG_LEN - newVersionTag.length();
+    for (uint16_t i = 0; i < left; ++i) {
+        newVersionTag += ' ';
+    }
+    if (lseek(fd.Get(), -MIN_STANDARD_SIZE, SEEK_END) == E_ERR) {
+        MEDIA_ERR_LOG("livePhoto4d:failed to lseek version tag errno: %{public}d", errno);
+        return E_ERR;
+    }
+    MEDIA_ERR_LOG("livePhoto4d:newVersionTag is %{public}s", newVersionTag.c_str());
+    if (AddStringToFile(fd, newVersionTag) == E_ERR) {
+        MEDIA_ERR_LOG("livePhoto4d:failed to write new version tag");
+        return E_ERR;
+    }
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::GetExtraDataVersion(const string& extraPath, uint32_t& version)
+{
+    string absExtraPath;
+    if (!PathToRealPath(extraPath, absExtraPath)) {
+        MEDIA_ERR_LOG("livePhoto4d:file is not real path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+    UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
+    if (fd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("livePhoto4d:failed to open extra file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    off_t fileSize = GetFileSize(fd.Get());
+    if (fileSize < MIN_STANDARD_SIZE) {
+        MEDIA_ERR_LOG("livePhoto4d:extra file size too small: %{public}" PRId64, fileSize);
+        return E_ERR;
+    }
+    uint32_t frameIndex = 0;
+    bool hasCinemagraph = false;
+    return MovingPhotoFileUtils::GetVersionAndFrameNum(fd.Get(), version, frameIndex, hasCinemagraph);
+}
 // LCOV_EXCL_STOP
 } // namespace OHOS::Media
