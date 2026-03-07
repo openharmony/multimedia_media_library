@@ -26,7 +26,7 @@ namespace Media {
 class MediaLibraryRdbStoreUtilsTest {
 public:
     static std::shared_ptr<MediaLibraryRdbStore> InitMediaLibraryRdbStore(
-        const std::shared_ptr<OHOS::AbilityRuntime::Context>&context);
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
 };
 } // namespace Media
 } // namespace OHOS
