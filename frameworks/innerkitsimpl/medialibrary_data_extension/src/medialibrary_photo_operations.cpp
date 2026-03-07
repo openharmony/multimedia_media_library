@@ -5809,10 +5809,7 @@ int32_t MediaLibraryPhotoOperations::SubmitExistFileDBRecordExecute(MediaLibrary
     int32_t subtype;
     int32_t id;
     bool isEdit;
-    (void)cachePath;
-    // TODO UpdateDBInputBucketNum(); cachepath空判断
-    // MediaLibraryAssetOperations::ScanFile(assetPath, false, true, true);
-
+    (void)cachePath; // cachepath空判断
     int32_t checkResult = ValidateAndExtractFileAssetParams(cmd, fileAsset, assetPath, subtype, id, isEdit);
     CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, E_FILE_OPER_FAIL,
         "Failed to ValidateAndExtractFileAssetParams, errCode: %{public}d", checkResult);
