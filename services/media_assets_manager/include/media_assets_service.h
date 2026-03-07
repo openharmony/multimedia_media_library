@@ -103,6 +103,7 @@ public:
     int32_t AssetChangeSetTitle(const int32_t fileId, const std::string &title);
     int32_t AssetChangeSetEditData(const NativeRdb::ValuesBucket &values);
     int32_t AssetChangeSubmitCache(SubmitCacheDto &dto);
+    int32_t SubmitExistFileDBRecord(SubmitCacheDto &dto);
     int32_t AssetChangeCreateAsset(AssetChangeCreateAssetDto &dto);
     int32_t AssetChangeAddImage(AddImageDto &dto);
     int32_t CameraInnerAddImage(AddImageDto &dto);
@@ -198,6 +199,8 @@ public:
     int32_t GetAssetCompressVersion(int32_t &version);
     int32_t GetCompressAssetSize(const std::vector<std::string> &uris, GetCompressAssetSizeRespBody &respBody);
     int32_t QueryMediaDataStatus(const std::string &dataKey, bool &result);
+    int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
+    int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);
