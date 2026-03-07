@@ -1144,7 +1144,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, c
         return true;
     }
     if (IsMovingPhotosInEditFolder(curBucketNum, folderName)) { // 动图
-        return ProcessMovingPhotosInEditFolder();
+        return ProcessMovingPhotosInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
     } else { // 静图
         bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
         bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
