@@ -41,6 +41,10 @@ static const int32_t SUBTYPE_INDEX = 2;
 static const int32_t KEY_COUNT = 2;
 static const int32_t VALUE_COUNT = 3;
 
+static const int32_t FILE_ID_NOT_EXIST = 0;
+static const int32_t FILE_ID_EXIST = 1;
+static const int32_t OTHER_FAIL = -1;
+
 bool MediaDeletedFileTask::Accept()
 {
     return MedialibrarySubscriber::IsCurrentStatusOn();
@@ -64,18 +68,25 @@ static std::vector<std::string> SplitUriString(const std::string& str, char deli
     return elements;
 }
 
-static bool IsFileIdExist(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, std::string fileId)
+static int32_t CheckFile(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, std::string fileId)
 {
-    std::string queryFileIdExist = "SELECT count(1) FROM Photos WHERE file_id = " + fileId;
+    std::string queryFileIdExist = "SELECT dirty, sync_status FROM Photos WHERE file_id = " + fileId;
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryFileIdExist);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query not match data fails");
     int columnIndex =  0;
-    int32_t count = -1;
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_FAIL,
-        "ResultSet go to first row fails");
-    resultSet->GetInt(columnIndex, count);
-    MEDIA_INFO_LOG("PhotoCustomRestoreOperation::BatchInsert fileId = %{public}d", count);
-    return count > 0;
+    int32_t dirtyType = -1;
+    int32_t syncStatus = -1;
+    int columnIndexDirtyType =  0;
+    int columnIndexSyncStatus =  1;
+    CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == NativeRdb::E_OK, FILE_ID_NOT_EXIST);
+    resultSet->GetInt(columnIndexDirtyType, dirtyType);
+    resultSet->GetInt(columnIndexSyncStatus, syncStatus);
+    if (dirtyType == static_cast<int32_t>(DirtyType::TYPE_DELETED) &&
+        syncStatus == static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD)) {
+        MEDIA_WARN_LOG("id: %{public}s is deleted cloud asset", fileId.c_str());
+        return FILE_ID_NOT_EXIST;
+    }
+    return FILE_ID_EXIST;
 }
 
 static bool checkValid(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, std::string key, std::string value,
@@ -95,11 +106,20 @@ static bool checkValid(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, std::str
         MEDIA_ERR_LOG("key: %{public}s is invalid", key.c_str());
         return false;
     }
-    if (IsFileIdExist(rdbStore, keys[ID_INDEX])) {
-        MEDIA_ERR_LOG("id: %{public}s is exist", keys[ID_INDEX].c_str());
-        return false;
-    }
     return true;
+}
+
+static void HandleFileDelete(std::vector<std::string> &keys, std::vector<std::string> &values)
+{
+    std::vector<std::string> ids = { keys[ID_INDEX] };
+    std::string table = keys[TABLE_INDEX];
+    std::vector<std::string> paths = { values[PATH_INDEX] };
+    std::vector<std::string> dateTakens = { values[DATE_TAKEN_INDEX] };
+    std::vector<int32_t> subTypes = { CloudMediaCommon::ToInt32(values[SUBTYPE_INDEX]) };
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(ids);
+#endif
+    MediaLibraryAssetOperations::TaskDataFileProcess(ids, paths, table, dateTakens, subTypes);
 }
 
 void MediaDeletedFileTask::HandleDeletedFile()
@@ -133,15 +153,16 @@ void MediaDeletedFileTask::HandleDeletedFile()
             prefs->Delete(key);
             continue;
         }
-        std::vector<std::string> ids = { keys[ID_INDEX] };
-        std::string table = keys[TABLE_INDEX];
-        std::vector<std::string> paths = { values[PATH_INDEX] };
-        std::vector<std::string> dateTakens = { values[DATE_TAKEN_INDEX] };
-        std::vector<int32_t> subTypes = { CloudMediaCommon::ToInt32(values[SUBTYPE_INDEX]) };
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-        MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(ids);
-#endif
-        MediaLibraryAssetOperations::TaskDataFileProcess(ids, paths, table, dateTakens, subTypes);
+        int32_t fileCheckResult = CheckFile(rdbStore, keys[ID_INDEX]);
+        if (fileCheckResult == OTHER_FAIL) {
+            MEDIA_ERR_LOG("id: %{public}s check fail", keys[ID_INDEX].c_str());
+            continue;
+        } else if (fileCheckResult == FILE_ID_EXIST) {
+            MEDIA_INFO_LOG("id: %{public}s check exits", keys[ID_INDEX].c_str());
+            prefs->Delete(key);
+            continue;
+        }
+        HandleFileDelete(keys, values);
         count++;
         if (count % batchSize == 0) {
             prefs->FlushSync();
