@@ -28,6 +28,7 @@
 #endif
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
+#include "media_clean_all_dirty_files_task.h"
 
 namespace OHOS::Media::Background {
 MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
@@ -44,6 +45,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
         std::make_shared<MediaCriticalLabelTask>(),
         #endif
+        std::make_shared<MediaCleanAllDirtyFilesTask>(), // should be last task
     };
 }
 
