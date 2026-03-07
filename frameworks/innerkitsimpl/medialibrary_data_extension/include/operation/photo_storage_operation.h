@@ -42,6 +42,14 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> FindStorage(std::shared_ptr<MediaLibraryRdbStore> mediaRdbStorePtr);
     std::shared_ptr<NativeRdb::ResultSet> QueryHighlightDirectorySize(std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     int64_t GetCacheSize();
+    int64_t GetBackUpSize();
+    int64_t GetAudioSize();
+    int64_t GetCameraSize();
+    int64_t GetPictureSize();
+    int64_t GetMediaVideoSize();
+    int64_t GetCustomSize();
+    int64_t GetMetaSize();
+    int64_t GetDataSize();
     int64_t GetHighlightSizeFromPreferences();
     void GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         TotalThumbnailSizeResult &totalThumbnailSizeResult);
@@ -67,11 +75,20 @@ private:
             position != 2 AND \
             file_source_type != 3 \
         GROUP BY media_type \
-        UNION \
+        ;";
+ 
+    const std::string SQL_DB_STORAGE_INFO_QUERY = "\
         SELECT \
             -1 AS media_type, \
             ? AS size \
-        FROM tab_photos_ext \
+        UNION \
+        SELECT \
+            1 AS media_type, \
+            ? AS size \
+        UNION \
+        SELECT \
+            2 AS media_type, \
+            ? AS size \
         ;";
 };
 }  // namespace OHOS::Media
