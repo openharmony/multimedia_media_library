@@ -1107,4 +1107,24 @@ void CloudFileDataConvert::HandlePropertyExifRotate(MDKRecordPhotosData &data, O
     MEDIA_INFO_LOG("Has propertyExifRotate, cloudId = %{public}s, exifRotate = %{public}d",
         onFetchPhotoVo.cloudId.c_str(), onFetchPhotoVo.exifRotate);
 }
+
+int32_t CloudFileDataConvert::HandleInt64FieldsHashMap(
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &uploadRecord)
+{
+    for (const auto &node : uploadRecord.int64fields) {
+        data[node.first] = MDKRecordField(node.second);
+    }
+    return E_OK;
+}
+
+void CloudFileDataConvert::ConvertInt64FieldsHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
+{
+    std::optional<int64_t> valueLongOp;
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_INT64) {
+        valueLongOp = data.GetAttributeFieldLongValue(fieldName);
+        CHECK_AND_CONTINUE(valueLongOp.has_value());
+        onFetchPhotoVo.int64fields[fieldName] = valueLongOp.value();
+    }
+    return;
+}
 } // namespace OHOS::Media::CloudSync

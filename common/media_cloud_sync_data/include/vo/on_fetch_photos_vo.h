@@ -92,6 +92,7 @@ public:
     int32_t fileSourceType;
     std::string storagePath;
     std::map<std::string, std::string> stringfields;
+    std::map<std::string, int64_t> int64fields;
     // Safe Album: risk status for children's watch
     int32_t photoRiskStatus{0};
     int32_t isCritical{0};
