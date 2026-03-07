@@ -106,7 +106,7 @@ static void CloudMdkrecordPhotoAlbumVoFuzzer()
     shared_ptr<CloudMdkRecordPhotoAlbumRespBody> cloudMdkRecordPhotoAlbumRespBody =
         make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     CHECK_AND_RETURN_LOG(cloudMdkRecordPhotoAlbumRespBody != nullptr, "cloudMdkRecordPhotoAlbumRespBody is nullptr");
-    cloudMdkRecordPhotoAlbumRespBody->baseAlbumUploadVo = { CloudMdkRecordPhotoAlbumVo() };
+    cloudMdkRecordPhotoAlbumRespBody->baseAlbumUploadVo_ = { CloudMdkRecordPhotoAlbumVo() };
     cloudMdkRecordPhotoAlbumRespBody->GetPhotoAlbumRecords();
     cloudMdkRecordPhotoAlbumRespBody->Marshalling(parcel);
     cloudMdkRecordPhotoAlbumRespBody->Unmarshalling(parcel);
