@@ -208,6 +208,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
     std::vector<std::string> lcdVector;
     std::vector<std::string> bothVector;
     std::vector<std::string> astcVector;
+    std::vector<std::string> notifyVector;
     MEDIA_INFO_LOG("size of downloadThumbnailMap is %{public}zu", downloadThumbnailMap.size());
     for (auto &pair : downloadThumbnailMap) {
         //(key,value) => key : cloudId, value : 001-> thm, 010 -> lcd, 011 -> thm and lcd, 100 -> astc(端云不会下载astc)
@@ -222,6 +223,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
 
     int32_t ret = E_ERR;
     ret = this->OnDownloadThm(thmVector, result);
+    CHECK_AND_EXECUTE(ret != E_OK, notifyVector.insert(notifyVector.end(), thmVector.begin(), thmVector.end()));
     ret = this->OnDownloadLcd(lcdVector, result);
     if (ret == E_OK) {
         astcVector.insert(astcVector.end(), lcdVector.begin(), lcdVector.end());
@@ -231,6 +233,8 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
         astcVector.insert(astcVector.end(), bothVector.begin(), bothVector.end());
     }
     MEDIA_INFO_LOG("size of astcVector is %{public}zu, sceneCode:%{public}d", astcVector.size(), sceneCode);
+    notifyVector.insert(notifyVector.end(), astcVector.begin(), astcVector.end());
+    NotifyCoverContentChange(notifyVector);
     CHECK_AND_RETURN_RET(sceneCode == 0, E_OK);
     //Only sceneCode is Default(0) can notify ASC task.
     this->NotifyDownloadLcd(astcVector);
@@ -762,6 +766,14 @@ int32_t CloudMediaDownloadService::CleanAttachments(
         MEDIA_INFO_LOG("attachmentDto: %{public}s", attachmentDto.ToString().c_str());
     }
     return E_OK;
+}
+
+void CloudMediaDownloadService::NotifyCoverContentChange(const std::vector<std::string> &notifyVector)
+{
+    std::vector<std::string> fileIds;
+    this->dao_.GetFileIdFromCloudId(notifyVector, fileIds);
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    albumRefresh.IsCoverContentChange(fileIds);
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP
