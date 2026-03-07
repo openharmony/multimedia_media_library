@@ -50,7 +50,6 @@ public:
     bool QueryFormIdIfExists(const std::string& formId);
     int32_t CommitEditInsert(const std::string& editData, int32_t fileId);
     int32_t QueryEnhancementTaskState(const std::string& photoUri, QueryCloudEnhancementTaskStateDto& dto);
-    static void DeleteFromVisionTables(const std::string& fileId);
 
     int32_t GrantPhotoUriPermission(MediaLibraryCommand &cmd);
     int32_t GrantPhotoUrisPermission(
