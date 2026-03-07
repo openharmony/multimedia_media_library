@@ -665,6 +665,7 @@ std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
 {
     int64_t startGetCloudPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<int32_t> minIds;
+    CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, minIds, "galleryRdb_ is null, return empty minIds");
     std::string querySql = GetCloudQuerySql();
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);
@@ -683,6 +684,7 @@ std::vector<int32_t> UpgradeRestore::GetLocalPhotoMinIds()
 {
     int64_t startGetLocalPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<int32_t> minIds;
+    CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, minIds, "galleryRdb_ is null, return empty minIds");
     std::string querySql = "SELECT _id FROM ("
         "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
             "WHERE (local_media_id != -1) "
