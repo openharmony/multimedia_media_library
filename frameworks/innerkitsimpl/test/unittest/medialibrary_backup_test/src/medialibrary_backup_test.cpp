@@ -3445,14 +3445,14 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CheckGalleryDbIntegrity, T
     MEDIA_INFO_LOG("medialib_backup_test_CheckGalleryDbIntegrity end");
 }
 
-// 测试恢复高亮相册
+// 测试恢复精彩时刻
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreHighlightAlbums, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreHighlightAlbums start");
     restoreService->galleryRdb_ = restoreService->galleryRdb_;
     restoreService->mediaLibraryRdb_ = photosStorePtr;
     restoreService->sceneCode_ = UPGRADE_RESTORE_ID;
-    restoreService->dualDeviceSoftName_ = "HarmonyOS 4.0";
+    restoreService->dualDeviceSoftName_ = "HarmonyOS";
     restoreService->isAccountValid_ = true;
     restoreService->isSyncSwitchOn_ = true;
     restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
