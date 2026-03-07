@@ -1,0 +1,209 @@
+frameworks/innerkitsimpl/medialibrary_data_extension/src/operation/photo_storage_operation.cpp
+
+#include "media_path_utils.h"
+
+
+int32_t MediaLibraryPhotoOperations::UpdateAssetPathInSubmitExistFile(int32_t fileId, std::string &path)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_FILE_PATH, path);
+    values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    return MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitExistFileDBRecordExecute(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+{
+    string assetPath;
+    int32_t subtype;
+    int32_t id;
+    bool isEdit;
+    (void)cachePath;
+    // TODO UpdateDBInputBucketNum(); cachepath空判断
+    // MediaLibraryAssetOperations::ScanFile(assetPath, false, true, true);
+
+    int32_t checkResult = ValidateAndExtractFileAssetParams(cmd, fileAsset, assetPath, subtype, id, isEdit);
+    CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, E_FILE_OPER_FAIL,
+        "Failed to ValidateAndExtractFileAssetParams, errCode: %{public}d", checkResult);
+    // override path
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(cmd.GetValueBucket(), CONST_IMPORT_CACHE_FILE_PATH, assetPath),
+                             E_FAIL, "Failed to get cache asset path");
+
+    std::string val = cmd.GetQuerySetParam(SET_LOCATION_KEY);
+    bool isWriteGpsAdvanced = val == SET_LOCATION_VALUE;
+
+    val = cmd.GetQuerySetParam(IS_ORIGINAL_IMAGE_RESOURCE);
+    bool isOriginalImageResource = val == ORIGINAL_IMAGE_RESOURCE;
+    // TODO 更新一下数据库的bucketnum相关内容 避免遗漏
+
+    UpdateAssetPathInSubmitExistFile(id, assetPath);
+    if (isWriteGpsAdvanced) {
+        MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
+    }
+    ScanFile(assetPath, false, true, true);
+    MEDIA_INFO_LOG("SubmitExistFileDBRecordExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitExistFileDBRecord(MediaLibraryCommand& cmd)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SubmitExistFileDBRecord");
+
+    if (IsSetEffectMode(cmd)) {
+        return SubmitEffectModeExecute(cmd);
+    }
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string fileName;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CONST_CACHE_FILE_NAME, fileName),
+        E_INVALID_VALUES, "Failed to get fileName");
+    string assetPath;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(cmd.GetValueBucket(), CONST_IMPORT_CACHE_FILE_PATH, assetPath),
+        E_FAIL, "Failed to get cache asset path");
+    int32_t fileIdDB = -1;
+    int32_t ret = GetFileIdByPathFromDB(assetPath, fileIdDB);
+    CHECK_AND_RETURN_RET_LOG(fileIdDB <= 0 && ret == E_OK, E_FAIL, "Already have asset record %{public}d", ret);
+
+    int32_t id = 0;
+    if (fileIdDB <= 0 && !GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
+        string displayName;
+        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
+            E_INVALID_VALUES, "Failed to get displayName");
+        CHECK_AND_RETURN_RET_LOG(
+            MediaFileUtils::GetExtensionFromPath(displayName) == MediaFileUtils::GetExtensionFromPath(fileName),
+            E_INVALID_VALUES, "DisplayName Mismatches Extension Of Cache File Name");
+        ValuesBucket reservedValues = values;
+        id = CreateV10(cmd);
+        CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to Create Asset");
+        cmd.SetValueBucket(reservedValues);
+    }
+    if (fileIdDB > 0) {
+        id = fileIdDB;
+    }
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_ID };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+        "Failed to FileAsset, fileId=%{public}d", id);
+    string cachePath = "";
+    int32_t errCode = SubmitExistFileDBRecordExecute(cmd, fileAsset, cachePath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId:%{public}d", id);
+    return id;
+}
+
+int32_t MediaLibraryPhotoOperations::GetFileIdByPathFromDB(std::string &path, int32_t &fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "RdbStore is null.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
+    auto resultSet = rdbStore->Query(predicates, {PhotoColumn::MEDIA_ID});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "rs is null");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
+        MEDIA_DEBUG_LOG("GetFileIdByPathFromDB fileId %{public}d", fileId);
+    }
+    resultSet->Close();
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersToExistPhoto(const std::string &inputPath,
+    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::AddFiltersToExistPhoto");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
+        "AddFiltersToExistPhoto InputPath: %{public}s, OutputPath: %{public}s",
+        MLOG_TAG, __FUNCTION__, __LINE__,
+        MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
+    std::string info = editdata;
+    size_t lastSlash = outputPath.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
+        "Failed to check outputPath: %{public}s", outputPath.c_str());
+    string tempOutputPath = outputPath.substr(0, lastSlash) +
+        "/filters_" + photoStatus + outputPath.substr(lastSlash + 1);
+    int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
+        "Failed To Create Temp Filters File %{private}s", tempOutputPath.c_str());
+    tracer.Start("MediaChangeEffect::TakeEffect");
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+    tracer.Finish();
+    if (ret != E_OK) {
+        HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} ToExistPhoto, TakeEffect Error. ret = %{public}d",
+            MLOG_TAG, __FUNCTION__, __LINE__, ret);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+
+    if (MediaFileUtils::IsFileExists(outputPath)) {
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} org file path: %{private}s exists, replace photo",
+            MLOG_TAG, __FUNCTION__, __LINE__, outputPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(outputPath), E_OK,
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+    }
+
+    ret = rename(tempOutputPath.c_str(), outputPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed To Rename Temp Filters File, Ret: %{public}d, errno: %{public}d", ret, errno);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return ret;
+    }
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} AddFiltersToExistPhoto Finish",
+        MLOG_TAG, __FUNCTION__, __LINE__);
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName)
+{
+    const std::string ROOT_MEDIA_ORG_DIR = "/storage/cloud/files/Photo/";
+    const std::string EDITDATA_FILE_NAME = "editdata";
+    const std::string SOURCE_FILE_PREFIX_NAME = "source";
+    const std::string ROOT_MEDIA_EDIT_DIR = "/storage/cloud/files/.editData/Photo/";
+
+    // 基于原图、编辑数据生成效果图 此时原图恢复后需要重新直接不更名扫描
+    std::string extension = MediaPathUtils::GetExtension(fileName);
+    std::string effectFolder = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum);
+    std::string effectFolderFile = effectFolder + SLASH_STR + fileName; // 编辑过 原图目录放的效果图
+    std::string editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) +
+        SLASH_STR + fileName; // 编辑文件目录名 包含editdata extraData source.jpg~heic source.mp4
+    std::string editDataFile = editBucketFolder + SLASH_STR + EDITDATA_FILE_NAME;
+    std::string editOriginFile = editBucketFolder + SLASH_STR + SOURCE_FILE_PREFIX_NAME + DOT_STR + extension;
+    // std::string editOriginMovingPhotoVideo = editBucketFolder + SLASH_STR + SOURCE_FILE_VIDEO_NAME;
+    string editData;
+    CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataFile, editData) == E_OK, E_HAS_FS_ERROR,
+        "Failed To Read editdata, Path:%{public}s", editDataFile.c_str());
+    MEDIA_ERR_LOG("ApplyEditEffectToFile EDITDATA: %{public}s", editData.c_str());
+    const string RESTORE_STATUS = "restore";
+    CHECK_AND_RETURN_RET_LOG(
+        AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editData, RESTORE_STATUS) == E_OK,
+        E_FAIL, "Failed To Add Filters To Photo");
+    int32_t fileId = -1;
+    int32_t ret = GetFileIdByPathFromDB(effectFolderFile, fileId);
+    CHECK_AND_RETURN_RET_LOG(fileId > 0 && ret == E_OK, E_FAIL, "Failed To Get Asset Record %{public}d", ret);
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_ID };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, to_string(fileId), OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+        "Failed to FileAsset, FileId:%{public}d", fileId);
+    MediaLibraryObjectUtils::ScanFileAsync(effectFolderFile, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ScanExistFileRecord(int32_t fileId, const std::string &path)
+{
+    ScanFile(path, false, true, true);
+    return E_OK;
+}
+} // namespace Media
+} // namespace OHOS
+//LCOV_EXCL_STOP
