@@ -77,7 +77,8 @@ constexpr int64_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
 
 
-static bool starts_with(const std::string& str, const std::string& prefix) {
+static bool Starts_With(const std::string& str, const std::string& prefix)
+{
     return str.rfind(prefix, 0) == 0;  // 从位置 0 开始查找
 }
 
@@ -203,6 +204,8 @@ int32_t MediaCleanAllDirtyFilesTask::QueryNextId(int32_t startFileId, int32_t &n
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Query Not Match Data Fails");
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         nextFileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
+        // TODO DEL
+        MEDIA_ERR_LOG("Go To First Row NextId: %{public}d", nextFileId);
     } else {
         MEDIA_ERR_LOG("Go To First Row Fails StartId: %{public}d", startFileId);
     }
@@ -223,7 +226,7 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
         MediaColumn::MEDIA_ID + " = " + std::to_string(startFileId) + " AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE));
     // 除纯云图 动图? 除东湖和临时文管文件
-    //  连拍 隐藏 等需要特殊适配
+    // TODO 连拍 隐藏 等需要特殊适配
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query not match data fails");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, false, "go to first row fails");
@@ -341,7 +344,7 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
 
 void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // 危险操作 date_added距此超24小时删除元数据
+    // TODO 危险操作 date_added距此超24小时删除元数据
     int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
     if (timeMs - dirtyFileInfo.addTime > ONE_DAY_MS) {
         MEDIA_INFO_LOG("HandleBothNotExistStrategy DeletePermanently FileId %{public}d", dirtyFileInfo.fileId);
@@ -437,7 +440,7 @@ std::string MediaCleanAllDirtyFilesTask::GetAssetCacheDir()
     return MEDIA_CACHE_DIR + cacheOwner;
 }
 
-bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::string & path,
+bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::string &path,
     const std::string &fileName, std::string &OtherFileName)
 {
     string title = MediaFileUtils::GetTitleFromDisplayName(fileName) + DOT_STR;
@@ -796,7 +799,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessThumbsFolderBatch(int32_t curBucketNum,
 }
 
 // 目录内非法名称识别 LCD.jpg  THM.jpg THM_ASTC.astc
-bool MediaCleanAllDirtyFilesTask::IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string & folderName)
+bool MediaCleanAllDirtyFilesTask::IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string &folderName)
 {
     bool containIllegal = false;
     std::string thumbsBucketFolderName = ROOT_MEDIA_THUMBS_DIR + std::to_string(curBucketNum) +
@@ -804,8 +807,8 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalThumbFolderFile(int32_t curBucketNum,
     std::vector<std::string> fileNameVec;
     MediaFileUtils::GetAllFileNameListUnderPath(thumbsBucketFolderName, fileNameVec);
     for (const auto& fileName : fileNameVec) {
-        if (!starts_with(fileName, THM_FILE_NAME) && !starts_with(fileName, LCD_FILE_NAME) &&
-            !starts_with(fileName, THM_ASTC_FILE_NAME)) {
+        if (!Starts_With(fileName, THM_FILE_NAME) && !Starts_With(fileName, LCD_FILE_NAME) &&
+            !Starts_With(fileName, THM_ASTC_FILE_NAME)) {
             MEDIA_ERR_LOG("IsIllegalThumbFolderFile Folder: %{public}s, Name: %{public}s",
                 MediaFileUtils::DesensitizePath(thumbsBucketFolderName).c_str(), fileName.c_str());
             containIllegal = true;
@@ -1040,7 +1043,7 @@ DirtyFilePathInfo MediaCleanAllDirtyFilesTask::BuildDirtyFilePathInfo(int32_t cu
 }
 
 // 目录内非法名称识别 editdata  extraData  source.* jpg/heif  source.mp4
-bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, const std::string & folderName)
+bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, const std::string &folderName)
 {
     bool containIllegal = false;
     std::string editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) +
@@ -1052,8 +1055,8 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, 
             MediaFileUtils::DesensitizePath(editBucketFolder).c_str());
     }
     for (const auto& fileName : fileNameVec) {
-        if (!starts_with(fileName, EDITDATA_FILE_NAME) && !starts_with(fileName, EXTRADATA_FILE_NAME) &&
-            !starts_with(fileName, SOURCE_FILE_PREFIX_NAME)) {
+        if (!Starts_With(fileName, EDITDATA_FILE_NAME) && !Starts_With(fileName, EXTRADATA_FILE_NAME) &&
+            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME)) {
             MEDIA_ERR_LOG("IsLegalEditFolderFile Folder: %{public}s, Name: %{public}s",
                 MediaFileUtils::DesensitizePath(editBucketFolder).c_str(),
                 fileName.c_str());
@@ -1099,6 +1102,38 @@ int32_t MediaCleanAllDirtyFilesTask::UpdateEditTimeByPath(std::string &path, int
     return ret;
 }
 
+bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBucketNum, const std::string &folderName,
+    DirtyFilePathInfo &dirtyFilePathInfo)
+{
+    bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
+    bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
+    bool isEditdataFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editDataFile);
+    if (isOriginFileExist && !isEffectFileExist) {
+        return ProcessEditFolderBatchMovingPhotos(curBucketNum, folderName, dirtyFilePathInfo);
+    }
+    if (!isOriginFileExist && isEffectFileExist && isEditdataFileExist) {
+        // 原图不存在 效果图存在的 删除编辑数据，标记图片未被编辑 清时间戳
+        MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
+        MEDIA_INFO_LOG("Delete editDataFile: %{public}s",
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
+        AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
+        return true;
+    }
+    if (!isOriginFileExist && !isEffectFileExist && isEditdataFileExist) {
+        // 原图不存在 效果图不存在的 删除编辑数据 删除目录记录等
+        MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
+        MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editBucketFolder);
+        MEDIA_INFO_LOG("Delete editData File And Dir: %{public}s",
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
+        AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
+        return true;
+    }
+    // 编辑原图存在 效果图存在的 不处理
+    return true;
+}
+
 bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, const std::string &folderName)
 {
     // 可优化 清理除固定名称文件之外的文件
@@ -1108,34 +1143,12 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, c
     if (DealWithZeroSizeFile(dirtyFilePathInfo.editOriginFile)) {
         return true;
     }
-    bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
-    bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
-    bool isEditdataFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editDataFile);
     if (IsMovingPhotosInEditFolder(curBucketNum, folderName)) { // 动图
-        if (isOriginFileExist && !isEffectFileExist) {
-            return ProcessEditFolderBatchMovingPhotos(curBucketNum, folderName, dirtyFilePathInfo);
-        }
-        if (!isOriginFileExist && isEffectFileExist && isEditdataFileExist) {
-            // 原图不存在 效果图存在的 删除编辑数据，标记图片未被编辑 清时间戳
-            MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
-            UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
-            MEDIA_INFO_LOG("Delete editDataFile: %{public}s",
-                MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
-            AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
-            return true;
-        }
-        if (!isOriginFileExist && !isEffectFileExist && isEditdataFileExist) {
-            // 原图不存在 效果图不存在的 删除编辑数据 删除目录记录等
-            MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
-            UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
-            MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editBucketFolder);
-            MEDIA_INFO_LOG("Delete editData File And Dir: %{public}s",
-                MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
-            AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
-            return true;
-        }
-        // 编辑原图存在 效果图存在的 不处理
+        return ProcessMovingPhotosInEditFolder();
     } else { // 静图
+        bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
+        bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
+        bool isEditdataFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editDataFile);
         if (isOriginFileExist && !isEffectFileExist) {
             return ProcessEditFolderBatchNormalPhotos(curBucketNum, folderName, dirtyFilePathInfo);
         }
@@ -1163,7 +1176,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, c
     return true;
 }
 
-bool MediaCleanAllDirtyFilesTask::IsLegalMediaAsset(const std::string & fileName)
+bool MediaCleanAllDirtyFilesTask::IsLegalMediaAsset(const std::string &fileName)
 {
     MediaType mediaTypeOther = MediaFileUtils::GetMediaType(fileName);
     if (mediaTypeOther == MediaType::MEDIA_TYPE_VIDEO || mediaTypeOther == MEDIA_TYPE_IMAGE) {
@@ -1360,6 +1373,8 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
 {
     int64_t lastExecuteTime = GetBatchExecuteTime();
     triggerTime_ = MediaFileUtils::UTCTimeSeconds(); // 当前时间
+    // TODO CHECK_AND_RETURN_INFO_LOG(OneDayOneTimeCheck(triggerTime_, lastExecuteTime),
+    //     "DirtyMediaHandler OneDay OneTime Check failed.");
 
     MEDIA_INFO_LOG("DirtyMediaHandler Start LastExecuteTime: %{public}" PRId64, lastExecuteTime);
     if (lastExecuteTime > 0) { // 判断接续 执行过 接续执行
@@ -1379,7 +1394,7 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
-        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > ONE_WEEK) { // 执行完成过 重新全量执行
+        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > 180) { // 执行完成过 重新全量执行 TODO ONE_WEEK
             ClearFileIdsCacheSet();
             HandleAllTableAndFolder(scanBeginCode, scanBeginCode);
             return;
