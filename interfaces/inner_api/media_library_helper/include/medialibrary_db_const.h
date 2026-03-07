@@ -485,6 +485,7 @@ const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
 // write cache
 #define CONST_CACHE_FILE_NAME "cache_file_name"
 #define CONST_CACHE_MOVING_PHOTO_VIDEO_NAME "cache_moving_photo_video_name"
+#define CONST_IMPORT_CACHE_FILE_PATH "import_cache_file_path"
 
 // moving photo param
 #define CONST_CREATE_MOVING_PHOTO_VIDEO "create_video"
