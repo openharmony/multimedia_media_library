@@ -51,7 +51,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "on_modify_file_dirty_vo.h"
 #include "on_modify_records_photos_vo.h"
-#include "photo_album_vo.h"
 #include "photos_vo.h"
 #include "update_dirty_vo.h"
 #include "update_local_file_dirty_vo.h"
@@ -107,11 +106,9 @@ static void CloudMdkrecordPhotoAlbumVoFuzzer()
     shared_ptr<CloudMdkRecordPhotoAlbumRespBody> cloudMdkRecordPhotoAlbumRespBody =
         make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     CHECK_AND_RETURN_LOG(cloudMdkRecordPhotoAlbumRespBody != nullptr, "cloudMdkRecordPhotoAlbumRespBody is nullptr");
-    vector<CloudMdkRecordPhotoAlbumVo> val;
-    cloudMdkRecordPhotoAlbumRespBody->baseAlbumUploadVo = { CloudMdkRecordPhotoAlbumVo() };
+    cloudMdkRecordPhotoAlbumRespBody->baseAlbumUploadVo_ = { CloudMdkRecordPhotoAlbumVo() };
     cloudMdkRecordPhotoAlbumRespBody->GetPhotoAlbumRecords();
     cloudMdkRecordPhotoAlbumRespBody->Marshalling(parcel);
-    cloudMdkRecordPhotoAlbumRespBody->GetRecords(val, parcel);
     cloudMdkRecordPhotoAlbumRespBody->Unmarshalling(parcel);
 }
 
@@ -140,8 +137,6 @@ static void CloudMdkrecordPhotosVoFuzzer()
     shared_ptr<CloudMdkRecordPhotosRespBody> cloudMdkRecordPhotosRespBody =
         make_shared<CloudMdkRecordPhotosRespBody>();
     CHECK_AND_RETURN_LOG(cloudMdkRecordPhotosRespBody != nullptr, "cloudMdkRecordPhotosRespBody is nullptr");
-    vector<CloudMdkRecordPhotosVo> val;
-    cloudMdkRecordPhotosRespBody->GetRecords(val, parcel);
     cloudMdkRecordPhotosRespBody->Marshalling(parcel);
     cloudMdkRecordPhotosRespBody->Unmarshalling(parcel);
     cloudMdkRecordPhotosRespBody->ToString();
@@ -613,16 +608,6 @@ static void OnModifyRecordsPhotosVoFuzzer()
     onModifyRecordsPhotosReqBody->GetModifyRecords();
 }
 
-static void PhotoAlbumVoFuzzer()
-{
-    MessageParcel parcel;
-    shared_ptr<PhotoAlbumVo> photoAlbumVo = make_shared<PhotoAlbumVo>();
-    CHECK_AND_RETURN_LOG(photoAlbumVo != nullptr, "photoAlbumVo is nullptr");
-    photoAlbumVo->Marshalling(parcel);
-    photoAlbumVo->Unmarshalling(parcel);
-    photoAlbumVo->ToString();
-}
-
 static void PhotosVoFuzzer()
 {
     MessageParcel parcel;
@@ -737,7 +722,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OnMdirtyRecordsAlbumVoFuzzer();
     OHOS::OnModifyFileDirtyVoFuzzer();
     OHOS::OnModifyRecordsPhotosVoFuzzer();
-    OHOS::PhotoAlbumVoFuzzer();
     OHOS::PhotosVoFuzzer();
     OHOS::UpdateDirtyVoFuzzer();
     OHOS::UpdateLocalFileDirtyVoFuzzer();

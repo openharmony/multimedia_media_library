@@ -20,20 +20,23 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool UpdatePositionReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->position);
-    parcel.ReadInt32(this->fileSourceType);
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
+    return true;
 }
 
 bool UpdatePositionReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->position);
-    parcel.WriteInt32(this->fileSourceType);
-    IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->position), false, "position");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
     return true;
 }
 
