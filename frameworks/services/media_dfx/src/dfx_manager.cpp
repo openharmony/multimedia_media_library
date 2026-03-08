@@ -1254,28 +1254,28 @@ void DfxManager::HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint&
     dfxReporter_->ReportAccurateRefreshResult(reportData);
 }
 
-void DfxManager::HandleTranscodeAccessTime(const TranscodeAccessType type)
+void DfxManager::HandleTranscodeAccessTime(const TranscodeAccessType type, TranscodeType transcodeType)
 {
     MEDIA_INFO_LOG("HandleTranscodeAccessTime type: %{public}d", type);
     CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
     CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
-    dfxAnalyzer_->FlushTranscodeAccessTimes(type);
+    dfxAnalyzer_->FlushTranscodeAccessTimes(type, transcodeType);
 }
 
-void DfxManager::HandleTranscodeFailed(const TranscodeErrorType type)
+void DfxManager::HandleTranscodeFailed(const TranscodeErrorType type, TranscodeType transcodeType)
 {
     MEDIA_INFO_LOG("HandleTranscodeFailed type: %{public}d", type);
     CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
     CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
-    dfxAnalyzer_->FlushTranscodeFailed(type);
+    dfxAnalyzer_->FlushTranscodeFailed(type, transcodeType);
 }
 
-void DfxManager::HandleTranscodeCostTime(const int32_t costTime)
+void DfxManager::HandleTranscodeCostTime(const int32_t costTime, TranscodeType transcodeType)
 {
     MEDIA_INFO_LOG("HandleTranscodeCostTime type: %{public}d", costTime);
     CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
     CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
-    dfxAnalyzer_->FlushTranscodeCostTime(costTime);
+    dfxAnalyzer_->FlushTranscodeCostTime(costTime, transcodeType);
 }
 
 void DfxManager::HandleUpgradeFault(const UpgradeExceptionInfo& reportData)

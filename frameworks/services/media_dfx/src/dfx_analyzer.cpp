@@ -177,11 +177,34 @@ static bool CheckDfxFile(const string& dfxFileName, shared_ptr<NativePreferences
     return true;
 }
 
-void DfxAnalyzer::FlushTranscodeAccessTimes(const TranscodeAccessType type)
+static bool GetTransCodeXML(TranscodeType transcodeType, string &XML)
+{
+    bool success = true;
+    switch (transcodeType) {
+        case TranscodeType::HEIF :
+            XML = ALIB_HEIF_DUPLICATE_XML;
+            break;
+        case TranscodeType::HEIF :
+            XML = ALIB_HIGH_PIXEL_DUPLICATE_XML;
+            break;
+        case TranscodeType::HEIF :
+            XML = ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML;
+            break;
+        default:
+            success = false;
+            break;
+    }
+    return success;
+}
+
+void DfxAnalyzer::FlushTranscodeAccessTimes(const TranscodeAccessType type, TranscodeType transcodeType)
 {
     int32_t errCode;
+    string XML;
+    bool success = GetTransCodeXML(transcodeType, XML);
+    CHECK_AND_RETURN_LOG(success, "GetTranscodeXML failed");
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
@@ -209,8 +232,11 @@ void DfxAnalyzer::FlushTranscodeAccessTimes(const TranscodeAccessType type)
 void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type)
 {
     int32_t errCode;
+    string XML;
+    bool success = GetTransCodeXML(transcodeType, XML);
+    CHECK_AND_RETURN_LOG(success, "GetTranscodeXML failed");
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
@@ -237,8 +263,11 @@ void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type)
 void DfxAnalyzer::FlushTranscodeCostTime(const int32_t costTime)
 {
     int32_t errCode;
+    string XML;
+    bool success = GetTransCodeXML(transcodeType, XML);
+    CHECK_AND_RETURN_LOG(success, "GetTranscodeXML failed");
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
