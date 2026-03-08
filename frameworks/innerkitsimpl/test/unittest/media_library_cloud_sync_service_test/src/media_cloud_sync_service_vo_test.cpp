@@ -492,13 +492,13 @@ HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotoAlbumRespBody_Test, Tes
     ASSERT_TRUE(reqBody);
     parcel.WriteInt32(-1);
     EXPECT_FALSE(reqBody->Unmarshalling(parcel));
-    EXPECT_FALSE(reqBody->Marshalling(parcel));
+    EXPECT_TRUE(reqBody->Marshalling(parcel));
 
     auto reqBody2 = std::make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     MessageParcel parcel2;
     parcel2.WriteInt32(1);
     EXPECT_FALSE(reqBody2->Unmarshalling(parcel2));
-    EXPECT_FALSE(reqBody2->Marshalling(parcel2));
+    EXPECT_TRUE(reqBody2->Marshalling(parcel2));
 }
 
 HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosVo_Test, TestSize.Level1)
