@@ -82,8 +82,25 @@ public:
     std::string FindSourcePath(const FileInfo &fileInfo);
     int32_t GetNoNeedMigrateCount();
 
+    void SetFilePath(std::vector<FileInfo> &fileInfos);
+    void SetIsStoragePathExistInDb(std::vector<FileInfo> &fileInfos);
+    void SetIsCloudPathExistInDb(std::vector<FileInfo> &fileInfos);
+    bool SetFilePathForLakeFile(FileInfo &fileInfo);
+    std::string FindStoragePath(const FileInfo &fileInfo);
+    bool IsFileSizeMatched(const FileInfo &fileInfo, const std::string &storagePath);
+    std::string FindStoragePathByFile(const FileInfo &fileInfo);
+    bool IsMetadataMatched(const FileInfo &fileInfo, const std::string &storagePath);
+    std::string GetNumberedStoragePath(const std::string &storagePath, uint32_t number);
+    void SetLakeFileInfo(FileInfo &fileInfo, const std::string &storagePath);
+    bool ShouldDeleteDuplicateLakeFile(const FileInfo &fileInfo);
+    bool IsCloudPathExist(const FileInfo &fileInfo);
+    int32_t CreateCloudPath(int32_t uniqueId, FileInfo &fileInfo);
+
 private:
     enum { UUID_STR_LENGTH = 37 };
+    struct MetadataInfo {
+        int32_t orientation = -1;
+    };
 
 private:
     PhotosClone &SetMediaLibraryTargetRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb)
@@ -114,6 +131,7 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb_;
+    std::unordered_map<std::string, MetadataInfo> storagePathToMetadataInfoMap_;
     PhotosDao::PhotosBasicInfo photosBasicInfo_;
     PhotosDao photosDao_;
     PhotoAlbumDao photoAlbumDao_;
@@ -249,8 +267,7 @@ private:
             ( \
                 SELECT owner_album_id, burst_key \
                 FROM Photos \
-                WHERE COALESCE(burst_key, '') <> '' AND \
-                    file_source_type = 0 \
+                WHERE COALESCE(burst_key, '') <> '' \
                 GROUP BY owner_album_id, burst_key \
             ) \
             GROUP BY burst_key \
