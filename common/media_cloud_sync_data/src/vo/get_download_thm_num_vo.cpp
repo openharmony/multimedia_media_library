@@ -19,18 +19,18 @@
 
 #include <sstream>
 
-#include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 
 bool GetDownloadThmNumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->type);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->type), false, "type");
     return true;
 }
 bool GetDownloadThmNumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->type);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->type), false, "type");
     return true;
 }
 
@@ -44,15 +44,15 @@ std::string GetDownloadThmNumReqBody::ToString() const
 
 bool GetDownloadThmNumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->totalNum);
-    parcel.ReadInt32(this->type);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->totalNum), false, "totalNum");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->type), false, "type");
     return true;
 }
 
 bool GetDownloadThmNumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->totalNum);
-    parcel.WriteInt32(this->type);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->totalNum), false, "totalNum");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->type), false, "type");
     return true;
 }
 
@@ -60,7 +60,7 @@ std::string GetDownloadThmNumRespBody::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"type\": " << this->type << "\"num\": " << this->totalNum << "}";
+       << "\"type\": " << this->type << ", \"num\": " << this->totalNum << "}";
     return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync

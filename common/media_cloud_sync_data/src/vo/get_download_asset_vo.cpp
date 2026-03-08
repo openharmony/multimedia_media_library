@@ -20,18 +20,24 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetDownloadAssetReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel) &&
-           IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->fileKeyList, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->pathList, parcel), false, "pathList");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->fileKeyList, parcel), false, "fileKeyList");
+    return true;
 }
 
 bool GetDownloadAssetReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel) &&
-           IPC::ITypeMediaUtil::Marshalling<std::string>(this->fileKeyList, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->pathList, parcel), false, "pathList");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->fileKeyList, parcel), false, "fileKeyList");
+    return true;
 }
 
 std::string GetDownloadAssetReqBody::ToString() const
@@ -42,12 +48,14 @@ std::string GetDownloadAssetReqBody::ToString() const
 
 bool GetDownloadAssetRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return PhotosVo::Unmarshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Unmarshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 bool GetDownloadAssetRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return PhotosVo::Marshalling(this->photos, parcel);
+    CHECK_AND_RETURN_RET_LOG(PhotosVo::Marshalling(this->photos, parcel), false, "photos");
+    return true;
 }
 
 std::string GetDownloadAssetRespBody::ToString() const

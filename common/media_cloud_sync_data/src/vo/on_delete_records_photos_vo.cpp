@@ -20,20 +20,22 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDeleteRecordsPhoto::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->dkRecordId);
-    parcel.ReadString(this->cloudId);
-    parcel.ReadBool(this->isSuccess);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->dkRecordId), false, "dkRecordId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
     return true;
 }
 bool OnDeleteRecordsPhoto::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->dkRecordId);
-    parcel.WriteString(this->cloudId);
-    parcel.WriteBool(this->isSuccess);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->dkRecordId), false, "dkRecordId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
     return true;
 }
 
@@ -41,17 +43,16 @@ std::string OnDeleteRecordsPhoto::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"dkRecordId\": \"" << dkRecordId << "\", "
-       << "\"cloudId\": \"" << cloudId << "\""
-       << "\"isSeccuss\": \"" << isSuccess << "\""
-       << "}";
+       << "\"dkRecordId\": \"" << dkRecordId << "\","
+       << "\"cloudId\": \"" << cloudId << "\","
+       << "\"isSuccess\": " << std::to_string(isSuccess) << "}";
     return ss.str();
 }
 
 int32_t OnDeleteRecordsPhotosReqBody::AddDeleteRecord(const OnDeleteRecordsPhoto &record)
 {
     this->records.push_back(record);
-    return 0;
+    return E_OK;
 }
 
 std::vector<OnDeleteRecordsPhoto> OnDeleteRecordsPhotosReqBody::GetDeleteRecords()
@@ -61,11 +62,15 @@ std::vector<OnDeleteRecordsPhoto> OnDeleteRecordsPhotosReqBody::GetDeleteRecords
 
 bool OnDeleteRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel), false, "records");
+    return true;
 }
 bool OnDeleteRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<OnDeleteRecordsPhoto>(this->records, parcel), false, "records");
+    return true;
 }
 
 std::string OnDeleteRecordsPhotosReqBody::ToString() const
@@ -86,13 +91,13 @@ std::string OnDeleteRecordsPhotosReqBody::ToString() const
 
 bool OnDeleteRecordsPhotosRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->failSize);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->failSize), false, "failSize");
     return true;
 }
 
 bool OnDeleteRecordsPhotosRespBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->failSize);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->failSize), false, "failSize");
     return true;
 }
 
