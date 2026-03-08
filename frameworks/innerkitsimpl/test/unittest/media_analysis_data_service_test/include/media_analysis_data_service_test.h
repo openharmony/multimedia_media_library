@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,24 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
-#define OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
+#ifndef MEDIA_ANALYSIS_DATA_SERVICE_TEST_H
+#define MEDIA_ANALYSIS_DATA_SERVICE_TEST_H
 
-#include <stdint.h>
-#include <string>
-
-#include "datashare_result_set.h"
+#include <gtest/gtest.h>
+#include <gtest/hwext/gtest-ext.h>
+#include <gtest/hwext/gtest-tag.h>
 
 namespace OHOS::Media {
-
-class GetAssetAnalysisDataDto {
+class MediaAnalysisDataServiceTest : public testing::Test {
 public:
-    int32_t fileId;
-    int32_t analysisType;
-    std::string language;
-    bool analysisTotal;
-
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    MediaAnalysisDataServiceTest() = default;
+    ~MediaAnalysisDataServiceTest() override = default;
+    
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
 };
 } // namespace OHOS::Media
-#endif // OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
+
+#endif // MEDIA_ANALYSIS_DATA_SERVICE_TEST_H

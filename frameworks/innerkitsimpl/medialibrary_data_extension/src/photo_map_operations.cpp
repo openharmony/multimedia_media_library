@@ -54,7 +54,6 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
-constexpr int32_t ALBUM_IS_REMOVED = 1;
 constexpr int32_t USER_OPERATION_MODIFYED = 1;
 unordered_map<string, string> dateTypeSecondsMap = {
     {CONST_MEDIA_DATA_DB_DATE_ADDED_TO_SECOND, "CAST(P.date_added / 1000 AS BIGINT) AS date_added_s"},
@@ -363,7 +362,7 @@ static int32_t HandleAnalysisEditOperationMoveAsset(MergedAlbumInfo &mergedAlbum
     rdbPredicate.In(ALBUM_ID, updateAlbumIds);
     value.PutInt(EDIT_OPERATION, USER_OPERATION_MODIFYED);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    int32_t ret = rdbStore->Update(changedRows, value, rdbPredicate);
+    rdbStore->Update(changedRows, value, rdbPredicate);
     CHECK_AND_RETURN_RET_LOG(changedRows > 0, E_ERR, "EditOperationMoveAsset fail.row %{public}d ", changedRows);
     return changedRows;
 }
@@ -392,7 +391,7 @@ static int32_t UpdateSingleAlbum(const string &targetAlbumId, MergedAlbumInfo &m
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
         "UpdateSingleAlbum rdbStore is nullptr!");
-    int32_t ret = rdbStore->Update(changedRows, value, rdbPredicate);
+    rdbStore->Update(changedRows, value, rdbPredicate);
     return changedRows;
 }
 
