@@ -44,7 +44,7 @@
 #include "cloud_media_album_cache.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaPhotosDao {
+class EXPORT CloudMediaPhotosDao {
 public:
     CloudMediaPhotosDao() = default;
     ~CloudMediaPhotosDao() = default;
@@ -261,6 +261,7 @@ private:
         ( \
             SELECT * \
             FROM Photos \
+            NOT INDEXED \
             WHERE dirty = ? AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \

@@ -156,6 +156,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setSupportedWatermarkType", JSSetSupportedWatermarkType),
             DECLARE_NAPI_FUNCTION("setVideoEnhancementAttr", JSSetVideoEnhancementAttr),
             DECLARE_NAPI_FUNCTION("setHasAppLink", JSSetHasAppLink),
+            DECLARE_NAPI_FUNCTION("setAppLinkState", JSSetAppLinkState),
             DECLARE_NAPI_FUNCTION("setAppLinkInfo", JSSetAppLink),
             DECLARE_NAPI_FUNCTION("setCompositeDisplayMode", JSSetCompositeDisplayMode),
             DECLARE_NAPI_FUNCTION("addResourceForPicker", JSAddResourceForPicker),
@@ -1255,6 +1256,29 @@ napi_value MediaAssetChangeRequestNapi::JSSetHasAppLink(napi_env env, napi_callb
     CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
     changeRequest->GetFileAssetInstance()->SetHasAppLink(hasAppLink);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_HAS_APPLINK);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetAppLinkState(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t appLinkState;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, appLinkState) == napi_ok,
+        "Failed to parse appLinkState");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_ARGS_WITH_MEG(env, MediaFileUtils::CheckAppLinkState(appLinkState), JS_E_PARAM_INVALID,
+        "Failed to check appLinkState");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetAppLinkState(appLinkState);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_APPLINK_STATE);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -2838,6 +2862,33 @@ static bool SetHasAppLinkExecute(MediaAssetChangeRequestAsyncContext &context)
     return true;
 }
 
+static bool SetAppLinkStateExecute(MediaAssetChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetAppLinkStateExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    NAPI_INFO_LOG("enter SetAppLinkStateExecute: %{public}d", fileAsset->GetAppLinkState());
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.appLinkState = fileAsset->GetAppLinkState();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK_STATE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(context.userId_).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update has_appLink of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static bool SetAppLinkExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
@@ -2847,7 +2898,8 @@ static bool SetAppLinkExecute(MediaAssetChangeRequestAsyncContext &context)
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
-    NAPI_INFO_LOG("enter SetAppLinkExecute: %{public}s", fileAsset->GetAppLink().c_str());
+    NAPI_INFO_LOG(
+        "enter SetAppLinkExecute: %{public}s", MediaFileUtils::DesensitizeName(fileAsset->GetAppLink()).c_str());
 
     AssetChangeReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
@@ -2999,6 +3051,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE, SetSupportedWatermarkTypeExecute },
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
     { AssetChangeOperation::SET_HAS_APPLINK, SetHasAppLinkExecute },
+    { AssetChangeOperation::SET_APPLINK_STATE, SetAppLinkStateExecute },
     { AssetChangeOperation::SET_APPLINK, SetAppLinkExecute },
     { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
     { AssetChangeOperation::ADD_RESOURCE_FOR_PICKER, AddResourceExecute },

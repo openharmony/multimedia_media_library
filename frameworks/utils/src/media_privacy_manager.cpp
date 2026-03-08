@@ -226,7 +226,7 @@ static void SendAppidToIoctl(int32_t fd)
 
     int32_t ret = ioctl(fd, HMDFS_IOC_SAVE_APPID, &iocAppId);
     if (ret < 0) {
-        MEDIA_ERR_LOG("failed to send appid, fd: %{public}d, ret: %{public}d, appid: %{private}s, erron: %{public}d",
+        MEDIA_DEBUG_LOG("failed to send appid, fd: %{public}d, ret: %{public}d, appid: %{private}s, erron: %{public}d",
             fd, ret, appId.c_str(), errno);
     } else {
         MEDIA_DEBUG_LOG("appid send success, fd: %{public}d, appid: %{private}s", fd, appId.c_str());

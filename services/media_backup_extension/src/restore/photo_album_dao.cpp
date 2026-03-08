@@ -21,6 +21,7 @@
 #include "backup_file_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -94,9 +95,9 @@ std::string PhotoAlbumDao::FindUniqueAlbumName(const PhotoAlbumDao::PhotoAlbumRo
         isUnique = this->CheckAlbumNameUnique(albumName, photoAlbum.lPath);
     }
     MEDIA_INFO_LOG("Media_Restore: FindUniqueAlbumName, old name: %{public}s, new name: %{public}s, lPath: %{public}s",
-        photoAlbum.albumName.c_str(),
-        albumName.c_str(),
-        photoAlbum.lPath.c_str());
+        MediaFileUtils::DesensitizeName(photoAlbum.albumName).c_str(),
+        MediaFileUtils::DesensitizeName(albumName).c_str(),
+        MediaFileUtils::DesensitizePath(photoAlbum.lPath).c_str());
     return albumName;
 }
 
@@ -147,8 +148,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     CHECK_AND_RETURN_RET(!this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumRowData), albumRowData);
     MEDIA_INFO_LOG("Media_Restore: can not find the PhotoAlbum info by lPath in cache."
                    " lPath=%{public}s, lPath in cache=%{public}s",
-        lPath.c_str(),
-        StringUtils::ToLower(lPath).c_str());
+        MediaFileUtils::DesensitizePath(lPath).c_str(),
+        MediaFileUtils::DesensitizePath(StringUtils::ToLower(lPath)).c_str());
     // query the PhotoAlbum info by lPath from PhotoAlbum table
     std::vector<NativeRdb::ValueObject> bindArgs = {lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_BY_LPATH;

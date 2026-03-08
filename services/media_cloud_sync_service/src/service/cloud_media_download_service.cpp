@@ -41,9 +41,12 @@
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
 #include "medialibrary_unistore_manager.h"
+#include "lake_file_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "media_edit_utils.h"
+#include "photo_attachment_dto.h"
+#include "userfile_manager_types.h"
 
 // LCOV_EXCL_START
 namespace OHOS::Media::CloudSync {
@@ -205,6 +208,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
     std::vector<std::string> lcdVector;
     std::vector<std::string> bothVector;
     std::vector<std::string> astcVector;
+    std::vector<std::string> notifyVector;
     MEDIA_INFO_LOG("size of downloadThumbnailMap is %{public}zu", downloadThumbnailMap.size());
     for (auto &pair : downloadThumbnailMap) {
         //(key,value) => key : cloudId, value : 001-> thm, 010 -> lcd, 011 -> thm and lcd, 100 -> astc(端云不会下载astc)
@@ -219,6 +223,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
 
     int32_t ret = E_ERR;
     ret = this->OnDownloadThm(thmVector, result);
+    CHECK_AND_EXECUTE(ret != E_OK, notifyVector.insert(notifyVector.end(), thmVector.begin(), thmVector.end()));
     ret = this->OnDownloadLcd(lcdVector, result);
     if (ret == E_OK) {
         astcVector.insert(astcVector.end(), lcdVector.begin(), lcdVector.end());
@@ -228,6 +233,8 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
         astcVector.insert(astcVector.end(), bothVector.begin(), bothVector.end());
     }
     MEDIA_INFO_LOG("size of astcVector is %{public}zu, sceneCode:%{public}d", astcVector.size(), sceneCode);
+    notifyVector.insert(notifyVector.end(), astcVector.begin(), astcVector.end());
+    NotifyCoverContentChange(notifyVector);
     CHECK_AND_RETURN_RET(sceneCode == 0, E_OK);
     //Only sceneCode is Default(0) can notify ASC task.
     this->NotifyDownloadLcd(astcVector);
@@ -462,6 +469,9 @@ int32_t CloudMediaDownloadService::GetFileId(const PhotosPo &photosPo)
  
 void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoVec)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+    std::vector<std::string> logFileIds;
     for (const auto &photosPo : photosPoVec) {
         int32_t mediaTypePhoto = photosPo.mediaType.value_or(0);
         if (mediaTypePhoto != static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
@@ -482,15 +492,23 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
         CHECK_AND_CONTINUE_INFO_LOG(videoMode == static_cast<int32_t>(VideoMode::DEFAULT), "photosPo has scannered");
         string logVideoPath = photosPo.data.value_or("");
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
-        videoModeData->SetFilePath(logVideoPath);
+        string realPath = LakeFileUtils::GetAssetRealPath(logVideoPath);
+        string absVideoPath;
+        if (!PathToRealPath(realPath, absVideoPath)) {
+            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            continue;
+        }
+        videoModeData->SetFilePath(realPath);
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
         CHECK_AND_CONTINUE_INFO_LOG(err == E_OK, "Failed to extract metadata for photosPo: %{public}s",
             DfxUtils::GetSafePath(logVideoPath).c_str());
         int32_t videoModeUpdate = videoModeData->GetVideoMode();
         MEDIA_INFO_LOG("photosPo videoMode=%{public}d", videoModeUpdate);
-        auto photoRet = PhotoVideoModeOperation::UpdatePhotosVideoMode(videoModeUpdate, fileId);
-        CHECK_AND_RETURN_LOG(photoRet == NativeRdb::E_OK,
-            "UpdatePhotosVideoMod photostab failed, error id: %{public}d", photoRet);
+        if (videoModeUpdate == static_cast<int32_t>(VideoMode::LOG_VIDEO)) {
+            logFileIds.push_back(std::to_string(fileId));
+        }
+        auto ret = PhotoVideoModeOperation::BatchUpdatePhotosVideoMode(rdbStore, logFileIds);
+        CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to UpdatePhotosVideoMode, ret: %{public}d", ret);
     }
 }
 
@@ -682,6 +700,80 @@ int32_t CloudMediaDownloadService::CheckRegenerateThumbnail(const ORM::PhotosPo 
     MEDIA_INFO_LOG("Need regenerate thumbnail, id:%{public}d, exifRotate:%{public}d", fileId, exifRotate);
     auto thumbnailService = ThumbnailService::GetInstance();
     return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId), false);
+}
+
+int32_t CloudMediaDownloadService::CleanAttachment(
+    const std::vector<std::string> &cloudIdList, int64_t &attachmentSize)
+{
+    bool isValid = !cloudIdList.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "cloudId is empty");
+    std::vector<PhotosPo> photoInfos;
+    int32_t ret = this->commonDao_.QueryLocalByCloudId(cloudIdList, {}, photoInfos);
+    isValid = !photoInfos.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_RDB, "No query data. cloudId size: %{public}d",
+                             static_cast<int32_t>(cloudIdList.size()));
+    std::vector<PhotoAttachmentDto> attachmentPathList;
+    ret = this->FindAttachments(photoInfos, attachmentPathList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "FindAttachments Failed to clean, ret: %{public}d", ret);
+    ret = this->CleanAttachments(attachmentPathList, attachmentSize);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CleanAttachments Failed to clean, ret: %{public}d", ret);
+    return E_OK;
+}
+
+int32_t CloudMediaDownloadService::FindAttachments(
+    const std::vector<PhotosPo> &photoInfos, std::vector<PhotoAttachmentDto> &attachmentList)
+{
+    for (const auto& photo : photoInfos) {
+        int32_t fileId = photo.fileId.value_or(0);
+        std::string cloudFilePath = photo.data.value_or("");
+        int32_t position = photo.position.value_or(1);
+        CHECK_AND_CONTINUE(
+            fileId > 0 && !cloudFilePath.empty() && position != static_cast<int32_t>(PhotoPositionType::LOCAL));
+        PhotoAttachmentDto attachmentDto;
+        attachmentDto.fileId = fileId;
+        attachmentDto.cloudPath = cloudFilePath;
+        if (MovingPhotoFileUtils::IsMovingPhoto(photo.subtype.value_or(0), photo.movingPhotoEffectMode.value_or(0),
+                                                photo.originalSubtype.value_or(0))) {
+            MovingPhotoFileUtils::FindMovingPhotoAttachments(cloudFilePath, attachmentDto.attachments);
+        } else {
+            MediaFileUtils::FindNormalPhotoAttachments(cloudFilePath, attachmentDto.attachments);
+        }
+        CHECK_AND_CONTINUE(!attachmentDto.attachments.empty());
+        attachmentList.emplace_back(attachmentDto);
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaDownloadService::CleanAttachments(
+    std::vector<PhotoAttachmentDto> &attachmentList, int64_t &attachmentSize)
+{
+    for (auto &attachmentDto : attachmentList) {
+        int64_t allfileSize = 0;
+        for (const auto &cloudPath : attachmentDto.attachments) {
+            std::string localPath = CloudMediaSyncUtils::GetLocalPath(cloudPath);
+            CHECK_AND_CONTINUE(MediaFileUtils::IsFileExists(localPath));
+            size_t fileSize = 0;
+            MediaFileUtils::GetFileSize(localPath, fileSize);
+            CHECK_AND_CONTINUE(MediaFileUtils::DeleteFile(localPath));
+            allfileSize += static_cast<int64_t>(fileSize);
+            // should audit int log file.
+            attachmentDto.deletedAttachments.emplace_back(localPath);
+        }
+        attachmentDto.attachmentSize = allfileSize;
+        attachmentSize += allfileSize;
+        MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(std::to_string(attachmentDto.fileId),
+                                                               attachmentDto.cloudPath);
+        MEDIA_INFO_LOG("attachmentDto: %{public}s", attachmentDto.ToString().c_str());
+    }
+    return E_OK;
+}
+
+void CloudMediaDownloadService::NotifyCoverContentChange(const std::vector<std::string> &notifyVector)
+{
+    std::vector<std::string> fileIds;
+    this->dao_.GetFileIdFromCloudId(notifyVector, fileIds);
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    albumRefresh.IsCoverContentChange(fileIds);
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP

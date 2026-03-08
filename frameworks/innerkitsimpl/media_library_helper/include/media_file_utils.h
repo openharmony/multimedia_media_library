@@ -189,7 +189,7 @@ public:
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
     EXPORT static std::string DesensitizePath(const std::string &path);
-    EXPORT static std::string DesensitizeDisplayName(const std::string &displayName);
+    EXPORT static std::string DesensitizeName(const std::string &name);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
@@ -221,9 +221,11 @@ public:
     EXPORT static bool IsDirExists(const std::string &path);
     EXPORT static int32_t CheckAppLink(const std::string &link);
     EXPORT static bool CheckHasAppLink(int32_t hasAppLink);
+    EXPORT static bool CheckAppLinkState(int32_t appLinkState);
     EXPORT static int32_t UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec);
     EXPORT static double CalculateAspectRatio(int32_t height, int32_t width);
     EXPORT static std::string GetLocalPath(const std::string &path);
+    static int32_t FindNormalPhotoAttachments(const std::string &localPath, std::vector<std::string> &localPathList);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

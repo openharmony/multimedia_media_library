@@ -379,5 +379,147 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_020, TestSize.L
     errCode = medialibraryKvstore->PutAllValueToNewKvStore(test_Kvstore);
     EXPECT_EQ(errCode, E_OK);
 }
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: Insert
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: Insert with nullptr kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_021, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = nullptr;
+    std::string key = "test_key";
+    std::vector<uint8_t> value = {1, 2, 3};
+    int32_t ret = medialibraryKvstore->Insert(key, value);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: DeleteBatch
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DeleteBatch with nullptr kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_022, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = nullptr;
+    std::vector<std::string> batchKeys = {FIRST_KEY, SECOND_KEY};
+    int32_t ret = medialibraryKvstore->DeleteBatch(batchKeys);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: DeleteBatch
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DeleteBatch with valid kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_023, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = std::make_shared<MockSingleKvStore>();
+    std::vector<std::string> batchKeys = {FIRST_KEY, SECOND_KEY, THIRD_KEY};
+    int32_t ret = medialibraryKvstore->DeleteBatch(batchKeys);
+    EXPECT_EQ(ret, E_OK);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: BatchQuery
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: BatchQuery with nullptr kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_024, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = nullptr;
+    std::vector<std::string> batchKeys = {FIRST_KEY, SECOND_KEY};
+    std::vector<std::vector<uint8_t>> values;
+    int32_t ret = medialibraryKvstore->BatchQuery(batchKeys, values);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: Close
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: Close with nullptr kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_025, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = nullptr;
+    bool ret = medialibraryKvstore->Close();
+    EXPECT_TRUE(ret);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: Close
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: Close with valid kvStorePtr_
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_026, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    medialibraryKvstore->kvStorePtr_ = std::make_shared<MockSingleKvStore>();
+    bool ret = medialibraryKvstore->Close();
+    EXPECT_FALSE(ret);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: InitSingleKvstore
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: InitSingleKvstore with OWNER role
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_027, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    KvStoreRoleType roleType = KvStoreRoleType::OWNER;
+    int32_t ret = medialibraryKvstore->InitSingleKvstore(roleType, TEST_MONTH_STOREID, TEST_PATH);
+    EXPECT_EQ(ret, E_OK);
+}
+
+/*
+ * Feature: MediaLibraryHelper
+ * Function: InitSingleKvstore
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: InitSingleKvstore with VISITOR role
+ */
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_028, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
+    ASSERT_NE(medialibraryKvstore, nullptr);
+    KvStoreRoleType roleType = KvStoreRoleType::VISITOR;
+    int32_t ret = medialibraryKvstore->InitSingleKvstore(roleType, TEST_MONTH_STOREID, TEST_PATH);
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS

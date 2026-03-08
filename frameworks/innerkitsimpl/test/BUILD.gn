@@ -18,6 +18,7 @@ group("test") {
     "unittest/heif_transcoding_check_utils_test:unittest",
     "unittest/media_albums_refresh_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
+    "unittest/media_analysis_data_manager_dto_test:unittest",
     "unittest/media_asset_test:unittest",
     "unittest/media_background_task_test:unittest",
     "unittest/media_event_test:unittest",
@@ -56,6 +57,7 @@ group("test") {
     "unittest/medialibrary_uri_test:unittest",
     "unittest/medialibrary_vision_test:unittest",
     "unittest/medialibrary_video_mode_test:unittest",
+    "unittest/medialibrary_critical_label_test:unittest",
     "unittest/medialibrary_visitor_db_test:unittest",
     "unittest/moving_photo_test:unittest",
     "unittest/notify_test:Notifytest",
@@ -78,6 +80,8 @@ group("test") {
     "unittest/medialibrary_photo_enhance_test:unittest",
     "unittest/medialibrary_cloud_asset_batch_download_test:unittest",
     "unittest/medialibrary_client_report_test:unittest",
+    "unittest/cloud_media_asset_retain_compare_test:unittest",
+    "unittest/media_library_cloud_sync_test:unittest",
   ]
 
   deps_custom_restore_unittest = [

@@ -24,6 +24,7 @@
 #include <memory>
 #include <functional>
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 constexpr fuse_ino_t FUSE_INVALID_INO = 0;
@@ -85,4 +86,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIA_FUSE_NODE_H

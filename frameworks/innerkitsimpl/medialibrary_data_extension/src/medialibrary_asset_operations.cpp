@@ -69,10 +69,12 @@
 #include "lake_file_operations.h"
 #include "medialibrary_db_const.h"
 #include "media_edit_utils.h"
+#include "medialibrary_event_db_operations.h"
+#include "media_operation_log_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-//LCOV_EXCL_START
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 mutex g_uniqueNumberLock;
@@ -683,7 +685,7 @@ std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string columnName = GetStringVal("name", resultSet);
         if (GetFileAssetMemberMap().count(columnName) == 0) {
-            MEDIA_WARN_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
+            MEDIA_DEBUG_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
             continue;
         }
         columnInfo.emplace_back(columnName);
@@ -1109,7 +1111,6 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
-    // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
     int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
     ValuesBucket assetInfo;
@@ -1148,6 +1149,13 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     HandleDateAdded(nowTime,
         cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO ? MEDIA_TYPE_PHOTO : MEDIA_TYPE_DEFAULT,
         assetInfo);
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        if (fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
+            fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) {
+            std::string uuid = MedialibraryEventDbOperations::GenerateUuid();
+            assetInfo.PutString(PhotoColumn::UNIQUE_ID, uuid);
+        }
+#endif
     cmd.SetValueBucket(assetInfo);
 }
 
@@ -1719,7 +1727,7 @@ static bool IsNotMusicFile(const std::string &path)
 }
 
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
-    MediaLibraryApi api, bool isMovingPhotoVideo, int32_t type)
+    MediaLibraryApi api, bool isMovingPhotoVideo, int32_t type, bool noNeedWatchNotify)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::OpenAsset");
@@ -1743,8 +1751,9 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
-            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s", fileAsset->GetUri().c_str(),
-                fileAsset->GetPath().c_str());
+            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s",
+                MediaFileUtils::DesensitizeUri(fileAsset->GetUri()).c_str(),
+                MediaFileUtils::DesensitizePath(fileAsset->GetPath()).c_str());
             int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
             CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
         }
@@ -1759,7 +1768,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         fileAsset->GetUserId(), fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str(), fd, errno);
 
     tracer.Start("AddWatchList");
-    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo && IsNotMusicFile(path)) {
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo && IsNotMusicFile(path)
+        && !noNeedWatchNotify) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             MEDIA_INFO_LOG("enter inotify, path = %{public}s, fileId = %{public}d",
@@ -1901,6 +1911,18 @@ void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path,
     if (!isInvalidateThumb) {
         scanAssetCallback->SetIsInvalidateThumb(false);
     }
+
+    int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanAssetCallback,
+        MediaLibraryApi::API_10, isForceScan, fileId);
+    CHECK_AND_PRINT_LOG(ret == 0, "Scan file failed with error: %{public}d", ret);
+}
+
+void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdateAndThumbGeneration(const string &path, bool isForceScan,
+    int32_t fileId)
+{
+    // In non-YUV capture scenarios, set the callback to a null pointer to cancel thumbnail generation,
+    // and there is a null pointer check in the InvokeCallback interface.
+    shared_ptr<ScanAssetCallback> scanAssetCallback = nullptr;
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanAssetCallback,
         MediaLibraryApi::API_10, isForceScan, fileId);
@@ -3287,8 +3309,8 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
         "Photo Asset is nullptr");
     string filePath = fileAsset->GetPath();
     string displayName = fileAsset->GetDisplayName();
-    MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
-    MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
+    MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", MediaFileUtils::DesensitizeName(displayName).c_str());
+    MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
     FileUtils::DeleteTempVideoFile(filePath);
     bool res = LakeFileUtils::DeleteFile(filePath);

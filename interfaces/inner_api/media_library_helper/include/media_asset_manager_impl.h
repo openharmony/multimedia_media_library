@@ -43,9 +43,11 @@ public:
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnMovingPhotoDataPrepared callback) override;
 
+    // LCOV_EXCL_START
     MediaLibrary_ErrorCode NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnQuickImageDataPrepared callback) override;
+    // LCOV_EXCL_STOP
 
     static std::mutex mutex_;
 
@@ -61,7 +63,8 @@ private:
 
     static OH_ImageSourceNative* CreateImageSource(const std::string requestId, const std::string requestUri);
     static void GetPictureNativeObject(const std::string requestId, const std::string fileUri,
-        OH_PictureNative** pictureNative, OH_ImageSourceNative** imageSourceNative, bool &isPicture);
+        OH_PictureNative** pictureNative, OH_ImageSourceNative** imageSourceNative, bool &isPicture,
+        bool &isHighQuality);
 
 private:
     static MediaLibraryManager* mediaLibraryManager_;

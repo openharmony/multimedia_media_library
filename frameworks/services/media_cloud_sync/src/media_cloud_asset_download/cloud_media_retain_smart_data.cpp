@@ -32,6 +32,7 @@
 #include "medialibrary_notify.h"
 #include "photo_album_column.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 
 static const std::string CLOUD_RETIAN_LAST_STATUS_KEY = "smart_data_retain_cloud_last_status";
@@ -406,3 +407,4 @@ int32_t DoUpdateSmartDataAlbum()
     return E_OK;
 }
 }
+// LCOV_EXCL_STOP

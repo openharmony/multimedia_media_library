@@ -133,6 +133,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_BACKUP_POSTPROCESS,
     OperationObject::VISION_ANALYSIS,
 };
+constexpr int64_t MAX_EXECUTE_TIME = 200;
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
@@ -198,8 +199,6 @@ void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
 #endif
-    Media::MedialibrarySubscriber::SubscribeAsync();
-    Media::HeifTranscodingCheckUtils::InitCheckList();
 }
 
 static bool CheckUnlockScene(int64_t startTime)
@@ -260,7 +259,6 @@ static void ResetThreadQos()
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
-    SetThreadQos();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     Extension::OnStart(want);
@@ -303,12 +301,13 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
     OnStartSub(want);
+    Media::MedialibrarySubscriber::SubscribeAsync();
+    Media::HeifTranscodingCheckUtils::InitCheckList();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
     dataManager->RestoreInvalidHDCCloudDataPos();
     PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
-    ResetThreadQos();
 }
 
 void MediaDataShareExtAbility::OnStop()
@@ -1106,10 +1105,11 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     }
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
-    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} API excuted, userId: %{public}d, traceId: %{public}s, "
-        "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
-        MLOG_TAG, __FUNCTION__, __LINE__, userId, traceId.c_str(),
-        static_cast<int32_t>(operationCode), ret, static_cast<long>(costTime));
+    if (costTime > MAX_EXECUTE_TIME) {
+        MEDIA_WARN_LOG("API excuted, userId: %{public}d, traceId: %{public}s, "
+            "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+            userId, traceId.c_str(), static_cast<int32_t>(operationCode), ret, static_cast<long>(costTime));
+    }
     DfxManager::GetInstance()->SetLastIPCTime(endTime);
     return ret;
 }

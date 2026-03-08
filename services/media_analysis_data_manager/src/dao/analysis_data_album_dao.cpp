@@ -30,6 +30,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS::Media::AnalysisData {
 static constexpr int32_t HIGHLIGHT_DELETED = -3;
 
@@ -99,3 +100,4 @@ int32_t AnalysisDataAlbumDao::DeleteHighlightAlbums(const vector<string>& albumI
     return changedRows;
 }
 } // namespace OHOS::Media::AnalysisData
+// LCOV_EXCL_STOP

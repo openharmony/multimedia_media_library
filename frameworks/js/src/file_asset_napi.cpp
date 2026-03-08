@@ -5371,9 +5371,10 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
         return;
     }
     struct stat fileInfo;
+    const off_t maxEditSize5G = 5LL * 1024 * 1024 * 1024;
     if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
         off_t fileSize = fileInfo.st_size;
-        if (fileSize < 0 || fileSize + 1 < 0) {
+        if (fileSize < 0 || fileSize + 1 < 0 || fileSize >= maxEditSize5G) {
             NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
             context->SaveError(E_FAIL);
             return;

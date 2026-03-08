@@ -74,6 +74,7 @@ public:
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCurrentStatusOn();
+    EXPORT static bool IsCriticalTypeStatusOn();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
     static const std::vector<std::string> events_;
@@ -82,9 +83,11 @@ private:
     bool isDeviceTemperatureProper_{false};
     static bool isWifiConnected_;
     static bool currentStatus_;
+    static bool checkCriticalTypeStatus_;
     bool thumbnailBgGenerationStatus_{false};
     bool checkInLakeStatus_{false};
     bool timerStatus_{false};
+    bool isBackgroundTaskAllowed_{true};
     static bool isCellularNetConnected_;
     std::mutex mutex_;
     int32_t agingCount_ {0};
@@ -133,6 +136,9 @@ private:
     void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void UpdateThumbnailBgGenerationStatus();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    bool UpdateCheckCriticalTypeStatus();
+#endif
     void UpdateMediaInLakeCheckStatus();
     void CheckHalfDayMissions();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -141,7 +147,10 @@ private:
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
-    void ResetCloneFlagAfterOneDay();
+    void PreProcessForUpdateStatus();
+    bool CheckOnRestoreAndTryResetFlag();
+    void UpdateGlobalStatusForBgTask();
+    bool IsBackgroundTaskAllowed();
 
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);

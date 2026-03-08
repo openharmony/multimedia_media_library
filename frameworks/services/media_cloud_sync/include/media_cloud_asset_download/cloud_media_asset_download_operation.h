@@ -36,6 +36,7 @@
 #include "net_connect_observer.h"
 #include "safe_map.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -100,17 +101,17 @@ public:
     EXPORT CloudMediaTaskPauseCause GetTaskPauseCause();
     EXPORT std::string GetTaskInfo();
     EXPORT int32_t InitDownloadTaskInfo();
-    void ResetDownloadTryTime();
-    void HandleOnRemoteDied();
+    EXPORT void ResetDownloadTryTime();
+    EXPORT void HandleOnRemoteDied();
 
 private:
-    void ClearData(DownloadFileData &data);
-    bool IsDataEmpty(DownloadFileData &data);
+    EXPORT void ClearData(DownloadFileData &data);
+    EXPORT bool IsDataEmpty(DownloadFileData &data);
     EXPORT int32_t DoRelativedRegister();
     int32_t SetDeathRecipient();
     bool IsProperFgTemperature();
     EXPORT void InitStartDownloadTaskStatus(const bool &isForeground);
-    void ResetParameter();
+    EXPORT void ResetParameter();
 
     EXPORT void SetTaskStatus(Status status);
     EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
@@ -122,8 +123,8 @@ private:
     EXPORT int32_t DoRecoverExecute();
     EXPORT int32_t PassiveStatusRecover();
     EXPORT int32_t SubmitBatchDownloadAgain();
-    void MoveDownloadFileToCache(const DownloadProgressObj &progress, const bool tryDownload = false);
-    void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
+    EXPORT void MoveDownloadFileToCache(const DownloadProgressObj &progress, const bool tryDownload = false);
+    EXPORT void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
     int32_t RegisterNetObserver();
 
 public:
@@ -167,4 +168,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_CLOUD_MEDIA_ASSET_DOWNLOAD_OPERATION_H

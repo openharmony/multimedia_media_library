@@ -147,7 +147,7 @@ bool NotificationUtils::WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo>
         std::shared_ptr<AAFwk::ChangeInfo> serverChangeInfo = std::make_shared<AAFwk::ChangeInfo>();
         serverChangeInfo->data_ = uBuf;
         serverChangeInfo->size_ = item->GetDataSize();
-        MEDIA_INFO_LOG("serverChangeInfo->size_ is: %{public}d", (int)item->GetDataSize());
+        MEDIA_DEBUG_LOG("size_ : %{public}d", (int)item->GetDataSize());
         changeInfos.push_back(serverChangeInfo);
     }
     return true;

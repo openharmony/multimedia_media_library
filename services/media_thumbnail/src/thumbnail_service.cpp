@@ -44,6 +44,7 @@
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
+#include "permission_utils.h"
 #include "thumbnail_restore_manager.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
@@ -161,6 +162,40 @@ static int32_t GetPathFromDb(const shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
 }
 #endif
 
+static bool CheckCriticalPhotoPermission(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    const string &id, const string &table)
+{
+    if (table != PhotoColumn::PHOTOS_TABLE) {
+        return true;
+    }
+
+    if (PermissionUtils::CheckCallerPermission(MANAGE_RISK_PHOTOS)) {
+        return true;
+    }
+
+    vector<string> columns = { PhotoColumn::PHOTO_IS_CRITICAL };
+    AbsRdbPredicates predicates(table);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, id);
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query is_critical for file_id: %{public}s", id.c_str());
+        return false;
+    }
+
+    int32_t isCritical = 0;
+    int32_t columnIndex = 0;
+    resultSet->GetColumnIndex(PhotoColumn::PHOTO_IS_CRITICAL, columnIndex);
+    resultSet->GetInt(columnIndex, isCritical);
+
+    if (isCritical == 1) {
+        MEDIA_ERR_LOG("Access denied: Critical photo requires MANAGE_RISK_PHOTOS permission");
+        return false;
+    }
+
+    return true;
+}
+
 int ThumbnailService::GetThumbFd(const string &path, const string &table, const string &id, const string &uri,
     const Size &size, bool isAstc)
 {
@@ -171,13 +206,17 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
         .row = id,
         .uri = uri,
     };
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (!CheckCriticalPhotoPermission(opts.store, opts.row, opts.table)) {
+        return UniqueFd(E_PERMISSION_DENIED);
+    }
+#endif
     ThumbnailType thumbType = GetThumbType(size.width, size.height, isAstc);
     if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
     ThumbnailData data;
     int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
-    CHECK_AND_PRINT_LOG(fd >= 0, "GetThumbnailPixelMap failed : %{public}d", fd);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
     CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
     return fd;

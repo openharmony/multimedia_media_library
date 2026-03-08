@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <sstream>
 #include <thread>
+#include <sys/resource.h>
 
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -37,6 +38,7 @@ namespace Media {
 static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
 static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
 static constexpr int32_t THREAD_NUM_ASYNC_UPDATE_RDB = 1;
+static constexpr int32_t THREAD_NICE_PRIORITY_40 = -20;
 constexpr size_t TASK_INSERT_COUNT = 15;
 constexpr size_t CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL = 270000;
 const std::string THREAD_NAME_FOREGROUND = "ThumbForeground";
@@ -218,6 +220,24 @@ bool ThumbnailGenerateWorker::WaitForTask(std::shared_ptr<ThumbnailGenerateThrea
     return isThreadRunning_;
 }
 
+static void SetPriorityForThumbnailWorker(int32_t tid, ThumbnailTaskType taskType)
+{
+    if (taskType == ThumbnailTaskType::FOREGROUND) {
+        // set thread priority to 40
+        CHECK_AND_PRINT_LOG(setpriority(PRIO_PROCESS, tid, THREAD_NICE_PRIORITY_40) == 0,
+            "ThumbnailGenerateWorker set priority failed, errno: %{public}d", errno);
+    }
+}
+
+static void ResetPriorityForThumbnailWorker(int32_t tid, ThumbnailTaskType taskType, int32_t threadNice)
+{
+    if (taskType == ThumbnailTaskType::FOREGROUND) {
+        // reset thread priority
+        CHECK_AND_PRINT_LOG(setpriority(PRIO_PROCESS, tid, threadNice) == 0,
+            "ThumbnailGenerateWorker reset priority failed, errno: %{public}d", errno);
+    }
+}
+
 void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus)
 {
     std::string name("ThumbnailGenerateWorker");
@@ -231,8 +251,13 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
             CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
+            auto tid = gettid();
+            int32_t priority = getpriority(PRIO_PROCESS, tid);
+            MEDIA_DEBUG_LOG("curent thread is %{public}d, with priority %{public}d", tid, priority);
+            SetPriorityForThumbnailWorker(tid, taskType_);
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
+            ResetPriorityForThumbnailWorker(tid, taskType_, priority);
             continue;
         }
 

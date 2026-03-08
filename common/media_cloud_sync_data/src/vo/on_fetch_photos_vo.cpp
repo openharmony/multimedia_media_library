@@ -174,6 +174,7 @@ bool OnFetchPhotosVo::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(parcel.ReadBool(this->isRecycle), false);
     CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->sourceAlbumIds, parcel), false);
     CHECK_AND_RETURN_RET(ITypesUtil::Unmarshalling(stringfields, parcel), false);
+    CHECK_AND_RETURN_RET(ITypesUtil::Unmarshalling(int64fields, parcel), false);
     return true;
 }
 
@@ -187,6 +188,7 @@ bool OnFetchPhotosVo::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(parcel.WriteBool(this->isRecycle), false);
     CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->sourceAlbumIds, parcel), false);
     CHECK_AND_RETURN_RET(ITypesUtil::Marshalling(stringfields, parcel), false);
+    CHECK_AND_RETURN_RET(ITypesUtil::Marshalling(int64fields, parcel), false);
     return true;
 }
 
@@ -279,6 +281,12 @@ void OnFetchPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
     for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
+    }
+    ss << "},";
+    ss << "\"int64fields\": {";
+    for (const auto &node : this->int64fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
     }
     ss << "}";
     return;

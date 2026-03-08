@@ -26,6 +26,7 @@
 #include "clone_restore_cv_analysis.h"
 #include "clone_restore_pet_album.h"
 #include "clone_restore_portrait_album.h"
+#include "clone_restore_selection.h"
 #include "clone_restore_highlight.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_group_photo.h"
@@ -446,7 +447,7 @@ bool CloneRestore::BackupPreprocess()
         // create temp DB path
         CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, false, "mediaLibraryRdb_ is nullptr!");
         std::string tmpDir = backupRestoreDir_ + "/storage/media/local/files/.backup/backup/media_temp_rdb";
-        tmpDbPath_ = tmpDir + "/media_library_temp.db";
+        tmpDbPath_ = tmpDir + "/media_library.db";
         CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(tmpDir),
             MediaFileUtils::DeleteDir(tmpDir));
         CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(tmpDbPath_) == E_OK,
@@ -463,7 +464,7 @@ bool CloneRestore::BackupPreprocess()
             err);
         bool ret = InvalidateHdcCloudData(backupRdb);
         MEDIA_INFO_LOG("add restore dir");
-        dirMappingList_.push_back("/data/storage/el2/database/rdb");
+        dirMappingList_.push_back("/data/storage/el2/database/rdb/");
         if (!ret) {
             MEDIA_ERR_LOG("fail to delete hdc data");
             SetErrorCode(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED);
@@ -682,7 +683,7 @@ void CloneRestore::GetAccountValid()
         cond = (!item["type"].is_string() ||  item["type"] != "singleAccountId");
         CHECK_AND_CONTINUE(!cond);
         oldId = item["detail"].is_string() ? item["detail"] : "";
-        MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+        MEDIA_INFO_LOG("the old is %{public}s", MediaFileUtils::DesensitizeName(oldId).c_str());
         break;
     }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
@@ -1674,7 +1675,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, PhotoRiskStatus::UNIDENTIFIED);
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, static_cast<int32_t>(PhotoRiskStatus::UNIDENTIFIED));
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
@@ -2299,6 +2300,7 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisPortrait();
     RestoreAnalysisPet();
     RestoreGroupPhoto();
+    RestoreAnalysisSelection();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     RestoreAnalysisData();
     ReportInvalidLocalFiles();
@@ -2317,7 +2319,8 @@ void CloneRestore::RestoreAnalysisTablesData()
         "tab_analysis_segmentation",
         "tab_analysis_object",
         "tab_analysis_saliency_detect",
-        "tab_analysis_recommendation"
+        "tab_analysis_recommendation",
+        "tab_analysis_crop"
     };
 
     vector<std::string> totalTypes = {
@@ -2328,7 +2331,8 @@ void CloneRestore::RestoreAnalysisTablesData()
         "segmentation",
         "object",
         "saliency",
-        "recommendation"
+        "recommendation",
+        "aesthetics_crop"
     };
 
     for (size_t index = 0; index < analysisTables.size(); index++) {
@@ -3054,6 +3058,10 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         bool cond = (updatedRows < 0 || ret < 0);
         CHECK_AND_PRINT_LOG(!cond, "BatchInsertFileInfoData Failed to update column: %s",
             fileInfos[i].cloudPath.c_str());
+        std::string dirPath = GetThumbnailLocalPath(fileInfos[i].cloudPath);
+        if (!MediaFileUtils::IsFileExists(dirPath)) {
+            continue;
+        }
         MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(fileInfos[i].fileIdNew),
             fileInfos[i].cloudPath);
     }
@@ -3224,6 +3232,15 @@ void CloneRestore::RestoreGroupPhoto()
         mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
     cloneRestoreGroupPhoto.Restore(photoInfoMap_);
     MEDIA_INFO_LOG("end RestoreGroupPhoto");
+}
+
+void CloneRestore::RestoreAnalysisSelection()
+{
+    CloneRestoreSelection selectionRestore;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
+    selectionRestore.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
+    selectionRestore.Preprocess();
+    selectionRestore.Restore();
 }
 
 void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)

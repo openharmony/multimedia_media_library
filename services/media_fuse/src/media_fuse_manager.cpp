@@ -36,6 +36,7 @@
 #include "medialibrary_data_manager.h"
 #include "media_column.h"
 #include "media_privacy_manager.h"
+#include "media_permission_check.h"
 #include "media_visit_count_manager.h"
 #include "media_edit_utils.h"
 #include "medialibrary_rdb_utils.h"
@@ -47,7 +48,6 @@
 #include "grant_permission_handler.h"
 #include "heif_transcoding_check_utils.h"
 #include "ipc_skeleton.h"
-#include "permission_used_type.h"
 #include "medialibrary_object_utils.h"
 #include "media_file_utils.h"
 #include "media_app_uri_permission_column.h"
@@ -76,6 +76,7 @@ const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
 const int32_t FILE_FAIL = -2;
 const int32_t PHOTO_POSITION_TYPE_CLOUD = 2;
+const int32_t PERMISSION_BUNDLENAME_EMPTY = 1;
 static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
 static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
@@ -126,8 +127,8 @@ static int32_t CheckCriticalPhotoPermission(const string &fileId, const uid_t &u
         return E_SUCCESS;
     }
 
-    if (!PermissionUtils::CheckCallerPermission(PERM_MANAGE_CRITICAL_PHOTOS)) {
-        MEDIA_ERR_LOG("Permission denied: MANAGE_CRITICAL_PHOTOS required for critical photo access");
+    if (!PermissionUtils::CheckCallerPermission(MANAGE_RISK_PHOTOS)) {
+        MEDIA_ERR_LOG("Permission denied: MANAGE_RISK_PHOTOS required for critical photo access");
         return E_PERMISSION_DENIED;
     }
 
@@ -336,6 +337,10 @@ int32_t MediaFuseManager::DoMedialibraryReadPermission(const string &fileId, con
     AccessTokenID tokenCaller = INVALID_TOKENID;
     int32_t permGranted = E_PERMISSION_DENIED;
     PermissionUtils::GetClientBundle(uid, bundleName);
+    if (bundleName.empty()) {
+        MEDIA_DEBUG_LOG("Get bundleName is empty for uid %{public}d", uid);
+        return PERMISSION_BUNDLENAME_EMPTY;
+    }
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
     class MediafusePermCheckInfo infoR(target, MEDIA_FILEMODE_READONLY, fileId, appId, uid);
     permGranted = infoR.CheckPermission(tokenCaller, false);
@@ -354,13 +359,14 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     bool cond = (path == nullptr || strlen(path) == 0);
 
     fuse_context *ctx = fuse_get_context();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     if (ctx != nullptr) {
         int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
         if (criticalCheck != E_SUCCESS) {
             return E_PERMISSION_DENIED;
         }
     }
-
+#endif
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
     int32_t ret;
     int32_t splitCount = countSubString(path, "/");
@@ -374,7 +380,7 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
         int64_t changeTime = 0;
         ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
-        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_comtext returned nullptr");
+        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
         int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
         CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
@@ -598,10 +604,12 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     MEDIA_DEBUG_LOG("fuse open file");
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
     if (criticalCheck != E_SUCCESS) {
         return E_PERMISSION_DENIED;
     }
+#endif
     uid_t uid = ctx->uid;
     string bundleName;
     AccessTokenID tokenCaller = INVALID_TOKENID;

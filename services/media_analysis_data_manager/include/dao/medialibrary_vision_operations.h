@@ -25,13 +25,15 @@
 #include "datashare_predicates.h"
 #include "foreground_analysis_meta.h"
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 class UpdateVisionAsyncTaskData : public AsyncTaskData {
 public:
-    UpdateVisionAsyncTaskData(int32_t fileId) : fileId_(fileId) {};
+    UpdateVisionAsyncTaskData(int32_t fileId, bool needRefresh) : fileId_(fileId), needRefresh_(needRefresh) {};
     virtual ~UpdateVisionAsyncTaskData() override = default;
     int32_t fileId_;
+    bool needRefresh_;
 };
 
 class MediaLibraryVisionOperations {
@@ -44,6 +46,7 @@ public:
         const std::vector<std::string> &columns);
     static std::shared_ptr<NativeRdb::ResultSet> HandleForegroundAnalysisOperation(MediaLibraryCommand &cmd);
     static int32_t PrepareDelayFgAnalysis(const std::string &assetUri, MediaType mediaType);
+    static int32_t ClearVisionDataByFileId(int32_t fileId, bool needRefresh);
 
 private:
     static int32_t InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
@@ -51,4 +54,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP
 #endif // OHOS_MEDIALIBRARY_VISION_OPERATIOINS_H

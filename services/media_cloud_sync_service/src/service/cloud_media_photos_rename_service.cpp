@@ -66,8 +66,8 @@ int32_t CloudMediaPhotosRenameService::FindNextStoragePath(
         errno);
     nextStoragePath = newStoragePath;
     MEDIA_INFO_LOG("FindNextStoragePath, rename lake asset, storagePath:%{public}s, newStoragePath: %{public}s",
-        storagePath.c_str(),
-        newStoragePath.c_str());
+        MediaFileUtils::DesensitizePath(storagePath).c_str(),
+        MediaFileUtils::DesensitizePath(newStoragePath).c_str());
     return E_OK;
 }
 

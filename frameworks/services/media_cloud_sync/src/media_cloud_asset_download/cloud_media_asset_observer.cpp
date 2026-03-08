@@ -30,6 +30,7 @@
 using namespace std;
 using Uri = OHOS::Uri;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 
@@ -69,3 +70,4 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

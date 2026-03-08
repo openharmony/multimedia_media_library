@@ -205,7 +205,7 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
 
     type = oldAlbumInfo.count_ < count_ ? NOTIFY_ALBUM_ADD_ASSET :
         (oldAlbumInfo.count_ > count_ ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
-    ACCURATE_INFO("Update albumInfo[%{public}d], notifyType[%{public}d]: %{public}s", oldAlbumInfo.albumId_,
+    MEDIA_INFO_LOG("Update albumInfo[%{public}d], notifyType[%{public}d]: %{public}s", oldAlbumInfo.albumId_,
         static_cast<int32_t>(type), ss.str().c_str());
     return values;
 }

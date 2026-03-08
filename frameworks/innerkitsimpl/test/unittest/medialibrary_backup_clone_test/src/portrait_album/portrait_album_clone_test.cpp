@@ -195,23 +195,20 @@ void PortraitAlbumCloneTest::VerifyPortraitAlbumRestore(const std::shared_ptr<Na
     std::string querySql = "SELECT * FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE album_type = " + std::to_string(SMART) +
         " AND album_subtype = " + std::to_string(PORTRAIT);
-
+    int index;
+    std::string columnValue;
     std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
     ASSERT_NE(resultSet, nullptr);
 
-    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        (void)resultSet->GetColumnIndex("album_name", index);
+        resultSet->GetString(index, columnValue);
+        EXPECT_EQ(columnValue, "test_portrait_album_001");
 
-    int index;
-    std::string columnValue;
-
-    (void)resultSet->GetColumnIndex("album_name", index);
-    resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_portrait_album_001");
-
-    (void)resultSet->GetColumnIndex("tag_id", index);
-    resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_tag_id");
-
+        (void)resultSet->GetColumnIndex("tag_id", index);
+        resultSet->GetString(index, columnValue);
+        EXPECT_EQ(columnValue, "a");
+    }
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 

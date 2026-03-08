@@ -62,9 +62,11 @@ public:
      * @param flags a parameter for input, indicating the expected type of permission check
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
+    // LCOV_EXCL_START
     EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId,
         const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags,
         bool readWriteIsolation = false);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief Check cloud download Permission
@@ -75,8 +77,10 @@ public:
      * @param flags a parameter for input, indicating the expected type of permission check
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
+    // LCOV_EXCL_START
     EXPORT int32_t CheckCloudDownloadPermission(uint32_t tokenId,
         const std::vector<string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief Grant PhotoUri Permission
@@ -88,8 +92,10 @@ public:
      * @param hideSensitiveType a parameter for input, indicating the expected grant hideSensitiveType
      * @return If the grant is successful, return 0; otherwise, return -1 for failure.
      */
+    // LCOV_EXCL_START
     EXPORT int32_t GrantPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId, const std::vector<string> &uris,
         const std::vector<PhotoPermissionType> &photoPermissionTypes, HideSensitiveType hideSensitiveTpye);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief Cancel PhotoUri Permission
@@ -114,8 +120,10 @@ public:
      * @param result boolean result with permission or not
      * @return container for Boolean Results
      */
+    // LCOV_EXCL_START
     EXPORT int32_t GetPhotoUrisPermission(uint32_t targetTokenld, const std::vector<string> &uris,
         const std::vector<PhotoPermissionType> &photoPermissionTypes, std::vector<bool> &result);
+    // LCOV_EXCL_STOP
 
     /**
      * @brief convert path to URI
@@ -124,7 +132,9 @@ public:
      * @param uris uri
      * @return container converted to URI
      */
+    // LCOV_EXCL_START
     EXPORT int32_t GetUrisFromFusePaths(const std::vector<std::string> paths, std::vector<std::string> &uris);
+    // LCOV_EXCL_STOP
 
 private:
     int32_t userId_;

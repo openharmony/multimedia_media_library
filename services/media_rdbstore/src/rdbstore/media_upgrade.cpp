@@ -131,7 +131,8 @@ const std::string PhotoUpgrade::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS
     PhotoColumn::PHOTO_RISK_STATUS + " INT NOT NULL DEFAULT 0, " +
     PhotoColumn::PHOTO_DATE_ADDED_DAY + " TEXT, " +
     PhotoColumn::PHOTO_DATE_ADDED_MONTH + " TEXT, " +
-    PhotoColumn::PHOTO_DATE_ADDED_YEAR + " TEXT" +
+    PhotoColumn::PHOTO_DATE_ADDED_YEAR + " TEXT, " +
+    PhotoColumn::UNIQUE_ID + " TEXT DEFAULT '-1' " +
     ") ";
 
 const std::string PhotoUpgrade::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +

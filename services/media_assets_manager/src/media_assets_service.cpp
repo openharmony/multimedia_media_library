@@ -82,17 +82,6 @@ constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
-#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
-{
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr");
-    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
-    CHECK_AND_RETURN_LOG(data != nullptr, "UpdateVisionAsyncTaskData is nullptr");
-    string fileId = to_string(data->fileId_);
-    MediaAssetsRdbOperations::DeleteFromVisionTables(fileId);
-}
-#endif
-
 MediaAssetsService &MediaAssetsService::GetInstance()
 {
     static MediaAssetsService service;
@@ -141,15 +130,7 @@ int32_t MediaAssetsService::CommitEditedAsset(const CommitEditedAssetDto& commit
         commitEditedAssetDto.fileId);
     CHECK_AND_RETURN_RET(errCode == E_SUCCESS, errCode);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
-    UpdateVisionAsyncTaskData* taskData =
-        new (std::nothrow) UpdateVisionAsyncTaskData(commitEditedAssetDto.fileId);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to new taskData");
-    shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateVisionTableForEdit, taskData);
-    CHECK_AND_PRINT_LOG(updateAsyncTask != nullptr, "UpdateAnalysisDataForEdit fail");
-    asyncWorker->AddTask(updateAsyncTask, true);
+    MediaLibraryVisionOperations::ClearVisionDataByFileId(commitEditedAssetDto.fileId, false);
 #endif
     return errCode;
 }
@@ -537,6 +518,25 @@ int32_t MediaAssetsService::SetHasAppLink(const int32_t fileId, const int32_t ha
     return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
 }
  
+int32_t MediaAssetsService::SetAppLinkState(const int32_t fileId, const int32_t appLinkState)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_APPLINK_STATE, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_HAS_APPLINK, appLinkState);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
+}
+
 int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLink)
 {
     MediaLibraryCommand cmd(
@@ -851,7 +851,8 @@ static void ConvertToString(const vector<int32_t> &fileIds, std::vector<std::str
 
 int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &title)
 {
-    MEDIA_INFO_LOG("SetAssetTitle fileId: %{public}d, title: %{private}s.", fileId, title.c_str());
+    MEDIA_INFO_LOG(
+        "SetAssetTitle fileId: %{public}d, title: %{public}s.", fileId, MediaFileUtils::DesensitizeName(title).c_str());
     NativeRdb::ValuesBucket assetInfo;
     assetInfo.PutString(PhotoColumn::MEDIA_TITLE, title);
 
@@ -1072,15 +1073,8 @@ int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertTo
 
     int32_t errCode = this->rdbOperation_.RevertToOrigin(fileId);
     if (errCode == E_SUCCESS) {
-        string fileUri = revertToOriginalDto.fileUri;
-        Uri uri(fileUri);
-        MediaLibraryCommand cmdEditCommit(uri);
-        cmdEditCommit.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-        NativeRdb::ValuesBucket values;
-        values.Put(PhotoColumn::MEDIA_ID, fileId);
-        cmdEditCommit.SetValueBucket(values);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-        MediaLibraryVisionOperations::EditCommitOperation(cmdEditCommit);
+        MediaLibraryVisionOperations::ClearVisionDataByFileId(fileId, false);
 #endif
     }
     return errCode;

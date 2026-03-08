@@ -27,6 +27,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -102,7 +103,7 @@ std::string PhotoBurstOperation::FindBurstGroupName(const std::string &displayNa
     auto pos = displayName.find(this->TITLE_KEY_WORDS_OF_BURST);
     if (pos == std::string::npos) {
         MEDIA_ERR_LOG("Media_Operation: FindBurstGroupName: cannot find _BURST in displayName. displayName: %{public}s",
-            displayName.c_str());
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         return "";
     }
     return displayName.substr(0, std::min<int32_t>(pos, DISPLAY_NAME_PREFIX_LENGTH) + 1);
