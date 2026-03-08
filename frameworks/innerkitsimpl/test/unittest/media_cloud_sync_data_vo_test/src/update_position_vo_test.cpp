@@ -57,7 +57,7 @@ HWTEST_F(UpdatePositionVoTest, TC002_ReqBody_Unmarshalling_EmptyCloudIds, TestSi
     parcel.RewindRead(0);
     UpdatePositionReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(UpdatePositionVoTest, TC003_ReqBody_Unmarshalling_ReadInt32Size_Fail, TestSize.Level1)

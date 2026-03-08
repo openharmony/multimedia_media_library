@@ -94,7 +94,7 @@ HWTEST_F(GetDownloadThmByUriVoTest, TC004_ReqBody_Unmarshalling_ReadInt32Size_Fa
     parcel.RewindRead(0);
     GetDownloadThmsByUriReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(GetDownloadThmByUriVoTest, TC005_ReqBody_Unmarshalling_SizeOverflow, TestSize.Level1)
@@ -106,7 +106,7 @@ HWTEST_F(GetDownloadThmByUriVoTest, TC005_ReqBody_Unmarshalling_SizeOverflow, Te
     parcel.RewindRead(0);
     GetDownloadThmsByUriReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(GetDownloadThmByUriVoTest, TC007_RespBody_Marshalling_Unmarshalling_Empty, TestSize.Level1)

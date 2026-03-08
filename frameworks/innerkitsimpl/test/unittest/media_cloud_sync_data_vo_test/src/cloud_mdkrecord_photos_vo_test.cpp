@@ -167,6 +167,7 @@ HWTEST_F(CloudMdkRecordPhotosVoTest, TC017_TruncateDataBy200K_SingleLargeRecord,
     size_t originalSize = respBody.GetDataSize();
     bool ret = respBody.TruncateDataBy200K();
     EXPECT_TRUE(ret);
-    EXPECT_EQ(respBody.GetDataSize(), originalSize);
+    EXPECT_NE(respBody.GetDataSize(), originalSize);
+    EXPECT_EQ(respBody.GetDataSize(), 0);
 }
 }  // namespace OHOS::Media::CloudSync

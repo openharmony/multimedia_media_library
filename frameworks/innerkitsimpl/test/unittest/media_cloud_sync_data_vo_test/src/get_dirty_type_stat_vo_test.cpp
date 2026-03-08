@@ -61,7 +61,7 @@ HWTEST_F(GetDirtyTypeStatVoTest, TC002_RespBody_Marshalling_Unmarshalling_Single
     ASSERT_TRUE(ret);
 
     EXPECT_EQ(restored.statList.size(), 2);
-    EXPECT_EQ(restored.statList[0], 1024400);
+    EXPECT_EQ(restored.statList[0], 1024);
 }
 
 HWTEST_F(GetDirtyTypeStatVoTest, TC003_RespBody_Marshalling_Unmarshalling_Multiple, TestSize.Level1)

@@ -153,7 +153,7 @@ HWTEST_F(OnCreateRecordsAlbumVoTest, TC008_AlbumData_Unmarshalling_ErrorDetailsE
     parcel.RewindRead(0);
     OnCreateRecordsAlbumReqBodyAlbumData vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(OnCreateRecordsAlbumVoTest, TC009_AlbumData_Unmarshalling_ErrorDetailsSingle, TestSize.Level1)

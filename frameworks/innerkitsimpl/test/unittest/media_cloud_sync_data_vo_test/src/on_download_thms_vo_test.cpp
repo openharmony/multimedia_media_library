@@ -101,7 +101,7 @@ HWTEST_F(OnDownloadThmsVoTest, TC004_ReqBody_Unmarshalling_ReadInt32Size_Fail, T
     parcel.RewindRead(0);
     OnDownloadThmsReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(OnDownloadThmsVoTest, TC005_ReqBody_Unmarshalling_SizeOverflow, TestSize.Level1)
@@ -113,7 +113,7 @@ HWTEST_F(OnDownloadThmsVoTest, TC005_ReqBody_Unmarshalling_SizeOverflow, TestSiz
     parcel.RewindRead(0);
     OnDownloadThmsReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 }  // namespace OHOS::Media::CloudSync

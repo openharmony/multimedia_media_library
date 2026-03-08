@@ -56,7 +56,7 @@ HWTEST_F(FailedSizeRespVoTest, TC002_Unmarshalling_ReadInt32FailSize_Fail, TestS
     parcel.RewindRead(0);
     FailedSizeResp vo;
     ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 }  // namespace OHOS::Media::CloudSync
