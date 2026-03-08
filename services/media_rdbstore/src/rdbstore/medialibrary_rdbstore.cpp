@@ -74,6 +74,7 @@
 #include "media_edit_utils.h"
 #include "media_string_utils.h"
 #include "media_values_bucket_utils.h"
+#include "media_compatible_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -5870,6 +5871,16 @@ static void UpdateTriggerForAnalysisAlbum(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("End update album modify trigger");
 }
 
+static void CreateTabComPatibleInfo(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("create tab_compatible_info starts");
+    const vector<string> sqls = {
+        TabCompatibleInfoColumn::CREATE_TABLE
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("create tab_compatible_info ends");
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -5888,6 +5899,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true)) {
         AddCinematicVideoAlbum(store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
+        CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
     }
 }
 

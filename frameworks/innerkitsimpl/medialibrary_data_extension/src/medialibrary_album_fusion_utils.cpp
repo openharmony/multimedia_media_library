@@ -2228,19 +2228,48 @@ static bool IsHighPixelPicture(int32_t width, int32_t height)
     return false;
 }
 
-static void GetDesireSize(int32_t &width, int32_t &height)
+static bool GetDesireSize(int32_t &width, int32_t &height)
 {
+    if (width <= 0 || height <= 0) {
+        return false;    
+    }
+
     while (IsHighPixelPicture(width, height)) {
         width /= HIGH_PIXEL_SCALE;
         height /= HIGH_PIXEL_SCALE;
     }
+    
+    return true;
+}
+
+static void SetTranscodeType(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, TranscodeType &transcodeType)
+{
+    int32_t width = GetInt32Val(PhotoColumn::PHOTO_WIDTH, resultSet);
+    int32_t height = GetInt32Val(PhotoColumn::PHOTO_HEIGHT, resultSet);
+    std::string mimeType = GetString(PhotoColumn::MEDIA_MIME_TYPE, resultSet);
+    bool isHeif = (mimeType == "image/heic" || mimeType == "image/heif");
+    bool isHighPixel = IsHighPixelPicture(width, height);
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
 }
 
 static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int32_t fileId, int32_t &dupExist, int32_t &width, int32_t &height)
+    int32_t fileId, int32_t &dupExist, int32_t &width, int32_t &height, TranscodeType &transcodeType)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INNER_FAIL,
         "no matched data.");
+    SetTranscodeType(resultSet, transcodeType);
     dupExist = GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet);
     if (dupExist > 0) {
         MEDIA_INFO_LOG("compatible duplicate file is exists");
@@ -2253,7 +2282,8 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
         IsHighPixelPicture(width, height), E_PARAM_CONVERT_FORMAT,
         "mimeType is invalid, mimeType: %{public}s", mimeType.c_str());
 
-    GetDesireSize(width, height);
+    CHECK_AND_RETURN_RET_LOG(GetDesireSize(width, height), E_PARAM_CONVERT_FORMAT,
+        "GetDesireSize failed, width %{public}d, height %{public}d", width, height);
 
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
@@ -2276,14 +2306,16 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
 }
 
 int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, const std::string &path, size_t &size,
-    int32_t &dupExist)
+    int32_t &dupExist, TranscodeType& transcodeType)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateTmpCompatibleDup");
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbStore.");
-        dfxManager->HandleTranscodeFailed(INNER_FAILED);
+        dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);
         return E_INNER_FAIL;
     }
 
@@ -2300,10 +2332,10 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
         return err;
     }
     if (err == E_OK) {
-        return PhotoFileOperation().CreateTmpCompatibleDup(path, size, width, height);
+        return PhotoFileOperation().CreateTmpCompatibleDup(path, size, width, height, transcodeType);
     }
     MEDIA_ERR_LOG("CheckTmpCompatibleDup fail %{public}d", err);
-    dfxManager->HandleTranscodeFailed(INNER_FAILED);
+    dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);
     return err;
 }
 

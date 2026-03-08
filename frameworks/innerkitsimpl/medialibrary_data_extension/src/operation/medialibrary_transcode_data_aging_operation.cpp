@@ -283,12 +283,12 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
     return E_OK;
 }
 
-void MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(const int32_t &type)
+void MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(const int32_t &type, TranscodeType transcodeType)
 {
     MEDIA_INFO_LOG("medialibrary open transcode file success");
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_LOG(dfxManager != nullptr, "DfxManager::GetInstance() returned nullptr");
-    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB);
+    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB, transcodeType);
 }
 
 static int32_t GetExpiredCount(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int64_t threshold)
