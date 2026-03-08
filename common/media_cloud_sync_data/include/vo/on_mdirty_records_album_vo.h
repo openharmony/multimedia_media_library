@@ -34,6 +34,7 @@ public:
     int32_t serverErrorCode;
     ErrorType errorType;
     std::vector<CloudErrorDetail> errorDetails;
+
 public:  // functions of Parcelable.
     virtual ~OnMdirtyAlbumRecord() = default;
     bool Unmarshalling(MessageParcel &parcel) override;
@@ -45,7 +46,7 @@ public:  // basic functions
 
 class EXPORT OnMdirtyRecordsAlbumReqBody : public IPC::IMediaParcelable {
 private:
-    std::vector<OnMdirtyAlbumRecord> records;
+    std::vector<OnMdirtyAlbumRecord> records_;
 
 public:
     int32_t AddMdirtyRecord(const OnMdirtyAlbumRecord &record);

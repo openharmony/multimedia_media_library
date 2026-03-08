@@ -19,59 +19,56 @@
 
 #include <sstream>
 
-#include "media_itypes_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool PhotosVo::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->fileId);
-    parcel.ReadString(this->cloudId);
-    parcel.ReadInt64(this->size);
-    parcel.ReadInt64(this->modifiedTime);
-    parcel.ReadString(this->path);
-    parcel.ReadString(this->fileName);
-    parcel.ReadString(this->localPath);
-    parcel.ReadString(this->originalCloudId);
-    parcel.ReadInt32(this->type);
-    parcel.ReadInt32(this->orientation);
-    parcel.ReadInt32(this->fileSourceType);
-    parcel.ReadString(this->storagePath);
-    parcel.ReadInt32(this->hidden);
-    parcel.ReadInt64(this->dateTrashed);
-    parcel.ReadInt32(this->attributesMediaType);
-    CloudFileDataVo::Unmarshalling(this->attachment, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->modifiedTime), false, "modifiedTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->originalCloudId), false, "originalCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->type), false, "type");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->orientation), false, "orientation");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->dateTrashed), false, "dateTrashed");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->attributesMediaType), false, "attributesMediaType");
+    CHECK_AND_RETURN_RET_LOG(CloudFileDataVo::Unmarshalling(this->attachment, parcel), false, "attachment");
     return true;
 }
 
 bool PhotosVo::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->fileId);
-    parcel.WriteString(this->cloudId);
-    parcel.WriteInt64(this->size);
-    parcel.WriteInt64(this->modifiedTime);
-    parcel.WriteString(this->path);
-    parcel.WriteString(this->fileName);
-    parcel.WriteString(this->localPath);
-    parcel.WriteString(this->originalCloudId);
-    parcel.WriteInt32(this->type);
-    parcel.WriteInt32(this->orientation);
-    parcel.WriteInt32(this->fileSourceType);
-    parcel.WriteString(this->storagePath);
-    parcel.WriteInt32(this->hidden);
-    parcel.WriteInt64(this->dateTrashed);
-    parcel.WriteInt32(this->attributesMediaType);
-    CloudFileDataVo::Marshalling(this->attachment, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->modifiedTime), false, "modifiedTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->path), false, "path");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->fileName), false, "fileName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->originalCloudId), false, "originalCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->type), false, "type");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->orientation), false, "orientation");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->dateTrashed), false, "dateTrashed");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->attributesMediaType), false, "attributesMediaType");
+    CHECK_AND_RETURN_RET_LOG(CloudFileDataVo::Marshalling(this->attachment, parcel), false, "attachment");
     return true;
 }
 
 bool PhotosVo::Marshalling(const std::vector<PhotosVo> &result, MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(result.size())), false);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(result.size())), false, "result.size()");
     for (const auto &entry : result) {
-        if (!entry.Marshalling(parcel)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(entry.Marshalling(parcel), false, "PhotosVo");
     }
     return true;
 }
@@ -79,20 +76,16 @@ bool PhotosVo::Marshalling(const std::vector<PhotosVo> &result, MessageParcel &p
 bool PhotosVo::Unmarshalling(std::vector<PhotosVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
-    CHECK_AND_RETURN_RET(len >= 0, false);
+    CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
 
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
-    if ((size > readAbleSize) || (size > val.max_size())) {
-        return false;
-    }
-
+    bool isInValid = (size > readAbleSize) || (size > val.max_size());
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     val.clear();
-    bool isValid;
     for (size_t i = 0; i < size; i++) {
         PhotosVo nodeObj;
-        isValid = nodeObj.Unmarshalling(parcel);
-        CHECK_AND_RETURN_RET(isValid, false);
+        CHECK_AND_RETURN_RET_LOG(nodeObj.Unmarshalling(parcel), false, "PhotosVo");
         val.emplace_back(nodeObj);
     }
     return true;

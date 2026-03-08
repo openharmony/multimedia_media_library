@@ -51,7 +51,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "on_modify_file_dirty_vo.h"
 #include "on_modify_records_photos_vo.h"
-#include "photo_album_vo.h"
 #include "photos_vo.h"
 #include "update_dirty_vo.h"
 #include "update_local_file_dirty_vo.h"
@@ -161,7 +160,6 @@ void FillContainersPart1(std::vector<std::shared_ptr<IPC::IMediaParcelable>> &co
 
     containers.emplace_back(std::make_shared<OnModifyRecord>());
     containers.emplace_back(std::make_shared<OnModifyRecordsPhotosReqBody>());
-    containers.emplace_back(std::make_shared<PhotoAlbumVo>());
     containers.emplace_back(std::make_shared<PhotosVo>());
     containers.emplace_back(std::make_shared<UpdateDirtyReqBody>());
 
@@ -186,7 +184,6 @@ HWTEST_F(CloudMediaSyncServiceVoTest, GeneralVoBasic_Test, TestSize.Level1)
 
 HWTEST_F(CloudMediaSyncServiceVoTest, GeneralToString_Test, TestSize.Level1)
 {
-    EXPECT_FALSE(PhotoAlbumVo().ToString().empty());
     EXPECT_TRUE(GetDownloadAssetRespBody().ToString().empty());
     EXPECT_TRUE(GetDownloadAssetReqBody().ToString().empty());
     EXPECT_TRUE(GetVideoToCacheRespBody().ToString().empty());
@@ -495,13 +492,13 @@ HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotoAlbumRespBody_Test, Tes
     ASSERT_TRUE(reqBody);
     parcel.WriteInt32(-1);
     EXPECT_FALSE(reqBody->Unmarshalling(parcel));
-    EXPECT_FALSE(reqBody->Marshalling(parcel));
+    EXPECT_TRUE(reqBody->Marshalling(parcel));
 
     auto reqBody2 = std::make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     MessageParcel parcel2;
     parcel2.WriteInt32(1);
     EXPECT_FALSE(reqBody2->Unmarshalling(parcel2));
-    EXPECT_FALSE(reqBody2->Marshalling(parcel2));
+    EXPECT_TRUE(reqBody2->Marshalling(parcel2));
 }
 
 HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosVo_Test, TestSize.Level1)

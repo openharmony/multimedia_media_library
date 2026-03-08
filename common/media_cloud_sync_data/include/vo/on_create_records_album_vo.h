@@ -36,6 +36,7 @@ public:
     int32_t serverErrorCode;
     ErrorType errorType;
     std::vector<CloudErrorDetail> errorDetails;
+
 public:  // functions of Parcelable.
     virtual ~OnCreateRecordsAlbumReqBodyAlbumData() = default;
     bool Unmarshalling(MessageParcel &parcel) override;

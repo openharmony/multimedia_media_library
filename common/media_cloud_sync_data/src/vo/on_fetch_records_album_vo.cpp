@@ -25,40 +25,40 @@
 namespace OHOS::Media::CloudSync {
 bool OnFetchRecordsAlbumReqBody::AlbumReqData::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadString(this->cloudId);
-    parcel.ReadString(this->localPath);
-    parcel.ReadString(this->albumName);
-    parcel.ReadString(this->albumBundleName);
-    parcel.ReadString(this->localLanguage);
-    parcel.ReadInt32(this->albumId);
-    parcel.ReadInt32(this->priority);
-    parcel.ReadInt32(this->albumType);
-    parcel.ReadInt32(this->albumSubType);
-    parcel.ReadInt64(this->albumDateCreated);
-    parcel.ReadInt64(this->albumDateAdded);
-    parcel.ReadInt64(this->albumDateModified);
-    parcel.ReadBool(this->isDelete);
-    parcel.ReadInt32(this->coverUriSource);
-    parcel.ReadString(this->coverCloudId);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->albumBundleName), false, "albumBundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->localLanguage), false, "localLanguage");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->priority), false, "priority");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->albumDateCreated), false, "albumDateCreated");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->albumDateAdded), false, "albumDateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->albumDateModified), false, "albumDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDelete), false, "isDelete");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->coverUriSource), false, "coverUriSource");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->coverCloudId), false, "coverCloudId");
     return true;
 }
 bool OnFetchRecordsAlbumReqBody::AlbumReqData::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteString(this->cloudId);
-    parcel.WriteString(this->localPath);
-    parcel.WriteString(this->albumName);
-    parcel.WriteString(this->albumBundleName);
-    parcel.WriteString(this->localLanguage);
-    parcel.WriteInt32(this->albumId);
-    parcel.WriteInt32(this->priority);
-    parcel.WriteInt32(this->albumType);
-    parcel.WriteInt32(this->albumSubType);
-    parcel.WriteInt64(this->albumDateCreated);
-    parcel.WriteInt64(this->albumDateAdded);
-    parcel.WriteInt64(this->albumDateModified);
-    parcel.WriteBool(this->isDelete);
-    parcel.WriteInt32(this->coverUriSource);
-    parcel.WriteString(this->coverCloudId);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->localPath), false, "localPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->albumName), false, "albumName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->albumBundleName), false, "albumBundleName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->localLanguage), false, "localLanguage");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumId), false, "albumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->priority), false, "priority");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumType), false, "albumType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->albumSubType), false, "albumSubType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->albumDateCreated), false, "albumDateCreated");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->albumDateAdded), false, "albumDateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->albumDateModified), false, "albumDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDelete), false, "isDelete");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->coverUriSource), false, "coverUriSource");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->coverCloudId), false, "coverCloudId");
     return true;
 }
 
@@ -85,12 +85,16 @@ std::string OnFetchRecordsAlbumReqBody::AlbumReqData::ToString() const
 
 bool OnFetchRecordsAlbumReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<AlbumReqData>(this->albums, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<AlbumReqData>(this->albums, parcel), false, "albums");
+    return true;
 }
 
 bool OnFetchRecordsAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<AlbumReqData>(this->albums, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<AlbumReqData>(this->albums, parcel), false, "albums");
+    return true;
 }
 
 std::string OnFetchRecordsAlbumReqBody::ToString() const
@@ -111,14 +115,18 @@ std::string OnFetchRecordsAlbumReqBody::ToString() const
 
 bool OnFetchRecordsAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false);
-    return IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel), false, "stats");
+    return true;
 }
 
 bool OnFetchRecordsAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false);
-    return IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel), false, "stats");
+    return true;
 }
 
 std::string OnFetchRecordsAlbumRespBody::ToString() const
