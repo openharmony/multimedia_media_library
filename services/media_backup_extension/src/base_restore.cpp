@@ -19,6 +19,7 @@
 
 #include <cinttypes>
 #include "application_context.h"
+#include "backup_adapters.h"
 #include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
 #include "backup_dfx_utils.h"
@@ -175,9 +176,9 @@ bool BaseRestore::IsRestorePhoto()
         bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == STAT_KEY_BACKUP_INFO;
         CHECK_AND_CONTINUE(checkType);
         for (const auto& backupInfo : item["detail"]) {
-            bool conds = (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
+            bool cond = (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO ||
                 backupInfo == STAT_TYPE_GALLERY_DATA);
-            CHECK_AND_RETURN_RET(!conds, true);
+            CHECK_AND_RETURN_RET(!cond, true);
         }
         MEDIA_INFO_LOG("not restore photo or video");
         return false;
@@ -323,7 +324,8 @@ shared_ptr<NativeRdb::ResultSet> BaseRestore::QuerySql(const string &sql, const 
 
 int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dstFile) const
 {
-    if (MediaFileUtils::MoveFile(srcFile, dstFile)) {
+    int32_t errCode = BackupFileUtils::MoveFile(srcFile, dstFile, sceneCode_);
+    if (errCode == E_SUCCESS) {
         return E_OK;
     }
     if (this->CopyFile(srcFile, dstFile) != E_OK) {
@@ -539,9 +541,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
 
 void BaseRestore::InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
-    MEDIA_INFO_LOG("BaseRestore::InsertVideoMode");
     int32_t videoMode = metadata->GetVideoMode();
-    MEDIA_INFO_LOG("InsertVideoMode videoMode=%{public}d", videoMode);
     value.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
 }
 
@@ -883,7 +883,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
     MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
-    
+
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         size_t destPos = fileInfo.filePath.find_last_of(".");
         CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "fileInfo.filePath not contain '.'");
@@ -899,7 +899,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
             BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
         MediaFileUtils::UpdateModifyTimeInMsec(movTargetPath, fileInfo.dateModified);
-        
+
         CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
             "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
             BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
@@ -954,6 +954,7 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
             dentryInfo.path = fileInfos[i].cloudPath;
             dentryInfo.fileName = fileInfos[i].displayName;
         } else {
+            dentryInfo.path = fileInfos[i].cloudPath;
             dentryInfo.size = THUMB_DENTRY_SIZE;
             if (fileType == DENTRY_INFO_LCD) {
                 dentryInfo.fileType = (!HasExThumbnail(fileInfos[i])) ? fileType : LCD_EX_SUFFIX;
@@ -1172,6 +1173,9 @@ void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<s
             iteration->needVisible = false;
             iteration->needMove = false;
             UpdateFailedFiles(iteration->fileType, *iteration, RestoreError::INSERT_FAILED);
+            ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 1, "",
+                BackupLogUtils::FileInfoToString(this->sceneCode_, *iteration));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             if (fileType == DENTRY_INFO_ORIGIN) {
                 iteration = fileInfos.erase(iteration);
             } else if (fileType == DENTRY_INFO_LCD) {
@@ -1248,7 +1252,6 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
     if (visibleIds.empty()) {
         return 0;
     }
-
     NativeRdb::ValuesBucket updatePostBucket;
     updatePostBucket.Put(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
@@ -1996,8 +1999,7 @@ void BaseRestore::UpdateDatabase()
     MEDIA_INFO_LOG("Start update all albums");
     ExecuteAnalyzeInDatabase(mediaLibraryRdb_);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {}, { NotifyAlbumType::NO_NOTIFY, true,
-        AlbumOperationType::DEFAULT, false });
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     MEDIA_INFO_LOG("Start update unique number");
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, CONST_IMAGE_ASSET_TYPE);
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, CONST_VIDEO_ASSET_TYPE);
@@ -2238,10 +2240,10 @@ bool BaseRestore::IsCloudRestoreSatisfied()
     return isAccountValid_ && isSyncSwitchOn_;
 }
 
-void BaseRestore::ProcessBurstPhotos()
+void BaseRestore::ProcessBurstPhotos(int32_t maxId)
 {
     int64_t startProcess = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_, maxId);
     int64_t endProcess = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("process burst photos end, cost: %{public}" PRId64, endProcess - startProcess);
 }
