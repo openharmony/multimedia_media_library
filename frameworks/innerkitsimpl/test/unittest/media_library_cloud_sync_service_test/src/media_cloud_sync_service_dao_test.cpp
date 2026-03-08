@@ -385,7 +385,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, GetMetaModifiedRecords_Test_001, TestSize
     CloudMediaPhotosDao photosDao;
     int32_t size = 10;
     std::vector<PhotosPo> cloudRecordPoList;
-    int32_t ret = photosDao.GetMetaModifiedRecords(size, cloudRecordPoList);
+    int32_t ret = photosDao.GetMetaModifiedRecords(size, cloudRecordPoList, 0);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1933,7 +1933,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, ConflictDataMerge_Test_003, TestSize.Leve
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(Cl)loudMediaSyncServiceDaoTest, ConflictDataMerge_Test_004, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceDaoTest, ConflictDataMerge_Test_004, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
     CloudMediaPullDataDto pullData;

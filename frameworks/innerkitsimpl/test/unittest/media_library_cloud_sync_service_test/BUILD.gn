@@ -159,6 +159,7 @@ ohos_unittest("media_library_cloud_sync_service_dao_test") {
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
@@ -222,6 +223,7 @@ ohos_unittest("media_library_cloud_sync_service_dto_test") {
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
@@ -286,6 +288,7 @@ ohos_unittest("media_library_cloud_sync_service_controller_service_test") {
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
@@ -348,6 +351,7 @@ ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
@@ -427,6 +431,7 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
     "e2fsprogs:libext2_uuid",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
@@ -490,6 +495,7 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
+    "preferences:native_preferences",
   ]
 
   sanitize = {
