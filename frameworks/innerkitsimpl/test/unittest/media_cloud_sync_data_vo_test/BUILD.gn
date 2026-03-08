@@ -40,7 +40,7 @@ ohos_unittest("media_cloud_sync_data_vo_test") {
     "-Wsign-compare",
   ]
 
-  module_out_path = "media_library/media_cloud_sync_data_vo"
+  module_out_path = "media_library/medialibrary-data"
   include_dirs = [
     "./include",
     "${MEDIALIB_CLOUD_SYNC_DATA}/include",
