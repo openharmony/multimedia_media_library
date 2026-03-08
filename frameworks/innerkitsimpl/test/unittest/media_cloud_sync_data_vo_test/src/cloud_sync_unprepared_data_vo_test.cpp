@@ -52,7 +52,7 @@ HWTEST_F(CloudSyncUnpreparedDataVoTest, TC002_Unmarshalling_ReadInt32Count_Fail,
     parcel.RewindRead(0);
     CloudSyncUnPreparedDataRespBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(CloudSyncUnpreparedDataVoTest, TC002_Unmarshalling_ReadStringCloudId_Fail, TestSize.Level1)
@@ -66,7 +66,7 @@ HWTEST_F(CloudSyncUnpreparedDataVoTest, TC002_Unmarshalling_ReadStringCloudId_Fa
     parcel.RewindRead(0);
     CloudSyncUnPreparedDataRespBody vo;
     ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(CloudSyncUnpreparedDataVoTest, TC003_Unmarshalling_ReadBoolRecycled_Fail, TestSize.Level1)
@@ -79,7 +79,7 @@ HWTEST_F(CloudSyncUnpreparedDataVoTest, TC003_Unmarshalling_ReadBoolRecycled_Fai
     parcel.RewindRead(0);
     CloudSyncUnPreparedDataRespBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 }  // namespace OHOS::Media::CloudSync

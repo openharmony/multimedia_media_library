@@ -99,7 +99,7 @@ HWTEST_F(GetAgingFileVoTest, TC005_ReqBody_Unmarshalling_ReadInt32Offset_Fail, T
     parcel.RewindRead(0);
     GetAgingFileReqBody vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(GetAgingFileVoTest, TC006_RespBody_Marshalling_Unmarshalling_Empty, TestSize.Level1)

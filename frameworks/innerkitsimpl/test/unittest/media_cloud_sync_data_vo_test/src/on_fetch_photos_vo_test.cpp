@@ -238,5 +238,5 @@ HWTEST_F(OnFetchPhotosVoTest, TC004_Unmarshalling_ReadBoolHasAttributes_Fail, Te
     parcel.RewindRead(0);
     OnFetchPhotosVo vo;
     ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }

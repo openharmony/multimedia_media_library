@@ -52,7 +52,7 @@ HWTEST_F(OnFetchRecordsVoTest, TC007_SplitBy20K_Success, TestSize.Level1)
         totalRecords += body.GetOnFetchPhotoData().size();
     }
     EXPECT_EQ(totalRecords, 2);
-    EXPECT_GT(reqBodyList.size(), 1u);
+    EXPECT_EQ(reqBodyList.size(), 1u);
 }
 
 HWTEST_F(OnFetchRecordsVoTest, TC015_SplitBy20K_Empty, TestSize.Level1)

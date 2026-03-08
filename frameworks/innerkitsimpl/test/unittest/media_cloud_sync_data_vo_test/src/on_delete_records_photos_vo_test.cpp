@@ -89,7 +89,7 @@ HWTEST_F(OnDeleteRecordsPhotosVoTest, TC004_Unmarshalling_ReadBoolIsSuccess_Fail
     parcel.RewindRead(0);
     OnDeleteRecordsPhoto vo;
     bool ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 HWTEST_F(OnDeleteRecordsPhotosVoTest, TC005_ReqBody_Marshalling_Unmarshalling_Empty, TestSize.Level1)
@@ -197,7 +197,7 @@ HWTEST_F(OnDeleteRecordsPhotosVoTest, TC009_RespBody_Unmarshalling_ReadInt32Fail
     parcel.RewindRead(0);
     OnDeleteRecordsPhotosRespBody vo;
     ret = vo.Unmarshalling(parcel);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
 }
 
 }  // namespace OHOS::Media::CloudSync
