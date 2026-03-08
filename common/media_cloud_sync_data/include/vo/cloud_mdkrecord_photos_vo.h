@@ -93,6 +93,7 @@ public:
 
     // Hash Map for attributes
     std::map<std::string, std::string> stringfields;
+    std::map<std::string, int64_t> int64fields;
 
 public:
     virtual ~CloudMdkRecordPhotosVo() = default;

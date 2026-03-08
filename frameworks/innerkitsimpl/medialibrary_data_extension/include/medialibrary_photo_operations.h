@@ -124,7 +124,6 @@ public:
     EXPORT static int32_t GetCompressAssetSize(const std::vector<std::string> &uris, int64_t &size);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
-    EXPORT static int32_t SetPhotoCritical(MediaLibraryCommand &cmd);
     static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
@@ -188,6 +187,7 @@ private:
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
     static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
+    static int32_t SaveCameraPhotoWithFilters(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,

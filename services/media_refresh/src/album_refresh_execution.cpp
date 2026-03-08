@@ -122,7 +122,7 @@ int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData
         albumRefreshInfos_.insert(ownerAlbumRefreshInfos_.begin(), ownerAlbumRefreshInfos_.end());
         if (IS_ACCURATE_DEBUG) {
             for (auto const &albumInfo : albumRefreshInfos_) {
-                ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", albumInfo.first,
+                MEDIA_DEBUG_LOG("albumId: %{public}d, refreshInfo: %{public}s", albumInfo.first,
                     albumInfo.second.ToString().c_str());
             }
         }
@@ -292,6 +292,33 @@ void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, 
     }
 }
 
+int32_t AlbumRefreshExecution::SetForceSelectCoverValues(ValuesBucket &values, const AlbumChangeInfo &albumInfo,
+    bool isHidden)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::SetForceSelectCoverValues " +
+        to_string(albumInfo.albumId_) + (isHidden ? " hidden" : ""));
+    PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
+    struct UpdateAlbumData data;
+    data.albumSubtype = albumInfo.albumSubType_;
+    data.albumId = albumInfo.albumId_;
+    data.hiddenCount = albumInfo.hiddenCount_;
+    data.albumCount = albumInfo.count_;
+    data.albumImageCount = albumInfo.imageCount_;
+    data.albumVideoCount = albumInfo.videoCount_;
+    data.hiddenCover = albumInfo.hiddenCoverUri_;
+    data.albumCoverUri = albumInfo.coverUri_;
+    data.coverDateTime = albumInfo.coverDateTime_;
+    data.coverUriSource = albumInfo.coverUriSource_;
+    data.hiddenCoverDateTime = albumInfo.hiddenCoverDateTime_;
+    if (!isHidden && (subtype == PhotoAlbumSubType::USER_GENERIC ||
+        subtype == PhotoAlbumSubType::SOURCE_GENERIC) && isRefreshWithDateModified_) {
+        data.shouldUpdateDateModified = true; // 非隐藏全量刷新时，说明相册封面有变化，需要设置
+    }
+    int32_t ret = MediaLibraryRdbUtils::SetUpdateCoverValues(data, values, isHidden);
+    return ret;
+}
+
 int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType)
 {
     ACCURATE_INFO("AccurateUpdateAlbums notifyAlbumType[0x%{public}x]", notifyAlbumType);
@@ -300,7 +327,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
     for (auto &iter : refreshAlbums_) {
         DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
         auto &albumInfo = iter.second.second;
-        ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
+        MEDIA_DEBUG_LOG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
             albumInfo.albumId_);
         const auto &initIter = initAlbumInfos_.find(albumInfo.albumId_);
         if (initIter == initAlbumInfos_.end()) {
@@ -311,6 +338,12 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         auto &initAlbumInfo = initIter->second;
         OHOS::Media::NotifyType type = OHOS::Media::NotifyType::NOTIFY_INVALID;
         ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo, type);
+        if (albumInfo.needForceSelectCover) {
+            SetForceSelectCoverValues(values, initAlbumInfo, false);
+        }
+        if (albumInfo.needForceSelectHiddenCover) {
+            SetForceSelectCoverValues(values, initAlbumInfo, true);
+        }
         CheckUpdateValues(albumInfo, iter.second.first, values);
         if (values.IsEmpty()) {
             MEDIA_ERR_LOG("no need update.");
@@ -325,7 +358,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         if (albumChangeInfo.IsAlbumInfoRefresh()) {
             CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
         }
-        ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
+        MEDIA_INFO_LOG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
             albumInfo.albumId_);
         DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
         DfxRefreshHander::SetAlbumIdHander(albumInfo.albumId_, dfxRefreshManager_);
@@ -576,17 +609,19 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
         // 当前cover没有removeCover新
         bool isForceRefresh = refreshInfo.removeFileIds.find(coverFileId) != refreshInfo.removeFileIds.end();
         if (coverFileId <= 0 || isForceRefresh) {
-            forceRefreshAlbums_.insert(albumInfo.albumId_);
-            ClearAlbumInfo(albumInfo);
+            albumInfo.needForceSelectCover = true;
+            isRefreshAlbum = true;
+            ClearAlbumCoverInfo(albumInfo);
         }
-        ACCURATE_DEBUG("Del[%{public}d], forceRefresh[%{public}d], old cover fileId:%{public}d", albumInfo.albumId_,
+        ACCURATE_DEBUG("Del[%{public}d], forceSelectCover[%{public}d], old cover fileId:%{public}d", albumInfo.albumId_,
             isForceRefresh, coverFileId);
     } else if (IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() > 0) {
         // 异常场景：同一个相册中cover既有新增又有删除;同一个相册中没有新增也没有删除
         // 全量刷新指定的系统相册
-        forceRefreshAlbums_.insert(albumInfo.albumId_);
-        ClearAlbumInfo(albumInfo);
-        ACCURATE_ERR("Abnormal[%{public}d], forceRefresh, addCover: %{public}s, remove size: %{public}zu",
+        albumInfo.needForceSelectCover = true;
+        isRefreshAlbum = true;
+        ClearAlbumCoverInfo(albumInfo);
+        ACCURATE_ERR("Abnormal[%{public}d], forceSelectCover, addCover: %{public}s, remove size: %{public}zu",
             albumInfo.albumId_, refreshInfo.deltaAddCover_.ToString().c_str(),
             refreshInfo.removeFileIds.size());
     }
@@ -617,17 +652,17 @@ bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, cons
         // 当前cover没有removeCover新
         bool isRefresh = refreshInfo.removeHiddenFileIds.find(coverFileId) != refreshInfo.removeHiddenFileIds.end();
         if (coverFileId <= 0 || isRefresh) {
-            forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
-            ClearHiddenAlbumInfo(albumInfo);
+            albumInfo.needForceSelectHiddenCover = true;
+            ClearHiddenAlbumCoverInfo(albumInfo);
         }
-        ACCURATE_DEBUG("Del hidden[%{public}d], forceRefresh[%{public}d], coverFileId[%{public}d]",
+        ACCURATE_DEBUG("Del hidden[%{public}d], force select cover[%{public}d], coverFileId[%{public}d]",
             albumInfo.albumId_, isRefresh, coverFileId);
     } else if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() > 0) {
         // 异常场景：同一个相册中cover既有新增又有删除
         // 全量刷新指定的系统相册
-        forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
-        ClearHiddenAlbumInfo(albumInfo);
-        ACCURATE_DEBUG("Abnormal hidden[%{public}d], force: %{public}s, add/remove[%{public}s/%{public}zu]",
+        albumInfo.needForceSelectHiddenCover = true;
+        ClearHiddenAlbumCoverInfo(albumInfo);
+        ACCURATE_DEBUG("Abnormal hidden[%{public}d], forceSelectCover: %{public}s, add/remove[%{public}s/%{public}zu]",
             albumInfo.albumId_, albumInfo.ToString().c_str(), refreshInfo.deltaAddHiddenCover_.ToString().c_str(),
             refreshInfo.removeHiddenFileIds.size());
     }
@@ -650,11 +685,23 @@ void AlbumRefreshExecution::ClearHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
     albumInfo.hiddenCoverDateTime_ = INVALID_INT64_VALUE;
 }
 
+void AlbumRefreshExecution::ClearAlbumCoverInfo(AlbumChangeInfo &albumInfo)
+{
+    albumInfo.coverUri_ = EMPTY_STR;
+    albumInfo.coverDateTime_ = INVALID_INT64_VALUE;
+}
+
+void AlbumRefreshExecution::ClearHiddenAlbumCoverInfo(AlbumChangeInfo &albumInfo)
+{
+    albumInfo.hiddenCoverUri_ = EMPTY_STR;
+    albumInfo.hiddenCoverDateTime_ = INVALID_INT64_VALUE;
+}
+
 void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType,
     const AlbumChangeInfo &albumInfo, OHOS::Media::NotifyType type)
 {
     if (notifyAlbumType == NotifyAlbumType::NO_NOTIFY || notifyAlbumType == NotifyAlbumType::ANA_ALBUM) {
-        ACCURATE_DEBUG("no need old notification");
+        MEDIA_DEBUG_LOG("no need old notification");
         return;
     }
     if (type == OHOS::Media::NotifyType::NOTIFY_INVALID) {

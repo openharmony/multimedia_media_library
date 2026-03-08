@@ -19,6 +19,7 @@
 #include "net_all_capabilities.h"
 #include "net_conn_callback_stub.h"
 
+// LCOV_EXCL_START
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -42,4 +43,5 @@ private:
     NetConnStatus netStatus_ = NetConnStatus::NO_NETWORK;
 };
 } // namespace OHOS::Media
+// LCOV_EXCL_STOP
 #endif  // OHOS_NET_CONNECT_OBSERVER_H

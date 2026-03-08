@@ -83,7 +83,7 @@ void NotifyTaskWorker::AddTaskInfo(NotifyInfoInner &notifyInfoInner)
         NotifyTaskInfo notifyTaskInfo = taskInfos_[waitLoopCnt];
         notifyTaskInfo.notifyInfos.push_back(notifyInfoInner);
         taskInfos_[waitLoopCnt] = notifyTaskInfo;
-        MEDIA_INFO_LOG("notifyInfos size: %{public}d, waitLoopCnt: %{public}d",
+        MEDIA_DEBUG_LOG("notifyInfos size: %{public}d, waitLoopCnt: %{public}d",
             (int32_t)notifyTaskInfo.notifyInfos.size(), waitLoopCnt);
     }
 }

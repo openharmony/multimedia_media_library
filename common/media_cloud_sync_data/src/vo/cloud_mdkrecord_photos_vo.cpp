@@ -89,6 +89,7 @@ bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(MessageParcel &parcel) co
     parcel.WriteInt32(fileSourceType);
     parcel.WriteString(storagePath);
     ITypesUtil::Marshalling(stringfields, parcel);
+    ITypesUtil::Marshalling(int64fields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
@@ -156,6 +157,7 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
     parcel.ReadInt32(fileSourceType);
     parcel.ReadString(storagePath);
     ITypesUtil::Unmarshalling(stringfields, parcel);
+    ITypesUtil::Unmarshalling(int64fields, parcel);
     return true;
 }
 bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const
@@ -358,6 +360,12 @@ void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
     for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
+    }
+    ss << "},";
+    ss << "\"int64fields\": {";
+    for (const auto &node : this->int64fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
     }
     ss << "}";
     return;

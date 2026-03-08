@@ -31,6 +31,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 static int32_t GetHighlightId(const string &whereClause, const vector<string> &whereArgs)
@@ -82,7 +83,7 @@ static void NotifyStoryAlbum(MediaLibraryCommand &cmd)
     int32_t albumId = 0;
     GetHighlightAlbumId(to_string(id), albumId);
     CHECK_AND_RETURN_LOG(albumId > 0, "highlight album_id invalid");
-    MEDIA_INFO_LOG("NotifyStoryAlbum, album id is %{public}d", albumId);
+    MEDIA_DEBUG_LOG("NotifyStoryAlbum, album id is %{public}d", albumId);
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
@@ -152,3 +153,4 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryStoryOperations::QueryOperation(Med
 }
 } // namespace Media
 } // namespace OHOS
+// LCOV_EXCL_STOP

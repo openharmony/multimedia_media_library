@@ -651,23 +651,6 @@ bool MediaAssetManagerAni::CreateOnProgressHandlerInfo(ani_env *env, unique_ptr<
     return true;
 }
 
-static void SavePicture(const std::string &fileUri)
-{
-    std::string uriStr = CONST_PATH_SAVE_PICTURE;
-    std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
-    std::size_t index = tempStr.find("/");
-    std::string fileId = tempStr.substr(0, index);
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, fileId);
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, CONST_IMAGE_FILE_TYPE, "1");
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, "uri", fileUri);
-    Uri uri(uriStr);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    DataShare::DataSharePredicates predicate;
-    UserFileClient::Update(uri, predicate, valuesBucket);
-}
-
 static string PhotoQualityToString(MultiStagesCapturePhotoStatus photoQuality)
 {
     static const string HIGH_QUALITY_STRING = "high";
@@ -733,7 +716,7 @@ void MediaAssetManagerAni::GetImageSourceAniObject(const std::string &fileUri, a
 }
 
 void MediaAssetManagerAni::GetPictureAniObject(const std::string &fileUri, ani_object &pictureAniObj,
-    bool isSource, ani_env *env, bool& isPicture)
+    bool isSource, ani_env *env, bool& isPicture, MultiStagesCapturePhotoStatus &photoQuality)
 {
     if (env == nullptr) {
         ANI_ERR_LOG(" create image source object failed, need to initialize env");
@@ -744,13 +727,17 @@ void MediaAssetManagerAni::GetPictureAniObject(const std::string &fileUri, ani_o
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
-    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+    bool isHighQuality = false;
+    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()), isHighQuality);
     if (pic == nullptr) {
         ANI_ERR_LOG("picture is null");
         isPicture = false;
         GetImageSourceAniObject(fileUri, pictureAniObj, isSource, env);
         return;
     }
+    photoQuality = isHighQuality ? MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS
+                                 : MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+
     ANI_INFO_LOG("picture is not null");
     pictureAniObj = OHOS::Media::PictureTaiheAni::CreateEtsPicture(env, pic);
 }
@@ -870,7 +857,7 @@ int32_t MediaAssetManagerAni::GetFdFromSandBoxUri(const std::string &sandBoxUri)
 }
 
 static ani_object GetAniValueOfMedia(ani_env *env, const std::shared_ptr<AniMediaAssetDataHandler>& dataHandler,
-    bool& isPicture)
+    bool& isPicture, MultiStagesCapturePhotoStatus &photoQuality)
 {
     CHECK_COND_RET(dataHandler != nullptr, nullptr, "dataHandler is null");
     ANI_DEBUG_LOG("GetAniValueOfMedia");
@@ -899,7 +886,7 @@ static ani_object GetAniValueOfMedia(ani_env *env, const std::shared_ptr<AniMedi
             dataHandler->GetSourceMode(), movingPhotoParam);
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         MediaAssetManagerAni::GetPictureAniObject(dataHandler->GetRequestUri(), aniValueOfMedia,
-            dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture);
+            dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture, photoQuality);
     } else {
         ANI_ERR_LOG("source mode type invalid");
     }
@@ -953,6 +940,9 @@ void MediaAssetManagerAni::OnDataPrepared(ani_env *env, AssetHandler *assetHandl
         }
     }
 
+    bool isPicture = true;
+    ani_object aniValueOfMedia = assetHandler->isError ? nullptr : GetAniValueOfMedia(env, dataHandler, isPicture,
+        assetHandler->photoQuality);
     ani_object aniValueOfInfoMap = nullptr;
     if (assetHandler->needsExtraInfo) {
         aniValueOfInfoMap = GetInfoMapAniValue(env, assetHandler);
@@ -961,13 +951,6 @@ void MediaAssetManagerAni::OnDataPrepared(ani_env *env, AssetHandler *assetHandl
             MediaLibraryAniUtils::GetUndefinedObject(env, aniValueOfInfoMap);
         }
     }
-    bool isPicture = true;
-    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_ARRAY_BUFFER ||
-        dataHandler->GetReturnDataType() == ReturnDataType::TYPE_IMAGE_SOURCE) {
-        string uri = dataHandler->GetRequestUri();
-        SavePicture(uri);
-    }
-    ani_object aniValueOfMedia = assetHandler->isError ? nullptr : GetAniValueOfMedia(env, dataHandler, isPicture);
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {
             dataHandler->EtsOnDataPrepared(env, aniValueOfMedia, nullptr, aniValueOfInfoMap);

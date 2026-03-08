@@ -45,7 +45,7 @@ enum ThmsType {
 DatabaseDataMock CloudMediaDataClientTest::dbDataMock_;
 std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 static uint64_t g_shellToken = 0;
-static MediaLibraryMockNativeToken* mockToken = nullptr;
+static MediaLibraryMockNativeToken *mockToken = nullptr;
 
 void CloudMediaDataClientTest::SetUpTestCase(void)
 {
@@ -77,7 +77,8 @@ void CloudMediaDataClientTest::TearDownTestCase(void)
 }
 
 // SetUp:Execute before each test case
-void CloudMediaDataClientTest::SetUp() {}
+void CloudMediaDataClientTest::SetUp()
+{}
 
 void CloudMediaDataClientTest::TearDown(void)
 {
@@ -875,7 +876,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadThms, TestSize.Level1)
         EXPECT_GT(photosList.size(), 0);
         ret = photosDao.GetPhotoByCloudId(photosList, pair.first, photo);
         EXPECT_EQ(ret, 0);
-        if (pair.second != TYPE_LCD) {  //TYPE_THM、TYPE_THM_AND_LCD才更新PHOTO_SYNC_STATUS = TYPE_VISIBLE
+        if (pair.second != TYPE_LCD) {  // TYPE_THM、TYPE_THM_AND_LCD才更新PHOTO_SYNC_STATUS = TYPE_VISIBLE
             EXPECT_EQ(photo.syncStatus.value_or(-1), static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
                 << "check syncSt not Expect val:" << pair.first;
         }
@@ -971,8 +972,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThmNum_test_01, TestSize.Level1)
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS,
                        std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(Clean::NOT_NEED_CLEAN)));
-    predicates
-        .NotEqualTo(PhotoColumn::PHOTO_POSITION, std::to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)))
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, std::to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)))
         ->And()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, std::to_string(static_cast<int32_t>(ThumbState::TO_DOWNLOAD)))
@@ -1050,10 +1050,10 @@ HWTEST_F(CloudMediaDataClientTest, GetCloudThmStat, TestSize.Level1)
     int32_t ret = cloudMediaDataClient.GetCloudThmStat(cloudThmStat);
     EXPECT_EQ(ret, 0);
     TestUtils::PhotosDao photosDao = TestUtils::PhotosDao();
-    EXPECT_EQ(cloudThmStat[0], photosDao.GetCloudThmStatNum(0));  //INDEX_DOWNLOADED
-    EXPECT_EQ(cloudThmStat[1], photosDao.GetCloudThmStatNum(1));  //INDEX_LCD_TO_DOWNLOAD
-    EXPECT_EQ(cloudThmStat[2], photosDao.GetCloudThmStatNum(2));  //INDEX_THM_TO_DOWNLOAD
-    EXPECT_EQ(cloudThmStat[3], photosDao.GetCloudThmStatNum(3));  //INDEX_TO_DOWNLOAD
+    EXPECT_EQ(cloudThmStat[0], photosDao.GetCloudThmStatNum(0));  // INDEX_DOWNLOADED
+    EXPECT_EQ(cloudThmStat[1], photosDao.GetCloudThmStatNum(1));  // INDEX_LCD_TO_DOWNLOAD
+    EXPECT_EQ(cloudThmStat[2], photosDao.GetCloudThmStatNum(2));  // INDEX_THM_TO_DOWNLOAD
+    EXPECT_EQ(cloudThmStat[3], photosDao.GetCloudThmStatNum(3));  // INDEX_TO_DOWNLOAD
 }
 
 HWTEST_F(CloudMediaDataClientTest, GetDirtyTypeStat, TestSize.Level1)
@@ -1143,7 +1143,7 @@ HWTEST_F(CloudMediaDataClientTest, CheckAndFixAlbum_02, TestSize.Level1)
     std::vector<std::string> dirty = {"0", "2", "4"};
     std::vector<std::string> columns = {PhotoAlbumColumns::ALBUM_CLOUD_ID};
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_DIRTY, dirty);
+    predicates.In(PhotoAlbumColumns::ALBUM_DIRTY, dirty);
     auto resultSet = rdbStore_->Query(predicates, columns);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string cloud_id = GetStringVal(PhotoAlbumColumns::ALBUM_CLOUD_ID, resultSet);
@@ -1157,14 +1157,14 @@ HWTEST_F(CloudMediaDataClientTest, CheckAndFixAlbum_03, TestSize.Level1)
     CloudMediaDataClient cloudMediaDataClient(1, 100);
 
     std::vector<std::string> dirty = {"0", "1", "3", "5"};
-    std::vector<std::string> columns = { "count(1) AS count" };
+    std::vector<std::string> columns = {"count(1) AS count"};
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
     predicates.BeginWrap()
         ->IsNull(PhotoAlbumColumns::ALBUM_CLOUD_ID)
         ->In(PhotoAlbumColumns::ALBUM_DIRTY, dirty)
         ->EndWrap()
-    ->Or()
-    ->IsNotNull(PhotoAlbumColumns::ALBUM_CLOUD_ID);
+        ->Or()
+        ->IsNotNull(PhotoAlbumColumns::ALBUM_CLOUD_ID);
     auto resultSet = rdbStore_->Query(predicates, columns);
     EXPECT_TRUE(resultSet != nullptr);
     EXPECT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
@@ -1300,5 +1300,39 @@ HWTEST_F(CloudMediaDataClientTest, UpdateData_test_02, TestSize.Level1)
     CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.UpdateData(tableName, uppredicates, buckets, "update");
     EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(CloudMediaDataClientTest, CleanAttachment_test_01, TestSize.Level1)
+{
+    std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b388e";
+    std::vector<std::string> cloudIdList = {cloudId};
+    int64_t size = 0;
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
+    int32_t ret = cloudMediaDataClient.CleanAttachment(cloudIdList, size);
+    EXPECT_EQ(ret, 0);
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIdList);
+    const std::vector<std::string> columns = {};
+    auto resultSet = rdbStore_->Query(predicates, columns);
+    EXPECT_TRUE(resultSet != nullptr);
+}
+
+HWTEST_F(CloudMediaDataClientTest, CleanAttachment_test_02, TestSize.Level1)
+{
+    std::string cloudId = "35c73dbc2cde4816833eb4747a80d947347b8302ca494ead9fd5fed15beabb1b";
+    std::vector<std::string> cloudIdList = {cloudId};
+    int64_t size = 0;
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
+    int32_t ret = cloudMediaDataClient.CleanAttachment(cloudIdList, size);
+    EXPECT_EQ(ret, E_RDB);
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIdList);
+    const std::vector<std::string> columns = {};
+    auto resultSet = rdbStore_->Query(predicates, columns);
+    EXPECT_TRUE(resultSet != nullptr);
+    int32_t rowCount = 0;
+    ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 0);
 }
 }  // namespace OHOS::Media::CloudSync

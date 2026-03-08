@@ -146,7 +146,7 @@ int32_t CloudMediaDataHandler::GetCopyRecords(std::vector<MDKRecord> &records, i
 
 int32_t CloudMediaDataHandler::OnCreateRecords(const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("OnCreateRecords enter, map: %{public}zu", map.size());
+    MEDIA_INFO_LOG("map: %{public}zu", map.size());
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
@@ -281,17 +281,21 @@ int32_t CloudMediaDataHandler::OnCompleteCheck()
     return this->dataHandler_->OnCompleteCheck();
 }
 
+// LCOV_EXCL_START
 void CloudMediaDataHandler::SetCloudSpaceFull(bool isCloudSpaceFull)
 {
     CHECK_AND_RETURN_LOG(
         this->dataHandler_ != nullptr, "No data handler found! tableName: %{public}s", this->tableName_.c_str());
     this->dataHandler_->SetCloudSpaceFull(isCloudSpaceFull);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 bool CloudMediaDataHandler::IsCloudSpaceFull()
 {
     CHECK_AND_RETURN_RET_LOG(
         this->dataHandler_ != nullptr, false, "No data handler found! tableName: %{public}s", this->tableName_.c_str());
     return this->dataHandler_->IsCloudSpaceFull();
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

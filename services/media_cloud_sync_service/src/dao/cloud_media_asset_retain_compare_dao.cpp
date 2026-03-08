@@ -87,7 +87,7 @@ DuplicatePhotoInfo CloudMediaAssetCompareDao::FindSamePhotoWithoutAlbum(const Cl
 
     int32_t mediaType = GetMediaTypeFromPullData(pullData);
     int32_t pictureFlag = (mediaType == MEDIA_TYPE_VIDEO) ? 0 : 1;
-    int32_t orientation = (pullData.localOrientation != -1) ? pullData.localOrientation : 0;
+    int32_t orientation = (pullData.propertiesRotate != -1) ? pullData.propertiesRotate : 0;
 
     const std::vector<NativeRdb::ValueObject> params = {
         maxFileId, pullData.basicFileName, pullData.basicSize, pictureFlag, orientation};
@@ -109,7 +109,7 @@ DuplicatePhotoInfo CloudMediaAssetCompareDao::FindSamePhotoBySourcePath(const Cl
 
     int32_t mediaType = GetMediaTypeFromPullData(pullData);
     int32_t pictureFlag = (mediaType == MEDIA_TYPE_VIDEO) ? 0 : 1;
-    int32_t orientation = (pullData.localOrientation != -1) ? pullData.localOrientation : 0;
+    int32_t orientation = (pullData.propertiesRotate != -1) ? pullData.propertiesRotate : 0;
 
     const std::vector<NativeRdb::ValueObject> params = {
         sourcePath, maxFileId, pullData.basicFileName, pullData.basicSize, pictureFlag, orientation};

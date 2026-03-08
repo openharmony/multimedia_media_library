@@ -161,7 +161,7 @@ int32_t CloudMediaDataDao::UpdateThmStatus(const std::string &cloudId, int32_t t
 
 int32_t CloudMediaDataDao::QueryFilePosStat(const int32_t position, int &num)
 {
-    MEDIA_INFO_LOG("enter QueryFilePosStat, position: %{public}d", position);
+    MEDIA_DEBUG_LOG("enter QueryFilePosStat, position: %{public}d", position);
     num = 0;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "QueryFilePosStat Failed to get rdbStore.");
@@ -175,7 +175,7 @@ int32_t CloudMediaDataDao::QueryFilePosStat(const int32_t position, int &num)
     CHECK_AND_RETURN_RET_LOG(isValid, E_RDB, "failed to get row");
     num = GetInt32Val("count", resultSet);
     resultSet->Close();
-    MEDIA_INFO_LOG("QueryFilePosStat end %{public}d", num);
+    MEDIA_DEBUG_LOG("QueryFilePosStat end %{public}d", num);
     return E_OK;
 }
 
@@ -220,7 +220,7 @@ int32_t CloudMediaDataDao::QueryDirtyTypeStat(const int32_t dirtyType, int64_t &
     }
     num = GetInt64Val("count", resultSet);
     resultSet->Close();
-    MEDIA_INFO_LOG("QueryDirtyTypeStat, dirtyType: %{public}d, num: %{public}" PRIu64, dirtyType, num);
+    MEDIA_DEBUG_LOG("QueryDirtyTypeStat, dirtyType: %{public}d, num: %{public}" PRIu64, dirtyType, num);
     return E_OK;
 }
 

@@ -233,6 +233,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::SetHasAppLink
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK_STATE),
+        &MediaAssetsControllerService::SetAppLinkState
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK),
         &MediaAssetsControllerService::SetAppLink
     },
@@ -1235,6 +1239,21 @@ int32_t MediaAssetsControllerService::SetHasAppLink(MessageParcel &data, Message
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
+int32_t MediaAssetsControllerService::SetAppLinkState(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SetAppLinkState");
+    AssetChangeReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetAppLinkState Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().SetAppLinkState(reqBody.fileId, reqBody.appLinkState);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
 int32_t MediaAssetsControllerService::SetAppLink(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetAppLink");
@@ -1322,7 +1341,6 @@ int32_t MediaAssetsControllerService::GetAssets(
 int32_t MediaAssetsControllerService::GetBurstAssets(
     MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
-    MEDIA_INFO_LOG("enter");
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1354,7 +1372,7 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_INFO_LOG("GetAssets by read permission");
+        MEDIA_DEBUG_LOG("GetAssets by read permission");
     }
     dto.predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);

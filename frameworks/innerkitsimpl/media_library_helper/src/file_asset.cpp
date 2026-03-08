@@ -701,10 +701,21 @@ int32_t FileAsset::GetHasAppLink() const
     return GetInt32Member(PhotoColumn::PHOTO_HAS_APPLINK);
 }
  
+int32_t FileAsset::GetAppLinkState() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_HAS_APPLINK);
+}
+
 void FileAsset::SetHasAppLink(int32_t hasAppLink)
 {
     std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
     member_[PhotoColumn::PHOTO_HAS_APPLINK] = hasAppLink;
+}
+
+void FileAsset::SetAppLinkState(int32_t appLinkState)
+{
+    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
+    member_[PhotoColumn::PHOTO_HAS_APPLINK] = appLinkState;
 }
  
 const std::string &FileAsset::GetAppLink() const

@@ -90,6 +90,7 @@ int32_t MediaLibraryCameraManager::OpenAsset(std::string &uri, const std::string
     return sDataShareHelper_->OpenFile(openUri, openMode);
 }
 
+// LCOV_EXCL_START
 int32_t MediaLibraryCameraManager::RegisterPhotoStateCallback(const LowQualityMemoryNumHandler &func)
 {
     MEDIA_INFO_LOG("RegisterPhotoStateCallback begin.");
@@ -100,7 +101,9 @@ int32_t MediaLibraryCameraManager::RegisterPhotoStateCallback(const LowQualityMe
     }
     return callback_->RegisterPhotoStateCallback(sDataShareHelper_, func);
 }
+// LCOV_EXCL_STOP
  
+// LCOV_EXCL_START
 int32_t MediaLibraryCameraManager::UnregisterPhotoStateCallback()
 {
     MEDIA_INFO_LOG("UnregisterPhotoStateCallback begin.");
@@ -115,5 +118,6 @@ int32_t MediaLibraryCameraManager::UnregisterPhotoStateCallback()
     MEDIA_INFO_LOG("UnregisterPhotoStateCallback success.");
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

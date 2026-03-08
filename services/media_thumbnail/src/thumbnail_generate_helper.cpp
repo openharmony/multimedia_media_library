@@ -52,6 +52,9 @@
 #include "thumbnail_utils.h"
 #include "highlight_column.h"
 #include "medialibrary_related_system_state_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+#include "analysis_data_vision_dao.h"
+#endif
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -545,7 +548,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     fileName = GetAvailablePath(data.path, thumbType);
     if (access(fileName.c_str(), F_OK) == 0) {
         // No need to create thumbnails if corresponding file exists
-        MEDIA_INFO_LOG("File exists, file info: %{public}s", ThumbnailFileUtils::GetFileInfo(fileName).c_str());
+        MEDIA_DEBUG_LOG("File exists, file info: %{public}s", ThumbnailFileUtils::GetFileInfo(fileName).c_str());
         return E_OK;
     }
 
@@ -965,7 +968,9 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
         CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, dirtyType, true) == E_OK,
             "Failed to UpdateExifRotateAndDirty, id:%{public}s", thumbnailData.id.c_str());
         ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
-        MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+        AnalysisData::AnalysisDataVisionDao::DeleteVisionDataAfterEdit(thumbnailData.id, true);
+#endif
         IThumbnailHelper::CreateLcdAndThumbnail(data);
     } else {
         CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, dirtyType, false) == E_OK,
@@ -1019,7 +1024,9 @@ int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbR
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     auto taskWithDeleteFromVisionTables = [](std::shared_ptr<ThumbnailTaskData> &data) {
         CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
-        MediaAssetsRdbOperations::DeleteFromVisionTables(data->thumbnailData_.id);
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+        AnalysisData::AnalysisDataVisionDao::DeleteVisionDataAfterEdit(data->thumbnailData_.id, true);
+#endif
         FixThumbnailExifRotateAfterDownloadAssetTask(data);
     };
     IThumbnailHelper::AddThumbnailGenerateTask(

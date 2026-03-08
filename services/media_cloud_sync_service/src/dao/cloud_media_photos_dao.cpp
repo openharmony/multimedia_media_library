@@ -45,16 +45,16 @@ using ChangeType = AAFwk::ChangeInfo::ChangeType;
 // LCOV_EXCL_START
 void NotifyDateTakenChanged(const CloudMediaPullDataDto &pullData)
 {
-    MEDIA_INFO_LOG("NotifyDateTakenChanged localTime: %{public}ld, cloudTime: %{public}ld, fileId: %{public}d",
-        (long)pullData.dateTaken,
-        (long)pullData.basicCreatedTime,
-        pullData.localFileId);
     if (pullData.dateTaken != pullData.basicCreatedTime) {
         std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + std::to_string(pullData.localFileId) + '/' +
                           std::to_string(pullData.dateTaken) + '/' + std::to_string(pullData.basicCreatedTime);
         MediaGallerySyncNotify::GetInstance().TryNotify(
             uri, static_cast<ChangeType>(ExtraChangeType::PHOTO_TIME_UPDATE), std::to_string(pullData.localFileId));
     }
+    bool isEqual = pullData.dateTaken == pullData.basicCreatedTime;
+    CHECK_AND_PRINT_INFO_LOG(isEqual,
+        "NotifyDateTakenChanged localTime: %{public}ld, cloudTime: %{public}ld, fileId: %{public}d",
+        (long)pullData.dateTaken, (long)pullData.basicCreatedTime, pullData.localFileId);
 }
 
 int32_t CloudMediaPhotosDao::BatchInsertFile(std::map<std::string, int> &recordAnalysisAlbumMaps,
@@ -250,11 +250,11 @@ int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<in
     }
     int64_t rowId = 0;
     int32_t ret = this->BatchInsert(rowId, PhotoMap::TABLE, pmList);
-    MEDIA_ERR_LOG("fileId: %{public}d insert photomap, ret: %{public}d", fileId, ret);
+    MEDIA_DEBUG_LOG("fileId: %{public}d insert photomap, ret: %{public}d", fileId, ret);
     std::string deleteSql = "Delete FROM PhotoMap WHERE map_asset = " + to_string(fileId) +
                             " AND dirty != 0 AND map_album NOT IN ( " + ss.str() + " )";
     ret = rdbStore->ExecuteSql(deleteSql, bindArgs);
-    MEDIA_ERR_LOG("fileId: %{public}d delete photomap, ret: %{public}d, deleteSql: %{public}s",
+    MEDIA_DEBUG_LOG("fileId: %{public}d delete photomap, ret: %{public}d, deleteSql: %{public}s",
         fileId, ret, deleteSql.c_str());
     return E_OK;
 }
@@ -393,7 +393,7 @@ void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBuc
 {
     if (MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heif" &&
         MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heic") {
-        MEDIA_INFO_LOG("cloudId: %{public}s Display name is not heif", pullData.cloudId.c_str());
+        MEDIA_DEBUG_LOG("cloudId: %{public}s Display name is not heif", pullData.cloudId.c_str());
         return;
     }
 
@@ -458,7 +458,6 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
     int32_t ret = this->UpdateProxy(changedRows, values, predicates, pullData.cloudId, photoRefresh);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateRecordToDatabase, ret: %{public}d", ret);
     NotifyDateTakenChanged(pullData);
-    MEDIA_INFO_LOG("changedRows %{public}d, IsRecycleUpdated %{public}d", changedRows, pullData.GetIsRecycleUpdated());
     if (changedRows > 0) {
         if (mtimeChanged) {  // 文件修改与元数据同时修改，算文件修改
             stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT]++;
@@ -468,6 +467,8 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
     }
     UpdateAssetInPhotoMap(pullData.attributesFileId, albumIds);
     IsCoverContentChange(changedRows, mtimeChanged, pullData.localFileId);
+    MEDIA_INFO_LOG("UpdateRecordToDatabase completed, ret: %{public}d, changedRows %{public}d, cloudId: %{public}s, "
+        "IsRecycleUpdated %{public}d", ret, changedRows, pullData.cloudId.c_str(), pullData.GetIsRecycleUpdated());
     return ret;
 }
 
@@ -728,7 +729,7 @@ int32_t CloudMediaPhotosDao::GetSourceAlbum(const CloudMediaPullDataDto &pullDat
     } else if (tmpAlbum != 0) {
         cloudMapIds.insert(tmpAlbum);
     }
-    MEDIA_INFO_LOG("GetSourceAlbum, firstAlbum: %{public}d, albumId: %{public}d, "
+    MEDIA_DEBUG_LOG("GetSourceAlbum, firstAlbum: %{public}d, albumId: %{public}d, "
                    "physical: %{public}d, tmpAlbum: %{public}d, mediaType: %{public}d.",
         firstAlbum,
         albumId,
@@ -742,13 +743,13 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     int32_t &albumId, std::set<int32_t> &albumIds, std::set<std::string> &refreshAlbums)
 {
     SafeMap<std::string, int32_t> albumCloudToLocalMap = GetAlbumCloudToLocalMap();
-    MEDIA_ERR_LOG("UpdateFixDB: %{public}s, %{public}d", data.cloudId.c_str(), albumCloudToLocalMap.Size());
+    MEDIA_DEBUG_LOG("UpdateFixDB: %{public}s, %{public}d", data.cloudId.c_str(), albumCloudToLocalMap.Size());
     bool isHide = false;
     int32_t ret = E_OK;
     ret = GetSourceAlbum(data, albumId, albumIds, isHide, albumCloudToLocalMap);
     CHECK_AND_PRINT_LOG(
         ret == E_OK, "UpdateFixDB cloudId: %{public}s cannot get sourceAlbum", data.cloudId.c_str());
-    MEDIA_INFO_LOG("UpdateFixDB cloudId: %{public}s, isHide: %{public}d, album: %{public}d",
+    MEDIA_DEBUG_LOG("UpdateFixDB cloudId: %{public}s, isHide: %{public}d, album: %{public}d",
         data.cloudId.c_str(),
         isHide,
         albumId);
@@ -783,8 +784,8 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     }
     this->FixEmptyAlbumId(data, albumId);
     refreshAlbums.emplace(std::to_string(albumId));
-    MEDIA_INFO_LOG(
-        "UpdateFixDB needFix %{public}d  %{public}d  %{public}d %{public}d", needFix, isHide, hidden, albumId);
+    MEDIA_DEBUG_LOG("UpdateFixDB completed, cloudId: %{public}s, needFix: %{public}d, isHide: %{public}d, "
+        "hidden: %{public}d, albumId: %{public}d", data.cloudId.c_str(), needFix, isHide, hidden, albumId);
     return E_OK;
 }
 
@@ -910,7 +911,8 @@ int32_t CloudMediaPhotosDao::GetLocalKeyData(KeyData &localKeyData, std::shared_
     SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap = GetAlbumLocalToCloudMap();
     if (!localToCloudMap.Find(albumid, val)) {
         localKeyData.sourceAlbum = hiddenAlbumId_ == albumid ? HIDDEN_ALBUM_CLOUD_ID : "";
-        MEDIA_ERR_LOG("FixData: Get sourceAlbum %{public}s", localKeyData.sourceAlbum.c_str());
+        MEDIA_ERR_LOG(
+            "FixData: Get sourceAlbum %{public}s", MediaFileUtils::DesensitizeName(localKeyData.sourceAlbum).c_str());
         std::string sourcePath = Media::GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
         localKeyData.lPath = CloudMediaSyncUtils::GetLpathFromSourcePath(sourcePath);
         MEDIA_ERR_LOG(
@@ -928,7 +930,8 @@ bool CloudMediaPhotosDao::JudgeConflict(
     if (localKeyData.displayName != cloudKeyData.displayName) {
         return false;
     }
-    MEDIA_INFO_LOG("Judge duplicate files %{public}s", localKeyData.displayName.c_str());
+    MEDIA_INFO_LOG(
+        "Judge duplicate files %{public}s", MediaFileUtils::DesensitizeName(localKeyData.displayName).c_str());
     if ((localKeyData.isize != cloudKeyData.isize) ||
         ((cloudKeyData.mediaType == MediaType::MEDIA_TYPE_IMAGE) &&
             (localKeyData.exifRotateValue != cloudKeyData.exifRotateValue))) {
@@ -1188,7 +1191,7 @@ int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> 
     CHECK_AND_RETURN_RET_LOG(ret >= 0, E_DB_FAIL, "GetCopyRecords Failed to query RowCount.");
     // Notify caller if no data is returned, it means all data has been processed.
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
-    MEDIA_INFO_LOG("GetCopyRecords Counts: %{public}zu", tempList.size());
+    MEDIA_DEBUG_LOG("GetCopyRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
     int32_t fileId;
     bool isValid;
@@ -1227,7 +1230,7 @@ int32_t CloudMediaPhotosDao::AddRemoveAlbumCloudId(
 
 int32_t CloudMediaPhotosDao::UpdateLocalAlbumMap(const std::string &cloudId)
 {
-    MEDIA_INFO_LOG("enter UpdateLocalAlbumMap %{public}s", cloudId.c_str());
+    MEDIA_DEBUG_LOG("enter UpdateLocalAlbumMap %{public}s", cloudId.c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateLocalAlbumMap get store failed.");
     /* update deleted */
@@ -1258,7 +1261,6 @@ int32_t CloudMediaPhotosDao::UpdateLocalAlbumMap(const std::string &cloudId)
         MEDIA_ERR_LOG("UpdateLocalAlbumMap Update local album map err %{public}d, %{public}s", ret, cloudId.c_str());
         return ret;
     }
-    MEDIA_INFO_LOG("UpdateLocalAlbumMap success");
     return ret;
 }
 
@@ -1818,7 +1820,7 @@ void CloudMediaPhotosDao::IsCoverContentChange(int32_t changedRows, bool mtimeCh
     CHECK_AND_RETURN_LOG(dataFileId > 0, "fileId is invalid");
     string fileId = to_string(dataFileId);
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    if (albumRefresh.IsCoverContentChange(fileId)) {
+    if (albumRefresh.IsCoverContentChange({fileId})) {
         MEDIA_INFO_LOG("album cover content has Changed, fileId: %{public}d", dataFileId);
     }
 }

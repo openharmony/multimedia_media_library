@@ -111,9 +111,10 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
 
 bool CloudMediaSyncUtils::IsLocalDirty(int32_t dirty, bool isDelete)
 {
-    MEDIA_INFO_LOG("dirty: %{public}d, isDelete: %{public}d", dirty, static_cast<int32_t>(isDelete));
     bool localDirty = (dirty == static_cast<int32_t>(DirtyType::TYPE_MDIRTY)) ||
                       (dirty == static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+    CHECK_AND_PRINT_INFO_LOG(!localDirty, "dirty: %{public}d, isDelete: %{public}d",
+        dirty, static_cast<int32_t>(isDelete));
     if (isDelete) {
         return localDirty;
     } else {
@@ -123,7 +124,7 @@ bool CloudMediaSyncUtils::IsLocalDirty(int32_t dirty, bool isDelete)
 
 bool CloudMediaSyncUtils::FileIsLocal(const int32_t position)
 {
-    MEDIA_INFO_LOG("position: %{public}d.", position);
+    MEDIA_DEBUG_LOG("position: %{public}d.", position);
     return !!(static_cast<uint32_t>(position) & 1);
 }
 

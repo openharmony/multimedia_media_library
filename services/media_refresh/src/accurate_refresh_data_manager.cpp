@@ -242,22 +242,22 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 
         // 更新infoAfterChange_
         if (IsValidChangeInfo(changeData.infoAfterChange_)) {
-            MEDIA_INFO_LOG("operate duplicate modified key: %{public}d", key);
+            MEDIA_DEBUG_LOG("operate duplicate modified key: %{public}d", key);
         }
         changeData.infoAfterChange_ = modifiedInfo;
         PostInsertAfterData(changeData, pendingInfo);
         if (modifiedDatas.size() <= logTimesLimit || !recordFirst) {
-            ACCURATE_INFO("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);
+            MEDIA_DEBUG_LOG("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);
             if (AccurateRefresh::accurateDebugLevel >= AccurateRefresh::accurateDebugLevelMid) {
-                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: [update] info before: %{public}s",
-                    MLOG_TAG, __FUNCTION__, __LINE__, changeData.infoBeforeChange_.ToString(true).c_str());
-                HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} ##: change: %{public}s",
+                HILOG_COMM_INFO(
+                    "%{public}s:{%{public}s:%{public}d} ##: [update] info before: %{public}s change: %{public}s",
                     MLOG_TAG, __FUNCTION__, __LINE__,
+                    changeData.infoBeforeChange_.ToString(true).c_str(),
                     changeData.infoBeforeChange_.GetDataDiff(changeData.infoAfterChange_).c_str());
             }
             recordFirst = true;
             if (modifiedDatas.size() > logTimesLimit) {
-                ACCURATE_INFO("%{public}zu total update datas", modifiedDatas.size());
+                MEDIA_DEBUG_LOG("%{public}zu total update datas", modifiedDatas.size());
             }
         }
     }
@@ -296,7 +296,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         changeData.version_ = timestamp;
         PostInsertAfterData(changeData, pendingInfo, true);
         changeDatas_.emplace(key, changeData);
-        ACCURATE_INFO("[add] info: %{public}s", changeData.infoAfterChange_.ToString(true).c_str());
+        MEDIA_INFO_LOG("[add] info: %{public}s", changeData.infoAfterChange_.ToString(true).c_str());
     }
 
     return ACCURATE_REFRESH_RET_OK;

@@ -287,6 +287,7 @@ thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRiskStatusEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAppLinkStateRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -368,11 +369,13 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("off", UserFileMgrOffCallback),
             DECLARE_NAPI_FUNCTION("getPrivateAlbum", UserFileMgrGetPrivateAlbum),
             DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
-            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers), DECLARE_NAPI_FUNCTION("release", JSRelease),
+            DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
+            DECLARE_NAPI_FUNCTION("release", JSRelease),
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
-            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex), DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
+            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -399,6 +402,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoRiskStatus", CreatePhotoRiskStatusEnum(env)),
+        DECLARE_NAPI_PROPERTY("AppLinkState", CreateAppLinkStateEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -8333,7 +8337,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callba
 
 napi_value MediaLibraryNapi::PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info)
 {
-    NAPI_INFO_LOG("MediaLibraryNapi::PhotoAccessGetBurstAssets start");
+    NAPI_DEBUG_LOG("MediaLibraryNapi::PhotoAccessGetBurstAssets start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
     CHECK_NULLPTR_RET(ParseArgsGetBurstAssets(env, info, asyncContext));
@@ -10243,6 +10247,11 @@ napi_value MediaLibraryNapi::CreateHideSensitiveTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateDynamicRangeTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, dynamicRangeTypeEnum, sDynamicRangeType_);
+}
+
+napi_value MediaLibraryNapi::CreateAppLinkStateEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, appLinkStateEnum, sAppLinkStateRef_);
 }
 
 static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)
@@ -12979,6 +12988,11 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
+    NAPI_ERR_LOG("pickerCallBack");
+    if (context->pickerCallBack == nullptr) {
+        NAPI_ERR_LOG("pickerCallBack is null");
+        CHECK_NULL_PTR_RETURN_VOID(context->pickerCallBack, "pickerCallBack is null");
+    }
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
@@ -12991,6 +13005,7 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property resultCode failed");
     }
+
     getPhotoPickerSelectUris(env, result, context);
     getPhotoPickerMovingPhotoBadgeStates(env, result, context);
     napi_value gridLevel = nullptr;

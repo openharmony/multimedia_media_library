@@ -200,11 +200,9 @@ int32_t AlbumAccurateRefresh::NotifyForReCheck()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-bool AlbumAccurateRefresh::IsCoverContentChange(const string &fileId)
+bool AlbumAccurateRefresh::IsCoverContentChange(const vector<string> &fileIds)
 {
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), false, "invalid input param");
-    CHECK_AND_RETURN_RET_LOG(atoi(fileId.c_str()) > 0, false, "fileId is invalid");
-    MEDIA_INFO_LOG("IsCoverContentChange in, fileId: %{public}s", fileId.c_str());
+    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), false, "fileIds is empty");
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -224,33 +222,36 @@ bool AlbumAccurateRefresh::IsCoverContentChange(const string &fileId)
             resultSet, TYPE_STRING));
         string hiddenCover = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::HIDDEN_COVER,
             resultSet, TYPE_STRING));
-        if ((coverUri != "" && MediaFileUtils::GetIdFromUri(coverUri) == fileId)
-            || (hiddenCover != "" && MediaFileUtils::GetIdFromUri(hiddenCover) == fileId)) {
+        if ((coverUri != "" &&
+            std::find(fileIds.begin(), fileIds.end(), MediaFileUtils::GetIdFromUri(coverUri)) != fileIds.end())
+            || (hiddenCover != "" &&
+            std::find(fileIds.begin(), fileIds.end(), MediaFileUtils::GetIdFromUri(hiddenCover)) != fileIds.end())) {
             albumIds.push_back(albumId);
         }
     }
     resultSet->Close();
 
     if (!albumIds.empty()) {
-        NotifyAlbumsCoverChange(fileId, albumIds);
+        NotifyAlbumsCoverChange(fileIds, albumIds);
         return true;
     }
     return false;
 }
 
-void AlbumAccurateRefresh::NotifyAlbumsCoverChange(const string &fileId, vector<int32_t> &albumIds)
+void AlbumAccurateRefresh::NotifyAlbumsCoverChange(const vector<string> &fileIds, vector<int32_t> &albumIds)
 {
-    CHECK_AND_RETURN_LOG(MediaFileUtils::IsValidInteger(fileId), "invalid input param");
-    CHECK_AND_RETURN_LOG(atoi(fileId.c_str()) > 0, "fileId is invalid");
+    CHECK_AND_RETURN_LOG(!fileIds.empty(), "fileIds is empty");
     CHECK_AND_RETURN_LOG(!albumIds.empty(), "no album cover has changed");
     Init(albumIds);
     UpdateModifiedDatasInner(albumIds, RDB_OPERATION_UPDATE);
     vector<AlbumChangeData> albumChangeDatas = dataManager_.GetChangeDatas();
     for (auto &albumChangeData : albumChangeDatas) {
-        if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.coverUri_) == fileId) {
+        if (std::find(fileIds.begin(), fileIds.end(),
+            MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.coverUri_)) != fileIds.end()) {
             albumChangeData.infoAfterChange_.isCoverChange_ = true;
         }
-        if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.hiddenCoverUri_) == fileId) {
+        if (std::find(fileIds.begin(), fileIds.end(),
+            MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.hiddenCoverUri_)) != fileIds.end()) {
             albumChangeData.infoAfterChange_.isHiddenCoverChange_ = true;
         }
     }

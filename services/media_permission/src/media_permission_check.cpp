@@ -30,6 +30,7 @@
 #include "parameters.h"
 #include "media_db_permission_check.h"
 #include "media_access_medialib_thumb_db_permission_check.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::Media;
@@ -97,7 +98,7 @@ int32_t PermissionCheck::VerifyOpenFilePermissions(uint32_t businessCode, const 
             PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         return E_PERMISSION_DENIED;
     }
-    MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d success", businessCode);
+    MEDIA_DEBUG_LOG("VerifyPermissions API code=%{public}d success", businessCode);
     return ret;
 }
 
@@ -160,7 +161,7 @@ int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const Permissi
         CHECK_AND_RETURN_RET((ret == E_SUCCESS), E_PERMISSION_DENIED);
         return E_SUCCESS;
     }
-    
+
     auto permissionCheck = BuildPermissionCheckChain(businessCode, data);
     if (permissionCheck == nullptr) {
         MEDIA_DEBUG_LOG("%{public}s permissionCheck is nullptr", __func__);
@@ -181,4 +182,44 @@ int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const Permissi
     return ret;
 }
 
+bool PermissionCheck::IsCriticalPhoto(const std::string &fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get RDB store");
+        return false;
+    }
+
+    vector<string> columns = { PhotoColumn::PHOTO_IS_CRITICAL };
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_CRITICAL, true);
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+
+    int32_t isCritical = 0;
+    int32_t columnIndex = 0;
+    resultSet->GetColumnIndex(PhotoColumn::PHOTO_IS_CRITICAL, columnIndex);
+    resultSet->GetInt(columnIndex, isCritical);
+
+    bool result = isCritical == 1;
+    resultSet->Close();
+    return result;
+}
+
+int32_t PermissionCheck::CheckCriticalPhotoPermission(const std::string &fileId, const uid_t &uid)
+{
+    if (!IsCriticalPhoto(fileId)) {
+        return E_SUCCESS;
+    }
+
+    if (!PermissionUtils::CheckCallerPermission(MANAGE_RISK_PHOTOS)) {
+        return E_PERMISSION_DENIED;
+    }
+
+    return E_SUCCESS;
+}
 } // namespace OHOS::Media

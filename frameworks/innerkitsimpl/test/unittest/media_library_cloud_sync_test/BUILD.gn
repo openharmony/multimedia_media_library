@@ -56,6 +56,8 @@ ohos_unittest("media_library_cloud_sync_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
     "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include/",
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include/cloud_sync_data_convert/",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/controller/processor",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils",
   ]
 
   include_media_cloud_sync_data = [
@@ -83,6 +85,8 @@ ohos_unittest("media_library_cloud_sync_test") {
     "./src/cloud_media_photo_handler_onfetchrecords_test.cpp",
     "./src/cloud_media_photo_handler_test.cpp",
     "./src/database_data_mock_test.cpp",
+    "./src/mdk_record_reader_test.cpp",
+    "./src/cloud_int64_fields_hash_map_test.cpp",
   ]
 
   deps = [

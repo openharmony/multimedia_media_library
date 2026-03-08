@@ -112,7 +112,7 @@ void RepairFutureDateTask::UpdateFutureDate(
     MEDIA_INFO_LOG("update succeed, fileId:%{public}d, dateTaken:%{public}lld, detailTime:%{public}s",
         fileId,
         static_cast<long long>(scanResult.dateTaken),
-        scanResult.detailTime.c_str());
+        MediaFileUtils::DesensitizeName(scanResult.detailTime).c_str());
 }
 
 void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &terminate, const std::vector<PhotosPo> &photos)

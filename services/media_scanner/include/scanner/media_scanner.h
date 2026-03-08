@@ -102,6 +102,7 @@ private:
     EXPORT int32_t GetFileMetadata();
     EXPORT int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
     EXPORT int32_t GetMediaInfo();
+    void FillAssetInfoWatch();
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const std::string &parent);
 #endif

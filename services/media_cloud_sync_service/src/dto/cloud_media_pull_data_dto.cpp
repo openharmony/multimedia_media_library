@@ -21,12 +21,14 @@
 
 #include "cloud_media_dao_const.h"
 #include "cloud_media_sync_const.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPullDataDto::GetBasicInfo(std::stringstream &ss) const
 {
     ss << "\"cloudId\": \"" << cloudId << "\","
+       << "\"basicDisplayName\": \"" << MediaFileUtils::DesensitizeName(basicDisplayName) << "\","
        << "\"basicIsDelete\": " << std::to_string(basicIsDelete) << ","
        << "\"basicSize\": " << basicSize << ","
        << "\"basicMimeType\": \"" << basicMimeType << "\","
@@ -181,6 +183,12 @@ void CloudMediaPullDataDto::GetAttributesHashMap(std::stringstream &ss) const
     for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
         ss << "\"" << node.second << "\", ";
+    }
+    ss << "}, ";
+    ss << "\"int64fields\": {";
+    for (const auto &node : this->int64fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
     }
     ss << "}";
     return;

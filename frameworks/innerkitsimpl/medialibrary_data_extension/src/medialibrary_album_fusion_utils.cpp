@@ -797,7 +797,7 @@ static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targ
     GetLongValueFromResultSet(resultSet, MediaColumn::MEDIA_DATE_MODIFIED, dateModified);
     std::string uri = PHOTO_URI_PREFIX + to_string(assetId) + MediaFileUtils::GetExtraUri(displayName, targetPath) +
         "?api_version=10&date_modified=" + to_string(dateModified) + "&date_taken=" + to_string(dateTaken);
-    MEDIA_INFO_LOG("Begin generate thumbnail %{public}s, ", uri.c_str());
+    MEDIA_INFO_LOG("Begin generate thumbnail %{public}s, ", MediaFileUtils::DesensitizeUri(uri).c_str());
     int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, isSyncGenerateThumbnail);
     if (err != E_SUCCESS) {
         MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
@@ -861,7 +861,8 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
         return E_INVALID_PATH;
     }
     MEDIA_INFO_LOG("begin copy local file, scrPath is %{public}s, and target path is %{public}s",
-        srcPath.c_str(), targetPath.c_str());
+        MediaFileUtils::DesensitizePath(srcPath).c_str(),
+        MediaFileUtils::DesensitizePath(targetPath).c_str());
     // Copy photo files, supporting copy moving photo's video and extraData folder.
     int32_t err = PhotoFileOperation().CopyPhoto(resultSet, targetPath);
     if (err != E_OK) {
@@ -1019,7 +1020,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
         return E_INVALID_PATH;
     }
     MEDIA_INFO_LOG("Begin copy thumbnail original scrPath is %{public}s, and target path is %{public}s",
-        srcPath.c_str(), targetPath.c_str());
+        MediaFileUtils::DesensitizePath(srcPath).c_str(), MediaFileUtils::DesensitizePath(targetPath).c_str());
     int32_t err = CopyOriginThumbnail(srcPath, targetPath);
     CHECK_AND_RETURN_RET(err == E_OK, err);
 
@@ -1219,7 +1220,7 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     MediaLibraryAlbumFusionUtils::BuildTargetFilePath(targetPath, displayName, mediaType);
     std::string extension = MediaFileUtils::GetExtensionFromPath(displayName);
     MEDIA_INFO_LOG("ConvertFormatPhoto failed, displayName: %{public}s, targetPath: %{public}s",
-        displayName.c_str(), targetPath.c_str());
+        MediaFileUtils::DesensitizeName(displayName).c_str(), MediaFileUtils::DesensitizePath(targetPath).c_str());
     int32_t err = PhotoFileOperation().ConvertFormatPhoto(resultSet, targetPath, extension);
     if (err != E_OK) {
         MEDIA_ERR_LOG("ConvertFormatPhoto failed, err: %{public}d", err);
@@ -1519,7 +1520,7 @@ static void QuerySourceAlbumLPath(const std::shared_ptr<MediaLibraryRdbStore> up
     shared_ptr<NativeRdb::ResultSet> albumPluginResultSet = upgradeStore->QuerySql(queryExpiredAlbumInfo);
     if (albumPluginResultSet == nullptr || albumPluginResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Query lpath data fails, bundleName is %{public}s and albumName is %{public}s",
-            bundle_name.c_str(), album_name.c_str());
+            bundle_name.c_str(), MediaFileUtils::DesensitizeName(album_name).c_str());
         lPath = "/Pictures/" + album_name;
         return;
     }
@@ -1648,10 +1649,10 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
 static bool IsDeleteOtherAlbum(int32_t oldAlbumId)
 {
     std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is null");
     const std::string querySql = "SELECT lpath from PhotoAlbum WHERE album_id = " + std::to_string(oldAlbumId);
     auto resultSet = rdbStore->QueryByStep(querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Is delete other album, find album resultSet null");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Is delete other album, find album resultSet null");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("IsDeleteOtherAlbum first row empty");
         resultSet->Close();
@@ -1919,6 +1920,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(const std::shared_pt
         } else {
             MergeScreenRecordAlbum(upgradeStore, resultSet);
         }
+        SetRefreshAlbum(true);
     }
     MEDIA_INFO_LOG("End handle change name album data");
     return E_OK;
