@@ -26,12 +26,16 @@
 namespace OHOS::Media::CloudSync {
 bool OnDentryFileReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::UnmarshallingParcelable<OnFetchPhotosVo>(this->records, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::UnmarshallingParcelable<OnFetchPhotosVo>(this->records, parcel), false, "records");
+    return true;
 }
 
 bool OnDentryFileReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::MarshallingParcelable<OnFetchPhotosVo>(this->records, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::MarshallingParcelable<OnFetchPhotosVo>(this->records, parcel), false, "records");
+    return true;
 }
 
 int32_t OnDentryFileReqBody::AddOnDentryFileRecord(const OnFetchPhotosVo &record)
@@ -63,12 +67,16 @@ std::string OnDentryFileReqBody::ToString() const
 
 bool OnDentryFileRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    return true;
 }
 
 bool OnDentryFileRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false, "failedRecords");
+    return true;
 }
 
 std::string OnDentryFileRespBody::ToString() const
@@ -89,7 +97,7 @@ std::string OnDentryFileRespBody::ToString() const
 
 bool OnDentryFileReqBody::SplitBy20K(std::vector<OnDentryFileReqBody> &reqBodyList) const
 {
-    CHECK_AND_RETURN_RET(!this->records.empty(), false);
+    CHECK_AND_RETURN_RET_LOG(!this->records.empty(), true, "!this->records.empty()");
     const size_t parcelGap = 4800;
     const size_t parcelCapacity = 204800 - parcelGap;
     size_t parcelSize = 0;
@@ -121,7 +129,7 @@ bool OnDentryFileReqBody::SplitBy20K(std::vector<OnDentryFileReqBody> &reqBodyLi
         reqBodyList.size());
     return true;
 }
- 
+
 void OnDentryFileRespBody::MergeRespBody(const OnDentryFileRespBody &respBody)
 {
     this->failedRecords.insert(this->failedRecords.end(), respBody.failedRecords.begin(), respBody.failedRecords.end());

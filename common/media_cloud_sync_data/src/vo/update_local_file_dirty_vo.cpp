@@ -20,16 +20,20 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool UpdateLocalFileDirtyReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
+    return true;
 }
 
 bool UpdateLocalFileDirtyReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
+    return true;
 }
 
 std::string UpdateLocalFileDirtyReqBody::ToString() const

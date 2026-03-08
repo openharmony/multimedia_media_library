@@ -57,4 +57,4 @@ std::string CleanAttachmentReqBody::ToString() const
        << "}";
     return ss.str();
 }
-} // namespace OHOS::Media::CloudSync
+}  // namespace OHOS::Media::CloudSync

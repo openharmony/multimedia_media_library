@@ -26,23 +26,17 @@
 namespace OHOS::Media::CloudSync {
 bool UpdateDataReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = DataShare::DataSharePredicates::Unmarshal(predicates, parcel);
-    CHECK_AND_RETURN_RET_LOG(status, false, "predicates Unmarshal failed");
-
-    status = ITypesUtil::Unmarshal(parcel, value.valuesMap);
-    CHECK_AND_RETURN_RET_LOG(status, false, "valuebucket Unmarshal failed");
-
-    return ITypesUtil::Unmarshal(parcel, tableName, operateName);
+    CHECK_AND_RETURN_RET_LOG(DataShare::DataSharePredicates::Unmarshal(predicates, parcel), false, "predicates");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshal(parcel, value.valuesMap), false, "value.valuesMap");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshal(parcel, tableName, operateName), false, "tableName, operateName");
+    return true;
 }
 
 bool UpdateDataReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = DataShare::DataSharePredicates::Marshal(predicates, parcel);
-    CHECK_AND_RETURN_RET_LOG(status, false, "predicates Marshal failed");
-
-    status = ITypesUtil::Marshal(parcel, value.valuesMap);
-    CHECK_AND_RETURN_RET_LOG(status, false, "valuebucket Marshal failed");
-
-    return ITypesUtil::Marshal(parcel, tableName, operateName);
+    CHECK_AND_RETURN_RET_LOG(DataShare::DataSharePredicates::Marshal(predicates, parcel), false, "predicates");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshal(parcel, value.valuesMap), false, "value.valuesMap");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshal(parcel, tableName, operateName), false, "tableName, operateName");
+    return true;
 }
 }  // namespace OHOS::Media::CloudSync

@@ -20,16 +20,21 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnDeleteAlbumsRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedAlbumIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedAlbumIds, parcel), false, "failedAlbumIds");
+    return true;
 }
 
 bool OnDeleteAlbumsRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedAlbumIds, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedAlbumIds, parcel), false, "failedAlbumIds");
+    return true;
 }
 
 std::string OnDeleteAlbumsRespBody::ToString() const
