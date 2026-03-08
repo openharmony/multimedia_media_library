@@ -31,6 +31,7 @@
 #include "medialibrary_type_const.h"
 #include "os_account_manager.h"
 #include "storage_manager_proxy.h"
+#include "safe_map.h"
 #include "system_ability_definition.h"
 #include "settings_data_manager.h"
 #include "medialibrary_data_manager.h"
@@ -93,8 +94,8 @@ static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDWR | O_TRUNC, MEDIA_FILEMODE_READWRITETRUNCATE },
     { O_RDWR | O_APPEND, MEDIA_FILEMODE_READWRITEAPPEND },
 };
-std::map<int, time_t> MEDIA_OPEN_WRITE_MAP;
-std::map<std::string, bool> MEDIA_CREATE_WRITE_MAP;
+SafeMap<int, time_t> MEDIA_OPEN_WRITE_MAP;
+SafeMap<std::string, bool> MEDIA_CREATE_WRITE_MAP;
 
 static bool IsCriticalPhoto(const string &fileId)
 {
@@ -663,7 +664,7 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     if (realFlag == O_RDONLY || HasTransCodeFile(target, fileId) != E_OK || GetFileMtime(target, mtime) != E_OK) {
         return E_OK;
     }
-    MEDIA_OPEN_WRITE_MAP.insert(std::make_pair(fd, mtime));
+    MEDIA_OPEN_WRITE_MAP.Insert(fd, mtime);
     return 0;
 }
 
@@ -677,9 +678,9 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
         MEDIA_ERR_LOG("fuse close file fail");
         return E_ERR;
     }
-    if (MEDIA_OPEN_WRITE_MAP.find(fd) != MEDIA_OPEN_WRITE_MAP.end()) {
-        time_t oldMtime = MEDIA_OPEN_WRITE_MAP[fd];
-        MEDIA_OPEN_WRITE_MAP.erase(fd);
+    time_t oldMtime = 0;
+    if (MEDIA_OPEN_WRITE_MAP.Find(fd, oldMtime)) {
+        MEDIA_OPEN_WRITE_MAP.Erase(fd);
         time_t newMtime = 0;
         if (GetFileMtime(filePath, newMtime) != E_OK) {
             MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
@@ -817,11 +818,11 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         }
         res = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Delete failed");
-        MEDIA_CREATE_WRITE_MAP[target] = false;
+        MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, false);
         res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
         CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "MediaLibraryPhotoOperations::Create failed, path = %{private}s",
             filePath.c_str());
-        MEDIA_CREATE_WRITE_MAP[target] = true;
+        MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, true);
         return E_SUCCESS;
     }
     string localPath;
@@ -845,7 +846,7 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
         return -EINVAL;
     }
     string target = path;
-    MEDIA_CREATE_WRITE_MAP[target] = false;
+    MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, false);
 
     int32_t albumId = -1;
     string filePath;
@@ -860,7 +861,7 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
         return res;
     }
     fi->fh = static_cast<uint64_t>(fd);
-    MEDIA_CREATE_WRITE_MAP[target] = true;
+    MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, true);
     return E_SUCCESS;
 }
 
@@ -883,20 +884,21 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     string target = path;
-    if (MEDIA_CREATE_WRITE_MAP.find(target) == MEDIA_CREATE_WRITE_MAP.end()) {
+    bool isCreateWrite = false;
+    if (!MEDIA_CREATE_WRITE_MAP.Find(target, isCreateWrite)) {
         MEDIA_INFO_LOG("not found, path=%{private}s, try do release.", path);
         int32_t ret = DoRelease(path, static_cast<int>(fd));
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "do release fail");
         return E_SUCCESS;
     }
 
-    if (MEDIA_CREATE_WRITE_MAP[target]) {
+    if (isCreateWrite) {
         int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
-        MEDIA_CREATE_WRITE_MAP.erase(target);
+        MEDIA_CREATE_WRITE_MAP.Erase(target);
         return res;
     } else {
         MEDIA_ERR_LOG("DoHdcCreate failed.");
-        MEDIA_CREATE_WRITE_MAP.erase(target);
+        MEDIA_CREATE_WRITE_MAP.Erase(target);
         return E_ERR;
     }
 }
