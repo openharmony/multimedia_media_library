@@ -472,8 +472,7 @@ std::string PhotosClone::FindStoragePathByFile(const FileInfo &fileInfo)
     CHECK_AND_RETURN_RET_LOG(!candidateStoragePaths.empty(), "",
         "No candidate storagePaths for %{public}s", ToString(fileInfo).c_str());
     CHECK_AND_RETURN_RET(candidateStoragePaths.size() > 1, candidateStoragePaths[0]);
-    for (auto it = candidateStoragePaths.rbegin(); it != candidateStoragePaths.rend(); ++it)
-    {
+    for (auto it = candidateStoragePaths.rbegin(); it != candidateStoragePaths.rend(); ++it) {
         const auto& storagePath = *it;
         CHECK_AND_RETURN_RET(!IsMetadataMatched(fileInfo, storagePath), storagePath);
     }
