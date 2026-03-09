@@ -112,7 +112,10 @@ const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
 const std::string SPECIAL_EDIT_EDIT_DATA = "";
 const std::string SPECIAL_EDIT_APP_ID = "com.ohos.photos";
 static const std::string ORIGIN_VIDEO_STR = "1";
+static const string IS_ORIGINAL_IMAGE_RESOURCE = "is_original_image_resource";
+static const string ORIGINAL_IMAGE_RESOURCE = "1";
 const bool PROCESS_TRANSCODE_SIZE = false;
+static const std::string ORIGIN_VIDEO_STR = "1";
 static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
@@ -4364,6 +4367,31 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::ValidateAndExtractFileAssetParams(MediaLibraryCommand& cmd,
+    const std::shared_ptr<FileAsset>& fileAsset, string& assetPath, int32_t& subtype, int32_t& id, bool& isEdit)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    
+    subtype = fileAsset->GetPhotoSubType();
+    CHECK_AND_RETURN_RET_LOG(CheckCacheCmd(cmd, subtype, fileAsset->GetDisplayName()),
+        E_INVALID_VALUES, "Failed to check cache cmd");
+        
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+
+    int64_t pending = fileAsset->GetTimePending();
+    CHECK_AND_RETURN_RET_LOG(
+        pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
+        E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
+
+    assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+
+    id = fileAsset->GetId();
+    isEdit = (pending == 0);
+
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
 {
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
@@ -6073,7 +6101,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToExistPhoto(const std::string &i
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
         "Failed To Create Temp Filters File %{private}s", tempOutputPath.c_str());
     tracer.Start("MediaChangeEffect::TakeEffect");
-    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
+    int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
     tracer.Finish();
     if (ret != E_OK) {
         HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} ToExistPhoto, TakeEffect Error. ret = %{public}d",
