@@ -57,6 +57,7 @@
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_const.h"
 #include "medialibrary_bundle_manager.h"
+#include "transcode_compatible_info_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -542,9 +543,25 @@ static bool IsHighPixelPicture(const string &fileId)
     return false;
 }
 
+static bool IsSupportHighResolution(const string& bundleName)
+{
+    CompatibleInfo compatibleInfo;
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    if (compatibleInfo.highResolution) {
+        return true;
+    }
+    return false;
+}
+
 static bool NeedTranscodeHighPixelPicture(bool isHighPixel)
 {
     if (isHighPixel && !PermissionUtils::IsSystemApp()) {
+        string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        MEDIA_ERR_LOG("IsSupportHighPixelPicture clientBundle %{public}s", clientBundle.c_str());
+        if (IsSupportHighResolution(clientBundle)) {
+            return false;
+        }
+        MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
         return true;
     }
     return false;
