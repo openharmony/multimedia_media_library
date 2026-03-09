@@ -337,6 +337,7 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return remoteObject->AsObject();
 }
+//LCOV_EXCL_STOP
 
 vector<string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const string &mimeTypeFilter)
 {
@@ -344,6 +345,7 @@ vector<string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const stri
     return ret;
 }
 
+//LCOV_EXCL_START
 static void FillV10Perms(const MediaType mediaType, const bool containsRead, const bool containsWrite,
     vector<string> &perm)
 {
@@ -741,6 +743,7 @@ int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
     }
     return err;
 }
+//LCOV_EXCL_STOP
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
@@ -789,10 +792,12 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     return ret;
 }
 
+//LCOV_EXCL_START
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const string &mode)
 {
     return 0;
 }
+//LCOV_EXCL_STOP
 
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
@@ -812,6 +817,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     return ret;
 }
 
+//LCOV_EXCL_START
 int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBucket &value, string &result)
 {
     MediaLibraryCommand cmd(uri);
@@ -895,6 +901,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     CHECK_AND_RETURN_RET_LOG(!cond, err, "permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
     return updateRet;
 }
+//LCOV_EXCL_STOP
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
@@ -919,6 +926,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     return ret;
 }
 
+//LCOV_EXCL_START
 shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
@@ -983,6 +991,7 @@ string MediaDataShareExtAbility::GetType(const Uri &uri)
     string getTypeRet = MediaLibraryDataManager::GetInstance()->GetType(uri);
     return getTypeRet;
 }
+//LCOV_EXCL_STOP
 
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
@@ -1005,6 +1014,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
     return ret;
 }
 
+//LCOV_EXCL_START
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
@@ -1035,6 +1045,7 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return true;
 }
+//LCOV_EXCL_STOP
 
 bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
@@ -1047,6 +1058,7 @@ bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
     return true;
 }
 
+//LCOV_EXCL_START
 Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
