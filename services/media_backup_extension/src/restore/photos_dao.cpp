@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "backup_database_utils.h"
+#include "dao_utils.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
@@ -44,10 +45,7 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
         resultSet->Close();
         return rowData;
     }
-    rowData.fileId = GetInt32Val("file_id", resultSet);
-    rowData.data = GetStringVal("data", resultSet);
-    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
-    rowData.position = GetInt32Val("position", resultSet);
+    ParseResultSetOfSameFile(rowData, resultSet);
     resultSet->Close();
     return rowData;
 }
@@ -72,10 +70,7 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
         resultSet->Close();
         return rowData;
     }
-    rowData.fileId = GetInt32Val("file_id", resultSet);
-    rowData.data = GetStringVal("data", resultSet);
-    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
-    rowData.position = GetInt32Val("position", resultSet);
+    ParseResultSetOfSameFile(rowData, resultSet);
     resultSet->Close();
     return rowData;
 }
@@ -98,12 +93,19 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithCloudId(const FileInfo &file
         resultSet->Close();
         return rowData;
     }
+    ParseResultSetOfSameFile(rowData, resultSet);
+    resultSet->Close();
+    return rowData;
+}
+
+void PhotosDao::ParseResultSetOfSameFile(PhotosDao::PhotosRowData &rowData,
+    std::shared_ptr<NativeRdb::ResultSet> resultSet)
+{
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
-    resultSet->Close();
-    return rowData;
+    rowData.fileSourceType = GetInt32Val("file_source_type", resultSet);
 }
 
 /**
@@ -179,10 +181,7 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fil
         resultSet->Close();
         return rowData;
     }
-    rowData.fileId = GetInt32Val("file_id", resultSet);
-    rowData.data = GetStringVal("data", resultSet);
-    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
-    rowData.position = GetInt32Val("position", resultSet);
+    ParseResultSetOfSameFile(rowData, resultSet);
     resultSet->Close();
     return rowData;
 }
@@ -235,5 +234,118 @@ std::vector<PhotosDao::PhotosRowData> PhotosDao::GetDirtyFiles(int32_t offset)
     }
     resultSet->Close();
     return rowDataList;
+}
+
+int32_t PhotosDao::GetBackupMediaCount(const std::vector<int32_t> &mediaTypes,
+    const std::vector<int32_t> &fileSourceTypes, const std::vector<int32_t> &positionTypes)
+{
+    std::vector<std::string> bindArgs = { BackupDatabaseUtils::JoinValues(mediaTypes, ","),
+        BackupDatabaseUtils::JoinValues(fileSourceTypes, ","), BackupDatabaseUtils::JoinValues(positionTypes, ",") };
+    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_MEDIA_COUNT, bindArgs);
+    return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, "count");
+}
+
+int32_t PhotosDao::GetBackupAudioCount(const std::vector<int32_t> &mediaTypes)
+{
+    std::vector<std::string> bindArgs = { BackupDatabaseUtils::JoinValues(mediaTypes, ",") };
+    std::string querySql = DaoUtils::FillParams(SQL_AUDIOS_GET_AUDIO_COUNT, bindArgs);
+    return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, "count");
+}
+
+int64_t PhotosDao::GetAssetTotalSizeByFileSourceType(int32_t fileSourceType)
+{
+    std::string mediaVolumeQuery = GetPhotosSizeSqlByFileSourceType(fileSourceType);
+    std::string thumbSizeSql = GetThumbSizeSqlByFileSourceType(fileSourceType);
+    CHECK_AND_EXECUTE(thumbSizeSql.empty(), mediaVolumeQuery += " UNION ALL " + thumbSizeSql);
+    std::string audiosSizeSql = GetAudiosSizeSqlByFileSourceType(fileSourceType);
+    CHECK_AND_EXECUTE(audiosSizeSql.empty(), mediaVolumeQuery += " UNION ALL " + audiosSizeSql);
+
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, mediaVolumeQuery);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "Failed to execute media volume query");
+
+    int64_t totalVolume = 0;
+    MEDIA_INFO_LOG("Initial totalVolume: %{public}" PRId64, totalVolume);
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
+        int32_t mediatype = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+        MEDIA_INFO_LOG("mediatype is %{public}d, current media asset size is: %{public}" PRId64, mediatype, mediaSize);
+        CHECK_AND_PRINT_LOG(mediaSize >= 0,
+            "ill mediaSize: %{public}" PRId64 " for mediatype: %{public}d", mediaSize, mediatype);
+        totalVolume += mediaSize;
+    }
+    resultSet->Close();
+    MEDIA_INFO_LOG("media db media asset size is: %{public}" PRId64, totalVolume);
+
+    CHECK_AND_RETURN_RET_LOG(totalVolume >= 0, totalVolume,
+        "totalVolume is negative: %{public}" PRId64 ". Return 0.", totalVolume);
+    return totalVolume;
+}
+
+std::string PhotosDao::GetPhotosSizeSqlByFileSourceType(int32_t fileSourceType)
+{
+    return "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " + MediaColumn::MEDIA_SIZE + "," + MediaColumn::MEDIA_TYPE +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + "(" +
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") AND " +
+        PhotoColumn::PHOTO_POSITION + " != 2 AND " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " = " + std::to_string(fileSourceType) +
+        " GROUP BY " + MediaColumn::MEDIA_TYPE;
+}
+
+std::string PhotosDao::GetThumbSizeSqlByFileSourceType(int32_t fileSourceType)
+{
+    CHECK_AND_RETURN_RET(fileSourceType == FileSourceType::MEDIA, "");
+    return "SELECT SUM(CAST(" + PhotoExtColumn::THUMBNAIL_SIZE + " AS BIGINT)) AS " + CONST_MEDIA_DATA_DB_SIZE +
+        ", -1 AS " + MediaColumn::MEDIA_TYPE + " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
+}
+
+std::string PhotosDao::GetAudiosSizeSqlByFileSourceType(int32_t fileSourceType)
+{
+    CHECK_AND_RETURN_RET(fileSourceType == FileSourceType::MEDIA, "");
+    return AudioColumn::QUERY_MEDIA_VOLUME;
+}
+
+std::unordered_set<std::string> PhotosDao::GetExistingStoragePaths(const std::vector<std::string> &storagePaths,
+    int32_t maxFileId)
+{
+    std::unordered_set<std::string> existingStoragePaths;
+    CHECK_AND_RETURN_RET(maxFileId > 0, existingStoragePaths);
+
+    std::string selection;
+    for (const auto &storagePath : storagePaths) {
+        BackupDatabaseUtils::UpdateSelection(selection, storagePath, true);
+    }
+    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_EXISTING_STORAGE_PATHS, { selection });
+    std::vector<NativeRdb::ValueObject> params = { maxFileId, FileSourceType::MEDIA_HO_LAKE };
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, existingStoragePaths);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string storagePath = GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet);
+        existingStoragePaths.insert(storagePath);
+    }
+    resultSet->Close();
+    return existingStoragePaths;
+}
+
+std::unordered_set<std::string> PhotosDao::GetExistingData(const std::vector<std::string> &data, int32_t maxFileId)
+{
+    std::unordered_set<std::string> existingData;
+    CHECK_AND_RETURN_RET(maxFileId > 0, existingData);
+
+    std::string selection;
+    for (const auto &datum : data) {
+        BackupDatabaseUtils::UpdateSelection(selection, datum, true);
+    }
+    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_EXISTING_DATA, { selection });
+    std::vector<NativeRdb::ValueObject> params = { maxFileId };
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, existingData);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        existingData.insert(data);
+    }
+    resultSet->Close();
+    return existingData;
 }
 }  // namespace OHOS::Media

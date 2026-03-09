@@ -153,7 +153,7 @@ public:
     template <typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue);
-    static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t maxFileId);
     static std::vector<int32_t> QueryIntVec(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::string& sql, const std::string& columnName);
     static std::unordered_map<int32_t, int32_t> QueryIntMap(std::shared_ptr<NativeRdb::RdbStore> rdbStore,

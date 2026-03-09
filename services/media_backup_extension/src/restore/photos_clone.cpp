@@ -21,10 +21,15 @@
 #include "result_set_utils.h"
 #include "photo_album_dao.h"
 #include "backup_const.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "album_plugin_config.h"
 #include "userfile_manager_types.h"
+
+#include <sys/stat.h>
+#include "backup_adapters.h"
+#include "backup_file_utils.h"
+#include "medialibrary_errno.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media {
 std::string PhotosClone::ToString(const FileInfo &fileInfo)
@@ -361,5 +366,176 @@ int32_t PhotosClone::GetNoNeedMigrateCount()
     }
     int32_t count = GetInt32Val("count", resultSet);
     return count;
+}
+
+void PhotosClone::SetFilePath(std::vector<FileInfo> &fileInfos)
+{
+    SetIsStoragePathExistInDb(fileInfos);
+    // use std::remove_if to filter out lake files unable to set file path
+    auto validEnd = std::remove_if(fileInfos.begin(), fileInfos.end(), [this](FileInfo &fileInfo) {
+        bool success = SetFilePathForLakeFile(fileInfo);
+        CHECK_AND_PRINT_LOG(success,
+            "Set filePath for %{public}s failed, remove it from fileInfos", ToString(fileInfo).c_str());
+        return !success;
+    });
+    fileInfos.erase(validEnd, fileInfos.end());
+    // in case that storage_path changes
+    SetIsStoragePathExistInDb(fileInfos);
+    SetIsCloudPathExistInDb(fileInfos);
+}
+
+void PhotosClone::SetIsStoragePathExistInDb(std::vector<FileInfo> &fileInfos)
+{
+    int32_t existCount = 0;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::string> storagePaths;
+    for (const auto &fileInfo : fileInfos) {
+        CHECK_AND_CONTINUE(FileAdapter::IsLakeFile(fileInfo));
+        storagePaths.emplace_back(fileInfo.storagePath);
+    }
+    std::unordered_set<std::string> existingStoragePaths =
+        photosDao_.GetExistingStoragePaths(storagePaths, photosBasicInfo_.maxFileId);
+    for (auto &fileInfo : fileInfos) {
+        CHECK_AND_CONTINUE(FileAdapter::IsLakeFile(fileInfo));
+        fileInfo.isStoragePathExistInDb = existingStoragePaths.count(fileInfo.storagePath) > 0;
+        existCount += fileInfo.isStoragePathExistInDb;
+    }
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("LakeClone: TimeCost: SetIsStoragePathExistInDb cost %{public}" PRId64 ", existCount: %{public}d",
+        endTime - startTime, existCount);
+}
+
+void PhotosClone::SetIsCloudPathExistInDb(std::vector<FileInfo> &fileInfos)
+{
+    int32_t existCount = 0;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::string> cloudPaths;
+    for (const auto &fileInfo : fileInfos) {
+        CHECK_AND_CONTINUE(FileAdapter::IsLakeFile(fileInfo));
+        cloudPaths.emplace_back(fileInfo.oldPath);
+    }
+    std::unordered_set<std::string> existingCloudPaths =
+        photosDao_.GetExistingData(cloudPaths, photosBasicInfo_.maxFileId);
+    for (auto &fileInfo : fileInfos) {
+        CHECK_AND_CONTINUE(FileAdapter::IsLakeFile(fileInfo));
+        fileInfo.isCloudPathExistInDb = existingCloudPaths.count(fileInfo.oldPath) > 0;
+        existCount += fileInfo.isCloudPathExistInDb;
+    }
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("LakeClone: TimeCost: SetIsCloudPathExistInDb cost %{public}" PRId64 ", existCount: %{public}d",
+        endTime - startTime, existCount);
+}
+
+bool PhotosClone::SetFilePathForLakeFile(FileInfo &fileInfo)
+{
+    if (!FileAdapter::IsLakeFile(fileInfo)) {
+        fileInfo.inode.clear();
+        fileInfo.storagePath.clear(); // in case of hidden or trashed file originally from lake, remove lake info
+        return true;
+    }
+    std::string storagePath = FindStoragePath(fileInfo);
+    CHECK_AND_RETURN_RET(!storagePath.empty(), false);
+    SetLakeFileInfo(fileInfo, storagePath);
+    return true;
+}
+
+std::string PhotosClone::FindStoragePath(const FileInfo &fileInfo)
+{
+    bool cond = !fileInfo.isStoragePathExistInDb && IsFileSizeMatched(fileInfo, fileInfo.storagePath);
+    CHECK_AND_RETURN_RET(!cond, fileInfo.storagePath);
+    return FindStoragePathByFile(fileInfo);
+}
+
+bool PhotosClone::IsFileSizeMatched(const FileInfo &fileInfo, const std::string &storagePath)
+{
+    struct stat statInfo {};
+    CHECK_AND_RETURN_RET(stat(storagePath.c_str(), &statInfo) == E_SUCCESS, false);
+    CHECK_AND_RETURN_RET_LOG(statInfo.st_size == fileInfo.fileSize, false,
+        "%{public}s size not matched, %{public}" PRId64 " != %{public}" PRId64,
+        fileInfo.storagePath.c_str(), statInfo.st_size, fileInfo.fileSize);
+    return true;
+}
+
+std::string PhotosClone::FindStoragePathByFile(const FileInfo &fileInfo)
+{
+    const uint32_t MAX_TRY_TIMES = 50;
+    std::vector<std::string> candidateStoragePaths;
+    for (uint32_t number = 0; number < MAX_TRY_TIMES; number++) {
+        std::string numberedStoragePath = GetNumberedStoragePath(fileInfo.storagePath, number);
+        CHECK_AND_BREAK_INFO_LOG(MediaFileUtils::IsFileExists(numberedStoragePath),
+            "LakeClone: no need to search more, stop at %{public}s",
+            BackupFileUtils::GarbleFilePath(numberedStoragePath, DEFAULT_RESTORE_ID).c_str());
+        CHECK_AND_CONTINUE(IsFileSizeMatched(fileInfo, numberedStoragePath));
+        candidateStoragePaths.emplace_back(numberedStoragePath);
+    }
+
+    CHECK_AND_RETURN_RET_LOG(!candidateStoragePaths.empty(), "",
+        "No candidate storagePaths for %{public}s", ToString(fileInfo).c_str());
+    CHECK_AND_RETURN_RET(candidateStoragePaths.size() > 1, candidateStoragePaths[0]);
+    for (auto it = candidateStoragePaths.rbegin(); it != candidateStoragePaths.rend(); ++it) {
+        const auto& storagePath = *it;
+        CHECK_AND_RETURN_RET(!IsMetadataMatched(fileInfo, storagePath), storagePath);
+    }
+    return "";
+}
+
+bool PhotosClone::IsMetadataMatched(const FileInfo &fileInfo, const std::string &storagePath)
+{
+    auto iter = storagePathToMetadataInfoMap_.find(storagePath);
+    CHECK_AND_RETURN_RET(iter == storagePathToMetadataInfoMap_.end(), iter->second.orientation == fileInfo.orientation);
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath(storagePath);
+    data->SetFileMediaType(fileInfo.fileType);
+    data->SetFileDateModified(fileInfo.dateModified);
+    data->SetFileName(fileInfo.displayName);
+    BackupFileUtils::FillMetadata(data);
+    MetadataInfo metadataInfo = { data->GetOrientation() };
+    storagePathToMetadataInfoMap_[storagePath] = metadataInfo;
+    return metadataInfo.orientation == fileInfo.orientation;
+}
+
+std::string PhotosClone::GetNumberedStoragePath(const std::string &storagePath, uint32_t number)
+{
+    CHECK_AND_RETURN_RET(number > 0, storagePath);
+    size_t pos = storagePath.find_last_of(".");
+    CHECK_AND_RETURN_RET(pos != std::string::npos, storagePath + "(" + std::to_string(number) + ")");
+    std::string title = storagePath.substr(0, pos);
+    std::string extension = storagePath.substr(pos + 1);
+    return title + "(" + std::to_string(number) + ")." + extension;
+}
+
+void PhotosClone::SetLakeFileInfo(FileInfo &fileInfo, const std::string &storagePath)
+{
+    struct stat statInfo {};
+    CHECK_AND_RETURN(stat(storagePath.c_str(), &statInfo) == E_SUCCESS);
+    fileInfo.inode = std::to_string(statInfo.st_ino);
+    fileInfo.storagePath = storagePath;
+    fileInfo.filePath = storagePath;
+    fileInfo.displayName = MediaFileUtils::GetFileName(fileInfo.filePath);
+    fileInfo.title = MediaFileUtils::GetTitleFromDisplayName(fileInfo.displayName);
+    MEDIA_INFO_LOG("LakeClone: fileInfo inode: %{public}s, storagePath: %{public}s, displayName: %{private}s",
+        fileInfo.inode.c_str(), BackupFileUtils::GarbleFilePath(storagePath, DEFAULT_RESTORE_ID).c_str(),
+        BackupFileUtils::GarbleFilePath(fileInfo.displayName, DEFAULT_RESTORE_ID).c_str());
+}
+
+bool PhotosClone::ShouldDeleteDuplicateLakeFile(const FileInfo &fileInfo)
+{
+    // if not a lake file, return true as default;
+    CHECK_AND_RETURN_RET(FileAdapter::IsLakeFile(fileInfo), true);
+    // if the file has existing storage_path, the file should not be deleted
+    return !fileInfo.isStoragePathExistInDb;
+}
+
+bool PhotosClone::IsCloudPathExist(const FileInfo &fileInfo)
+{
+    CHECK_AND_RETURN_RET(FileAdapter::IsLakeFile(fileInfo), MediaFileUtils::IsFileExists(fileInfo.cloudPath));
+    return fileInfo.isCloudPathExistInDb;
+}
+
+int32_t PhotosClone::CreateCloudPath(int32_t uniqueId, FileInfo &fileInfo)
+{
+    int32_t fixedBucketNum = FileAdapter::IsLakeFile(fileInfo) ? 0 : -1;
+    return BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
+        MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath, fixedBucketNum);
 }
 }  // namespace OHOS::Media

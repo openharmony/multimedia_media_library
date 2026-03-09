@@ -18,6 +18,7 @@
 #include "backup_file_utils.h"
 
 #include <utime.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 #include "backup_const_column.h"
@@ -110,11 +111,11 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
     }
 
     std::error_code ec;
-    auto iter = filesystem::directory_iterator(parentDir,
+    auto iter = std::filesystem::directory_iterator(parentDir,
         std::filesystem::directory_options::skip_permission_denied, ec);
-    while (iter != filesystem::directory_iterator()) {
+    while (iter != std::filesystem::directory_iterator()) {
         if (ec) {
-            MEDIA_WARN_LOG("Failed to open directory: %{public}s, skip. ec: %{public}d, msg: %{public}s",
+            MEDIA_WARN_LOG("Failed to open directory: %{public}s, ec: %{public}d, msg: %{public}s",
                 BackupFileUtils::GarbleFilePath(parentDir, DEFAULT_RESTORE_ID).c_str(),
                 ec.value(), ec.message().c_str());
             ec.clear();
@@ -134,7 +135,6 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
         }
         iter.increment(ec);
     }
-
     return false;
 }
 
@@ -269,10 +269,10 @@ string BackupFileUtils::GarbleFileName(const std::string &fileName)
 }
 
 int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
-    string &filePath)
+    string &filePath, int32_t fixedBucketNum)
 {
-    int32_t bucketNum = 0;
-    int32_t errCode = MediaFileUri::CreateAssetBucket(fileId, bucketNum);
+    int32_t bucketNum = fixedBucketNum;
+    int32_t errCode = CreateBucketNum(fileId, bucketNum);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -293,6 +293,12 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Create Dir Failed! localDirPath=%{private}s",
         localDirPath.c_str());
     filePath = dirPath + "/" + realName;
+    return E_OK;
+}
+
+int32_t BackupFileUtils::CreateBucketNum(int32_t fileId, int32_t &bucketNum)
+{
+    CHECK_AND_RETURN_RET(bucketNum >= 0, MediaFileUri::CreateAssetBucket(fileId, bucketNum));
     return E_OK;
 }
 
@@ -361,9 +367,23 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
     return E_OK;
 }
 
+std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
+    const std::string &path)
+{
+    std::string replacedPath;
+    if (PREFIX_MAP.count(srcPrefixType) == 0 || PREFIX_MAP.count(dstPrefixType) == 0) {
+        MEDIA_ERR_LOG("Get source or destination prefix failed: %{public}d, %{public}d", srcPrefixType, dstPrefixType);
+        return replacedPath;
+    }
+    std::string srcPrefix = PREFIX_MAP.at(srcPrefixType);
+    std::string dstPrefix = PREFIX_MAP.at(dstPrefixType);
+    replacedPath = path;
+    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
+    return replacedPath;
+}
+
 int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
 {
-    bool errRet = false;
     if (!MediaFileUtils::IsFileExists(oldPath)) {
         MEDIA_ERR_LOG("old path: %{public}s is not exists.", GarbleFilePath(oldPath, sceneCode).c_str());
         return E_NO_SUCH_FILE;
@@ -380,21 +400,6 @@ int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, 
     return ret;
 }
 
-std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
-    const std::string &path)
-{
-    std::string replacedPath;
-    if (PREFIX_MAP.count(srcPrefixType) == 0 || PREFIX_MAP.count(dstPrefixType) == 0) {
-        MEDIA_ERR_LOG("Get source or destination prefix failed: %{public}d, %{public}d", srcPrefixType, dstPrefixType);
-        return replacedPath;
-    }
-    std::string srcPrefix = PREFIX_MAP.at(srcPrefixType);
-    std::string dstPrefix = PREFIX_MAP.at(dstPrefixType);
-    replacedPath = path;
-    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
-    return replacedPath;
-}
-
 void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
 {
     if (modifiedTime <= 0) {
@@ -408,23 +413,6 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     if (ret != 0) {
         MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
     }
-}
-
-string BackupFileUtils::GetFileNameFromPath(const string &path)
-{
-    size_t pos = GetLastSlashPosFromPath(path);
-    if (pos == INVALID_RET || pos + 1 >= path.size()) {
-        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s, "
-            "size: %{public}zu, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
-        return "";
-    }
-    return path.substr(pos + 1);
-}
-
-string BackupFileUtils::GetFileTitle(const string &displayName)
-{
-    string::size_type pos = displayName.find_last_of('.');
-    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
 int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneCode,
@@ -467,6 +455,23 @@ int32_t BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
     CHECK_AND_RETURN_RET_LOG(statInfo.st_size > 0, E_FAIL, "Invalid file (%{public}s), get size (%{public}lld) <= 0",
         garbledFilePath.c_str(), (long long)statInfo.st_size);
     return E_OK;
+}
+
+string BackupFileUtils::GetFileNameFromPath(const string &path)
+{
+    size_t pos = GetLastSlashPosFromPath(path);
+    if (pos == INVALID_RET || pos + 1 >= path.size()) {
+        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s, "
+            "size: %{public}zu, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
+        return "";
+    }
+    return path.substr(pos + 1);
+}
+
+string BackupFileUtils::GetFileTitle(const string &displayName)
+{
+    string::size_type pos = displayName.find_last_of('.');
+    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
 std::string BackupFileUtils::GetDetailsPath(int32_t sceneCode, const std::string &type,
@@ -949,7 +954,5 @@ void BackupFileUtils::RestoreInvalidHDCCloudDataPos()
         "the sDataShareHelper_ update error");
     MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos update success");
 }
-
-
 } // namespace Media
 } // namespace OHOS
