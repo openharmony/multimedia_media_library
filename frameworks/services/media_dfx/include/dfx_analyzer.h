@@ -31,7 +31,7 @@ public:
     void FlushDeleteBehavior(std::unordered_map<std::string, int32_t> &deleteBehaviorMap, int32_t type);
     void FlushAdaptationToMovingPhoto(AdaptationToMovingPhotoInfo& newAdaptationInfo);
     void FlushTranscodeAccessTimes(const TranscodeAccessType type, TranscodeType transcodeType);
-    void FlushTranscodeFailed(const TranscodeErrorType type, TranscodeType transcodeType), ;
+    void FlushTranscodeFailed(const TranscodeErrorType type, TranscodeType transcodeType);
     void FlushTranscodeCostTime(const int32_t costTime, TranscodeType transcodeType);
     void FlushCinematicVideoInfo(CinematicVideoInfo& newCinematicVideoInfo);
 

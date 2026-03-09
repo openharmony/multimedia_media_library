@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace Media {
 enum class TranscodeType : int32_t {
-    DEFAULT = 0;
+    DEFAULT = 0,
     HEIF,
     HIGH_PIXEL,
     HIGH_PIXEL_HEIF,
