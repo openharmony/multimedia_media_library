@@ -163,4 +163,14 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "e2fsprogs:libext2_uuid",
     "samgr:samgr_proxy",
   ]
+
+  if (media_library_analysis_data_enable) {
+    include_dirs += [
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/",
+    ]
+    sources += [
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_vision_dao.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_video_dao.cpp",
+    ]
+  }
 }

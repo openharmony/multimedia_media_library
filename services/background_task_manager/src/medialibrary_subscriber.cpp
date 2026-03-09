@@ -147,6 +147,7 @@ const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
 const string CLOUD_EVENT_INFO_TYPE = "type";
 const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+const std::string CLONE_STATE = "persist.dataclone.state";
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -349,6 +350,60 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 #endif
 }
 
+void MedialibrarySubscriber::PreProcessForUpdateStatus()
+{
+    CheckOnRestoreAndTryResetFlag();
+    UpdateGlobalStatusForBgTask();
+}
+
+bool MedialibrarySubscriber::CheckOnRestoreAndTryResetFlag()
+{
+    std::string cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
+    CHECK_AND_RETURN_RET(cloneFlagStr != "0", false);
+
+    int64_t cloneStartTime = 0;
+    if (!cloneFlagStr.empty()) {
+        cloneStartTime = MediaFileUtils::StrToInt64(cloneFlagStr);
+    }
+    CHECK_AND_RETURN_RET_LOG(cloneStartTime >= 0, false,
+        "Invalid cloneFlag value: %{public}s", cloneFlagStr.c_str());
+
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    CHECK_AND_RETURN_RET_LOG(currentTime >= cloneStartTime, false,
+        "Current time earlier than clone start time, now:%{public}" PRId64
+        ", start: %{public}" PRId64, currentTime, cloneStartTime);
+
+    constexpr int64_t oneDayInSeconds = 86400;
+    if (currentTime - cloneStartTime >= oneDayInSeconds) {
+        system::SetParameter(CLONE_FLAG, "0");
+        cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
+        CHECK_AND_PRINT_LOG(cloneFlagStr == "0", "Fail to set clone flag: %{public}s", cloneFlagStr.c_str());
+        return false;
+    }
+
+    MEDIA_DEBUG_LOG("Meanwhile is on restore, cloneStartTime: %{public}" PRId64, cloneStartTime);
+    return true;
+}
+
+void MedialibrarySubscriber::UpdateGlobalStatusForBgTask()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool isCurrentBackgroundTaskAllowed = IsBackgroundTaskAllowed();
+    if (isBackgroundTaskAllowed_ != isCurrentBackgroundTaskAllowed) {
+        MEDIA_INFO_LOG("UpdateGlobalStatusForBgTask, isCurrentBackgroundTaskAllowed: %{public}d",
+            isCurrentBackgroundTaskAllowed);
+        isBackgroundTaskAllowed_ = isCurrentBackgroundTaskAllowed;
+    }
+}
+
+bool MedialibrarySubscriber::IsBackgroundTaskAllowed()
+{
+    // Skip background operations during restore for clone or upgrade
+    bool isCloneInProcess = system::GetParameter(CLONE_STATE, "0") != "0";
+    bool isCloneFlagInEffect = system::GetParameter(CLONE_FLAG, "0") != "0";
+    return !isCloneInProcess && !isCloneFlagInEffect;
+}
+
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -363,6 +418,8 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
     }
+
+    newStatus = newStatus && isBackgroundTaskAllowed_;
 
     if (currentStatus_ == newStatus) {
         return;
@@ -436,6 +493,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             return;
     }
 
+    PreProcessForUpdateStatus();
     UpdateCurrentStatus();
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     UpdateCheckCriticalTypeStatus();
@@ -938,6 +996,8 @@ void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
     bool newStatus = isCharging_ && isScreenOff_ && isPowerSufficientForInLakeCheck &&
         newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
 
+    newStatus = newStatus && isBackgroundTaskAllowed_;
+
     if (checkInLakeStatus_ == newStatus) {
         return;
     }
@@ -1032,7 +1092,6 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 #endif
     int32_t ret = DoCloudMediaRetainCleanup();
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to schedule DoCleanPhotosTableCloudData task");
-    ResetCloneFlagAfterOneDay();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     BackgroundCloudFileProcessor::RepairMimeType();
 #endif
@@ -1073,7 +1132,7 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     std::lock_guard<std::mutex> lock(mutex_);
     bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
     bool newStatus = false;
-    if (system::GetParameter(CLONE_FLAG, "0") != "0") {
+    if (!isBackgroundTaskAllowed_) {
         newStatus = false;
     } else if (isCharging_) {
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
@@ -1180,6 +1239,8 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;
+
+    newStatus = newStatus && IsBackgroundTaskAllowed();
     if (timerStatus_ == newStatus) {
         return;
     }
@@ -1211,6 +1272,8 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
     MediaLibraryKvStoreManager::GetInstance().TryCloseAllKvStore();
     PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
+
+    CHECK_AND_RETURN(isBackgroundTaskAllowed_);
 
     if (statusEventType == StatusEventType::SCREEN_ON || statusEventType == StatusEventType::SCREEN_OFF) {
         ThumbnailService::GetInstance()->RestoreThumbnailOnScreenStateChanged(!isScreenOff_);
@@ -1315,26 +1378,6 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPre
     CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
     value = GetInt32Val(queryColumn, resultSet);
     return E_OK;
-}
-
-void MedialibrarySubscriber::ResetCloneFlagAfterOneDay()
-{
-    std::string cloneFlagStr = system::GetParameter(CLONE_FLAG, "0");
-    if (cloneFlagStr == "0") {
-        MEDIA_INFO_LOG("Clone flag is 0, no need to reset");
-        return;
-    }
-    int64_t cloneStartTime = 0;
-    if (!cloneFlagStr.empty()) {
-        cloneStartTime = static_cast<int64_t>(MediaFileUtils::StrToInt64(cloneFlagStr));
-    }
-    auto currentTime = MediaFileUtils::UTCTimeSeconds();
-    int64_t timeCost = currentTime - cloneStartTime;
-    const int64_t oneDayInSeconds = 86400;
-    if (timeCost >= oneDayInSeconds) {
-        bool retFlag = system::SetParameter(CLONE_FLAG, "0");
-        CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
 }
 
 #ifdef MEDIALIBRARY_FACARD_SUPPORT

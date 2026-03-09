@@ -81,6 +81,7 @@ private:
     void CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo);
     int32_t FindAttachments(const std::vector<PhotosPo> &photoInfos, std::vector<PhotoAttachmentDto> &attachmentList);
     int32_t CleanAttachments(std::vector<PhotoAttachmentDto> &attachmentList, int64_t &attachmentSize);
+    void NotifyCoverContentChange(const std::vector<std::string> &notifyVector);
 
 private:
     const uint32_t TYPE_THM_MASK = 0x1;

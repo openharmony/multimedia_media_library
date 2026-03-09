@@ -63,8 +63,8 @@ public:
     int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     int32_t LogicalDeleteReplaceByUpdate(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
     static int32_t NotifyForReCheck();
-    bool IsCoverContentChange(const string &fileId);
-    void NotifyAlbumsCoverChange(const string &fileId, vector<int32_t> &albumIds);
+    bool IsCoverContentChange(const vector<string> &fileIds);
+    void NotifyAlbumsCoverChange(const vector<string> &fileIds, vector<int32_t> &albumIds);
     vector<AlbumChangeData> GetAlbumChangeDatas();
     void ClearChangeInfos();
 

@@ -178,7 +178,7 @@ HWTEST_F(MDKRecordReaderTest, GetLongValue_MinValue_Test, TestSize.Level1)
     auto recordReader = MDKRecordReader();
     auto result = recordReader.GetLongValue(fields, "min_key");
     EXPECT_TRUE(result.has_value());
-    EXPECT_EQ(std::numeric::<int64_t>::min(), result.value());
+    EXPECT_EQ(std::numeric_limits<int64_t>::min(), result.value());
 }
 
 HWTEST_F(MDKRecordReaderTest, GetIntValue_KeyFound_Test, TestSize.Level1)
@@ -313,13 +313,13 @@ HWTEST_F(MDKRecordReaderTest, MultipleKeys_Test, TestSize.Level1)
     auto int32Result = recordReader.GetIntValue(fields, "int32_key");
     auto boolResult = recordReader.GetBoolValue(fields, "bool_key");
     auto assetResult = recordReader.GetAssetValue(fields, "asset_key");
-    
+
     EXPECT_TRUE(stringResult.has_value());
     EXPECT_TRUE(int64Result.has_value());
     EXPECT_TRUE(int32Result.has_value());
     EXPECT_TRUE(boolResult.has_value());
     EXPECT_TRUE(assetResult.has_value());
-    
+
     EXPECT_EQ("test_value", stringResult.value());
     EXPECT_EQ(1234567890, int64Result.value());
     EXPECT_EQ(12345, int32Result.value());
@@ -335,7 +335,7 @@ HWTEST_F(MDKRecordReaderTest, EmptyFieldsMap_Test, TestSize.Level1)
     auto int32Result = recordReader.GetIntValue(fields, "any_key");
     auto boolResult = recordReader.GetBoolValue(fields, "any_key");
     auto assetResult = recordReader.GetAssetValue(fields, "any_key");
-    
+
     EXPECT_FALSE(stringResult.has_value());
     EXPECT_FALSE(int64Result.has_value());
     EXPECT_FALSE(int32Result.has_value());
@@ -346,7 +346,7 @@ HWTEST_F(MDKRecordReaderTest, EmptyFieldsMap_Test, TestSize.Level1)
 HWTEST_F(MDKRecordReaderTest, SpecialStringValues_Test, TestSize.Level1)
 {
     std::map<std::string, MDKRecordField> fields;
-    
+
     fields["json_string"] = MDKRecordField("{\"key\":\"value\"}");
     fields["url_string"] = MDKRecordField("https://example.com/path/to/file.jpg");
     fields["path_string"] = MDKRecordField("/storage/emulated/0/DCIM/Camera/test.jpg");
@@ -356,12 +356,12 @@ HWTEST_F(MDKRecordReaderTest, SpecialStringValues_Test, TestSize.Level1)
     auto urlResult = recordReader.GetStringValue(fields, "url_string");
     auto pathResult = recordReader.GetStringValue(fields, "path_string");
     auto uuidResult = recordReader.GetStringValue(fields, "uuid_string");
-    
+
     EXPECT_TRUE(jsonResult.has_value());
     EXPECT_TRUE(urlResult.has_value());
     EXPECT_TRUE(pathResult.has_value());
     EXPECT_TRUE(uuidResult.has_value());
-    
+
     EXPECT_EQ("{\"key\":\"value\"}", jsonResult.value());
     EXPECT_EQ("https://example.com/path/to/file.jpg", urlResult.value());
     EXPECT_EQ("/storage/emulated/0/DCIM/Camera/test.jpg", pathResult.value());
@@ -371,7 +371,7 @@ HWTEST_F(MDKRecordReaderTest, SpecialStringValues_Test, TestSize.Level1)
 HWTEST_F(MDKRecordReaderTest, EdgeCaseIntValues_Test, TestSize.Level1)
 {
     std::map<std::string, MDKRecordField> fields;
-    
+
     fields["one"] = MDKRecordField(int32_t(1));
     fields["minus_one"] = MDKRecordField(int32_t(-1));
     fields["large_positive"] = MDKRecordField(int32_t(2147483647));
@@ -381,7 +381,7 @@ HWTEST_F(MDKRecordReaderTest, EdgeCaseIntValues_Test, TestSize.Level1)
     auto minusOneResult = recordReader.GetIntValue(fields, "minus_one");
     auto largePosResult = recordReader.GetIntValue(fields, "large_positive");
     auto largeNegResult = recordReader.GetIntValue(fields, "large_negative");
-    
+
     EXPECT_EQ(1, oneResult.value());
     EXPECT_EQ(-1, minusOneResult.value());
     EXPECT_EQ(2147483647, largePosResult.value());
@@ -391,15 +391,16 @@ HWTEST_F(MDKRecordReaderTest, EdgeCaseIntValues_Test, TestSize.Level1)
 HWTEST_F(MDKRecordReaderTest, EdgeCaseInt64Values_Test, TestSize.Level1)
 {
     std::map<std::string, MDKRecordField> fields;
-    
+
     fields["one"] = MDKRecordField(int64_t(1));
     fields["minus_one"] = MDKRecordField(int64_t(-1));
     fields["large"] = MDKRecordField(int64_t(9223372036854775807));
-    
-    auto oneResult = MDKRecordReader::GetLongValue(fields, "one");
-    auto minusOneResult = MDKRecordReader::GetLongValue(fields, "minus_one");
-    auto largePosResult = MDKRecordReader::GetLongValue(fields, "large");
-    
+
+    auto recordReader = MDKRecordReader();
+    auto oneResult = recordReader.GetLongValue(fields, "one");
+    auto minusOneResult = recordReader.GetLongValue(fields, "minus_one");
+    auto largePosResult = recordReader.GetLongValue(fields, "large");
+
     EXPECT_EQ(1, oneResult.value());
     EXPECT_EQ(-1, minusOneResult.value());
     EXPECT_EQ(9223372036854775807, largePosResult.value());
@@ -408,13 +409,13 @@ HWTEST_F(MDKRecordReaderTest, EdgeCaseInt64Values_Test, TestSize.Level1)
 HWTEST_F(MDKRecordReaderTest, LongToIntegerConversion_Test, TestSize.Level1)
 {
     std::map<std::string, MDKRecordField> fields;
-    
+
     fields["int32_max"] = MDKRecordField(int64_t(std::numeric_limits<int32_t>::max()));
     fields["int32_min"] = MDKRecordField(int64_t(std::numeric_limits<int32_t>::min()));
     auto recordReader = MDKRecordReader();
     auto maxResult = recordReader.GetIntValue(fields, "int32_max");
     auto minResult = recordReader.GetIntValue(fields, "int32_min");
-    
+
     EXPECT_EQ(std::numeric_limits<int32_t>::max(), maxResult.value());
     EXPECT_EQ(std::numeric_limits<int32_t>::min(), minResult.value());
 }
@@ -422,7 +423,7 @@ HWTEST_F(MDKRecordReaderTest, LongToIntegerConversion_Test, TestSize.Level1)
 HWTEST_F(MDKRecordReaderTest, UnicodeStringValues_Test, TestSize.Level1)
 {
     std::map<std::string, MDKRecordField> fields;
-    
+
     fields["chinese"] = MDKRecordField("中文测试");
     fields["emoji"] = MDKRecordField("📸测试");
     fields["russian"] = MDKRecordField("Тест");
@@ -432,12 +433,12 @@ HWTEST_F(MDKRecordReaderTest, UnicodeStringValues_Test, TestSize.Level1)
     auto emojiResult = recordReader.GetStringValue(fields, "emoji");
     auto russianResult = recordReader.GetStringValue(fields, "russian");
     auto arabicResult = recordReader.GetStringValue(fields, "arabic");
-    
+
     EXPECT_TRUE(chineseResult.has_value());
     EXPECT_TRUE(emojiResult.has_value());
     EXPECT_TRUE(russianResult.has_value());
     EXPECT_TRUE(arabicResult.has_value());
-    
+
     EXPECT_EQ("中文测试", chineseResult.value());
     EXPECT_EQ("📸测试", emojiResult.value());
     EXPECT_EQ("Тест", russianResult.value());
@@ -475,6 +476,6 @@ HWTEST_F(MDKRecordReaderTest, AssetWithLargeValues_Test, TestSize.Level1)
     EXPECT_TRUE(result.has_value());
 }
 
-} // namespace CloudSync
-} // namespace Media
-} // namespace OHOS
+}  // namespace CloudSync
+}  // namespace Media
+}  // namespace OHOS

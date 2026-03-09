@@ -656,7 +656,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     return errCode;
 }
 
-static std::unique_ptr<Picture> DecodeAsset(int32_t fd)
+static std::unique_ptr<Picture> DecodeAsset(int32_t fd, int32_t width, int32_t height)
 {
     if (fd < 0) {
         MEDIA_ERR_LOG("fd = %{public}d is invalid", fd);
@@ -671,6 +671,8 @@ static std::unique_ptr<Picture> DecodeAsset(int32_t fd)
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "CreateImageSource failed, err: %{public}u", err);
 
     DecodingOptionsForPicture decodeOptions;
+    if (width > 0 && height > 0) {
+    }
     std::unique_ptr<Picture> picturePtr = imageSource->CreatePicture(decodeOptions, err);
     CHECK_AND_RETURN_RET_LOG(picturePtr != nullptr, nullptr, "CreatePicture failed, err: %{public}u", err);
     return picturePtr;
@@ -697,9 +699,10 @@ static bool EncodeSaveAsset(std::unique_ptr<Picture> picturePtr, const std::stri
     return true;
 }
 
-static bool DecodeEncodeSaveAsset(int32_t srcFd, int32_t dstFd, const std::string &extension)
+static bool DecodeEncodeSaveAsset(int32_t srcFd, int32_t dstFd, const std::string &extension,
+    int32_t width, int32_t height)
 {
-    std::unique_ptr<Picture> picturePtr = DecodeAsset(srcFd);
+    std::unique_ptr<Picture> picturePtr = DecodeAsset(srcFd, width, height);
     CHECK_AND_RETURN_RET_LOG(picturePtr != nullptr, false, "DecodeAsset failed");
 
     std::string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MediaMapConstUtils::GetMimeTypeMap());
@@ -712,7 +715,7 @@ static bool DecodeEncodeSaveAsset(int32_t srcFd, int32_t dstFd, const std::strin
 }
 
 bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::string &dstFile,
-    const std::string &extension)
+    const std::string &extension, int32_t width, int32_t height)
 {
     MEDIA_DEBUG_LOG("ConvertFormatCopy srcFile: %{public}s, dstFile: %{public}s, extension: %{public}s",
         srcFile.c_str(), dstFile.c_str(), extension.c_str());
@@ -745,7 +748,7 @@ bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::st
         return false;
     }
 
-    if (!DecodeEncodeSaveAsset(srcFd.Get(), dstFd.Get(), extension)) {
+    if (!DecodeEncodeSaveAsset(srcFd.Get(), dstFd.Get(), extension, width, height)) {
         MEDIA_ERR_LOG("DecodeEncodeSaveAsset failed");
         DeleteFile(normalizedDstPath);
         return false;

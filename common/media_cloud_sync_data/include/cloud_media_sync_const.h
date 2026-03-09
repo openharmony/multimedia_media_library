@@ -231,6 +231,10 @@ const std::vector<std::string> PHOTOS_SYNC_COLUMN_STRING = {
     // Add Photos fields here. such as PhotoColumn::PHOTO_MEDIA_SUFFIX,
 };
 
+const std::vector<std::string> PHOTOS_SYNC_COLUMN_INT64 = {
+    // Add Photos int64 fields here.
+};
+
 enum CheckFlag : int32_t {
     CHECKED,
     NEED_CHECK,
