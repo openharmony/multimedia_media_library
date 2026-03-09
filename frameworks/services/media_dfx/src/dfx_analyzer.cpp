@@ -184,10 +184,10 @@ static bool GetTransCodeXML(TranscodeType transcodeType, string &XML)
         case TranscodeType::HEIF :
             XML = ALIB_HEIF_DUPLICATE_XML;
             break;
-        case TranscodeType::HEIF :
+        case TranscodeType::HIGH_PIXEL :
             XML = ALIB_HIGH_PIXEL_DUPLICATE_XML;
             break;
-        case TranscodeType::HEIF :
+        case TranscodeType::HIGH_PIXEL_HEIF :
             XML = ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML;
             break;
         default:
@@ -229,7 +229,7 @@ void DfxAnalyzer::FlushTranscodeAccessTimes(const TranscodeAccessType type, Tran
     prefs->FlushSync();
 }
 
-void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type)
+void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type, TranscodeType transcodeType)
 {
     int32_t errCode;
     string XML;
@@ -260,7 +260,7 @@ void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type)
     prefs->FlushSync();
 }
 
-void DfxAnalyzer::FlushTranscodeCostTime(const int32_t costTime)
+void DfxAnalyzer::FlushTranscodeCostTime(const int32_t costTime, TranscodeType transcodeType)
 {
     int32_t errCode;
     string XML;
