@@ -198,6 +198,8 @@ private:
     static int32_t UpdateAssetPathInSubmitExistFile(int32_t fileId, std::string &path);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static int32_t ValidateAndExtractFileAssetParams(MediaLibraryCommand& cmd,
+        const std::shared_ptr<FileAsset>& fileAsset, string& assetPath, int32_t& subtype, int32_t& id, bool& isEdit);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
     static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool& isAddGraffiti);
