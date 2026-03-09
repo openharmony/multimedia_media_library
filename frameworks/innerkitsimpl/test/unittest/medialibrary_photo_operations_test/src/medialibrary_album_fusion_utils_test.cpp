@@ -265,12 +265,12 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_004, TestSize.L
         assetId, displayName);
     MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(rdbStorePtr, ALBUM_NUM, resultSet,
         assetId, displayName);
-    
+
     MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(upgradeStore, assetId, ALBUM_NUM,
         resultSet, assetId);
     MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(rdbStorePtr, assetId, ALBUM_NUM,
         resultSet, assetId);
-    
+
     MediaLibraryAlbumFusionUtils::SetRefreshAlbum(true);
     MediaLibraryAlbumFusionUtils::SetRefreshAlbum(false);
     ASSERT_NE(rdbStorePtr, nullptr);
@@ -487,6 +487,891 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_018, TestSize.L
 
     auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
     EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_019, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    int32_t status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_020, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1);
+    int32_t status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_021, TestSize.Level1)
+{
+    int64_t albumFusionTag = NUM_ONE;
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(albumFusionTag, AlbumFusionState::START, rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(albumFusionTag, AlbumFusionState::SUCCESS, rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(albumFusionTag, AlbumFusionState::FAILED, rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_022, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(NUM_ZERO, AlbumFusionState::START, nullptr);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(NUM_INVALID, AlbumFusionState::FAILED, rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_023, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_024, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(false);
+    EXPECT_GE(ret, NUM_INVALID);
+    ret = MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_025, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_026, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(nullptr);
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_027, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    int32_t status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_028, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_029, TestSize.Level1)
+{
+    size_t size = 0;
+    int32_t dupExist = 0;
+    int32_t ret = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(ASSET_ID, "", size, dupExist);
+    EXPECT_NE(ret, E_OK);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_030, TestSize.Level1)
+{
+    string displayName = "photo_test.jpg";
+    int32_t fileId = CreatePhotoApi10(IAMGE_TYPE, displayName);
+    if (fileId > 0) {
+        MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), displayName);
+    }
+    MediaLibraryAlbumFusionUtils::CloneSingleAsset(NUM_ZERO, "zero_id.jpg");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_031, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    notMatchedMap.insert(std::make_pair(1, vector<int32_t>{2, 3}));
+    notMatchedMap.insert(std::make_pair(4, vector<int32_t>{5}));
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(upgradeStore, notMatchedMap);
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_032, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    int32_t assetId = NUM_ONE;
+    int32_t ownerAlbumId = ALBUM_NUM;
+    int64_t newAssetId = NUM_ZERO;
+    MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(upgradeStore, assetId, ownerAlbumId, newAssetId);
+    MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(rdbStorePtr, assetId, ownerAlbumId, newAssetId);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_033, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    vector<int32_t> restOwnerAlbumIds = {1, 2, 3};
+    int32_t assetId = NUM_ONE;
+    int32_t handledCount = 0;
+    MediaLibraryAlbumFusionUtils::HandleRestData(upgradeStore, assetId, restOwnerAlbumIds, handledCount);
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, assetId, restOwnerAlbumIds, handledCount);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_034, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(upgradeStore, notMatchedMap, true);
+    notMatchedMap.clear();
+    MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(rdbStorePtr, notMatchedMap, false);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_035, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    NativeRdb::ValuesBucket values;
+    string albumName = "TestAlbum";
+    MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(upgradeStore, values, resultSet, albumName);
+    if (resultSet != nullptr) {
+        MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr, values, resultSet, albumName);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_036, TestSize.Level1)
+{
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    bool isCloud = MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet);
+    EXPECT_FALSE(isCloud);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_037, TestSize.Level1)
+{
+    bool isCloud = MediaLibraryAlbumFusionUtils::IsCloudAlbum(nullptr);
+    EXPECT_FALSE(isCloud);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_038, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
+    executeObject.rdbStore = nullptr;
+    vector<string> fileIdsInAlbum;
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, NUM_ZERO, NUM_INVALID,
+        false, &fileIdsInAlbum);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_039, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
+    executeObject.rdbStore = rdbStorePtr;
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, NUM_ZERO, ALBUM_NUM,
+        true, nullptr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_040, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    notMatchedMap.insert(std::make_pair(0, vector<int32_t>()));
+    MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(upgradeStore, notMatchedMap);
+    MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(rdbStorePtr, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_041, TestSize.Level1)
+{
+    string extension = "jpg";
+    struct PhotoResult photoAsset = {1, "test.jpg", "test",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_042, TestSize.Level1)
+{
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(NUM_INVALID, "invalid.jpg", "jpg");
+    EXPECT_EQ(resultSet, nullptr);
+    resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(NUM_ZERO, "zero.jpg", "png");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_043, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {2, "IMG.heic", "IMG",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 1, 0};
+    InsertPhotoAsset(photoAsset);
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_044, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_045, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_046, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_047, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleNoOwnerData(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleNoOwnerData(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_048, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_049, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_050, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_051, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(nullptr);
+    EXPECT_EQ(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_052, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_053, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(nullptr);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(rdbStorePtr);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_054, TestSize.Level1)
+{
+    string displayName = "test.jpg";
+    int64_t assetId = NUM_ZERO;
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    int32_t ret = MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(nullptr, ALBUM_NUM, resultSet,
+        assetId, displayName);
+    EXPECT_NE(ret, E_OK);
+    if (resultSet != nullptr) {
+        ret = MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(rdbStorePtr, ALBUM_NUM, resultSet,
+            assetId, displayName);
+        EXPECT_GE(ret, NUM_INVALID);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_055, TestSize.Level1)
+{
+    int64_t assetId = NUM_ZERO;
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    int32_t ret = MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(nullptr, assetId, ALBUM_NUM, resultSet, assetId);
+    EXPECT_NE(ret, E_OK);
+    if (resultSet != nullptr) {
+        ret = MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(rdbStorePtr, assetId, ALBUM_NUM, resultSet, assetId);
+        EXPECT_LT(ret, NUM_INVALID);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_056, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    int32_t newAlbumId = NUM_INVALID;
+    int32_t albumId = NUM_ZERO;
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    int32_t ret = MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, albumId, newAlbumId);
+    EXPECT_NE(ret, E_OK);
+    if (resultSet != nullptr) {
+        ret = MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(rdbStorePtr, resultSet, albumId, newAlbumId);
+        EXPECT_GE(ret, NUM_INVALID);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_057, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(nullptr, notMatchedMap);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, notMatchedMap);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_058, TestSize.Level1)
+{
+    int32_t assetId = NUM_INVALID;
+    int32_t ownerAlbumId = NUM_ZERO;
+    int64_t newAssetId = NUM_ZERO;
+    int32_t ret = MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(nullptr, assetId, ownerAlbumId, newAssetId);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(rdbStorePtr, assetId, ownerAlbumId, newAssetId);
+    EXPECT_LT(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_059, TestSize.Level1)
+{
+    vector<int32_t> restOwnerAlbumIds;
+    int32_t assetId = NUM_INVALID;
+    int32_t handledCount = 0;
+    MediaLibraryAlbumFusionUtils::HandleRestData(nullptr, assetId, restOwnerAlbumIds, handledCount);
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, assetId, restOwnerAlbumIds, handledCount);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_060, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    int32_t ret = MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(nullptr, notMatchedMap, true);
+    EXPECT_NE(ret, E_OK);
+    ret = MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(rdbStorePtr, notMatchedMap, true);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_061, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetRefreshAlbum(true);
+    int32_t ret = MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    EXPECT_GE(ret, NUM_INVALID);
+    MediaLibraryAlbumFusionUtils::SetRefreshAlbum(false);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_062, TestSize.Level1)
+{
+    for (int32_t i = 0; i < 3; i++) {
+        MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+        MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_063, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    int32_t status1 = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1);
+    int32_t status2 = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status1, NUM_INVALID);
+    EXPECT_GE(status2, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_064, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(NUM_ONE, AlbumFusionState::START, rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(NUM_ONE, AlbumFusionState::SUCCESS, rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(NUM_ONE, AlbumFusionState::FAILED, rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_065, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(false);
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_066, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_067, TestSize.Level1)
+{
+    int32_t ret = MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(false);
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_068, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::CloneSingleAsset(NUM_INVALID, "invalid.jpg");
+    MediaLibraryAlbumFusionUtils::CloneSingleAsset(999999, "large_id.jpg");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_069, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    notMatchedMap.insert(std::make_pair(10, vector<int32_t>{11, 12, 13}));
+    notMatchedMap.insert(std::make_pair(20, vector<int32_t>{21}));
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_070, TestSize.Level1)
+{
+    vector<int32_t> restOwnerAlbumIds = {100, 200};
+    int32_t assetId = 1;
+    int32_t handledCount = 0;
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, assetId, restOwnerAlbumIds, handledCount);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_071, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(upgradeStore, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_072, TestSize.Level1)
+{
+    NativeRdb::ValuesBucket values;
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, {PhotoColumn::MEDIA_FILE_PATH});
+    MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr, values, resultSet, "");
+    MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr, values, resultSet, "NewAlbum");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_073, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
+    executeObject.rdbStore = rdbStorePtr;
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, 1, 2, false);
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, 1, 2, true);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_074, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {3, "file.heic", "file",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD), 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_075, TestSize.Level1)
+{
+    struct PhotoResult photoAsset = {4, "video.mp4", "video",
+        static_cast<int32_t>(MEDIA_TYPE_VIDEO), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, "mp4");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_076, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_077, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleNoOwnerData(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_078, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_079, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_080, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(rdbStorePtr, notMatchedMap, true);
+    size_t mapSize = notMatchedMap.size();
+    EXPECT_GE(mapSize, 0u);
+    MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(rdbStorePtr, notMatchedMap, false);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_081, TestSize.Level1)
+{
+    string displayName = "multi_test.jpg";
+    int32_t fileId = CreatePhotoApi10(IAMGE_TYPE, displayName);
+    if (fileId > 0) {
+        MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), "clone1.jpg");
+        MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), "clone2.jpg");
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_082, TestSize.Level1)
+{
+    int64_t tags[] = {0, 1, -1, 100};
+    for (auto tag : tags) {
+        MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(tag, AlbumFusionState::START, rdbStorePtr);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_083, TestSize.Level1)
+{
+    string displayNames[] = {"a.jpg", "b.png", "c.gif"};
+    for (const auto& name : displayNames) {
+        MediaLibraryAlbumFusionUtils::CloneSingleAsset(ASSET_ID, name);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_084, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_085, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_086, TestSize.Level1)
+{
+    int32_t assetId = 5;
+    int32_t ownerAlbumId = 10;
+    int64_t newAssetId = 0;
+    MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(rdbStorePtr, assetId, ownerAlbumId, newAssetId);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_087, TestSize.Level1)
+{
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    int32_t albumId = 0;
+    int64_t newAlbumId = -1;
+    if (resultSet != nullptr) {
+        MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(rdbStorePtr, resultSet, albumId, newAlbumId);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_088, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    notMatchedMap.insert(std::make_pair(1, vector<int32_t>()));
+    notMatchedMap.insert(std::make_pair(2, vector<int32_t>{1, 2}));
+    MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(rdbStorePtr, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_089, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
+    executeObject.rdbStore = rdbStorePtr;
+    vector<string> fileIds = {"1", "2"};
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, 0, 1, false, &fileIds);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_090, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    int32_t status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1);
+    status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_091, TestSize.Level1)
+{
+    string displayName = "sync_test.jpg";
+    CreatePhotoApi10(IAMGE_TYPE, displayName);
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_092, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    int32_t ret = MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    EXPECT_GE(ret, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_093, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::IsCloudAlbum(nullptr);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, {PhotoColumn::MEDIA_FILE_PATH});
+    MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_094, TestSize.Level1)
+{
+    int64_t assetId = NUM_ZERO;
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet != nullptr) {
+        MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(rdbStorePtr, 1, resultSet, assetId, "test.jpg");
+        MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(rdbStorePtr, 0, 1, resultSet, assetId);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_095, TestSize.Level1)
+{
+    vector<int32_t> restOwnerAlbumIds = {1};
+    int32_t assetId = 0;
+    int32_t handledCount = 0;
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, assetId, restOwnerAlbumIds, handledCount);
+    restOwnerAlbumIds = {1, 2, 3, 4, 5};
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, assetId, restOwnerAlbumIds, handledCount);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_096, TestSize.Level1)
+{
+    string extensions[] = {"heic", "jpg", "png"};
+    struct PhotoResult photoAsset = {5, "test.heic", "test",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+    for (const auto& ext : extensions) {
+        MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, ext);
+    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_097, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
+    executeObject.rdbStore = rdbStorePtr;
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, 0, 0, false);
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject, 100, 200, true);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_098, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(rdbStorePtr, notMatchedMap, true);
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, notMatchedMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_099, TestSize.Level1)
+{
+    NativeRdb::ValuesBucket values;
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
+    auto resultSet = g_rdbStore->Query(cmd, {PhotoColumn::MEDIA_FILE_PATH});
+    MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr, values, resultSet, "Album1");
+    MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr, values, resultSet, "Album2");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_100, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetRefreshAlbum(true);
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
+    MediaLibraryAlbumFusionUtils::SetRefreshAlbum(false);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_101, TestSize.Level1)
+{
+    std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
+    MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(upgradeStore);
+    MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(upgradeStore);
+    MediaLibraryAlbumFusionUtils::HandleNoOwnerData(upgradeStore);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_102, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> emptyMap;
+    std::multimap<int32_t, vector<int32_t>> filledMap;
+    filledMap.insert(std::make_pair(1, vector<int32_t>{2}));
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, emptyMap);
+    MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(rdbStorePtr, filledMap);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_103, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(0, AlbumFusionState::FAILED, rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1);
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(1, AlbumFusionState::SUCCESS, rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_104, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1);
+    int32_t status = MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
+    EXPECT_GE(status, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_105, TestSize.Level1)
+{
+    vector<int32_t> singleId = {1};
+    vector<int32_t> multiIds = {1, 2, 3, 4, 5};
+    int32_t handledCount = 0;
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, 0, singleId, handledCount);
+    MediaLibraryAlbumFusionUtils::HandleRestData(rdbStorePtr, 1, multiIds, handledCount);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_106, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::ExecuteObject execObj;
+    execObj.rdbStore = rdbStorePtr;
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(execObj, 5, 10, false);
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(execObj, 10, 20, true);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_107, TestSize.Level1)
+{
+    struct PhotoResult asset = {6, "convert.heic", "convert",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(asset);
+    MediaLibraryAlbumFusionUtils::ConvertFormatAsset(asset.fileId, asset.title, "heic");
+    MediaLibraryAlbumFusionUtils::ConvertFormatAsset(asset.fileId, asset.title, "jpg");
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_108, TestSize.Level1)
+{
+    MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_109, TestSize.Level1)
+{
+    int32_t ret1 = MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    int32_t ret2 = MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(false);
+    int32_t ret3 = MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    EXPECT_GE(ret1, NUM_INVALID);
+    EXPECT_GE(ret2, NUM_INVALID);
+    EXPECT_GE(ret3, NUM_INVALID);
+    ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_110, TestSize.Level1)
+{
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(rdbStorePtr, notMatchedMap);
+    MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
+    ASSERT_NE(rdbStorePtr, nullptr);
 }
 }
 }
