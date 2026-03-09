@@ -71,8 +71,8 @@ const std::string PHOTO_DB_NAME = "photo_MediaInfo.db";
 const std::string PHOTO_SD_MEDIA_INFO_DB_NAME = "photo_sd_MediaInfo.db";
 const std::string VIDEO_DB_NAME = "video_MediaInfo.db";
 const std::string VIDEO_SD_MEDIA_INFO_DB_NAME = "video_sd_MediaInfo.db";
-const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
 const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
+const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
 const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string I_PHONE_IMAGE_FILE_PATH = "/storage/media/local/files/.backup/restore/";
 const std::string I_PHONE_DYNAMIC_IMAGE = "_DYNAMIC";
@@ -904,7 +904,7 @@ void OthersCloneRestore::RestorePhoto()
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    ProcessBurstPhotos();
+    ProcessBurstPhotos(this->photosRestore_.GetMaxFileId());
 }
 
 void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)
@@ -1077,7 +1077,7 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
     }
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
         photoAlbumRestore_.GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
-    auto ret =  photoAlbumDao_.RestoreAlbums(albumInfosToRestore);
+    auto ret = photoAlbumDao_.RestoreAlbums(albumInfosToRestore);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to RestoreAlbums : %{public}d", ret);
     }

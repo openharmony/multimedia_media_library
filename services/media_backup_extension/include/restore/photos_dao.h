@@ -58,15 +58,26 @@ public:
     PhotosBasicInfo GetBasicInfo();
     int32_t GetDirtyFilesCount();
     std::vector<PhotosRowData> GetDirtyFiles(int32_t offset);
+    int32_t GetBackupMediaCount(const std::vector<int32_t> &mediaTypes, const std::vector<int32_t> &fileSourceTypes,
+        const std::vector<int32_t> &positionTypes);
+    int32_t GetBackupAudioCount(const std::vector<int32_t> &mediaTypes);
+    int64_t GetAssetTotalSizeByFileSourceType(int32_t fileSourceType);
+    std::unordered_set<std::string> GetExistingStoragePaths(const std::vector<std::string> &storagePaths,
+        int32_t maxFileId);
+    std::unordered_set<std::string> GetExistingData(const std::vector<std::string> &data, int32_t maxFileId);
 
 private:
     PhotosRowData FindSameFileWithoutAlbum(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosRowData FindSameFileInAlbum(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosRowData FindSameFileBySourcePath(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosRowData FindSameFileWithCloudId(const FileInfo &fileInfo, int32_t maxFileId);
+    void ParseResultSetOfSameFile(PhotosDao::PhotosRowData &rowData, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     std::string ToString(const FileInfo &fileInfo);
     std::string ToString(const PhotosRowData &rowData);
     std::string ToLower(const std::string &str);
+    std::string GetPhotosSizeSqlByFileSourceType(int32_t fileSourceType);
+    std::string GetThumbSizeSqlByFileSourceType(int32_t fileSourceType);
+    std::string GetAudiosSizeSqlByFileSourceType(int32_t fileSourceType);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -84,7 +95,8 @@ private:
             p.file_id, \
             p.data, \
             p.clean_flag, \
-            p.position \
+            p.position, \
+            p.file_source_type \
         FROM \
         ( \
             SELECT album_id \
@@ -99,6 +111,7 @@ private:
                 data, \
                 clean_flag, \
                 position, \
+                file_source_type, \
                 size, \
                 orientation, \
                 owner_album_id \
@@ -117,7 +130,8 @@ private:
             P.file_id, \
             P.data, \
             P.clean_flag, \
-            P.position \
+            P.position, \
+            P.file_source_type \
         FROM Photos AS P \
         WHERE file_id <= ? AND \
             display_name = ? AND \
@@ -131,7 +145,8 @@ private:
             P.file_id, \
             P.data, \
             P.clean_flag, \
-            P.position \
+            P.position, \
+            P.file_source_type \
         FROM Photos AS P \
         WHERE file_id <= ? AND \
             cloud_id = ? \
@@ -141,13 +156,15 @@ private:
             file_id, \
             data, \
             clean_flag, \
-            position \
+            position, \
+            file_source_type \
         FROM \
         ( \
             SELECT file_id, \
                 data, \
                 clean_flag, \
                 position, \
+                file_source_type, \
                 display_name, \
                 size, \
                 orientation, \
@@ -185,6 +202,15 @@ private:
         "SELECT count(1) as count FROM Photos WHERE sync_status = ?";
     const std::string SQL_PHOTOS_GET_DIRTY_FILES =
         "SELECT file_id, data, position, subtype FROM Photos WHERE sync_status = ? LIMIT ?, ?";
+    const std::string SQL_PHOTOS_GET_MEDIA_COUNT =
+        "SELECT count(1) as count FROM Photos "
+        "WHERE position IN ({2}) AND sync_status = 0 AND clean_flag = 0 AND time_pending = 0 AND is_temp = 0 AND "
+        "media_type IN ({0}) AND file_source_type IN ({1})";
+    const std::string SQL_AUDIOS_GET_AUDIO_COUNT =
+        "SELECT count(1) as count FROM Audios WHERE media_type IN ({0})";
+    const std::string SQL_PHOTOS_GET_EXISTING_STORAGE_PATHS =
+        "SELECT storage_path FROM Photos WHERE file_id <= ? AND file_source_type = ? AND storage_path IN ({0})";
+    const std::string SQL_PHOTOS_GET_EXISTING_DATA = "SELECT data FROM Photos WHERE file_id <= ? AND data IN ({0})";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTOS_DAO

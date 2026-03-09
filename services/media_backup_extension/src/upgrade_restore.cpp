@@ -222,7 +222,7 @@ int32_t UpgradeRestore::HandleXmlNode(xmlNodePtr cur)
     return E_ERR;
 }
 
-int32_t UpgradeRestore::ParseXml(string path)
+int32_t UpgradeRestore::ParseXml(const std::string &path)
 {
     std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docPtr(
         xmlReadFile(path.c_str(), nullptr, XML_PARSE_NOBLANKS), xmlFreeDoc);
@@ -482,12 +482,13 @@ void UpgradeRestore::RestorePhoto()
     }
     RestoreSmartAlbums();
     ReportPortraitStat(sceneCode_);
+
     int32_t restoreMode = BaseRestore::GetRestoreMode();
     UpgradeRestoreTaskReport()
         .SetSceneCode(sceneCode_)
         .SetTaskId(taskId_)
         .ReportRestoreMode(restoreMode, BaseRestore::GetNotFoundNumber());
-    ProcessBurstPhotos();
+    ProcessBurstPhotos(this->photosRestore_.GetMaxFileId());
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -802,11 +803,11 @@ void UpgradeRestore::HandleRestData(void)
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
         MEDIA_DEBUG_LOG("Start to delete photo data.");
-        (void)MediaFileUtils::DeleteDir(photoData);
+        MediaFileUtils::DeleteDir(photoData);
     }
     if (MediaFileUtils::IsFileExists(mediaData)) {
         MEDIA_DEBUG_LOG("Start to delete media data.");
-        (void)MediaFileUtils::DeleteDir(mediaData);
+        MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
     int64_t endDeleteDir = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1811,8 +1812,8 @@ int32_t UpgradeRestore::RecordAlbumCoverInfo(const std::shared_ptr<NativeRdb::Re
     string lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     if (lPath.empty()) { // virtual album
         string columnValue = GetStringVal(COLUMN_VALUE, resultSet);
-        if (virtualAlbumIdMap.count(columnValue)) {
-            MEDIA_ERR_LOG("RecordAlbumCoverInfo columnValue:%{public}s not in map", columnValue.c_str());
+        if (virtualAlbumIdMap.count(columnValue) == 0) {
+            MEDIA_ERR_LOG("recordAlbumCoverInfo columnValue, %{public}s", columnValue.c_str());
             return E_ERR;
         }
         int32_t albumId = virtualAlbumIdMap.at(columnValue);
