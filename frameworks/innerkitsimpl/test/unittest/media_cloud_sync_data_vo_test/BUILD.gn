@@ -57,6 +57,16 @@ ohos_unittest("media_cloud_sync_data_vo_test") {
   sources = [
     "./src/cloud_error_detail_vo_test.cpp",
     "./src/cloud_file_data_vo_test.cpp",
+    "./src/cloud_mdkrecord_photo_album_vo_test.cpp",
+    "./src/cloud_mdkrecord_photos_vo_test.cpp",
+    "./src/cloud_sync_unprepared_data_vo_test.cpp",
+    "./src/failed_size_resp_vo_test.cpp",
+    "./src/get_aging_file_vo_test.cpp",
+    "./src/get_check_records_vo_test.cpp",
+    "./src/get_cloud_thm_stat_vo_test.cpp",
+    "./src/get_dirty_type_stat_vo_test.cpp",
+    "./src/get_download_asset_vo_test.cpp",
+    "./src/get_download_thm_by_uri_vo_test.cpp",
   ]
 
   deps = [
