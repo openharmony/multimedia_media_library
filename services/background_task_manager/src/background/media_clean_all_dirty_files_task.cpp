@@ -1361,7 +1361,8 @@ bool MediaCleanAllDirtyFilesTask::IsCurrentTaskTimeOut()
     return false;
 }
 
-bool MediaCleanAllDirtyFilesTask::OneDayOneTimeCheck(int64_t currExecuteTime, int64_t lastExecuteTime) {
+bool MediaCleanAllDirtyFilesTask::OneDayOneTimeCheck(int64_t currExecuteTime, int64_t lastExecuteTime)
+{
     if (currExecuteTime - lastExecuteTime < HALF_DAY) { // 判断是否小于12小时 一天只触发一次
         return false;
     }
