@@ -1234,12 +1234,12 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CalculateAspectRatio_Test_04
     MEDIA_INFO_LOG("MediaFileUtils_CalculateAspectRatio_Test_04 end");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_01, TestSize.Level1)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeName_Test_01, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_01 Start");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_01 Start");
 
     std::vector<std::pair<std::string, std::string>> testCases{
-        {"", ""}, {"a", "*"}, {"ab", "a*"}, {"abc", "a*c"}, {"abcd", "a**d"}, {"abcdefghij", "a********j"}};
+        {"", ""}, {"a", "*"}, {"ab", "*b"}, {"abc", "a*c"}, {"abcd", "a**d"}, {"abcdefghij", "abc***ghij"}};
 
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
@@ -1249,15 +1249,15 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
         EXPECT_EQ(actual, expect);
     }
 
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_01 end");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_01 end");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_02, TestSize.Level1)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeName_Test_02, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_02 Start");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_02 Start");
 
     std::vector<std::pair<std::string, std::string>> testCases{
-        {"文", "*"}, {"文字", "文*"}, {"文字国", "文*国"}, {"文字国际", "文**际"}, {"文字国际化测试", "文*****试"}};
+        {"文", "*"}, {"文字", "*字"}, {"文字国", "文*国"}, {"文字国际", "文**际"}, {"文字国际化测试", "文字***测试"}};
 
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
@@ -1267,18 +1267,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
         EXPECT_EQ(actual, expect);
     }
 
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_02 end");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_02 end");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_03, TestSize.Level1)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeName_Test_03, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_03 Start");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_03 Start");
 
     std::vector<std::pair<std::string, std::string>> testCases{{"👨‍👩‍👧‍👦", "*"},
-        {"ñ🚀", "ñ*"},
+        {"ñ🚀", "*🚀"},
         {"👨‍💻ạ̇👍🏽", "👨‍💻*👍🏽"},
         {"👷🏾⚠️ﬁ🇨🇳", "👷🏾**🇨🇳"},
-        {"💻👨👩👧👦⚠👍", "💻*****👍"}};
+        {"💻👨👩👧👦⚠👍", "💻👨***⚠👍"}};
 
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
@@ -1288,18 +1288,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
         EXPECT_EQ(actual, expect);
     }
 
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_03 end");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_03 end");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_04, TestSize.Level1)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeName_Test_04, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_04 Start");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_04 Start");
 
     std::vector<std::pair<std::string, std::string>> testCases{{"后缀测试🇺🇳.jpg", "后***🇺🇳.jpg"},
-        {"Suffix test é.mp4", "S***********é.mp4"},
-        {"3️⃣👌🥩👆👇🎫.png", "3️⃣****🎫.png"},
-        {"文3️3test.heic", "文*****t.heic"},
-        {"👌test🈶.3g2", "👌****🈶.3g2"}};
+        {"Suffix test é.mp4", "Suffi***est é.mp4"},
+        {"3️⃣👌🥩👆👇🎫.png", "3️⃣***👇🎫.png"},
+        {"文3️3test.heic", "文3️***st.heic"},
+        {"👌test🈶.3g2", "👌***t🈶.3g2"}};
 
     for (const auto &testCase : testCases) {
         std::string displayName = testCase.first;
@@ -1309,7 +1309,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizeDisplayName_Test_
         EXPECT_EQ(actual, expect);
     }
 
-    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeDisplayName_Test_04 end");
+    MEDIA_INFO_LOG("MediaFileUtils_DesensitizeName_Test_04 end");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileAndDelSrc_Test_001, TestSize.Level1)
@@ -1795,7 +1795,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTempOriMovingPhotoVideoPa
     string imagePath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
     string videoPath = MediaFileUtils::GetTempMovingPhotoVideoPath(imagePath);
     EXPECT_FALSE(videoPath.empty());
-    EXPECT_EQ(videoPath, "/storage/cloud/files/.editData/Photo/1/IMG_test.jpg/temp_source.mp4");
+    EXPECT_EQ(videoPath, "/storage/cloud/files/Photo/1/temp_IMG_test.mp4");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMovingPhotoMimeType_Test_001, TestSize.Level1)
