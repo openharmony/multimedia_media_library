@@ -31,7 +31,9 @@
 #define private public
 #include "cloud_media_album_service.h"
 #include "cloud_media_photos_service.h"
+#include "cloud_media_enhance_service.h"
 #undef private
+#include "cloud_file_error.h"
 
 using namespace testing::ext;
 using namespace OHOS::AAFwk;
@@ -447,7 +449,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_ClearLocalData_Te
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_002, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_003, TestSize.Level1)
 {
     // 用例说明：测试 PullUpdate 方法，本地记录脏，忽略云更新
     CloudMediaPhotosService service;
@@ -464,7 +466,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_0
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_003, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_004, TestSize.Level1)
 {
     // 用例说明：测试 PullUpdate 方法，本地文件写打开，设置重试标志
     CloudMediaPhotosService service;
@@ -472,7 +474,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_0
     pullData.cloudId = "test_cloud_id";
     pullData.localPath = "/storage/cloud/files/Photo/test.jpg";
     pullData.localPosition = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
-    pullData.localDirty = static_cast<int32_t>(DirtyType::CLEAN);
+    pullData.localDirty = static_cast<int32_t>(DirtyType::TYPE_SYNCED);
     pullData.localDateModified = "1234567890";
     pullData.attributesEditedTimeMs = 1234567891;
     std::set<std::string> refreshAlbums;
@@ -550,7 +552,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullInsert_Test_0
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_CreateEntry_Test_001, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_CreateEntry_Test_002, TestSize.Level1)
 {
     // 用例说明：测试 CreateEntry 方法，pullDatas 为空
     CloudMediaPhotosService service;
@@ -642,8 +644,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     // 用例说明：测试 OnRecordFailedErrorDetails 方法，空间已满
     CloudMediaPhotosService service;
     PhotosDto photo;
-    photo.errorType = ErrorType::TYPE_NEED_RETRY;
-    ErrorDetail detail;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::SPACE_FULL);
     photo.errorDetails.push_back(detail);
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
@@ -658,8 +660,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     // 用例说明：测试 OnRecordFailedErrorDetails 方法，业务模式变更
     CloudMediaPhotosService service;
     PhotosDto photo;
-    photo.errorType = ErrorType::TYPE_NEED_RETRY;
-    ErrorDetail detail;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::BUSINESS_MODEL_CHANGE_DATA_UPLOAD_FORBIDDEN);
     photo.errorDetails.push_back(detail);
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
@@ -674,8 +676,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     // 用例说明：测试 OnRecordFailedErrorDetails 方法，同名文件
     CloudMediaPhotosService service;
     PhotosDto photo;
-    photo.errorType = ErrorType::TYPE_NEED_RETRY;
-    ErrorDetail detail;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::SAME_FILENAME_NOT_ALLOWED);
     photo.errorDetails.push_back(detail);
     photo.cloudId = "test_cloud_id";
@@ -691,8 +693,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     // 用例说明：测试 OnRecordFailedErrorDetails 方法，内容未找到
     CloudMediaPhotosService service;
     PhotosDto photo;
-    photo.errorType = ErrorType::TYPE_NEED_RETRY;
-    ErrorDetail detail;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::CONTENT_NOT_FIND);
     photo.errorDetails.push_back(detail);
     photo.cloudId = "test_cloud_id";
@@ -710,7 +712,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     CloudMediaPhotosService service;
     PhotosDto photo;
     photo.errorType = ErrorType::TYPE_NOT_NEED_RETRY;
-    ErrorDetail detail;
+    CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::OTHER_ERROR);
     photo.errorDetails.push_back(detail);
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
@@ -899,18 +901,20 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_IsIgnoreMatch_Tes
     EXPECT_TRUE(ret);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_GetCloudSyncUnPreparedData_Test_001, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_GetCloudSyncUnPreparedData_Test_001, TestSize.Level1)
 {
     // 用例说明：测试 GetCloudSyncUnprearedData 方法，成功获取数据
     CloudMediaEnhanceService service;
     int32_t result = 0;
 
-    int32_t ret = service.GetCloudSyncUnprearedData(result);
+    int32_t ret = service.GetCloudSyncUnPreparedData(result);
 
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_001, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_001, TestSize.Level1)
 {
     // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，任务已在运行
     CloudMediaEnhanceService service;
@@ -921,7 +925,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitCloudSyncP
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_002, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_002, TestSize.Level1)
 {
     // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，执行器为空
     CloudMediaEnhanceService service;
@@ -933,7 +938,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitCloudSyncP
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_003, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_003, TestSize.Level1)
 {
     // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，成功提交任务
     CloudMediaEnhanceService service;
