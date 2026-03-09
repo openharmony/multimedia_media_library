@@ -15,7 +15,7 @@
 
 #include "media_compatible_info_column.h"
 
-namespace OHOS::Media{
+namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
 

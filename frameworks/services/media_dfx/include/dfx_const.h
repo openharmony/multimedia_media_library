@@ -120,7 +120,7 @@ const std::string ADAPTATION_TO_MOVING_PHOTO_XML = "/data/storage/el2/base/prefe
 const std::string DFX_CINEMATIC_VIDEO_XML = "/data/storage/el2/base/preferences/dfx_cinematic_video.xml";
 const std::string ALIB_HEIF_DUPLICATE_XML = "/data/storage/el2/base/preferences/alib_heif_duplicate.xml";
 const std::string ALIB_HIGH_PIXEL_DUPLICATE_XML = "/data/storage/el2/base/preferences/alib_high_pixel_duplicate.xml";
-const std::string ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML = 
+const std::string ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML =
     "/data/storage/el2/base/preferences/alib_high_pixel_heif_duplicate.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";

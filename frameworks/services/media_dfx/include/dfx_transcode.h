@@ -19,7 +19,7 @@
 #include <string>
 
 namespace OHOS {
-namespace Media{
+namespace Media {
 enum class TranscodeType : int32_t {
     DEFAULT = 0;
     HEIF,
@@ -28,6 +28,4 @@ enum class TranscodeType : int32_t {
 };
 }
 }
-
-
 #endif

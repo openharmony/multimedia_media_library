@@ -854,7 +854,6 @@ void DfxReporter::ReportAlibHeifDuplicate()
     ReportAlibDuplicate(TranscodeType::HEIF);
     ReportAlibDuplicate(TranscodeType::HIGH_PIXEL);
     ReportAlibDuplicate(TranscodeType::HIGH_PIXEL_HEIF);
-    
 }
 
 int32_t DfxReporter::ReportUpgradeFault(const UpgradeExceptionInfo& reportData)

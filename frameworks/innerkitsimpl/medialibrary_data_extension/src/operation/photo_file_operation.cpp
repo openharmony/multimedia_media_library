@@ -660,8 +660,9 @@ int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, s
     tracer.Start("CreateTmpCompatibleDup");
 
     auto targetPath = std::move(editDataFolder) + duplicate;
-    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath, extension,
-        width, height), DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, transcodeType, targetPath));
+    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath,
+        extension, width, height),
+        DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, transcodeType, targetPath));
 
     tracer.Finish();
     CHECK_AND_RETURN_RET(MediaFileUtils::GetFileSize(targetPath, size),
