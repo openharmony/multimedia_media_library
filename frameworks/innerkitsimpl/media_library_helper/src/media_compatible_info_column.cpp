@@ -29,6 +29,6 @@ const string TabCompatibleInfoColumn::CREATE_TABLE = "\
     CREATE TABLE IF NOT EXISTS tab_compatible_info ( \
         bundle_name TEXT NOT NULL PRIMARY KEY, \
         high_resolution INT DEFAULT 0, \
-        encodings TEXT
+        encodings TEXT \
     );";
 }
