@@ -5822,7 +5822,7 @@ int32_t MediaLibraryPhotoOperations::SubmitExistFileDBRecordExecute(MediaLibrary
 
     val = cmd.GetQuerySetParam(IS_ORIGINAL_IMAGE_RESOURCE);
     bool isOriginalImageResource = val == ORIGINAL_IMAGE_RESOURCE;
-    // TODO 更新一下数据库的bucketnum相关内容 避免遗漏
+    // 更新数据库的bucketnum相关内容 避免遗漏
 
     UpdateAssetPathInSubmitExistFile(id, assetPath);
     if (isWriteGpsAdvanced) {
