@@ -1143,7 +1143,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBuc
         // 原图不存在 效果图存在的 删除编辑数据，标记图片未被编辑 清时间戳
         MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
         UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
-        MEDIA_INFO_LOG("Delete editDataFile: %{public}s",
+        MEDIA_INFO_LOG("Delete MovingPhoto editDataFile: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
         return true;
@@ -1153,7 +1153,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBuc
         MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editDataFile);
         UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
         MediaFileUtils::DeleteFileWithRetry(dirtyFilePathInfo.editBucketFolder);
-        MEDIA_INFO_LOG("Delete editData File And Dir: %{public}s",
+        MEDIA_INFO_LOG("Delete MovingPhoto editData File And Dir: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editDataFile).c_str());
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
         return true;
