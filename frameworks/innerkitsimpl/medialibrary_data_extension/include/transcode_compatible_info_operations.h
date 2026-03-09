@@ -40,7 +40,7 @@ public:
     static int32_t InsertCompatibleInfo(CompatibleInfo& compatibleInfo);
     static int32_t UpdataCompatibleInfo(CompatibleInfo& compatibleInfo);
     static int32_t DeleteCompatibleInfo(const std::string& bundleName);
-    static Int32_t QueryCompatibleInfo(comst std::string& bundleName, CompatibleInfo& compatibleInfo);
+    static int32_t QueryCompatibleInfo(const std::string& bundleName, CompatibleInfo& compatibleInfo);
 private:
     static std::string VectorToString(const std::vector<std::string> &encodings);
     static std::string StringToVector(const std::string &str);
