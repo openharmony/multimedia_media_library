@@ -2248,7 +2248,7 @@ static void SetTranscodeType(const std::shared_ptr<NativeRdb::ResultSet> &result
 {
     int32_t width = GetInt32Val(PhotoColumn::PHOTO_WIDTH, resultSet);
     int32_t height = GetInt32Val(PhotoColumn::PHOTO_HEIGHT, resultSet);
-    std::string mimeType = GetString(PhotoColumn::MEDIA_MIME_TYPE, resultSet);
+    std::string mimeType = GetStringVal(PhotoColumn::MEDIA_MIME_TYPE, resultSet);
     bool isHeif = (mimeType == "image/heic" || mimeType == "image/heif");
     bool isHighPixel = IsHighPixelPicture(width, height);
     if (isHeif) {
@@ -2328,7 +2328,7 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     dupExist = 0;
     int32_t width = 0;
     int32_t height = 0;
-    auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist, width, height);
+    auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist, width, height, transcodeType);
     CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
     if (dupExist > 0) {
         return err;
