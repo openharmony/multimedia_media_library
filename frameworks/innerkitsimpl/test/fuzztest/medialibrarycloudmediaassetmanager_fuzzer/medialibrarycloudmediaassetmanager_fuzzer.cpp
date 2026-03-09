@@ -14,6 +14,7 @@
  */
 
 #include "medialibrarycloudmediaassetmanager_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <string>
@@ -23,7 +24,6 @@
 
 #define private public
 #include "cloud_media_asset_manager.h"
-#include "cloud_media_asset_download_operation.h"
 #include "cloud_media_asset_callback.h"
 #include "cloud_media_asset_observer.h"
 #include "cloud_media_asset_types.h"
@@ -49,12 +49,9 @@ static const int32_t POSITION_CLOUD_FLAG = 2;
 static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_CLOUD_MEDIA_DOWNLOAD_TYPE = 1;
 static const int32_t MIN_CLOUD_MEDIA_TASK_RECOVER_CAUSE = 1;
-static const int32_t MAX_CLOUD_MEDIA_ASSET_TASK_STATUS = 2;
-static const int32_t MAX_DOWNLOAD_ERROR_TYPE = 5;
 static const int32_t MAX_URI_LIST = 5;
 static const int32_t MAX_CLOUD_MEDIA_TASK_RECOVER_CAUSE = 7;
 static const int32_t MAX_CLOUD_MEDIA_TASK_PAUSE_CAUSE = 9;
-static const int32_t MAX_STATUS = 13;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
 static const string PHOTOS_TABLE = "Photos";
@@ -78,24 +75,6 @@ static inline CloudMediaTaskPauseCause FuzzCloudMediaTaskPauseCause()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_MEDIA_TASK_PAUSE_CAUSE);
     return static_cast<CloudMediaTaskPauseCause>(value);
-}
-
-static inline CloudMediaAssetTaskStatus FuzzCloudMediaAssetTaskStatus()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_MEDIA_ASSET_TASK_STATUS);
-    return static_cast<CloudMediaAssetTaskStatus>(value);
-}
-
-static inline Status FuzzStatus()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_STATUS);
-    return static_cast<Status>(value);
-}
-
-static inline DownloadProgressObj::DownloadErrorType FuzzDownloadErrorType()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DOWNLOAD_ERROR_TYPE);
-    return static_cast<DownloadProgressObj::DownloadErrorType>(value);
 }
 
 static int32_t InsertAsset()
@@ -163,12 +142,7 @@ static void Init()
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto rdbStore = Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
@@ -201,57 +175,6 @@ static void CloudMediaAssetDownloadFuzzer()
     instance.GetDownloadType();
     instance.SetBgDownloadPermission(provider->ConsumeBool());
     instance.CheckStorageAndRecoverDownloadTask();
-}
-
-static void CloudMediaAssetDownloadOperationFuzzer()
-{
-    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
-    int32_t firstFileId = InsertAsset();
-    int32_t secondFileId = InsertAsset();
-    MEDIA_INFO_LOG("firstFileId: %{public}d, secondFileId: %{public}d", firstFileId, secondFileId);
-    std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
-    operation->taskStatus_ = FuzzCloudMediaAssetTaskStatus();
-    instance.StartDownloadCloudAsset(FuzzCloudMediaDownloadType());
-    instance.RecoverDownloadCloudAsset(FuzzCloudMediaTaskRecoverCause());
-    instance.PauseDownloadCloudAsset(FuzzCloudMediaTaskPauseCause());
-    instance.CancelDownloadCloudAsset();
-    instance.GetCloudMediaAssetTaskStatus();
-    instance.SetIsThumbnailUpdate();
-    instance.GetTaskStatus();
-    instance.GetDownloadType();
-    instance.SetBgDownloadPermission(provider->ConsumeBool());
-    instance.CheckStorageAndRecoverDownloadTask();
-    operation->SetTaskStatus(FuzzStatus());
-    operation->QueryDownloadFilesNeeded(provider->ConsumeBool());
-    operation->isThumbnailUpdate_ = provider->ConsumeBool();
-    operation->InitDownloadTaskInfo();
-    CloudMediaAssetDownloadOperation::DownloadFileData downloadFileData = operation->ReadyDataForBatchDownload();
-    operation->StartFileCacheFailed();
-    operation->StartBatchDownload();
-    operation->SubmitBatchDownload(downloadFileData, provider->ConsumeBool());
-    operation->InitStartDownloadTaskStatus(provider->ConsumeBool());
-    operation->DoRelativedRegister();
-    operation->ManualActiveRecoverTask(provider->ConsumeIntegral<int32_t>());
-    operation->pauseCause_ = FuzzCloudMediaTaskPauseCause();
-    operation->PassiveStatusRecoverTask(FuzzCloudMediaTaskRecoverCause());
-    operation->CheckStorageAndRecoverDownloadTask();
-    operation->PauseDownloadTask(FuzzCloudMediaTaskPauseCause());
-    operation->SubmitBatchDownloadAgain();
-    operation->GetTaskPauseCause();
-    operation->GetTaskInfo();
-}
-
-static void CloudMediaAssetDownloadCallbackFuzzer()
-{
-    std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
-    operation->taskStatus_ = CloudMediaAssetTaskStatus::DOWNLOADING;
-    DownloadProgressObj downloadProgressObj;
-    downloadProgressObj.downloadId = provider->ConsumeIntegral<int32_t>();
-    downloadProgressObj.downloadErrorType = FuzzDownloadErrorType();
-    downloadProgressObj.path = provider->ConsumeBytesAsString(NUM_BYTES);
-    operation->HandleSuccessCallback(downloadProgressObj);
-    operation->HandleFailedCallback(downloadProgressObj);
-    operation->HandleStoppedCallback(downloadProgressObj);
 }
 
 static void CloudMediaAssetDeleteFuzzer()
@@ -305,11 +228,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace Media
 } // namespace OHOS
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -328,9 +246,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::Media::CloudMediaAssetManagerFuzzer();
     OHOS::Media::CloudMediaAssetDownloadFuzzer();
-    OHOS::Media::CloudMediaAssetDownloadOperationFuzzer();
-    OHOS::Media::CloudMediaAssetDownloadCallbackFuzzer();
     OHOS::Media::CloudMediaAssetDeleteFuzzer();
-    OHOS::Media::ClearKvStore();
     return 0;
 }

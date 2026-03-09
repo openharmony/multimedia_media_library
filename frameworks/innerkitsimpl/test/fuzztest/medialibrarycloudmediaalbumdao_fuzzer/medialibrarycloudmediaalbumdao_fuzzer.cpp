@@ -14,6 +14,7 @@
  */
 
 #include "medialibrarycloudmediaalbumdao_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <string>
@@ -259,7 +260,10 @@ static void InsertAndRemoveAlbumFailedRecoredFuzzer()
 
 void SetTables()
 {
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    auto rdbStore = Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
@@ -280,14 +284,6 @@ void SetTables()
 
 static void Init()
 {
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
     auto albumRefresh = std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
     if (albumRefresh == nullptr) {
         MEDIA_ERR_LOG("albumRefresh is nullptr");
@@ -317,11 +313,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -341,6 +332,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::provider = &fdp;
     OHOS::CloudMediaAlbumDaoFuzzer();
     OHOS::InsertAndRemoveAlbumFailedRecoredFuzzer();
-    OHOS::ClearKvStore();
     return 0;
 }
