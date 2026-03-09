@@ -1331,6 +1331,7 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyFolders(int32_t curStartBucketId
     int32_t startBucketId = curStartBucketId == scanBeginCode ? 1 : curStartBucketId;
     std::vector<std::string> bucketsVec;
     MediaFileUtils::GetFolderListUnderPath(ROOT_MEDIA_ORG_DIR, bucketsVec);
+    CHECK_AND_RETURN_INFO_LOG(!bucketsVec.empty(), "HandleAllDirtyFolders BucketsVec Empty");
     std::vector<int32_t> bucketsIntVec = MediaFileUtils::ConvertBucketNameVector(bucketsVec);
     std::sort(bucketsIntVec.begin(), bucketsIntVec.end());
     for (const auto& curBucketNum : bucketsIntVec) {
