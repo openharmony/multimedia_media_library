@@ -20,6 +20,7 @@
 #include <array>
 #include <mutex>
 #include <thread>
+#include <unistd.h>
 #include "access_token.h"
 #include "accesstoken_kit.h"
 #include "album_operation_uri.h"
@@ -79,6 +80,8 @@
 #include <charconv>
 #include "query_media_data_status_vo.h"
 #include "media_string_utils.h"
+#include "acquire_debug_database_vo.h"
+#include "release_debug_database_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -92,6 +95,9 @@ static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbna
 static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
 static std::atomic<int32_t> requestIdCounter_ = 0;
 static std::atomic<int32_t> requestIdCallback_ = 0;
+static const std::unordered_set<std::string> BETACLUB_FAULT_TREE_CODES = {
+    "1025_1041_1018",
+};
 
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -101,6 +107,8 @@ const int32_t MAX_QUERY_LIMIT = 15;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 const int32_t MAX_LEN_LIMIT = 9999;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
+const int32_t BETA_ISSUE_ID_LENGTH = 10;
+const int32_t MAX_FILE_FD = 1023;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -255,6 +263,10 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessSetPhotoAlbumOrder)},
     ani_native_function {"isMediaDataReadyInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::QueryMediaDataReady)},
+    ani_native_function {"acquireDebugDatabaseInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessAcquireDebugDatabase)},
+    ani_native_function {"releaseDebugDatabaseInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessReleaseDebugDatabase)},
 };
 } // namespace
 
@@ -5753,6 +5765,218 @@ void MediaLibraryAni::PhotoAccessOffTrashedAlbumChange(ani_env *env, ani_object 
     unregisterAssetExecute(env, object, callbackOff, "trashedAlbumChange");
     tracer.Finish();
     return;
+}
+
+static bool CheckBetaIssueId(const std::string &betaIssueId)
+{
+    return betaIssueId.length() == BETA_ISSUE_ID_LENGTH && MediaLibraryAniUtils::IsNumber(betaIssueId);
+}
+
+static bool CheckBetaScenario(const std::string &betaScenario)
+{
+    return !betaScenario.empty() && BETACLUB_FAULT_TREE_CODES.count(betaScenario) != 0;
+}
+
+static bool CheckFileDescriptor(int32_t fileFd)
+{
+    return fileFd >= 0 && fileFd <= MAX_FILE_FD;
+}
+
+static int32_t CheckDebugDatabasePermission(ani_env* env)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "API only can be called by system app");
+        return ANI_ERROR;
+    }
+    if (!MediaLibraryAniUtils::IsBetaVersion()) {
+        AniError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Caller not beta version");
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
+static ani_status ParseArgsAcquireDebugDatabase(ani_env* env, ani_string betaIssueIdObj, ani_string betaScenarioObj,
+    unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == ANI_OK, ANI_ERROR, "Permission verification failed");
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is nullptr");
+
+    std::string betaIssueId;
+    std::string betaScenario;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, betaIssueIdObj, betaIssueId) == ANI_OK,
+        JS_E_PARAM_INVALID, ANI_ERROR, "Failed to parse betaIssueId");
+    CHECK_ARGS_WITH_RET_MSG(env, CheckBetaIssueId(betaIssueId), JS_E_PARAM_INVALID, ANI_ERROR,
+        "betaIssueId is invalid");
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, betaScenarioObj, betaScenario) == ANI_OK,
+        JS_E_PARAM_INVALID, ANI_ERROR, "Failed to parse betaScenario");
+    CHECK_ARGS_WITH_RET_MSG(env, CheckBetaScenario(betaScenario), JS_E_PARAM_INVALID, ANI_ERROR,
+        "betaScenario is invalid");
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_BETA_ISSUE_ID, betaIssueId);
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_BETA_SCENARIO, betaScenario);
+
+    return ANI_OK;
+}
+
+static void AcquireDebugDatabaseExecute(ani_env* env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("AcquireDebugDatabaseExecute");
+
+    bool isValid = false;
+    std::string betaIssueId = context->valuesBucket.Get(CONST_MEDIA_DATA_BETA_ISSUE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "AcquireDebugDatabaseExecute betaIssueId is empty");
+    std::string betaScenario = context->valuesBucket.Get(CONST_MEDIA_DATA_BETA_SCENARIO, isValid);
+    CHECK_IF_EQUAL(isValid, "AcquireDebugDatabaseExecute betaScenario is empty");
+
+    AcquireDebugDatabaseReqBody reqBody;
+    reqBody.betaIssueId = betaIssueId;
+    reqBody.betaScenario = betaScenario;
+    AcquireDebugDatabaseRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        context->SaveError(errCode);
+        return;
+    }
+    string uri = string(CONST_ML_FILE_URI_PREFIX) + "/" + CONST_MEDIA_FILEOPRN_OPEN_DEBUG_DB + "/" + betaIssueId;
+    Uri openFileUri(uri);
+    int32_t fileFd = UserFileClient::OpenFile(openFileUri, "r");
+    if (fileFd < 0) {
+        context->SaveError(fileFd);
+        return;
+    }
+    context->debugDatabaseMap["FILE_FD"] = std::to_string(fileFd);
+    context->debugDatabaseMap["FILE_NAME"] = respBody.fileName;
+    context->debugDatabaseMap["FILE_SIZE"] = respBody.fileSize;
+}
+
+static ani_object AcquireDebugDatabaseComplete(ani_env* env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("AcquireDebugDatabaseComplete");
+
+    ani_object MapRes {};
+    ani_object errorObj {};
+    if (context->error == ERR_DEFAULT) {
+        if (context->debugDatabaseMap.empty()) {
+            AniError::ThrowError(env, JS_E_INNER_FAIL, "No debugDatabaseMap result found!");
+            context->HandleError(env, errorObj);
+            return nullptr;
+        }
+        CHECK_ARGS_WITH_RET_MSG(env,
+            MediaLibraryAniUtils::ToAniMap(env, context->debugDatabaseMap, MapRes) == ANI_OK,
+            JS_E_INNER_FAIL, nullptr, "Failed to create js object for AcquireDebugDatabase resultMap");
+    } else {
+        context->HandleError(env, errorObj);
+    }
+    tracer.Finish();
+    context.reset();
+    return MapRes;
+}
+
+ani_object MediaLibraryAni::PhotoAccessAcquireDebugDatabase(ani_env* env, ani_object object,
+    ani_string betaIssueId, ani_string betaScenario)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessAcquireDebugDatabase");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(ParseArgsAcquireDebugDatabase(env, betaIssueId, betaScenario, asyncContext) == ANI_OK,
+        nullptr, "failed to parse input");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE);
+
+    SetUserIdFromObjectInfo(asyncContext);
+    AcquireDebugDatabaseExecute(env, asyncContext);
+    return AcquireDebugDatabaseComplete(env, asyncContext);
+}
+
+static ani_status ParseArgsReleaseDebugDatabase(ani_env* env, ani_string betaIssueIdObj, ani_int fileFdObj,
+    unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    CHECK_COND_RET(CheckDebugDatabasePermission(env) == ANI_OK, ANI_ERROR, "Permission verification failed");
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is nullptr");
+
+    std::string betaIssueId;
+    int32_t fileFd;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, betaIssueIdObj, betaIssueId) == ANI_OK,
+        JS_E_PARAM_INVALID, ANI_ERROR, "Failed to parse betaIssueId");
+    CHECK_ARGS_WITH_RET_MSG(env, CheckBetaIssueId(betaIssueId), JS_E_PARAM_INVALID, ANI_ERROR,
+        "betaIssueId is invalid");
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetInt32(env, fileFdObj, fileFd) == ANI_OK, JS_E_PARAM_INVALID,
+        ANI_ERROR, "Failed to parse fileFd");
+    CHECK_ARGS_WITH_RET_MSG(env, CheckFileDescriptor(fileFd), JS_E_PARAM_INVALID, ANI_ERROR,
+        "fileFd is invalid");
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_BETA_ISSUE_ID, betaIssueId);
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_BETA_DEBUG_DB_FD, fileFd);
+
+    return ANI_OK;
+}
+
+static void ReleaseDebugDatabaseExecute(ani_env* env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("ReleaseDebugDatabaseExecute");
+
+    bool isValid = false;
+    std::string betaIssueId = context->valuesBucket.Get(CONST_MEDIA_DATA_BETA_ISSUE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "ReleaseDebugDatabaseExecute betaIssueId is empty");
+    int32_t fileFd = context->valuesBucket.Get(CONST_MEDIA_DATA_BETA_DEBUG_DB_FD, isValid);
+    CHECK_IF_EQUAL(isValid, "ReleaseDebugDatabaseExecute betaScenario is empty");
+
+    int32_t errCode = close(fileFd);
+    CHECK_AND_PRINT_LOG(errCode == 0, "Failed to close fileFd, errCode: %{public}d", errCode);
+    ReleaseDebugDatabaseReqBody reqBody;
+    reqBody.betaIssueId = betaIssueId;
+    errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
+    if (errCode != E_OK) {
+        context->SaveError(errCode);
+    }
+}
+
+static void ReleaseDebugDatabaseComplete(ani_env* env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, errorObj);
+    }
+    context.reset();
+}
+
+void MediaLibraryAni::PhotoAccessReleaseDebugDatabase(ani_env* env, ani_object object,
+    ani_string betaIssueId, ani_int fileFd)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessReleaseDebugDatabase");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    if (asyncContext == nullptr) {
+        return;
+    }
+    asyncContext->objectInfo = Unwrap(env, object);
+    if (asyncContext->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID);
+        return;
+    }
+    
+    CHECK_IF_EQUAL(ParseArgsReleaseDebugDatabase(env, betaIssueId, fileFd, asyncContext) == ANI_OK,
+        "failed to parse input");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE);
+
+    SetUserIdFromObjectInfo(asyncContext);
+    ReleaseDebugDatabaseExecute(env, asyncContext);
+    return ReleaseDebugDatabaseComplete(env, asyncContext);
 }
 
 } // namespace Media

@@ -140,6 +140,7 @@ const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
 const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
+const int32_t MAX_FILE_FD = 1023;
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -13954,7 +13955,7 @@ static bool CheckBetaScenario(const std::string &betaScenario)
 
 static bool CheckFileDescriptor(int32_t fileFd)
 {
-    return fileFd >= 0 && fileFd <= 1023;
+    return fileFd >= 0 && fileFd <= MAX_FILE_FD;
 }
 
 static int32_t CheckDebugDatabasePermission(napi_env env)

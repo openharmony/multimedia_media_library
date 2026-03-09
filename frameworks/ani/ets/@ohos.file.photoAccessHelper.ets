@@ -2491,6 +2491,8 @@ export namespace photoAccessHelper {
     getPhotoAlbumOrder(orderStyle: int, options?: FetchOptions): Promise<FetchResult<AlbumOrder>>;
     setPhotoAlbumOrder(orderStyle: int, albumOrders: Array<AlbumOrder>): Promise<void>;
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
+    acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
+    releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
   }
 
   interface AppInfo {
@@ -3497,6 +3499,53 @@ export namespace photoAccessHelper {
       });
     }
 
+    acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>> {
+      return new Promise<Map<string, string>>((resolve: (v: Map<string, string>) => void, reject: RejectString) => {
+        let cb = (): Map<string, string> | MediaLibraryAniError => {
+          let result: Map<string, string> | MediaLibraryAniError;
+          try {
+            result = this.acquireDebugDatabaseInner(betaIssueId, betaScenario);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Map<string, string>);
+            }
+          }
+        });
+      });
+    }
+
+    releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.releaseDebugDatabaseInner(betaIssueId, dbFd);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code as int, err.message));
+          }
+        });
+      });
+    }
+
     onSinglePhotoAlbumChange(album: Album, callback: Callback<AlbumChangeInfos>): void {
       let cb = (): MediaLibraryAniError | undefined => {
         try {
@@ -3680,6 +3729,8 @@ export namespace photoAccessHelper {
     native updateGalleryFormInfoInner(info: GalleryFormInfo): void;
     native getSupportedPhotoFormatsInner(photoType: PhotoType): Array<string>;
     native startAssetAnalysisInner(type: AnalysisType, assetUris?: Array<string>): int;
+    native acquireDebugDatabaseInner(betaIssueId: string, betaScenario: string): Map<string, string>;
+    native releaseDebugDatabaseInner(betaIssueId: string, dbFd: int): void;
     native onSinglePhotoAlbumChangeInner(album: Album, callback: Callback<AlbumChangeInfos>): void;
     native offSinglePhotoAlbumChangeInner(album?: Album, callback?: Callback<AlbumChangeInfos>): void;
     native onSinglePhotoChangeInner(asset: PhotoAsset, callback: Callback<PhotoAssetChangeInfos>): void;
