@@ -123,7 +123,6 @@ private:
 
     void AddToFilesCacheSet(const std::string &val);
     void ClearFilesCacheSet();
-    bool OneDayOneTimeCheck(int64_t currExecuteTime, int64_t lastExecuteTime);
     bool IsLegalMediaAsset(const std::string &fileName);
     bool IsIllegalEditFolderFile(int32_t curBucketNum, const std::string &folderName);
     bool IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string &folderName);
@@ -134,7 +133,6 @@ private:
     std::set<int32_t> ProcessCacheSet(const std::set<std::string>& cacheSet, int32_t batchSize);
     int32_t GetFileIdByPathsFromDB(std::vector<std::string> &paths, std::set<int32_t> &fileIdSet);
     void SaveCacheSetToCacheDB();
-    void AddToFileIdsCacheSet(int32_t val);
     void ClearFileIdsCacheSet();
     bool ContainsFileIdsCacheSet(int32_t &val);
     int32_t UpdatePendingInfoByPath(int32_t fileId, int64_t modifyTime, int64_t pending);
