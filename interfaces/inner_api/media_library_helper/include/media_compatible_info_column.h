@@ -22,7 +22,7 @@
 #include "rdb_predicates.h"
 #include "userfile_manager_types.h"
 
-namespace OHOS::Meida {
+namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class TabCompatibleInfoColumn : BaseColumn {
 public:
@@ -32,6 +32,6 @@ public:
     static const std::string ENCODINGS EXPORT;
 
     static const std::string CREATE_TABLE;
-}
+};
 }
 #endif
