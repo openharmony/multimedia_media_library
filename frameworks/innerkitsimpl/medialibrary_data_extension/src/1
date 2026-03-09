@@ -1,0 +1,39 @@
+static const string IS_ORIGINAL_IMAGE_RESOURCE = "is_original_image_resource";
+static const string ORIGINAL_IMAGE_RESOURCE = "1";
+const bool PROCESS_TRANSCODE_SIZE = false;
+static const std::string ORIGIN_VIDEO_STR = "1";
+
+
+
+int32_t MediaLibraryPhotoOperations::ValidateAndExtractFileAssetParams(MediaLibraryCommand& cmd,
+    const std::shared_ptr<FileAsset>& fileAsset, string& assetPath, int32_t& subtype, int32_t& id, bool& isEdit)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    
+    subtype = fileAsset->GetPhotoSubType();
+    CHECK_AND_RETURN_RET_LOG(CheckCacheCmd(cmd, subtype, fileAsset->GetDisplayName()),
+        E_INVALID_VALUES, "Failed to check cache cmd");
+        
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+
+    int64_t pending = fileAsset->GetTimePending();
+    CHECK_AND_RETURN_RET_LOG(
+        pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
+        E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
+
+    assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+
+    id = fileAsset->GetId();
+    isEdit = (pending == 0);
+
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
+
+    tracer.Start("MediaChangeEffect::TakeEffect");
+
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
+    int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
