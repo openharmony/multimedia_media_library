@@ -942,7 +942,10 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectMovingPhotoNotExistInEditFolde
     // 动图视频
     std::string videoPath = dirtyFilePathInfo.effectFolder + SLASH_STR +
         MediaFileUtils::GetTitleFromDisplayName(dirtyFilePathInfo.fileName) + MOVING_PHOTO_SUFFIX;
-    bool cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    bool cpSuccV = true;
+    if (!MediaFileUtils::IsFileExists(videoPath)) { // 不存在就拷贝一份 存在直接跳过
+        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    }
     MEDIA_INFO_LOG("DirtyMediaHandler DealEditedEffectMovingPhotoNotExistInEditFolder Copy to Org: %{public}s, "
         "Ret: %{public}d, RetV: %{public}d",
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc, cpSuccV);
@@ -1174,7 +1177,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, c
         bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
         bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
         bool isEditdataFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editDataFile);
-        if (isOriginFileExist && !isEffectFileExist) {
+        if (isOriginFileExist && !isEffectFileExist) { // 效果图不存在的
             return ProcessEditFolderBatchNormalPhotos(curBucketNum, folderName, dirtyFilePathInfo);
         }
         if (!isOriginFileExist && isEffectFileExist && isEditdataFileExist) {
@@ -1266,12 +1269,6 @@ void MediaCleanAllDirtyFilesTask::ClearFilesCacheSet()
 {
     std::lock_guard<std::mutex> lock(filesCacheSetMtx_);
     filesCacheSet_.clear();
-}
-
-void MediaCleanAllDirtyFilesTask::AddToFileIdsCacheSet(int32_t val)
-{
-    std::lock_guard<std::mutex> lock(fileIdsCacheSetMtx_);
-    fileIdsCacheSet_.insert(val);
 }
 
 void MediaCleanAllDirtyFilesTask::ClearFileIdsCacheSet()
@@ -1388,21 +1385,10 @@ bool MediaCleanAllDirtyFilesTask::IsCurrentTaskTimeOut()
     return false;
 }
 
-bool MediaCleanAllDirtyFilesTask::OneDayOneTimeCheck(int64_t currExecuteTime, int64_t lastExecuteTime)
-{
-    if (currExecuteTime - lastExecuteTime < HALF_DAY) { // 判断是否小于12小时 一天只触发一次
-        return false;
-    }
-    return true;
-}
-
 void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
 {
     int64_t lastExecuteTime = GetBatchExecuteTime();
     triggerTime_ = MediaFileUtils::UTCTimeSeconds(); // 当前时间
-    CHECK_AND_RETURN_INFO_LOG(OneDayOneTimeCheck(triggerTime_, lastExecuteTime),
-        "DirtyMediaHandler OneDay OneTime Check failed.");
-
     MEDIA_INFO_LOG("DirtyMediaHandler Start LastExecuteTime: %{public}" PRId64, lastExecuteTime);
     if (lastExecuteTime > 0) { // 判断接续 执行过 接续执行
         int32_t curStartFileId = GetBatchProgressId(START_FILE_ID_STR);
@@ -1417,7 +1403,6 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
             HandleAllTableAndFolder(curStartFileId, scanDoneCode);
             return; // 避免重复执行
         }
-        
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
