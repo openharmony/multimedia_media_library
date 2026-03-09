@@ -395,7 +395,7 @@ void MediaCleanAllDirtyFilesTask::HandleSingleRecord(DirtyFileInfo &dirtyFileInf
 void MediaCleanAllDirtyFilesTask::MoveToNextId(int32_t &startFileId)
 {
     int32_t nextFileId = 0;
-    if (QueryNextId(startFileId, nextFileId) == E_OK && nextFileId != 0) {
+    if (QueryNextId(startFileId, nextFileId) == E_OK && nextFileId != 0 && startFileId != nextFileId) {
         MEDIA_INFO_LOG("HandleAllDirtyTable MoveToNext Id: %{public}d, Next: %{public}d", startFileId, nextFileId);
         startFileId = nextFileId;
     } else {
@@ -432,7 +432,7 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyTable(int32_t curStartFileId)
         if (QueryFileInfos(startFileId, dirtyFileInfo)) {
             HandleSingleRecord(dirtyFileInfo);
         }
-        MoveToNextId(startFileId);
+        MoveToNextId(startFileId); // 一定需要拿到下一个 避免死循环
     }
     if (startFileId > maxFileId) { // Archiving
         MEDIA_INFO_LOG("DirtyMediaHandler Table Scan END");
