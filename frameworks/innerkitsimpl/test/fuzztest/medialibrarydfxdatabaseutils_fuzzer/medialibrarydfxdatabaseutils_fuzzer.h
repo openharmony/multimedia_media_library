@@ -77,7 +77,7 @@ const std::vector<std::string> MIMETYPE_LISTS = {
     "image/jpeg",
     "audio/mpeg",
     "video/mp4",
-    "text/xml"
+    "text/xml",
     "invalid"
 };
 } // namespace Media

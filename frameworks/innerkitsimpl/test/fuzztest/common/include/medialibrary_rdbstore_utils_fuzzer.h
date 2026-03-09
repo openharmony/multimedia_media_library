@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,22 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef NOTIFYCHANGE_FUZZER_H
-#define NOTIFYCHANGE_FUZZER_H
+#ifndef MEDIALIBRARY_RDB_STORE_UTILS_H
+#define MEDIALIBRARY_RDB_STORE_UTILS_H
 
-#define FUZZ_PROJECT_NAME "medialibrarydfx2_fuzzer"
+#include "ability_context_impl.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
-enum PhotoPosition {
-    LOCAL = 1,
-    CLOUD = 2,
-    LOCAL_AND_CLOUD = 3
-};
-
-enum PhotoThumbStatus {
-    DOWNLOADED = 0,
-    NOT_DOWNLOADED  = 2
+class MediaLibraryRdbStoreUtilsTest {
+public:
+    static std::shared_ptr<MediaLibraryRdbStore> InitMediaLibraryRdbStore(
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
 };
 } // namespace Media
 } // namespace OHOS

@@ -43,6 +43,7 @@ using namespace DataShare;
 static const int32_t NUM_BYTES = 1;
 static const int32_t DEFAULT_URI_LISTS = 1;
 static const int32_t DEFAULT_MEDIA_OPEN_MODES = 1;
+static const int32_t HIGH_QUALITY_MODE = 1;
 FuzzedDataProvider *provider = nullptr;
 
 static inline vector<int32_t> FuzzVectorInt32()
@@ -174,7 +175,9 @@ static inline void DeleteFuzzer(MediaDataShareExtAbility &extension)
 
 static inline void QueryFuzzer(MediaDataShareExtAbility &extension)
 {
-    auto columns = FuzzVectorString();
+    int fileId = provider->ConsumeIntegral<uint32_t>();
+    int deliveryMode = HIGH_QUALITY_MODE;
+    vector<string> columns = {std::to_string(fileId), to_string(deliveryMode)};
     auto error = FuzzDataShareBusinessError();
     extension.Query(FuzzUri(), FuzzDataSharePredicates(), columns, error);
 }
@@ -216,26 +219,15 @@ static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension)
     extension.DenormalizeUri(FuzzUri());
 }
 
-static int InitExtention(MediaDataShareExtAbility &extension)
+static inline void InitExtention(MediaDataShareExtAbility &extension)
 {
     extension.InitPermissionHandler();
-    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
-        sceneCode);
 }
 
 static inline MediaDataShareExtAbility Init()
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
     return {(*runtime)};
-}
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 } // namespace OHOS
 
@@ -267,6 +259,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DenormalizeUriFuzzer(extension);
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
-    OHOS::ClearKvStore();
     return 0;
 }
