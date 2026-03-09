@@ -2233,7 +2233,7 @@ static bool IsHighPixelPicture(int32_t width, int32_t height)
 static bool GetDesireSize(int32_t &width, int32_t &height)
 {
     if (width <= 0 || height <= 0) {
-        return false;    
+        return false;
     }
 
     while (IsHighPixelPicture(width, height)) {

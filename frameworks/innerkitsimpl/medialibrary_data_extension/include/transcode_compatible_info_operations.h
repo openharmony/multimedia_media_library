@@ -26,7 +26,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_unistore_manager.h"
 
-namespace OHOS::Media{
+namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 struct CompatibleInfo {
@@ -48,3 +48,4 @@ private:
     static const std::string ENCODINGS_SEPARATOR;
 };
 }
+#endif

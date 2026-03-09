@@ -54,7 +54,7 @@ static const string NO_MEDIA_TAG = ".nomedia";
 const char* HAS_DATA = "persist.multimedia.media_analysis_service.hasdata";
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
-static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 *1024;
+static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
