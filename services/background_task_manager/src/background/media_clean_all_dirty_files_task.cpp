@@ -157,8 +157,11 @@ int32_t MediaCleanAllDirtyFilesTask::GetMaxFileId()
     std::string QUERY_MAX_FILE_ID = "SELECT MAX(file_id) as q_id FROM Photos";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAX_FILE_ID);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, maxFileId, "Query Result Set Fails");
-    int columnIndex = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, maxFileId, "Go To First Row Fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return maxFileId;
+    }
     maxFileId = GetInt32Val(QUERY_FILE_ID_STR, resultSet);
     resultSet->Close();
     MEDIA_DEBUG_LOG("GetMaxFileId %{public}d", maxFileId);
@@ -179,8 +182,11 @@ int32_t MediaCleanAllDirtyFilesTask::GetMinFileId()
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE));
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MIN_FILE_ID);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, minFileId, "Query Result Set Fails");
-    int columnIndex = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, minFileId, "Go To First Row Fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return minFileId;
+    }
     minFileId = GetInt32Val(QUERY_FILE_ID_STR, resultSet);
     resultSet->Close();
     MEDIA_DEBUG_LOG("GetMinFileId %{public}d", minFileId);
@@ -228,7 +234,11 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
     // 连拍 隐藏 等需要特殊适配
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query not match data fails");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, false, "go to first row fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return false;
+    }
     dirtyFileInfo.fileId = startFileId;
     dirtyFileInfo.path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     dirtyFileInfo.pending = GetInt32Val(MediaColumn::MEDIA_TIME_PENDING, resultSet);
@@ -520,7 +530,11 @@ bool MediaCleanAllDirtyFilesTask::ExistPhotoPathInDB(const std::string &path)
     std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "') AS recordExist";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, recordExist, "Query ExistPhotoPathInDB Fails");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, true, "Go To First Row Fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return true;
+    }
     recordExist = GetInt32Val("recordExist", resultSet) == 0 ? false : true;  // 默认要为true 否则可能误判
     resultSet->Close();
     return recordExist;
@@ -535,7 +549,11 @@ bool MediaCleanAllDirtyFilesTask::ExistMovingPhotoPathInDB(const std::string &pa
         std::to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + ") AS recordExist";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, true, "Query ExistMovingPhotoPathInDB Fails");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, true, "Go To First Row Fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return true;
+    }
     bool recordExist = GetInt32Val("recordExist", resultSet) == 0 ? false : true;  // 默认要为true 否则可能误判
     resultSet->Close();
     return recordExist;
