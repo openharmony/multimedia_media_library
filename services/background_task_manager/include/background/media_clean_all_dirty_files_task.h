@@ -79,7 +79,7 @@ private:
     void HandleSingleRecord(DirtyFileInfo &dirtyFileInfo);
     void HandleAllDirtyTable(int32_t curStartFileId);
 
-    bool GetFileNameWithSameNameOtherType(const std::string & path,
+    bool GetFileNameWithSameNameOtherType(const std::string &path,
         const std::string &fileName, std::string &OtherFileName);
     bool IsMovingPhotosInOrgFolder(int32_t curBucketNum, const std::string &fileName);
     bool IsMovingPhotosInEditFolder(int32_t curBucketNum, const std::string &fileName);
