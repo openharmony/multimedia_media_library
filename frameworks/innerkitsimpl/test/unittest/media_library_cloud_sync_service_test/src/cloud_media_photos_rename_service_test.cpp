@@ -29,10 +29,7 @@
 #include "photos_dto.h"
 #include "asset_accurate_refresh.h"
 #include "photo_asset_info.h"
-
-#define private public
 #include "cloud_media_photos_rename_service.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;

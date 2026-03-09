@@ -24,7 +24,6 @@ group("unittest") {
     ":media_library_cloud_sync_service_controller_processor_test",
     ":media_library_cloud_sync_service_service_test", 
     ":media_library_cloud_sync_service_service_ext_test",
-    ":media_library_cloud_sync_service_photos_rename_test",
   ]
 }
 
@@ -45,6 +44,8 @@ ohos_unittest("media_library_cloud_sync_service_test") {
 
   include_dirs += include_media_cloud_sync_data
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_album_controller_service.cpp",
@@ -57,6 +58,7 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "./src/media_cloud_sync_test_utils.cpp",
     "./src/cloud_media_photos_delete_test.cpp",
     "./src/media_assets_delete_service_test.cpp",
+    "./src/cloud_media_photos_rename_service_test.cpp",
   ]
 
   deps = [
@@ -497,71 +499,6 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
     "dfs_service:libdistributedfileutils_lite",
     "relational_store:rdb_data_share_adapter",
     "preferences:native_preferences",
-  ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
-  resource_config_file =
-      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
-}
-
-ohos_unittest("media_library_cloud_sync_service_photos_rename_test") {
-  module_out_path = "media_library/media_library_asset"
-  include_dirs = [
-    "include",
-    "../medialibrary_unittest_utils/include",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils/",
-  ]
-
-  include_media_cloud_sync_data = [
-    "${MEDIALIB_CLOUD_SYNC_DATA}/include",
-    "${MEDIALIB_CLOUD_SYNC_DATA}/include/vo",
-  ]
-
-  include_dirs += include_media_cloud_sync_data
-
-  sources = [
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_rename_service.cpp",
-    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "src/cloud_media_photos_rename_service_test.cpp",
-  ]
-
-  deps = [
-    "${MEDIALIB_CLOUD_SYNC_CLIENT}:media_library_cloud_sync",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "${MEDIALIB_COMMON_PATH}:media_library_common",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_CLOUD_SYNC_DATA}:mediacloud_sync_data",
-  ]
-
-  external_deps = [
-    "ability_runtime:ability_connect_callback_stub",
-    "ability_runtime:ability_manager",
-    "data_share:datashare_common",
-    "data_share:datashare_consumer",
-    "data_share:datashare_provider",
-    "hilog:libhilog",
-    "relational_store:native_rdb",
-    "relational_store:rdb_data_share_adapter",
-    "ability_base:zuri",
-    "ability_runtime:ability_context_native",
-    "ability_runtime:abilitykit_native",
-    "ability_runtime:app_context",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "common_event_service:cesfwk_innerkits",
-    "ipc:ipc_single",
-    "kv_store:distributeddata_inner",
-    "napi:ace_napi",
-    "player_framework:media_client",
-    "dfs_service:cloudsync_kit_inner",
-    "dfs_service:libdistributedfileutils_lite",
-    "relational_store:rdb_data_share_adapter",
   ]
 
   sanitize = {
