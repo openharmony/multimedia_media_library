@@ -22,6 +22,7 @@
 #include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
+static const int32_t MAX_DATA_SIZE = 10000;
 bool CloudFileDataVo::Unmarshalling(MessageParcel &parcel)
 {
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->fileName), false, "fileName");
@@ -54,6 +55,7 @@ bool CloudFileDataVo::Unmarshalling(std::map<std::string, CloudFileDataVo> &val,
     size_t readAbleSize = parcel.GetReadableBytes();
     bool isInValid = (static_cast<size_t>(size) > readAbleSize) || static_cast<size_t>(size) > val.max_size();
     CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
+    size = size < MAX_DATA_SIZE ? size : MAX_DATA_SIZE;
     for (int32_t i = 0; i < size; i++) {
         std::string key;
         CHECK_AND_RETURN_RET_LOG(parcel.ReadString(key), false, "CloudFileDataVo key");
