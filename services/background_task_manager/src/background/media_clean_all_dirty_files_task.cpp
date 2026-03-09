@@ -204,8 +204,7 @@ int32_t MediaCleanAllDirtyFilesTask::QueryNextId(int32_t startFileId, int32_t &n
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Query Not Match Data Fails");
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         nextFileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
-        // TODO DEL
-        MEDIA_ERR_LOG("Go To First Row NextId: %{public}d", nextFileId);
+        MEDIA_DEBUG_LOG("QueryNextId NextId: %{public}d", nextFileId);
     } else {
         MEDIA_ERR_LOG("Go To First Row Fails StartId: %{public}d", startFileId);
     }
@@ -226,7 +225,7 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
         MediaColumn::MEDIA_ID + " = " + std::to_string(startFileId) + " AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE));
     // 除纯云图 动图? 除东湖和临时文管文件
-    // TODO 连拍 隐藏 等需要特殊适配
+    // 连拍 隐藏 等需要特殊适配
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query not match data fails");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, false, "go to first row fails");
@@ -344,7 +343,7 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
 
 void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // TODO 危险操作 date_added距此超24小时删除元数据
+    // 危险操作 date_added距此超24小时删除元数据
     int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
     if (timeMs - dirtyFileInfo.addTime > ONE_DAY_MS) {
         MEDIA_INFO_LOG("HandleBothNotExistStrategy DeletePermanently FileId %{public}d", dirtyFileInfo.fileId);
@@ -1373,8 +1372,8 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
 {
     int64_t lastExecuteTime = GetBatchExecuteTime();
     triggerTime_ = MediaFileUtils::UTCTimeSeconds(); // 当前时间
-    // TODO CHECK_AND_RETURN_INFO_LOG(OneDayOneTimeCheck(triggerTime_, lastExecuteTime),
-    //     "DirtyMediaHandler OneDay OneTime Check failed.");
+    CHECK_AND_RETURN_INFO_LOG(OneDayOneTimeCheck(triggerTime_, lastExecuteTime),
+        "DirtyMediaHandler OneDay OneTime Check failed.");
 
     MEDIA_INFO_LOG("DirtyMediaHandler Start LastExecuteTime: %{public}" PRId64, lastExecuteTime);
     if (lastExecuteTime > 0) { // 判断接续 执行过 接续执行
@@ -1394,7 +1393,7 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
-        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > 180) { // 执行完成过 重新全量执行 TODO ONE_WEEK
+        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > ONE_WEEK) { // 执行完成过 重新全量执行
             ClearFileIdsCacheSet();
             HandleAllTableAndFolder(scanBeginCode, scanBeginCode);
             return;
