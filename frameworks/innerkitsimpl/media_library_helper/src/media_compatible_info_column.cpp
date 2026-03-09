@@ -30,5 +30,5 @@ const string TabCompatibleInfoColumn::CREATE_TABLE = "\
         bundle_name TEXT NOT NULL PRIMARY KEY, \
         high_resolution INT DEFAULT 0, \
         encodings TEXT
-    );"
+    );";
 }
