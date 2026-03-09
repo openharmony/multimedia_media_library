@@ -791,10 +791,10 @@ static bool GetTransCodeXML(TranscodeType transcodeType, string &XML)
         case TranscodeType::HEIF :
             XML = ALIB_HEIF_DUPLICATE_XML;
             break;
-        case TranscodeType::HEIF :
+        case TranscodeType::HIGH_PIXEL :
             XML = ALIB_HIGH_PIXEL_DUPLICATE_XML;
             break;
-        case TranscodeType::HEIF :
+        case TranscodeType::HIGH_PIXEL_HEIF :
             XML = ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML;
             break;
         default:
