@@ -632,5 +632,1468 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Te
     EXPECT_NE(values.IsEmpty(), true);
     MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test End");
 }
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HasTlvFiles_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> emptyFiles;
+    bool result = operatorObj.HasTlvFiles(emptyFiles);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_001 End");
 }
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HasTlvFiles_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> files = {"/storage/media/local/files/test.jpg", "/storage/media/local/files/test2.jpg"};
+    bool result = operatorObj.HasTlvFiles(files);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_002 End");
 }
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_001 Start");
+    string srcPath = "";
+    string destPath = "/storage/media/local/files/Photo/1/test.jpg";
+    int32_t result = PhotoCustomRestoreOperation::MoveFile(srcPath, destPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_002 Start");
+    string srcPath = "/storage/media/local/files/test.jpg";
+    string destPath = "";
+    int32_t result = PhotoCustomRestoreOperation::MoveFile(srcPath, destPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_DeleteDirectoryIfExists_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDirectoryIfExists_Test_001 Start");
+    string dirPath = "/storage/media/local/files/nonexistent_dir";
+    bool result = PhotoCustomRestoreOperation::DeleteDirectoryIfExists(dirPath);
+    EXPECT_EQ(result, true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDirectoryIfExists_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_ProcessExtractTlvFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string tlvFilePath = "";
+    string destDir;
+    unordered_map<TlvTag, string> extractedFiles;
+    int32_t result = operatorObj.ProcessExtractTlvFile(tlvFilePath, destDir, extractedFiles);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_ProcessExtractTlvFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string tlvFilePath = "/storage/media/local/files/nonexistent.tlv";
+    string destDir;
+    unordered_map<TlvTag, string> extractedFiles;
+    int32_t result = operatorObj.ProcessExtractTlvFile(tlvFilePath, destDir, extractedFiles);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleTlvRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    vector<string> filePathVector;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleTlvRestore(timeInfoMap, restoreTaskInfo, filePathVector, true, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetUniqueTempDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_001 Start");
+    string tlvPath = "/storage/media/local/files/test.tlv";
+    string result = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvPath);
+    EXPECT_EQ(result.empty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandlePhotoSourceRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string sourceBackSrcPath = "/storage/media/local/files/source.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandlePhotoSourceRestore(sourceBackSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandlePhotoSourceBackRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceBackRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string sourceBackSrcPath = "/storage/media/local/files/source_back.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandlePhotoSourceBackRestore(sourceBackSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceBackRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleEditDataRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleEditDataRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string editDataSrcPath = "/storage/media/local/files/edit_data.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleEditDataRestore(editDataSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleEditDataRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleEditDataCameraRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleEditDataCameraRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string editDataCameraSrcPath = "/storage/media/local/files/edit_camera.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleEditDataCameraRestore(editDataCameraSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleEditDataCameraRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleExtraDataRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleExtraDataRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string editDataCameraSrcPath = "/storage/media/local/files/extra_data.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleExtraDataRestore(editDataCameraSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleExtraDataRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_CheckNeedProcessMovingPhotoSize_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_002 Start");
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 0);
+    bool result = PhotoCustomRestoreOperation::CheckNeedProcessMovingPhotoSize(values);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string jsonPath = "/storage/media/local/files/nonexistent.json";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleDbFieldsFromJsonRestore(jsonPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    decodeTlvPathMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin.jpg";
+    string assetPath = "/storage/media/local/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleTlvSingleRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    unordered_map<TlvTag, string> editFileMap;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleTlvSingleRestore(editFileMap, timeInfoMap, restoreTaskInfo, true, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleTlvSingleRestore_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    unordered_map<TlvTag, string> editFileMap;
+    editFileMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin.jpg";
+    editFileMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/edit.json";
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result =
+        operatorObj.HandleTlvSingleRestore(editFileMap, timeInfoMap, restoreTaskInfo, false, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RestoreTlvRollback_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RestoreTlvRollback_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    operatorObj.RestoreTlvRollback(assetPath);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RestoreTlvRollback_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdateTlvEditDataSize_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateTlvEditDataSize_Test_001 Start");
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = PhotoCustomRestoreOperation::UpdateTlvEditDataSize(assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateTlvEditDataSize_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveLivePhoto_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string originFilePath = "/storage/media/local/files/live_photo.jpg";
+    string filePath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.MoveLivePhoto(originFilePath, filePath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_DeleteDatabaseRecord_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDatabaseRecord_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string filePath = "/storage/media/local/files/Photo/1/asset.jpg";
+    operatorObj.DeleteDatabaseRecord(filePath);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDatabaseRecord_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAlbumInfoBySubType_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    int32_t subType = PhotoAlbumSubType::IMAGE;
+    string albumUri;
+    int32_t albumId;
+    int32_t result = operatorObj.GetAlbumInfoBySubType(subType, albumUri, albumId);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAlbumInfoBySubType_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    int32_t subType = PhotoAlbumSubType::VIDEO;
+    string albumUri;
+    int32_t albumId;
+    int32_t result = operatorObj.GetAlbumInfoBySubType(subType, albumUri, albumId);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_QueryMediaInfo_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_QueryMediaInfo_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    shared_ptr<NativeRdb::RdbStore> nullStore = nullptr;
+    unordered_map<string, TimeInfo> result = operatorObj.QueryMediaInfo(nullStore);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_QueryMediaInfo_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetTimeInfoMap_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.dbPath = "";
+    unordered_map<string, TimeInfo> result = operatorObj.GetTimeInfoMap(restoreTaskInfo);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetTimeInfoMap_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.dbPath = "nonexistent.db";
+    restoreTaskInfo.bundleName = "test.bundle";
+    unordered_map<string, TimeInfo> result = operatorObj.GetTimeInfoMap(restoreTaskInfo);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_IsDuplication_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = false;
+    restoreTaskInfo.albumId = 0;
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.size = 1024;
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.orientation = 0;
+    bool result = operatorObj.IsDuplication(restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_IsDuplication_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 1;
+    restoreTaskInfo.hasPhotoCache = true;
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.size = 1024;
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.orientation = 0;
+    operatorObj.photoCache_.insert("test.jpg_1024_1_0");
+    bool result = operatorObj.IsDuplication(restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result, true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_IsDuplication_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 1;
+    restoreTaskInfo.hasPhotoCache = true;
+    FileInfo fileInfo;
+    fileInfo.fileName = "test2.jpg";
+    fileInfo.size = 2048;
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.orientation = 0;
+    operatorObj.photoCache_.insert("test.jpg_1024_1_0");
+    bool result = operatorObj.IsDuplication(restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_IsDuplication_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_QueryAlbumId_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_QueryAlbumId_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.isDeduplication = true;
+    operatorObj.QueryAlbumId(restoreTaskInfo);
+    EXPECT_EQ(restoreTaskInfo.isDeduplication, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_QueryAlbumId_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetFileInfos_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileInfos_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> filePathVector;
+    UniqueNumber uniqueNumber;
+    vector<FileInfo> result = operatorObj.GetFileInfos(filePathVector, uniqueNumber);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileInfos_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetFileInfos_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileInfos_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> filePathVector = {"/storage/media/local/files/test.txt"};
+    UniqueNumber uniqueNumber;
+    vector<FileInfo> result = operatorObj.GetFileInfos(filePathVector, uniqueNumber);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileInfos_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_SetDestinationPath_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_SetDestinationPath_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    UniqueNumber uniqueNumber;
+    vector<FileInfo> result = operatorObj.SetDestinationPath(restoreFiles, uniqueNumber);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_SetDestinationPath_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo;
+    fileInfo.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo.isLivePhoto = false;
+    restoreFiles.push_back(fileInfo);
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo;
+    fileInfo.originFilePath = "/storage/media/local/files/live_photo.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/live_photo.jpg";
+    fileInfo.isLivePhoto = true;
+    restoreFiles.push_back(fileInfo);
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_BatchInsert_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_BatchInsert_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    vector<FileInfo> restoreFiles;
+    int32_t sameFileNum = 0;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    vector<FileInfo> result = operatorObj.BatchInsert(timeInfoMap, restoreTaskInfo, restoreFiles, sameFileNum, true);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_BatchInsert_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_BatchInsert_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_BatchInsert_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 1;
+    restoreTaskInfo.hasPhotoCache = true;
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.displayName = "test.jpg";
+    fileInfo.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.size = 1024;
+    fileInfo.orientation = 0;
+    restoreFiles.push_back(fileInfo);
+    operatorObj.photoCache_.insert("test.jpg_1024_1_0");
+    int32_t sameFileNum = 0;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    vector<FileInfo> result = operatorObj.BatchInsert(timeInfoMap, restoreTaskInfo, restoreFiles, sameFileNum, false);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_BatchInsert_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleCustomRestore_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> filePathVector;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleCustomRestore(timeInfoMap, restoreTaskInfo, filePathVector, true, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleCustomRestore_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> filePathVector = {"/storage/media/local/files/test.jpg"};
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result =
+        operatorObj.HandleCustomRestore(timeInfoMap, restoreTaskInfo, filePathVector, false, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleFirstRestoreFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleFirstRestoreFile_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> files = {"/storage/media/local/files/test.jpg"};
+    unordered_map<string, TimeInfo> timeInfoMap;
+    int32_t firstRestoreIndex = 0;
+    bool result = operatorObj.HandleFirstRestoreFile(timeInfoMap, restoreTaskInfo, files, 0, firstRestoreIndex);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleFirstRestoreFile_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.totalNum = 100;
+    restoreTaskInfo.uriType = RESTORE_URI_TYPE_PHOTO;
+    restoreTaskInfo.uri = "file://media/photo/1";
+    operatorObj.successNum_.store(80);
+    operatorObj.failNum_.store(10);
+    operatorObj.sameNum_.store(10);
+    InnerRestoreResult result = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, NOTIFY_PROGRESS);
+    EXPECT_EQ(result.stage, "onRestore");
+    EXPECT_EQ(result.successNum, 80);
+    EXPECT_EQ(result.failedNum, 10);
+    EXPECT_EQ(result.sameNum, 10);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.totalNum = 100;
+    restoreTaskInfo.uriType = RESTORE_URI_TYPE_PHOTO;
+    restoreTaskInfo.uri = "file://media/photo/1";
+    operatorObj.successNum_.store(80);
+    operatorObj.failNum_.store(10);
+    operatorObj.sameNum_.store(10);
+    InnerRestoreResult result = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, NOTIFY_LAST);
+    EXPECT_EQ(result.stage, "finished");
+    EXPECT_EQ(result.successNum, 80);
+    EXPECT_EQ(result.failedNum, 10);
+    EXPECT_EQ(result.sameNum, 10);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.totalNum = 100;
+    restoreTaskInfo.uriType = RESTORE_URI_TYPE_PHOTO;
+    restoreTaskInfo.uri = "file://media/photo/1";
+    operatorObj.successNum_.store(50);
+    operatorObj.failNum_.store(20);
+    operatorObj.sameNum_.store(10);
+    InnerRestoreResult result = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, NOTIFY_CANCEL);
+    EXPECT_EQ(result.stage, "finished");
+    EXPECT_EQ(result.successNum, 50);
+    EXPECT_EQ(result.failedNum, 20);
+    EXPECT_EQ(result.sameNum, 10);
+    EXPECT_EQ(result.cancelNum, 20);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdatePhotoAlbum_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.displayName = "test.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t result = operatorObj.UpdatePhotoAlbum(restoreTaskInfo, fileInfo);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdateUniqueNumber_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    UniqueNumber uniqueNumber;
+    uniqueNumber.imageTotalNumber = 10;
+    uniqueNumber.videoTotalNumber = 5;
+    int32_t result = operatorObj.UpdateUniqueNumber(uniqueNumber);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.displayName = "test.jpg";
+    fileInfo.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.isLivePhoto = false;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    NativeRdb::ValuesBucket result = operatorObj.GetInsertValue(timeInfoMap, restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result.IsEmpty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.mp4";
+    fileInfo.displayName = "test.mp4";
+    fileInfo.originFilePath = "/storage/media/local/files/test.mp4";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.mp4";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.isLivePhoto = false;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    NativeRdb::ValuesBucket result = operatorObj.GetInsertValue(timeInfoMap, restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result.IsEmpty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    FileInfo fileInfo;
+    fileInfo.fileName = "live_photo.jpg";
+    fileInfo.displayName = "live_photo.jpg";
+    fileInfo.originFilePath = "/storage/media/local/files/live_photo.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/live_photo.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.isLivePhoto = true;
+    unordered_map<string, TimeInfo> timeInfoMap;
+    NativeRdb::ValuesBucket result = operatorObj.GetInsertValue(timeInfoMap, restoreTaskInfo, fileInfo);
+    EXPECT_EQ(result.IsEmpty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_FillMetadata_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unordered_map<string, TimeInfo> timeInfoMap;
+    int32_t result = operatorObj.FillMetadata(timeInfoMap, fileInfo, data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_FillMetadata_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.jpg";
+    fileInfo.originFilePath = "/storage/media/local/files/test/test.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unordered_map<string, TimeInfo> timeInfoMap;
+    timeInfoMap["test.jpg"] = {MediaFileUtils::UTCTimeMilliSeconds(),
+                                MediaFileUtils::UTCTimeMilliSeconds(),
+                                "2024-01-01 12:00:00"};
+    int32_t result = operatorObj.FillMetadata(timeInfoMap, fileInfo, data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetFileMetadata_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/storage/media/local/files/nonexistent.jpg");
+    data->SetFileName("nonexistent.jpg");
+    int32_t result = operatorObj.GetFileMetadata(data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = false;
+    restoreTaskInfo.albumId = 0;
+    int32_t result = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 0;
+    int32_t result = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 1;
+    int32_t result = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string rootDirPath;
+    operatorObj.GetAssetRootDir(MEDIA_TYPE_IMAGE, rootDirPath);
+    EXPECT_EQ(rootDirPath, "Photo/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string rootDirPath;
+    operatorObj.GetAssetRootDir(MEDIA_TYPE_VIDEO, rootDirPath);
+    EXPECT_EQ(rootDirPath, "Photo/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string rootDirPath;
+    operatorObj.GetAssetRootDir(MEDIA_TYPE_AUDIO, rootDirPath);
+    EXPECT_EQ(rootDirPath, "Audio/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string rootDirPath;
+    operatorObj.GetAssetRootDir(MEDIA_TYPE_FILE, rootDirPath);
+    EXPECT_EQ(rootDirPath, "Document/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_005 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string rootDirPath;
+    operatorObj.GetAssetRootDir(999, rootDirPath);
+    EXPECT_EQ(rootDirPath, "Document/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test_005 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_AddTask_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_AddTask_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    PhotoCustomRestoreOperation &result = operatorObj.AddTask(restoreTaskInfo);
+    EXPECT_EQ(&result, &operatorObj);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_AddTask_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Start_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Start_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    operatorObj.isRunning_.store(false);
+    PhotoCustomRestoreOperation &result = operatorObj.Start();
+    EXPECT_EQ(&result, &operatorObj);
+    EXPECT_EQ(operatorObj.isRunning_.load(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Start_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Start_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Start_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    operatorObj.isRunning_.store(true);
+    PhotoCustomRestoreOperation &result = operatorObj.Start();
+    EXPECT_EQ(&result, &operatorObj);
+    EXPECT_EQ(operatorObj.isRunning_.load(), true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Start_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_CancelTask_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CancelTask_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    operatorObj.CancelTask(restoreTaskInfo);
+    EXPECT_EQ(operatorObj.IsCancelTask(restoreTaskInfo), true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CancelTask_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_CancelTaskFinish_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CancelTaskFinish_Test_001 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    operatorObj.cancelKeySet_.insert("test_key");
+    operatorObj.CancelTaskFinish(restoreTaskInfo);
+    EXPECT_EQ(operatorObj.IsCancelTask(restoreTaskInfo), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CancelTaskFinish_Test_001 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleTlvSingleRestore_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    unordered_map<TlvTag, string> editFileMap;
+    editFileMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/test/origin.jpg";
+    editFileMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/test/edit.json";
+    editFileMap[TlvTag::TLV_TAG_EDITDATA] = "/storage/media/local/files/test/edit_data.jpg";
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleTlvSingleRestore(editFileMap, timeInfoMap, restoreTaskInfo, true, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    decodeTlvPathMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/edit.json";
+    decodeTlvPathMap[TlvTag::TLV_TAG_EDITDATA] = "/storage/media/local/files/edit_data.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_CAMERA] = "/storage/media/local/files/camera.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_SOURCE] = "/storage/media/local/files/source.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_SOURCE_BACK] = "/storage/media/local/files/source_back.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    decodeTlvPathMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/edit.json";
+    decodeTlvPathMap[TlvTag::TLV_TAG_MOVING_PHOTO_VIDEO] = "/storage/media/local/files/video.mp4";
+    decodeTlvPathMap[TlvTag::TLV_TAG_MOVING_PHOTO_VIDEO_SOURCE] = "/storage/media/local/files/video_source.mp4";
+    decodeTlvPathMap[TlvTag::TLV_TAG_MOVING_PHOTO_VIDEO_SOURCE_BACK] =
+        "/storage/media/local/files/video_source_back.mp4";
+    decodeTlvPathMap[TlvTag::TLV_TAG_EXTRA_DATA] = "/storage/media/local/files/extra_data.jpg";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleFirstRestoreFile_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleFirstRestoreFile_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> files = {"/storage/media/local/files/test.jpg", "/storage/media/local/files/test2.jpg"};
+    unordered_map<string, TimeInfo> timeInfoMap;
+    int32_t firstRestoreIndex = 0;
+    bool result = operatorObj.HandleFirstRestoreFile(timeInfoMap, restoreTaskInfo, files, 1, firstRestoreIndex);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleFirstRestoreFile_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveFile_Testing_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_003 Start");
+    string srcPath = "/storage/media/local/files/test.jpg";
+    string destPath = "/storage/media/local/files/Photo/1/test.jpg";
+    int32_t result = PhotoCustomRestoreOperation::MoveFile(srcPath, destPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveFile_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_004 Start");
+    string srcPath = "/storage/media/local/files/test.mp4";
+    string destPath = "/storage/media/local/files/Photo/1/test.mp4";
+    int32_t result = PhotoCustomRestoreOperation::MoveFile(srcPath, destPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveFile_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_DeleteDirectoryIfExists_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDirectoryIfExists_Test_002 Start");
+    string dirPath = "/storage/media/local/files/test_dir";
+    bool result = PhotoCustomRestoreOperation::DeleteDirectoryIfExists(dirPath);
+    EXPECT_EQ(result, true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_DeleteDirectoryIfExists_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetUniqueTempDir_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_002 Start");
+    string tlvPath = "/storage/media/local/files/test2.tlv";
+    string result = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvPath);
+    EXPECT_EQ(result.empty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetUniqueTempDir_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_003 Start");
+    string tlvPath = "/storage/media/local/files/subdir/test.tlv";
+    string result = PhotoCustomRestoreOperation::GetUniqueTempDir(tlvPath);
+    EXPECT_EQ(result.empty(), false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetUniqueTempDir_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_CheckNeedProcessMovingPhotoSize_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_004 Start");
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+    bool result = PhotoCustomRestoreOperation::CheckNeedProcessMovingPhotoSize(values);
+    EXPECT_EQ(result, true);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_CheckNeedProcessMovingPhotoSize_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_005 Start");
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 0);
+    bool result = PhotoCustomRestoreOperation::CheckNeedProcessMovingPhotoSize(values);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_CheckNeedProcessMovingPhotoSize_Test_005 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string jsonPath = "/storage/media/local/files/test/edit.json";
+    string assetPath = "/storage/media/local/files/Photo/1/asset.jpg";
+    int32_t result = operatorObj.HandleDbFieldsFromJsonRestore(jsonPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleDbFieldsFromJsonRestore_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdateTlvEditDataSize_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateTlvEditDataSize_Test_003 Start");
+    string assetPath = "/storage/media/local/files/Photo/3/asset.mp4";
+    int32_t result = PhotoCustomRestoreOperation::UpdateTlvEditDataSize(assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateTlvEditDataSize_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveLivePhoto_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string originFilePath = "/storage/media/local/files/live_photo2.jpg";
+    string filePath = "/storage/media/local/files/Photo/2/asset.jpg";
+    int32_t result = operatorObj.MoveLivePhoto(originFilePath, filePath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_MoveLivePhoto_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string originFilePath = "/storage/media/local/files/live_photo3.jpg";
+    string filePath = "/storage/media/local/files/Photo/3/asset.jpg";
+    int32_t result = operatorObj.MoveLivePhoto(originFilePath, filePath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_MoveLivePhoto_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAlbumInfoBySubType_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    int32_t subType = PhotoAlbumSubType::FAVORITE;
+    string albumUri;
+    int32_t albumId;
+    int32_t result = operatorObj.GetAlbumInfoBySubType(subType, albumUri, albumId);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAlbumInfoBySubType_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    int32_t subType = PhotoAlbumSubType::TRASH;
+    string albumUri;
+    int32_t albumId;
+    int32_t result = operatorObj.GetAlbumInfoBySubType(subType, albumUri, albumId);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAlbumInfoBySubType_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetTimeInfoMap_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.dbPath = "test.db";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    unordered_map<string, TimeInfo> result = operatorObj.GetTimeInfoMap(restoreTaskInfo);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetTimeInfoMap_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.dbPath = "subdir/test.db";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    unordered_map<string, TimeInfo> result = operatorObj.GetTimeInfoMap(restoreTaskInfo);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetTimeInfoMap_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleCustomRestore_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> filePathVector = {"/storage/media/local/files/test.jpg", "/storage/media/local/files/test2.jpg"};
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleCustomRestore(timeInfoMap, restoreTaskInfo, filePathVector, true, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleCustomRestore_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test";
+    vector<string> filePathVector = {"/storage/media/local/files/test.mp4"};
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result =
+        operatorObj.HandleCustomRestore(timeInfoMap, restoreTaskInfo, filePathVector, false, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleCustomRestore_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo1;
+    fileInfo1.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo1.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo1.isLivePhoto = false;
+    restoreFiles.push_back(fileInfo1);
+    FileInfo fileInfo2;
+    fileInfo2.originFilePath = "/storage/media/local/files/test2.jpg";
+    fileInfo2.filePath = "/storage/media/local/files/Photo/2/test2.jpg";
+    fileInfo2.isLivePhoto = false;
+    restoreFiles.push_back(fileInfo2);
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_005 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo1;
+    fileInfo1.originFilePath = "/storage/media/local/files/live_photo1.jpg";
+    fileInfo1.filePath = "/storage/media/local/files/Photo/1/live_photo1.jpg";
+    fileInfo1.isLivePhoto = true;
+    restoreFiles.push_back(fileInfo1);
+    FileInfo fileInfo2;
+    fileInfo2.originFilePath = "/storage/media/local/files/live_photo2.jpg";
+    fileInfo2.filePath = "/storage/media/local/files/Photo/2/live_photo2.jpg";
+    fileInfo2.isLivePhoto = true;
+    restoreFiles.push_back(fileInfo2);
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_005 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_RenameFiles_Test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_006 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> restoreFiles;
+    FileInfo fileInfo1;
+    fileInfo1.originFilePath = "/storage/media/local/files/test.jpg";
+    fileInfo1.filePath = "/storage/media/local/files/Photo/1/test.jpg";
+    fileInfo1.isLivePhoto = false;
+    restoreFiles.push_back(fileInfo1);
+    FileInfo fileInfo2;
+    fileInfo2.originFilePath = "/storage/media/local/files/live_photo.jpg";
+    fileInfo2.filePath = "/storage/media/local/files/Photo/2/live_photo.jpg";
+    fileInfo2.isLivePhoto = true;
+    restoreFiles.push_back(fileInfo2);
+    int32_t result = operatorObj.RenameFiles(restoreFiles);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_RenameFiles_Test_006 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_FillMetadata_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.mp4";
+    fileInfo.originFilePath = "/storage/media/local/files/test.mp4";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unordered_map<string, TimeInfo> timeInfoMap;
+    timeInfoMap["test.mp4"] = {MediaFileUtils::UTCTimeMilliSeconds(),
+                                MediaFileUtils::UTCTimeMilliSeconds(),
+                                "2024-01-01 12:00:00"};
+    int32_t result = operatorObj.FillMetadata(timeInfoMap, fileInfo, data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_FillMetadata_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetFileMetadata_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/storage/media/local/files/test/nonexistent.jpg");
+    data->SetFileName("nonexistent.jpg");
+    int32_t result = operatorObj.GetFileMetadata(data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetFileMetadata_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/storage/media/local/files/nonexistent.mp4");
+    data->SetFileName("nonexistent.mp4");
+    int32_t result = operatorObj.GetFileMetadata(data);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetFileMetadata_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 2;
+    int32_t result = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_005 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 3;
+    int32_t result = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test_005 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdatePhotoAlbum_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    FileInfo fileInfo;
+    fileInfo.fileName = "test.mp4";
+    fileInfo.displayName = "test.mp4";
+    fileInfo.filePath = "/storage/media/local/files/Photo/1/test.mp4";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    int32_t result = operatorObj.UpdatePhotoAlbum(restoreTaskInfo, fileInfo);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdatePhotoAlbum_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.bundleName = "test2.bundle";
+    restoreTaskInfo.packageName = "test2.package";
+    FileInfo fileInfo;
+    fileInfo.fileName = "test2.jpg";
+    fileInfo.displayName = "test2.jpg";
+    fileInfo.filePath = "/storage/media/local/files/Photo/2/test2.jpg";
+    fileInfo.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t result = operatorObj.UpdatePhotoAlbum(restoreTaskInfo, fileInfo);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdateUniqueNumber_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    UniqueNumber uniqueNumber;
+    uniqueNumber.imageTotalNumber = 20;
+    uniqueNumber.videoTotalNumber = 10;
+    int32_t result = operatorObj.UpdateUniqueNumber(uniqueNumber);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_002 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdateUniqueNumber_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    UniqueNumber uniqueNumber;
+    uniqueNumber.imageTotalNumber = 0;
+    uniqueNumber.videoTotalNumber = 0;
+    int32_t result = operatorObj.UpdateUniqueNumber(uniqueNumber);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdateUniqueNumber_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleTlvSingleRestore_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "test_key2";
+    restoreTaskInfo.sourceDir = "/storage/media/local/files/test2";
+    restoreTaskInfo.bundleName = "test.bundle";
+    restoreTaskInfo.packageName = "test.package";
+    restoreTaskInfo.appId = "test.app";
+    unordered_map<TlvTag, string> editFileMap;
+    editFileMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/test2/origin.jpg";
+    editFileMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/test2/edit.json";
+    unordered_map<string, TimeInfo> timeInfoMap;
+    UniqueNumber uniqueNumber;
+    int32_t result = operatorObj.HandleTlvSingleRestore(editFileMap,
+        timeInfoMap, restoreTaskInfo, false, uniqueNumber);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleTlvSingleRestore_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_005 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    decodeTlvPathMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin2.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/edit2.json";
+    string assetPath = "/storage/media/local/files/Photo/2/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_005 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandleAllEditData_Test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_006 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    unordered_map<TlvTag, string> decodeTlvPathMap;
+    decodeTlvPathMap[TlvTag::TLV_TAG_ORIGIN] = "/storage/media/local/files/origin3.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_JSON] = "/storage/media/local/files/edit3.json";
+    decodeTlvPathMap[TlvTag::TLV_TAG_EDITDATA] = "/storage/media/local/files/edit_data3.jpg";
+    decodeTlvPathMap[TlvTag::TLV_TAG_CAMERA] = "/storage/media/local/files/camera3.jpg";
+    string assetPath = "/storage/media/local/files/Photo/3/asset.jpg";
+    int32_t result = operatorObj.HandleAllEditData(decodeTlvPathMap, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandleAllEditData_Test_006 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_ProcessExtractTlvFile_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string tlvFilePath = "/storage/media/local/files/test2.tlv";
+    string destDir;
+    unordered_map<TlvTag, string> extractedFiles;
+    int32_t result = operatorObj.ProcessExtractTlvFile(tlvFilePath, destDir, extractedFiles);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_ProcessExtractTlvFile_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string tlvFilePath = "/storage/media/local/files/subdir/test.tlv";
+    string destDir;
+    unordered_map<TlvTag, string> extractedFiles;
+    int32_t result = operatorObj.ProcessExtractTlvFile(tlvFilePath, destDir, extractedFiles);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_ProcessExtractTlvFile_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HasTlvFiles_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_003 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> files = {"/storage/media/local/files/test.jpg"};
+    bool result = operatorObj.HasTlvFiles(files);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_003 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HasTlvFiles_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_004 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<string> files = {"/storage/media/local/files/test.mp4", "/storage/media/local/files/test2.mp4"};
+    bool result = operatorObj.HasTlvFiles(files);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HasTlvFiles_Test_004 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_HandlePhotoSourceRestore_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceRestore_Test_002 Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string sourceBackSrcPath = "/storage/media/local/files/source2.jpg";
+    string assetPath = "/storage/media/local/files/Photo/2/asset.jpg";
+    int32_t result = operatorObj.HandlePhotoSourceRestore(sourceBackSrcPath, assetPath);
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_HandlePhotoSourceRestore_Test_002 End");
+}
+} // namespace Media
+} // namespace OHOS

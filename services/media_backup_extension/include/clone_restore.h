@@ -270,6 +270,9 @@ private:
     CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
     CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
+    void GetLakeInfoInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void UpdateDuplicateNumber(const FileInfo &fileInfo);
+    void ReportRestoreTaskofLakeFiles();
     bool CheckAlbumNameUnique(std::string albumName, const std::vector<string> &repetedAlbumName);
     void UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos, vector<string> &repetedAlbumName,
         size_t index);

@@ -5883,9 +5883,11 @@ static void AddCinematicVideoAlbum(RdbStore &store, int32_t version)
 
 static void UpdateTriggerForAnalysisAlbum(RdbStore &store, int32_t version)
 {
-    const vector<string> executeSqlStrs = {
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + SEARCH_TOTAL_TABLE + " ADD COLUMN " + TBL_SEARCH_FACE_STATUS + " INT DEFAULT 0 ",
+        "ALTER TABLE " + SEARCH_TOTAL_TABLE + " ADD COLUMN " + TBL_SEARCH_ALBUM_STATUS + " INT DEFAULT 0 ",
         "DROP TRIGGER IF EXISTS " + ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
-        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
+        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
     ExecSqlsWithDfx(executeSqlStrs, store, version);

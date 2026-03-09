@@ -26,158 +26,162 @@
 namespace OHOS::Media::CloudSync {
 bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
 {
-    parcel.WriteString(title);
-    parcel.WriteInt32(mediaType);
-    parcel.WriteInt32(duration);
-    parcel.WriteInt32(hidden);
-    parcel.WriteInt64(hiddenTime);
-    parcel.WriteString(relativePath);
-    parcel.WriteString(virtualPath);
-    parcel.WriteInt64(metaDateModified);
-    parcel.WriteInt32(subtype);
-    parcel.WriteInt32(burstCoverLevel);
-    parcel.WriteString(burstKey);
-    parcel.WriteString(dateYear);
-    parcel.WriteString(dateMonth);
-    parcel.WriteString(dateDay);
-    parcel.WriteString(shootingMode);
-    parcel.WriteString(shootingModeTag);
-    parcel.WriteInt32(dynamicRangeType);
-    parcel.WriteInt32(hdrMode);
-    parcel.WriteInt32(videoMode);
-    parcel.WriteString(frontCamera);
-    parcel.WriteInt64(editTime);
-    parcel.WriteInt32(originalSubtype);  //
-    parcel.WriteInt64(coverPosition);
-    parcel.WriteInt32(isRectificationCover);
-    parcel.WriteInt32(exifRotate);
-    parcel.WriteInt32(movingPhotoEffectMode);
-    parcel.WriteInt32(supportedWatermarkType);
-    parcel.WriteInt32(strongAssociation);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(title), false, "title");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(duration), false, "duration");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(hiddenTime), false, "hiddenTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(relativePath), false, "relativePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(virtualPath), false, "virtualPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(subtype), false, "subtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(burstCoverLevel), false, "burstCoverLevel");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(burstKey), false, "burstKey");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(dateYear), false, "dateYear");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(dateMonth), false, "dateMonth");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(dateDay), false, "dateDay");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(shootingMode), false, "shootingMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(shootingModeTag), false, "shootingModeTag");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(dynamicRangeType), false, "dynamicRangeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(hdrMode), false, "hdrMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(videoMode), false, "videoMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(frontCamera), false, "frontCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(editTime), false, "editTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(originalSubtype), false, "originalSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(coverPosition), false, "coverPosition");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(isRectificationCover), false, "isRectificationCover");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(exifRotate), false, "exifRotate");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(movingPhotoEffectMode), false, "movingPhotoEffectMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(supportedWatermarkType), false, "supportedWatermarkType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(strongAssociation), false, "strongAssociation");
     return true;
 }
 bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(fileId);
-    parcel.WriteString(cloudId);
-    parcel.WriteString(originalAssetCloudId);
-    parcel.WriteString(data);
-    parcel.WriteInt64(dateAdded);
-    parcel.WriteInt64(dateModified);
-    parcel.WriteInt32(ownerAlbumId);
-    parcel.WriteDouble(latitude);
-    parcel.WriteDouble(longitude);
-    parcel.WriteString(sourcePath);
-    parcel.WriteString(displayName);
-    parcel.WriteInt64(dateTaken);
-    parcel.WriteString(detailTime);
-    parcel.WriteInt32(height);
-    parcel.WriteInt32(width);
-    parcel.WriteString(deviceName);
-    parcel.WriteInt64(dateTrashed);
-    parcel.WriteInt32(isFavorite);
-    parcel.WriteString(userComment);
-    parcel.WriteInt32(dirty);
-    parcel.WriteInt32(orientation);
-    parcel.WriteInt64(size);
-    parcel.WriteInt64(baseVersion);
-    parcel.WriteString(mimeType);
-    parcel.WriteString(albumCloudId);
-    parcel.WriteString(albumLPath);
-    parcel.WriteString(recordType);
-    parcel.WriteString(recordId);
-    parcel.WriteInt32(fileSourceType);
-    parcel.WriteString(storagePath);
-    ITypesUtil::Marshalling(stringfields, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(originalAssetCloudId), false, "originalAssetCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(data), false, "data");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateAdded), false, "dateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(ownerAlbumId), false, "ownerAlbumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteDouble(latitude), false, "latitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteDouble(longitude), false, "longitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(sourcePath), false, "sourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(displayName), false, "displayName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateTaken), false, "dateTaken");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(detailTime), false, "detailTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(height), false, "height");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(width), false, "width");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(deviceName), false, "deviceName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(dateTrashed), false, "dateTrashed");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(isFavorite), false, "isFavorite");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(userComment), false, "userComment");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(dirty), false, "dirty");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(orientation), false, "orientation");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(baseVersion), false, "baseVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(mimeType), false, "mimeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumCloudId), false, "albumCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(albumLPath), false, "albumLPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(recordType), false, "recordType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(recordId), false, "recordId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshalling(stringfields, parcel), false, "stringfields");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshalling(int64fields, parcel), false, "int64fields");
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
 {
-    parcel.ReadString(title);
-    parcel.ReadInt32(mediaType);
-    parcel.ReadInt32(duration);
-    parcel.ReadInt32(hidden);
-    parcel.ReadInt64(hiddenTime);
-    parcel.ReadString(relativePath);
-    parcel.ReadString(virtualPath);
-    parcel.ReadInt64(metaDateModified);
-    parcel.ReadInt32(subtype);
-    parcel.ReadInt32(burstCoverLevel);
-    parcel.ReadString(burstKey);
-    parcel.ReadString(dateYear);
-    parcel.ReadString(dateMonth);
-    parcel.ReadString(dateDay);
-    parcel.ReadString(shootingMode);
-    parcel.ReadString(shootingModeTag);
-    parcel.ReadInt32(dynamicRangeType);
-    parcel.ReadInt32(hdrMode);
-    parcel.ReadInt32(videoMode);
-    parcel.ReadString(frontCamera);
-    parcel.ReadInt64(editTime);
-    parcel.ReadInt32(originalSubtype);
-    parcel.ReadInt64(coverPosition);
-    parcel.ReadInt32(isRectificationCover);
-    parcel.ReadInt32(exifRotate);
-    parcel.ReadInt32(movingPhotoEffectMode);
-    parcel.ReadInt32(supportedWatermarkType);
-    parcel.ReadInt32(strongAssociation);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(title), false, "title");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(mediaType), false, "mediaType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(duration), false, "duration");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(hidden), false, "hidden");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(hiddenTime), false, "hiddenTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(relativePath), false, "relativePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(virtualPath), false, "virtualPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(metaDateModified), false, "metaDateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(subtype), false, "subtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(burstCoverLevel), false, "burstCoverLevel");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(burstKey), false, "burstKey");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(dateYear), false, "dateYear");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(dateMonth), false, "dateMonth");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(dateDay), false, "dateDay");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(shootingMode), false, "shootingMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(shootingModeTag), false, "shootingModeTag");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(dynamicRangeType), false, "dynamicRangeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(hdrMode), false, "hdrMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(videoMode), false, "videoMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(frontCamera), false, "frontCamera");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(editTime), false, "editTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(originalSubtype), false, "originalSubtype");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(coverPosition), false, "coverPosition");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(isRectificationCover), false, "isRectificationCover");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(exifRotate), false, "exifRotate");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(movingPhotoEffectMode), false, "movingPhotoEffectMode");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(supportedWatermarkType), false, "supportedWatermarkType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(strongAssociation), false, "strongAssociation");
     return true;
 }
 bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
 {
-    parcel.ReadInt32(fileId);
-    parcel.ReadString(cloudId);
-    parcel.ReadString(originalAssetCloudId);
-    parcel.ReadString(data);
-    parcel.ReadInt64(dateAdded);
-    parcel.ReadInt64(dateModified);
-    parcel.ReadInt32(ownerAlbumId);
-    parcel.ReadDouble(latitude);
-    parcel.ReadDouble(longitude);
-    parcel.ReadString(sourcePath);
-    parcel.ReadString(displayName);
-    parcel.ReadInt64(dateTaken);
-    parcel.ReadString(detailTime);
-    parcel.ReadInt32(height);
-    parcel.ReadInt32(width);
-    parcel.ReadString(deviceName);
-    parcel.ReadInt64(dateTrashed);
-    parcel.ReadInt32(isFavorite);
-    parcel.ReadString(userComment);
-    parcel.ReadInt32(dirty);
-    parcel.ReadInt32(orientation);
-    parcel.ReadInt64(size);
-    parcel.ReadInt64(baseVersion);
-    parcel.ReadString(mimeType);
-    parcel.ReadString(albumCloudId);
-    parcel.ReadString(albumLPath);
-    parcel.ReadString(recordType);
-    parcel.ReadString(recordId);
-    parcel.ReadInt32(fileSourceType);
-    parcel.ReadString(storagePath);
-    ITypesUtil::Unmarshalling(stringfields, parcel);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(fileId), false, "fileId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(cloudId), false, "cloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(originalAssetCloudId), false, "originalAssetCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(data), false, "data");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateAdded), false, "dateAdded");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateModified), false, "dateModified");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(ownerAlbumId), false, "ownerAlbumId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadDouble(latitude), false, "latitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadDouble(longitude), false, "longitude");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(sourcePath), false, "sourcePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(displayName), false, "displayName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateTaken), false, "dateTaken");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(detailTime), false, "detailTime");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(height), false, "height");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(width), false, "width");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(deviceName), false, "deviceName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(dateTrashed), false, "dateTrashed");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(isFavorite), false, "isFavorite");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(userComment), false, "userComment");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(dirty), false, "dirty");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(orientation), false, "orientation");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(baseVersion), false, "baseVersion");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(mimeType), false, "mimeType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumCloudId), false, "albumCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(albumLPath), false, "albumLPath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(recordType), false, "recordType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(recordId), false, "recordId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(fileSourceType), false, "fileSourceType");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(stringfields, parcel), false, "stringfields");
+    CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(int64fields, parcel), false, "int64fields");
     return true;
 }
 bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const
 {
-    this->MarshallingBasicInfo(parcel);
-    this->MarshallingAttributesInfo(parcel);
-    IPC::ITypeMediaUtil::Marshalling<std::string>(this->removeAlbumCloudId, parcel);
+    CHECK_AND_RETURN_RET_LOG(this->MarshallingBasicInfo(parcel), false, "MarshallingBasicInfo");
+    CHECK_AND_RETURN_RET_LOG(this->MarshallingAttributesInfo(parcel), false, "MarshallingAttributesInfo");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Marshalling<std::string>(this->removeAlbumCloudId, parcel), false, "removeAlbumCloudId");
     return true;
 }
 
 bool CloudMdkRecordPhotosVo::Unmarshalling(MessageParcel &parcel)
 {
-    this->ReadBasicInfo(parcel);
-    this->ReadAttributesInfo(parcel);
-    IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->removeAlbumCloudId, parcel);
+    CHECK_AND_RETURN_RET_LOG(this->ReadBasicInfo(parcel), false, "ReadBasicInfo");
+    CHECK_AND_RETURN_RET_LOG(this->ReadAttributesInfo(parcel), false, "ReadAttributesInfo");
+    CHECK_AND_RETURN_RET_LOG(
+        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->removeAlbumCloudId, parcel), false, "removeAlbumCloudId");
     return true;
 }
 
 void CloudMdkRecordPhotosVo::GetAlbumInfo(std::stringstream &ss) const
 {
-    ss << "\"albumCloudId\": " << albumCloudId << "\","
-       << "\"albumLPath\": " << albumLPath << ",";
+    ss << "\"albumCloudId\": \"" << albumCloudId << "\","
+       << "\"albumLPath\": \"" << albumLPath << "\"";
 }
 
 void CloudMdkRecordPhotosVo::GetBasicInfo(std::stringstream &ss) const
@@ -212,7 +216,7 @@ void CloudMdkRecordPhotosVo::GetPropertiesInfo(std::stringstream &ss) const
 void CloudMdkRecordPhotosVo::GetCloudInfo(std::stringstream &ss) const
 {
     ss << "\"recordType\": \"" << recordType << "\","
-       << "\"recordId\": \"" << recordId << ",\""
+       << "\"recordId\": \"" << recordId << "\","
        << "\"isNew\": " << isNew << ","
        << "\"baseVersion\": " << baseVersion << ","
        << "\"originalSubtype\": " << originalSubtype << ","
@@ -277,15 +281,15 @@ std::string CloudMdkRecordPhotosVo::ToString() const
 
 bool CloudMdkRecordPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    parcel.ReadInt32(this->size);
-    parcel.ReadInt32(this->dirtyType);
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->dirtyType), false, "dirtyType");
     return true;
 }
 
 bool CloudMdkRecordPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    parcel.WriteInt32(this->size);
-    parcel.WriteInt32(this->dirtyType);
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->size), false, "size");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->dirtyType), false, "dirtyType");
     return true;
 }
 
@@ -293,50 +297,41 @@ std::string CloudMdkRecordPhotosReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "{";
-    ss << "\"size\":" << this->size << ",";
-    ss << "\"dirtyType\":" << this->dirtyType << ",";
+    ss << "\"size\": " << this->size << ",";
+    ss << "\"dirtyType\": " << this->dirtyType << ",";
     ss << "}";
     return ss.str();
 }
 
 std::vector<CloudMdkRecordPhotosVo> CloudMdkRecordPhotosRespBody::GetPhotosRecords()
 {
-    return this->cloudPhotosUploadRecord;
+    return this->cloudPhotosUploadRecord_;
 }
 
 bool CloudMdkRecordPhotosRespBody::Marshalling(MessageParcel &parcel) const
 {
-    if (cloudPhotosUploadRecord.size() == 0) {
-        return false;
-    }
-    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(cloudPhotosUploadRecord.size())), false);
-    for (const auto &entry : cloudPhotosUploadRecord) {
-        if (!entry.Marshalling(parcel)) {
-            return false;
-        }
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(static_cast<int32_t>(cloudPhotosUploadRecord_.size())),
+                             false,
+                             "cloudPhotosUploadRecord.size()");
+    for (const auto &entry : cloudPhotosUploadRecord_) {
+        CHECK_AND_RETURN_RET_LOG(entry.Marshalling(parcel), false, "CloudMdkRecordPhotosVo");
     }
     return true;
 }
 
 // 服务端->客户端；在客户端反序列化
-bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
+bool CloudMdkRecordPhotosRespBody::UnmarshallRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
-    if (len < 0) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(len >= 0, false, "len >= 0");
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
-    if ((size > readAbleSize) || (size > val.max_size())) {
-        return false;
-    }
-
+    bool isInValid = (size > readAbleSize) || (size > val.max_size());
+    CHECK_AND_RETURN_RET_LOG(!isInValid, false, "size invalid");
     val.clear();
-    bool isValid;
     for (size_t i = 0; i < size; i++) {
         CloudMdkRecordPhotosVo nodeObj;
-        isValid = nodeObj.Unmarshalling(parcel);
-        CHECK_AND_RETURN_RET(isValid, false);
+        CHECK_AND_RETURN_RET_LOG(nodeObj.Unmarshalling(parcel), false, "CloudMdkRecordPhotosVo");
         val.emplace_back(nodeObj);
     }
     return true;
@@ -344,7 +339,9 @@ bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo
 
 bool CloudMdkRecordPhotosRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return GetRecords(this->cloudPhotosUploadRecord, parcel);
+    CHECK_AND_RETURN_RET_LOG(
+        UnmarshallRecords(this->cloudPhotosUploadRecord_, parcel), false, "cloudPhotosUploadRecord_");
+    return true;
 }
 
 std::string CloudMdkRecordPhotosRespBody::ToString() const
@@ -357,40 +354,45 @@ void CloudMdkRecordPhotosVo::GetAttributesHashMap(std::stringstream &ss) const
     ss << "\"stringfields\": {";
     for (const auto &node : this->stringfields) {
         ss << "\"" << node.first << "\": ";
-        ss << "\"" << node.second << "\", ";
+        ss << "\"" << node.second << "\"";
+    }
+    ss << "},";
+    ss << "\"int64fields\": {";
+    for (const auto &node : this->int64fields) {
+        ss << "\"" << node.first << "\": ";
+        ss << node.second << ", ";
     }
     ss << "}";
-    return;
 }
 
 size_t CloudMdkRecordPhotosRespBody::GetDataSize() const
 {
-    return this->cloudPhotosUploadRecord.size();
+    return this->cloudPhotosUploadRecord_.size();
 }
 
 bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
 {
-    CHECK_AND_RETURN_RET(!this->cloudPhotosUploadRecord.empty(), false);
-    const size_t parcelGap = 4800;
-    const size_t maxCapacity = 204800;
-    const size_t parcelCapacity = maxCapacity - parcelGap;
-    const size_t originalSize = this->cloudPhotosUploadRecord.size();
+    CHECK_AND_RETURN_RET_LOG(!this->cloudPhotosUploadRecord_.empty(), true, "cloudPhotosUploadRecord not empty");
+    constexpr size_t PARCEL_GAP = 4800;
+    constexpr size_t MAX_CAPACITY = 204800;
+    const size_t parcelCapacity = MAX_CAPACITY - PARCEL_GAP;
+    const size_t originalSize = this->cloudPhotosUploadRecord_.size();
     size_t parcelSize = 0;
-    size_t elementSize = 0;
     std::vector<CloudMdkRecordPhotosVo> resultList;
     for (size_t index = 0; index < originalSize; index++) {
         MessageParcel tempParcel;
         // Try marshalling into MessageParcel.
-        CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord[index].Marshalling(tempParcel),
+        CHECK_AND_BREAK_ERR_LOG(this->cloudPhotosUploadRecord_[index].Marshalling(tempParcel),
             "Marshalling error, truncate stop. "
             "index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu",
             index,
             resultList.size(),
             originalSize);
         // Check the dataSize not exceed capacity.
-        elementSize = tempParcel.GetDataSize();
+        size_t elementSize = tempParcel.GetDataSize();
         parcelSize += elementSize;
-        CHECK_AND_BREAK_ERR_LOG(parcelSize <= parcelCapacity,
+        CHECK_AND_BREAK_ERR_LOG(
+            parcelSize <= parcelCapacity,
             "exceed capacity, truncate it. "
             "elementSize: %{public}zu, index: %{public}zu, resultList: %{public}zu, originalSize: %{public}zu, "
             "parcelSize: %{public}zu, parcelCapacity: %{public}zu",
@@ -400,11 +402,11 @@ bool CloudMdkRecordPhotosRespBody::TruncateDataBy200K()
             originalSize,
             parcelSize,
             parcelCapacity);
-        resultList.emplace_back(this->cloudPhotosUploadRecord[index]);
+        resultList.emplace_back(this->cloudPhotosUploadRecord_[index]);
     }
     // No need to truncate body.
-    CHECK_AND_RETURN_RET(resultList.size() != originalSize, true);
-    this->cloudPhotosUploadRecord = resultList;
+    CHECK_AND_RETURN_RET_LOG(resultList.size() != originalSize, true, "resultList.size() != originalSize");
+    this->cloudPhotosUploadRecord_ = resultList;
     MEDIA_INFO_LOG("TruncateDataBy200K completed, "
         "resultList: %{public}zu, originalSize: %{public}zu, "
         "parcelSize: %{public}zu, parcelCapacity: %{public}zu",

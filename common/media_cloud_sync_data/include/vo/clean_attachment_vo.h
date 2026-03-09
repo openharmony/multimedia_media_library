@@ -45,5 +45,5 @@ public:
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
-}   // namespace OHOS::Media::CloudSync
+}  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLEAN_ATTACHMENT_VO_H

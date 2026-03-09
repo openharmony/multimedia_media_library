@@ -56,7 +56,7 @@ public:  // basic functions
 
 class EXPORT OnCopyRecordsPhotosReqBody : public IPC::IMediaParcelable {
 private:
-    std::vector<OnCopyRecord> records;
+    std::vector<OnCopyRecord> records_;
 
 public:  // functions of Parcelable.
     virtual ~OnCopyRecordsPhotosReqBody() = default;

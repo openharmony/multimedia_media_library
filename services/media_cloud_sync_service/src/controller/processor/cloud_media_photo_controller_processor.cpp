@@ -17,6 +17,8 @@
 
 #include "cloud_media_photo_controller_processor.h"
 
+#include <charconv>
+
 #include "media_log.h"
 #include "cloud_file_data_vo.h"
 #include "cloud_file_data_dto.h"
@@ -206,6 +208,7 @@ CloudMdkRecordPhotosVo CloudMediaPhotoControllerProcessor::ConvertRecordPoToVo(c
     this->GetPropertiesInfo(record, photosVo);
     this->GetCloudInfo(record, photosVo);
     this->GetAttributesHashMap(record, photosVo);
+    this->GetInt64FieldsHashMap(record, photosVo);
     return photosVo;
 }
 
@@ -312,6 +315,7 @@ CloudMediaPullDataDto CloudMediaPhotoControllerProcessor::ConvertToCloudMediaPul
     this->GetCloudInfo(photosVo, data);
     this->GetAlbumInfo(photosVo, data);
     this->GetAttributesHashMap(photosVo, data);
+    this->GetInt64FieldsHashMap(photosVo, data);
     return data;
 }
 
@@ -421,4 +425,24 @@ bool CloudMediaPhotoControllerProcessor::HandleUserComment(const PhotosPo &recor
     return true;
 }
 
+bool CloudMediaPhotoControllerProcessor::GetInt64FieldsHashMap(
+    const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
+{
+    for (const auto &fieldName : PHOTOS_SYNC_COLUMN_INT64) {
+        auto it = record.attributes.find(fieldName);
+        CHECK_AND_CONTINUE(it != record.attributes.end());
+        int64_t value = 0;
+        auto [ptr, ec] = std::from_chars(it->second.data(), it->second.data() + it->second.size(), value);
+        CHECK_AND_CONTINUE(ec == std::errc() && ptr == it->second.data() + it->second.size());
+        photosVo.int64fields[fieldName] = value;
+    }
+    return true;
+}
+
+bool CloudMediaPhotoControllerProcessor::GetInt64FieldsHashMap(
+    const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
+{
+    data.int64fields = photosVo.int64fields;
+    return true;
+}
 }  // namespace OHOS::Media::CloudSync

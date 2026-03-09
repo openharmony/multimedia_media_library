@@ -14,6 +14,7 @@
 */
 
 #include "medialibraryrefresh_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <string>
@@ -105,18 +106,15 @@ void SetTables()
 
 static void Init()
 {
-    MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    auto g_rdbStore = Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
     SetTables();
-}
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 
 Media::AccurateRefresh::PhotoAssetChangeInfo GetPhotoAssetChangeInfo()
@@ -415,6 +413,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::AssetAccurateRefreshFuzzerTest();
     OHOS::AlbumAccurateRefreshFuzzerTest();
-    OHOS::ClearKvStore();
     return 0;
 }

@@ -21,6 +21,7 @@
 #include "cloud_sync_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_related_system_state_manager.h"
 
 using namespace std;
 using namespace OHOS::NetManagerStandard;
@@ -42,6 +43,7 @@ int32_t NetConnectObserver::NetCapabilitiesChange(sptr<NetHandle> &netHandle, co
     if (netAllCap->bearerTypes_.count(BEARER_WIFI)) {
         MEDIA_INFO_LOG("wifi connected");
         SetNetConnStatus(NetConnStatus::WIFI_CONNECTED);
+        MedialibraryRelatedSystemStateManager::GetInstance()->SetWifiConnected(true);
         CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
     } else if (netAllCap->bearerTypes_.count(BEARER_CELLULAR)) {
         MEDIA_INFO_LOG("cellular connected");

@@ -715,4 +715,9 @@ std::optional<std::string> MDKRecordPhotosData::GetAttributeFieldValue(const std
 {
     return this->recordReader_.GetStringValue(this->attributes_, fieldName);
 }
+
+std::optional<int64_t> MDKRecordPhotosData::GetAttributeFieldLongValue(const std::string &fieldName) const
+{
+    return this->recordReader_.GetLongValue(this->attributes_, fieldName);
+}
 }  // namespace OHOS::Media::CloudSync

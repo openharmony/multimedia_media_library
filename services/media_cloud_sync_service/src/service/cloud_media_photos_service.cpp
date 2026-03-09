@@ -180,8 +180,8 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         dto, pullData.localPath, pullData.localOrientation, pullData.exifRotate, pullData.localThumbState);
     fdirtyData.emplace_back(dto);
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
+    CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
     if (isLocal) {
-        CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath);
         CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
         // for cloud enhancement composite photo

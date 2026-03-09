@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "medialibrary_util_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <string>
@@ -117,11 +118,7 @@ static void Init()
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto rdbStore = Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr.");
         return;
@@ -368,11 +365,6 @@ static void ScannerUtilsTest()
     path = FDP->ConsumeBool() ? ROOT_MEDIA_DIR + "Pictures": FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::CheckSkipScanList(path);
 }
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -409,6 +401,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CommonUtilsTest();
     OHOS::CloudSyncUtilsTest();
     OHOS::ScannerUtilsTest();
-    OHOS::ClearKvStore();
     return 0;
 }

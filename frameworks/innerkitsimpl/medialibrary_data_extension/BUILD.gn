@@ -1039,6 +1039,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   if (media_library_analysis_data_enable) {
     media_analysis_data_server_source = [
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_vision_dao.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_album_dao.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_video_dao.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_location_operations.cpp",

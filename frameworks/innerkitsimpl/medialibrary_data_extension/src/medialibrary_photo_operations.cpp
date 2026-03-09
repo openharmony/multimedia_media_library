@@ -463,6 +463,8 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     MediaColumn::MEDIA_SIZE,
     MediaColumn::MEDIA_NAME,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+    PhotoColumn::PHOTO_WIDTH,
+    PhotoColumn::PHOTO_HEIGHT,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -2510,7 +2512,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
         MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_ORIENTATION,
             fileAsset->GetFilePath(), transCodeExifInfo, __func__);
         AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-        albumRefresh.IsCoverContentChange(to_string(fileAsset->GetId()));
+        albumRefresh.IsCoverContentChange({to_string(fileAsset->GetId())});
     }
     return rowId;
 }
@@ -3183,7 +3185,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.IsCoverContentChange(to_string(fileAsset->GetId()));
+    albumRefresh.IsCoverContentChange({to_string(fileAsset->GetId())});
     return E_OK;
 }
 
@@ -3345,7 +3347,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         UpdateAndNotifyMovingPhotoAlbum();
     }
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.IsCoverContentChange(fileIdStr);
+    albumRefresh.IsCoverContentChange({fileIdStr});
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
@@ -4239,7 +4241,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     }
     string fileIdStr = to_string(fileAsset->GetId());
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.IsCoverContentChange(fileIdStr);
+    albumRefresh.IsCoverContentChange({fileIdStr});
     NotifyFormMap(id, assetPath, false);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
     MediaLibraryVisionOperations::EditCommitOperation(cmd);

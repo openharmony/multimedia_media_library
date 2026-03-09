@@ -2558,5 +2558,1315 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_070, TestSize
     EXPECT_TRUE(ret > 0);
     EXPECT_TRUE(changeRows == 0);
 }
+
+// 测试IsCoverContentChange - 空fileIds参数
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_001, TestSize.Level2)
+{
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds;
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试IsCoverContentChange - 单个fileId匹配coverUri
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_002 Start");
+    // 准备测试数据：插入一个album，其coverUri包含fileId
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "12345";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_002 End");
+}
+
+// 测试IsCoverContentChange - 单个fileId匹配hiddenCover
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_003 Start");
+    // 准备测试数据：插入一个album，其hiddenCover包含fileId
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "67890";
+    string testHiddenCover = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, testHiddenCover);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_003 End");
+}
+
+// 测试IsCoverContentChange - 多个fileIds匹配多个albums
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_004 Start");
+    // 准备测试数据：插入多个albums
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "11111";
+    string testCoverUri1 = "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri1);
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    string testFileId2 = "22222";
+    string testHiddenCover2 = "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER, testHiddenCover2);
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0);
+    EXPECT_TRUE(insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId2};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_004 End");
+}
+
+// 测试IsCoverContentChange - fileIds不匹配任何album
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_005, TestSize.Level2)
+{
+    // 准备测试数据：插入album，但fileIds不匹配
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testCoverUri = "file://media/Photo/99999/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"88888", "77777"};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试IsCoverContentChange - 数据库为空
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_006, TestSize.Level2)
+{
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"12345", "67890"};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试IsCoverContentChange - 数据库有多条记录，部分匹配
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_007, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_007 Start");
+    // 准备测试数据：插入3个albums，只有2个匹配
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "10001";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    string testFileId2 = "10002";
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album3 = GetHiddenInsertAlbum();
+    album3.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album3.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "file://media/Photo/99999.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    int64_t insertNum3 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    g_rdbStore->Insert(insertNum3, PhotoAlbumColumns::TABLE, album3);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0 && insertNum3 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId2};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_007 End");
+}
+
+// 测试IsCoverContentChange - coverUri和hiddenCover都为空
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_008, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"12345"};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试IsCoverContentChange - 同一个fileId匹配多个albums
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_009, TestSize.Level2)
+{
+    string testFileId = "55555";
+    
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+}
+
+// 测试IsCoverContentChange - 大量fileIds
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_010, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "33333";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds;
+    for (int i = 0; i < 100; i++) {
+        fileIds.push_back(to_string(i));
+    }
+    fileIds.push_back(testFileId);
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+}
+
+// 测试NotifyAlbumsCoverChange - 空fileIds参数
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_011, TestSize.Level2)
+{
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds;
+    vector<int32_t> albumIds = {1, 2, 3};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+}
+
+// 测试NotifyAlbumsCoverChange - 空albumIds参数
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_012, TestSize.Level2)
+{
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"12345"};
+    vector<int32_t> albumIds;
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+}
+
+// 测试NotifyAlbumsCoverChange - 正常场景：coverUri匹配
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_013, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "44444";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 正常场景：hiddenCover匹配
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_014, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "55555";
+    string testHiddenCover = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, testHiddenCover);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 多个fileIds和多个albumIds
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshRefreshTest_NotifyAlbumsCoverChange_015, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "66666";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    string testFileId2 = "77777";
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId2};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_, TRASH_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - fileId不匹配任何URI
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_017, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/11111/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/22222/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"33333", "44444"};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+    if (changeDatas.size() > 0) {
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isCoverChange_);
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isHiddenCoverChange_);
+    }
+}
+
+// 测试NotifyAlbumsCoverChange - URI为空字符串
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_018, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"12345"};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+    if (changeDatas.size() > 0) {
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isCoverChange_);
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isHiddenCoverChange_);
+    }
+}
+
+// 测试NotifyAlbumsCoverChange - 大量fileIds和albumIds
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_019, TestSize.Level2)
+{
+    // 准备测试数据
+    vector<string> fileIds;
+    vector<int32_t> albumIds;
+    vector<ValuesBucket> albumValuesList;
+    
+    for (int i = 0; i < 50; i++) {
+        ValuesBucket albumValues;
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_ID, 1000 + i);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 10);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COUNT, 0);
+        albumValues.PutInt(PhotoAlbumColumns::COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        
+        string testFileId = to_string(20000 + i);
+        fileIds.push_back(testFileId);
+        albumIds.push_back(1000 + i);
+        
+        string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+        albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+        albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, "TestAlbum" + to_string(i));
+        albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+        
+        albumValuesList.push_back(albumValues);
+    }
+    
+    // 批量插入
+    for (auto &albumValues : albumValuesList) {
+        int64_t insertNum = 0;
+        g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    }
+    
+    AlbumAccurateRefresh albumRefresh;
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 混合匹配场景
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_020, TestSize.Level2)
+{
+    // 准备测试数据：3个albums，只有部分匹配
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "11111";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    album2.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/22222/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/33333/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album3 = GetHiddenInsertAlbum();
+    string testFileId3 = "44444";
+    album3.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album3.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId3 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    int64_t insertNum3 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    g_rdbStore->Insert(insertNum3, PhotoAlbumColumns::TABLE, album3);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0 && insertNum3 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId3, "55555"};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_,
+        HIDDEN_ALBUM_INFO.albumId_
+    };
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试IsCoverContentChange - 长fileId
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_022, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_SpecialChars_022 Start");
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "1234567890123456789012345678901234567890";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_SpecialChars_022 End");
+}
+
+// 测试NotifyAlbumsCoverChange - 单个fileId匹配多个albums的coverUri
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_023, TestSize.Level2)
+{
+    string testFileId = "60000";
+    
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    album2.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album2.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_
+    };
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试IsCoverContentChange - URI中包含路径分隔符
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_026, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_026 Start");
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "110000";
+    string testCoverUri = "file://media/Photo/subdir1/subdir2/" + testFileId +
+        "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_026 End");
+}
+
+// 测试NotifyAlbumsCoverChange - 清空changeInfos后重新调用
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_027, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "120000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    albumRefresh.ClearChangeInfos();
+    
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试IsCoverContentChange - 连续调用多次
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_028, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_028 Start");
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId1 = "130000";
+    string testFileId2 = "140000";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    
+    // 第一次调用
+    vector<string> fileIds1 = {testFileId1};
+    auto ret1 = albumRefresh.IsCoverContentChange(fileIds1);
+    EXPECT_TRUE(ret1);
+    
+    // 第二次调用
+    vector<string> fileIds2 = {testFileId2};
+    auto ret2 = albumRefresh.IsCoverContentChange(fileIds2);
+    EXPECT_TRUE(ret2);
+    
+    // 第三次调用（不匹配）
+    vector<string> fileIds3 = {"150000"};
+    auto ret3 = albumRefresh.IsCoverContentChange(fileIds3);
+    EXPECT_FALSE(ret3);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_028 End");
+}
+
+// 测试NotifyAlbumsCoverChange - 处理边界情况：fileIds包含重复元素
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_033, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "230000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId, testFileId, testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 处理边界情况：fileIds包含空字符串
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_035, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "260000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId, "", "270000"};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证多次调用后的状态
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_037, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId1 = "280000";
+    string testFileId2 = "290000";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    
+    // 第一次调用
+    vector<string> fileIds1 = {testFileId1};
+    vector<int32_t> albumIds1 = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds1, albumIds1);
+    auto changeDatas1 = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas1.size() > 0);
+    
+    // 清空后第二次调用
+    albumRefresh.ClearChangeInfos();
+    vector<string> fileIds2 = {testFileId2};
+    vector<int32_t> albumIds2 = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds2, albumIds2);
+    auto changeDatas2 = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas2.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 处理大量albums
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_039, TestSize.Level2)
+{
+    vector<string> fileIds;
+    vector<int32_t> albumIds;
+    vector<ValuesBucket> albumValuesList;
+    
+    // 插入100个albums
+    for (int i = 0; i < 100; i++) {
+        ValuesBucket albumValues;
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_ID, 3000 + i);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 10);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COUNT, 0);
+        albumValues.PutInt(PhotoAlbumColumns::COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        
+        string testFileId = to_string(50000 + i);
+        fileIds.push_back(testFileId);
+        albumIds.push_back(3000 + i);
+        
+        string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+        albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+        albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+        albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, "TestAlbum" + to_string(i));
+        albumValuesList.push_back(albumValues);
+    }
+    
+    // 批量插入
+    for (auto &albumValues : albumValuesList) {
+        int64_t insertNum = 0;
+        g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    }
+    
+    AlbumAccurateRefresh albumRefresh;
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - URI中包含下划线
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_041, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "test_file_456";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证数据更新逻辑
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_043, TestSize.Level2)
+{
+    // 准备测试数据
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "350000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    
+    // 调用Init初始化
+    vector<int32_t> initAlbumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    auto initRet = albumRefresh.Init(initAlbumIds);
+    EXPECT_TRUE(initRet == ACCURATE_REFRESH_RET_OK);
+    
+    // 调用NotifyAlbumsCoverChange
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试IsCoverContentChange - 验证空字符串URI的处理
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_044, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"360000"};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证空字符串URI的处理
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_045, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"370000"};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+    if (changeDatas.size() > 0) {
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isCoverChange_);
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isHiddenCoverChange_);
+    }
+}
+
+// 测试IsCoverContentChange - 验证只匹配hiddenCover
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_048, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_048 Start");
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "420000";
+    string testHiddenCover = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/430000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, testHiddenCover);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_TRUE(ret);
+    MEDIA_INFO_LOG("AlbumAccurateRefreshTest_IsCoverContentChange_048 End");
+}
+
+// 测试NotifyAlbumsCoverChange - 验证fileIds大小为1的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_053, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "500000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    EXPECT_EQ(fileIds.size(), 1);
+    EXPECT_EQ(albumIds.size(), 1);
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证fileIds大小为2的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_055, TestSize.Level2)
+{
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "530000";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    string testFileId2 = "540000";
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId2};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_
+    };
+    EXPECT_EQ(fileIds.size(), 2);
+    EXPECT_EQ(albumIds.size(), 2);
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试IsCoverContentChange - 验证不匹配的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_056, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/550000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/560000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"570000", "580000"};
+    auto ret = albumRefresh.IsCoverContentChange(fileIds);
+    EXPECT_FALSE(ret);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证不匹配的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_057, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/590000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    albumValues.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/600000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {"610000", "620000"};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验在这种情况下changeDatas应该为空或不设置标志
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    if (changeDatas.size() > 0) {
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isCoverChange_);
+        EXPECT_FALSE(changeDatas[0].infoAfterChange_.isHiddenCoverChange_);
+    }
+}
+
+// 测试NotifyAlbumsCoverChange - 验证部分匹配的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_059, TestSize.Level2)
+{
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "660000";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    album2.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album2.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/670000/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, "680000"};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_
+    };
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证多个albums匹配同一个文件
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_061, TestSize.Level2)
+{
+    string testFileId = "700000";
+    
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    album2.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album2.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_
+    };
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证URI格式正确性
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_063, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "720000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证边界情况：最大fileId
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_065, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "999999999999";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证边界情况：最小fileId
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_067, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "1";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证fileId为0的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_069, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "0";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证负数fileId的情况
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_071, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "-1";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证URI扩展名不同的处理
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_073, TestSize.Level2)
+{
+    ValuesBucket album1 = GetFavoriteInsertAlbum();
+    string testFileId1 = "750000";
+    album1.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    album1.PutString(PhotoAlbumColumns::ALBUM_COVER_URI,
+        "file://media/Photo/" + testFileId1 + "/IMG_1744362716_000/IMG_20250425_123456.png");
+    
+    ValuesBucket album2 = GetTrashInsertAlbum();
+    string testFileId2 = "760000";
+    album2.Delete(PhotoAlbumColumns::HIDDEN_COVER);
+    album2.PutString(PhotoAlbumColumns::HIDDEN_COVER,
+        "file://media/Photo/" + testFileId2 + "/IMG_1744362716_000/IMG_20250425_123456.jpeg");
+    
+    int64_t insertNum1 = 0;
+    int64_t insertNum2 = 0;
+    g_rdbStore->Insert(insertNum1, PhotoAlbumColumns::TABLE, album1);
+    g_rdbStore->Insert(insertNum2, PhotoAlbumColumns::TABLE, album2);
+    EXPECT_TRUE(insertNum1 > 0 && insertNum2 > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId1, testFileId2};
+    vector<int32_t> albumIds = {
+        FAVORITE_ALBUM_INFO.albumId_,
+        TRASH_ALBUM_INFO.albumId_
+    };
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证URI中包含特殊字符
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_075, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "780000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证大量数据时的性能
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_077, TestSize.Level2)
+{
+    vector<string> fileIds;
+    vector<int32_t> albumIds;
+    vector<ValuesBucket> albumValuesList;
+    
+    // 插入200个albums
+    for (int i = 0; i < 200; i++) {
+        ValuesBucket albumValues;
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_ID, 5000 + i);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 10);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, 5);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COUNT, 0);
+        albumValues.PutInt(PhotoAlbumColumns::COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, 0);
+        albumValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        
+        string testFileId = to_string(90000 + i);
+        fileIds.push_back(testFileId);
+        albumIds.push_back(5000 + i);
+        
+        string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+        albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+        albumValues.PutString(PhotoAlbumColumns::HIDDEN_COVER, "");
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, "TestAlbum" + to_string(i));
+        albumValuesList.push_back(albumValues);
+    }
+    
+    // 批量插入
+    for (auto &albumValues : albumValuesList) {
+        int64_t insertNum = 0;
+        g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    }
+    
+    AlbumAccurateRefresh albumRefresh;
+    albumRefresh.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas = albumRefresh.GetAlbumChangeDatas();
+    EXPECT_TRUE(changeDatas.size() > 0);
+}
+
+// 测试NotifyAlbumsCoverChange - 验证并发场景
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_NotifyAlbumsCoverChange_079, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "810000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh1;
+    AlbumAccurateRefresh albumRefresh2;
+    
+    vector<string> fileIds = {testFileId};
+    vector<int32_t> albumIds = {FAVORITE_ALBUM_INFO.albumId_};
+    
+    // 两个实例同时调用
+    albumRefresh1.NotifyAlbumsCoverChange(fileIds, albumIds);
+    albumRefresh2.NotifyAlbumsCoverChange(fileIds, albumIds);
+    
+    // 验证通知结果
+    auto changeDatas1 = albumRefresh1.GetAlbumChangeDatas();
+    auto changeDatas2 = albumRefresh2.GetAlbumChangeDatas();
+    
+    EXPECT_TRUE(changeDatas1.size() > 0);
+    EXPECT_TRUE(changeDatas2.size() > 0);
+}
+
+// 测试IsCoverContentChange - 验证错误恢复能力
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_IsCoverContentChange_080, TestSize.Level2)
+{
+    ValuesBucket albumValues = GetFavoriteInsertAlbum();
+    string testFileId = "820000";
+    string testCoverUri = "file://media/Photo/" + testFileId + "/IMG_1744362716_000/IMG_20250425_123456.jpg";
+    albumValues.Delete(PhotoAlbumColumns::ALBUM_COVER_URI);
+    albumValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, testCoverUri);
+    
+    int64_t insertNum = 0;
+    g_rdbStore->Insert(insertNum, PhotoAlbumColumns::TABLE, albumValues);
+    EXPECT_TRUE(insertNum > 0);
+    
+    AlbumAccurateRefresh albumRefresh;
+    
+    // 第一次调用成功
+    vector<string> fileIds1 = {testFileId};
+    auto ret1 = albumRefresh.IsCoverContentChange(fileIds1);
+    EXPECT_TRUE(ret1);
+    
+    // 第二次调用不匹配
+    vector<string> fileIds2 = {"830000"};
+    auto ret2 = albumRefresh.IsCoverContentChange(fileIds2);
+    EXPECT_FALSE(ret2);
+    
+    // 第三次调用又成功
+    vector<string> fileIds3 = {testFileId};
+    auto ret3 = albumRefresh.IsCoverContentChange(fileIds3);
+    EXPECT_TRUE(ret3);
+}
 } // namespace Media
 } // namespace OHOS

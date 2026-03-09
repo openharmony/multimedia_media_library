@@ -99,6 +99,7 @@ unique_ptr<MediaLibraryTranscodeDataAgingOperation> MediaLibraryTranscodeDataAgi
 mutex MediaLibraryTranscodeDataAgingOperation::mutex_;
 const double TIMER_MULTIPLIER = 60.0;
 constexpr int64_t SHARE_UID = 5520;
+const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 MediaLibraryTranscodeDataAgingOperation::MediaLibraryTranscodeDataAgingOperation(void)
 {
 }
@@ -232,20 +233,33 @@ void MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(const Exif
     return;
 }
 
+static bool IsHighPixelPicture(int32_t width, int32_t height)
+{
+    if (width * height >= HIGH_PIXEL_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static bool NeedTranscodeHighPixelPicture(int32_t width, int32_t height)
+{
+    if (IsHighPixelPicture(width, height) && !PermissionUtils::IsSystemApp()) {
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset,
     const std::string &mode, const bool isHeif)
 {
     CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
-    CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
         "MediaLibraryBundleManager::GetInstance() returned nullptr");
     string clientBundle = mediaLibraryBundleManager->GetClientBundleName();
-    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
-        E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     CHECK_AND_RETURN_RET_LOG(fileAsset->GetExistCompatibleDuplicate(), E_INNER_FAIL,
         "SetTranscodeUriToFileAsset compatible duplicate is not exist, fileAsset uri: %{public}s",
         fileAsset->GetUri().c_str());
@@ -254,6 +268,17 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
         "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     string newPath = path + "/transcode.jpg";
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
+    bool isHeifType = (MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heif" ||
+        MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heic");
+    if (!NeedTranscodeHighPixelPicture(fileAsset->GetWidth(), fileAsset->GetHeight())) {
+        if (!isHeifType) {
+            MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", path.c_str());
+            return E_INNER_FAIL;
+        }
+        CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
+        CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
+            E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
+    }
     fileAsset->SetPath(newPath);
     return E_OK;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,24 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
-#define OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
+#ifndef FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_ASSET_RETAIN_COMPARE_TEST_H
+#define FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_ASSET_RETAIN_COMPARE_TEST_H
 
-#include <stdint.h>
-#include <string>
+#include <gtest/gtest.h>
 
-#include "datashare_result_set.h"
-
-namespace OHOS::Media {
-
-class GetAssetAnalysisDataDto {
+namespace OHOS {
+namespace Media {
+class CloudMediaAssetRetainCompareTest : public testing::Test {
 public:
-    int32_t fileId;
-    int32_t analysisType;
-    std::string language;
-    bool analysisTotal;
-
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
-} // namespace OHOS::Media
-#endif // OHOS_MEDIA_ASSETS_MANAGER_GET_ASSET_ANALYSIS_DATA_DTO_H
+} // namespace Media
+} // namespace OHOS
+
+#endif // FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_MEDIA_ASSET_RETAIN_COMPARE_TEST_H
