@@ -17,7 +17,7 @@
 
 #include "media_background_task_factory_test.h"
 
-#include "media_location_synchronize_task_test.h"
+#include "media_location_synchronize_task.h"
 #include "power_efficiency_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"

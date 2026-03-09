@@ -44,8 +44,6 @@ ohos_unittest("media_library_cloud_sync_service_test") {
 
   include_dirs += include_media_cloud_sync_data
 
-  cflags = [ "-fno-access-control" ]
-
   sources = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_album_controller_service.cpp",
