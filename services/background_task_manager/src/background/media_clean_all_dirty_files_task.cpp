@@ -333,15 +333,19 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
         if (!existThumbnail) {
             std::string lcdPath = GetThumbnailPath(dirtyFileInfo.path, THUMBNAIL_LCD_SUFFIX);
             bool existThumbnailLCD = MediaFileUtils::IsFileExists(lcdPath);
-            MediaFileUtils::CopyFileUtil(lcdPath, dirtyFileInfo.path);
-            MEDIA_INFO_LOG("Copy Lcd %{public}s to Id %{public}d", lcdPath.c_str(), dirtyFileInfo.fileId);
+            if (!MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
+                MediaFileUtils::CopyFileUtil(lcdPath, dirtyFileInfo.path);
+                MEDIA_INFO_LOG("Copy Lcd %{public}s to Id %{public}d", lcdPath.c_str(), dirtyFileInfo.fileId);
+            }
             // SCAN 扫描更新size等column
             MediaAssetsService::GetInstance().ScanExistFileRecord(dirtyFileInfo.fileId, dirtyFileInfo.path);
             return;
         }
-        MediaFileUtils::CopyFileUtil(thumbnailPath, dirtyFileInfo.path);
-        MEDIA_INFO_LOG("HandleOriginNotExistStrategy Copy Thumbnail %{public}s to Id %{public}d",
-            MediaFileUtils::DesensitizePath(thumbnailPath).c_str(), dirtyFileInfo.fileId);
+        if (!MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
+            MediaFileUtils::CopyFileUtil(thumbnailPath, dirtyFileInfo.path);
+            MEDIA_INFO_LOG("HandleOriginNotExistStrategy Copy Thumbnail %{public}s to Id %{public}d",
+                MediaFileUtils::DesensitizePath(thumbnailPath).c_str(), dirtyFileInfo.fileId);
+        }
         // SCAN 扫描更新size等column
         MediaAssetsService::GetInstance().ScanExistFileRecord(dirtyFileInfo.fileId, dirtyFileInfo.path);
         return;
@@ -744,12 +748,13 @@ bool MediaCleanAllDirtyFilesTask::DealThumbsEffectAssetNotExist(int32_t curBucke
         SLASH_STR + folderName;
     std::string thumbsBucketFolderFile = thumbsBucketFolderName + SLASH_STR + THM_FILE_NAME;
     std::string thumbsBucketFolderLCDFile = thumbsBucketFolderName + SLASH_STR + LCD_FILE_NAME;
-    if (MediaFileUtils::IsFileExists(thumbsBucketFolderFile)) {
+    if (MediaFileUtils::IsFileExists(thumbsBucketFolderFile) && !MediaFileUtils::IsFileExists(originBucketFolderFile)) {
         MediaFileUtils::CopyFileUtil(thumbsBucketFolderFile, originBucketFolderFile);
         MEDIA_INFO_LOG("Copy thumbs to Bucket:%{public}d, Name: %{public}s", curBucketNum,
             MediaFileUtils::DesensitizePath(folderName).c_str());
         return true;
-    } else if (MediaFileUtils::IsFileExists(thumbsBucketFolderLCDFile)) {
+    } else if (MediaFileUtils::IsFileExists(thumbsBucketFolderLCDFile) &&
+        !MediaFileUtils::IsFileExists(originBucketFolderFile)) {
         MediaFileUtils::CopyFileUtil(thumbsBucketFolderLCDFile, originBucketFolderFile);
         MEDIA_INFO_LOG("Copy lcd to Bucket:%{public}d, Name: %{public}s", curBucketNum,
             MediaFileUtils::DesensitizePath(folderName).c_str());
@@ -974,7 +979,10 @@ bool MediaCleanAllDirtyFilesTask::DealEffectMovingPhotoNotExistInEditFolder(int3
     // 动图视频
     std::string videoPath = dirtyFilePathInfo.effectFolder + SLASH_STR +
         MediaFileUtils::GetTitleFromDisplayName(dirtyFilePathInfo.fileName) + MOVING_PHOTO_SUFFIX;
-    bool cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    bool cpSuccV = true;
+    if (!MediaFileUtils::IsFileExists(videoPath)) { // 不存在就拷贝一份 存在直接跳过
+        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    }
     MEDIA_INFO_LOG("DirtyMediaHandler DealEffectMovingPhotoNotExistInEditFolder Copy To Org: %{public}s, "
         "Ret: %{public}d, RetV: %{public}d",
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc, cpSuccV);
