@@ -43,7 +43,7 @@ public:
     static int32_t QueryCompatibleInfo(const std::string& bundleName, CompatibleInfo& compatibleInfo);
 private:
     static std::string VectorToString(const std::vector<std::string> &encodings);
-    static std::string StringToVector(const std::string &str);
+    static std::vector<std::string> StringToVector(const std::string &str);
 
     static const std::string ENCODINGS_SEPARATOR;
 };

@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::Media;
 
 const string TranscodeCompatibleInfoOperation::ENCODINGS_SEPARATOR = ",";
 
@@ -47,7 +48,7 @@ string TranscodeCompatibleInfoOperation::VectorToString(const std::vector<std::s
 std::vector<std::string> TranscodeCompatibleInfoOperation::StringToVector(const std::string &str)
 {
     if (str.empty()) {
-        result {};
+        return {};
     }
 
     vector<string> result;
@@ -83,7 +84,7 @@ int32_t TranscodeCompatibleInfoOperation::InsertCompatibleInfo(CompatibleInfo& c
     values.PutString(TabCompatibleInfoColumn::ENCODINGS, VectorToString(compatibleInfo.encodings));
 
     int64_t rowId;
-    int32_t ret = rdbStore->Insert(rowId, TabCompatibleInfoColumn::TABLE, values)
+    int32_t ret = rdbStore->Insert(rowId, TabCompatibleInfoColumn::TABLE, values);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
         "Insert compatibleInfo failed, ret : %{public}d", ret);
     
@@ -130,11 +131,11 @@ int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::string
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
         "bundleName is empty");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, compatibleInfo.bundleName);
+    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, bundleName);
 
     int32_t deletedRows;
     int32_t ret = rdbStore->Delete(deletedRows, predicates);
