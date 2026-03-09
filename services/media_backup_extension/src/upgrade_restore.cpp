@@ -32,6 +32,7 @@
 #include "portrait_album_utils.h"
 #include "group_photo_album_restore.h"
 #include "media_string_utils.h"
+#include "video_ringtone_processor.h"
 // LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
@@ -823,6 +824,8 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     this->restorePhotosAlbumHidden_.UpdateEmptyAlbumHidden(mediaLibraryRdb_);
+    VideoRingtoneProcessor videoRingtoneProcessor;
+    videoRingtoneProcessor.ProcessVideoRingtones(mediaLibraryRdb_);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t minId)

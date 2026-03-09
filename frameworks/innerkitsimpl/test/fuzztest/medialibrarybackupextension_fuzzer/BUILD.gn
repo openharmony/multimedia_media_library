@@ -38,6 +38,7 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/include/portrait_album",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/include/selection",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/include/group_photo_album",
+    "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/include/video_ringtone_processor",
 
   ]
 
@@ -55,6 +56,7 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/ocr/ocr_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_data.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/video_ringtone_processor/video_ringtone_processor.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/upgrade_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/clone_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/others_clone_restore.cpp",
