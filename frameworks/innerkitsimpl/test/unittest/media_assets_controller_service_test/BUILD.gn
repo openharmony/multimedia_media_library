@@ -128,6 +128,7 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/asset_change_request_test.cpp",
     "./src/cancel_photo_uri_permission_test.cpp",
     "./src/clone_asset_test.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/src/dao/media_assets_dao.cpp",
   ]
 
   if (media_library_feature_cloud_enhancement) {
@@ -138,6 +139,7 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/cloud_media_change_test.cpp",
     "./src/commit_edited_asset_test.cpp",
     "./src/create_asset_test.cpp",
+    "./src/media_assets_dao_test.cpp",
     "./src/create_temporary_compatible_duplicate_test.cpp",
     "./src/custom_restore_test.cpp",
     "./src/delete_asset_test.cpp",
@@ -235,6 +237,8 @@ ohos_unittest("media_assets_controller_service_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "zlib:shared_libz",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
   ]
   defines = []
   if (defined(global_parts_info) &&
