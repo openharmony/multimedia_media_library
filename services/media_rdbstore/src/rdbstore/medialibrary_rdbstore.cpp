@@ -2007,6 +2007,7 @@ static const vector<string> onCreateSqlStrs = {
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 
     TabOperationLogColumn::CREATE_TABLE,
+    TabCompatibleInfoColumn::CREATE_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
