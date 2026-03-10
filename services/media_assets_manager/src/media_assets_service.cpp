@@ -1869,12 +1869,6 @@ int32_t MediaAssetsService::SubmitExistFileDBRecord(SubmitCacheDto &dto)
     if (dto.isWriteGpsAdvanced) {
         cmd.SetApiParam(SET_LOCATION_KEY, SET_LOCATION_VALUE);
     }
-
-    if (dto.isOriginalImageResource) {
-        DfxManager::GetInstance()->HandleMultishotInfoUpdOriResTimes();
-        cmd.SetApiParam(IS_ORIGINAL_IMAGE_RESOURCE, ORIGINAL_IMAGE_RESOURCE);
-    }
-
     cmd.SetDeviceName(GetLocalDeviceName());
     cmd.SetBundleName(GetClientBundleName());
     int32_t ret = MediaLibraryPhotoOperations::SubmitExistFileDBRecord(cmd);
