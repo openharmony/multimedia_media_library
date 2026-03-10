@@ -27,6 +27,7 @@
 #include "accurate_refresh_base.h"
 #include "photo_asset_change_info.h"
 #include "asset_data_manager.h"
+#include "analysis_album_refresh_execution.h"
 #include "album_refresh_execution.h"
 #include "asset_change_notify_execution.h"
 
@@ -69,6 +70,7 @@ public:
     // notify assest change infos based on init datas and modified datas.
     int32_t Notify();
     int32_t NotifyYuvReady(const int32_t fileId);
+    void NotifyForAnalysisInfoChange();
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
     int32_t Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
@@ -83,7 +85,6 @@ public:
     static int32_t NotifyForReCheck();
 
 protected:
-    int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates) override;
     int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation,
         PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
@@ -92,10 +93,12 @@ private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
     int32_t RefreshAllAlbum(std::unordered_set<int32_t> albumIds,
         NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified = true);
+    void RefreshAllAnalysisAlbum();
 
 private:
     AssetDataManager dataManager_;
     AlbumRefreshExecution albumRefreshExe_;
+    AnalysisAlbumRefreshExecution analysisAlbumRefreshExe_;
     AssetChangeNotifyExecution notifyExe_;
     std::shared_ptr<DfxRefreshManager> refreshManager;
     // 资产数据查询锁，查询资产信息放入MultiThreadAssetChangeInfoMgr中，防止同一资产多线程访问

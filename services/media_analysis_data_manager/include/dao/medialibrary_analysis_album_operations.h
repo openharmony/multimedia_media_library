@@ -67,6 +67,7 @@ public:
         const DataShare::DataSharePredicates &predicates);
     EXPORT static int32_t SetHighlightAttribute(const int32_t &albumId,
         const int32_t &highlightAlbumChangeAttribute, const std::string &value);
+    EXPORT static int32_t UpdateAnalysisAlbum(std::vector<std::string> sqls, std::vector<int32_t> albumIds);
 };
 } // namespace Media
 } // namespace OHOS

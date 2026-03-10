@@ -1213,7 +1213,7 @@ static inline bool ShouldUpdateGroupPhotoAlbumCover(const shared_ptr<MediaLibrar
 }
 
 shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
-    const string &albumId, const PhotoAlbumSubType &subType)
+    const string &albumId)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryPortraitCover");
@@ -1243,10 +1243,6 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(const shared
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 ";
-    if (subType == PhotoAlbumSubType::PORTRAIT) {
-        clause += "AND tab_analysis_image_face.tag_id IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
-            albumId + " LIMIT 1) ";
-    }
     clause += "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
         "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " + albumId + " LIMIT 1))";
     predicates.SetWhereClause(clause);
@@ -1262,6 +1258,7 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(const shared
     const string columnDisplayName = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_NAME;
     const string columnData = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_FILE_PATH;
     const vector<string> columns = { columnFileId, columnDisplayName, columnData };
+
     auto resultSet = rdbStore->StepQueryWithoutCheck(predicates, columns);
     string sql = RdbSqlUtils::BuildQueryString(predicates, columns);
     CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
@@ -1273,7 +1270,7 @@ shared_ptr<ResultSet> MediaLibraryRdbUtils::QueryPortraitAlbumCover(const shared
 static shared_ptr<ResultSet> QueryGroupPhotoAlbumCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string &albumId)
 {
-    return MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId, PhotoAlbumSubType::GROUP_PHOTO);
+    return MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId);
 }
 
 static void SetPortraitValuesWithCache(shared_ptr<UpdateAlbumDataWithCache> portraitData,
@@ -1356,8 +1353,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore>& r
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
     }
-    shared_ptr<ResultSet> coverResult = MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId,
-        PhotoAlbumSubType::PORTRAIT);
+    shared_ptr<ResultSet> coverResult = MediaLibraryRdbUtils::QueryPortraitAlbumCover(rdbStore, albumId);
     CHECK_AND_RETURN_RET_LOG(coverResult != nullptr, E_HAS_DB_ERROR,
         "Failed to query Portrait Album Cover");
     SetPortraitCover(coverResult, data, values, newCount);
@@ -2089,9 +2085,9 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
+        assetRefresh.RefreshAlbum();
         int32_t ret = LakeFileOperations::MoveAssetsFromLake(fileAssetsIds);
         CHECK_AND_PRINT_LOG(ret == E_OK, "trash inner anco file error");
-        assetRefresh.RefreshAlbum();
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
         MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);
@@ -2213,8 +2209,8 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(const vector<string>&
     return E_OK;
 }
 
-int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
-    std::unordered_map<int32_t, std::set<int32_t>>& fileToAlbums, std::set<int32_t>& allAlbumIds)
+int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const vector<std::string>& assetIds,
+    unordered_map<int32_t, unordered_set<int32_t>>& fileToAlbums, unordered_set<int32_t>& allAlbumIds)
 {
     // Step 1. 获取数据库连接
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -2242,8 +2238,8 @@ int32_t MediaLibraryRdbUtils::QueryAnalysisAlbumMapByAssets(const std::vector<st
             MEDIA_WARN_LOG("Invalid record, fileId=%{public}d, albumId=%{public}d", fileId, albumId);
             continue;
         }
-        CHECK_AND_CONTINUE_ERR_LOG(albumId > 0, "Not valid albumId");
-        auto &albumSet = fileToAlbums.try_emplace(fileId, std::set<int32_t>{}).first->second;
+        CHECK_AND_CONTINUE_ERR_LOG(albumId > 0, "Invalid albumId");
+        auto &albumSet = fileToAlbums.try_emplace(fileId, std::unordered_set<int32_t>{}).first->second;
         albumSet.insert(albumId);
         allAlbumIds.insert(albumId);
     }

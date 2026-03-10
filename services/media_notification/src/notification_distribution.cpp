@@ -50,7 +50,9 @@ MediaChangeInfo NotificationDistribution::FilterNotifyInfoByPermission(
     if ((notifyUriType == NotifyUriType::PHOTO_URI ||
          notifyUriType == NotifyUriType::PHOTO_ALBUM_URI ||
          notifyUriType == NotifyUriType::SINGLE_PHOTO_URI ||
-         notifyUriType == NotifyUriType::SINGLE_PHOTO_ALBUM_URI) &&
+         notifyUriType == NotifyUriType::SINGLE_PHOTO_ALBUM_URI ||
+         notifyUriType == NotifyUriType::ANALYSIS_PHOTO_URI ||
+         notifyUriType == NotifyUriType::ANALYSIS_ALBUM_URI) &&
          changeUri == notifyUriType) {
         return changeInfo;
     }
@@ -81,10 +83,18 @@ int32_t NotificationDistribution::SendNotificationWithRecheckChangeInfo(
     recheckChangeInfo.isSystem = observerInfo.isSystem;
     if (changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_ADD ||
         changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_UPDATE ||
-        changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_REMOVE) {
+        changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_REMOVE ||
+        changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS ||
+        changeInfo.notifyType == AccurateNotifyType::NOTIFY_ASSET_REMOVE_ANALYSIS) {
         recheckChangeInfo.notifyType = AccurateNotifyType::NOTIFY_ASSET_ADD;
+        if (changeInfo.notifyUri == NotifyUriType::ANALYSIS_PHOTO_URI) {
+            recheckChangeInfo.notifyType = AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS;
+        }
     } else {
         recheckChangeInfo.notifyType = AccurateNotifyType::NOTIFY_ALBUM_ADD;
+        if (changeInfo.notifyUri == NotifyUriType::ANALYSIS_ALBUM_URI) {
+            recheckChangeInfo.notifyType = AccurateNotifyType::NOTIFY_ALBUM_ADD_ANALYSIS;
+        }
     }
     shared_ptr<MediaChangeInfo> sharedChangeInfo = make_shared<MediaChangeInfo>(recheckChangeInfo);
     return NotificationUtils::SendNotification(observerInfo.observer, sharedChangeInfo);
