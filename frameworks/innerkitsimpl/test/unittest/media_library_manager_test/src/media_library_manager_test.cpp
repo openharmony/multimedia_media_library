@@ -1956,5 +1956,23 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_SendBrokerChangeOperation_
     int ret = mediaLibraryExtendManager->GetCompressAssetSize(uris);
     EXPECT_EQ(ret, E_ERR);
 }
+
+HWTEST_F(MediaLibraryManagerTest, SendBrokerChangeOperation_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("SendBrokerChangeOperation_001 enter");
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string operation = "";
+    EXPECT_EQ(mediaLibraryExtendManager->SendBrokerChangeOperation(operation), E_OK);
+    MEDIA_INFO_LOG("SendBrokerChangeOperation_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetCompressAssetSize_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("GetCompressAssetSize_001 enter");
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    vector<string> uris;
+    EXPECT_EQ(mediaLibraryExtendManager->GetCompressAssetSize(uris), E_ERR);
+    MEDIA_INFO_LOG("GetCompressAssetSize_001 exit");
+}
 } // namespace Media
 } // namespace OHOS
