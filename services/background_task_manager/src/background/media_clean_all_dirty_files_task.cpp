@@ -52,7 +52,6 @@ static const int32_t scanDoneCode = -2;
 const std::string ROOT_MEDIA_ORG_DIR = "/storage/cloud/files/Photo/";
 const std::string ROOT_MEDIA_THUMBS_DIR = "/storage/cloud/files/.thumbs/Photo/";
 const std::string ROOT_MEDIA_EDIT_DIR = "/storage/cloud/files/.editData/Photo/";
-const std::string MEDIA_CACHE_DIR = ROOT_MEDIA_DIR + ".cache/";
 
 const std::string THM_FILE_NAME = "THM.jpg";
 const std::string LCD_FILE_NAME = "LCD.jpg";
@@ -442,15 +441,6 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyTable(int32_t curStartFileId)
         MEDIA_INFO_LOG("DirtyMediaHandler Table Scan Part END FileId: %{public}d", startFileId);
         SetBatchProgressId(startFileId, START_FILE_ID_STR);
     }
-}
-
-std::string MediaCleanAllDirtyFilesTask::GetAssetCacheDir()
-{
-    string cacheOwner = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    if (cacheOwner.empty()) {
-        cacheOwner = "common"; // Create cache file in common dir if there is no bundleName.
-    }
-    return MEDIA_CACHE_DIR + cacheOwner;
 }
 
 bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::string &path,
