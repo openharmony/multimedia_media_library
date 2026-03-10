@@ -220,6 +220,7 @@ HWTEST_F(MediaLibraryCameraHelperTest, MediaLibraryCameraManager_CreatePhotoAsse
         .callingUid = 0,
         .userId = 0,
     };
+    callerInfo.ToString();
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::MOVING_PHOTO);
     ASSERT_NE(photoAssetProxy, nullptr);
 
@@ -956,6 +957,23 @@ HWTEST_F(MediaLibraryCameraHelperTest, PhotoAssetProxy_UnregisterPhotoStateCallb
 
     LowQualityMemoryNumHandler func;
     photoAssetProxy->UnregisterPhotoStateCallback();
+}
+
+HWTEST_F(MediaLibraryCameraHelperTest, PhotoAssetProxy_RegisterPhotoStateCallback_test001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter PhotoAssetProxy_RegisterPhotoStateCallback_test001");
+    LowQualityMemoryNumHandler func = nullptr;
+    int32_t ret = mediaLibraryManager->RegisterPhotoStateCallback(func);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end PhotoAssetProxy_RegisterPhotoStateCallback_test001");
+}
+
+HWTEST_F(MediaLibraryCameraHelperTest, PhotoAssetProxy_UnregisterPhotoStateCallback_test001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter PhotoAssetProxy_UnregisterPhotoStateCallback_test001");
+    int32_t ret = mediaLibraryManager->UnregisterPhotoStateCallback();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end PhotoAssetProxy_UnregisterPhotoStateCallback_test001");
 }
 
 } // namespace Media
