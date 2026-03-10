@@ -87,6 +87,16 @@ ohos_unittest("media_cloud_sync_data_vo_test") {
     "./src/on_fetch_records_vo_test.cpp",
     "./src/on_mdirty_records_album_vo_test.cpp",
     "./src/on_modify_file_dirty_vo_test.cpp",
+    "./src/on_modify_records_photos_vo_test.cpp",
+    "./src/photos_vo_test.cpp",
+    "./src/query_data_vo_test.cpp",
+    "./src/report_failure_vo_test.cpp",
+    "./src/update_data_vo_test.cpp",
+    "./src/update_dirty_vo_test.cpp",
+    "./src/update_local_file_dirty_vo_test.cpp",
+    "./src/update_position_vo_test.cpp",
+    "./src/update_sync_status_vo_test.cpp",
+    "./src/update_thm_status_vo_test.cpp",
   ]
 
   deps = [
