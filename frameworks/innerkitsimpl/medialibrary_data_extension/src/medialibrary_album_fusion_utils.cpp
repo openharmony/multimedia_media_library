@@ -2284,8 +2284,7 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
         IsHighPixelPicture(width, height), E_PARAM_CONVERT_FORMAT,
         "mimeType is invalid, mimeType: %{public}s", mimeType.c_str());
 
-    CHECK_AND_RETURN_RET_LOG(GetDesireSize(width, height), E_PARAM_CONVERT_FORMAT,
-        "GetDesireSize failed, width %{public}d, height %{public}d", width, height);
+    GetDesireSize(width, height);
 
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
