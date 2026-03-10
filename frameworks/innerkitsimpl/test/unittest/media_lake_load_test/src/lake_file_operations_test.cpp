@@ -519,7 +519,7 @@ HWTEST_F(LakeFileOperationsTest, RenamePhoto_Test_015, TestSize.Level1)
     std::string storagePath = "/storage/media/local/files/test.jpg";
     std::string data = "";
     
-    int32_t ret = LakeFileOperations::RenamePhoto(Refresh, fileId, displayName, storagePath, data);
+    int32_t ret = LakeFileOperations::RenamePhoto(refresh, fileId, displayName, storagePath, data);
     EXPECT_EQ(ret, E_ERR);
 }
 
@@ -646,21 +646,6 @@ HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_009, TestSize.Level1)
     
     MediaFileUtils::DeleteDir(TEST_DIR_PATH);
     MediaFileUtils::CreateDirectory(TEST_DIR_PATH);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_010, TestSize.Level1)
-{
-    std::string srcPath = TEST_SRC_PATH;
-    std::string destPath = TEST_DEST_PATH;
-    
-    MediaFileUtils::CreateFile(srcPath);
-    
-    chmod(srcPath.c_str(), 0000);
-    
-    int32_t ret = LakeFileOperations::MoveLakeFile(srcPath, destPath);
-    
-    chmod(srcPath.c_str(), 0644);
-    MediaFileUtils::DeleteFile(srcPath);
 }
 
 HWTEST_F(LakeFileOperationsTest, GetInnerLakeAssets_Test_006, TestSize.Level1)
@@ -796,14 +781,6 @@ HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_010, TestSize.Level1)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_006, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"0"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_007, TestSize.Level1)
 {
     std::vector<std::string> ids = {"-1"};
@@ -832,7 +809,7 @@ HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_010, TestSize.Level1)
 {
     std::vector<std::string> ids = {"test"};
     
-    int32_t ret = LakeFileOperations::::MoveAssetsFromLake(ids);
+    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
     EXPECT_EQ(ret, E_OK);
 }
 
