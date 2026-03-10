@@ -1033,4 +1033,62 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitTaskTimeou
 
     EXPECT_FALSE(service.submitRunning_.load());
 }
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_QueryData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 QueryData 方法，查询 PHOTOS 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columnNames = {PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_CLOUD_ID};
+    std::string tableName = PhotoColumn::PHOTOS_TABLE;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+
+    int32_t ret = service.QueryData(predicates, columnNames, tableName, results);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_QueryData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 QueryData 方法，查询 PHOTO_ALBUM 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columnNames = {PhotoAlbumColumns::ALBUM_NAME};
+    std::string tableName = PhotoAlbumColumns::TABLE;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+
+    int32_t ret = service.QueryData(predicates, columnNames, tableName, results);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateData 方法，更新 PHOTOS 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket value;
+    std::vector<std::string> columnNames = {PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_CLOUD_ID};
+    std::string tableName = PhotoColumn::PHOTOS_TABLE;
+    std::string operateName = "test_operation";
+
+    int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateData 方法，更新 PHOTO_ALBUM 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket value;
+    std::vector<std::string> columnNames = {PhotoAlbumColumns::ALBUM_NAME};
+    std::string tableName = PhotoAlbumColumns::TABLE;
+    std::string operateName = "test_operation";
+
+    int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
+
+    EXPECT_EQ(ret, E_OK);
+}
 }
