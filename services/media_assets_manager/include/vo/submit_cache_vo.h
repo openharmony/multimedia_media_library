@@ -26,6 +26,7 @@ class SubmitCacheReqBody : public IPC::IMediaParcelable {
 public:
     bool isWriteGpsAdvanced;
     NativeRdb::ValuesBucket values;
+    bool isOriginalImageResource;
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
