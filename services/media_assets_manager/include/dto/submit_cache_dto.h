@@ -23,6 +23,7 @@ class SubmitCacheDto {
 public:
     bool isWriteGpsAdvanced;
     NativeRdb::ValuesBucket values;
+    bool isOriginalImageResource;
 
     int32_t fileId{-1};
     std::string outUri;
