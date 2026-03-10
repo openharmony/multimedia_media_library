@@ -111,7 +111,6 @@ const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
 const std::string SPECIAL_EDIT_EDIT_DATA = "";
 const std::string SPECIAL_EDIT_APP_ID = "com.ohos.photos";
-static const std::string ORIGIN_VIDEO_STR = "1";
 static const string IS_ORIGINAL_IMAGE_RESOURCE = "is_original_image_resource";
 static const string ORIGINAL_IMAGE_RESOURCE = "1";
 const bool PROCESS_TRANSCODE_SIZE = false;
