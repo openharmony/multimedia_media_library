@@ -17,6 +17,7 @@
 
 #include "media_background_task_factory_test.h"
 
+#include "power_efficiency_manager.h"
 #include "media_background_task_factory.h"
 
 using namespace testing::ext;
