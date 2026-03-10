@@ -123,6 +123,7 @@ namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 const string URI_SEPARATOR = "file:media";
+const string URI_SEPARATOR_PERMISSION = "file:media:permission";
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -11362,7 +11363,19 @@ int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref,
     if (uriIter == uriMap.end()) {
         return HandleNewUriRegistration(env, ref, observer, uriType, fileIdOrAlbumId);
     }
-
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
+        return JS_E_PARAM_INVALID;
+    }
+    auto ret =
+        UserFileClient::RegisterObserverExtProvider(Uri(registerUri + URI_SEPARATOR_PERMISSION + fileIdOrAlbumId),
+        static_cast<std::shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to check permission, ret: %{public}d", ret);
+        return ret;
+    }
     return HandleExistingUriCheck(env, ref, uriIter->second, uriType, fileIdOrAlbumId);
 }
 

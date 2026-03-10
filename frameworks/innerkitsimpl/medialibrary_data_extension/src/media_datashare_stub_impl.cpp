@@ -41,6 +41,7 @@ std::unordered_map<std::string, Notification::NotifyUriType> NOTIFY_URI_MAP = {
 };
 
 const std::string URI_SEPARATOR = "file:media";
+const std::string URI_SEPARATOR_PERMISSION = "file:media:permission";
 
 std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
 {
@@ -196,6 +197,18 @@ int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
         int32_t ret = observerManager->AddObserver(registerUriType, dataObserver, option.isReconnect);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to add observer, error is %{public}d", ret);
         return E_SUCCESS;
+    }
+    size_t permissionPos = uriType.find(URI_SEPARATOR_PERMISSION);
+    if (permissionPos != std::string::npos) {
+        std::string singleUriType = uriType.substr(0, permissionPos);
+        std::string singleId = uriType.substr(permissionPos + URI_SEPARATOR_PERMISSION.length());
+        if (NOTIFY_URI_MAP.find(singleUriType) != NOTIFY_URI_MAP.end()) {
+            Notification::NotifyUriType registerUriType = NOTIFY_URI_MAP.at(singleUriType);
+            auto ret = observerManager->CheckSingleOperationPermissionsAndLimit(registerUriType, singleId);
+            CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to add observerUris, error is %{public}d", ret);
+            return E_SUCCESS;
+        }
+        return E_URI_IS_INVALID;
     }
     std::string singleUriType = uriType.substr(0, separatorPos);
     std::string singleId = uriType.substr(separatorPos + URI_SEPARATOR.length());
