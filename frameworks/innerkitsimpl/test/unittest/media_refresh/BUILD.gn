@@ -26,11 +26,15 @@ ohos_unittest("media_refresh_test") {
     "../medialibrary_unittest_utils/include",
     "./include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/core",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/base",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/strategies",
   ]
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/album_accurate_refresh_test.cpp",
+    "./src/analysis_album_refresh_test.cpp",
     "./src/asset_accurate_refresh_test.cpp",
     "./src/accurate_refresh_test_util.cpp",
     "./src/media_refresh_controller_service_test.cpp",
@@ -56,6 +60,21 @@ ohos_unittest("media_refresh_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/multi_thread_asset_change_info_mgr.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_accurate_refresh.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_change_notify_execution.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_data_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_refresh_execution.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/cover_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/cover_picker_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/count_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_batch_update_helper.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_impact_analyzer.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_pipeline.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_strategy_registry.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/default_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/portrait_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/highlight_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/shooting_mode_strategies.cpp",
   ]
 
   sources += accurate_refresh_source

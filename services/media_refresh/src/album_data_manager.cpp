@@ -64,8 +64,7 @@ PhotoAssetChangeInfo AlbumDataManager::GetPhotoAssetInfo(int32_t fileId)
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     auto resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, PhotoAssetChangeInfo(), "resultSet null");
-    auto changeInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet,
-        PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    auto changeInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet);
     resultSet->Close();
     if (changeInfos.size() != 1) {
         MEDIA_WARN_LOG("changeInfos[%{public}d] size[%{public}zu] wrong.", fileId, changeInfos.size());
@@ -143,7 +142,7 @@ vector<AlbumChangeInfo> AlbumDataManager::GetInfosByPredicates(const AbsRdbPredi
 
 vector<AlbumChangeInfo> AlbumDataManager::GetInfosByResult(const shared_ptr<ResultSet> &resultSet)
 {
-    return AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
+    return AlbumChangeInfo::GetInfoFromResult(resultSet);
 }
 
 vector<AlbumChangeInfo> AlbumDataManager::GetAlbumInfos(const vector<int32_t> &albumIds,
@@ -208,7 +207,7 @@ vector<AlbumChangeData> AlbumDataManager::GetAlbumDatasFromAddAlbum(const vector
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumChangeDatas, "rdbStore null");
     auto resultSet = rdbStore->QueryByStep(predicates, AlbumChangeInfo::GetAlbumInfoColumns());
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumChangeDatas, "resultSet null");
-    auto albumIdInfos = AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
+    auto albumIdInfos = AlbumChangeInfo::GetInfoFromResult(resultSet);
     resultSet->Close();
     for (auto &albumInfo : albumIdInfos) {
         AlbumChangeData changeData;
