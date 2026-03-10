@@ -12905,6 +12905,22 @@ static void getPhotoPickerContextRecoveryInfoExtend(napi_env env, napi_status st
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property version failed");
     }
+
+    napi_value sortRule = nullptr;
+    const string &jsSortRule = context->pickerCallBack->sortRule;
+    napi_create_string_utf8(env, jsSortRule.c_str(), NAPI_AUTO_LENGTH, &sortRule);
+    status = napi_set_named_property(env, recoverInfo, "sortRule", sortRule);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property sortRule failed");
+    }
+
+    napi_value fileSize = nullptr;
+    napi_create_int32(env, context->pickerCallBack->fileSize, &fileSize);
+    status = napi_set_named_property(env, recoverInfo, "fileSize", fileSize);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property fileSize failed");
+    }
+
 }
 
 static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value result)
