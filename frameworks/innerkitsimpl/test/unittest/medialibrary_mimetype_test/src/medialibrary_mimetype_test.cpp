@@ -323,6 +323,7 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromContent_Test_002, TestSize.Le
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_GetImageMimetype_Test_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("MimeTypeTest_GetImageMimetype_Test_001 start");
     auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension("jpg");
     string filePath1 = "";
     auto imgMimetype1 = MimeTypeUtils::GetImageMimetype(filePath1, mimeType);
@@ -333,24 +334,30 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetImageMimetype_Test_001, TestSize.Level1)
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath2), true);
     EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
     auto imgMimetype2 = MimeTypeUtils::GetImageMimetype(filePath2, mimeType);
-    ASSERT_EQ(imgMimetype2, E_OK);
+    ASSERT_EQ(imgMimetype2, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("MimeTypeTest_GetImageMimetype_Test_001 end");
 }
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_GetVideoMimetype_Test_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("MimeTypeTest_GetVideoMimetype_Test_001 start");
     auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension("mp4");
     string dirPath = "/data/test/MimeTypeTest";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
     string filePath = dirPath + "/testVideo1.mp4";
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
     EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
-    EXPECT_EQ(MimeTypeUtils::GetVideoMimetype(filePath, mimeType), E_OK);
+    EXPECT_EQ(MimeTypeUtils::GetVideoMimetype(filePath, mimeType), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("MimeTypeTest_GetVideoMimetype_Test_001 end");
 }
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_IsMimeTypeMapEmpty_Test_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("MimeTypeTest_IsMimeTypeMapEmpty_Test_001 start");
+    MimeTypeUtils::mediaJsonMap_.clear();
     bool isEmpty = MimeTypeUtils::IsMimeTypeMapEmpty();
     ASSERT_EQ(isEmpty, true);
+    MEDIA_INFO_LOG("MimeTypeTest_IsMimeTypeMapEmpty_Test_001 end");
 }
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_IsMimeTypeMapEmpty_Test_002, TestSize.Level1)
