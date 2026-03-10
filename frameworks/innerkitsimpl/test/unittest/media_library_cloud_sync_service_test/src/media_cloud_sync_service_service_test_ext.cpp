@@ -33,7 +33,7 @@
 #include "cloud_media_photos_service.h"
 #include "cloud_media_enhance_service.h"
 #include "cloud_media_scan_service.h"
-#include "cloud_media_data_service.h" 
+#include "cloud_media_data_service.h"
 #undef private
 #include "cloud_file_error.h"
 #include "metadata.h"
