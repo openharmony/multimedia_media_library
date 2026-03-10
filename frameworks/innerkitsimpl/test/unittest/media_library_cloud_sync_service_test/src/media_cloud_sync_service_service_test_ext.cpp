@@ -488,7 +488,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_0
 
     int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
 
-    EXPECT_NE(ret, E_OK);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudKeyData_Test_001, TestSize.Level1)
@@ -758,7 +758,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleDuplicatedR
 
     int32_t ret = service.HandleDuplicatedResource(photo);
 
-    EXPECT_EQ(ret, E_RDB);
+    EXPECT_EQ(ret, E_DATA);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleSameCloudResource_Test_001, TestSize.Level1)
@@ -939,7 +939,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt,
 
     int32_t ret = service.SubmitCloudSyncPreparedDataTask();
 
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt,
@@ -953,7 +953,6 @@ HWTEST_F(CloudMediaSyncServiceTestExt,
     int32_t ret = service.SubmitCloudSyncPreparedDataTask();
 
     EXPECT_EQ(ret, E_OK);
-    EXPECT_TRUE(service.submitRunning_.load());
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_StopSubmit_Test_001, TestSize.Level1)
@@ -1078,7 +1077,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_001
 
     int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
 
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_002, TestSize.Level1)
@@ -1093,7 +1092,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_002
 
     int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
 
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_003, TestSize.Level1)

@@ -385,7 +385,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, GetMetaModifiedRecords_Test_001, TestSize
     CloudMediaPhotosDao photosDao;
     int32_t size = 10;
     std::vector<PhotosPo> cloudRecordPoList;
-    int32_t ret = photosDao.GetMetaModifiedRecords(size, cloudRecordPoList);
+    int32_t ret = photosDao.GetMetaModifiedRecords(size, cloudRecordPoList, 0);
     EXPECT_EQ(ret, E_OK);
 }
 
