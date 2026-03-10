@@ -23,12 +23,12 @@ namespace OHOS::Media {
 
 bool SubmitCacheReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshal(parcel, isWriteGpsAdvanced, values);
+    return ITypesUtil::Unmarshal(parcel, isWriteGpsAdvanced, values, isOriginalImageResource);
 }
 
 bool SubmitCacheReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshal(parcel, isWriteGpsAdvanced, values);
+    return ITypesUtil::Marshal(parcel, isWriteGpsAdvanced, values, isOriginalImageResource);
 }
 
 bool SubmitCacheRespBody::Unmarshalling(MessageParcel &parcel)
