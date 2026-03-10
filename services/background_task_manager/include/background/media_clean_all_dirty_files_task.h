@@ -110,7 +110,6 @@ private:
     bool HandleThumbsBucketFolder(int32_t curBucketNum);
     bool ProcessEditFolderBatch(int32_t curBucketNum, const std::string &folderName);
     bool HandleEditBucketFolder(int32_t curBucketNum);
-    std::string GetAssetCacheDir();
 
     bool HandleHandleAllDirtyFoldersInner(int32_t curBucketNum);
 
