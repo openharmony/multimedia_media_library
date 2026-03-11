@@ -174,7 +174,8 @@ HWTEST_F(DaoUtilsTest, FillParams_Test_009, TestSize.Level0)
 HWTEST_F(DaoUtilsTest, FillParams_Test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("FillParams_Test_010 start");
-    std::string sql = "SELECT * FROM table WHERE col1 = {0} AND col2 = {1} AND col3 = {2} AND col4 = {3} AND col5 = {4}";
+    std::string sql =
+        "SELECT * FROM table WHERE col1 = {0} AND col2 = {1} AND col3 = {2} AND col4 = {3} AND col5 = {4}";
     std::vector<std::string> bindArgs = {"val1", "val2", "val3", "val4", "val5"};
     
     std::string result = DaoUtils::FillParams(sql, bindArgs);
