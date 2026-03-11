@@ -16,6 +16,8 @@
 
 #include "media_datashare_ext_ability.h"
 
+#include <sys/resource.h>
+
 #include "app_mgr_client.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_utils.h"
@@ -238,7 +240,7 @@ static void RestartCloudMediaAssetDownload()
     }).detach();
 }
 
-static void SetThreadQos()
+static void SetThreadQos(int32_t tid, int32_t defaultPrio)
 {
     std::unordered_map<std::string, std::string> payload;
     payload["pid"] = std::to_string(getpid());
@@ -248,20 +250,26 @@ static void SetThreadQos()
     OHOS::QOS::QosLevel qosLevel = OHOS::QOS::QosLevel::QOS_BACKGROUND;
     GetThreadQos(qosLevel);
     MEDIA_INFO_LOG("set qos level: %{public}d", static_cast<int>(qosLevel));
+    CHECK_AND_PRINT_LOG(setpriority(PRIO_PROCESS, tid, defaultPrio) == 0,
+        "Onstart reset priority failed, errno: %{public}d", errno);
 }
 
-static void ResetThreadQos()
+static void ResetThreadQos(int32_t tid, int32_t defaultPrio)
 {
     int err = OHOS::QOS::ResetThreadQos();
     MEDIA_INFO_LOG("set qos level result: %{public}d", err);
     OHOS::QOS::QosLevel qosLevel = OHOS::QOS::QosLevel::QOS_BACKGROUND;
     GetThreadQos(qosLevel);
     MEDIA_INFO_LOG("set qos level reset: %{public}d", static_cast<int>(qosLevel));
+    CHECK_AND_PRINT_LOG(setpriority(PRIO_PROCESS, tid, defaultPrio) == 0,
+        "Onstart reset priority failed, errno: %{public}d", errno);
 }
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
-    SetThreadQos();
+    auto tid = gettid();
+    int32_t priority = getpriority(PRIO_PROCESS, tid);
+    SetThreadQos(tid, priority);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     Extension::OnStart(want);
@@ -309,7 +317,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
     dataManager->RestoreInvalidHDCCloudDataPos();
     PhotoAlbumUploadStatusOperation::JudgeUploadAlbumEnable();
-    ResetThreadQos();
+    ResetThreadQos(tid, priority);
 }
 
 void MediaDataShareExtAbility::OnStop()
