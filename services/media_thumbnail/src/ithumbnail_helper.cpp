@@ -167,9 +167,10 @@ static bool WaitFor(const shared_ptr<ThumbnailSyncStatus> &thumbnailWait, int wa
     return ret;
 }
 
-WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type, const string &dateModified)
+WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type, const string &dateModified,
+    const string &timeStamp)
 {
-    id_ = id + ThumbnailFileUtils::GetThumbnailSuffix(type);
+    id_ = id + ThumbnailFileUtils::GetThumbnailSuffix(type) + timeStamp;
     dateModified_ = dateModified;
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -187,6 +188,7 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type, co
 
         writeLck.unlock();
         MEDIA_INFO_LOG("Waiting for thumbnail generation, id: %{public}s", id_.c_str());
+        hasGenerateThumbnail_ = false;
         thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
             if (auto sharedPtr = weakPtr.lock()) {
                 return sharedPtr->isSyncComplete_;
@@ -277,7 +279,7 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
 {
     ThumbnailType idType = (type == ThumbnailType::LCD || type == ThumbnailType::LCD_EX) ?
         ThumbnailType::LCD : ThumbnailType::THUMB;
-    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(idType);
+    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(idType) + (data.tracks.empty() ? "" : data.timeStamp);
     MEDIA_INFO_LOG("Save current pixelMap, path: %{public}s, type: %{public}d",
         DfxUtils::GetSafePath(data.path).c_str(), type);
     unique_lock<shared_mutex> writeLck(mutex_);
@@ -317,7 +319,8 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
 
 bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, const bool isSourceEx, const string &tempOutputPath)
 {
-    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(ThumbnailType::LCD);
+    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(ThumbnailType::LCD) +
+        (data.tracks.empty() ? "" : data.timeStamp);
     MEDIA_INFO_LOG("Save current picture, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -355,7 +358,7 @@ bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, const bool isSour
     return true;
 }
 
-void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
+void ThumbnailWait::CheckAndWait(const string &id, bool isLcd, const std::string &timeStamp)
 {
     id_ = id;
 
@@ -364,6 +367,7 @@ void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
     } else {
         id_ += THUMBNAIL_THUMB_SUFFIX;
     }
+    id_ += timeStamp;
     shared_lock<shared_mutex> readLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
     if (iter != thumbnailMap_.end()) {
@@ -429,6 +433,8 @@ void ThumbnailWait::UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, boo
 
 void ThumbnailWait::Notify()
 {
+    CHECK_AND_RETURN_INFO_LOG(hasGenerateThumbnail_,
+        "No generate thumbnail, no need to notify, id: %{public}s", id_.c_str());
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
     if (iter != thumbnailMap_.end()) {
@@ -553,7 +559,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position,
         GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     ThumbnailWait thumbnailWait(true);
-    WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD, data.dateModified);
+    WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD, data.dateModified,
+        data.tracks.empty() ? "" : data.timeStamp);
     data.needCheckWaitStatus = true;
     if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         data.needUpdateDb = false;
@@ -939,7 +946,8 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         GetGenThumbSceneName(data.genThumbScene).c_str(), data.taskCreatedInfo.c_str());
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     ThumbnailWait thumbnailWait(true);
-    WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB, data.dateModified);
+    WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB, data.dateModified,
+        data.tracks.empty() ? "" : data.timeStamp);
     data.needCheckWaitStatus = true;
     if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         data.needUpdateDb = false;
