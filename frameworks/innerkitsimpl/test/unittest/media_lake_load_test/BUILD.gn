@@ -66,6 +66,7 @@ ohos_unittest("media_lake_load_test") {
   sources = [
     "./src/global_scanner_test.cpp",
     "./src/lake_file_operations_test.cpp",
+    "./src/file_parser_test.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_anco_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",

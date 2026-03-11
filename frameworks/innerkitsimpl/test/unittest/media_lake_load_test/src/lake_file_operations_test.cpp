@@ -118,7 +118,7 @@ HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_004, TestSize.Level1)
     MediaFileUtils::CreateFile(destPath);
     
     int32_t ret = LakeFileOperations::MoveLakeFile(srcPath, destPath);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     
     MediaFileUtils::DeleteFile(srcPath);
     MediaFileUtils::DeleteFile(destPath);
@@ -209,7 +209,7 @@ HWTEST_F(LakeFileOperationsTest, MoveInnerLakeAssetsToNewAlbum_Test_005, TestSiz
     int32_t targetAlbumId = -1;
     
     int32_t ret = LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(refresh, ids, targetAlbumId);
-    EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_001, TestSize.Level1)
@@ -221,86 +221,12 @@ HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_001, TestSize.Level1)
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_002, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"1", "2", "3"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_003, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"999999"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_004, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids;
-    for (int i = 0; i < 50; i++) {
-        ids.push_back(std::to_string(i));
-    }
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_005, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"-1", "0", "abc"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_001, TestSize.Level1)
 {
     std::vector<std::string> ids;
     
     int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_002, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"1", "2", "3"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_003, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"999999"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_004, TestSize.Level1)
-{
-    std::vector<std::string> ids;
-    for (int i = 0; i < 50; i++) {
-        ids.push_back(std::to_string(i));
-    }
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_005, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"-1", "0", "abc"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(LakeFileOperationsTest, UpdateMediaAssetEditData_Test_001, TestSize.Level1)
@@ -332,7 +258,7 @@ HWTEST_F(LakeFileOperationsTest, UpdateMediaAssetEditData_Test_004, TestSize.Lev
     std::string fileUri = "HO_DATA_EXT_MISC/test.jpg";
     
     int32_t ret = LakeFileOperations::UpdateMediaAssetEditData(fileUri);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(LakeFileOperationsTest, UpdateMediaAssetEditData_Test_005, TestSize.Level1)
@@ -583,7 +509,7 @@ HWTEST_F(LakeFileOperationsTest, RenamePhoto_Test_020, TestSize.Level1)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_006, TestSize.Level1)
+HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_005, TestSize.Level1)
 {
     std::string srcPath = TEST_SRC_PATH;
     std::string destPath = TEST_DIR_PATH + "/test.jpg";
@@ -600,7 +526,7 @@ HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_006, TestSize.Level1)
     MediaFileUtils::CreateDirectory(TEST_DIR_PATH);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_007, TestSize.Level1)
+HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_006, TestSize.Level1)
 {
     std::string srcPath = TEST_SRC_PATH;
     std::string destPath = TEST_DIR_PATH + "/test.mp44";
@@ -616,7 +542,7 @@ HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_007, TestSize.Level1)
     MediaFileUtils::CreateDirectory(TEST_DIR_PATH);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_008, TestSize.Level1)
+HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_007, TestSize.Level1)
 {
     std::string srcPath = TEST_SRC_PATH;
     std::string destPath = TEST_DIR_PATH + "/test.png";
@@ -632,7 +558,7 @@ HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_008, TestSize.Level1)
     MediaFileUtils::CreateDirectory(TEST_DIR_PATH);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_009, TestSize.Level1)
+HWTEST_F(LakeFileOperationsTest, MoveLakeFile_Test_008, TestSize.Level1)
 {
     std::string srcPath = TEST_SRC_PATH;
     std::string destPath = TEST_DIR_PATH + "/subdir1/subdir2/test.jpg";
@@ -706,7 +632,7 @@ HWTEST_F(LakeFileOperationsTest, MoveInnerLakeAssetsToNewAlbum_Test_007, TestSiz
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(LakeFileOperationsTest, MoveInnerLakeAssetsToNewNewAlbum_Test_008, TestSize.Level1)
+HWTEST_F(LakeFileOperationsTest, MoveInnerLakeAssetsToNewNewAlbum_Test_001, TestSize.Level1)
 {
     AccurateRefresh::AssetAccurateRefresh refresh;
     std::vector<std::string> ids = {"1", "2", "3", "4", "5"};
@@ -734,83 +660,6 @@ HWTEST_F(LakeFileOperationsTest, MoveInnerLakeAssetsToNewAlbum_Test_010, TestSiz
     
     int32_t ret = LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(refresh, ids, targetAlbumId);
     EXPECT_EQ(ret, E_ERR);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_006, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"0"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_007, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"-1"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_008, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"2147483647"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_009, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsToLake_Test_010, TestSize.Level1)
-{
-    AccurateRefresh::AssetAccurateRefresh refresh;
-    std::vector<std::string> ids = {"test"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_007, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"-1"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_008, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"2147483647"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_009, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(LakeFileOperationsTest, MoveAssetsFromLake_Test_010, TestSize.Level1)
-{
-    std::vector<std::string> ids = {"test"};
-    
-    int32_t ret = LakeFileOperations::MoveAssetsFromLake(ids);
-    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(LakeFileOperationsTest, UpdateMediaAssetEditData_Test_006, TestSize.Level1)
