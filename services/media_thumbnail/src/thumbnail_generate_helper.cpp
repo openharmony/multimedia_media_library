@@ -759,7 +759,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
 int32_t ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp, int32_t &type)
 {
     ThumbnailWait thumbnailWait(false);
-    thumbnailWait.CheckAndWait(opts.row, type == KEY_FRAME_LCD);
+    thumbnailWait.CheckAndWait(opts.row, type == KEY_FRAME_LCD, to_string(timeStamp));
     vector<int> trackInfos;
     int32_t errTracks = E_ERR;
     if (!ThumbnailUtils::GetHighlightTracks(opts, trackInfos, errTracks)) {

@@ -74,9 +74,10 @@ public:
     EXPORT ThumbnailWait(bool release);
     EXPORT ~ThumbnailWait();
 
-    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type, const std::string &dateModified);
+    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type, const std::string &dateModified,
+        const std::string &timeStamp);
     WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
-    void CheckAndWait(const std::string &id, bool isLcd);
+    void CheckAndWait(const std::string &id, bool isLcd, const std::string &timeStamp = "");
     void UpdateThumbnailMap();
     void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
@@ -88,6 +89,7 @@ private:
     std::string id_;
     std::string dateModified_;
     bool needRelease_{false};
+    bool hasGenerateThumbnail_{true};
     static ThumbnailMap thumbnailMap_;
     static std::shared_mutex mutex_;
 };
