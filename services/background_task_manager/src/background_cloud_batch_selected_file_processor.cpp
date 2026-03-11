@@ -1758,7 +1758,7 @@ void BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor()
             MEDIA_WARN_LOG("LaunchBatchDownloadProcessor exception restore");
             SetBatchDownloadProcessRunningStatus(false);
         } else {
-            MEDIA_WARN_LOG("LaunchBatchDownloadProcessor exception restore timer runing");
+            MEDIA_WARN_LOG("LaunchBatchDownloadProcessor exception restore timer running");
         }
     }
 }
