@@ -1090,8 +1090,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadInAutoPauseTask
     MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadInAutoPauseTaskWithException START");
     int32_t num = QueryBatchSelectedFilesNumInAutoPauseWithException(); // 查询是否有需自动停止的任务
     if (num == 0) {
-        MEDIA_DEBUG_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadInAutoPauseTaskWithException"
-            "change to true");
+        MEDIA_DEBUG_LOG("BatchDownloadProgress HaveBatchDownloadInAutoPauseTaskWithException No Task");
     } else {
         MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadInAutoPauseTaskWithException END Resume "
             "count num: %{public}d", num);
@@ -1104,7 +1103,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadInAutoPauseTask
     MEDIA_DEBUG_LOG("BatchSelectFileDownload HaveBatchDownloadInAutoPauseTask START");
     int32_t num = QueryBatchSelectedFilesNumInAutoPause(); // 查询是否有需自动停止的任务
     if (num == 0) {
-        MEDIA_DEBUG_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadInAutoPauseTask change to true");
+        MEDIA_DEBUG_LOG("BatchDownloadProgress HaveBatchDownloadInAutoPauseTask No Task");
     } else {
         MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadInAutoPauseTask END Resume count num: %{public}d",
             num);
