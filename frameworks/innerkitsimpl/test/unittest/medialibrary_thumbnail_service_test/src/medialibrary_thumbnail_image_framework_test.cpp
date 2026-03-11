@@ -163,9 +163,14 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMap_test_003, TestSi
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPictureSource_test_001, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("CopyPictureSource_test_001: Test with null picture");
+    
     std::shared_ptr<Picture> picture = nullptr;
     std::shared_ptr<Picture> copyPicture = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    
     EXPECT_EQ(copyPicture, nullptr);
+    
+    MEDIA_INFO_LOG("CopyPictureSource_test_001 end");
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPictureSource_test_002, TestSize.Level0)
@@ -185,7 +190,7 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPictureSource_test_003, Te
     std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
     ASSERT_NE(picture, nullptr);
     std::shared_ptr<Picture> copyPicture = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
-    EXPECT_NE(copyPicture, nullptr);
+    ASSERT_NE(copyPicture, nullptr);
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_001, TestSize.Level0)
@@ -200,7 +205,7 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_002, T
     std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
     ASSERT_NE(pixelMap, nullptr);
     std::shared_ptr<PixelMap> copyPixelMap = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
-    EXPECT_NE(copyPixelMap, nullptr);
+    ASSERT_NE(copyPixelMap, nullptr);
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_003, TestSize.Level0)
@@ -208,7 +213,7 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_003, T
     std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, false);
     ASSERT_NE(pixelMap, nullptr);
     std::shared_ptr<PixelMap> copyPixelMap = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
-    EXPECT_NE(copyPixelMap, nullptr);
+    ASSERT_NE(copyPixelMap, nullptr);
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmap_test_001, TestSize.Level0)
@@ -216,7 +221,7 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmap_test_001, T
     std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
     ASSERT_NE(pixelMap, nullptr);
     std::shared_ptr<PixelMap> copyPixelMap = ThumbnailImageFrameWorkUtils::CopyNormalPixelmap(pixelMap);
-    EXPECT_NE(copyPixelMap, nullptr);
+    ASSERT_NE(copyPixelMap, nullptr);
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyYuvPixelmap_test_001, TestSize.Level0)
@@ -225,7 +230,7 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyYuvPixelmap_test_001, Test
     ASSERT_NE(pixelMap, nullptr);
     EXPECT_EQ(pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC, false);
     std::shared_ptr<PixelMap> copyPixelMap = ThumbnailImageFrameWorkUtils::CopyYuvPixelmap(pixelMap);
-    EXPECT_NE(copyPixelMap, nullptr);
+    ASSERT_NE(copyPixelMap, nullptr);
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_004, TestSize.Level0)
@@ -691,6 +696,1005 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsSinglePixelMapHdrTypeTest_00
     EXPECT_FALSE(ThumbnailImageFrameWorkUtils::IsSinglePixelMapHdrType(ImageHdrType::HDR_ISO_DUAL));
     
     MEDIA_INFO_LOG("IsSinglePixelMapHdrTypeTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNoSurfaceBufferYuvPixelmapTest_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_001: Test with NV21 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNoSurfaceBufferYuvPixelmapTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_002: Test with NV12 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmapTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_002: Test with RGBA_8888 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNormalPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    EXPECT_EQ(copyCopyPixelMap->GetPixelFormat(), pixelMap->GetPixelFormat());
+    
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmapTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_003: Test with BGRA_8888 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::BGRA_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNormalPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    EXPECT_EQ(copyCopyPixelMap->GetPixelFormat(), pixelMap->GetPixelFormat());
+    
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPictureValidTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPictureValidTest_002: Test with null picture");
+    
+    std::shared_ptr<Picture> picture = nullptr;
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPictureValid(picture);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPictureValidTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPictureValidTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPictureValidTest_003: Test with picture having null main pixel");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, nullptr);
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPictureValid(picture);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPictureValidTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPixelMapValidTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsIsPixelMapValidTest_002: Test with null pixelMap");
+    
+    std::shared_ptr<PixelMap> pixelMap = nullptr;
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPixelMapValidTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePictureTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_002: Test with null picture");
+    
+    Size desiredSize = { 50, 50 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePicture(nullptr, desiredSize);
+    
+    EXPECT_EQ(ret, nullptr);
+    
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePictureTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_003: Test with invalid desired size");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    
+    Size desiredSize = { 0, 0 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePicture(picture, desiredSize);
+    
+    EXPECT_EQ(ret, nullptr);
+    
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePixelMapTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_002: Test with null pixelMap");
+    
+    Size desiredSize = { 50, 50 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(nullptr, desiredSize);
+    
+    EXPECT_EQ(ret, nullptr);
+    
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePixelMapTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_003: Test with invalid desired size");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    
+    Size desiredSize = { -1, -1 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
+    
+    EXPECT_EQ(ret, nullptr);
+    
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_003: Test with null picture");
+    
+    int32_t exifRotate = 2;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(nullptr, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_004: Test with invalid exifRotate");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 999;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_003: Test with null pixelMap");
+    
+    int32_t exifRotate = 2;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(nullptr, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_004: Test with invalid exifRotate");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 888;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ConvertPixelMapToSdrAndFormatRGBA8888Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888Test_005: Test with null pixelMap");
+    
+    std::shared_ptr<PixelMap> pixelMap = nullptr;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888Test_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfoTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_004: Test with null pixelMap");
+    
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<PixelMap> pixelMap = nullptr;
+    bool isHdr = true;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopySurfaceBufferInfoTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopySurfaceBufferInfoTest_002: Test with null source buffer");
+    
+    sptr<SurfaceBuffer> source = nullptr;
+    sptr<SurfaceBuffer> dst = SurfaceBuffer::Create();
+    
+    ThumbnailImageFrameWorkUtils::CopySurfaceBufferInfo(source, dst);
+    
+    EXPECT_NE(dst, nullptr);
+    
+    MEDIA_INFO_LOG("CopySurfaceBufferInfoTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopySurfaceBufferInfoTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopySurfaceBufferInfoTest_003: Test with null dst buffer");
+    
+    sptr<SurfaceBuffer> source = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> dst = nullptr;
+    
+    ThumbnailImageFrameWorkUtils::CopySurfaceBufferInfo(source, dst);
+    
+    EXPECT_NE(source, nullptr);
+    
+    MEDIA_INFO_LOG("CopySurfaceBufferInfoTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_004: Test with NV12 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isYuv = ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    
+    EXPECT_EQ(isYuv, true);
+    
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMapTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_005: Test with YCRCB_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isYuv = ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    
+    EXPECT_EQ(isYuv, true);
+    
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMapTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_006: Test with YCBCR_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCBCR_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isYuv = ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    
+    EXPECT_EQ(isYuv, true);
+    
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMapTest_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_007: Test with RGB_565 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGB_565, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isYuv = ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    
+    EXPECT_EQ(isYuv, false);
+    
+    MEDIA_INFO_LOG("IsYuvPixelMapTest_007 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsSupportCopyPixelMapTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsSupportCopyPixelMapTest_002: Test with YCRCB_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isSupported = ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
+    
+    EXPECT_EQ(isSupported, false);
+    
+    MEDIA_INFO_LOG("IsSupportCopyPixelMapTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsSupportCopyPixelMapTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsSupportCopyPixelMapTest_003: Test with YCBCR_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCBCR_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    bool isSupported = ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
+    
+    EXPECT_EQ(isSupported, false);
+    
+    MEDIA_INFO_LOG("IsSupportCopyPixelMapTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyYuvPixelmapTest_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyYuvPixelmapTest_002: Test with NV12 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyYuvPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyYuvPixelmapTest_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSourceTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyPixelMapSourceTest_005: Test with BGRA_8888 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::BGRA_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyPixelMapSourceTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSourceTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyPixelMapSourceTest_006: Test with RGB_565 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGB_565, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyPixelMapSourceTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPictureSourceTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyPictureSourceTest_004: Test with NV21 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::NV21, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    ASSERT_NE(picture, nullptr);
+    
+    std::shared_ptr<Picture> copyPicture =
+        ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    
+    ASSERT_NE(copyPicture, nullptr);
+    
+    MEDIA_INFO_LOG("CopyPictureSource:Test_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPictureSourceTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyPictureSourceTest_005: Test with NV12 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    ASSERT_NE(picture, nullptr);
+    
+    std::shared_ptr<Picture> copyPicture =
+        ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    
+    ASSERT_NE(copyPicture, nullptr);
+    
+    MEDIA_INFO_LOG("CopyPictureSourceTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_005: Test with different exifRotate values");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 0;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_006: Test with exifRotate value 1");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 1;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_007: Test with exifRotate value 3");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 3;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_007 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_008: Test with exifRotate value 4");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 4;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_008 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_009: Test with exifRotate value 5");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 5;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_009 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_010: Test with exifRotate value 6");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 6;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_010 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_011: Test with exifRotate value 7");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 7;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_011 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_012: Test with exifRotate value 8");
+    
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 8;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_012 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_005: Test with exifRotate value 0");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 0;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_006: Test with exifRotate value 1");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 1;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_007: Test with exifRotate value 3");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 3;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_007 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_008: Test with exifRotate value 4");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 4;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_008 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_009: Test with exifRotate value 5");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 5;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_009 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_010: Test with exifRotate value 6");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 6;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_010 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_011: Test with exifRotate value 7");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 7;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_011 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_012: Test with exifRotate value 8");
+    
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 8;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_012 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePictureTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_004: Test with scale up");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    
+    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT * 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT * 2 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePicture(picture, desiredSize);
+    
+    EXPECT_NE(ret, nullptr);
+    EXPECT_EQ(ret->GetMainPixel()->GetWidth(), desiredSize.width);
+    EXPECT_EQ(ret->GetMainPixel()->GetHeight(), desiredSize.height);
+    
+    MEDIA_INFO_LOG("CopyAndScalePictureTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePixelMapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_004: Test with scale up");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    
+    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT * 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT * 2 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
+    
+    EXPECT_NE(ret, nullptr);
+    EXPECT_EQ(ret->GetWidth(), desiredSize.width);
+    EXPECT_EQ(ret->GetHeight(), desiredSize.height);
+    
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePixelMapTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_005: Test with scale down");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    
+    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 4, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 4 };
+    
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
+    
+    EXPECT_NE(ret, nullptr);
+    EXPECT_EQ(ret->GetWidth(), desiredSize.width);
+    EXPECT_EQ(ret->GetHeight(), desiredSize.height);
+    
+    MEDIA_INFO_LOG("CopyAndScalePixelMapTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ResizePictureTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ResizePictureTest_005: Test with scale up");
+    
+    Size sourceSize = { 100, 100 };
+    auto picture = ThumbnailImageFrameWorkUtils::CreatePicture(CreateTestImageSource(), sourceSize);
+    ASSERT_NE(picture, nullptr);
+    
+    Size targetSize = { 200, 200 };
+    bool ret = ThumbnailImageFrameWorkUtils::ResizePicture(picture, targetSize);
+    
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(picture->GetMainPixel()->GetWidth(), targetSize.width);
+    EXPECT_EQ(picture->GetMainPixel()->GetHeight(), targetSize.height);
+    
+    MEDIA_INFO_LOG("ResizePictureTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ResizePictureTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ResizePictureTest_006: Test with scale down");
+    
+    Size sourceSize = { 100, 100 };
+    auto picture = ThumbnailImageFrameWorkUtils::CreatePicture(CreateTestImageSource(), sourceSize);
+    ASSERT_NE(picture, nullptr);
+    
+    Size targetSize = { 50, 50 };
+    bool ret = ThumbnailImageFrameWorkUtils::ResizePicture(picture, targetSize);
+    
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(picture->GetMainPixel()->GetWidth(), targetSize.width);
+    EXPECT_EQ(picture->GetMainPixel()->GetHeight(), targetSize.height);
+    
+    MEDIA_INFO_LOG("ResizePictureTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ResizePictureTest_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ResizePictureTest_007: Test with same size");
+    
+    Size sourceSize = { 100, 100 };
+    auto picture = ThumbnailImageFrameWorkUtils::CreatePicture(CreateTestImageSource(), sourceSize);
+    ASSERT_NE(picture, nullptr);
+    
+    Size targetSize = { 100, 100 };
+    bool ret = ThumbnailImageFrameWorkUtils::ResizePicture(picture, targetSize);
+    
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(picture->GetMainPixel()->GetWidth(), targetSize.width);
+    EXPECT_EQ(picture->GetMainPixel()->GetHeight(), targetSize.height);
+    
+    MEDIA_INFO_LOG("ResizePictureTest_007 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CreatePixelMapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreatePixelMapTest_004: Test with null imageSource");
+    
+    uint32_t err = E_OK;
+    DecodeOptions decodeOpts;
+    
+    auto pixelMap = ThumbnailImageFrameWorkUtils::CreatePixelMap(nullptr, decodeOpts, err);
+    
+    EXPECT_EQ(pixelMap, nullptr);
+    
+    MEDIA_INFO_LOG("CreatePixelMapTest_004 end");
+    MEDIA_INFO_LOG("CreatePixelMapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_004: Test with ARGB_8888 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::ARGB_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNormalPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    EXPECT_EQ(copyCopyPixelMap->GetPixelFormat(), pixelMap->GetPixelFormat());
+    
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNormalPixelmapTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_005: Test with RGB_565 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGB_565, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNormalPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    EXPECT_EQ(copyCopyPixelMap->GetPixelFormat(), pixelMap->GetPixelFormat());
+    
+    MEDIA_INFO_LOG("CopyNormalPixelmapTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNoSurfaceBufferYuvPixelmapTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_004: Test with YCRCB_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyNoSurfaceBufferYuvPixelmapTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_005: Test with YCBCR_P010 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCBCR_P010, false);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    std::shared_ptr<PixelMap> copyCopyPixelMap =
+        ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPixelmap(pixelMap);
+    
+    ASSERT_NE(copyCopyPixelMap, nullptr);
+    EXPECT_EQ(copyCopyPixelMap->GetWidth(), pixelMap->GetWidth());
+    EXPECT_EQ(copyCopyPixelMap->GetHeight(), pixelMap->GetHeight());
+    
+    MEDIA_INFO_LOG("CopyNoSurfaceBufferYuvPixelmapTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfoTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_005: Test with NV12 format and false isHdr");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, true);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    bool isHdr = false;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfoTest_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_006: Test with NV21 format and false isHdr");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, true);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    bool isHdr = false;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_006 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfoTest_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_007: Test with null surfaceBuffer and NV12 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, false);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    bool isHdr = false;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_007 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfoTest_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_008: Test with null surfaceBuffer and NV21 format");
+    
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, false);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    bool isHdr = true;
+    
+    auto ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    
+    EXPECT_EQ(ret, true);
+    
+    MEDIA_INFO_LOG("SetPixelMapYuvInfoTest_008 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPixelMapValidTest_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPixelMapValidTest_003: Test with zero width");
+    
+    InitializationOptions opts;
+    opts.size.width = 0;
+    opts.size.height = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPixelMapValidTest_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPixelMapValidTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPixelMapValidTest_004: Test with zero height");
+    
+    InitializationOptions opts;
+    opts.size.width = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.size.height = 0;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPixelMapValidTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPictureValidTest_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPictureValidTest_004: Test with zero width main pixel");
+    
+    InitializationOptions opts;
+    opts.size.width = 0;
+    opts.size.height = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPictureValid(picture);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPictureValidTest_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsPictureValidTest_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsPictureValidTest_005: Test with zero height main pixel");
+    
+    InitializationOptions opts;
+    opts.size.width = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.size.height = 0;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    
+    bool ret = ThumbnailImageFrameWorkUtils::IsPictureValid(picture);
+    
+    EXPECT_EQ(ret, false);
+    
+    MEDIA_INFO_LOG("IsPictureValidTest_005 end");
 }
 
 } // namespace Media
