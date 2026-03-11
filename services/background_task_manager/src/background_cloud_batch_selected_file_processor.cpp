@@ -1051,7 +1051,8 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTa
     int32_t num = QueryBatchSelectedFilesNumForAutoResume(); // 查询是否有需要下载 或处理的任务
     if (num == 0) {
         downloadLatestFinished_.store(true); // 之前下载已完成
-        MEDIA_DEBUG_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadForAutoResumeTask change to true");
+        MEDIA_DEBUG_LOG("BatchDownloadProgress downloadLatestFinished_ HaveBatchDownloadForAutoResumeTask"
+            " change to true");
     } else {
         MEDIA_INFO_LOG("BatchSelectFileDownload HaveBatchDownloadResourcesTask END Resume count num: %{public}d", num);
         if (!CloudSyncUtils::IsCloudSyncSwitchOn()) {
