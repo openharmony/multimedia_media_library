@@ -654,7 +654,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_010, TestSi
     string uri = "test";
     int32_t shotType = 0;
     string burstKey = "test";
-    MediaLibraryCommAni::CreatePhotoAssetAni(env, uri, shotType, burstKey);
+    ani_object ret = MediaLibraryCommAni::CreatePhotoAssetAni(env, uri, shotType, burstKey);
+    EXPECT_EQ(ret, nullptr);
 }
 
 HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_011, TestSize.Level1)
@@ -664,7 +665,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_011, TestSi
     int32_t shotType = 0;
     string burstKey = "test";
     int32_t captureId = 0;
-    MediaLibraryCommAni::CreatePhotoAssetAni(env, uri, shotType, captureId, burstKey);
+    ani_object ret = MediaLibraryCommAni::CreatePhotoAssetAni(env, uri, shotType, captureId, burstKey);
+    EXPECT_EQ(ret, nullptr);
 }
 } // namespace Media
 } // namespace OHOS
