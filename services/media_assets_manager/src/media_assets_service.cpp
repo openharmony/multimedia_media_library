@@ -1046,9 +1046,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
     auto startTime = std::chrono::high_resolution_clock::now();
     size_t size = 0;
     int32_t dupExist = 0;
+    TranscodeType transcodeType = TranscodeType::DEFAULT;
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
-    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist);
+    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist, transcodeType);
     if (err == E_OK && dupExist == 0) {
         err = this->rdbOperation_.UpdateTmpCompatibleDup(fileId, size);
         if (err == E_OK) {
@@ -1056,10 +1057,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
             std::chrono::duration<uint16_t, std::milli> duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             MEDIA_INFO_LOG("CreateTmpCompatibleDup duration:%{public}d ms", duration.count());
-            dfxManager->HandleTranscodeCostTime(duration.count());
+            dfxManager->HandleTranscodeCostTime(duration.count(), transcodeType);
         } else {
             MEDIA_ERR_LOG("CreateTmpCompatibleDup dfx updata database failed");
-            dfxManager->HandleTranscodeFailed(INNER_FAILED);
+            dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);
         }
     }
     return err;

@@ -115,6 +115,7 @@ const bool PROCESS_TRANSCODE_SIZE = false;
 static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
+static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 const int32_t PACKOPTION_QUALITY = 90;
 const int32_t PACKOPTION_QUALITY_HEIF = 95;
@@ -465,6 +466,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     PhotoColumn::PHOTO_WIDTH,
     PhotoColumn::PHOTO_HEIGHT,
+    MediaColumn::MEDIA_MIME_TYPE,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -649,6 +651,28 @@ static bool CheckPermissionToOpenFileAsset(const shared_ptr<FileAsset>& fileAsse
     return true;
 }
 
+static void SetTranscodeType(std::shared_ptr<FileAsset> &fileAsset, TranscodeType &transcodeType)
+{
+    int32_t width = fileAsset->GetWidth();
+    int32_t height = fileAsset->GetHeight();
+    string mimeType = fileAsset->GetMimeType();
+    bool isHeif = (mimeType == "image/heic" || mimeType == "image/heif");
+    bool isHighPixel = (width * height >= HIGH_PIXEL_SIZE);
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -704,7 +728,9 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         ret = OpenAsset(fileAsset, mode, cmd.GetApi(), isMovingPhotoVideo, type);
     }
     if (err == 0 && ret >= 0) {
-        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
+        TranscodeType transcodeType = TranscodeType::DEFAULT;
+        SetTranscodeType(fileAsset, transcodeType);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB, transcodeType);
     }
     return ret;
 }
