@@ -312,6 +312,7 @@ enum FileSourceType {
     FILE_MANAGER,
     PERIPHERAL,
     MEDIA_HO_LAKE,
+    TEMP_FILE_MANAGER,
 };
 
 const int32_t DEVICE_SYNCSTATUSING = 0;
