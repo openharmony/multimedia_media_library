@@ -112,6 +112,7 @@
 #include "media_audio_column.h"
 #include "media_upgrade.h"
 #include "media_string_utils.h"
+#include "check_single_photo_permission_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -123,7 +124,6 @@ namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 const string URI_SEPARATOR = "file:media";
-const string URI_SEPARATOR_PERMISSION = "file:media:permission";
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -11367,19 +11367,13 @@ int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref,
     if (uriIter == uriMap.end()) {
         return HandleNewUriRegistration(env, ref, observer, uriType, fileIdOrAlbumId);
     }
-    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
-    std::string registerUri = "";
-    if (MediaLibraryNotifyUtils::GetSingleNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
-        NAPI_ERR_LOG("Failed to get registerUriType registerUri");
-        return JS_E_PARAM_INVALID;
-    }
-    auto ret =
-        UserFileClient::RegisterObserverExtProvider(Uri(registerUri + URI_SEPARATOR_PERMISSION + fileIdOrAlbumId),
-        static_cast<std::shared_ptr<DataShare::DataShareObserver>>(observer), false);
-    if (ret != E_OK) {
-        NAPI_ERR_LOG("failed to check permission, ret: %{public}d", ret);
-        return ret;
-    }
+
+    CheckSinglePhotoPermissionReqBody reqBody;
+    reqBody.registerType = static_cast<int32_t>(uriType);
+    reqBody.fileId = fileIdOrAlbumId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to check permission, ret: %{public}d", ret);
     return HandleExistingUriCheck(env, ref, uriIter->second, uriType, fileIdOrAlbumId);
 }
 
