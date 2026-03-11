@@ -60,6 +60,7 @@
 #include "database_adapter.h"
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
+#include "notify_register_permission.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -1823,5 +1824,15 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     int32_t ret = MediaLibraryPhotoOperations::GetCompressAssetSize(uris, respBody.totalSize);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to get compress asset size, errCode = %{public}d", ret);
     return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
+    Notification::NotifyRegisterPermission permissionHandle;
+    int32_t ret =
+        permissionHandle.SinglePermissionCheck(static_cast<Notification::NotifyUriType>(registerType), fileId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
+    return E_OK;
 }
 } // namespace OHOS::Media
