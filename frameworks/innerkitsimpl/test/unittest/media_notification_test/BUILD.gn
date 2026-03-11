@@ -33,6 +33,9 @@ ohos_unittest("media_notification_test") {
     "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
     "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/register_manger",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/core",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/base",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/analysis/strategies",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_UTILS_PATH}/include",
   ]
@@ -72,9 +75,27 @@ ohos_unittest("media_notification_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/multi_thread_asset_change_info_mgr.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_accurate_refresh.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_change_notify_execution.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_data_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis_album_refresh_execution.cpp",
+  ]
+  accurate_refresh_anlysis_source = [
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/cover_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/cover_picker_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/base/count_strategy.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_batch_update_helper.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_impact_analyzer.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_album_pipeline.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/core/analysis_strategy_registry.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/default_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/portrait_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/highlight_strategies.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/analysis/strategies/shooting_mode_strategies.cpp",
   ]
 
   sources += media_notification_source
+  sources += accurate_refresh_anlysis_source
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_COMMON_PATH}:media_library_common",

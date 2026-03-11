@@ -17,6 +17,8 @@
 
 #include "medialibrary_album_operations.h"
 
+#include <filesystem>
+
 #include "album_plugin_config.h"
 #include "dfx_utils.h"
 #include "media_analysis_helper.h"
@@ -2027,9 +2029,8 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
 
     AssetAccurateRefresh assetRefresh(AccurateRefresh::RECOVER_ASSETS_BUSSINESS_NAME);
     int32_t changedRows = assetRefresh.UpdateWithDateTime(rdbValues, rdbPredicates);
-    if (changedRows < 0) {
-        return changedRows;
-    }
+    CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
+    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     int32_t ret = LakeFileOperations::MoveAssetsToLake(assetRefresh, rdbPredicates.GetWhereArgs());
     CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when recover asset");
 
@@ -2041,8 +2042,6 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, whereArgs);
-    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     std::set<string> hiddenSet = GetHiddenUri(whereArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
@@ -2726,12 +2725,6 @@ static int32_t UpdateForReduceOneOrder(const int32_t referenceOrder)
 int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_t currentAlbumId,
     const int32_t targetAlbumId)
 {
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed update for merge albums");
-        return E_DB_FAIL;
-    }
-
     std::string updateForMergeAlbums = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + GROUP_TAG + " = " +
         updateAlbumInfo.groupTag + "," + COUNT + " = " + to_string(updateAlbumInfo.count) + "," + IS_ME + " = " +
         to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = '" + updateAlbumInfo.coverUri + "'," +
@@ -2742,8 +2735,20 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
         "," + ALBUM_RELATIONSHIP + " = '" + updateAlbumInfo.relationship + "'" +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId) + ")";
-    vector<string> updateSqls = { updateForMergeAlbums};
-    return ExecSqls(updateSqls, uniStore);
+    std::string initAccurateRefreshSql = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
+        + ALBUM_TYPE + ", " + ALBUM_SUBTYPE + ", " + COUNT + ", " + GROUP_TAG + ", " + ALBUM_NAME + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " +
+        to_string(targetAlbumId) + ")";
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    int32_t ret = E_OK;
+    std::vector<NativeRdb::ValueObject> bindArgs;
+    ret = albumRefresh.Init(initAccurateRefreshSql, bindArgs);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateForMergeAlbums init failed");
+    ret = albumRefresh.ExecuteSql(updateForMergeAlbums, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateForMergeAlbums execute sql failed");
+    albumRefresh.Notify();
+    return E_OK;
 }
 
 int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t currentAlbumId,
@@ -2838,6 +2843,12 @@ string GetCandidateIdsAndSetCoverSatisfied(MergeAlbumInfo &updateAlbumInfo, cons
     return currentFileId + ", " + targetFileId;
 }
 
+std::string ExtractStem(const std::string& path)
+{
+    std::filesystem::path p(path);
+    return p.stem().string();
+}
+
 int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
     const MergeAlbumInfo &targetAlbum)
 {
@@ -2854,7 +2865,7 @@ int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const
     string candidateIds =
         GetCandidateIdsAndSetCoverSatisfied(updateAlbumInfo, currentAlbum, targetAlbum, currentFileId, targetFileId);
 
-    const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
+    const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_FILE_PATH + "," +
         MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
         " WHERE " + MediaColumn::MEDIA_ID + " IN (" + candidateIds + " )";
 
@@ -2870,10 +2881,11 @@ int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const
     }
 
     string mergeTitle;
-    if (GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_TITLE, mergeTitle) != NativeRdb::E_OK) {
+    if (GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, mergeTitle) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("resultSet is error! failed query get merge album cover uri");
         return E_HAS_DB_ERROR;
     }
+    mergeTitle = ExtractStem(mergeTitle);
 
     string mergeDisplayName;
     if (GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, mergeDisplayName) != NativeRdb::E_OK) {
@@ -2943,9 +2955,8 @@ static int32_t GetMergedAlbumInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo,
     return E_OK;
 }
 
-static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
+static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, MergeAlbumInfo &updateAlbumInfo)
 {
-    MergeAlbumInfo updateAlbumInfo;
     if (GetMergeAlbumCoverUriAndSatisfied(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
         return E_HAS_DB_ERROR;
     }
@@ -3025,7 +3036,8 @@ int32_t MediaLibraryAlbumOperations::MergeAlbums(const NativeRdb::ValuesBucket &
     }
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
-    err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
+    MergeAlbumInfo updateAlbumInfo;
+    err = UpdateMergeAlbumsInfo(mergeAlbumInfo, updateAlbumInfo);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "MergeAlbum failed, err %{public}d", err);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
     err = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
@@ -3275,20 +3287,18 @@ int32_t MediaLibraryAlbumOperations::SetHighlightCoverUri(const ValuesBucket &va
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE +
         " SET " + COVER_STATUS + " = " + to_string(newCoverStatus) +
         " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + targetAlbumId + " LIMIT 1)";
-    std::shared_ptr<TransactionOperations> trans = std::make_shared<TransactionOperations>(__func__);
-    std::function<int32_t(void)> func = [&]()->int32_t {
-        vector<string> updateSqls = { updateAnalysisAlbum, updateCoverInfoTable };
-        err = ExecSqls(updateSqls, uniStore);
-        if (err == E_OK) {
-            vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
-            NotifyHighlightAlbum(changeAlbumIds);
-        }
-        return err;
-    };
-    int32_t ret = trans->RetryTrans(func);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR,
-        "fail to set highlight cover uri trans, ret: %{public}d", ret);
-    return ret;
+    vector<int32_t> changeAlbumIds = {stoi(targetAlbumId)};
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+    err = MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(std::vector<string>{updateAnalysisAlbum},
+        changeAlbumIds);
+#endif
+    CHECK_AND_PRINT_LOG(err == E_OK, "Failed to set highlight cover uri, ret: %{public}d", err);
+    vector<string> updateSqls = { updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
 }
 
 int32_t MediaLibraryAlbumOperations::SetHighlightAlbumName(const ValuesBucket &values,
@@ -3319,10 +3329,15 @@ int32_t MediaLibraryAlbumOperations::SetHighlightAlbumName(const ValuesBucket &v
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
         COVER_STATUS + " = " + to_string(newCoverStatus) + " WHERE " +
         ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
-    vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
+    vector<int32_t> changeAlbumIds = {stoi(highlightAlbumId)};
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+    err = MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(std::vector<string>{updateAlbumName},
+        changeAlbumIds);
+#endif
+    CHECK_AND_PRINT_LOG(err == E_OK, "Failed to set highlight album name, ret: %{public}d", err);
+    vector<string> updateSqls = { updateCoverInfoTable };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
-        vector<int32_t> changeAlbumIds = { atoi(highlightAlbumId.c_str()) };
         NotifyHighlightAlbum(changeAlbumIds);
     }
     return err;
@@ -3539,7 +3554,8 @@ std::vector<std::string> GetUpdateSqlForSetAlbumName(std::string targetAlbumId, 
     return updateSqls;
 }
 
-static int32_t GetTargetAlbumId(const DataSharePredicates &predicates, std::string &targetAlbumId)
+int32_t MediaLibraryAlbumOperations::GetTargetAlbumId(const DataShare::DataSharePredicates &predicates,
+    std::string &targetAlbumId)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
 
@@ -3556,6 +3572,94 @@ static int32_t GetTargetAlbumId(const DataSharePredicates &predicates, std::stri
     return E_OK;
 }
 
+int32_t MediaLibraryAlbumOperations::GetAndCheckTargetAlbum(const DataSharePredicates &predicates,
+    std::string &targetAlbumId)
+{
+    int32_t err = GetTargetAlbumId(predicates, targetAlbumId);
+    CHECK_AND_RETURN_RET(err == E_OK, err);
+
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
+        "uniStore is nullptr! failed update for set album name");
+
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumOperations::GetAndCheckAlbumName(const ValuesBucket &values, string &albumName)
+{
+    int32_t err = GetStringVal(values, ALBUM_NAME, albumName);
+    if (err < 0 || albumName.empty()) {
+        MEDIA_ERR_LOG("invalid album name");
+        return E_INVALID_VALUES;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumOperations::UpdateAlbumNameInDb(const std::string &targetAlbumId, const string &albumName)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "rdbStore is nullptr! failed update index");
+
+    std::vector<std::string> updateSqls =
+        GetUpdateSqlForSetAlbumName(targetAlbumId, albumName);
+    std::string updateAnalysisAlbumName = updateSqls[0];
+    std::string updateRenameOperation = updateSqls[1];
+
+    vector<string> tempAlbumIds = {targetAlbumId};
+    MediaLibraryRdbUtils::GetAlbumIdsForPortrait(rdbStore, tempAlbumIds);
+
+    vector<int32_t> accurateChangeAlbumIds;
+    for (auto idStr : tempAlbumIds) {
+        CHECK_AND_CONTINUE(MediaLibraryDataManagerUtils::IsNumber(idStr));
+        accurateChangeAlbumIds.emplace_back(stoi(idStr));
+    }
+
+    int32_t err = E_OK;
+#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
+    err = MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(
+        std::vector<string> {updateAnalysisAlbumName}, accurateChangeAlbumIds);
+#endif
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_OK, "Failed to set album name, ret: %{public}d", err);
+
+    err = ExecSqls(std::vector<string> {updateRenameOperation}, rdbStore);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to update rename info, ret: %{public}d", err);
+    return E_OK;
+}
+
+void MediaLibraryAlbumOperations::NotifyPortraitIfNeeded(const std::string &targetAlbumId)
+{
+    vector<int32_t> changeAlbumIds = {std::stoi(targetAlbumId)};
+    NotifyPortraitAlbum(changeAlbumIds);
+}
+
+void MediaLibraryAlbumOperations::UpdateIndexForAlbumAssets(const std::string &targetAlbumId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr! failed update index");
+        return;
+    }
+
+    const std::string QUERY_MAP_ASSET_TO_UPDATE_INDEX =
+        "SELECT map_asset FROM AnalysisPhotoMap WHERE map_album = " + targetAlbumId;
+
+    vector<string> mapAssets;
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAP_ASSET_TO_UPDATE_INDEX);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr! failed update index");
+        return;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        mapAssets.push_back(to_string(GetInt32Val("map_asset", resultSet)));
+    }
+
+    MEDIA_INFO_LOG("update index map_asset size: %{public}zu", mapAssets.size());
+
+    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), mapAssets);
+}
+
 /**
  * set target album name
  * @param values album_name
@@ -3564,45 +3668,21 @@ static int32_t GetTargetAlbumId(const DataSharePredicates &predicates, std::stri
 int32_t MediaLibraryAlbumOperations::SetAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     std::string targetAlbumId;
-    int32_t err = GetTargetAlbumId(predicates, targetAlbumId);
+    int32_t err = GetAndCheckTargetAlbum(predicates, targetAlbumId);
     CHECK_AND_RETURN_RET(err == E_OK, err);
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for set album name");
+
     string albumName;
-    err = GetStringVal(values, ALBUM_NAME, albumName);
-    if (err < 0 || albumName.empty()) {
-        MEDIA_ERR_LOG("invalid album name");
-        return E_INVALID_VALUES;
-    }
+    err = GetAndCheckAlbumName(values, albumName);
+    CHECK_AND_RETURN_RET(err == E_OK, err);
+
     MEDIA_INFO_LOG("Set analysis album name, album id: %{public}s, album name: %{public}s",
         targetAlbumId.c_str(), DfxUtils::GetSafeAlbumName(albumName).c_str());
-    std::vector<std::string> updateSqls = GetUpdateSqlForSetAlbumName(targetAlbumId, albumName);
-    err = ExecSqls(updateSqls, uniStore);
-    if (err == E_OK) {
-        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
-        NotifyPortraitAlbum(changeAlbumIds);
-    }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr! failed update index");
-        return err;
-    }
-    const std::string  QUERY_MAP_ASSET_TO_UPDATE_INDEX =
-        "SELECT map_asset FROM AnalysisPhotoMap WHERE map_album = " + targetAlbumId;
-    vector<string> mapAssets;
-    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAP_ASSET_TO_UPDATE_INDEX);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr! failed update index");
-        return err;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        mapAssets.push_back(to_string(GetInt32Val("map_asset", resultSet)));
-    }
-    MEDIA_INFO_LOG("update index map_asset size: %{public}zu", mapAssets.size());
-    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
-        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), mapAssets);
+    err = UpdateAlbumNameInDb(targetAlbumId, albumName);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to set album name, ret: %{public}d", err);
+    NotifyPortraitIfNeeded(targetAlbumId);
 
+    UpdateIndexForAlbumAssets(targetAlbumId);
     return err;
 }
 
@@ -3639,8 +3719,18 @@ int32_t MediaLibraryAlbumOperations::SetCoverUri(const ValuesBucket &values, con
         "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + targetAlbumId + ")";
-    vector<string> updateSqls = { updateForSetCoverUri };
-    err = ExecSqls(updateSqls, uniStore);
+    std::string initAccurateRefreshSql = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
+        + ALBUM_TYPE + ", " + ALBUM_SUBTYPE + ", " + COUNT + ", " + GROUP_TAG + ", " + ALBUM_NAME + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    int32_t ret = E_OK;
+    std::vector<NativeRdb::ValueObject> bindArgs;
+    ret = albumRefresh.Init(initAccurateRefreshSql, bindArgs);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "SetCoverUri init failed");
+    ret = albumRefresh.ExecuteSql(updateForSetCoverUri, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "SetCoverUri execute sql failed");
+    albumRefresh.Notify();
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyPortraitAlbum(changeAlbumIds);

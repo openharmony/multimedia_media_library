@@ -2005,6 +2005,8 @@ export namespace photoAccessHelper {
     NOTIFY_CHANGE_UPDATE = 1,
     NOTIFY_CHANGE_REMOVE = 2,
     NOTIFY_CHANGE_YUV_READY = 3,
+    NOTIFY_CHANGE_ADD_ANALYSIS = 4,
+    NOTIFY_CHANGE_REMOVE_ANALYSIS = 5,
   }
 
   export interface Album extends AbsAlbum {
