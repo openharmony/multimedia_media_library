@@ -38,6 +38,7 @@
 #include "submit_cache_dto.h"
 #include "media_assets_service.h"
 #include "medialibrary_bundle_manager.h"
+#include <nlohmann/json.hpp>
 
 using namespace OHOS::NativeRdb;
 
@@ -52,6 +53,10 @@ static const int32_t scanDoneCode = -2;
 const std::string ROOT_MEDIA_ORG_DIR = "/storage/cloud/files/Photo/";
 const std::string ROOT_MEDIA_THUMBS_DIR = "/storage/cloud/files/.thumbs/Photo/";
 const std::string ROOT_MEDIA_EDIT_DIR = "/storage/cloud/files/.editData/Photo/";
+
+const std::string ROOT_MEDIA_LOCAL_ORG_DIR = "/storage/media/local/files/Photo/";
+const std::string ROOT_MEDIA_LOCAL_THUMBS_DIR = "/storage/media/local/files/.thumbs/Photo/";
+const std::string ROOT_MEDIA_LOCAL_EDIT_DIR = "/storage/media/local/files/.editData/Photo/";
 
 const std::string THM_FILE_NAME = "THM.jpg";
 const std::string LCD_FILE_NAME = "LCD.jpg";
@@ -70,11 +75,14 @@ const std::string START_BUCKET_NUMBER_STR = "startBucketNumber";
 const std::string QUERY_FILE_ID_STR = "q_id";
 
 constexpr int64_t THREE_HOURS = 3 * 60 * 60;
-constexpr int64_t ONE_WEEK = 7 * 24 * 60 * 60;
-constexpr int64_t ONE_DAY_MS = 24 * 60 * 60 * 1000;
+constexpr int64_t FOUR_WEEK = 4 * 7 * 24 * 60 * 60;
+constexpr int64_t THREE_DAY_MS = 72 * 60 * 60 * 1000;
 constexpr int64_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
-
+const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.huawei.hmos.photos";
+const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
+const std::string SPECIAL_EDIT_EDIT_DATA = "";
+const std::string SPECIAL_EDIT_APP_ID = "com.huawei.hmos.photos";
 
 static bool Starts_With(const std::string& str, const std::string& prefix)
 {
@@ -178,7 +186,9 @@ int32_t MediaCleanAllDirtyFilesTask::GetMinFileId()
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
         std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
-        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE));
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MIN_FILE_ID);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, minFileId, "Query Result Set Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -202,9 +212,11 @@ int32_t MediaCleanAllDirtyFilesTask::QueryNextId(int32_t startFileId, int32_t &n
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
         std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
-        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) +
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
         " ORDER BY file_id ASC LIMIT 1";
-    // 除纯云图 动图? 除东湖和临时文管文件
+    // 除纯云图 动图? 除东湖和临时文管文件 clear_flag is_temp 排除掉
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Query Not Match Data Fails");
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
@@ -228,9 +240,10 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
         std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
         MediaColumn::MEDIA_ID + " = " + std::to_string(startFileId) + " AND " +
-        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE));
-    // 除纯云图 动图? 除东湖和临时文管文件
-    // 连拍 隐藏 等需要特殊适配
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    // 除纯云图 动图? 除东湖和临时文管文件 隐藏 等需要特殊适配 clear_flag is_temp 排除掉
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query not match data fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -308,7 +321,7 @@ void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dir
     // pending文件 充电息屏且保存超过24小时 扫描原图转正
     if (dirtyFileInfo.pending != 0) {
         int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
-        if (timeMs - dirtyFileInfo.addTime > ONE_DAY_MS) {
+        if (timeMs - dirtyFileInfo.addTime > THREE_DAY_MS) {
             // 转正
             MEDIA_INFO_LOG("DealWithPendingToEffectFile Id %{public}d", dirtyFileInfo.fileId);
             UpdatePendingInfoByPath(dirtyFileInfo.fileId, timeMs, 0L);
@@ -318,15 +331,15 @@ void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dir
 
 void MediaCleanAllDirtyFilesTask::HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // pending文件 充电息屏且保存超过24小时 扫描原图转正
+    // pending文件 充电息屏且保存超过72小时 扫描原图转正
     DealWithPendingToEffectFile(dirtyFileInfo);
 }
 
 void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // date_added距此超24小时使用缩略图填充原图并扫描刷新
+    // date_added距此超72小时使用缩略图填充原图并扫描刷新
     int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
-    if (timeMs - dirtyFileInfo.addTime > ONE_DAY_MS) {
+    if (timeMs - dirtyFileInfo.addTime > THREE_DAY_MS) {
         std::string thumbnailPath = GetThumbnailPath(dirtyFileInfo.path, THUMBNAIL_THUMB_SUFFIX);
         bool existThumbnail = MediaFileUtils::IsFileExists(thumbnailPath);
         if (!existThumbnail) {
@@ -356,9 +369,9 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
 
 void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // 危险操作 date_added距此超24小时删除元数据
+    // 危险操作 date_added距此超72小时删除元数据
     int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
-    if (timeMs - dirtyFileInfo.addTime > ONE_DAY_MS) {
+    if (timeMs - dirtyFileInfo.addTime > THREE_DAY_MS) {
         MEDIA_INFO_LOG("HandleBothNotExistStrategy DeletePermanently FileId %{public}d", dirtyFileInfo.fileId);
         NativeRdb::RdbPredicates deletePhotoPredicates(PhotoColumn::PHOTOS_TABLE);
         deletePhotoPredicates.EqualTo(MediaColumn::MEDIA_ID, to_string(dirtyFileInfo.fileId));
@@ -369,7 +382,7 @@ void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirt
 
 void MediaCleanAllDirtyFilesTask::HandleOriginExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // pending文件，充电息屏且保存超过24小时扫描原图转正
+    // pending文件，充电息屏且保存超过72小时扫描原图转正
     DealWithPendingToEffectFile(dirtyFileInfo);
 }
 
@@ -683,8 +696,16 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t cu
     if (isOriginFileExist && !isEditdataFileExist) {
         MEDIA_INFO_LOG("DirtyMediaHandler File Create Editdata OriginFileExistEditDataNotExist EditData: %{public}s",
             editDataFile.c_str());
+        nlohmann::json editDataJson;
+        editDataJson[CONST_COMPATIBLE_FORMAT] = SPECIAL_EDIT_COMPATIBLE_FORMAT;
+        editDataJson[CONST_FORMAT_VERSION] = SPECIAL_EDIT_FORMAT_VERSION;
+        editDataJson[CONST_EDIT_DATA] = SPECIAL_EDIT_EDIT_DATA;
+        editDataJson[CONST_APP_ID] = SPECIAL_EDIT_APP_ID;
+        string editDataContent = editDataJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(editDataFile), E_HAS_FS_ERROR,
             "Failed To Create editdata File %{private}s", MediaFileUtils::DesensitizePath(editDataFile).c_str());
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataFile, editDataContent), E_HAS_FS_ERROR,
+            "Failed to write editdata:%{private}s", editDataFile.c_str());
     }
     return true;
 }
@@ -713,7 +734,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessOriginFolderBatch(int32_t curBucketNum,
 
 bool MediaCleanAllDirtyFilesTask::HandleOriginBucketFolder(int32_t curBucketNum)
 {
-    std::string originBucketFolder = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum);
+    std::string originBucketFolder = ROOT_MEDIA_LOCAL_ORG_DIR + std::to_string(curBucketNum);
     std::vector<std::string> fileNameVec;
     MediaFileUtils::GetAllFileNameListUnderPath(originBucketFolder, fileNameVec);
     for (const auto& fileName : fileNameVec) {
@@ -791,11 +812,11 @@ bool MediaCleanAllDirtyFilesTask::ProcessThumbsFolderBatch(int32_t curBucketNum,
             AddFileToTableWithFixedName(curBucketNum, folderName);
             AddToFilesCacheSet(originBucketFolderFile);
         } else {
-            // date_added距此超24小时使用缩略图填充原图并扫描刷新
+            // date_added距此超72小时使用缩略图填充原图并扫描刷新
             int64_t addTime = INT64_MAX;
             QueryPhotoAddTimeByPath(originBucketFolderFile, addTime);
             int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
-            if (timeMs - addTime > ONE_DAY_MS) {
+            if (timeMs - addTime > THREE_DAY_MS) {
                 MEDIA_INFO_LOG("ProcessThumbsFolderBatch Thumb, Record Exist, Org NotExist, Cp Thumb %{public}s",
                     MediaFileUtils::DesensitizePath(originBucketFolderFile).c_str());
                 DealThumbsEffectAssetNotExist(curBucketNum, folderName);
@@ -832,7 +853,7 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalThumbFolderFile(int32_t curBucketNum,
 bool MediaCleanAllDirtyFilesTask::HandleThumbsBucketFolder(int32_t curBucketNum)
 {
     std::vector<std::string> folderNameVec;
-    std::string thumbsBucketFolder = ROOT_MEDIA_THUMBS_DIR + std::to_string(curBucketNum);
+    std::string thumbsBucketFolder = ROOT_MEDIA_LOCAL_THUMBS_DIR + std::to_string(curBucketNum);
     MediaFileUtils::GetFolderListUnderPath(thumbsBucketFolder, folderNameVec);
     for (const auto& folderName : folderNameVec) {
         if (!this->Accept()) {
@@ -1207,7 +1228,7 @@ bool MediaCleanAllDirtyFilesTask::IsLegalMediaAsset(const std::string &fileName)
 bool MediaCleanAllDirtyFilesTask::HandleEditBucketFolder(int32_t curBucketNum)
 {
     std::vector<std::string> folderNameVec;
-    std::string editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum);
+    std::string editBucketFolder = ROOT_MEDIA_LOCAL_EDIT_DIR + std::to_string(curBucketNum);
     MediaFileUtils::GetFolderListUnderPath(editBucketFolder, folderNameVec);
     for (const auto& folderName : folderNameVec) {
         if (!this->Accept()) {
@@ -1232,6 +1253,9 @@ bool MediaCleanAllDirtyFilesTask::HandleHandleAllDirtyFoldersInner(int32_t curBu
     if (!this->Accept()) {
         MEDIA_ERR_LOG("HandleHandleAllDirtyFoldersInner Failed End");
         return false;
+    }
+    if (curBucketNum == 0) { // 东湖的0桶 跳过
+        return true;
     }
     // 1 处理编辑目录 多出的图片
     if (!HandleEditBucketFolder(curBucketNum)) {
@@ -1317,13 +1341,13 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyFolders(int32_t curStartBucketId
     CHECK_AND_RETURN_INFO_LOG(curStartBucketId >= 0, "HandleAllDirtyFolders Finished");
     int32_t startBucketId = curStartBucketId == scanBeginCode ? 1 : curStartBucketId;
     std::vector<std::string> bucketsVec;
-    MediaFileUtils::GetFolderListUnderPath(ROOT_MEDIA_ORG_DIR, bucketsVec);
+    MediaFileUtils::GetFolderListUnderPath(ROOT_MEDIA_LOCAL_ORG_DIR, bucketsVec);
     CHECK_AND_RETURN_INFO_LOG(!bucketsVec.empty(), "HandleAllDirtyFolders BucketsVec Empty");
     std::vector<int32_t> bucketsIntVec = MediaFileUtils::ConvertBucketNameVector(bucketsVec);
     std::sort(bucketsIntVec.begin(), bucketsIntVec.end());
     for (const auto& curBucketNum : bucketsIntVec) {
         CHECK_AND_RETURN_INFO_LOG(!IsCurrentTaskTimeOut(), "HandleAllDirtyFolders Timeout");
-        if (curBucketNum < startBucketId) { // 扫过的跳过
+        if (curBucketNum < startBucketId || curBucketNum == 0) { // 扫过的 和 东湖的0桶 跳过
             continue;
         }
         int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1396,7 +1420,7 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
-        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > ONE_WEEK) { // 执行完成过 重新全量执行
+        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > FOUR_WEEK) { // 执行完成过 重新全量执行
             ClearFileIdsCacheSet();
             HandleAllTableAndFolder(scanBeginCode, scanBeginCode);
             return;
