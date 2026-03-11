@@ -465,7 +465,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate, N;
             let z;
             let u;
             let state;
@@ -524,6 +524,7 @@ export class PhotoPickerComponent extends ViewPU {
                     gridPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.gridPinchMode,
                     globalMovingPhotoState:  null === (state = this.pickerOptions) || void 0 === state ? void 0 : state.globalMovingPhotoState,
                     showDateOnScrollbar:  null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.showDateOnScrollbar,
+                    backgroundOpacity:  null === (N = this.pickerOptions) || void 0 === N ? void 0 : N.backgroundOpacity
                 }
             }
             ,{
