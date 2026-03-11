@@ -108,6 +108,7 @@ void BaseRestoreBranchCoverageTest::TearDown()
     PrepareDir();
 }
 
+// 验证 ExtraCheckForCloneSameFile 在 clean 云端记录场景下会触发更新路径。
 HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_CleanCloud_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -124,6 +125,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_CleanCloud_00
     EXPECT_EQ(info.fileIdNew, 100);
 }
 
+// 验证 ExtraCheckForCloneSameFile 在普通重复文件场景下直接判定为重复。
 HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_NormalDuplicate_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -140,6 +142,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_NormalDuplica
     EXPECT_EQ(info.fileIdNew, 101);
 }
 
+// 验证 CheckAndDelete 能删除已存在的 ValuesBucket 字段。
 HWTEST_F(BaseRestoreBranchCoverageTest, CheckAndDelete_RemoveExistingColumn_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -150,6 +153,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, CheckAndDelete_RemoveExistingColumn_001,
     EXPECT_FALSE(values.HasColumn(PhotoColumn::PHOTO_USER_COMMENT));
 }
 
+// 验证 CheckAndDelete 对不存在字段调用时不会引入异常状态。
 HWTEST_F(BaseRestoreBranchCoverageTest, CheckAndDelete_NonExistingColumn_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -158,6 +162,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, CheckAndDelete_NonExistingColumn_001, Te
     EXPECT_FALSE(values.HasColumn(PhotoColumn::PHOTO_USER_COMMENT));
 }
 
+// 验证 InsertDateTime 在 detailTime 非法时仍会补齐日期相关字段。
 HWTEST_F(BaseRestoreBranchCoverageTest, InsertDateTime_InvalidDetailTime_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -172,6 +177,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, InsertDateTime_InvalidDetailTime_001, Te
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_DATE_DAY));
 }
 
+// 验证 InsertDateTime 在 detailTime 合法时会正常写入日期字段。
 HWTEST_F(BaseRestoreBranchCoverageTest, InsertDateTime_ValidDetailTime_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -186,6 +192,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, InsertDateTime_ValidDetailTime_001, Test
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_DATE_DAY));
 }
 
+// 验证 MoveFile 在 rename 失败回落拷贝路径时仍能成功生成目标文件。
 HWTEST_F(BaseRestoreBranchCoverageTest, MoveFile_CopyFallback_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -198,6 +205,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, MoveFile_CopyFallback_001, TestSize.Leve
     EXPECT_TRUE(MediaFileUtils::IsFileExists(dst));
 }
 
+// 验证 MoveFile 在源文件不存在时返回失败码。
 HWTEST_F(BaseRestoreBranchCoverageTest, MoveFile_SourceNotExist_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -207,6 +215,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, MoveFile_SourceNotExist_001, TestSize.Le
     EXPECT_NE(ret, E_OK);
 }
 
+// 验证 ExtraCheckForCloneSameFile 在普通批量重复场景下保持无更新无移动。
 HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_001, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -224,6 +233,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_001, Te
     EXPECT_EQ(info.fileIdNew, 1001);
 }
 
+// 验证 ExtraCheckForCloneSameFile 在 cleanFlag 命中但位置未触发更新时仍按重复文件处理。
 HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_004, TestSize.Level1)
 {
     TestBaseRestore restore;
@@ -241,6 +251,7 @@ HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_004, Te
     EXPECT_EQ(info.fileIdNew, 1004);
 }
 
+// 验证 ExtraCheckForCloneSameFile 在 cleanFlag 与云端位置组合场景下会标记更新和移动。
 HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_005, TestSize.Level1)
 {
     TestBaseRestore restore;

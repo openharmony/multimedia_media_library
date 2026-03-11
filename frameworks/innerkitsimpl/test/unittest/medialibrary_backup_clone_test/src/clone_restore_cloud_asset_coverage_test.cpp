@@ -132,6 +132,7 @@ void CloneRestoreCloudAssetCoverageTest::TearDown()
     ClearPhotos(g_db);
 }
 
+// 验证 GetCloudInsertValue 会写入云端插入所需的基础字段。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_BasicColumns_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -144,6 +145,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_BasicColumns_001, 
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
 }
 
+// 验证 GetCloudInsertValue 在包名和 bundleName 为空时仍能生成关键字段。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_EmptyPkgBundle_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -155,6 +157,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_EmptyPkgBundle_001
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID));
 }
 
+// 验证 IsSameFileForClone 在云端重复记录场景下会标记 needMove。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudDuplicateNeedMove_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -170,6 +173,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudDuplicateNe
     EXPECT_EQ(info.fileIdNew, id);
 }
 
+// 验证 IsSameFileForClone 在 cleanFlag 生效的云端记录上会标记 needUpdate。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudCleanRecordNeedUpdate_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -183,6 +187,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudCleanRecord
     EXPECT_TRUE(info.needUpdate);
 }
 
+// 验证 IsSameFileForClone 在普通重复文件场景下直接返回同文件。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_NormalDuplicate_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -196,6 +201,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_NormalDuplicate_
     EXPECT_FALSE(info.needMove);
 }
 
+// 验证 GetCloudInsertValue 在完整包信息场景下可正常生成云端插入字段。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -210,6 +216,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_001, TestSiz
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
 }
 
+// 验证 GetCloudInsertValue 在包信息全部为空时仍保留核心云端字段。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_005, TestSize.Level1)
 {
     CloneRestore restore;
@@ -224,6 +231,7 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_005, TestSiz
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
 }
 
+// 验证 GetCloudInsertValue 在仅缺少 bundleName 时仍可生成完整插入结果。
 HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_007, TestSize.Level1)
 {
     CloneRestore restore;

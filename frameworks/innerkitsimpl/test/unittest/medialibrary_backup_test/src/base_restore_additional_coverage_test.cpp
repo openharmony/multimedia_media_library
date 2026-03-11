@@ -60,6 +60,7 @@ void BaseRestoreAdditionalCoverageTest::SetUp() {}
 
 void BaseRestoreAdditionalCoverageTest::TearDown() {}
 
+// 验证 ConvertPathToRealPath 对非法源路径输入返回失败。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, ConvertPathToRealPath_InvalidInput_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -69,6 +70,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, ConvertPathToRealPath_InvalidInput_0
     EXPECT_FALSE(ret);
 }
 
+// 验证 ConvertPathToRealPath 会按 dualDirName 规则替换相对路径目录。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, ConvertPathToRealPath_DualDirReplace_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -81,6 +83,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, ConvertPathToRealPath_DualDirReplace
     EXPECT_NE(newPath.find("/A/file.jpg"), std::string::npos);
 }
 
+// 验证 HasExThumbnail 对无效 localMediaId 的旋转媒体返回扩展缩略图需求。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, HasExThumbnail_LocalMediaIdInvalid_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -92,6 +95,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, HasExThumbnail_LocalMediaIdInvalid_0
     EXPECT_TRUE(restore.HasExThumbnail(info));
 }
 
+// 验证 HasExThumbnail 对有效 localMediaId 的非图片媒体不要求扩展缩略图。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, HasExThumbnail_LocalMediaIdValidNonImage_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -103,6 +107,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, HasExThumbnail_LocalMediaIdValidNonI
     EXPECT_FALSE(restore.HasExThumbnail(info));
 }
 
+// 验证 UpdateProcessedNumber 在 STOP 状态下会直接拉齐 processedNumber。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StopSetsProcessedToTotal_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -112,6 +117,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StopSetsProces
     EXPECT_EQ(processedNumber.load(), 5);
 }
 
+// 验证 UpdateProcessedNumber 在 START 且未达上限时会递增 processedNumber。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartIncrementsBeforeTotal_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -122,6 +128,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartIncrement
     EXPECT_EQ(processedNumber.load(), 2);
 }
 
+// 验证 UpdateProcessedNumber 在 START 且已到上限时不会继续累加。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartDoesNotExceedTotal_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -132,6 +139,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartDoesNotEx
     EXPECT_EQ(processedNumber.load(), 5);
 }
 
+// 验证 IsCloudRestoreSatisfied 在账号无效时返回 false。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_InvalidAccount_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -140,6 +148,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_InvalidAccou
     EXPECT_FALSE(restore.IsCloudRestoreSatisfied());
 }
 
+// 验证 IsCloudRestoreSatisfied 在同步开关关闭时返回 false。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_SyncSwitchOff_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -148,6 +157,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_SyncSwitchOf
     EXPECT_FALSE(restore.IsCloudRestoreSatisfied());
 }
 
+// 验证 IsCloudRestoreSatisfied 在账号和同步开关都满足时返回 true。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_AllConditionsMet_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -156,6 +166,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_AllCondition
     EXPECT_TRUE(restore.IsCloudRestoreSatisfied());
 }
 
+// 验证 GetBackupErrorInfoJson 在成功态下输出成功错误码。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_Success_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
@@ -165,6 +176,7 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_Success_001, 
     EXPECT_EQ(successJson[STAT_KEY_ERROR_CODE], std::to_string(STAT_DEFAULT_ERROR_CODE_SUCCESS));
 }
 
+// 验证 GetBackupErrorInfoJson 在失败态下输出统一失败错误码。
 HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_Failed_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
