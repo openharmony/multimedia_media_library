@@ -709,4 +709,18 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ParseFromJsonValue_Test_04,
     EXPECT_TRUE(result);
     EXPECT_TRUE(record->fields_.empty());
 }
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, SetCloudSpaceFull_Test, TestSize.Level1)
+{
+    std::shared_ptr<CloudMediaDataHandler> dataHandler = std::make_shared<CloudMediaDataHandler>();
+    ASSERT_TRUE(dataHandler);
+    dataHandler->SetCloudSpaceFull(false);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, IsCloudSpaceFull_Test, TestSize.Level1)
+{
+    std::shared_ptr<CloudMediaDataHandler> dataHandler = std::make_shared<CloudMediaDataHandler>();
+    ASSERT_TRUE(dataHandler);
+    dataHandler->IsCloudSpaceFull();
+}
 }
