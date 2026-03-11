@@ -132,6 +132,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/medialibrary_backup_clone_test2.cpp",
     "./src/group_photo/clone_group_photo_source.cpp",
     "./src/group_photo/clone_restore_group_photo_test.cpp",
+    "./src/clone_restore_cloud_asset_coverage_test.cpp",
+    "./src/clone_restore_additional_coverage_test.cpp",
     "./src/portrait_album/portrait_album_clone_test.cpp",
     "./src/portrait_album/portrait_album_source.cpp",
     "./src/pet_album/pet_album_clone_test.cpp",

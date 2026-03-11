@@ -105,6 +105,8 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/log/hi_audit_test.cpp",
     "./src/log/log_utils_test.cpp",
     "./src/log/zip_util_test.cpp",
+    "./src/base_restore_branch_coverage_test.cpp",
+    "./src/base_restore_additional_coverage_test.cpp",
     "./src/medialibrary_backup_test.cpp",
     "./src/report/gallery_media_count_statistic_test.cpp",
     "./src/report/photos_count_statistic_test.cpp",
