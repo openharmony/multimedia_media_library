@@ -35,6 +35,7 @@ ohos_unittest("media_refresh_test") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/album_accurate_refresh_test.cpp",
     "./src/analysis_album_refresh_test.cpp",
+    "./src/analysis_album_strategy_pipeline_test.cpp",
     "./src/asset_accurate_refresh_test.cpp",
     "./src/accurate_refresh_test_util.cpp",
     "./src/media_refresh_controller_service_test.cpp",
