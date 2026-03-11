@@ -207,29 +207,56 @@ HWTEST_F(BaseRestoreBranchCoverageTest, MoveFile_SourceNotExist_001, TestSize.Le
     EXPECT_NE(ret, E_OK);
 }
 
-#define GEN_EXTRA_CHECK_TEST(ID, FILEID, CLEAN, POSITION, EXPECT_RET, EXPECT_NEED_UPDATE, EXPECT_NEED_MOVE) \
-HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_##ID, TestSize.Level1) \
-{ \
-    TestBaseRestore restore; \
-    FileInfo info = BuildBaseInfo(); \
-    PhotosDao::PhotosRowData rowData; \
-    rowData.fileId = FILEID; \
-    rowData.data = "/storage/cloud/files/Photo/1/batch_" #ID ".jpg"; \
-    rowData.cleanFlag = CLEAN; \
-    rowData.position = POSITION; \
-    bool ret = restore.ExtraCheckForCloneSameFile(info, rowData); \
-    EXPECT_EQ(ret, EXPECT_RET); \
-    EXPECT_EQ(info.needUpdate, EXPECT_NEED_UPDATE); \
-    EXPECT_EQ(info.needMove, EXPECT_NEED_MOVE); \
-    EXPECT_FALSE(info.isNew); \
-    EXPECT_EQ(info.fileIdNew, FILEID); \
+HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_001, TestSize.Level1)
+{
+    TestBaseRestore restore;
+    FileInfo info = BuildBaseInfo();
+    PhotosDao::PhotosRowData rowData;
+    rowData.fileId = 1001;
+    rowData.data = "/storage/cloud/files/Photo/1/batch_001.jpg";
+    rowData.cleanFlag = 0;
+    rowData.position = 1;
+    bool ret = restore.ExtraCheckForCloneSameFile(info, rowData);
+    EXPECT_TRUE(ret);
+    EXPECT_FALSE(info.needUpdate);
+    EXPECT_FALSE(info.needMove);
+    EXPECT_FALSE(info.isNew);
+    EXPECT_EQ(info.fileIdNew, 1001);
 }
 
-GEN_EXTRA_CHECK_TEST(001, 1001, 0, 1, true,  false, false)
-GEN_EXTRA_CHECK_TEST(004, 1004, 1, 1, true,  false, false)
-GEN_EXTRA_CHECK_TEST(005, 1005, 1, 2, false, true,  true)
+HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_004, TestSize.Level1)
+{
+    TestBaseRestore restore;
+    FileInfo info = BuildBaseInfo();
+    PhotosDao::PhotosRowData rowData;
+    rowData.fileId = 1004;
+    rowData.data = "/storage/cloud/files/Photo/1/batch_004.jpg";
+    rowData.cleanFlag = 1;
+    rowData.position = 1;
+    bool ret = restore.ExtraCheckForCloneSameFile(info, rowData);
+    EXPECT_TRUE(ret);
+    EXPECT_FALSE(info.needUpdate);
+    EXPECT_FALSE(info.needMove);
+    EXPECT_FALSE(info.isNew);
+    EXPECT_EQ(info.fileIdNew, 1004);
+}
 
-#undef GEN_EXTRA_CHECK_TEST
+HWTEST_F(BaseRestoreBranchCoverageTest, ExtraCheckForCloneSameFile_Batch_005, TestSize.Level1)
+{
+    TestBaseRestore restore;
+    FileInfo info = BuildBaseInfo();
+    PhotosDao::PhotosRowData rowData;
+    rowData.fileId = 1005;
+    rowData.data = "/storage/cloud/files/Photo/1/batch_005.jpg";
+    rowData.cleanFlag = 1;
+    rowData.position = 2;
+    bool ret = restore.ExtraCheckForCloneSameFile(info, rowData);
+    EXPECT_FALSE(ret);
+    EXPECT_TRUE(info.needUpdate);
+    EXPECT_TRUE(info.needMove);
+    EXPECT_FALSE(info.isNew);
+    EXPECT_EQ(info.fileIdNew, 1005);
+}
 
 } // namespace Media
 } // namespace OHOS
