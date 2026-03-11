@@ -364,6 +364,7 @@ export struct PhotoPickerComponent {
             gridPinchMode: this.pickerOptions?.gridPinchMode,
             globalMovingPhotoState: this.pickerOptions?.globalMovingPhotoState,
             showDateOnScrollbar: this.pickerOptions?.showDateOnScrollbar,
+            backgroundOpacity: this.pickerOptions?.backgroundOpacity
           }
         },
         {
@@ -1171,6 +1172,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   combinedMediaTypeFilter?: Array<string>;
   pickerIndex?: number;
   preselectedInfos?: Array<PreselectedInfo>;
+  backgroundOpacity?: number;
 }
 
 export class UpdatablePickerConfigs {
@@ -1189,6 +1191,7 @@ export class UpdatablePickerConfigs {
   photoBrowserBackgroundColorMode?: PickerColorMode,
   uiComponentColorMode?: PickerColorMode;
   appAlbumFilters?: Array<string>;
+  backgroundOpacity?: number;
 }
 
 export class GridPinchMode {
