@@ -54,7 +54,6 @@ FileInfo BuildFileInfo(int32_t srcPosition, const std::string &cloudId)
     fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
     fileInfo.position = srcPosition;
     fileInfo.uniqueId = cloudId;
-    fileInfo.cloudId = cloudId;
     fileInfo.displayName = "ut.jpg";
     fileInfo.fileSize = TEST_MEDIA_SIZE;
     fileInfo.orientation = 0;
