@@ -196,19 +196,6 @@ static std::shared_ptr<DataShareResultSet> QueryPhotoAsset(const std::shared_ptr
     return resultSet;
 }
 
-// static void SetBuffer(sptr<PhotoProxyTest> &photoProxy)
-// {
-//     int32_t rowDataSize = photoProxy->GetWidth();
-//     uint32_t bufferSize = rowDataSize * photoProxy->GetHeight();
-//     void *buffer = malloc(bufferSize);
-//     char *ch = static_cast<char *>(buffer);
-//     for (unsigned int i = 0; i < bufferSize; i++) {
-//         *(ch++) = (char)i;
-//     }
-//     photoProxy->fileDataAddr_ = buffer;
-//     photoProxy->fileSize_ = bufferSize;
-// }
-
 /**
  * @tc.name: MediaLibraryCameraManager_CreatePhotoAssetProxy_test01
  * @tc.desc: 获取photoAssetProxy对象, 已知CameraShotType, 可以获取到对应的subtype
@@ -513,48 +500,6 @@ HWTEST_F(MediaLibraryCameraHelperTest, PhotoAssetProxy_AddPhotoProxy_test101, Te
 
     MEDIA_INFO_LOG("end PhotoAssetProxy_AddPhotoProxy_test101");
 }
-
-/**
- * @tc.name: PhotoAssetProxy_AddPhotoProxy_test102
- * @tc.desc: [普通照片: 非YUV场景]
- *           [1] media_type = 1
- *           [2] subtype = 0
- *           [3] photo_quality 为低质量 -> dirty = -1
- *           [4] is_temp = 1
- *           [5] 有文件落盘(待处理)
- */
-// HWTEST_F(MediaLibraryCameraHelperTest, PhotoAssetProxy_AddPhotoProxy_test102, TestSize.Level1)
-// {
-//     MEDIA_INFO_LOG("enter PhotoAssetProxy_AddPhotoProxy_test102");
-
-//     PhotoAssetProxyCallerInfo callerInfo = {
-//         .callingUid = 0,
-//         .userId = 0,
-//     };
-//     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(callerInfo, CameraShotType::IMAGE);
-//     ASSERT_NE(photoAssetProxy, nullptr);
-
-//     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
-//     ASSERT_NE(photoProxyTest, nullptr);
-//     photoProxyTest->photoFormat_ = PhotoFormat::RGBA;
-//     photoProxyTest->extension_ = "jpg";
-//     photoProxyTest->photoQuality_ = PhotoQuality::LOW;
-//     SetBuffer(photoProxyTest);
-//     photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
-
-//     auto resultSet = QueryPhotoAsset(photoAssetProxy);
-//     ASSERT_NE(resultSet, nullptr);
-//     EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
-
-//     // value符合预期
-//     EXPECT_EQ(GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet), static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
-//     EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet), static_cast<int32_t>(PhotoSubType::DEFAULT));
-//     EXPECT_EQ(GetStringVal(PhotoColumn::PHOTO_ID, resultSet), photoProxyTest->GetPhotoId());
-//     EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet), -1);
-//     EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet), 1);
-
-//     MEDIA_INFO_LOG("end PhotoAssetProxy_AddPhotoProxy_test102");
-// }
 
 /**
  * @tc.name: PhotoAssetProxy_AddPhotoProxy_test201
