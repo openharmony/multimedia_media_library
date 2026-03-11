@@ -433,6 +433,273 @@ HWTEST_F(PhotosCloneTest, FindAlbumId_Test_003, TestSize.Level0)
     MEDIA_INFO_LOG("FindAlbumId_Test_003 end");
 }
 
+HWTEST_F(PhotosCloneTest, SetFilePath_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetFilePath_Test_001 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo1;
+    fileInfo1.fileSourceType = FileSourceType::MEDIA;
+    fileInfo1.storagePath = "/storage/emulated/0/Pictures/test1.jpg";
+    fileInfo1.oldPath = "/storage/cloud/files/Photo/16/test1.jpg";
+    fileInfos.push_back(fileInfo1);
+
+    FileInfo fileInfo2;
+    fileInfo2.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo2.storagePath = "/storage/emulated0/Pictures/test2.jpg";
+    fileInfo2.oldPath = "/storage/cloud/files/Photo/16/test2.jpg";
+    fileInfos.push_back(fileInfo2);
+
+    photosClone.SetFilePath(fileInfos);
+    EXPECT_EQ(fileInfos.size(), 1); // lake file not exist
+    MEDIA_INFO_LOG("SetFilePath_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, SetFilePath_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetFilePath_Test_002 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.storagePath = "";
+    fileInfos.push_back(fileInfo);
+
+    size_t originalSize = fileInfos.size();
+    photosClone.SetFilePath(fileInfos);
+    EXPECT_EQ(fileInfos.size(), originalSize);
+    MEDIA_INFO_LOG("SetFilePath_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, SetFilePathForLakeFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetFilePathForLakeFile_Test_001 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+
+    bool result = photosClone.SetFilePathForLakeFile(fileInfo);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(fileInfo.inode.empty());
+    EXPECT_TRUE(fileInfo.storagePath.empty());
+    MEDIA_INFO_LOG("SetFilePathForLakeFile_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, SetFilePathForLakeFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetFilePathForLakeFile_Test_002 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+
+    bool result = photosClone.SetFilePathForLakeFile(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("SetFilePathForLakeFile_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindStoragePath_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindStoragePath_Test_001 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.isStoragePathExistInDb = true;
+
+    std::string result = photosClone.FindStoragePath(fileInfo);
+    EXPECT_EQ(result, ""); // lake file not exist
+    MEDIA_INFO_LOG("FindStoragePath_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindStoragePath_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindStoragePath_Test_002 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.isStoragePathExistInDb = false;
+
+    std::string result = photosClone.FindStoragePath(fileInfo);
+    EXPECT_TRUE(result.empty());
+    MEDIA_INFO_LOG("FindStoragePath_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, GetNumberedStoragePath_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_001 start");
+    PhotosClone photosClone;
+
+    std::string storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    uint32_t number = 1;
+
+    std::string result = photosClone.GetNumberedStoragePath(storagePath, number);
+    EXPECT_EQ(result, "/storage/emulated/0/Pictures/test(1).jpg");
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, GetNumberedStoragePath_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_002 start");
+    PhotosClone photosClone;
+
+    std::string storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    uint32_t number = 0;
+
+    std::string result = photosClone.GetNumberedStoragePath(storagePath, number);
+    EXPECT_EQ(result, storagePath);
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, GetNumberedStoragePath_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_003 start");
+    PhotosClone photosClone;
+
+    std::string storagePath = "/storage/emulated/0/Pictures/test";
+    uint32_t number = 1;
+
+    std::string result = photosClone.GetNumberedStoragePath(storagePath, number);
+    EXPECT_EQ(result, "/storage/emulated/0/Pictures/test(1)");
+    MEDIA_INFO_LOG("GetNumberedStoragePath_Test_003 end");
+}
+
+HWTEST_F(PhotosCloneTest, ShouldDeleteDuplicateLakeFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_001 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+
+    bool result = photosClone.ShouldDeleteDuplicateLakeFile(fileInfo);
+    EXPECT_TRUE(result);
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, ShouldDeleteDuplicateLakeFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_002 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.isStoragePathExistInDb = true;
+
+    bool result = photosClone.ShouldDeleteDuplicateLakeFile(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, ShouldDeleteDuplicateLakeFile_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_003 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.isStoragePathExistInDb = false;
+
+    bool result = photosClone.ShouldDeleteDuplicateLakeFile(fileInfo);
+    EXPECT_TRUE(result);
+    MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_003 end");
+}
+
+HWTEST_F(PhotosCloneTest, IsCloudPathExist_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_001 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.cloudPath = "/storage/cloud/files/Photo/16/test.jpg";
+
+    bool result = photosClone.IsCloudPathExist(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, IsCloudPathExist_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_002 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.cloudPath = "/storage/cloud/files/Photo/16/test.jpg";
+    fileInfo.isCloudPathExistInDb = true;
+
+    bool result = photosClone.IsCloudPathExist(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, IsCloudPathExist_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_003 start");
+    PhotosClone photosClone;
+
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.cloudPath = "/storage/cloud/files/Photo/16/test.jpg";
+    fileInfo.isCloudPathExistInDb = false;
+
+    bool result = photosClone.IsCloudPathExist(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("IsCloudPathExist_Test_003 end");
+}
+
+HWTEST_F(PhotosCloneTest, CreateCloudPath_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloudPath_Test_001 start");
+    PhotosClone photosClone;
+
+    int32_t uniqueId = 100;
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = "test.jpg";
+
+    int32_t result = photosClone.CreateCloudPath(uniqueId, fileInfo);
+    EXPECT_EQ(result, 0);
+    EXPECT_FALSE(fileInfo.cloudPath.empty());
+    MEDIA_INFO_LOG("CreateCloudPath_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, CreateCloudPath_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloudPath_Test_002 start");
+    PhotosClone photosClone;
+
+    int32_t uniqueId = 100;
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = "test.jpg";
+
+    int32_t result = photosClone.CreateCloudPath(uniqueId, fileInfo);
+    EXPECT_EQ(result, 0);
+    EXPECT_FALSE(fileInfo.cloudPath.empty());
+    MEDIA_INFO_LOG("CreateCloudPath_Test_002 end");
+}
+
 void PhotosCloneTestUtils::ClearAllData()
 {
     ClearPhotosData();
