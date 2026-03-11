@@ -784,12 +784,33 @@ int32_t DfxReporter::reportHeifAgingStatistics(const HeifAgingStatistics& heifAg
     return ret;
 }
 
-void DfxReporter::ReportAlibHeifDuplicate()
+static bool GetTransCodeXML(TranscodeType transcodeType, string &XML)
 {
-    MEDIA_INFO_LOG("ReportAlibHeifDuplicate start");
+    bool success = true;
+    switch (transcodeType) {
+        case TranscodeType::HEIF :
+            XML = ALIB_HEIF_DUPLICATE_XML;
+            break;
+        case TranscodeType::HIGH_PIXEL :
+            XML = ALIB_HIGH_PIXEL_DUPLICATE_XML;
+            break;
+        case TranscodeType::HIGH_PIXEL_HEIF :
+            XML = ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML;
+            break;
+        default:
+            success = false;
+            break;
+    }
+    return success;
+}
+
+static void ReportAlibDuplicate(TranscodeType transcodeType)
+{
     int32_t errCode;
+    string XML;
+    CHECK_AND_RETURN(GetTransCodeXML(transcodeType, XML));
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
@@ -817,13 +838,22 @@ void DfxReporter::ReportAlibHeifDuplicate()
         "TRANSCODE_TIMES", transcodeTimes,
         "TRANSCODE_FAILED_TIMES", transcodeFailedTimes,
         "INNER_FAILED_TIMES", innerFailedTimes,
-        "CODEC_FAILED_TIMES", codecFailedTimes);
+        "CODEC_FAILED_TIMES", codecFailedTimes,
+        "TRANSCODE_TYPE", static_cast<int32_t>(transcodeType));
     if (ret != 0) {
         MEDIA_ERR_LOG("Report alib heif duplicate error:%{public}d", ret);
     }
 
     prefs->Clear();
     prefs->FlushSync();
+}
+
+void DfxReporter::ReportAlibHeifDuplicate()
+{
+    MEDIA_INFO_LOG("ReportAlibHeifDuplicate start");
+    ReportAlibDuplicate(TranscodeType::HEIF);
+    ReportAlibDuplicate(TranscodeType::HIGH_PIXEL);
+    ReportAlibDuplicate(TranscodeType::HIGH_PIXEL_HEIF);
 }
 
 int32_t DfxReporter::ReportUpgradeFault(const UpgradeExceptionInfo& reportData)
