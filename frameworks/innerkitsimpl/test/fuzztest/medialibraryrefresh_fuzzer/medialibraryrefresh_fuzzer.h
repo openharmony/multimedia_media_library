@@ -26,6 +26,7 @@
 #include "notify_register_permission.h"
 #include "observer_callback_recipient.h"
 #include "userfile_manager_types.h"
+#include "album_change_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,6 +45,8 @@ const int32_t ASSET_CLEAN_FLAG_NO = static_cast<int32_t>(CleanType::TYPE_NOT_CLE
 const int32_t ASSET_BURST_COVER_LEVEL = static_cast<int32_t>(BurstCoverLevelType::COVER);
 const string ASSET_DISPLAY_NAME = "asset_display_name";
 const string ASSET_PATH = "asset_path";
+const string ASSET_JPG_MIME_TYPE = "image/jpeg";
+const std::vector<std::shared_ptr<AccurateRefresh::AlbumChangeInfo>> MOCK_ALBUM_CHANGE_INFO = {};
 
 const std::string CREATE_PHOTO_ALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PhotoAlbumColumns::TABLE + " (" +
@@ -166,10 +169,13 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     "uri", // owner album uri
     false, // isFavorite
     ASSET_MEDIA_TYPE_IMAGE, // default image
+    ASSET_JPG_MIME_TYPE,
     false, // isHidden
     0,  // dateTrash
     ASSET_STRONG_ASSOCIATION_NORMAL,
-    ASSET_THUMBNAIL_VISIBLE, ASSET_DATE_ADDED, ASSET_DATE_TAKEN, ASSET_SUBTYPE_DEFAULT, ASSET_SYNC_STATUS_VISIBLE,
+    ASSET_THUMBNAIL_VISIBLE, ASSET_DATE_ADDED, ASSET_DATE_TAKEN,
+    MOCK_ALBUM_CHANGE_INFO,
+    ASSET_SUBTYPE_DEFAULT, ASSET_SYNC_STATUS_VISIBLE,
     ASSET_CLEAN_FLAG_NO,
     0, // timePending
     false, // isTemp
@@ -181,7 +187,10 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     ASSET_PATH,
     1, //local
     666, //size
-    0 //fileSourceType
+    0, //fileSourceType
+    "", // shooting_mode
+    0, // effect_mode
+    "" // front_camera
 };
 
 const std::vector<PhotoAlbumSubType> PHOTO_ALBUM_SUB_TYPE = {

@@ -49,7 +49,20 @@ std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         {AssetRefreshOperation::ASSET_OPERATION_UNTRASH, HandleAssetUntrash},
         {AssetRefreshOperation::ASSET_OPERATION_HIDDEN, HandleAssetHidden},
         {AssetRefreshOperation::ASSET_OPERATION_UNHIDDEN, HandleAssetUnhidden},
+
+        // When photo asset change happens
+        // Treat analysis asset add/remove/update notify type as normal photo asset notify type
+        {AssetRefreshOperation::ASSET_OPERATION_ADD_WITH_ANALYSIS, HandleAssetAddWithAnalysis},
+        {AssetRefreshOperation::ASSET_OPERATION_REMOVE_WITH_ANALYSIS, HandleAssetRemoveWithAnalysis},
+        {AssetRefreshOperation::ASSET_OPERATION_UPDATE_WITH_ANALYSIS, HandleAssetUpdateWithAnalysis},
+
+        // When only analysis asset change happens without normal photo asset change
+        // Deliver analysis asset add/remove notify with specific analysis asset notify type
+        {AssetRefreshOperation::ANALYSIS_ASSET_OPERATION_ADD, HandleAnalysisAssetAdd},
+        {AssetRefreshOperation::ANALYSIS_ASSET_OPERATION_REMOVE, HandleAnalysisAssetRemove},
+
         {AssetRefreshOperation::ASSET_OPERATION_RECHECK, HandleAssetRecheck},
+        {AssetRefreshOperation::ANALYSIS_ASSET_OPERATION_RECHECK, HandleAnalysisAssetRecheck},
         {AssetRefreshOperation::ASSET_OPERATION_YUV_READY, HandleYuvReady},
 
         {AlbumRefreshOperation::ALBUM_OPERATION_ADD, HandleAlbumAdd},
@@ -58,6 +71,13 @@ std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         {AlbumRefreshOperation::ALBUM_OPERATION_UPDATE_HIDDEN, HandleAlbumUpdateHidden},
         {AlbumRefreshOperation::ALBUM_OPERATION_UPDATE_TRASH, HandleAlbumUpdateTrash},
         {AlbumRefreshOperation::ALBUM_OPERATION_RECHECK, HandleAlbumRecheck},
+
+        // Deliver analysis album add/remove notify with specific analysis album notify type
+        // Reuse album update type when update
+        {AlbumRefreshOperation::ANALYSIS_ALBUM_OPERATION_ADD, HandleAnalysisAlbumAdd},
+        {AlbumRefreshOperation::ANALYSIS_ALBUM_OPERATION_REMOVE, HandleAnalysisAlbumRemove},
+        {AlbumRefreshOperation::ANALYSIS_ALBUM_OPERATION_UPDATE, HandleAnalysisAlbumUpdate},
+        {AlbumRefreshOperation::ANALYSIS_ALBUM_OPERATION_RECHECK, HandleAnalysisAlbumRecheck},
 };
 std::unordered_set<int32_t> NotificationClassification::addAlbumIdSet_;
 std::mutex NotificationClassification::addAlbumIdMutex_;
@@ -253,6 +273,52 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRecheck(Noti
             notifyInfoInner, true, AccurateNotifyType::NOTIFY_ASSET_ADD, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
+std::vector<MediaChangeInfo> NotificationClassification::HandleAssetAddWithAnalysis(NotifyInfoInner &notifyInfoInner)
+{
+    return {
+        BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI),
+        BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS,
+            NotifyUriType::ANALYSIS_PHOTO_URI),
+    };
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRemoveWithAnalysis(
+    NotifyInfoInner &notifyInfoInner)
+{
+    return {
+        BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_REMOVE,
+            NotifyUriType::PHOTO_URI),
+        BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_REMOVE_ANALYSIS,
+            NotifyUriType::ANALYSIS_PHOTO_URI),
+    };
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateWithAnalysis(
+    NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_UPDATE,
+        NotifyUriType::PHOTO_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAssetAdd(NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS,
+        NotifyUriType::ANALYSIS_PHOTO_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAssetRemove(NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ASSET_REMOVE_ANALYSIS,
+        NotifyUriType::ANALYSIS_PHOTO_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAssetRecheck(
+    NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, true, AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS,
+        NotifyUriType::ANALYSIS_PHOTO_URI)};
+}
+
 std::vector<MediaChangeInfo> NotificationClassification::HandleYuvReady(NotifyInfoInner &notifyInfoInner)
 {
     MEDIA_INFO_LOG("HandleYuvReady");
@@ -313,6 +379,31 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumRecheck(Noti
             notifyInfoInner, true, AccurateNotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::HIDDEN_ALBUM_URI),
         BuildMediaChangeInfo(
             notifyInfoInner, true, AccurateNotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::TRASH_ALBUM_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAlbumAdd(NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ALBUM_ADD_ANALYSIS,
+        NotifyUriType::ANALYSIS_ALBUM_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAlbumRemove(NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ALBUM_REMOVE_ANALYSIS,
+        NotifyUriType::ANALYSIS_ALBUM_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAlbumUpdate(NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, false, AccurateNotifyType::NOTIFY_ALBUM_UPDATE,
+        NotifyUriType::ANALYSIS_ALBUM_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAnalysisAlbumRecheck(
+    NotifyInfoInner &notifyInfoInner)
+{
+    return {BuildMediaChangeInfo(notifyInfoInner, true, AccurateNotifyType::NOTIFY_ALBUM_ADD_ANALYSIS,
+        NotifyUriType::ANALYSIS_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumAddAndUpdate(NotifyInfoInner &notifyInfoInner)

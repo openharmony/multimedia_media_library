@@ -22,6 +22,7 @@ ohos_fuzztest("MediaLibraryDfxFuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [
@@ -36,6 +37,7 @@ ohos_fuzztest("MediaLibraryDfxFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibrarydfx_fuzzer.cpp",
     "./mock_medialibrary_subscriber.cpp",
   ]

@@ -37,6 +37,8 @@ const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange
 const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
 const std::string RegisterNotifyType::SINGLE_PHOTO_CHANGE = "singlePhotoChange";
 const std::string RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE = "singlePhotoAlbumChange";
+const std::string RegisterNotifyType::ANALYSIS_PHOTO_CHANGE = "analysisPhotoChange";
+const std::string RegisterNotifyType::ANALYSIS_ALBUM_CHANGE = "analysisAlbumChange";
 const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
@@ -90,6 +92,8 @@ const std::map<Notification::NotifyUriType, Notification::NotifyUriType> MediaLi
     { Notification::NotifyUriType::PHOTO_ALBUM_URI, Notification::NotifyUriType::PHOTO_ALBUM_URI },
     { Notification::NotifyUriType::HIDDEN_ALBUM_URI, Notification::NotifyUriType::HIDDEN_ALBUM_URI },
     { Notification::NotifyUriType::TRASH_ALBUM_URI, Notification::NotifyUriType::TRASH_ALBUM_URI },
+    { Notification::NotifyUriType::ANALYSIS_PHOTO_URI, Notification::NotifyUriType::ANALYSIS_PHOTO_URI },
+    { Notification::NotifyUriType::ANALYSIS_ALBUM_URI, Notification::NotifyUriType::ANALYSIS_ALBUM_URI },
 };
 
 const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_URI_MAP = {
@@ -99,15 +103,23 @@ const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils
     { Notification::NotifyUriType::PHOTO_ALBUM_URI, RegisterNotifyType::PHOTO_ALBUM_CHANGE },
     { Notification::NotifyUriType::HIDDEN_ALBUM_URI, RegisterNotifyType::HIDDEN_ALBUM_CHANGE },
     { Notification::NotifyUriType::TRASH_ALBUM_URI, RegisterNotifyType::TRASHED_ALBUM_CHANGE },
+    { Notification::NotifyUriType::ANALYSIS_PHOTO_URI, RegisterNotifyType::ANALYSIS_PHOTO_CHANGE },
+    { Notification::NotifyUriType::ANALYSIS_ALBUM_URI, RegisterNotifyType::ANALYSIS_ALBUM_CHANGE },
 };
 
 const std::map<Notification::AccurateNotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
     { Notification::AccurateNotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
     { Notification::AccurateNotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
     { Notification::AccurateNotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_ADD_ANALYSIS, NotifyChangeType::NOTIFY_CHANGE_ADD_ANALYSIS },
+    { Notification::AccurateNotifyType::NOTIFY_ASSET_REMOVE_ANALYSIS,
+        NotifyChangeType::NOTIFY_CHANGE_REMOVE_ANALYSIS },
     { Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
     { Notification::AccurateNotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
     { Notification::AccurateNotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_ADD_ANALYSIS, NotifyChangeType::NOTIFY_CHANGE_ADD_ANALYSIS },
+    { Notification::AccurateNotifyType::NOTIFY_ALBUM_REMOVE_ANALYSIS,
+        NotifyChangeType::NOTIFY_CHANGE_REMOVE_ANALYSIS },
     { Notification::AccurateNotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
 };
 
@@ -325,6 +337,35 @@ napi_status MediaLibraryNotifyUtils::SetValueNull(const napi_env& env, const cha
     return status;
 }
 
+napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfosArray(napi_env env,
+    const std::vector<std::shared_ptr<AccurateRefresh::AlbumChangeInfo>> &albumChangeInfos)
+{
+    napi_value arrayResult = nullptr;
+    napi_status status = napi_create_array_with_length(env, albumChangeInfos.size(), &arrayResult);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to create albumChangeInfos array");
+        return nullptr;
+    }
+
+    size_t idx = 0;
+    for (const auto &albumInfoPtr : albumChangeInfos) {
+        napi_value item = nullptr;
+
+        if (albumInfoPtr != nullptr) {
+            item = BuildAlbumChangeInfo(env, *albumInfoPtr);
+        } else {
+            napi_get_null(env, &item);
+        }
+
+        if (napi_set_element(env, arrayResult, idx++, item) != napi_ok) {
+            NAPI_ERR_LOG("Failed to set albumChangeInfos element");
+            return nullptr;
+        }
+    }
+
+    return arrayResult;
+}
+
 napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo)
 {
@@ -353,6 +394,15 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     SetValueInt32(env, "position", photoAssetChangeInfo.position_, result);
     SetValueString(env, "displayName", photoAssetChangeInfo.displayName_, result);
     SetValueInt64(env, "size", photoAssetChangeInfo.size_, result);
+
+    {
+        napi_value albumArray = BuildAlbumChangeInfosArray(env, photoAssetChangeInfo.albumChangeInfos_);
+        if (albumArray != nullptr) {
+            napi_set_named_property(env, result, "albumChangeInfos", albumArray);
+        } else {
+            NAPI_ERR_LOG("Failed to build albumChangeInfos array");
+        }
+    }
 
     return result;
 }

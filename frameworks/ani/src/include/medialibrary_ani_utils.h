@@ -119,6 +119,14 @@
         }                                                           \
     } while (0)
 
+#define CHECK_ARGS_WITH_RET_MSG(env, cond, err, ret, msg)                   \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AniError::ThrowError(env, err, __FUNCTION__, __LINE__, msg);    \
+            return ret;                                                     \
+        }                                                                   \
+    } while (0)
+
 inline ani_object ReturnAniUndefined(ani_env *env)
 {
     ani_ref result = nullptr;
@@ -443,6 +451,8 @@ public:
         const bool hiddenOnly);
     static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
+    static bool IsBetaVersion();
+    static bool IsNumber(const std::string &str);
     static ani_status ParseAssetIdArray(ani_env *env, ani_object photoAssets, std::vector<std::string> &idArray);
     static std::string GetFileIdFromUriString(const std::string& uri);
     static std::string GetAlbumIdFromUriString(const std::string& uri);

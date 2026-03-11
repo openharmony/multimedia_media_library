@@ -42,6 +42,7 @@ ohos_shared_library("mediabackup") {
     "./include/selection",
     "./include/restore",
     "./include/report",
+    "./include/video_ringtone_processor",
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
@@ -107,6 +108,8 @@ ohos_shared_library("mediabackup") {
     "./src/report/upgrade_restore_gallery_media_task.cpp",
     "./src/report/upgrade_restore_task_report.cpp",
     "./src/restore/asset_map_clone.cpp",
+    "./src/restore/backup_adapters.cpp",
+    "./src/restore/dao_utils.cpp",
     "./src/restore/db_upgrade_utils.cpp",
     "./src/restore/gallery_db_upgrade.cpp",
     "./src/restore/gallery_media_dao.cpp",
@@ -114,6 +117,7 @@ ohos_shared_library("mediabackup") {
     "./src/restore/photo_album_clone.cpp",
     "./src/restore/photo_album_dao.cpp",
     "./src/restore/photo_album_restore.cpp",
+    "./src/restore/photos_backup.cpp",
     "./src/restore/photos_clone.cpp",
     "./src/restore/photos_dao.cpp",
     "./src/restore/photos_data_handler.cpp",
@@ -121,6 +125,7 @@ ohos_shared_library("mediabackup") {
     "./src/restore/restore_photos_album_hidden.cpp",
     "./src/restore/tab_old_albums_clone.cpp",
     "./src/restore/tab_old_photos_restore.cpp",
+    "./src/video_ringtone_processor/video_ringtone_processor.cpp",
     "./src/upgrade_restore.cpp",
   ]
 

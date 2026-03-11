@@ -110,6 +110,12 @@ uint32_t MtpMediaLibrary::GetId()
     return id_++;
 }
 
+static bool ContainsInvalidName(const std::string &str)
+{
+    return str.find("./") != std::string::npos ||
+           str.find("../") != std::string::npos;
+}
+
 static bool IsHiddenDirectory(const std::string &dir)
 {
     CHECK_AND_RETURN_RET_LOG(!dir.empty(), false, "dir is empty");
@@ -679,7 +685,9 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
     CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, doc) == MTP_SUCCESS,
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR),
             "MtpMediaLibrary::SendObjectInfo parent not found");
-
+    CHECK_AND_RETURN_RET_LOG(!ContainsInvalidName(context->name),
+        MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::SendObjectInfo context->name is invalid");
     std::string path = doc + "/" + context->name;
     if (context->format == MTP_FORMAT_ASSOCIATION_CODE) {
         std::error_code ec;
@@ -932,8 +940,10 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
         MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::SetObjectPropValue handle not found");
-
     std::error_code ec;
+    CHECK_AND_RETURN_RET_LOG(!ContainsInvalidName(get<std::string>(colValue)),
+        MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::SetObjectPropValue colValue is invalid");
     string to = sf::path(path).parent_path().string() + "/" + get<std::string>(colValue);
     bool cond = (sf::exists(to, ec) || ec.value() != MTP_SUCCESS);
     CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),

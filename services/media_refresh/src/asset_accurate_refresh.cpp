@@ -20,10 +20,12 @@
 #endif
 #include <cstdint>
 #include "medialibrary_errno.h"
+#include "analysis_album_refresh_execution.h"
 #include "media_file_utils.h"
 #include "asset_accurate_refresh.h"
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_tracer.h"
 #include "dfx_refresh_manager.h"
 #include "dfx_refresh_hander.h"
@@ -86,6 +88,7 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType, bool
     if (dataManager_.CheckIsForRecheck() || dataManager_.GetIsExceedStatus()) {
         MEDIA_INFO_LOG("enter ForRecheck");
         int32_t ret = RefreshAllAlbum(dataManager_.uniqueAlbumIds_, notifyAlbumType, isRefreshWithDateModified);
+        RefreshAllAnalysisAlbum();
         dataManager_.ClearMultiThreadChangeDatas();
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ret;
@@ -118,12 +121,16 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
         }
         diffCount--;
     }
-    if (diffCount == 0) {
+    int32_t ret = ACCURATE_REFRESH_RET_OK;
+    if (diffCount != 0) {
+        ret = albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType, isRefreshWithDateModified);
+        CHECK_AND_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, "Album refresh failed: %{public}d", ret);
+        ret = analysisAlbumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType, isRefreshWithDateModified);
+        CHECK_AND_WARN_LOG(ret == ACCURATE_REFRESH_RET_OK, "Analysis album refresh failed: %{public}d", ret);
+    } else {
         MEDIA_WARN_LOG("asset change datas are same, no need refresh album.");
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
-        return ACCURATE_REFRESH_RET_OK;
     }
-    int32_t ret = albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType, isRefreshWithDateModified);
     return ret;
 }
 
@@ -139,13 +146,22 @@ int32_t AssetAccurateRefresh::Notify()
     tracer.Start("AssetAccurateRefresh::Notify");
     if (dataManager_.CheckIsForRecheck()) {
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
+        analysisAlbumRefreshExe_.NotifyAssetForReCheck();
         return NotifyForReCheck();
     }
     // 相册通知
     albumRefreshExe_.Notify();
 
+    NotifyForAnalysisInfoChange();
+
     // 资产通知
     return Notify(dataManager_.GetChangeDatas());
+}
+
+void AssetAccurateRefresh::NotifyForAnalysisInfoChange()
+{
+    auto datas = dataManager_.GetChangeDatas();
+    analysisAlbumRefreshExe_.Notify(datas);
 }
 
 int32_t AssetAccurateRefresh::NotifyYuvReady(const int32_t fileId)
@@ -296,9 +312,25 @@ int32_t AssetAccurateRefresh::RefreshAllAlbum(std::unordered_set<int32_t> albumI
     return albumRefreshExe_.RefreshAllAlbum(albumIds, notifyAlbumType, isRefreshWithDateModified);
 }
 
-int32_t AssetAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates &predicates)
+void AssetAccurateRefresh::RefreshAllAnalysisAlbum()
 {
-    return dataManager_.AddAlbumIdForMoveOperation(predicates);
+    set<string> albumIds;
+    vector<string> idArgs;
+    size_t index = 0;
+    for (auto fileId : dataManager_.uniqueFileIds_) {
+        idArgs.emplace_back(std::to_string(fileId));
+        ++index;
+        if (idArgs.size() == MAX_ALBUM_UPDATE_SIZE || index == dataManager_.uniqueFileIds_.size()) {
+            CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(idArgs, albumIds) == E_OK,
+                "Failed to query analysis album id");
+            idArgs.clear();
+        }
+    }
+    vector<string> albumIdVector(albumIds.begin(), albumIds.end());
+    if (!albumIdVector.empty()) {
+        analysisAlbumRefreshExe_.RefreshAllAlbum(albumIdVector);
+    }
+    dataManager_.ClearMultiThreadChangeDatas();
 }
 
 std::shared_ptr<TransactionOperations> AssetAccurateRefresh::GetTransaction()

@@ -25,6 +25,7 @@ ohos_fuzztest("MediaLibraryCloudMediaDataHandlerFuzzTest") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include",
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include/utils",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   include_media_cloud_sync_data = [
@@ -36,6 +37,7 @@ ohos_fuzztest("MediaLibraryCloudMediaDataHandlerFuzzTest") {
 
   sources = [
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibrarycloudmediadatahandler_fuzzer.cpp",
   ]
 
