@@ -26,6 +26,7 @@ namespace OHOS {
 namespace Media {
 namespace {
 const std::string TEST_DB_PATH = "/data/test/backup/clone_restore_cloud_asset_coverage.db";
+constexpr int64_t TEST_MEDIA_SIZE = 4 * 1024;
 
 class CloneCoverageOpenCallback : public RdbOpenCallback {
 public:
@@ -55,7 +56,7 @@ FileInfo BuildFileInfo(int32_t srcPosition, const std::string &cloudId)
     fileInfo.uniqueId = cloudId;
     fileInfo.cloudId = cloudId;
     fileInfo.displayName = "ut.jpg";
-    fileInfo.fileSize = 4096;
+    fileInfo.fileSize = TEST_MEDIA_SIZE;
     fileInfo.orientation = 0;
     fileInfo.ownerAlbumId = 1;
     fileInfo.packageName = "pkg";
@@ -76,7 +77,7 @@ int32_t InsertPhotoRow(const std::shared_ptr<RdbStore> &db, const std::string &c
     values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, cleanFlag);
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
     values.PutString(MediaColumn::MEDIA_NAME, "ut.jpg");
-    values.PutLong(MediaColumn::MEDIA_SIZE, 4096);
+    values.PutLong(MediaColumn::MEDIA_SIZE, TEST_MEDIA_SIZE);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, 0);
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, 1);
     values.PutString(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
@@ -196,25 +197,47 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_NormalDuplicate_
     EXPECT_FALSE(info.needMove);
 }
 
-#define GEN_CLOUD_INSERT_VALUE_TEST(ID, POS, PKG, BUNDLE) \
-HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_##ID, TestSize.Level1) \
-{ \
-    CloneRestore restore; \
-    FileInfo info = BuildFileInfo(POS, "cid-batch-" #ID); \
-    info.packageName = PKG; \
-    info.bundleName = BUNDLE; \
-    NativeRdb::ValuesBucket values = restore.GetCloudInsertValue(info, \
-        "/storage/cloud/files/Photo/1/batch_" #ID ".jpg", 0); \
-    EXPECT_TRUE(values.HasColumn(MediaColumn::MEDIA_FILE_PATH)); \
-    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_POSITION)); \
-    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID)); \
-    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS)); \
+HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_001, TestSize.Level1)
+{
+    CloneRestore restore;
+    FileInfo info = BuildFileInfo(1, "cid-batch-001");
+    info.packageName = "pkg";
+    info.bundleName = "bundle";
+    NativeRdb::ValuesBucket values = restore.GetCloudInsertValue(info,
+        "/storage/cloud/files/Photo/1/batch_001.jpg", 0);
+    EXPECT_TRUE(values.HasColumn(MediaColumn::MEDIA_FILE_PATH));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_POSITION));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
 }
 
-GEN_CLOUD_INSERT_VALUE_TEST(001, 1, "pkg", "bundle")
-GEN_CLOUD_INSERT_VALUE_TEST(005, 2, "", "")
-GEN_CLOUD_INSERT_VALUE_TEST(007, 1, "pkg", "")
-#undef GEN_CLOUD_INSERT_VALUE_TEST
+HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_005, TestSize.Level1)
+{
+    CloneRestore restore;
+    FileInfo info = BuildFileInfo(2, "cid-batch-005");
+    info.packageName = "";
+    info.bundleName = "";
+    NativeRdb::ValuesBucket values = restore.GetCloudInsertValue(info,
+        "/storage/cloud/files/Photo/1/batch_005.jpg", 0);
+    EXPECT_TRUE(values.HasColumn(MediaColumn::MEDIA_FILE_PATH));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_POSITION));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
+}
+
+HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_Batch_007, TestSize.Level1)
+{
+    CloneRestore restore;
+    FileInfo info = BuildFileInfo(1, "cid-batch-007");
+    info.packageName = "pkg";
+    info.bundleName = "";
+    NativeRdb::ValuesBucket values = restore.GetCloudInsertValue(info,
+        "/storage/cloud/files/Photo/1/batch_007.jpg", 0);
+    EXPECT_TRUE(values.HasColumn(MediaColumn::MEDIA_FILE_PATH));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_POSITION));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID));
+    EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_SYNC_STATUS));
+}
 
 } // namespace Media
 } // namespace OHOS

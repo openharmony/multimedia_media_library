@@ -103,46 +103,71 @@ HWTEST_F(BaseRestoreAdditionalCoverageTest, HasExThumbnail_LocalMediaIdValidNonI
     EXPECT_FALSE(restore.HasExThumbnail(info));
 }
 
-HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StopAndStart_001, TestSize.Level1)
+HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StopSetsProcessedToTotal_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
     std::atomic<uint64_t> processedNumber = 1;
     std::atomic<uint64_t> totalNumber = 5;
     restore.UpdateProcessedNumber(STOP, processedNumber, totalNumber);
     EXPECT_EQ(processedNumber.load(), 5);
+}
 
+HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartIncrementsBeforeTotal_001, TestSize.Level1)
+{
+    TestBaseRestoreAdditional restore;
+    std::atomic<uint64_t> processedNumber = 1;
+    std::atomic<uint64_t> totalNumber = 5;
     processedNumber = 1;
     restore.UpdateProcessedNumber(START, processedNumber, totalNumber);
     EXPECT_EQ(processedNumber.load(), 2);
+}
 
+HWTEST_F(BaseRestoreAdditionalCoverageTest, UpdateProcessedNumber_StartDoesNotExceedTotal_001, TestSize.Level1)
+{
+    TestBaseRestoreAdditional restore;
+    std::atomic<uint64_t> processedNumber = 5;
+    std::atomic<uint64_t> totalNumber = 5;
     processedNumber = 5;
     restore.UpdateProcessedNumber(START, processedNumber, totalNumber);
     EXPECT_EQ(processedNumber.load(), 5);
 }
 
-HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_AndLogic_001, TestSize.Level1)
+HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_InvalidAccount_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
     restore.isAccountValid_ = false;
     restore.isSyncSwitchOn_ = true;
     EXPECT_FALSE(restore.IsCloudRestoreSatisfied());
+}
 
+HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_SyncSwitchOff_001, TestSize.Level1)
+{
+    TestBaseRestoreAdditional restore;
     restore.isAccountValid_ = true;
     restore.isSyncSwitchOn_ = false;
     EXPECT_FALSE(restore.IsCloudRestoreSatisfied());
+}
 
+HWTEST_F(BaseRestoreAdditionalCoverageTest, IsCloudRestoreSatisfied_AllConditionsMet_001, TestSize.Level1)
+{
+    TestBaseRestoreAdditional restore;
+    restore.isAccountValid_ = true;
     restore.isSyncSwitchOn_ = true;
     EXPECT_TRUE(restore.IsCloudRestoreSatisfied());
 }
 
-HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_SuccessAndFailed_001, TestSize.Level1)
+HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_Success_001, TestSize.Level1)
 {
     TestBaseRestoreAdditional restore;
     restore.SetErrorCode(RestoreError::SUCCESS);
     auto successJson = restore.GetBackupErrorInfoJson();
     EXPECT_EQ(successJson[STAT_KEY_TYPE], STAT_VALUE_ERROR_INFO);
     EXPECT_EQ(successJson[STAT_KEY_ERROR_CODE], std::to_string(STAT_DEFAULT_ERROR_CODE_SUCCESS));
+}
 
+HWTEST_F(BaseRestoreAdditionalCoverageTest, GetBackupErrorInfoJson_Failed_001, TestSize.Level1)
+{
+    TestBaseRestoreAdditional restore;
     restore.SetErrorCode(RestoreError::INIT_FAILED);
     auto failedJson = restore.GetBackupErrorInfoJson();
     EXPECT_EQ(failedJson[STAT_KEY_ERROR_CODE], std::to_string(STAT_DEFAULT_ERROR_CODE_FAILED));
