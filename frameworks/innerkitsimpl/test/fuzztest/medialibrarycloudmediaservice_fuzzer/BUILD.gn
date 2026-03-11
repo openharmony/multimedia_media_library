@@ -29,6 +29,7 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_CLIENT}/include/utils",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   include_media_cloud_sync_data = [
@@ -84,6 +85,7 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "./medialibrarycloudmediaservice_fuzzer.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
   ]
 
   deps = [

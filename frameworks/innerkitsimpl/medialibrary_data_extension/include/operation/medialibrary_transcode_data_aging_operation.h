@@ -54,7 +54,7 @@ public:
         const TransCodeExifInfo &exifInfo, const std::string &functionName);
     static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         const bool isHeif);
-    static void DoTranscodeDfx(const int32_t &type);
+    static void DoTranscodeDfx(const int32_t &type, TranscodeType transcodeType);
     EXPORT void AgingTmpCompatibleDuplicates();
     EXPORT void InterruptAgingTmpCompatibleDuplicates();
     EXPORT int32_t AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath);

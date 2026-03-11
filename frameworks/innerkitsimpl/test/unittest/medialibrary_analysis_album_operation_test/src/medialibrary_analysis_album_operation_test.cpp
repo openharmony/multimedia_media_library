@@ -971,5 +971,204 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetHighlightAttribute_test_001,
     resultSet->Close();
     MEDIA_INFO_LOG("end SetHighlightAttribute_test_001");
 }
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start QueryGroupPhotoAlbum_test_003");
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "ALBUM_TYPE =? AND ALBUM_SUBTYPE =? AND is_me =?";
+    std::vector<std::string> whereArgs = {"1", "2", "1"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+    MEDIA_INFO_LOG("end QueryGroupPhotoAlbum_test_003");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start QueryGroupPhotoAlbum_test_004");
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "ALBUM_TYPE =? AND ALBUM_SUBTYPE =? AND is_removed =?";
+    std::vector<std::string> whereArgs = {"1", "2", "1"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+    MEDIA_INFO_LOG("end QueryGroupPhotoAlbum_test_004");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start QueryGroupPhotoAlbum_test_005");
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "ALBUM_TYPE =? AND ALBUM_SUBTYPE =? AND user_display_level =?";
+    std::vector<std::string> whereArgs = {"1", "2", "3"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+    MEDIA_INFO_LOG("end QueryGroupPhotoAlbum_test_005");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start QueryGroupPhotoAlbum_test_006");
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "ALBUM_TYPE =? AND ALBUM_SUBTYPE =?";
+    std::vector<std::string> whereArgs = {"1", "2"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    cmd.GetAbsRdbPredicates()->Limit(10);
+    cmd.GetAbsRdbPredicates()->Offset(5);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+    MEDIA_INFO_LOG("end QueryGroupPhotoAlbum_test_006");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupAlbumName_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetGroupAlbumName_test_002");
+    OperationType operationType = OperationType::GROUP_ALBUM_NAME;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates dataPredicates;
+    dataPredicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    CleanTestTables();
+    EXPECT_NE(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
+    MEDIA_INFO_LOG("end SetGroupAlbumName_test_002");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupCoverUri_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetGroupCoverUri_test_002");
+    OperationType operationType = OperationType::GROUP_COVER_URI;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates dataPredicates;
+    dataPredicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    CleanTestTables();
+    EXPECT_NE(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
+    MEDIA_INFO_LOG("end SetGroupCoverUri_test_002");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateGroupPhotoAlbumById_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start UpdateGroupPhotoAlbumById_test_002");
+    ClearTables();
+    int32_t albumId = 1;
+    MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(albumId);
+    MEDIA_INFO_LOG("end UpdateGroupPhotoAlbumById_test_002");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumPortraitsOrder_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetAnalysisAlbumPortraitsOrder_test_001");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
+    NativeRdb::ValuesBucket values;
+    values.Put(RANK, "1");
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, "1");
+    int32_t result = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumPortraitsOrder(cmd);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("end SetAnalysisAlbumPortraitsOrder_test_001");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumOrderPosition_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetAnalysisAlbumOrderPosition_test_002");
+    ASSERT_TRUE(g_rdbStore);
+    ClearTables();
+    string sqlStr = "INSERT INTO AnalysisPhotoMap (map_album, map_asset, order_position) VALUES (1, 2 ,3)";
+    auto ret = g_rdbStore->ExecuteSql(sqlStr);
+    EXPECT_EQ(ret, E_OK);
+
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutInt(ORDER_POSITION, 1);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(ORDER_POSITION, to_string(3));
+    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end SetAnalysisAlbumOrderPosition_test_002");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetHighlightAttribute_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetHighlightAttribute_test_002");
+    int32_t albumId = 1;
+    int32_t highlightAlbumChangeAttribute = 4;
+    std::string value = "1";
+    int32_t ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, value);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("end SetHighlightAttribute_test_002");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetCheckHighlightAttributeValue_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetCheckHighlightAttributeValue_test_001");
+    int32_t albumId = 1;
+    int32_t ret = InsertValueHighlightAlbum(albumId);
+    EXPECT_EQ(ret, E_OK);
+    int32_t highlightAlbumChangeAttribute = 0;
+    std::string invalidValue = "2";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, invalidValue);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("end SetCheckHighlightAttributeValue_test_001");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetCheckHighlightAttributeValue_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start SetCheckHighlightAttributeValue_test_002");
+    int32_t albumId = 1;
+    int32_t ret = InsertValueHighlightAlbum(albumId);
+    EXPECT_EQ(ret, E_OK);
+    int32_t highlightAlbumChangeAttribute = 1;
+    std::string invalidValue = "abc";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, invalidValue);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("end SetCheckHighlightAttributeValue_test_002");
+}
 } // namespace Media
 } // namespace OHOS

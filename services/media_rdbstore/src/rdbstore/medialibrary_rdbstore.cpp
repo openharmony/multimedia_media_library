@@ -76,6 +76,7 @@
 #include "media_string_utils.h"
 #include "media_values_bucket_utils.h"
 #include "media_operation_log_column.h"
+#include "media_compatible_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2006,6 +2007,7 @@ static const vector<string> onCreateSqlStrs = {
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 
     TabOperationLogColumn::CREATE_TABLE,
+    TabCompatibleInfoColumn::CREATE_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -5883,13 +5885,25 @@ static void AddCinematicVideoAlbum(RdbStore &store, int32_t version)
 
 static void UpdateTriggerForAnalysisAlbum(RdbStore &store, int32_t version)
 {
-    const vector<string> executeSqlStrs = {
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + SEARCH_TOTAL_TABLE + " ADD COLUMN " + TBL_SEARCH_FACE_STATUS + " INT DEFAULT 0 ",
+        "ALTER TABLE " + SEARCH_TOTAL_TABLE + " ADD COLUMN " + TBL_SEARCH_ALBUM_STATUS + " INT DEFAULT 0 ",
         "DROP TRIGGER IF EXISTS " + ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
-        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
+        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
     ExecSqlsWithDfx(executeSqlStrs, store, version);
     MEDIA_INFO_LOG("End update album modify trigger");
+}
+
+static void CreateTabComPatibleInfo(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("create tab_compatible_info starts");
+    const vector<string> sqls = {
+        TabCompatibleInfoColumn::CREATE_TABLE
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("create tab_compatible_info ends");
 }
 
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
@@ -5922,6 +5936,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true)) {
         AddUniqueIdColumns(store, VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
+        CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
     }
 }
 

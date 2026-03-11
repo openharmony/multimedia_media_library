@@ -149,6 +149,11 @@ static void InsertPhotosData(int32_t fileId, int32_t frontCamera = 0)
     g_classifyRdbStore->GetRaw()->ExecuteSql(sql, params);
 }
 
+/*
+ * Test interface: ClassifyRestore::Init
+ * Test content: Initialize classify restore with valid parameters
+ * Cover branches: Normal flow with valid scene code, task ID, and database pointers
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_init_test_001 start");
@@ -160,6 +165,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_00
     EXPECT_NE(classifyRestore.galleryRdb_, nullptr);
 }
 
+/*
+ * Test interface: ClassifyRestore::Init
+ * Test content: Initialize classify restore with empty task ID
+ * Cover branches: Empty task ID branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_init_test_002 start");
@@ -168,6 +178,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_00
     EXPECT_EQ(classifyRestore.taskId_, "");
 }
 
+/*
+ * Test interface: ClassifyRestore::Init
+ * Test content: Initialize classify restore with null media library RDB
+ * Cover branches: Null media library RDB pointer
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_init_test_003 start");
@@ -176,6 +191,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_00
     EXPECT_EQ(classifyRestore.mediaLibraryRdb_, nullptr);
 }
 
+/*
+ * Test interface: ClassifyRestore::Init
+ * Test content: Initialize classify restore with null gallery RDB
+ * Cover branches: Null gallery RDB pointer
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_init_test_004 start");
@@ -184,6 +204,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_init_test_00
     EXPECT_EQ(classifyRestore.galleryRdb_, nullptr);
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse sub label string with valid format [1,2,3]
+ * Cover branches: Normal flow with valid array format
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_001 start");
@@ -198,6 +223,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels[2], 3);
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse empty sub label string []
+ * Cover branches: Empty array branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_002 start");
@@ -209,6 +239,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse empty sub label string
+ * Cover branches: Empty string branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_003 start");
@@ -220,6 +255,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse sub label string with extra spaces
+ * Cover branches: Valid array with spaces between elements
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_004 start");
@@ -234,6 +274,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels[2], 3);
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse sub label string with invalid element
+ * Cover branches: Invalid element handling, skip non-numeric values
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_005 start");
@@ -247,6 +292,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels[1], 3);
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse sub label string without brackets
+ * Cover branches: Invalid format without brackets
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_parse_sub_label_test_006 start");
@@ -258,6 +308,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels.size(), static_cast<size_t>(3));
 }
 
+/*
+ * Test interface: ClassifyRestore::ParseSubLabel
+ * Test content: Parse sub label string with valid format [1,2,3]
+ * Cover branches: Normal flow with valid array format
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_label_test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medial_classify_restore_parse_sub_label_test_007 start");
@@ -269,6 +324,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_parse_sub_la
     EXPECT_EQ(labels.size(), static_cast<size_t>(3));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetAggregateTypes
+ * Test content: Get aggregate types from valid labels
+ * Cover branches: Normal flow with valid labels
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregate_types_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_aggregate_types_test_001 start");
@@ -280,6 +340,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregat
     EXPECT_GE(aggregates.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetAggregateTypes
+ * Test content: Get aggregate types from empty labels
+ * Cover branches: Empty labels branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregate_types_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_aggregate_types_test_002 start");
@@ -291,6 +356,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregat
     EXPECT_EQ(aggregates.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetAggregateTypes
+ * Test content: Get aggregate types from invalid labels
+ * Cover branches: Invalid label that doesn't map to any aggregate type
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregate_types_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_aggregate_types_test_003 start");
@@ -302,6 +372,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregat
     EXPECT_EQ(aggregates.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetAggregateTypes
+ * Test content: Get aggregate types with duplicate labels
+ * Cover branches: Duplicate labels handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregate_types_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_aggregate_types_test_004 start");
@@ -313,6 +388,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_aggregat
     EXPECT_EQ(aggregates.size(), aggregates.size());
 }
 
+/*
+ * Test interface: ClassifyRestore::CollectAlbumInfo
+ * Test content: Collect album info with valid parameters
+ * Cover branches: Normal flow with valid file ID, category ID, and labels
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_album_info_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_collect_album_info_test_001 start");
@@ -327,6 +407,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_albu
     EXPECT_GT(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CollectAlbumInfo
+ * Test content: Collect album info with invalid category ID
+ * Cover branches: Invalid category ID branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_album_info_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_collect_album_info_test_002 start");
@@ -341,6 +426,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_albu
     EXPECT_GT(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CollectAlbumInfo
+ * Test content: Collect album info with zero file ID
+ * Cover branches: Zero file ID branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_album_info_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_collect_album_info_test_003 start");
@@ -355,6 +445,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_albu
     EXPECT_EQ(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CollectAlbumInfo
+ * Test content: Collect album info with empty labels
+ * Cover branches: Empty labels branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_album_info_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_collect_album_info_test_004 start");
@@ -369,6 +464,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_albu
     EXPECT_GT(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CollectAlbumInfo
+ * Test content: Collect album info with duplicate labels
+ * Cover branches: Duplicate labels handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_album_info_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_collect_album_info_test_005 start");
@@ -383,6 +483,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_collect_albu
     EXPECT_GT(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetImageCollectionSize
+ * Test content: Get image collection size with valid data
+ * Cover branches: Normal flow with valid table and data
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_collection_size_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_image_collection_size_test_001 start");
@@ -415,6 +520,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_co
     g_rdbStore->GetRaw()->ExecuteSql("DROP TABLE IF EXISTS image_collection");
 }
 
+/*
+ * Test interface: ClassifyRestore::GetImageCollectionSize
+ * Test content: Get image collection size without table
+ * Cover branches: Table doesn't exist branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_collection_size_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_image_collection_size_test_002 start");
@@ -425,6 +535,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_co
     EXPECT_EQ(size, -1);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetImageCollectionSize
+ * Test content: Get image collection size with null gallery RDB
+ * Cover branches: Null gallery RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_collection_size_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_image_collection_size_test_003 start");
@@ -435,6 +550,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_image_co
     EXPECT_EQ(size, -1);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetShouldEndTime
+ * Test content: Get should end time with valid parameters
+ * Cover branches: Normal flow with valid photo info map and collection size
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_end_time_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_should_end_time_test_001 start");
@@ -451,6 +571,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_e
     EXPECT_GT(endTime, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetShouldEndTime
+ * Test content: Get should end time with invalid task ID
+ * Cover branches: Invalid task ID branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_end_time_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_should_end_time_test_002 start");
@@ -467,6 +592,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_e
     EXPECT_EQ(endTime, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetShouldEndTime
+ * Test content: Get should end time with empty task ID
+ * Cover branches: Empty task ID branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_end_time_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_should_end_time_test_003 start");
@@ -483,6 +613,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_e
     EXPECT_EQ(endTime, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetShouldEndTime
+ * Test content: Get should end time with large photo info map
+ * Cover branches: Large data set handling (40000 items)
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_end_time_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medial_library_classify_restore_get_should_end_time_test_004 start");
@@ -501,6 +636,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_e
     EXPECT_GT(endTime, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetShouldEndTime
+ * Test content: Get should end time with zero image collection size
+ * Cover branches: Zero image collection size branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_end_time_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_should_end_time_test_005 start");
@@ -517,6 +657,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_should_e
     EXPECT_GT(endTime, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsurelyClassifyAlbumId
+ * Test content: Ensure classify album ID with valid album name
+ * Cover branches: Normal flow with valid album name
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_classify_album_id_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_classify_album_id_test_001 start");
@@ -528,6 +673,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_class
     EXPECT_GT(albumId, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsurelyClassifyAlbumId
+ * Test content: Ensure classify album ID with duplicate calls
+ * Cover branches: Duplicate album name handling, should return same ID
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_classify_album_id_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_classify_album_id_test_002 start");
@@ -540,7 +690,12 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_class
     EXPECT_EQ(albumId1, albumId2);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTestTest, medialibrary_classify_restore_ensure_classify_id_test_003, TestSize.Level2)
+/*
+ * Test interface: ClassifyRestore::EnsurelyClassifyAlbumId
+ * Test content: Ensure classify album ID with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_classify_album_id_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_classify_id_test_003 start");
     ClassifyRestore classifyRestore;
@@ -551,6 +706,11 @@ HWTEST_F(MediaLibraryBackupCloneTestTest, medialibrary_classify_restore_ensure_c
     EXPECT_EQ(albumId, -1);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsurelyClassifyAlbumId
+ * Test content: Ensure classify album ID with album name "1"
+ * Cover branches: Special album name handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_classify_album_id_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_classify_album_id_test_004 start");
@@ -562,6 +722,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_class
     EXPECT_GT(albumId, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsurelyClassifyAlbumId
+ * Test content: Ensure classify album ID with album name "2"
+ * Cover branches: Special album name handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_classify_album_id_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_classify_album_id_test_005 start");
@@ -573,6 +738,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_class
     EXPECT_GT(albumId, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureSelfieAlbum
+ * Test content: Ensure selfie album with front camera photo
+ * Cover branches: Normal flow with front camera photo data
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfie_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_selfie_album_test_001 start");
@@ -597,6 +767,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfi
     EXPECT_GT(count, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureSelfieAlbum
+ * Test content: Ensure selfie album with back camera photo
+ * Cover branches: Back camera photo (not selfie) handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfie_album_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_selfie_album_test_002 start");
@@ -607,6 +782,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfi
     classifyRestore.EnsureSelfieAlbum();
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureSelfieAlbum
+ * Test content: Ensure selfie album with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfie_album_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_selfie_album_test_003 start");
@@ -616,6 +796,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_selfi
     classifyRestore.EnsureSelfieAlbum();
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureUserCommentAlbum
+ * Test content: Ensure user comment album with comment data
+ * Cover branches: Normal flow with user comment data
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_user_comment_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_user_comment_album_test_001 start");
@@ -646,6 +831,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_user_
     EXPECT_GT(count, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureUserCommentAlbum
+ * Test content: Ensure user comment album without comment data
+ * Cover branches: No user comment data handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_comment_album_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_comment_album_test_002 start");
@@ -656,6 +846,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_comme
     classifyRestore.EnsureUserCommentAlbum();
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureUserCommentAlbum
+ * Test content: Ensure user comment album with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_user_comment_album_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_user_comment_album_test_003 start");
@@ -665,6 +860,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_user_
     classifyRestore.EnsureUserCommentAlbum();
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureSpecialAlbums
+ * Test content: Ensure special albums with front camera photo
+ * Cover branches: Normal flow with front camera photo data
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_special_albums_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_special_albums_test_001 start");
@@ -675,6 +875,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_speci
     classifyRestore.EnsureSpecialAlbums();
 }
 
+/*
+ * Test interface: ClassifyRestore::EnsureSpecialAlbums
+ * Test content: Ensure special albums with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_special_albums_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_ensure_special_albums_test_002 start");
@@ -684,6 +889,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_ensure_speci
     classifyRestore.EnsureSpecialAlbums();
 }
 
+/*
+ * Test interface: ClassifyRestore::ProcessCategoryAlbums
+ * Test content: Process category albums with valid album info
+ * Cover branches: Normal flow with valid album asset map
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_process_category_albums_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_process_category_albums_test_001 start");
@@ -699,6 +909,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_process_cate
     EXPECT_EQ(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::ProcessCategoryAlbums
+ * Test content: Process category albums with empty album info
+ * Cover branches: Empty album asset map branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_process_category_albums_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_process_category_albums_test_002 start");
@@ -709,6 +924,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_process_cate
     EXPECT_EQ(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CreateOrUpdateCategoryAlbums
+ * Test content: Create or update category albums with valid album info
+ * Cover branches: Normal flow with valid album asset map
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_create_category_albums_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_create_category_albums_test_001 start");
@@ -724,6 +944,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_create_categ
     EXPECT_EQ(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::CreateOrUpdateCategoryAlbums
+ * Test content: Create or update category albums with empty album info
+ * Cover branches: Empty album asset map branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_create_category_albums_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_create_category_albums_test_002 start");
@@ -734,6 +959,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_create_categ
     EXPECT_EQ(classifyRestore.albumAssetMap_.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::InsertAlbumMappings
+ * Test content: Insert album mappings with valid values
+ * Cover branches: Normal flow with valid values bucket
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_insert_album_mappings_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_insert_album_mappings_test_001 start");
@@ -750,6 +980,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_insert_album
     EXPECT_EQ(values.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::InsertAlbumMappings
+ * Test content: Insert album mappings with empty values
+ * Cover branches: Empty values bucket branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_insert_album_mappings_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_insert_album_mappings_test_002 start");
@@ -761,6 +996,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_insert_album
     EXPECT_EQ(values.size(), static_cast<size_t>(0));
 }
 
+/*
+ * Test interface: ClassifyRestore::GetMaxIds
+ * Test content: Get max IDs from empty tables
+ * Cover branches: Empty tables branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_max_ids_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_max_ids_test_001 start");
@@ -771,6 +1011,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_max_ids_
     EXPECT_GE(classifyRestore.maxIdOfLabel_, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::GetMaxIds
+ * Test content: Get max IDs with existing label data
+ * Cover branches: Normal flow with existing data
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_max_ids_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_get_max_ids_test_002 start");
@@ -792,6 +1037,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_get_max_ids_
     EXPECT_GT(classifyRestore.maxIdOfLabel_, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::UpdateStatus
+ * Test content: Update status with valid file IDs
+ * Cover branches: Normal flow with valid file IDs
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_update_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_update_status_test_001 start");
@@ -802,6 +1052,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_update_statu
     classifyRestore.UpdateStatus(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::UpdateStatus
+ * Test content: Update status with empty file IDs
+ * Cover branches: Empty file IDs branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_update_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_update_status_test_002 start");
@@ -812,6 +1067,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_update_statu
     classifyRestore.UpdateStatus(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::DeleteExistMapping
+ * Test content: Delete existing mapping with valid file IDs
+ * Cover branches: Normal flow with valid file IDs
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_delete_exist_mapping_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_delete_exist_mapping_test_001 start");
@@ -822,6 +1082,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_delete_exist
     classifyRestore.DeleteExistMapping(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::DeleteExistMapping
+ * Test content: Delete existing mapping with empty file IDs
+ * Cover branches: Empty file IDs branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_delete_exist_mapping_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_delete_exist_mapping_test_002 start");
@@ -832,6 +1097,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_delete_exist
     classifyRestore.DeleteExistMapping(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::RestoreClassify
+ * Test content: Restore classify with valid photo info map
+ * Cover branches: Normal flow with valid photo info map
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_classify_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_restore_classify_test_001 start");
@@ -846,6 +1116,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_clas
     classifyRestore.RestoreClassify(photoInfoMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::RestoreClassify
+ * Test content: Restore classify with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_classify_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_restore_classify_test_002 start");
@@ -860,6 +1135,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_clas
     classifyRestore.RestoreClassify(photoInfoMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::RestoreClassify
+ * Test content: Restore classify with null gallery RDB
+ * Cover branches: Null gallery RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_classify_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_restore_class_test_003 start");
@@ -874,6 +1154,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_clas
     classifyRestore.RestoreClassify(photoInfoMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::RestoreClassify
+ * Test content: Restore classify with empty photo info map
+ * Cover branches: Empty photo info map branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_class_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_restore_class_test_004 start");
@@ -884,10 +1169,15 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_restore_clas
     classifyRestore.RestoreClassify(photoInfoMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::BatchInsertWithRetry
+ * Test content: Batch insert with retry with valid values
+ * Cover branches: Normal flow with valid values bucket
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_batch_insert_with_retry_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_batch_insert_with_retry_test_001 start");
-    ClassifyRestore classify;
+    ClassifyRestore classifyRestore;
     classifyRestore.Init(TEST_SCENE_CODE, TEST_TASK_ID, g_rdbStore->GetRaw(), g_rdbStore->GetRaw());
     
     vector<NativeRdb::ValuesBucket> values;
@@ -905,6 +1195,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_batch_insert
     EXPECT_GT(rowNum, 0);
 }
 
+/*
+ * Test interface: ClassifyRestore::BatchInsertWithRetry
+ * Test content: Batch insert with retry with empty values
+ * Cover branches: Empty values bucket branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_batch_insert_with_retry_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_batch_insert_with_retry_test_002 start");
@@ -917,6 +1212,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_batch_insert
     EXPECT_EQ(errCode, E_OK);
 }
 
+/*
+ * Test interface: ClassifyRestore::HandleOcr
+ * Test content: Handle OCR with valid sub label map
+ * Cover branches: Normal flow with valid sub label map
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_handle_ocr_test_001 start");
@@ -929,6 +1229,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_t
     classifyRestore.HandleOcr(subLabelMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::HandleOcr
+ * Test content: Handle OCR with ID card label
+ * Cover branches: ID card label handling
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_handle_ocr_test_002 start");
@@ -941,6 +1246,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_t
     classifyRestore.HandleOcr(subLabelMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::HandleOcr
+ * Test content: Handle OCR with empty sub label map
+ * Cover branches: Empty sub label map branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medial_library_classify_restore_handle_ocr_test_003 start");
@@ -951,6 +1261,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_t
     classifyRestore.HandleOcr(subLabelMap);
 }
 
+/*
+ * Test interface: ClassifyRestore::HandleOcrHelper
+ * Test content: Handle OCR helper with valid file IDs
+ * Cover branches: Normal flow with valid file IDs
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_helper_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_handle_ocr_helper_test_001 start");
@@ -961,6 +1276,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_h
     classifyRestore.HandleOcrHelper(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::HandleOcrHelper
+ * Test content: Handle OCR helper with empty file IDs
+ * Cover branches: Empty file IDs branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_helper_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_handle_ocr_helper_test_002 start");
@@ -971,6 +1291,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_handle_ocr_h
     classifyRestore.HandleOcrHelper(fileIds);
 }
 
+/*
+ * Test interface: ClassifyRestore::AddIdCardAlbum
+ * Test content: Add ID card album with valid file IDs
+ * Cover branches: Normal flow with valid file IDs
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_add_id_card_album_test_001 start");
@@ -981,6 +1306,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_
     classifyRestore.AddIdCardAlbum(OcrAggregateType::ID_CARD, fileIdsToUpdateSet);
 }
 
+/*
+ * Test interface: ClassifyRestore::AddIdCardAlbum
+ * Test content: Add ID card album with empty file IDs
+ * Cover branches: Empty file IDs branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_album_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_add_id_card_album_test_002 start");
@@ -991,6 +1321,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_
     classifyRestore.AddIdCardAlbum(OcrAggregateType::ID_CARD, fileIdsToUpdateSet);
 }
 
+/*
+ * Test interface: ClassifyRestore::AddIdCardAlbum
+ * Test content: Add ID card album with null media library RDB
+ * Cover branches: Null media library RDB pointer branch
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_album_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_add_id_card_album_test_003 start");
@@ -1001,6 +1336,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_add_id_card_
     classifyRestore.AddIdCardAlbum(OcrAggregateType::ID_CARD, fileIdsToUpdateSet);
 }
 
+/*
+ * Test interface: ClassifyRestore::ReportRestoreTask
+ * Test content: Report restore task with default values
+ * Cover branches: Normal flow with default counter values
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_report_restore_task_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_report_restore_task_test_001 start");
@@ -1010,6 +1350,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_report_resto
     classifyRestore.ReportRestoreTask();
 }
 
+/*
+ * Test interface: ClassifyRestore::ReportRestoreTask
+ * Test content: Report restore task with specific counter values
+ * Cover branches: Normal flow with specific counter values
+ */
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_classify_restore_report_restore_task_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_classify_restore_report_restore_task_test_002 start");

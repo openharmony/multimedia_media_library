@@ -28,7 +28,10 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_ = {
+const std::string GROUP_TAG = "group_tag";
+const std::string IS_COVER_SATISFIED = "is_cover_satisfied";
+
+const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoColumnTypes_ = {
     { PhotoAlbumColumns::ALBUM_LPATH, TYPE_STRING },
     { PhotoAlbumColumns::ALBUM_IMAGE_COUNT, TYPE_INT32 },
     { PhotoAlbumColumns::ALBUM_VIDEO_COUNT, TYPE_INT32 },
@@ -51,9 +54,28 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::ALBUM_HIDDEN, TYPE_INT32 }
 };
 
+const map<std::string, ResultSetDataType> AlbumChangeInfo::analysisAlbumInfoColumnTypes_ = {
+    { PhotoAlbumColumns::ALBUM_ID, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING },
+    { PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING },
+    { IS_COVER_SATISFIED, TYPE_INT32 },
+    { GROUP_TAG, TYPE_STRING },
+};
+
 const vector<std::string> AlbumChangeInfo::albumInfoColumns_ = []() {
     vector<string> result;
-    for (const auto &item : albumInfoCloumnTypes_) {
+    for (const auto &item : albumInfoColumnTypes_) {
+        result.push_back(item.first);
+    }
+    return result;
+}();
+
+const vector<std::string> AlbumChangeInfo::analysisAlbumInfoColumns_ = []() {
+    vector<string> result;
+    for (const auto &item : analysisAlbumInfoColumnTypes_) {
         result.push_back(item.first);
     }
     return result;
@@ -64,8 +86,12 @@ const std::vector<std::string>& AlbumChangeInfo::GetAlbumInfoColumns()
     return albumInfoColumns_;
 }
 
-vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
-    const shared_ptr<NativeRdb::ResultSet> &resultSet, const std::vector<std::string> &columns)
+const std::vector<std::string>& AlbumChangeInfo::GetAnalysisAlbumInfoColumns()
+{
+    return analysisAlbumInfoColumns_;
+}
+
+vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(const shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     vector<AlbumChangeInfo> albumChangeInfos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -118,6 +144,35 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
     return albumChangeInfos;
 }
 
+vector<AlbumChangeInfo> AlbumChangeInfo::GetAnalysisAlbumInfoFromResult(
+    const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    vector<AlbumChangeInfo> albumChangeInfos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        AlbumChangeInfo albumChangeInfo;
+        albumChangeInfo.albumId_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID,
+            resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_ID)));
+        albumChangeInfo.albumType_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_TYPE,
+            resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_TYPE)));
+        albumChangeInfo.albumSubType_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_SUBTYPE)));
+        albumChangeInfo.albumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+            to_string(albumChangeInfo.albumId_));
+        albumChangeInfo.coverUri_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI,
+            resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_COVER_URI)));
+        albumChangeInfo.albumName_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME,
+            resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_NAME)));
+        albumChangeInfo.count_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT,
+            resultSet, GetAnalysisAlbumDataType(PhotoAlbumColumns::ALBUM_COUNT)));
+        albumChangeInfo.isCoverSatisfied_ = get<int32_t>(ResultSetUtils::GetValFromColumn(IS_COVER_SATISFIED,
+            resultSet, GetAnalysisAlbumDataType(IS_COVER_SATISFIED)));
+        albumChangeInfo.groupTag_ = get<string>(ResultSetUtils::GetValFromColumn(GROUP_TAG,
+            resultSet, GetAnalysisAlbumDataType(GROUP_TAG)));
+        albumChangeInfos.push_back(albumChangeInfo);
+    }
+    return albumChangeInfos;
+}
+
 void AlbumChangeInfo::SetPhotoAlbumHidden(AlbumChangeInfo &albumChangeInfo,
     const shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
@@ -154,8 +209,17 @@ string AlbumChangeInfo::ToString(bool isDetail) const
 
 ResultSetDataType AlbumChangeInfo::GetDataType(const std::string &column)
 {
-    auto const &item = albumInfoCloumnTypes_.find(column);
-    if (item == albumInfoCloumnTypes_.end()) {
+    auto const &item = albumInfoColumnTypes_.find(column);
+    if (item == albumInfoColumnTypes_.end()) {
+        return TYPE_NULL;
+    }
+    return item->second;
+}
+
+ResultSetDataType AlbumChangeInfo::GetAnalysisAlbumDataType(const std::string &column)
+{
+    auto const &item = analysisAlbumInfoColumnTypes_.find(column);
+    if (item == analysisAlbumInfoColumnTypes_.end()) {
         return TYPE_NULL;
     }
     return item->second;
@@ -259,6 +323,16 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
     }
     ret = ret && parcel.WriteInt32(albumId_);
     return ret;
+}
+
+bool AlbumChangeData::Marshalling(Parcel &parcel) const
+{
+    return Marshalling(parcel, false);
+}
+
+bool AlbumChangeData::Marshalling(Parcel &parcel, bool isSystem) const
+{
+    return AccurateRefreshChangeData<AlbumChangeInfo>::Marshalling(parcel, isSystem);
 }
 
 bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
@@ -417,6 +491,14 @@ bool AlbumChangeData::IsAlbumHiddenInfoChange()
     return infoAfterChange_.isHiddenCoverChange_ || (infoBeforeChange_.hiddenCount_ != infoAfterChange_.hiddenCount_);
 }
 
+bool AlbumChangeData::IsAnalysisAlbumInfoChange()
+{
+    return infoBeforeChange_.count_ != infoAfterChange_.count_ ||
+        infoBeforeChange_.coverUri_ != infoAfterChange_.coverUri_ ||
+        infoBeforeChange_.isCoverSatisfied_ != infoAfterChange_.isCoverSatisfied_ ||
+        infoBeforeChange_.groupTag_ != infoAfterChange_.groupTag_;
+}
+
 string AlbumRefreshInfo::ToString() const
 {
     stringstream ss;
@@ -439,6 +521,17 @@ string AlbumRefreshInfo::ToString() const
         ss << ", isHiddenForceRefresh_: " << isHiddenForceRefresh_;
     }
     
+    return ss.str();
+}
+
+string AnalysisAlbumRefreshInfo::ToString() const
+{
+    stringstream ss;
+    ss << "deltaCount_: " << deltaCount_ << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_
+        << ", remove asset size: " << removeFileIds_.size() << ", needRefreshCover_: " << needRefreshCover_
+        << ", isForceRefresh_: " << isForceRefresh_ << ", refreshCover_: "
+        << MediaFileUtils::DesensitizeUri(refreshCover_) << ", album timestamp: "
+        << albumRefreshTimestamp_.ToString();
     return ss.str();
 }
 

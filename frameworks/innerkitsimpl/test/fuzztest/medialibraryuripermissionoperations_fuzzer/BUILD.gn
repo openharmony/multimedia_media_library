@@ -22,9 +22,13 @@ ohos_fuzztest("MediaLibraryUriPermissionOperationsFuzzTest") {
     ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
-  sources = [ "./medialibraryuripermissionoperations_fuzzer.cpp" ]
+  sources = [
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
+    "./medialibraryuripermissionoperations_fuzzer.cpp"
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

@@ -14,6 +14,7 @@
  */
 
 #include "medialibraryfileparseinterface_fuzzer.h"
+#include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
 #include <memory>
@@ -262,12 +263,7 @@ static void Init()
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
-    int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
-        abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
-
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto rdbStore = Media::MediaLibraryRdbStoreUtilsTest::InitMediaLibraryRdbStore(abilityContextImpl);
     if (rdbStore == nullptr) {
         return;
     }
@@ -297,11 +293,6 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
-
-static inline void ClearKvStore()
-{
-    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
-}
 } // namespace Media
 } // namespace OHOS
 
@@ -326,6 +317,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::MovingPhotoFileUtilsTest();
     OHOS::Media::ExtractAVMetadataTest();
     OHOS::Media::MediaPrivacyManagerTest();
-    OHOS::Media::ClearKvStore();
     return 0;
 }

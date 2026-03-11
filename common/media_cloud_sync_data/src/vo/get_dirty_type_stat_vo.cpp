@@ -20,16 +20,19 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool GetDirtyTypeStatRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling<uint64_t>(this->statList, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Unmarshalling<uint64_t>(this->statList, parcel), false, "statList");
+    return true;
 }
 
 bool GetDirtyTypeStatRespBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling<uint64_t>(this->statList, parcel);
+    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<uint64_t>(this->statList, parcel), false, "statList");
+    return true;
 }
 
 std::string GetDirtyTypeStatRespBody::ToString() const

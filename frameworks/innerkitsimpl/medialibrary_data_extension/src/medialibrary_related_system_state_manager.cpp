@@ -155,14 +155,14 @@ bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
 // wifi和 无限流量场景组合 wifi连接+未使用蜂窝+网络连通 受无限流量开关控制 不偷跑流量
 bool MedialibraryRelatedSystemStateManager::IsNetAvailableWithUnlimitCondition()
 {
-    return IsNetValidatedAtRealTime() && ((IsWifiConnected() && !IsCellularNetConnected()) ||
-        (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    return IsNetValidatedAtRealTime() && ((IsWifiConnectedAtRealTime() && !IsCellularNetConnectedAtRealTime()) ||
+        (IsCellularNetConnectedAtRealTime() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
 }
 
 // 仅wifi下可用
 bool MedialibraryRelatedSystemStateManager::IsNetAvailableInOnlyWifiCondition()
 {
-    return IsNetValidatedAtRealTime() && (IsWifiConnected() && !IsCellularNetConnected());
+    return IsNetValidatedAtRealTime() && (IsWifiConnectedAtRealTime() && !IsCellularNetConnectedAtRealTime());
 }
 // LCOV_EXCL_STOP
 } // namespace Media

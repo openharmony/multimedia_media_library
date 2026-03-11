@@ -41,14 +41,15 @@ public:
     static std::string GarbleFilePath(const std::string &filePath, int32_t sceneCode, std::string cloneFilePath = "");
     static std::string GarbleFileName(const std::string &fileName);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
-        std::string &filePath);
+        std::string &filePath, int32_t fixedBucketNum = -1);
     static std::string GetFullPathByPrefixType(PrefixType prefixType, const std::string &relativePath);
     static int32_t CreatePath(int32_t mediaType, const std::string &displayName, std::string &path);
     static int32_t PreparePath(const std::string &path);
-    static int32_t MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
     static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
         const std::string &path);
+    static int32_t MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
     static void ModifyFile(const std::string path, int64_t modifiedTime);
+    static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
     static int32_t IsFileValid(std::string &filePath, int32_t sceneCode,
@@ -98,6 +99,7 @@ private:
 
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
+    static int32_t CreateBucketNum(int32_t fileId, int32_t &bucketNum);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
     static std::shared_ptr<FileAccessHelper> fileAccessHelper_;

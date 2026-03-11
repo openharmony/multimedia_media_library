@@ -87,6 +87,7 @@ private:
     bool thumbnailBgGenerationStatus_{false};
     bool checkInLakeStatus_{false};
     bool timerStatus_{false};
+    bool isBackgroundTaskAllowed_{true};
     static bool isCellularNetConnected_;
     std::mutex mutex_;
     int32_t agingCount_ {0};
@@ -146,7 +147,10 @@ private:
     void DoAgingOperation();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
     void UploadDB();
-    void ResetCloneFlagAfterOneDay();
+    void PreProcessForUpdateStatus();
+    bool CheckOnRestoreAndTryResetFlag();
+    void UpdateGlobalStatusForBgTask();
+    bool IsBackgroundTaskAllowed();
 
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);

@@ -41,6 +41,8 @@ public:
     static const std::string SINGLE_PHOTO_CHANGE EXPORT;
     static const std::string SINGLE_PHOTO_ALBUM_CHANGE EXPORT;
     static const std::string USER_CLIENT_CHANGE EXPORT;
+    static const std::string ANALYSIS_PHOTO_CHANGE EXPORT;
+    static const std::string ANALYSIS_ALBUM_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
@@ -89,6 +91,8 @@ public:
         &changeInfos);
     static napi_value BuildPhotoAssetChangeInfos(napi_env env,
         const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+    static napi_value BuildAlbumChangeInfosArray(napi_env env,
+        const std::vector<std::shared_ptr<AccurateRefresh::AlbumChangeInfo>> &albumChangeInfos);
 
     static napi_value BuildAlbumChangeInfo(napi_env env, const AccurateRefresh::AlbumChangeInfo &albumChangeInfo);
     static napi_value BuildAlbumChangeData(napi_env env, const AccurateRefresh::AlbumChangeData &albumChangeData);

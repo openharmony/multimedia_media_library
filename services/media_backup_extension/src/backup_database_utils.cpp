@@ -263,6 +263,17 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
     return columnInfoMap;
 }
 
+std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
+{
+    std::string garbledInfoName = infoName;
+    if (infoName.size() <= MIN_GARBLE_SIZE) {
+        return garbledInfoName;
+    }
+    size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
+    garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
+    return garbledInfoName;
+}
+
 void BackupDatabaseUtils::UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number,
     const std::string &type)
 {
@@ -277,17 +288,6 @@ int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::
 {
     const string querySql = "SELECT unique_number FROM UniqueNumber WHERE media_type = '" + type + "'";
     return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
-}
-
-std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
-{
-    std::string garbledInfoName = infoName;
-    if (infoName.size() <= MIN_GARBLE_SIZE) {
-        return garbledInfoName;
-    }
-    size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
-    garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
-    return garbledInfoName;
 }
 
 void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap)
@@ -1113,17 +1113,28 @@ std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QuerySql(
     return rdbStore->QuerySql(querySql, params);
 }
 
-void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t maxId)
 {
-    const string updateSql =
+    const string updateBurstSql =
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
         PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
         "," + PhotoColumn::PHOTO_BURST_KEY + " = NULL," +
         PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)) +
         " WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
-        "AND file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")";
-    int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
+        " AND " + " ((file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")) OR (file_id > " + to_string(maxId) + "))";
+    
+    int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateBurstSql);
     CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update continuous shooting photos, ret=%{public}d", erroCode);
+
+    const string updateBurstCoverSql =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+        PhotoColumn::PHOTO_BURST_KEY + " = NULL," +
+        PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)) +
+        " WHERE " + SQL_SELECT_ERROR_BURST_COVER_PHOTOS +
+        " AND " + " ((file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")) OR (file_id > " + to_string(maxId) + "))";
+    
+    erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateBurstCoverSql);
+    CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update error burst cover photo, ret=%{public}d", erroCode);
 }
 
 std::vector<int32_t> BackupDatabaseUtils::QueryIntVec(std::shared_ptr<NativeRdb::RdbStore> rdbStore,

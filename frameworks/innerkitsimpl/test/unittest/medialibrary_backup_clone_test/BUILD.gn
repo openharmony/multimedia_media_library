@@ -42,6 +42,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/portrait_album",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/selection",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/group_photo_album",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/video_ringtone_processor",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/log",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/ocr",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/include/report",
@@ -54,9 +55,9 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./include/group_photo",
     "./include/portrait_album",
     "./include/pet_album",
+    "./include/analysis_data",
+    "./include/analysis_album",
   ]
-
-  cflags = [ "-fno-access-control" ]
 
   sources = [
     "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/album_plugin_table_event_handler.cpp",
@@ -108,6 +109,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_gallery_media_task.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_task_report.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/asset_map_clone.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/backup_adapters.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/dao_utils.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/db_upgrade_utils.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/gallery_db_upgrade.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/gallery_media_dao.cpp",
@@ -115,6 +118,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_clone.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_dao.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_restore.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photos_backup.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photos_clone.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photos_dao.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/photos_data_handler.cpp",
@@ -122,6 +126,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/restore_photos_album_hidden.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_albums_clone.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
+    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/video_ringtone_processor/video_ringtone_processor.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
@@ -132,10 +137,17 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/medialibrary_backup_clone_test2.cpp",
     "./src/group_photo/clone_group_photo_source.cpp",
     "./src/group_photo/clone_restore_group_photo_test.cpp",
+    "./src/clone_restore_cloud_asset_coverage_test.cpp",
+    "./src/clone_restore_additional_coverage_test.cpp",
     "./src/portrait_album/portrait_album_clone_test.cpp",
     "./src/portrait_album/portrait_album_source.cpp",
     "./src/pet_album/pet_album_clone_test.cpp",
     "./src/pet_album/pet_album_source.cpp",
+    "./src/analysis_data/clone_restore_analysis_data_test.cpp",
+    "./src/analysis_data/clone_restore_analysis_total_test.cpp",
+    "./src/analysis_album/beauty_score_clone_test.cpp",
+    "./src/analysis_album/video_face_clone_test.cpp",
+    "./src/analysis_album/search_index_clone_test.cpp",
   ]
 
   source_ipc_client = [
@@ -202,6 +214,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     cfi_cross_dso = true
     debug = false
   }
+
+  cflags_cc += [ "-fno-access-control" ]
 
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"

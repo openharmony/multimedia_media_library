@@ -98,14 +98,19 @@ const int32_t IMAGE_CLOUD_ASSET_FILE_ID = 90000;
 const int32_t IMAGE_TRASH_ASSET_ALBUM_ID = 1000;
 const int32_t IMAGE_TRASH_ASSET_FILE_ID = 100000;
 
+const string ASSET_JPG_MIME_TYPE = "image/jpeg";
+const std::vector<std::shared_ptr<AlbumChangeInfo>> MOCK_ALBUM_CHANGE_INFO = {};
+
 const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE_DAY,
     "uri", // owner album uri
     false, // isFavorite
     ASSET_MEDIA_TYPE_IMAGE, // default image
+    ASSET_JPG_MIME_TYPE,
     false, // isHidden
     0,  // dateTrash
     ASSET_STRONG_ASSOCIATION_NORMAL,
-    ASSET_THUMBNAIL_VISIBLE, ASSET_DATE_ADDED, ASSET_DATE_TAKEN, ASSET_SUBTYPE_DEFAULT, ASSET_SYNC_STATUS_VISIBLE,
+    ASSET_THUMBNAIL_VISIBLE, ASSET_DATE_ADDED, ASSET_DATE_TAKEN,
+    MOCK_ALBUM_CHANGE_INFO, ASSET_SUBTYPE_DEFAULT, ASSET_SYNC_STATUS_VISIBLE,
     ASSET_CLEAN_FLAG_NO,
     0, // timePending
     false, // isTemp
@@ -117,7 +122,10 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     ASSET_PATH,
     1, // local
     666, //size
-    0 //fileSourceType
+    0, //fileSourceType
+    "", // shooting_mode
+    0, // effect_mode
+    "" // front_camera
 };
 
 void SetTables()
@@ -353,7 +361,7 @@ PhotoAssetChangeInfo GetAssetInfo(int32_t fileId = 0)
 
     auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     EXPECT_TRUE(resultSet != nullptr);
-    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet);
     if (assetInfos.size() == 1) {
         ACCURATE_DEBUG("assetInfo: %{public}s", assetInfos[0].ToString().c_str());
         return assetInfos[0];

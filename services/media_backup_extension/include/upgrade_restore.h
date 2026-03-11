@@ -92,9 +92,9 @@ protected:
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
-    int32_t ParseXml(std::string path);
-    int StringToInt(const std::string& str);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
+    int32_t ParseXml(const std::string &path);
+    int StringToInt(const std::string& str);
     int32_t HandleXmlNode(xmlNodePtr cur);
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);
@@ -126,9 +126,9 @@ protected:
         const std::unordered_set<std::string> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
+    bool HasLowQualityImage();
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
-    bool HasLowQualityImage();
     std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
     int32_t GetNoNeedMigrateCount() override;
     bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
@@ -147,6 +147,7 @@ protected:
     void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
         std::unique_ptr<Metadata> &data) override;
     bool CheckIsNeedCloneIsMe();
+    void QueryPortraitAlbumRelationship();
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -183,6 +184,7 @@ protected:
     bool isNeedCloneIsMe_ = false;
     std::unordered_set<std::string> processGlobalHashes_;
     ffrt::mutex processHashesMutex_;
+    std::unordered_map<std::string, std::string> portraitAlbumRelationship_;
 
 private:
     void BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlbumIds, int32_t &deleteRows);

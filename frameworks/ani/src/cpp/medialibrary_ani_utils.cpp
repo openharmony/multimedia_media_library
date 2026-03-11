@@ -47,6 +47,7 @@
 #include "photo_asset_custom_record_ani.h"
 #include "media_audio_column.h"
 #include "media_string_utils.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +59,7 @@ using json = nlohmann::json;
 using OperationItem = OHOS::DataShare::OperationItem;
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 static const std::string MULTI_USER_URI_FLAG = "user=";
+static const std::string CONST_LOGSYSTEM_VERSIONTYPE = "const.logsystem.versiontype";
 
 struct AniArrayOperator {
     ani_class cls {};
@@ -822,6 +824,27 @@ bool MediaLibraryAniUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
     return isSys;
+}
+
+bool MediaLibraryAniUtils::IsNumber(const std::string &str)
+{
+    if (str.empty()) {
+        ANI_ERR_LOG("IsNumber input is empty ");
+        return false;
+    }
+
+    for (const char &c : str) {
+        if (isdigit(static_cast<unsigned char>(c)) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool MediaLibraryAniUtils::IsBetaVersion()
+{
+    std::string versionType = system::GetParameter(CONST_LOGSYSTEM_VERSIONTYPE, "unknown");
+    return versionType == "beta";
 }
 
 static std::string GetUriFromAsset(const std::shared_ptr<FileAsset> &fileAsset)
@@ -1878,13 +1901,21 @@ int MediaLibraryAniUtils::TransErrorCode(const string &Name, int error)
 {
     ANI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to JS error code
+    static const unordered_set<int32_t> innerFailErrorSet = {
+        E_INNER_CONVERT_FORMAT,
+        E_INNER_FAIL,
+        E_OPR_DEBUG_DB_FAIL,
+        E_BACK_UP_DB_FAIL
+    };
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
         if (error == -E_CHECK_SYSTEMAPP_FAIL) {
             error = E_CHECK_SYSTEMAPP_FAIL;
-        } else if (error == E_PARAM_CONVERT_FORMAT) {
+        } else if (error == E_PARAM_CONVERT_FORMAT || error == E_ACQ_BETA_TASK_FAIL) {
             error = JS_E_PARAM_INVALID;
-        } else if (error == E_INNER_CONVERT_FORMAT || error == E_INNER_FAIL) {
+        } else if (innerFailErrorSet.find(error) != innerFailErrorSet.end()) {
             error = JS_E_INNER_FAIL;
+        } else if (error == E_BETA_VERSION_FAIL) {
+            error = JS_E_OPR_TYPE_NOT_SUPPORT;
         } else {
             error = JS_INNER_FAIL;
         }

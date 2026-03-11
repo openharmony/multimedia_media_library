@@ -73,6 +73,7 @@ group("test") {
     "unittest/media_lake_load_test:unittest",
     "unittest/media_library_related_system_state_test:unittest",
     "unittest/madvise_utils_test:unittest",
+    "unittest/media_analysis_data_service_test:unittest",
   ]
 
   deps_cloud_sync_unittest = [
@@ -82,6 +83,8 @@ group("test") {
     "unittest/medialibrary_client_report_test:unittest",
     "unittest/cloud_media_asset_retain_compare_test:unittest",
     "unittest/media_library_cloud_sync_test:unittest",
+    "unittest/media_library_cloud_sync_service_test:unittest",
+    "unittest/media_cloud_sync_data_vo_test:unittest",
   ]
 
   deps_custom_restore_unittest = [

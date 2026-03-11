@@ -60,6 +60,7 @@
 #include "database_adapter.h"
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
+#include "notify_register_permission.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -81,17 +82,6 @@ const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
-
-#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
-{
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr");
-    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
-    CHECK_AND_RETURN_LOG(data != nullptr, "UpdateVisionAsyncTaskData is nullptr");
-    string fileId = to_string(data->fileId_);
-    MediaAssetsRdbOperations::DeleteFromVisionTables(fileId);
-}
-#endif
 
 MediaAssetsService &MediaAssetsService::GetInstance()
 {
@@ -141,15 +131,7 @@ int32_t MediaAssetsService::CommitEditedAsset(const CommitEditedAssetDto& commit
         commitEditedAssetDto.fileId);
     CHECK_AND_RETURN_RET(errCode == E_SUCCESS, errCode);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
-    UpdateVisionAsyncTaskData* taskData =
-        new (std::nothrow) UpdateVisionAsyncTaskData(commitEditedAssetDto.fileId);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to new taskData");
-    shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateVisionTableForEdit, taskData);
-    CHECK_AND_PRINT_LOG(updateAsyncTask != nullptr, "UpdateAnalysisDataForEdit fail");
-    asyncWorker->AddTask(updateAsyncTask, true);
+    MediaLibraryVisionOperations::ClearVisionDataByFileId(commitEditedAssetDto.fileId, false);
 #endif
     return errCode;
 }
@@ -1065,9 +1047,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
     auto startTime = std::chrono::high_resolution_clock::now();
     size_t size = 0;
     int32_t dupExist = 0;
+    TranscodeType transcodeType = TranscodeType::DEFAULT;
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
-    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist);
+    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist, transcodeType);
     if (err == E_OK && dupExist == 0) {
         err = this->rdbOperation_.UpdateTmpCompatibleDup(fileId, size);
         if (err == E_OK) {
@@ -1075,10 +1058,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
             std::chrono::duration<uint16_t, std::milli> duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             MEDIA_INFO_LOG("CreateTmpCompatibleDup duration:%{public}d ms", duration.count());
-            dfxManager->HandleTranscodeCostTime(duration.count());
+            dfxManager->HandleTranscodeCostTime(duration.count(), transcodeType);
         } else {
             MEDIA_ERR_LOG("CreateTmpCompatibleDup dfx updata database failed");
-            dfxManager->HandleTranscodeFailed(INNER_FAILED);
+            dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);
         }
     }
     return err;
@@ -1091,15 +1074,8 @@ int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertTo
 
     int32_t errCode = this->rdbOperation_.RevertToOrigin(fileId);
     if (errCode == E_SUCCESS) {
-        string fileUri = revertToOriginalDto.fileUri;
-        Uri uri(fileUri);
-        MediaLibraryCommand cmdEditCommit(uri);
-        cmdEditCommit.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-        NativeRdb::ValuesBucket values;
-        values.Put(PhotoColumn::MEDIA_ID, fileId);
-        cmdEditCommit.SetValueBucket(values);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-        MediaLibraryVisionOperations::EditCommitOperation(cmdEditCommit);
+        MediaLibraryVisionOperations::ClearVisionDataByFileId(fileId, false);
 #endif
     }
     return errCode;
@@ -1886,6 +1862,16 @@ int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::strin
 
     int32_t ret = MediaLibraryPhotoOperations::ScanExistFileRecord(fileId, path);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::ScanExistFileRecord Failed");
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
+    Notification::NotifyRegisterPermission permissionHandle;
+    int32_t ret =
+        permissionHandle.SinglePermissionCheck(static_cast<Notification::NotifyUriType>(registerType), fileId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
     return E_OK;
 }
 } // namespace OHOS::Media

@@ -85,6 +85,9 @@ void AssetDataManager::SetAlbumIdFromChangeDates()
     for (const auto &[key, changeInfo] : this->changeDatas_) {
         this->uniqueAlbumIds_.insert(changeInfo.infoBeforeChange_.ownerAlbumId_);
         this->uniqueAlbumIds_.insert(changeInfo.infoAfterChange_.ownerAlbumId_);
+        int32_t fileId = changeInfo.GetFileId();
+        CHECK_AND_CONTINUE(fileId != INVALID_INT32_VALUE);
+        this->uniqueFileIds_.insert(fileId);
     }
 }
 
@@ -92,6 +95,8 @@ void AssetDataManager::SetAlbumIdByChangeInfos(const vector<PhotoAssetChangeInfo
 {
     for (const PhotoAssetChangeInfo &changeInfo : changeInfos) {
         this->uniqueAlbumIds_.insert(changeInfo.ownerAlbumId_);
+        CHECK_AND_CONTINUE(changeInfo.fileId_ != INVALID_INT32_VALUE);
+        this->uniqueFileIds_.insert(changeInfo.fileId_);
     }
 }
 
@@ -290,7 +295,7 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
 vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByResult(const shared_ptr<ResultSet> &resultSet)
 {
     // 根据resultSet转PhotoAssetChangeInfo
-    return PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    return PhotoAssetChangeInfo::GetInfoFromResult(resultSet);
 }
 
 vector<int32_t> AssetDataManager::GetInitKeys()

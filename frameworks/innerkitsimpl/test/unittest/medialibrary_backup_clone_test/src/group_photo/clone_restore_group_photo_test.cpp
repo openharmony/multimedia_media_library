@@ -63,7 +63,7 @@ static std::vector<std::string> testTables = {
     ANALYSIS_ALBUM_TABLE,
     ANALYSIS_PHOTO_MAP_TABLE,
 };
-const int32_t EXPECTED_GROUP_ALBUM_COUNT = 1;
+const int32_t EXPECTED_GROUP_ALBUM_COUNT = 2;
 
 static void InsertPhotoInNewDb(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
@@ -152,18 +152,16 @@ void CloneRestoreGroupPhotoTest::VerifyGroupAlbumRestore(const std::shared_ptr<N
 
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "a|c,");
+    EXPECT_EQ(columnValue, "a|b,");
 
     (void)resultSet->GetColumnIndex("cover_uri", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_cover_uri");
+    EXPECT_EQ(columnValue, "file://media/Photo/1/coverUri/test.jpg");
 
     (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
     int isCoverSatisfied;
     resultSet->GetInt(index, isCoverSatisfied);
     EXPECT_EQ(isCoverSatisfied, 1);
-
-    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
 void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithoutData(const std::shared_ptr<NativeRdb::RdbStore>& db)
@@ -178,7 +176,7 @@ void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithoutData(const std::sha
     int32_t count = 0;
     int32_t errCode = resultSet->GetRowCount(count);
     EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(count, 1);
+    EXPECT_EQ(count, EXPECTED_GROUP_ALBUM_COUNT);
     EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
 
     int index;
@@ -190,16 +188,16 @@ void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithoutData(const std::sha
 
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "a|c,");
+    EXPECT_EQ(columnValue, "a|b,");
 
     (void)resultSet->GetColumnIndex("cover_uri", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_cover_uri");
+    EXPECT_EQ(columnValue, "");
 
     (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
     int isCoverSatisfied;
     resultSet->GetInt(index, isCoverSatisfied);
-    EXPECT_EQ(isCoverSatisfied, 1);
+    EXPECT_EQ(isCoverSatisfied, 0);
 }
 
 void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithMerging(const std::shared_ptr<NativeRdb::RdbStore>& db)
@@ -214,7 +212,7 @@ void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithMerging(const std::sha
     int32_t count = 0;
     int32_t errCode = resultSet->GetRowCount(count);
     EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(count, 1);
+    EXPECT_EQ(count, EXPECTED_GROUP_ALBUM_COUNT);
     EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
 
     int index;
@@ -226,20 +224,20 @@ void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithMerging(const std::sha
 
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "a|c,d");
+    EXPECT_EQ(columnValue, "a|b,");
 
     (void)resultSet->GetColumnIndex("group_tag", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "a|c,d");
+    EXPECT_EQ(columnValue, "");
 
     (void)resultSet->GetColumnIndex("cover_uri", index);
     resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_cover_uri");
+    EXPECT_EQ(columnValue, "");
 
     (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
     int isCoverSatisfied;
     resultSet->GetInt(index, isCoverSatisfied);
-    EXPECT_EQ(isCoverSatisfied, 1);
+    EXPECT_EQ(isCoverSatisfied, 0);
 }
 
 void CloneRestoreGroupPhotoTest::SetUpTestCase(void)

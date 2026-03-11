@@ -53,7 +53,7 @@ public:
     virtual bool CheckIsForRecheck() = 0;
     bool CanTransOperate();
     std::unordered_set<int32_t> uniqueAlbumIds_;
-    int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates);
+    std::unordered_set<int32_t> uniqueFileIds_;
 
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo = PendingInfo());

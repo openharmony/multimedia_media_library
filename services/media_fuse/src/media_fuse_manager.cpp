@@ -31,6 +31,7 @@
 #include "medialibrary_type_const.h"
 #include "os_account_manager.h"
 #include "storage_manager_proxy.h"
+#include "safe_map.h"
 #include "system_ability_definition.h"
 #include "settings_data_manager.h"
 #include "medialibrary_data_manager.h"
@@ -57,6 +58,7 @@
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "lake_const.h"
 #include "medialibrary_bundle_manager.h"
+#include "transcode_compatible_info_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -93,8 +95,8 @@ static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDWR | O_TRUNC, MEDIA_FILEMODE_READWRITETRUNCATE },
     { O_RDWR | O_APPEND, MEDIA_FILEMODE_READWRITEAPPEND },
 };
-std::map<int, time_t> MEDIA_OPEN_WRITE_MAP;
-std::map<std::string, bool> MEDIA_CREATE_WRITE_MAP;
+SafeMap<int, time_t> MEDIA_OPEN_WRITE_MAP;
+SafeMap<std::string, bool> MEDIA_CREATE_WRITE_MAP;
 
 static bool IsCriticalPhoto(const string &fileId)
 {
@@ -542,15 +544,49 @@ static bool IsHighPixelPicture(const string &fileId)
     return false;
 }
 
-static bool NeedTranscodeHighPixelPicture(bool isHighPixel)
+static bool IsSupportHighResolution(const string& bundleName)
 {
-    if (isHighPixel && !PermissionUtils::IsSystemApp()) {
+    CompatibleInfo compatibleInfo;
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    if (compatibleInfo.highResolution) {
         return true;
     }
     return false;
 }
 
-static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode)
+static bool NeedTranscodeHighPixelPicture(bool isHighPixel)
+{
+    if (isHighPixel && !PermissionUtils::IsSystemApp()) {
+        string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        MEDIA_ERR_LOG("IsSupportHighPixelPicture clientBundle %{public}s", clientBundle.c_str());
+        if (IsSupportHighResolution(clientBundle)) {
+            return false;
+        }
+        MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
+        return true;
+    }
+    return false;
+}
+
+static void SetTranscodeType(bool isHighPixel, bool isHeif, TranscodeType& transcodeType)
+{
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
+}
+
+static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode,
+    TranscodeType& transcodeType)
 {
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, filePath: %{private}s", filePath.c_str());
@@ -577,6 +613,7 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
             "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
     }
     filePath = tempPath;
+    SetTranscodeType(isHighPixel, isHeif, transcodeType);
     return E_OK;
 }
 
@@ -601,25 +638,21 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     if (!permGranted) {
         return E_ERR;
     }
+    TranscodeType transcodeType = TranscodeType::DEFAULT;
     string path = filePath;
-    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode);
+    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode, transcodeType);
     int32_t ret = MediaPrivacyManager(path, mode, fileId, appId, bundleName, uid, tokenCaller).Open();
     if (err == 0 && ret >= 0) {
         MEDIA_INFO_LOG("libc open transcode file success");
         auto dfxManager = DfxManager::GetInstance();
         CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INNER_FAIL, "DfxManager::GetInstance() returned nullptr");
-        dfxManager->HandleTranscodeAccessTime(ACCESS_LIBC);
+        dfxManager->HandleTranscodeAccessTime(ACCESS_LIBC, transcodeType);
     }
     return ret;
 }
 
 static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
 {
-    if (MediaFileUtils::GetExtensionFromPath(filePath) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(filePath) != "heic") {
-        MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
-        return E_ERR;
-    }
     int32_t compatibleMode = 0;
     if (GetCompatibleModeFromFileId(compatibleMode, fileId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
@@ -663,7 +696,7 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     if (realFlag == O_RDONLY || HasTransCodeFile(target, fileId) != E_OK || GetFileMtime(target, mtime) != E_OK) {
         return E_OK;
     }
-    MEDIA_OPEN_WRITE_MAP.insert(std::make_pair(fd, mtime));
+    MEDIA_OPEN_WRITE_MAP.Insert(fd, mtime);
     return 0;
 }
 
@@ -677,9 +710,9 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
         MEDIA_ERR_LOG("fuse close file fail");
         return E_ERR;
     }
-    if (MEDIA_OPEN_WRITE_MAP.find(fd) != MEDIA_OPEN_WRITE_MAP.end()) {
-        time_t oldMtime = MEDIA_OPEN_WRITE_MAP[fd];
-        MEDIA_OPEN_WRITE_MAP.erase(fd);
+    time_t oldMtime = 0;
+    if (MEDIA_OPEN_WRITE_MAP.Find(fd, oldMtime)) {
+        MEDIA_OPEN_WRITE_MAP.Erase(fd);
         time_t newMtime = 0;
         if (GetFileMtime(filePath, newMtime) != E_OK) {
             MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
@@ -817,11 +850,11 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         }
         res = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Delete failed");
-        MEDIA_CREATE_WRITE_MAP[target] = false;
+        MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, false);
         res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
         CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "MediaLibraryPhotoOperations::Create failed, path = %{private}s",
             filePath.c_str());
-        MEDIA_CREATE_WRITE_MAP[target] = true;
+        MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, true);
         return E_SUCCESS;
     }
     string localPath;
@@ -845,7 +878,7 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
         return -EINVAL;
     }
     string target = path;
-    MEDIA_CREATE_WRITE_MAP[target] = false;
+    MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, false);
 
     int32_t albumId = -1;
     string filePath;
@@ -860,7 +893,7 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
         return res;
     }
     fi->fh = static_cast<uint64_t>(fd);
-    MEDIA_CREATE_WRITE_MAP[target] = true;
+    MEDIA_CREATE_WRITE_MAP.EnsureInsert(target, true);
     return E_SUCCESS;
 }
 
@@ -883,20 +916,21 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     string target = path;
-    if (MEDIA_CREATE_WRITE_MAP.find(target) == MEDIA_CREATE_WRITE_MAP.end()) {
+    bool isCreateWrite = false;
+    if (!MEDIA_CREATE_WRITE_MAP.Find(target, isCreateWrite)) {
         MEDIA_INFO_LOG("not found, path=%{private}s, try do release.", path);
         int32_t ret = DoRelease(path, static_cast<int>(fd));
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "do release fail");
         return E_SUCCESS;
     }
 
-    if (MEDIA_CREATE_WRITE_MAP[target]) {
+    if (isCreateWrite) {
         int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
-        MEDIA_CREATE_WRITE_MAP.erase(target);
+        MEDIA_CREATE_WRITE_MAP.Erase(target);
         return res;
     } else {
         MEDIA_ERR_LOG("DoHdcCreate failed.");
-        MEDIA_CREATE_WRITE_MAP.erase(target);
+        MEDIA_CREATE_WRITE_MAP.Erase(target);
         return E_ERR;
     }
 }

@@ -104,7 +104,9 @@ const std::string CREATE_SEARCH_INDEX_TBL = "CREATE TABLE IF NOT EXISTS tab_anal
     "cv_status INTEGER, "
     "geo_status INTEGER, "
     "version INTEGER, "
-    "system_language TEXT "
+    "system_language TEXT, "
+    "face_status INTEGER, "
+    "album_status INTEGER "
     ");";
 
 const std::string CREATE_AESTHETICS_SCORE_TBL = "CREATE TABLE IF NOT EXISTS tab_analysis_aesthetics_score ( "

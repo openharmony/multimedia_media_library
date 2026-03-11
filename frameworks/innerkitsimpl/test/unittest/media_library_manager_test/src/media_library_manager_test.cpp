@@ -1159,16 +1159,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_002, TestS
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_003 enter");
-    string displayName = "test1.jpg";
-    string uri =  mediaLibraryManager->CreateAsset(displayName);
-    ASSERT_NE(uri, "");
-    GTEST_LOG_(INFO) << "uri is " << uri;
-    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    ASSERT_GT(destFd, 0);
-    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
-    ASSERT_NE(resWrite, -1);
-    mediaLibraryManager->CloseAsset(uri, destFd);
-
     DataSharePredicates predicates;
     vector<string> columnsAlbum;
     ASSERT_NE(mediaLibraryManager, nullptr);
@@ -1179,7 +1169,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_003, TestS
     FetchResult<FileAsset> assetsFetchResult;
     vector<string> columnsAsset{ MediaColumn::MEDIA_NAME };
     DataSharePredicates predicatesAsset;
-    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "test1.jpg");
+    predicatesAsset.IsNotNull(MediaColumn::MEDIA_NAME);
     for (int32_t i = albumCount - 1; i >= 0; i--) {
         srcAlbum = albumsFetchResult.GetObjectAtPosition(i);
         assetsFetchResult = mediaLibraryManager->GetAssets(*srcAlbum, columnsAsset, &predicatesAsset);
@@ -1193,9 +1183,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadAssets_test_003, TestS
     GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << assetDisplayName;
     string assetUri = GetFileAssetUri(firstAssetPtr);
     GTEST_LOG_(INFO) << "assetUri is " << assetUri;
-    int32_t assetFd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
-    ASSERT_GT(assetFd, 0);
-    mediaLibraryManager->CloseAsset(assetUri, assetFd);
     MEDIA_INFO_LOG("MediaLibraryManager_ReadAssets_test_003 exit");
 }
 

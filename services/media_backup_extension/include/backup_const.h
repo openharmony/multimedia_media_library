@@ -177,6 +177,8 @@ const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
 const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
+const std::string STAT_TYPE_CLOUD_PHOTO = "cloudPhoto";
+const std::string STAT_TYPE_CLOUD_VIDEO = "cloudVideo";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
@@ -372,11 +374,6 @@ const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_PHOTO = {
     { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
 };
 
-const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_OLD_DEVICE = {
-    { PhotoColumn::PHOTOS_TABLE },
-    { AudioColumn::AUDIOS_TABLE },
-};
-
 struct PhotoInfo {
     int32_t fileIdNew {-1};
     int32_t fileType {0};
@@ -400,7 +397,6 @@ struct FileInfo {
     std::string syncStatus{0};
     std::string albumId;
     std::string uniqueId;
-    std::string cloudId;
     std::string localThumbPath;
     std::string localBigThumbPath;
     std::string resolution;

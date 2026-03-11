@@ -21,9 +21,11 @@ ohos_fuzztest("MediaLibraryFileParseInterfaceFuzzTest") {
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_mtp/include",
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/include",
   ]
 
   sources = [
+    "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibraryfileparseinterface_fuzzer.cpp"
   ]
 

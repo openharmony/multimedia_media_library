@@ -134,10 +134,10 @@ public:
     EXPORT static int32_t QueryAnalysisAlbumIdOfAssets(const std::vector<std::string>& assetIds,
         std::set<std::string>& albumIds);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbumCover(
-        const std::shared_ptr<MediaLibraryRdbStore>& rdbStore, const std::string &albumId,
-        const PhotoAlbumSubType &subType);
+        const std::shared_ptr<MediaLibraryRdbStore>& rdbStore, const std::string &albumId);
     EXPORT static int32_t QueryAnalysisAlbumMapByAssets(const std::vector<std::string>& assetIds,
-        std::unordered_map<int32_t, std::set<int32_t>>& fileToAlbums, std::set<int32_t>& allAlbumIds);
+        std::unordered_map<int32_t, std::unordered_set<int32_t>>& fileToAlbums,
+        std::unordered_set<int32_t>& allAlbumIds);
     EXPORT static int32_t QueryAnalysisAlbumsForAccurateRefresh(
         const std::vector<int32_t> &affectedAlbumIds,
         std::vector<UpdateAlbumData> &albumDatas,
