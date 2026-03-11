@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_PHOTO_ASSET_CHCNAGE_INFO_H
 #define OHOS_MEDIALIBRARY_PHOTO_ASSET_CHCNAGE_INFO_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -29,22 +30,27 @@ namespace OHOS {
 namespace Media::AccurateRefresh {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+class AlbumChangeInfo;
 class EXPORT PhotoAssetChangeInfo : public Parcelable {
 public:
     PhotoAssetChangeInfo() { }
     PhotoAssetChangeInfo(int32_t fileId, std::string uri, std::string dateDay, std::string ownerAlbumUri,
-        bool isFavorite, int32_t mediaType, bool isHidden, int64_t dateTrashedMs, int32_t strongAssociation,
-        int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs, int32_t subType,
+        bool isFavorite, int32_t mediaType, std::string mimeType, bool isHidden, int64_t dateTrashedMs,
+        int32_t strongAssociation, int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs,
+        std::vector<std::shared_ptr<AlbumChangeInfo>> albumChangeInfos, int32_t subType,
         int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp, int32_t burstCoverLevel,
         int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName,
-        std::string path, int32_t position, int64_t size, int32_t fileSourceType) : fileId_(fileId), uri_(uri),
+        std::string path, int32_t position, int64_t size, int32_t fileSourceType,
+        std::string shootingMode, int32_t movingPhotoEffectMode, std::string frontCamera) : fileId_(fileId), uri_(uri),
         dateDay_(dateDay), ownerAlbumUri_(ownerAlbumUri), isFavorite_(isFavorite), mediaType_(mediaType),
-        isHidden_(isHidden), dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation),
-        thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs), subType_(subType),
+        mimeType_(mimeType), isHidden_(isHidden), dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation),
+        thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs),
+        albumChangeInfos_(albumChangeInfos), subType_(subType),
         syncStatus_(syncStatus), cleanFlag_(cleanFlag), timePending_(timePending), isTemp_(isTemp),
         burstCoverLevel_(burstCoverLevel), ownerAlbumId_(ownerAlbumId), hiddenTime_(hiddenTime),
         thumbnailReady_(thumbnailReady), displayName_(displayName), path_(path), position_(position), size_(size),
-        fileSourceType_(fileSourceType) {}
+        fileSourceType_(fileSourceType), shootingMode_(shootingMode), movingPhotoEffectMode_(movingPhotoEffectMode),
+        frontCamera_(frontCamera) {}
         
 public:
     int32_t fileId_ = INVALID_INT32_VALUE;
@@ -55,6 +61,7 @@ public:
     std::string ownerAlbumUri_; // todo 或者使用ownerAlbumId
     bool isFavorite_ = false;
     int32_t mediaType_ = INVALID_INT32_VALUE;
+    std::string mimeType_ = EMPTY_STR;
     bool isHidden_ = false;
     int64_t dateTrashedMs_ = INVALID_INT64_VALUE;
     int32_t strongAssociation_ = INVALID_INT32_VALUE;
@@ -62,6 +69,9 @@ public:
     
     int64_t dateAddedMs_ = INVALID_INT64_VALUE;
     int64_t dateTakenMs_ = INVALID_INT64_VALUE;
+
+    // 智慧相册相关
+    std::vector<std::shared_ptr<AlbumChangeInfo>> albumChangeInfos_;
 
     // 内部使用
     int32_t subType_ = INVALID_INT32_VALUE;
@@ -80,16 +90,20 @@ public:
     int32_t position_ = INVALID_INT32_VALUE;
     int64_t size_ = INVALID_INT64_VALUE;
     int32_t fileSourceType_ = INVALID_INT32_VALUE;
+    std::string shootingMode_ = EMPTY_STR;
+    int32_t movingPhotoEffectMode_ = INVALID_INT32_VALUE;
+    std::string frontCamera_ = EMPTY_STR;
 
     std::string ToString(bool isDetail = false) const;
     bool Marshalling(Parcel &parcel) const override;
     bool Marshalling(Parcel &parcel, bool isSystem) const;
+    bool MarshallingAlbumChangeInfos(Parcel &parcel) const;
     bool ReadFromParcel(Parcel &parcel);
+    bool ReadAlbumChangeInfos(Parcel &parcel);
     static std::shared_ptr<PhotoAssetChangeInfo> Unmarshalling(Parcel &parcel);
 
     static const std::vector<std::string>& GetPhotoAssetColumns();
-    static std::vector<PhotoAssetChangeInfo> GetInfoFromResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const std::vector<std::string> &columns);
+    static std::vector<PhotoAssetChangeInfo> GetInfoFromResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static ResultSetDataType GetDataType(const std::string &column);
     
     PhotoAssetChangeInfo(const PhotoAssetChangeInfo &info) = default;
@@ -125,7 +139,7 @@ public:
             std::to_string(isContentChanged_) + ", thumbnailChangeStatus_: " +
             std::to_string(thumbnailChangeStatus_);
     }
-    int32_t GetFileId();
+    int32_t GetFileId() const;
 
 public:
     bool isContentChanged_ = false;

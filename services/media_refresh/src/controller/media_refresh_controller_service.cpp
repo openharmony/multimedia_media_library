@@ -18,6 +18,7 @@
 #include "media_refresh_controller_service.h"
 
 #include "album_accurate_refresh.h"
+#include "analysis_album_accurate_refresh.h"
 #include "asset_accurate_refresh.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -49,6 +50,8 @@ int32_t MediaRefreshControllerService::NotifyForReCheck(MessageParcel &data, Mes
     MEDIA_INFO_LOG("Enter NotifyForReCheck");
     AccurateRefresh::AlbumAccurateRefresh::NotifyForReCheck();
     AccurateRefresh::AssetAccurateRefresh::NotifyForReCheck();
+    AccurateRefresh::AnalysisAlbumAccurateRefresh::NotifyForAnalysisAssetReCheck();
+    AccurateRefresh::AnalysisAlbumAccurateRefresh::NotifyForAnalysisAlbumReCheck();
     return E_SUCCESS;
 }
 
