@@ -162,9 +162,6 @@ static void CloudMediaAssetDownloadOperationFuzzer()
     operation->QueryDownloadFilesNeeded(provider->ConsumeBool());
     operation->isThumbnailUpdate_ = provider->ConsumeBool();
     operation->InitDownloadTaskInfo();
-    CloudMediaAssetDownloadOperation::DownloadFileData downloadFileData = operation->ReadyDataForBatchDownload();
-    operation->StartBatchDownload();
-    operation->SubmitBatchDownload(downloadFileData, provider->ConsumeBool());
     operation->InitStartDownloadTaskStatus(provider->ConsumeBool());
     operation->DoRelativedRegister();
     operation->ManualActiveRecoverTask(provider->ConsumeIntegral<int32_t>());

@@ -48,9 +48,12 @@ static const int32_t MAX_PHOTO_QUALITY = 1;
 static const int32_t MAX_MODIFY_TYPE = 2;
 static const int32_t MAX_DPS_ERROR_CODE = 10;
 static const int32_t MAX_MEDIA_TYPE = 14;
+static const uint8_t ARRAY_SIZE = 255;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
 static const string PHOTOS_TABLE = "Photos";
+constexpr const char* CLOUD_FLAG = "cloudImageEnhanceFlag";
+constexpr const char* CPATURE_FLAG = "captureEnhancementFlag";
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
@@ -107,8 +110,9 @@ static int32_t InsertAsset(string photoId)
 
 unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
 {
-    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHRE " +
+    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         columnName + "='" + value + "';";
+
     MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("g_rdbStore is nullptr");
@@ -187,18 +191,19 @@ static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
     std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
     picture->Create(surfaceBuffer);
-    uint8_t *addr = new uint8_t();
-    long bytes = provider->ConsumeIntegral<long>();
-    uint32_t cloudImageEnhanceFlag = provider->ConsumeIntegral<uint32_t>();
+    uint8_t *addr = new uint8_t[ARRAY_SIZE];
+    long bytes = provider->ConsumeIntegralInRange<uint8_t>(0, ARRAY_SIZE);
     DpsMetadata metadata;
-    constexpr const char* cloudFlag = "cloudImageEnhanceFlag";
-    metadata.Set(cloudFlag, cloudImageEnhanceFlag);
+    uint32_t cloudImageEnhanceFlag = provider->ConsumeIntegral<uint32_t>();
+    uint32_t captureEnhancementFlag = provider->ConsumeIntegral<uint32_t>();
+    metadata.Set(CLOUD_FLAG, cloudImageEnhanceFlag);
+    metadata.Set(CPATURE_FLAG, captureEnhancementFlag);
     callback->OnProcessImageDone(photoId, picture, metadata);
     callback->OnProcessImageDone(photoId, addr, bytes, cloudImageEnhanceFlag);
 
     photoId = "/test" + SPLIT_PATH + provider->ConsumeBytesAsString(NUM_BYTES);
     callback->OnDeliveryLowQualityImage(photoId, picture);
-    delete addr;
+    delete[] addr;
     addr = nullptr;
     MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcSessionCallbackTest end");
 }
