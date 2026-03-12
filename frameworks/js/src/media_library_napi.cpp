@@ -112,6 +112,7 @@
 #include "media_audio_column.h"
 #include "media_upgrade.h"
 #include "media_string_utils.h"
+#include "check_single_photo_permission_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -476,6 +477,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("onSinglePhotoAlbumChange", SinglePhotoAlbumRegisterCallback),
             DECLARE_NAPI_FUNCTION("offSinglePhotoChange", SinglePhotoAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("offSinglePhotoAlbumChange", SinglePhotoAlbumUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("onAnalysisPhotoChange", AnalysisPhotoAccessRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offAnalysisPhotoChange", AnalysisPhotoAccessUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("onAnalysisAlbumChange", AnalysisAlbumAccessRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offAnalysisAlbumChange", AnalysisAlbumAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
         }
     };
@@ -11363,6 +11368,12 @@ int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref,
         return HandleNewUriRegistration(env, ref, observer, uriType, fileIdOrAlbumId);
     }
 
+    CheckSinglePhotoPermissionReqBody reqBody;
+    reqBody.registerType = static_cast<int32_t>(uriType);
+    reqBody.fileId = fileIdOrAlbumId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to check permission, ret: %{public}d", ret);
     return HandleExistingUriCheck(env, ref, uriIter->second, uriType, fileIdOrAlbumId);
 }
 
@@ -11573,6 +11584,72 @@ napi_value MediaLibraryNapi::SinglePhotoAlbumRegisterCallback(napi_env env, napi
     }
     NAPI_INFO_LOG("SinglePhotoAlbumRegisterCallback success for album uri: %{public}s", albumUri.c_str());
     tracer.Finish();
+    return undefinedResult;
+}
+
+bool MediaLibraryNapi::RegisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
+    Notification::NotifyUriType uriType)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = { nullptr };
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+
+    if (argc != ARGS_ONE) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requires only 1 parameter.");
+        return false;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok ||
+        valueType != napi_function) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        return false;
+    }
+
+    napi_ref cbOnRef = nullptr;
+    napi_status status = napi_create_reference(env, argv[PARAM0], 1, &cbOnRef);
+    if (status != napi_ok || cbOnRef == nullptr) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        return false;
+    }
+
+    int32_t ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType);
+    if (ret != E_OK) {
+        napi_delete_reference(env, cbOnRef);
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        return false;
+    }
+    return true;
+}
+
+napi_value MediaLibraryNapi::AnalysisPhotoAccessRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AnalysisPhotoAccessRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AnalysisPhotoAccessRegisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    CHECK_AND_RETURN_RET(RegisterAnalysisAccessCallbackInternal(env, info,
+        Notification::NotifyUriType::ANALYSIS_PHOTO_URI), undefinedResult);
+
+    NAPI_INFO_LOG("AnalysisPhotoAccessRegisterCallback success");
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::AnalysisAlbumAccessRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AnalysisAlbumAccessRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AnalysisAlbumAccessRegisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    CHECK_AND_RETURN_RET(RegisterAnalysisAccessCallbackInternal(env, info,
+        Notification::NotifyUriType::ANALYSIS_ALBUM_URI), undefinedResult);
+
+    NAPI_INFO_LOG("AnalysisAlbumAccessRegisterCallback success");
     return undefinedResult;
 }
 
@@ -11917,6 +11994,87 @@ napi_value MediaLibraryNapi::SinglePhotoAlbumUnregisterCallback(napi_env env, na
     if (singleContext.cbRef != nullptr) {
         napi_delete_reference(env, singleContext.cbRef);
     }
+    return undefinedResult;
+}
+
+static napi_value CheckUnregisterAnalysisCallbackArg(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value thisVar = nullptr;
+    context->argc = ARGS_ONE;
+    GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
+
+    if (context->argc > ARGS_ONE) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requires no or one parameter.");
+        return nullptr;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    if (context->argc == ARGS_ONE && napi_typeof(env, context->argv[PARAM0], &valueType) == napi_ok
+        && valueType != napi_function) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        return nullptr;
+    }
+    return thisVar;
+}
+
+void MediaLibraryNapi::UnregisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
+    Notification::NotifyUriType uriType)
+{
+    if (g_listObj == nullptr) {
+        return;
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> context =
+        make_unique<MediaLibraryAsyncContext>();
+    if (CheckUnregisterAnalysisCallbackArg(env, info, context) == nullptr) {
+        return;
+    }
+
+    napi_ref cbOffRef = nullptr;
+    if (context->argc == ARGS_ONE) {
+        const int32_t refCount = 1;
+        napi_create_reference(env, context->argv[PARAM0], refCount, &cbOffRef);
+    }
+
+    int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listObj);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+    }
+
+    if (cbOffRef != nullptr) {
+        napi_delete_reference(env, cbOffRef);
+    }
+}
+
+napi_value MediaLibraryNapi::AnalysisPhotoAccessUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AnalysisPhotoAccessUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AnalysisPhotoAccessUnregisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    UnregisterAnalysisAccessCallbackInternal(
+        env, info, Notification::NotifyUriType::ANALYSIS_PHOTO_URI);
+
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::AnalysisAlbumAccessUnregisterCallback(
+    napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AnalysisAlbumAccessUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AnalysisAlbumAccessUnregisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    UnregisterAnalysisAccessCallbackInternal(
+        env, info, Notification::NotifyUriType::ANALYSIS_ALBUM_URI);
+
     return undefinedResult;
 }
 
@@ -12892,6 +13050,22 @@ static void getPhotoPickerContextRecoveryInfoExtend(napi_env env, napi_status st
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property version failed");
     }
+
+    napi_value sortRule = nullptr;
+    const string &jsSortRule = context->pickerCallBack->sortRule;
+    napi_create_string_utf8(env, jsSortRule.c_str(), NAPI_AUTO_LENGTH, &sortRule);
+    status = napi_set_named_property(env, recoverInfo, "sortRule", sortRule);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property sortRule failed");
+    }
+
+    napi_value fileSize = nullptr;
+    napi_create_int32(env, context->pickerCallBack->fileSize, &fileSize);
+    status = napi_set_named_property(env, recoverInfo, "fileSize", fileSize);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property fileSize failed");
+    }
+
 }
 
 static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value result)

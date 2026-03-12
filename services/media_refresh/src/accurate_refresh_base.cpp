@@ -232,6 +232,15 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
     return ret;
 }
 
+int32_t AccurateRefreshBase::InitBeforeUpdate(const AbsRdbPredicates &predicates)
+{
+    auto ret = Init(predicates);
+    if (ret != ACCURATE_REFRESH_RET_OK) {
+        MEDIA_WARN_LOG("no Init.");
+    }
+    return ret;
+}
+
 int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const ValuesBucket &value,
     const AbsRdbPredicates &predicates, RdbOperation operation)
 {
@@ -240,11 +249,7 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
     }
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::UpdateWithNoDateTime");
-    // 初始化Init数据
-    auto ret = Init(predicates);
-    if (ret != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("no Init.");
-    }
+    InitBeforeUpdate(predicates);
 
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
@@ -261,7 +266,6 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
 
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     changedRows = retWithResults.second.changed;
-    AddAlbumIdForMoveOperation(predicates);
     UpdateModifiedDatasInner(keys, operation);
     return ACCURATE_REFRESH_RET_OK;
 }

@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <shared_mutex>
-#include <regex>
 #include "mtp_data_utils.h"
 #include "media_exif.h"
 #include "media_file_utils.h"
@@ -32,7 +31,6 @@
 #include "post_proc.h"
 #include "image_packer.h"
 #include "avmetadatahelper.h"
-#include "safe_map.h"
 // LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
@@ -112,6 +110,12 @@ uint32_t MtpMediaLibrary::GetId()
     return id_++;
 }
 
+static bool ContainsInvalidName(const std::string &str)
+{
+    return str.find("./") != std::string::npos ||
+           str.find("../") != std::string::npos;
+}
+
 static bool IsHiddenDirectory(const std::string &dir)
 {
     CHECK_AND_RETURN_RET_LOG(!dir.empty(), false, "dir is empty");
@@ -173,22 +177,6 @@ static void SetStatTime(const std::unordered_map<std::string, std::pair<long, lo
             MEDIA_WARN_LOG("utimes toPath:%{public}s failed", it->first.c_str());
         }
     }
-}
-
-static inline bool RegexCheck(const string &str, const string &regexStr)
-{
-    const regex express(regexStr);
-    return regex_search(str, express);
-}
-
-int32_t IsNameValid(const string &checkName)
-{
-    static const string INVALID_NAME_REGEX = R"([\\/:*?"<>|])";
-    if (RegexCheck(checkName, INVALID_NAME_REGEX)) {
-        MEDIA_ERR_LOG("Failed to check name regex: %{private}s", checkName.c_str());
-        return E_ERR;
-    }
-    return MTP_SUCCESS;
 }
 
 int32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
@@ -697,9 +685,8 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
     CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, doc) == MTP_SUCCESS,
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR),
             "MtpMediaLibrary::SendObjectInfo parent not found");
-
-    CHECK_AND_RETURN_RET_LOG(IsNameValid(context->name) == MTP_SUCCESS,
-        MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR),
+    CHECK_AND_RETURN_RET_LOG(!ContainsInvalidName(context->name),
+        MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::SendObjectInfo context->name is invalid");
     std::string path = doc + "/" + context->name;
     if (context->format == MTP_FORMAT_ASSOCIATION_CODE) {
@@ -953,13 +940,11 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
         MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::SetObjectPropValue handle not found");
-
-    string safeColValue = get<std::string>(colValue);
-    CHECK_AND_RETURN_RET_LOG(IsNameValid(safeColValue) == MTP_SUCCESS,
+    std::error_code ec;
+    CHECK_AND_RETURN_RET_LOG(!ContainsInvalidName(get<std::string>(colValue)),
         MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::SetObjectPropValue colValue is invalid");
-    std::error_code ec;
-    string to = sf::path(path).parent_path().string() + "/" + safeColValue;
+    string to = sf::path(path).parent_path().string() + "/" + get<std::string>(colValue);
     bool cond = (sf::exists(to, ec) || ec.value() != MTP_SUCCESS);
     CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");

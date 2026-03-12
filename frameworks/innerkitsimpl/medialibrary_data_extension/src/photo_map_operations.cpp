@@ -16,6 +16,8 @@
 
 #include "photo_map_operations.h"
 
+#include "accurate_common_data.h"
+#include "analysis_album_accurate_refresh.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -177,9 +179,11 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     bool cond = (!isValid || albumId <= 0);
     CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
 
-    MEDIA_INFO_LOG("Add highlight assets, id is %{puiblic}d", albumId);
+    MEDIA_INFO_LOG("Add highlight assets, id is %{public}d", albumId);
     vector<string> uris;
     std::vector<ValuesBucket> insertValues;
+    std::vector<int32_t> photoIds;
+    int32_t insertCount = 0;
     for (auto value : values) {
         bool isValidValue = false;
         std::string assetUri = value.Get(PhotoMap::ASSET_ID, isValidValue);
@@ -192,6 +196,8 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
         DataShare::DataShareValuesBucket pair;
         pair.Put(PhotoMap::ALBUM_ID, albumId);
         pair.Put(PhotoMap::ASSET_ID, photoId);
+        photoIds.emplace_back(photoId);
+        insertCount++;
         ValuesBucket valueInsert = RdbDataShareAdapter::RdbUtils::ToValuesBucket(pair);
         insertValues.push_back(valueInsert);
     }
@@ -202,6 +208,10 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
 
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    albumRefresh.CustomUpdateAlbumsWithDeltaCount(insertCount, std::vector<string>{to_string(albumId)});
+    albumRefresh.NotifyAnalysisAssetChange(photoIds, AccurateRefresh::RDB_OPERATION_ADD_ANALYSIS);
+    albumRefresh.Notify();
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
     auto watch = MediaLibraryNotify::GetInstance();
     for (auto uri : uris) {
@@ -599,14 +609,21 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
 int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<string> &assetIds)
 {
     int32_t deleteRow = 0;
+    vector<int32_t> assetIdIntegers;
+    for (auto id : assetIds) {
+        CHECK_AND_CONTINUE(MediaLibraryDataManagerUtils::IsNumber(id));
+        assetIdIntegers.emplace_back(stoi(id));
+    }
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
         NativeRdb::RdbPredicates mapTablePredicate { ANALYSIS_PHOTO_MAP_TABLE };
         mapTablePredicate.EqualTo(MAP_ALBUM, albumId);
         mapTablePredicate.And()->In(MAP_ASSET, assetIds);
         deleteRow = MediaLibraryRdbStore::Delete(mapTablePredicate);
         if (deleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
-            MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {albumId});
+            AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+            albumRefresh.CustomUpdateAlbumsWithDeltaCount(0 - deleteRow, std::vector<string>{albumId}, assetIds);
+            albumRefresh.NotifyAnalysisAssetChange(assetIdIntegers, AccurateRefresh::RDB_OPERATION_REMOVE_ANALYSIS);
+            albumRefresh.Notify();
         }
         return deleteRow;
     }
@@ -628,8 +645,11 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
     if (deleteRow <= 0) {
         return deleteRow;
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), updateAlbumIds);
+
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    albumRefresh.CustomUpdateAlbumsWithDeltaCount(0 - deleteRow, std::vector<string>{albumId}, assetIds);
+    albumRefresh.NotifyAnalysisAssetChange(assetIdIntegers, AccurateRefresh::RDB_OPERATION_REMOVE_ANALYSIS);
+    albumRefresh.Notify();
     return deleteRow;
 }
 

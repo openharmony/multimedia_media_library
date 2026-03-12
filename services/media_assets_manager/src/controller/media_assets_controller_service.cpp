@@ -106,9 +106,12 @@
 #include "open_asset_compress_dto.h"
 #include "get_compress_asset_size_vo.h"
 #include "query_media_data_status_vo.h"
+#include "check_single_photo_permission_vo.h"
+#include "media_change_info.h"
 
 namespace OHOS::Media {
 using namespace std;
+using namespace Notification;
 static const size_t FACARD_MAX_REGISTER_OBSERVER = 500;
 
 using SpecialRequestHandle = int32_t (MediaAssetsControllerService::*)(
@@ -607,6 +610,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE),
         &MediaAssetsControllerService::GetCompressAssetSize
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION),
+        &MediaAssetsControllerService::CheckSinglePhotoPermission
     },
 };
 
@@ -2990,5 +2997,22 @@ int32_t MediaAssetsControllerService::GetCompressAssetSize(MessageParcel &data, 
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::CheckSinglePhotoPermission(MessageParcel &data, MessageParcel &reply)
+{
+    CheckSinglePhotoPermissionReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckSinglePhotoPermissionReqBody Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    if (static_cast<NotifyUriType>(reqBody.registerType) != NotifyUriType::SINGLE_PHOTO_URI) {
+        MEDIA_ERR_LOG("CheckSinglePhotoPermissionReqBody Invalid RegisterType");
+        ret = E_INVALID_ARGUMENTS;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().CheckSinglePhotoPermission(reqBody.fileId, reqBody.registerType);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

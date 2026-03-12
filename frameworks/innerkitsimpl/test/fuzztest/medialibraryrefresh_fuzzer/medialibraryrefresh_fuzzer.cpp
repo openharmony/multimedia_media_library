@@ -20,6 +20,7 @@
 #include <string>
 #include <pixel_map.h>
 
+#include "album_change_info.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include "medialibrary_restore.h"
 #include "medialibrary_rdbstore.h"

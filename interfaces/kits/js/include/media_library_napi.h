@@ -386,9 +386,13 @@ private:
     EXPORT static napi_value PhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value SinglePhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value SinglePhotoAlbumRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AnalysisPhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AnalysisAlbumAccessRegisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value SinglePhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AnalysisPhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AnalysisAlbumAccessUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value QueryMediaDataReady(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
@@ -461,6 +465,10 @@ private:
     static int32_t RemoveClientObserver(napi_env env, napi_ref ref,
         map<Notification::NotifyUriType, vector<shared_ptr<ClientObserver>>> &clientObservers,
         const Notification::NotifyUriType uriType);
+    static bool RegisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
+        Notification::NotifyUriType uriType);
+    static void UnregisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
+        Notification::NotifyUriType uriType);
 
     napi_env env_;
     int32_t userId_ = -1;
@@ -536,6 +544,8 @@ struct PickerCallBack {
     int32_t selectedRecommendationType;
     vector<int32_t> movingPhotoBadgeStates;
     int32_t gridLevel;
+    std::string sortRule;
+    int32_t fileSize;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;

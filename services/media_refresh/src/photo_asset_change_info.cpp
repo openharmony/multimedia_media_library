@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include "parameters.h"
+#include "album_change_info.h"
 #include "photo_asset_change_info.h"
 #include "result_set_utils.h"
 #include "media_file_utils.h"
@@ -38,6 +39,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
 
     { PhotoColumn::MEDIA_IS_FAV, TYPE_INT32 },
     { PhotoColumn::MEDIA_TYPE, TYPE_INT32 },
+    { MediaColumn::MEDIA_MIME_TYPE, TYPE_STRING },
     { PhotoColumn::MEDIA_HIDDEN, TYPE_INT32 },
     { PhotoColumn::MEDIA_DATE_TRASHED, TYPE_INT64 },
     { PhotoColumn::PHOTO_STRONG_ASSOCIATION, TYPE_INT32 },
@@ -62,7 +64,24 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_POSITION, TYPE_INT32 },
     { PhotoColumn::MEDIA_SIZE, TYPE_INT64 },
     { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, TYPE_INT32 },
+    { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING },
+    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
+    { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
 };
+
+static void AlbumChangeInfosToString(stringstream &ss,
+    const vector<shared_ptr<AlbumChangeInfo>> &albumChangeInfos)
+{
+    ss << ", albumChangeInfos_: [";
+    for (const auto &albumInfo : albumChangeInfos) {
+        if (albumInfo == nullptr) {
+            ss << "null, ";
+            continue;
+        }
+        ss << "{ albumId_: " << albumInfo->albumId_ << ", albumSubType_: " << albumInfo->albumSubType_ << " }, ";
+    }
+    ss << "]";
+}
 
 const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {
     vector<string> result;
@@ -77,74 +96,77 @@ const vector<string>& PhotoAssetChangeInfo::GetPhotoAssetColumns()
     return photoAssetColumns_;
 }
 
-vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const shared_ptr<ResultSet> &resultSet,
-    const vector<string> &columns)
+static void FillFromResultSet(PhotoAssetChangeInfo &assetChangeInfo, const shared_ptr<ResultSet> &resultSet)
+{
+    auto getInt = [resultSet](const string &col) {
+        return get<int32_t>(
+            ResultSetUtils::GetValFromColumn(
+                col, resultSet, PhotoAssetChangeInfo::GetDataType(col)));
+    };
+    auto getLong = [resultSet](const string &col) {
+        return get<int64_t>(
+            ResultSetUtils::GetValFromColumn(
+                col, resultSet, PhotoAssetChangeInfo::GetDataType(col)));
+    };
+    auto getStr = [resultSet](const string &col) {
+        return get<string>(
+            ResultSetUtils::GetValFromColumn(
+                col, resultSet, PhotoAssetChangeInfo::GetDataType(col)));
+    };
+
+    assetChangeInfo.fileSourceType_ = getInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+    assetChangeInfo.fileId_ = getInt(PhotoColumn::MEDIA_ID);
+    assetChangeInfo.dateDay_ = getStr(PhotoColumn::PHOTO_DATE_DAY);
+    assetChangeInfo.isFavorite_ = getInt(PhotoColumn::MEDIA_IS_FAV);
+    assetChangeInfo.mediaType_ = getInt(PhotoColumn::MEDIA_TYPE);
+    assetChangeInfo.mimeType_ = getStr(MediaColumn::MEDIA_MIME_TYPE);
+    assetChangeInfo.isHidden_ = getInt(PhotoColumn::MEDIA_HIDDEN);
+    assetChangeInfo.dateTrashedMs_ = getLong(PhotoColumn::MEDIA_DATE_TRASHED);
+    assetChangeInfo.strongAssociation_ = getInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION);
+    assetChangeInfo.thumbnailVisible_ = getInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE);
+    assetChangeInfo.dateAddedMs_ = getLong(PhotoColumn::MEDIA_DATE_ADDED);
+    assetChangeInfo.dateTakenMs_ = getLong(PhotoColumn::MEDIA_DATE_TAKEN);
+    assetChangeInfo.subType_ = getInt(PhotoColumn::PHOTO_SUBTYPE);
+    assetChangeInfo.syncStatus_ = getInt(PhotoColumn::PHOTO_SYNC_STATUS);
+    assetChangeInfo.cleanFlag_ = getInt(PhotoColumn::PHOTO_CLEAN_FLAG);
+    assetChangeInfo.timePending_ = getInt(PhotoColumn::MEDIA_TIME_PENDING);
+    assetChangeInfo.isTemp_ = getInt(PhotoColumn::PHOTO_IS_TEMP);
+    assetChangeInfo.burstCoverLevel_ = getInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+    assetChangeInfo.ownerAlbumId_ = getInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    assetChangeInfo.hiddenTime_ = getLong(PhotoColumn::PHOTO_HIDDEN_TIME);
+    assetChangeInfo.thumbnailReady_ = getLong(PhotoColumn::PHOTO_THUMBNAIL_READY);
+    assetChangeInfo.displayName_ = getStr(PhotoColumn::MEDIA_NAME);
+    assetChangeInfo.path_ = getStr(PhotoColumn::MEDIA_FILE_PATH);
+    assetChangeInfo.dirty_ = getInt(PhotoColumn::PHOTO_DIRTY);
+    assetChangeInfo.position_ = getInt(PhotoColumn::PHOTO_POSITION);
+    assetChangeInfo.size_ = getLong(PhotoColumn::MEDIA_SIZE);
+    assetChangeInfo.shootingMode_ = getStr(PhotoColumn::PHOTO_SHOOTING_MODE);
+    assetChangeInfo.movingPhotoEffectMode_ =
+        getInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
+    assetChangeInfo.frontCamera_ = getStr(PhotoColumn::PHOTO_FRONT_CAMERA);
+}
+
+vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(
+    const shared_ptr<ResultSet> &resultSet)
 {
     vector<PhotoAssetChangeInfo> assetChangeInfos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         PhotoAssetChangeInfo assetChangeInfo;
-        assetChangeInfo.fileSourceType_ =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-            resultSet, GetDataType(PhotoColumn::PHOTO_FILE_SOURCE_TYPE)));
-        if (assetChangeInfo.fileSourceType_ == static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
+        FillFromResultSet(assetChangeInfo, resultSet);
+        if (assetChangeInfo.fileSourceType_ ==
+            static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
             continue;
         }
-        assetChangeInfo.fileId_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet,
-            GetDataType(PhotoColumn::MEDIA_ID)));
-        assetChangeInfo.dateDay_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_DATE_DAY,
-            resultSet, GetDataType(PhotoColumn::PHOTO_DATE_DAY)));
-        assetChangeInfo.isFavorite_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_IS_FAV,
-            resultSet, GetDataType(PhotoColumn::MEDIA_IS_FAV)));
-        assetChangeInfo.mediaType_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE, resultSet,
-            GetDataType(PhotoColumn::MEDIA_TYPE)));
-        assetChangeInfo.isHidden_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_HIDDEN, resultSet,
-            GetDataType(PhotoColumn::MEDIA_HIDDEN)));
-        assetChangeInfo.dateTrashedMs_ = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
-            resultSet, GetDataType(PhotoColumn::MEDIA_DATE_TRASHED)));
-        assetChangeInfo.strongAssociation_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_STRONG_ASSOCIATION, resultSet, GetDataType(PhotoColumn::PHOTO_STRONG_ASSOCIATION)));
-        assetChangeInfo.thumbnailVisible_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet, GetDataType(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE)));
-        assetChangeInfo.dateAddedMs_ = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_ADDED,
-            resultSet, GetDataType(PhotoColumn::MEDIA_DATE_ADDED)));
-        assetChangeInfo.dateTakenMs_ = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TAKEN,
-            resultSet, GetDataType(PhotoColumn::MEDIA_DATE_TAKEN)));
-        assetChangeInfo.subType_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet,
-            GetDataType(PhotoColumn::PHOTO_SUBTYPE)));
-        assetChangeInfo.syncStatus_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SYNC_STATUS,
-            resultSet, GetDataType(PhotoColumn::PHOTO_SYNC_STATUS)));
-        assetChangeInfo.cleanFlag_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CLEAN_FLAG,
-            resultSet, GetDataType(PhotoColumn::PHOTO_CLEAN_FLAG)));
-        assetChangeInfo.timePending_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TIME_PENDING,
-            resultSet, GetDataType(PhotoColumn::MEDIA_TIME_PENDING)));
-        assetChangeInfo.isTemp_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_IS_TEMP, resultSet,
-            GetDataType(PhotoColumn::PHOTO_IS_TEMP)));
-        assetChangeInfo.burstCoverLevel_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet, GetDataType(PhotoColumn::PHOTO_BURST_COVER_LEVEL)));
-        assetChangeInfo.ownerAlbumId_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet, GetDataType(PhotoColumn::PHOTO_OWNER_ALBUM_ID)));
-        assetChangeInfo.hiddenTime_ = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_HIDDEN_TIME,
-            resultSet, GetDataType(PhotoColumn::PHOTO_HIDDEN_TIME)));
-        assetChangeInfo.thumbnailReady_ = get<int64_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet, GetDataType(PhotoColumn::PHOTO_THUMBNAIL_READY)));
-        assetChangeInfo.displayName_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet,
-            GetDataType(PhotoColumn::MEDIA_NAME)));
-        assetChangeInfo.path_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
-            GetDataType(PhotoColumn::MEDIA_FILE_PATH)));
-        assetChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_DIRTY, resultSet, GetDataType(PhotoColumn::PHOTO_DIRTY)));
 
-        assetChangeInfo.uri_ = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            to_string(assetChangeInfo.fileId_), MediaFileUtils::GetExtraUri(assetChangeInfo.displayName_,
-            assetChangeInfo.path_));
+        assetChangeInfo.uri_ = MediaFileUtils::GetUriByExtrConditions(
+            PhotoColumn::PHOTO_URI_PREFIX, to_string(assetChangeInfo.fileId_),
+            MediaFileUtils::GetExtraUri(
+                assetChangeInfo.displayName_, assetChangeInfo.path_));
         if (assetChangeInfo.ownerAlbumId_ > 0) {
-            assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+            assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(
+                PhotoAlbumColumns::ALBUM_URI_PREFIX,
                 to_string(assetChangeInfo.ownerAlbumId_));
         }
-        assetChangeInfo.position_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::PHOTO_POSITION, resultSet, GetDataType(PhotoColumn::PHOTO_POSITION)));
-        assetChangeInfo.size_ = get<int64_t>(ResultSetUtils::GetValFromColumn(
-            PhotoColumn::MEDIA_SIZE, resultSet, GetDataType(PhotoColumn::MEDIA_SIZE)));
         assetChangeInfos.push_back(assetChangeInfo);
     }
     return assetChangeInfos;
@@ -177,7 +199,10 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
         ss << ", displayName_: " << MediaFileUtils::DesensitizeName(displayName_);
         ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
-        ss << ", position_: " <<position_ << ", size_: " << size_;
+        ss << ", position_: " << position_ << ", size_: " << size_;
+        ss << ", mimeType_: " << mimeType_ << ", shootingMode_: " << shootingMode_;
+        ss << ", frontCamera_: " << frontCamera_ << ", movingPhotoEffectMode_: " << movingPhotoEffectMode_;
+        AlbumChangeInfosToString(ss, albumChangeInfos_);
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }
@@ -187,6 +212,19 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
 bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel) const
 {
     return Marshalling(parcel, false);
+}
+
+bool PhotoAssetChangeInfo::MarshallingAlbumChangeInfos(Parcel &parcel) const
+{
+    bool ret = parcel.WriteInt32(static_cast<int32_t>(albumChangeInfos_.size()));
+    for (auto &info : albumChangeInfos_) {
+        CHECK_AND_CONTINUE(info != nullptr);
+        info->isHiddenCoverChange_ = false;
+        info->coverInfo_ = PhotoAssetChangeInfo();
+        info->hiddenCoverInfo_ = PhotoAssetChangeInfo();
+        ret = ret && info->Marshalling(parcel, true);
+    }
+    return ret;
 }
 
 bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
@@ -214,8 +252,28 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteInt32(position_);
         ret = ret && parcel.WriteString(displayName_);
         ret = ret && parcel.WriteInt64(size_);
+        ret = ret && MarshallingAlbumChangeInfos(parcel);
     }
     return ret;
+}
+
+bool PhotoAssetChangeInfo::ReadAlbumChangeInfos(Parcel &parcel)
+{
+    int32_t size = 0;
+    bool ret = parcel.ReadInt32(size);
+    if (!ret || size < 0 || size > MAX_MARSHALL_SIZE) {
+        return false;
+    }
+    albumChangeInfos_.clear();
+    albumChangeInfos_.reserve(size);
+    for (int32_t i = 0; i < size; ++i) {
+        AlbumChangeInfo info;
+        if (!info.ReadFromParcel(parcel)) {
+            return false;
+        }
+        albumChangeInfos_.push_back(make_shared<AlbumChangeInfo>(info));
+    }
+    return true;
 }
 
 bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
@@ -243,8 +301,9 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
         ret = ret && parcel.ReadInt32(position_);
         ret = ret && parcel.ReadString(displayName_);
         ret = ret && parcel.ReadInt64(size_);
+        ret = ret && ReadAlbumChangeInfos(parcel);
     }
-    return true;
+    return ret;
 }
 
 shared_ptr<PhotoAssetChangeInfo> PhotoAssetChangeInfo::Unmarshalling(Parcel &parcel)
@@ -263,6 +322,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         dateDay_ = info.dateDay_;
         isFavorite_ = info.isFavorite_;
         mediaType_ = info.mediaType_;
+        mimeType_ = info.mimeType_;
         isHidden_ = info.isHidden_;
         dateTrashedMs_ = info.dateTrashedMs_;
         strongAssociation_ = info.strongAssociation_;
@@ -285,15 +345,21 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         dirty_ = info.dirty_;
         position_ = info.position_;
         size_ = info.size_;
+        shootingMode_ = info.shootingMode_;
+        movingPhotoEffectMode_ = info.movingPhotoEffectMode_;
+        frontCamera_ = info.frontCamera_;
+        albumChangeInfos_ = info.albumChangeInfos_;
     }
     return *this;
 }
+
 bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
 {
     return fileId_ == info.fileId_ &&
         dateDay_ == info.dateDay_ &&
         isFavorite_ == info.isFavorite_ &&
         mediaType_ == info.mediaType_ &&
+        mimeType_ == info.mimeType_ &&
         isHidden_ == info.isHidden_ &&
         dateTrashedMs_ == info.dateTrashedMs_ &&
         strongAssociation_ == info.strongAssociation_ &&
@@ -315,7 +381,11 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         ownerAlbumUri_ == info.ownerAlbumUri_ &&
         dirty_ == info.dirty_ &&
         position_ == info.position_ &&
-        size_ == info.size_;
+        size_ == info.size_ &&
+        shootingMode_ == info.shootingMode_ &&
+        movingPhotoEffectMode_ == info.movingPhotoEffectMode_ &&
+        frontCamera_ == info.frontCamera_ &&
+        albumChangeInfos_ == info.albumChangeInfos_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
@@ -347,6 +417,7 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     GET_ASSET_DIFF(ownerAlbumUri_);
     GET_ASSET_DIFF(isFavorite_);
     GET_ASSET_DIFF(mediaType_);
+    GET_ASSET_DIFF(mimeType_);
     GET_ASSET_DIFF(isHidden_);
     GET_ASSET_DIFF(dateTrashedMs_);
     GET_ASSET_DIFF(strongAssociation_);
@@ -372,6 +443,11 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     if (asset.path_ != compare.path_) {
         ss << "path_: " << MediaFileUtils::DesensitizePath(asset.path_) << " -> ";
         ss << MediaFileUtils::DesensitizePath(compare.path_);
+    }
+    if (asset.albumChangeInfos_ != compare.albumChangeInfos_) {
+        AlbumChangeInfosToString(ss, asset.albumChangeInfos_);
+        ss << " -> ";
+        AlbumChangeInfosToString(ss, compare.albumChangeInfos_);
     }
     return ss.str();
 }
@@ -415,7 +491,7 @@ shared_ptr<PhotoAssetChangeData> PhotoAssetChangeData::Unmarshalling(Parcel &par
     return nullptr;
 }
 
-int32_t PhotoAssetChangeData::GetFileId()
+int32_t PhotoAssetChangeData::GetFileId() const
 {
     return infoBeforeChange_.fileId_ != INVALID_INT32_VALUE ? infoBeforeChange_.fileId_ : infoAfterChange_.fileId_;
 }
