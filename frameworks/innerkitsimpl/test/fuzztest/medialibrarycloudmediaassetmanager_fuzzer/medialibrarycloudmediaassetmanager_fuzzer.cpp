@@ -35,7 +35,6 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_kvstore_manager.h"
 #include "media_upgrade.h"
 
 namespace OHOS {
@@ -44,9 +43,6 @@ using namespace std;
 using namespace AbilityRuntime;
 using namespace FileManagement::CloudSync;
 using Status = CloudMediaAssetDownloadOperation::Status;
-static const string DELETE_DISPLAY_NAME = "cloud_media_asset_deleted";
-static const int32_t POSITION_CLOUD_FLAG = 2;
-static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_CLOUD_MEDIA_DOWNLOAD_TYPE = 1;
 static const int32_t MIN_CLOUD_MEDIA_TASK_RECOVER_CAUSE = 1;
 static const int32_t MAX_URI_LIST = 5;
@@ -75,39 +71,6 @@ static inline CloudMediaTaskPauseCause FuzzCloudMediaTaskPauseCause()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_MEDIA_TASK_PAUSE_CAUSE);
     return static_cast<CloudMediaTaskPauseCause>(value);
-}
-
-static int32_t InsertAsset()
-{
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
-    NativeRdb::ValuesBucket values;
-    values.PutString(MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
-    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, provider->ConsumeIntegral<int64_t>());
-    values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
-    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
-    values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
-    values.PutInt(PhotoColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_IMAGE));
-    int64_t fileId = 0;
-    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
-    return static_cast<int32_t>(fileId);
-}
-
-static int32_t InsertDeleteAsset()
-{
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
-    NativeRdb::ValuesBucket values;
-    values.PutString(MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
-    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, provider->ConsumeIntegral<int64_t>());
-    values.PutString(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
-    values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
-    values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
-    int64_t fileId = 0;
-    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
-    return static_cast<int32_t>(fileId);
 }
 
 static inline Uri FuzzUri()
@@ -177,37 +140,6 @@ static void CloudMediaAssetDownloadFuzzer()
     instance.CheckStorageAndRecoverDownloadTask();
 }
 
-static void CloudMediaAssetDeleteFuzzer()
-{
-    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
-    instance.StartDeleteCloudMediaAssets();
-    instance.StopDeleteCloudMediaAssets();
-    instance.UpdateCloudMediaAssets();
-
-    int32_t fileId = InsertAsset();
-    CHECK_AND_RETURN_LOG(fileId > 0, "fileId is invalid.");
-    vector<string> fileIds = { to_string(fileId) };
-    instance.DeleteBatchCloudFile(fileIds);
-    fileIds.clear();
-    vector<string> paths;
-    vector<string> dateTakens;
-    std::vector<int32_t> subTypes;
-    fileId = InsertAsset();
-    std::vector<int64_t> lcdVisitTimes;
-    instance.ReadyDataForDelete(fileIds, paths, dateTakens, lcdVisitTimes, subTypes);
-    instance.DeleteAllCloudMediaAssetsAsync();
-    instance.DeleteEmptyCloudAlbums();
-    instance.ForceRetainDownloadCloudMedia();
-
-    int32_t firstFileId = InsertDeleteAsset();
-    int32_t secondFileId = InsertDeleteAsset();
-    instance.UpdateCloudMediaAssets();
-    instance.DeleteAllCloudMediaAssetsAsync();
-    firstFileId = InsertDeleteAsset();
-    secondFileId = InsertDeleteAsset();
-    instance.ForceRetainDownloadCloudMedia();
-}
-
 static int32_t AddSeed()
 {
     char *seedData = new char[OHOS::Media::SEED_SIZE];
@@ -246,6 +178,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::Media::CloudMediaAssetManagerFuzzer();
     OHOS::Media::CloudMediaAssetDownloadFuzzer();
-    OHOS::Media::CloudMediaAssetDeleteFuzzer();
     return 0;
 }

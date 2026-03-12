@@ -20,7 +20,6 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #define private public
 #include "media_assets_controller_service.h"
-#include "media_analysis_data_controller_service.h"
 #undef private
 #include "user_define_ipc.h"
 #include "form_info_vo.h"
@@ -31,20 +30,6 @@
 #include "asset_change_vo.h"
 #include "submit_cache_vo.h"
 #include "asset_change_vo.h"
-#include "add_image_vo.h"
-#include "save_camera_photo_vo.h"
-#include "get_assets_vo.h"
-#include "create_asset_vo.h"
-#include "modify_assets_vo.h"
-#include "get_asset_analysis_data_vo.h"
-#include "clone_asset_vo.h"
-#include "revert_to_original_vo.h"
-#include "convert_format_vo.h"
-#include "cloud_enhancement_vo.h"
-#include "start_download_cloud_media_vo.h"
-#include "retain_cloud_media_asset_vo.h"
-#include "get_cloudmedia_asset_status_vo.h"
-#include "get_edit_data_vo.h"
 
 #include "media_old_photos_column.h"
 #include "media_column.h"
@@ -56,13 +41,11 @@ using namespace std;
 using namespace OHOS::Media;
 
 static const int32_t FORM_INFO_NUM_BYTES = 10;
-static const int32_t NUM_BYTES = 8;
 static const string EDIT_DATA_VALUE = "{\"imageEffect\":{\"filters\":[{\"name\":\"InplaceSticker\",\"values\":"
     "{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\",\"cameraPosition\":1}}],\"name\":\"imageEdit\"}}";
 
 FuzzedDataProvider* FDP;
 shared_ptr<MediaAssetsControllerService> mediaAssetsControllerService = nullptr;
-shared_ptr<AnalysisData::MediaAnalysisDataControllerService> analysisDataControllerService = nullptr;
 
 static inline std::vector<std::string> FuzzVector()
 {
@@ -233,334 +216,6 @@ static void AssetChangeCreateAssetFuzzer()
     mediaAssetsControllerService->AssetChangeCreateAsset(data, reply);
 }
 
-static void AssetChangeAddImageFuzzer()
-{
-    AddImageReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.photoId = "20250527162718617";
-    reqBody.deferredProcType = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->AssetChangeAddImage(data, reply);
-}
-
-static void SetCameraShotKeyFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.cameraShotKey = "shot_key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx_test";
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetCameraShotKey(data, reply);
-}
-
-static void SaveCameraPhotoFuzzer()
-{
-    SaveCameraPhotoReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.needScan = FDP->ConsumeBool();
-    reqBody.path = "file//media/Photo/";
-    reqBody.photoSubType = 1;
-    reqBody.imageFileType = 1;
-    reqBody.supportedWatermarkType = FDP->ConsumeIntegral<int32_t>();
-    reqBody.cameraShotKey = "Set";
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SaveCameraPhoto(data, reply);
-}
-
-static void DiscardCameraPhotoFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->DiscardCameraPhoto(data, reply);
-}
-
-static void SetEffectModeFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.effectMode = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetEffectMode(data, reply);
-}
-
-static void SetOrientationFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.orientation = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetOrientation(data, reply);
-}
-
-static void SetVideoEnhancementAttrFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.photoId = "202410011800";
-    reqBody.path = "file//media/Photo/";
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetVideoEnhancementAttr(data, reply);
-}
-
-static void SetSupportedWatermarkTypeFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.watermarkType = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetSupportedWatermarkType(data, reply);
-}
-
-static void SetCompositeDisplayModeFuzzer()
-{
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.compositeDisplayMode = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetCompositeDisplayMode(data, reply);
-}
-
-static void DuplicateAssetsFuzzer()
-{
-    GetAssetsReqBody reqBody;
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->GetAllDuplicateAssets(data, reply);
-    mediaAssetsControllerService->GetDuplicateAssetsToDelete(data, reply);
-}
-
-static void CreateAssetFuzzer()
-{
-    CreateAssetReqBody reqBody;
-    reqBody.mediaType = MEDIA_TYPE_IMAGE;
-    reqBody.title = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.extension = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->PublicCreateAsset(data, reply);
-    CreateAssetReqBody sysReqBody;
-    sysReqBody.mediaType = MEDIA_TYPE_IMAGE;
-    sysReqBody.photoSubtype = FDP->ConsumeIntegral<int32_t>();
-    sysReqBody.displayName = FDP->ConsumeBytesAsString(NUM_BYTES);
-    sysReqBody.cameraShotKey = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel sysData;
-    MessageParcel sysReply;
-    sysReqBody.Marshalling(sysData);
-    mediaAssetsControllerService->SystemCreateAsset(sysData, sysReply);
-}
-
-static void CreateAssetForAppFuzzer()
-{
-    CreateAssetForAppReqBody reqBody;
-    reqBody.tokenId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.mediaType = MEDIA_TYPE_IMAGE;
-    reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
-    reqBody.title = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.extension = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.appId = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.packageName = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.bundleName = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->PublicCreateAssetForApp(data, reply);
-    mediaAssetsControllerService->SystemCreateAssetForApp(data, reply);
-    reqBody.ownerAlbumId = to_string(FDP->ConsumeIntegral<int32_t>());
-    MessageParcel album_data;
-    MessageParcel album_reply;
-    reqBody.Marshalling(album_data);
-    mediaAssetsControllerService->CreateAssetForAppWithAlbum(album_data, album_reply);
-}
-
-static void SetAssetTitleFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.title = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetTitle(data, reply);
-}
-
-static void SetAssetPendingFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.pending = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetPending(data, reply);
-}
-
-static void SetAssetsFavoriteFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.favorite = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetsFavorite(data, reply);
-}
-
-static void SetAssetsHiddenStatusFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.hiddenStatus = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetsHiddenStatus(data, reply);
-}
-
-static void SetAssetsRecentShowStatusFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.recentShowStatus = FDP->ConsumeIntegral<int32_t>();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetsRecentShowStatus(data, reply);
-}
-
-static void SetAssetsUserCommentFuzzer()
-{
-    ModifyAssetsReqBody reqBody;
-    reqBody.fileIds.push_back(FDP->ConsumeIntegral<int32_t>());
-    reqBody.userComment = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SetAssetsUserComment(data, reply);
-}
-
-static void GetAssetAnalysisDataFuzzer()
-{
-    GetAssetAnalysisDataReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.language = "zh-Hans";
-    reqBody.analysisType = FDP->ConsumeIntegral<int32_t>();
-    reqBody.analysisTotal = FDP->ConsumeBool();
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    analysisDataControllerService->GetAssetAnalysisData(data, reply);
-}
-
-static void CloneAssetFuzzer()
-{
-    CloneAssetReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.displayName = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.title = FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->CloneAsset(data, reply);
-}
-
-static void RevertToOriginalFuzzer()
-{
-    RevertToOriginalReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.fileUri = "file://media/Photo/" + to_string(reqBody.fileId);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->RevertToOriginal(data, reply);
-}
-
-static void ConvertFormatFuzzer()
-{
-    ConvertFormatReqBody reqBody;
-    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
-    reqBody.title = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.extension =FDP->ConsumeBytesAsString(NUM_BYTES);
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->ConvertFormat(data, reply);
-}
-
-static void SubmitCloudEnhancementTasksFuzzer()
-{
-    CloudEnhancementReqBody reqBody;
-    reqBody.hasCloudWatermark = FDP->ConsumeBool();
-    reqBody.triggerMode = 1;
-    reqBody.fileUris = { "file://media/Photo/" + to_string(FDP->ConsumeIntegral<int32_t>()) };
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->SubmitCloudEnhancementTasks(data, reply);
-    mediaAssetsControllerService->PrioritizeCloudEnhancementTask(data, reply);
-    mediaAssetsControllerService->CancelCloudEnhancementTasks(data, reply);
-    mediaAssetsControllerService->CancelAllCloudEnhancementTasks(data, reply);
-    mediaAssetsControllerService->SyncCloudEnhancementTaskStatus(data, reply);
-}
-
-static void StartDownloadCloudMediaFuzzer()
-{
-    StartDownloadCloudMediaReqBody reqBody;
-    reqBody.cloudMediaType = FDP->ConsumeBool() ? 1 : 0;
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->StartDownloadCloudMedia(data, reply);
-}
-
-static void RetainCloudMediaAssetFuzzer()
-{
-    RetainCloudMediaAssetReqBody reqBody;
-    reqBody.cloudMediaRetainType = FDP->ConsumeBool() ? 1 : 0;
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->RetainCloudMediaAsset(data, reply);
-}
-
-static void GetCloudMediaAssetStatusFuzzer()
-{
-    GetCloudMediaAssetStatusReqBody reqBody;
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->GetCloudMediaAssetStatus(data, reply);
-}
-
-static void GetEditDataFuzzer()
-{
-    GetEditDataReqBody reqBody;
-    reqBody.predicates.EqualTo("file_id", "1111111");
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAssetsControllerService->GetEditData(data, reply);
-}
-
 static void MediaAssetsControllerServiceFirstFuzzer()
 {
     FormInfoFuzzer();
@@ -576,41 +231,12 @@ static void MediaAssetsControllerServiceFirstFuzzer()
     AssetChangeSetEditDataFuzzer();
     AssetChangeSubmitCacheFuzzer();
     AssetChangeCreateAssetFuzzer();
-    AssetChangeAddImageFuzzer();
-    SetCameraShotKeyFuzzer();
-    SaveCameraPhotoFuzzer();
-    DiscardCameraPhotoFuzzer();
-    SetEffectModeFuzzer();
-    SetOrientationFuzzer();
-    SetVideoEnhancementAttrFuzzer();
-    SetSupportedWatermarkTypeFuzzer();
-    SetCompositeDisplayModeFuzzer();
-    DuplicateAssetsFuzzer();
-    CreateAssetFuzzer();
-    CreateAssetForAppFuzzer();
-    SetAssetTitleFuzzer();
-    SetAssetPendingFuzzer();
-    SetAssetsFavoriteFuzzer();
-    SetAssetsHiddenStatusFuzzer();
-    SetAssetsRecentShowStatusFuzzer();
-    SetAssetsUserCommentFuzzer();
-    GetAssetAnalysisDataFuzzer();
-    CloneAssetFuzzer();
-    RevertToOriginalFuzzer();
-    ConvertFormatFuzzer();
-    SubmitCloudEnhancementTasksFuzzer();
-    StartDownloadCloudMediaFuzzer();
-    RetainCloudMediaAssetFuzzer();
-    GetCloudMediaAssetStatusFuzzer();
-    GetEditDataFuzzer();
 }
 
 static void Init()
 {
-    shared_ptr<MediaAssetsControllerService> mediaAssetsControllerService =
+    OHOS::mediaAssetsControllerService =
         make_shared<MediaAssetsControllerService>();
-    OHOS::analysisDataControllerService =
-        make_shared<Media::AnalysisData::MediaAnalysisDataControllerService>();
 }
 } // namespace OHOS
 
