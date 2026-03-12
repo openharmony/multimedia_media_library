@@ -63,6 +63,8 @@ void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Wa
     pickerCallBack_->selectedRecommendationType = result.GetIntParam("selectedRecommendationType", 0);
     pickerCallBack_->movingPhotoBadgeStates = result.GetIntArrayParam("select-item-moving-enabled");
     pickerCallBack_->gridLevel = result.GetIntParam("gridLevel", 1);
+    pickerCallBack_->sortRule = result.GetStringParam("sortRule");
+    pickerCallBack_->fileSize = result.GetIntParam("fileSize", 0);
 }
 
 void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)

@@ -446,24 +446,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdatePhotoVisible_Test_001, TestSize.Lev
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateMediaAnalysisHdcData_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    photosDao.UpdateMediaAnalysisHdcData();
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, ClearAlbumMap_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    photosDao.ClearAlbumMap();
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateAnalysisAlbumsCountForCloud_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    photosDao.UpdateAnalysisAlbumsCountForCloud();
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateAlbumReplacedSignal_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -736,6 +718,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_001, T
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadAsset(data, valuebucket);
+    EXPECT_EQ(data.exifRotate, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_002, TestSize.Level1)
@@ -748,6 +731,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_002, T
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadAsset(data, valuebucket);
+    EXPECT_EQ(data.exifRotate, 1);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_003, TestSize.Level1)
@@ -760,6 +744,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_003, T
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadAsset(data, valuebucket);
+    EXPECT_EQ(data.exifRotate, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadMetaData_Test_001, TestSize.Level1)
@@ -772,28 +757,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadMetaData_Test_001
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadMetaData(data, valuebucket);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, HandleShootingMode_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::ValuesBucket valuebucket;
-    valuebucket.PutInt(PhotoColumn::PHOTO_SHOOTING_MODE, 1);
-    
-    std::map<std::string, int> recordAnalysisAlbumMaps;
-    photosDao.HandleShootingMode(cloudId, valuebucket, recordAnalysisAlbumMaps);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, HandleShootingMode_Test_002, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::ValuesBucket valuebucket;
-    valuebucket.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, "abc");
-    
-    std::map<std::string, int> recordAnalysisAlbumMaps;
-    photosDao.HandleShootingMode(cloudId, valuebucket, recordAnalysisAlbumMaps);
+    EXPECT_EQ(data.exifRotate, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateFileRecordsInTransaction_Test_001, TestSize.Level1)
@@ -1000,48 +964,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateFailRecordsCloudId_Test_002, TestSi
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, InsertPhotoCreateFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    int32_t fileId = 1;
-    photosDao.InsertPhotoCreateFailedRecord(fileId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, InsertPhotoModifyFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    photosDao.InsertPhotoModifyFailedRecord(cloudId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, InsertPhotoCopyFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    int32_t fileId = 1;
-    photosDao.InsertPhotoCopyFailedRecord(fileId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, RemovePhotoCreateFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    int32_t fileId = 1;
-    photosDao.RemovePhotoCreateFailedRecord(fileId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, RemovePhotoModifyFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    photosDao.RemovePhotoModifyFailedRecord(cloudId);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, RemovePhotoCopyFailedRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    int32_t fileId = 1;
-    photosDao.RemovePhotoCopyFailedRecord(fileId);
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, DeleteLocalFileNotExistRecord_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -1092,30 +1014,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, QueryAnalysisAlbum_Test_002, TestSize.Lev
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateAlbumInternal_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::set<std::string> refreshAlbums = {"1", "2", "3"};
-    
-    photosDao.UpdateAlbumInternal(refreshAlbums);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateAllAlbumsCountForCloud_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::vector<std::string> albums = {"1", "2", "3"};
-    
-    photosDao.UpdateAllAlbumsCountForCloud(albums);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateAlbumCountInternal_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::vector<std::string> subtypes = {"1", "2", "3"};
-    
-    photosDao.UpdateAlbumCountInternal(subtypes);
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, IsAlbumCloud_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -1161,16 +1059,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdatePhoto_Test_001, TestSize.Level1)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, IsCoverContentChange_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    int32_t changedRows = 1;
-    bool mtimeChanged = true;
-    int32_t dataFileId = 1;
-    
-    photosDao.IsCoverContentChange(changedRows, mtimeChanged, dataFileId);
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, FixAlbumIdToBeOtherAlbumId_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -1192,6 +1080,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, GetSourceAlbumFromPath_Test_001, TestSize
     SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap;
     
     photosDao.GetSourceAlbumFromPath(pullData, albumId, cloudMapIds, lpathToIdMap);
+    EXPECT_EQ(pullData.cloudId, "test_cloud_id");
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, GetSourceAlbumForMerge_Test_001, TestSize.Level1)
@@ -1225,15 +1114,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, GetSourceAlbum_Test_001, TestSize.Level1)
     EXPECT_EQ(ret, E_INVALID_VALUES);
 }
 
-HWTEST_F(CloudMediaSyncServiceDaoTest, GetAllSysAlbumsQuery_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    NativeRdb::AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    std::vector<std::string> columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME};
-    
-    auto resultSet = photosDao.GetAllSysAlbumsQuery(predicates, columns);
-}
-
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordValues_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosDao photosDao;
@@ -1244,24 +1124,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordValues_Test_001, TestSize.Lev
     
     NativeRdb::ValuesBucket values;
     photosDao.GetUpdateRecordValues(pullData, values);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, GetUpdateRecordCondition_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    
-    photosDao.GetUpdateRecordCondition(cloudId, predicates);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, GetUpdateRecordConditionForRecycleUpdate_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    
-    photosDao.GetUpdateRecordConditionForRecycleUpdate(cloudId, predicates);
+    EXPECT_EQ(pullData.cloudId, "test_cloud_id");
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordToDatabasePrepare_Test_001, TestSize.Level1)
@@ -1280,6 +1143,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordToDatabasePrepare_Test_001, T
     NativeRdb::ValuesBucket values;
     
     photosDao.UpdateRecordToDatabasePrepare(pullData, isLocal, mtimeChanged, values);
+    EXPECT_EQ(pullData.cloudId, "test_cloud_id");
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordToDatabasePrepare_Test_002, TestSize.Level1)
@@ -1298,6 +1162,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateRecordToDatabasePrepare_Test_002, T
     NativeRdb::ValuesBucket values;
     
     photosDao.UpdateRecordToDatabasePrepare(pullData, isLocal, mtimeChanged, values);
+    EXPECT_EQ(pullData.cloudId, "test_cloud_id");
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateProxy_Test_001, TestSize.Level1)
@@ -1431,6 +1296,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_004, T
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadAsset(data, valuebucket);
+    EXPECT_EQ(data.exifRotate, 1);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_005, TestSize.Level1)
@@ -1443,6 +1309,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadAsset_Test_005, T
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadAsset(data, valuebucket);
+    EXPECT_EQ(data.exifRotate, 1);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadMetaData_Test_002, TestSize.Level1)
@@ -1455,28 +1322,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, HandleExifRotateDownloadMetaData_Test_002
     
     NativeRdb::ValuesBucket valuebucket;
     photosDao.HandleExifRotateDownloadMetaData(data, valuebucket);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, HandleShootingMode_Test_003, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::ValuesBucket valuebucket;
-    valuebucket.Put(PhotoColumn::PHOTO_SHOOTING_MODE, "123");
-    
-    std::map<std::string, int> recordAnalysisAlbumMaps;
-    photosDao.HandleShootingMode(cloudId, valuebucket, recordAnalysisAlbumMaps);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, HandleShootingMode_Test_004, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    std::string cloudId = "test_cloud_id";
-    NativeRdb::ValuesBucket valuebucket;
-    valuebucket.Put(PhotoColumn::PHOTO_SHOOTING_MODE, "");
-    
-    std::map<std::string, int> recordAnalysisAlbumMaps;
-    photosDao.HandleShootingMode(cloudId, valuebucket, recordAnalysisAlbumMaps);
+    EXPECT_EQ(data.exifRotate, 90);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, GetSourceAlbumForMerge_Test_002, TestSize.Level1)

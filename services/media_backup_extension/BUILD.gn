@@ -42,6 +42,7 @@ ohos_shared_library("mediabackup") {
     "./include/selection",
     "./include/restore",
     "./include/report",
+    "./include/video_ringtone_processor",
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
@@ -124,6 +125,7 @@ ohos_shared_library("mediabackup") {
     "./src/restore/restore_photos_album_hidden.cpp",
     "./src/restore/tab_old_albums_clone.cpp",
     "./src/restore/tab_old_photos_restore.cpp",
+    "./src/video_ringtone_processor/video_ringtone_processor.cpp",
     "./src/upgrade_restore.cpp",
   ]
 

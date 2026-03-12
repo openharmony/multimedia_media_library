@@ -139,6 +139,12 @@ public:
     static const std::unordered_map<std::string, ColumnSchema>& GetPhotoAlbumTableSchema();
 
 private:
+    static int32_t GetTargetAlbumId(const DataShare::DataSharePredicates &predicates, std::string &targetAlbumId);
+    static int32_t GetAndCheckTargetAlbum(const DataShare::DataSharePredicates &predicates, std::string &targetAlbumId);
+    static int32_t GetAndCheckAlbumName(const NativeRdb::ValuesBucket &values, string &albumName);
+    static int32_t UpdateAlbumNameInDb(const std::string &targetAlbumId, const string &albumName);
+    static void UpdateIndexForAlbumAssets(const std::string &targetAlbumId);
+    static void NotifyPortraitIfNeeded(const std::string &targetAlbumId);
     static void PrepareSourceAlbum(const std::string &albumName, const std::string &lpath,
         NativeRdb::ValuesBucket &values);
     // Values that both source album and user album share when locally created.

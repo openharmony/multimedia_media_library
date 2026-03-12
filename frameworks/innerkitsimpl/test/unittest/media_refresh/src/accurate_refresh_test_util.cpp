@@ -157,7 +157,7 @@ AlbumChangeInfo GetAlbumInfo(PhotoAlbumSubType subType, shared_ptr<MediaLibraryR
     queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
     auto resultSet = rdbStore->QueryByStep(queryPredicates, AlbumChangeInfo::GetAlbumInfoColumns());
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, AlbumChangeInfo(), "resultSet nullptr");
-    auto albumInfos = AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
+    auto albumInfos = AlbumChangeInfo::GetInfoFromResult(resultSet);
     if (albumInfos.size() == 1) {
         return albumInfos[0];
     }
@@ -171,7 +171,7 @@ AlbumChangeInfo GetAlbumInfo(int32_t albumId, std::shared_ptr<MediaLibraryRdbSto
     queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     auto resultSet = rdbStore->QueryByStep(queryPredicates, AlbumChangeInfo::GetAlbumInfoColumns());
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, AlbumChangeInfo(), "resultSet nullptr");
-    auto albumInfos = AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
+    auto albumInfos = AlbumChangeInfo::GetInfoFromResult(resultSet);
     if (albumInfos.size() == 1) {
         return albumInfos[0];
     }

@@ -17,6 +17,7 @@
 
 #include "cloud_media_asset_manager.h"
 #include <cinttypes>
+#include "analysis_album_accurate_refresh.h"
 #include "album_accurate_refresh.h"
 #include "asset_accurate_refresh.h"
 #include "cloud_sync_notify_handler.h"
@@ -560,6 +561,7 @@ int32_t CloudMediaAssetManager::UpdateCloudAssets(const std::vector<std::string>
 void CloudMediaAssetManager::NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
 {
     AccurateRefresh::AssetAccurateRefresh::NotifyForReCheck();
+    AccurateRefresh::AnalysisAlbumAccurateRefresh::NotifyForAnalysisAssetReCheck();
     CHECK_AND_RETURN_LOG(!notifyFileIds.empty(), "notifyFileIds is null.");
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "watch is null.");

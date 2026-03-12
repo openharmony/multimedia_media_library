@@ -17,6 +17,7 @@
 
 #include "medialibrary_analysis_album_operations.h"
 
+#include "analysis_album_accurate_refresh.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_data_manager.h"
@@ -483,12 +484,14 @@ static int32_t UpdateAnalysisPhotoMapForMergeGroupPhoto(const shared_ptr<MediaLi
 static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> store, const vector<string> &deleteId,
     const std::unordered_map<string, MergeAlbumInfo> updateMaps)
 {
-    for (auto it : deleteId) {
-        RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
-        rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, it);
-        MediaLibraryRdbStore::Delete(rdbPredicates);
-    }
+    AccurateRefresh::AnalysisAlbumAccurateRefresh deleteAlbumRefresh;
+    RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
+    rdbPredicates.In(PhotoAlbumColumns::ALBUM_ID, deleteId);
+    int32_t deletedRows = 0;
+    CHECK_AND_PRINT_LOG(deleteAlbumRefresh.Delete(deletedRows, rdbPredicates), "Fail to delete albums.");
+    deleteAlbumRefresh.Notify();
     vector<string> updateSqls;
+    vector<int32_t> albumIds;
     for (auto it : updateMaps) {
         int32_t renameOperation =
             it.second.renameOperation != GROUP_ALBUM_RENAMED ? ALBUM_TO_RENAME_FOR_ANALYSIS : GROUP_ALBUM_RENAMED;
@@ -502,12 +505,18 @@ static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> 
             RENAME_OPERATION + " = " + to_string(renameOperation) + ", " + ALBUM_NAME + " = '" +
             it.second.albumName + "', " + IS_ME + " = " + to_string(it.second.isMe) +
             " WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
+        albumIds.emplace_back(it.second.albumId);
         updateSqls.push_back(sql);
     }
-    int ret = ExecSqls(updateSqls, store);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to update analysisAlbum");
-    ret = UpdateAnalysisPhotoMapForMergeGroupPhoto(store, updateMaps);
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    albumRefresh.Init(albumIds);
+    int ret = UpdateAnalysisPhotoMapForMergeGroupPhoto(store, updateMaps);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to update analysisPhotoMap.");
+    for (auto sql : updateSqls) {
+        ret = albumRefresh.ExecuteSql(sql, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to update analysisAlbum");
+    }
+    albumRefresh.Notify();
     return E_OK;
 }
 
@@ -650,10 +659,10 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetGroupAlbumName(const ValuesBucke
     }
     std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' , " + RENAME_OPERATION + " = 2 WHERE " + ALBUM_ID + " = " + targetAlbumId;
-    vector<string> updateSqls = { updateForSetAlbumName };
-    err = ExecSqls(updateSqls, uniStore);
+    vector<int32_t> changeAlbumIds = {stoi(targetAlbumId)};
+    err = UpdateAnalysisAlbum(std::vector<string>{updateForSetAlbumName}, changeAlbumIds);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to set group album name, ret: %{public}d", err);
     if (err == E_OK) {
-        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyGroupAlbum(changeAlbumIds);
     }
     return err;
@@ -684,10 +693,10 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetGroupCoverUri(const ValuesBucket
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
         "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) +
         " WHERE " + ALBUM_ID + " = " + targetAlbumId;
-    vector<string> updateSqls = { updateForSetCoverUri };
-    err = ExecSqls(updateSqls, uniStore);
+    vector<int32_t> changeAlbumIds = {stoi(targetAlbumId)};
+    err = UpdateAnalysisAlbum(std::vector<string>{updateForSetCoverUri}, changeAlbumIds);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to set group cover uri, ret: %{public}d", err);
     if (err == E_OK) {
-        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyGroupAlbum(changeAlbumIds);
     }
     return err;
@@ -715,6 +724,9 @@ int32_t MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(const Values
     int err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+        AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+        albumRefresh.InitForRemove(changeAlbumIds);
+        albumRefresh.Notify();
         NotifyGroupAlbum(changeAlbumIds);
     }
     return err;
@@ -882,6 +894,21 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(const int32_t
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_INNER_FAIL,
         "update highlight album attribute failed");
     return ret;
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(vector<string> sqls, vector<int32_t> albumIds)
+{
+    CHECK_AND_RETURN_RET_LOG(!albumIds.empty(), E_INNER_FAIL, "UpdateAnalysisAlbum no valid albumIds");
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    int32_t ret = E_OK;
+    ret = albumRefresh.Init(albumIds);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateAnalysisAlbum init failed");
+    for (auto sql : sqls) {
+        ret = albumRefresh.ExecuteSql(sql, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateAnalysisAlbum execute sql failed");
+    }
+    albumRefresh.Notify();
+    return E_OK;
 }
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP

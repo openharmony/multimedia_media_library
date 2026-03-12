@@ -88,6 +88,7 @@
 #include "cloud_media_dao_utils.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "media_edit_utils.h"
+#include "transcode_compatible_info_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -241,9 +242,25 @@ static bool IsHighPixelPicture(int32_t width, int32_t height)
     return false;
 }
 
+static bool IsSupportHighResolution(const string& bundleName)
+{
+    CompatibleInfo compatibleInfo;
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    if (compatibleInfo.highResolution) {
+        return true;
+    }
+    return false;
+}
+
 static bool NeedTranscodeHighPixelPicture(int32_t width, int32_t height)
 {
     if (IsHighPixelPicture(width, height) && !PermissionUtils::IsSystemApp()) {
+        string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        MEDIA_ERR_LOG("IsSupportHighPixelPicture clientBundle %{public}s", clientBundle.c_str());
+        if (IsSupportHighResolution(clientBundle)) {
+            return false;
+        }
+        MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
         return true;
     }
     return false;
@@ -283,12 +300,12 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
     return E_OK;
 }
 
-void MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(const int32_t &type)
+void MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(const int32_t &type, TranscodeType transcodeType)
 {
     MEDIA_INFO_LOG("medialibrary open transcode file success");
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_LOG(dfxManager != nullptr, "DfxManager::GetInstance() returned nullptr");
-    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB);
+    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB, transcodeType);
 }
 
 static int32_t GetExpiredCount(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int64_t threshold)

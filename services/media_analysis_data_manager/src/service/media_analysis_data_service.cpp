@@ -17,6 +17,7 @@
  
 #include "media_analysis_data_service.h"
  
+#include "analysis_album_accurate_refresh.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "rdb_utils.h"
@@ -470,6 +471,15 @@ int32_t MediaAnalysisDataService::DeleteHighlightAlbums(const vector<string>& al
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
                 albumIds[i]), NotifyType::NOTIFY_REMOVE);
         }
+        vector<int32_t> albumIdIntegers;
+        albumIdIntegers.reserve(albumIds.size());
+        for (auto &idStr : albumIds) {
+            CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(idStr));
+            albumIdIntegers.emplace_back(std::stoi(idStr));
+        }
+        AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+        albumRefresh.InitForRemove(albumIdIntegers);
+        albumRefresh.Notify();
     }
     return changedRows;
 }

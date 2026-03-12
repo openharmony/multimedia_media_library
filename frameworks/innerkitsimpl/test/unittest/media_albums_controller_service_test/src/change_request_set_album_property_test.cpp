@@ -121,6 +121,45 @@ static int32_t ServiceCreateAlbum(const std::string &albumName)
     return respVo.GetErrCode();
 }
 
+int32_t CreatePortraitAlbum(string albumName)
+{
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    valuesBucket.Put(ALBUM_NAME, albumName);
+    valuesBucket.Put(COUNT, 0);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+}
+
+int32_t CreateGroupAlbum(string albumName)
+{
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+    valuesBucket.Put(ALBUM_NAME, albumName);
+    valuesBucket.Put(COUNT, 0);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+}
+
+int32_t CreateHighLightAlbum(string albumName)
+{
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::HIGHLIGHT);
+    valuesBucket.Put(ALBUM_NAME, albumName);
+    valuesBucket.Put(COUNT, 0);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+}
+
 static int32_t ServicePublicCreateAsset(const std::string &ext, const std::string &title = "")
 {
     CreateAssetReqBody reqBody;
@@ -236,8 +275,8 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_002, TestSize.
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start SetAlbumProperty_Test_003");
-    int32_t albumId = ServiceCreateAlbum("Album_Test_001");
-    ASSERT_GT(albumId, 0);
+    CreatePortraitAlbum("Album_Test_001");
+    string albumId = "2";
     int32_t fileId = ServicePublicCreateAsset("jpg");
     ASSERT_GT(fileId, 0);
     string coverUri = "file://media/Photo/" + to_string(fileId);
@@ -264,7 +303,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_003, TestSize.
     setAlbumNameReqBody.albumType = reqBody.albumType;
     setAlbumNameReqBody.albumSubType = reqBody.albumSubType;
     setAlbumNameReqBody.albumName = "hello";
-    setAlbumNameReqBody.albumId = to_string(albumId);
+    setAlbumNameReqBody.albumId = albumId;
     result = setAlbumNameReqBody.Marshalling(data);
     ASSERT_NE(result, false);
     service->ChangeRequestSetAlbumName(data, reply);
@@ -280,6 +319,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_003, TestSize.
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start SetAlbumProperty_Test_004");
+    CreateGroupAlbum("3");
     string albumId = "3";
     string coverUri = "file://media/Photo/3";
     ChangeRequestSetCoverUriReqBody reqBody;
@@ -321,6 +361,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_004, TestSize.
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start SetAlbumProperty_Test_005");
+    CreateGroupAlbum("4");
     string albumId = "4";
     string coverUri = "file://media/Photo/4";
     ChangeRequestSetCoverUriReqBody reqBody;

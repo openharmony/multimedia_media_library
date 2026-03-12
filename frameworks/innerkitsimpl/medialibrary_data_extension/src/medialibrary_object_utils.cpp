@@ -54,6 +54,8 @@ static const string NO_MEDIA_TAG = ".nomedia";
 const char* HAS_DATA = "persist.multimedia.media_analysis_service.hasdata";
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
+static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
+
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
     if (dirPath.empty()) {
@@ -810,6 +812,28 @@ int32_t HandlePhotoRequestPictureBuffer(MediaLibraryCommand &cmd)
     return PictureHandlerService::RequestBufferHandlerFd(fd);
 }
 
+static void SetTranscodeType(std::shared_ptr<FileAsset> &fileAsset, TranscodeType &transcodeType)
+{
+    int32_t width = fileAsset->GetWidth();
+    int32_t height = fileAsset->GetHeight();
+    string mimeType = fileAsset->GetMimeType();
+    bool isHeif = (mimeType == "image/heic" || mimeType == "image/heif");
+    bool isHighPixel = (width * height >= HIGH_PIXEL_SIZE);
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -845,7 +869,9 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     int32_t fd = OpenAsset(path, mode, fileId, type);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "open file fd %{private}d, errno %{private}d", fd, errno);
     if (err == 0) {
-        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
+        TranscodeType transcodeType = TranscodeType::DEFAULT;
+        SetTranscodeType(fileAsset, transcodeType);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB, transcodeType);
     }
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();

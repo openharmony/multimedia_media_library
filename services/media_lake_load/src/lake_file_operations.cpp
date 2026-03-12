@@ -27,6 +27,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
@@ -460,6 +461,8 @@ static int32_t UpdateFileSourceType(const std::vector<std::string> &updateIds, c
 
 int32_t LakeFileOperations::MoveAssetsFromLake(const std::vector<std::string> &ids)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("LakeFileOperations::MoveAssetsFromLake");
     MEDIA_INFO_LOG("MoveAssetsFromLake enter %{public}u", ids.size());
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), E_INVALID_ARGUMENTS, "move asset param error");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);

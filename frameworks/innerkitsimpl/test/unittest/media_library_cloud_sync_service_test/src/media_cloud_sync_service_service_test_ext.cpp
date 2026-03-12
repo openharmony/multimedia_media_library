@@ -31,7 +31,13 @@
 #define private public
 #include "cloud_media_album_service.h"
 #include "cloud_media_photos_service.h"
+#include "cloud_media_enhance_service.h"
+#include "cloud_media_scan_service.h"
+#include "cloud_media_data_service.h"
 #undef private
+#include "cloud_file_error.h"
+#include "metadata.h"
+#include "metadata_extractor.h"
 
 using namespace testing::ext;
 using namespace OHOS::AAFwk;
@@ -432,5 +438,842 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_HandleNoContentUploadFail_T
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t ret = service.HandleNoContentUploadFail(photo, photoRefresh);
     EXPECT_EQ(ret, E_RDB);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_ClearLocalData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 ClearLocalData 方法，localPhotosPoOp 无值
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.localPhotosPoOp = std::nullopt;
+    std::vector<PhotosDto> fdirtyData;
+
+    int32_t ret = service.ClearLocalData(pullData, fdirtyData);
+
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 PullUpdate 方法，本地记录脏，忽略云更新
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.cloudId = "test_cloud_id";
+    pullData.localDirty = static_cast<int32_t>(DirtyType::TYPE_SDIRTY);
+    std::set<std::string> refreshAlbums;
+    std::vector<PhotosDto> fdirtyData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullUpdate_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 PullUpdate 方法，本地文件写打开，设置重试标志
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.cloudId = "test_cloud_id";
+    pullData.localPath = "/storage/cloud/files/Photo/test.jpg";
+    pullData.localPosition = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
+    pullData.localDirty = static_cast<int32_t>(DirtyType::TYPE_SYNCED);
+    pullData.localDateModified = "1234567890";
+    pullData.attributesEditedTimeMs = 1234567891;
+    std::set<std::string> refreshAlbums;
+    std::vector<PhotosDto> fdirtyData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudKeyData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudKeyData 方法，数据无效
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.hasAttributes = false;
+    pullData.basicFileName = "test.jpg";
+    pullData.basicSize = 1024;
+    KeyData keyData;
+
+    int32_t ret = service.GetCloudKeyData(pullData, keyData);
+
+    EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudKeyData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudKeyData 方法，fileType 为 -1
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.hasAttributes = true;
+    pullData.basicFileName = "test.jpg";
+    pullData.basicSize = 1024;
+    pullData.basicFileType = -1;
+    KeyData keyData;
+
+    int32_t ret = service.GetCloudKeyData(pullData, keyData);
+
+    EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudKeyData_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudKeyData 方法，文件类型为视频
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    pullData.hasAttributes = true;
+    pullData.basicFileName = "test.mp4";
+    pullData.basicSize = 1024;
+    pullData.basicFileType = FILE_TYPE_VIDEO;
+    pullData.attributesMetaDateModified = 1234567890;
+    pullData.basicEditedTime = 1234567891;
+    pullData.basicCreatedTime = 1234567889;
+    pullData.basicRecycledTime = 0;
+    pullData.propertiesRotate = ORIENTATION_NORMAL;
+    KeyData keyData;
+
+    int32_t ret = service.GetCloudKeyData(pullData, keyData);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(keyData.mediaType, static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO));
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_PullInsert_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 PullInsert 方法，pullDatas 为空
+    CloudMediaPhotosService service;
+    std::vector<CloudMediaPullDataDto> pullDatas;
+    std::vector<std::string> failedRecords;
+
+    int32_t ret = service.PullInsert(pullDatas, failedRecords);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_CreateEntry_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 CreateEntry 方法，pullDatas 为空
+    CloudMediaPhotosService service;
+    std::vector<CloudMediaPullDataDto> pullDatas;
+    std::set<std::string> refreshAlbums;
+    std::vector<PhotosDto> newData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    std::vector<std::string> failedRecords;
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.CreateEntry(pullDatas, refreshAlbums, newData, stats, failedRecords, photoRefresh);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleRecord_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 HandleRecord 方法，cloudIds 为空
+    CloudMediaPhotosService service;
+    std::vector<std::string> cloudIds;
+    std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
+    std::vector<PhotosDto> newData;
+    std::vector<PhotosDto> fdirtyData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    std::vector<std::string> failedRecords;
+
+    int32_t ret = service.HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleRecord_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 HandleRecord 方法，新记录（本地路径为空且未删除）
+    CloudMediaPhotosService service;
+    std::vector<std::string> cloudIds = {"test_cloud_id"};
+    std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
+    CloudMediaPullDataDto pullData;
+    pullData.cloudId = "test_cloud_id";
+    pullData.localPath = "";
+    pullData.basicIsDelete = false;
+    cloudIdRelativeMap["test_cloud_id"] = pullData;
+    std::vector<PhotosDto> newData;
+    std::vector<PhotosDto> fdirtyData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    std::vector<std::string> failedRecords;
+
+    int32_t ret = service.HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(stats[StatsIndex::NEW_RECORDS_COUNT], 1);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleRecord_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 HandleRecord 方法，删除记录
+    CloudMediaPhotosService service;
+    std::vector<std::string> cloudIds = {"test_cloud_id"};
+    std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
+    CloudMediaPullDataDto pullData;
+    pullData.cloudId = "test_cloud_id";
+    pullData.localPath = "/storage/cloud/files/Photo/test.jpg";
+    pullData.basicIsDelete = true;
+    cloudIdRelativeMap["test_cloud_id"] = pullData;
+    std::vector<PhotosDto> newData;
+    std::vector<PhotosDto> fdirtyData;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    std::vector<std::string> failedRecords;
+
+    int32_t ret = service.HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(stats[StatsIndex::DELETE_RECORDS_COUNT], 1);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleCloudDeleteRecord_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 HandleCloudDeleteRecord 方法，cloudDeleteFileIds 为空
+    CloudMediaPhotosService service;
+    std::map<std::string, CloudMediaPullDataDto> cloudIdRelativeMap;
+
+    int32_t ret = service.HandleCloudDeleteRecord(cloudIdRelativeMap);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 OnRecordFailedErrorDetails 方法，空间已满
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
+    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::SPACE_FULL);
+    photo.errorDetails.push_back(detail);
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
+
+    EXPECT_EQ(ret, FileManagement::E_CLOUD_STORAGE_FULL);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 OnRecordFailedErrorDetails 方法，业务模式变更
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
+    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::BUSINESS_MODEL_CHANGE_DATA_UPLOAD_FORBIDDEN);
+    photo.errorDetails.push_back(detail);
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
+
+    EXPECT_EQ(ret, FileManagement::E_BUSINESS_MODE_CHANGED);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 OnRecordFailedErrorDetails 方法，同名文件
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
+    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::SAME_FILENAME_NOT_ALLOWED);
+    photo.errorDetails.push_back(detail);
+    photo.cloudId = "test_cloud_id";
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
+
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 OnRecordFailedErrorDetails 方法，内容未找到
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.errorType = ErrorType::TYPE_NEED_UPLOAD;
+    CloudErrorDetail detail;
+    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::CONTENT_NOT_FIND);
+    photo.errorDetails.push_back(detail);
+    photo.cloudId = "test_cloud_id";
+    photo.path = "/storage/cloud/files/Photo/test.jpg";
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
+
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_005, TestSize.Level1)
+{
+    // 用例说明：测试 OnRecordFailedErrorDetails 方法，不需要重试
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.errorType = ErrorType::TYPE_NOT_NEED_RETRY;
+    CloudErrorDetail detail;
+    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::CONTENT_NOT_FIND);
+    photo.errorDetails.push_back(detail);
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+
+    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
+
+    EXPECT_EQ(ret, FileManagement::E_STOP);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudPath_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudPath 方法，路径无效
+    CloudMediaPhotosService service;
+    std::string filePath = "/invalid/path/test.jpg";
+
+    std::string result = service.GetCloudPath(filePath);
+
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudPath_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudPath 方法，路径有效
+    CloudMediaPhotosService service;
+    std::string filePath = "/storage/cloud/files/Photo/test.jpg";
+
+    std::string result = service.GetCloudPath(filePath);
+
+    EXPECT_FALSE(result.empty());
+    EXPECT_TRUE(result.find("/mnt/hmdfs/account/device_view/cloud") == 0);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleDuplicatedResource_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 HandleDuplicatedResource 方法，重新推送失败
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.cloudId = "test_cloud_id";
+
+    int32_t ret = service.HandleDuplicatedResource(photo);
+
+    EXPECT_EQ(ret, E_DATA);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleSameCloudResource_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 HandleSameCloudResource 方法，路径为空
+    CloudMediaPhotosService service;
+    PhotosDto photo;
+    photo.path = "";
+
+    int32_t ret = service.HandleSameCloudResource(photo);
+
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，不支持的错误类型
+    CloudMediaPhotosService service;
+    int32_t errorCode = 999999;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，缩未找到
+    CloudMediaPhotosService service;
+    int32_t errorCode = E_THM_SOURCE_BASIC + ENOENT;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，LCD 未找到
+    CloudMediaPhotosService service;
+    int32_t errorCode = E_LCD_SOURCE_BASIC + ENOENT;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，数据库大小为零
+    CloudMediaPhotosService service;
+    int32_t errorCode = E_DB_SIZE_IS_ZERO;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_005, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，LCD 过大
+    CloudMediaPhotosService service;
+    int32_t errorCode = E_LCD_IS_TOO_LARGE;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_NotifyUploadErr_Test_006, TestSize.Level1)
+{
+    // 用例说明：测试 NotifyUploadErr 方法，相册未找到
+    CloudMediaPhotosService service;
+    int32_t errorCode = E_DB_ALBUM_NOT_FOUND;
+    std::string fileId = "12345";
+
+    int32_t ret = service.NotifyUploadErr(errorCode, fileId);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_FindPhotoAlbum_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 FindPhotoAlbum 方法，已有相册信息
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto pullData;
+    PhotoAlbumPo albumInfo;
+    pullData.albumInfoOp = albumInfo;
+
+    int32_t ret = service.FindPhotoAlbum(pullData);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_IsIgnoreMatch_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 IsIgnoreMatch 方法，相册上传关闭
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto mergeData;
+    KeyData cloudKeyData;
+    KeyData localKeyData;
+
+    bool ret = service.IsIgnoreMatch(mergeData, cloudKeyData, localKeyData);
+
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_IsIgnoreMatch_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 IsIgnoreMatch 方法，云端数据在回收站，本地不在
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto mergeData;
+    PhotoAlbumPo albumInfo;
+    mergeData.albumInfoOp = albumInfo;
+    KeyData cloudKeyData;
+    cloudKeyData.dateTrashed = 1;
+    KeyData localKeyData;
+    localKeyData.dateTrashed = 0;
+
+    bool ret = service.IsIgnoreMatch(mergeData, cloudKeyData, localKeyData);
+
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_IsIgnoreMatch_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 Is方法，本地数据在回收站，云端不在
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto mergeData;
+    PhotoAlbumPo albumInfo;
+    mergeData.albumInfoOp = albumInfo;
+    KeyData cloudKeyData;
+    cloudKeyData.dateTrashed = 0;
+    KeyData localKeyData;
+    localKeyData.dateTrashed = 1;
+
+    bool ret = service.IsIgnoreMatch(mergeData, cloudKeyData, localKeyData);
+
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_GetCloudSyncUnPreparedData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 GetCloudSyncUnprearedData 方法，成功获取数据
+    CloudMediaEnhanceService service;
+    int32_t result = 0;
+
+    int32_t ret = service.GetCloudSyncUnPreparedData(result);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，任务已在运行
+    CloudMediaEnhanceService service;
+    service.submitRunning_ = true;
+
+    int32_t ret = service.SubmitCloudSyncPreparedDataTask();
+
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，执行器为空
+    CloudMediaEnhanceService service;
+    service.submitRunning_ = false;
+    service.executor_ = nullptr;
+
+    int32_t ret = service.SubmitCloudSyncPreparedDataTask();
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitCloudSyncPreparedDataTask_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitCloudSyncPreparedDataTask 方法，成功提交任务
+    CloudMediaEnhanceService service;
+    service.submitRunning_ = false;
+    service.executor_ = std::make_unique<OHOS::ThreadPool>("TestExecutor");
+
+    int32_t ret = service.SubmitCloudSyncPreparedDataTask();
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_StopSubmit_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 StopSubmit 方法，停止提交
+    CloudMediaEnhanceService service;
+    service.submitCount_ = 5;
+    service.submitPhotoId_ = "test_photo_id";
+    service.submitRunning_ = true;
+
+    service.StopSubmit();
+
+    EXPECT_EQ(service.submitCount_, 0);
+    EXPECT_TRUE(service.submitPhotoId_.empty());
+    EXPECT_FALSE(service.submitRunning_.load());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_StopSubmit_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 StopSubmit 方法，多次调用
+    CloudMediaEnhanceService service;
+    service.submitCount_ = 5;
+    service.submitPhotoId_ = "test_photo_id";
+    service.submitRunning_ = true;
+
+    service.StopSubmit();
+    service.StopSubmit();
+
+    EXPECT_EQ(service.submitCount_, 0);
+    EXPECT_TRUE(service.submitPhotoId_.empty());
+    EXPECT_FALSE(service.submitRunning_.load());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitNextCloudSyncPreparedDataTask_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitNextCloudSyncPreparedDataTask 方法，文件 ID 为空
+    CloudMediaEnhanceService service;
+    service.submitPhotoId_ = "test_photo_id";
+    service.submitRunning_ = true;
+    service.executor_ = std::make_unique<OHOS::ThreadPool>("TestExecutor");
+
+    service.SubmitNextCloudSyncPreparedDataTask();
+
+    EXPECT_FALSE(service.submitRunning_.load());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaEnhanceService_SubmitNextCloudSyncPreparedDataTask_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitNextCloudSyncPreparedDataTask 方法，照片 ID 相同
+    CloudMediaEnhanceService service;
+    service.submitPhotoId_ = "test_photo_id";
+    service.submitRunning_ = true;
+    service.executor_ = std::make_unique<OHOS::ThreadPool>("TestExecutor");
+
+    service.SubmitNextCloudSyncPreparedDataTask();
+
+    EXPECT_FALSE(service.submitRunning_.load());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitTaskTimeoutCheck_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitTaskTimeoutCheck 方法，回调已完成
+    CloudMediaEnhanceService service;
+    service.callbackDone_ = true;
+
+    service.SubmitTaskTimeoutCheck();
+
+    EXPECT_TRUE(true);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaEnhanceService_SubmitTaskTimeoutCheck_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 SubmitTaskTimeoutCheck 方法，超时
+    CloudMediaEnhanceService service;
+    service.callbackDone_ = false;
+    service.submitRunning_ = true;
+
+    service.SubmitTaskTimeoutCheck();
+
+    EXPECT_FALSE(service.submitRunning_.load());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_QueryData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 QueryData 方法，查询 PHOTOS 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columnNames = {PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_CLOUD_ID};
+    std::string tableName = PhotoColumn::PHOTOS_TABLE;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+
+    int32_t ret = service.QueryData(predicates, columnNames, tableName, results);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_QueryData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 QueryData 方法，查询 PHOTO_ALBUM 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columnNames = {PhotoAlbumColumns::ALBUM_NAME};
+    std::string tableName = PhotoAlbumColumns::TABLE;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+
+    int32_t ret = service.QueryData(predicates, columnNames, tableName, results);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateData 方法，更新 PHOTOS 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket value;
+    std::vector<std::string> columnNames = {PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_CLOUD_ID};
+    std::string tableName = PhotoColumn::PHOTOS_TABLE;
+    std::string operateName = "test_operation";
+
+    int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
+
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateData 方法，更新 PHOTO_ALBUM 表
+    CloudMediaDataService service;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket value;
+    std::vector<std::string> columnNames = {PhotoAlbumColumns::ALBUM_NAME};
+    std::string tableName = PhotoAlbumColumns::TABLE;
+    std::string operateName = "test_operation";
+
+    int32_t ret = service.UpdateData(tableName, predicates, value, operateName);
+
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 FillMetadata 方法，dateModified 为 0
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/tmp/test.jpg");
+    data->SetFileDateModified(0);
+
+    int32_t ret = service.FillMetadata(data);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(data->GetFileDateModified(), 0);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 FillMetadata 方法，更新 dateModifie
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/tmp/test.jpg");
+    data->SetFileDateModified(1000);
+    data->SetFileDateModified(0);
+
+    int32_t ret = service.FillMetadata(data);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(data->GetFileDateModified(), 1000);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_005, TestSize.Level1)
+{
+    // 用例说明：测试 FillMetadata 方法，成功填充元数据
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/tmp/test.jpg");
+    data->SetFileDateModified(1000);
+
+    int32_t ret = service.FillMetadata(data);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(data->GetFileExtension().empty());
+    EXPECT_FALSE(data->GetFileMimeType().empty());
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 ScanMetaData 方法，data 为 nullptr
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = nullptr;
+    std::string path = "/tmp/test.jpg";
+
+    int32_t ret = service.ScanMetaData(path, data);
+
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 ScanMetaData 方法，FillMetadata 失败
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    std::string path = "/invalid/path/that/does/not/exist.jpg";
+    data->SetFilePath(path);
+
+    int32_t ret = service.ScanMetaData(path, data);
+
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 ScanMetaData 方法，提取图片元数据
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    std::string path = "/tmp/test.jpg";
+    data->SetFilePath(path);
+    data->SetFileMediaType(MEDIA_TYPE_IMAGE);
+
+    int32_t ret = service.ScanMetaData(path, data);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_005, TestSize.Level1)
+{
+    // 用例说明：测试 ScanMetaData 方法，提取音视频元数据
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    std::string path = "/tmp/test.mp4";
+    data->SetFilePath(path);
+    data->SetFileMediaType(MEDIA_TYPE_VIDEO);
+
+    int32_t ret = service.ScanMetaData(path, data);
+
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanDownloadedFile_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 ScanDownloadedFile 方法，data 为 nullptr
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = nullptr;
+    std::string path = "/tmp/test.jpg";
+    CloudMediaScanService::ScanResult result;
+
+    int32_t ret = service.ScanDownloadedFile(path, result);
+
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanDownloadedFile_Test_002, TestSize.Level1)
+{
+    // 用例说明：测试 ScanDownloadedFile 方法，ScanMetaData 失败
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    std::string path = "/invalid/path/that/does/not/exist.jpg";
+    data->SetFilePath(path);
+    CloudMediaScanService::ScanResult result;
+
+    int32_t ret = service.ScanDownloadedFile(path, result);
+
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanDownloadedFile_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 ScanDownloadedFile 方法，成功扫描
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    std::string path = "/tmp/test.jpg";
+    data->SetFilePath(path);
+    CloudMediaScanService::ScanResult result;
+
+    int32_t ret = service.ScanDownloadedFile(path, result);
+
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_TRUE(result.scanSuccess);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaScanService_UpdateAndNotifyShootingModeAlbumIfNeeded_Test_003, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateAndNotifyShootingModeAlbumIfNeeded 方法，albumIds 为空
+    CloudMediaScanService service;
+    CloudMediaScanService::ScanResult result;
+    result.scanSuccess = true;
+    result.subType = 1;
+
+    service.UpdateAndNotifyShootingModeAlbumIfNeeded(result);
+
+    EXPECT_TRUE(true);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt,
+    CloudMediaScanService_UpdateAndNotifyShootingModeAlbumIfNeeded_Test_004, TestSize.Level1)
+{
+    // 用例说明：测试 UpdateAndNotifyShootingModeAlbumIfNeeded 方法，成功更新
+    CloudMediaScanService service;
+    CloudMediaScanService::ScanResult result;
+    result.scanSuccess = true;
+    result.subType = 1;
+
+    service.UpdateAndNotifyShootingModeAlbumIfNeeded(result);
+
+    EXPECT_TRUE(true);
+}
+
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanResult_Test_001, TestSize.Level1)
+{
+    // 用例说明：测试 ScanResult::ToString 方法，成功转换为字符串
+    CloudMediaScanService::ScanResult result;
+    result.scanSuccess = true;
+    result.shootingMode = "normal";
+    result.frontCamera = "front";
+    result.subType = 1;
+
+    std::string str = result.ToString();
+
+    EXPECT_FALSE(str.empty());
+    EXPECT_TRUE(str.find("scanSuccess") != string::npos);
 }
 }
