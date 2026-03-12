@@ -304,8 +304,7 @@ bool PictureDataOperations::IsExsitDataForPictureType(const std::string& imageId
 void PictureDataOperations::SaveLowQualityPicture(const std::string& imageId)
 {
     MEDIA_DEBUG_LOG("enter ");
-    enum PictureType pictureType;
-    bool isSuccess = SavePicture(imageId, lowQualityPictureMap_, true);
+    SavePicture(imageId, lowQualityPictureMap_, true);
 }
 
 // 落盘低质量图，包括低质量裸图

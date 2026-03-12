@@ -139,6 +139,7 @@ public:
     EXPORT int32_t GetAssetCompressVersion(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetCompressAssetSize(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t QueryMediaDataStatus(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CheckSinglePhotoPermission(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAssetsControllerService() = default;

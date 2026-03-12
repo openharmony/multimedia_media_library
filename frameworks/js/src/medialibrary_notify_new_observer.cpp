@@ -317,6 +317,7 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
         case Notification::PHOTO_URI:
         case Notification::HIDDEN_PHOTO_URI:
         case Notification::TRASH_PHOTO_URI:
+        case Notification::ANALYSIS_PHOTO_URI:
             buildResult = mediaChangeInfo == nullptr ?
                 MediaLibraryNotifyUtils::BuildPhotoAssetRecheckChangeInfos(env) :
                 MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo);
@@ -327,6 +328,7 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
         case Notification::PHOTO_ALBUM_URI:
         case Notification::HIDDEN_ALBUM_URI:
         case Notification::TRASH_ALBUM_URI:
+        case Notification::ANALYSIS_ALBUM_URI:
             buildResult = mediaChangeInfo == nullptr ?
                 MediaLibraryNotifyUtils::BuildAlbumRecheckChangeInfos(env) :
                 MediaLibraryNotifyUtils::BuildAlbumChangeInfos(env, mediaChangeInfo);

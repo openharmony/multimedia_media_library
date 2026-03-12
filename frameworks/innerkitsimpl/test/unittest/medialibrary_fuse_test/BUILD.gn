@@ -45,6 +45,7 @@ ohos_unittest("medialibrary_fuse_test") {
     "./src/mock_medialibrary_fuse_test.cpp",
     "./src/medialibrary_fuse_test.cpp",
     "./src/media_fuse_node_test.cpp",
+    "${MEDIALIB_INTERFACES_PATH}/medialibrary_data_extension/src/transcode_compatible_info_operations.cpp",
   ]
 
   deps = [

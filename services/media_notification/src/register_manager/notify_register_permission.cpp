@@ -99,7 +99,10 @@ int32_t NotifyRegisterPermission::ExecuteCheckPermission(const NotifyUriType &re
     } else if (registerUriType == NotifyUriType::HIDDEN_PHOTO_URI ||
                registerUriType == NotifyUriType::HIDDEN_ALBUM_URI) {
         ret = HiddenPermissionCheck();
-    } else if (registerUriType == NotifyUriType::TRASH_PHOTO_URI || registerUriType == NotifyUriType::TRASH_ALBUM_URI) {
+    } else if (registerUriType == NotifyUriType::TRASH_PHOTO_URI ||
+        registerUriType == NotifyUriType::TRASH_ALBUM_URI ||
+        registerUriType == NotifyUriType::ANALYSIS_PHOTO_URI ||
+        registerUriType == NotifyUriType::ANALYSIS_ALBUM_URI) {
         ret = TranshPermissionCheck();
     } else if (registerUriType == NotifyUriType::USER_DEFINE_NOTIFY_URI) {
         MEDIA_INFO_LOG("Permission validation is not applicable to USER_DEFINE_NOTIFY_URI.");

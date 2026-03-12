@@ -128,6 +128,7 @@ void MediaPermissionHelperTest::TearDownTestCase(void)
     MEDIA_ERR_LOG("TearDownTestCase start");
     if (sDataShareHelper_ != nullptr) {
         sDataShareHelper_->Release();
+        sDataShareHelper_ = nullptr;
     }
     sleep(CLEAN_TIME);
     ClearAllFile();

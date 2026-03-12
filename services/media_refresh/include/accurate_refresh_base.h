@@ -63,6 +63,9 @@ public:
         const std::string &whereClause, const std::vector<std::string> &args);
     int32_t Update(int32_t &changedRows, const NativeRdb::ValuesBucket &value,
         const NativeRdb::AbsRdbPredicates &predicates, RdbOperation operation = RDB_OPERATION_UPDATE);
+
+    // Update场景需要内部初始化，抽取内部初始化方法增加可读性
+    int32_t InitBeforeUpdate(const NativeRdb::AbsRdbPredicates &predicates);
     int32_t UpdateWithNoDateTime(int32_t &changedRows, const NativeRdb::ValuesBucket &value,
         const NativeRdb::AbsRdbPredicates &predicates, RdbOperation operation = RDB_OPERATION_UPDATE);
     int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
@@ -86,7 +89,6 @@ public:
     void CloseDfxReport();
 
 protected:
-    virtual int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     // 数据库操作后，触发更新修改后的数据
     virtual int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation,
         PendingInfo pendingInfo = PendingInfo()) = 0;

@@ -22,6 +22,7 @@
 #include "rdb_store.h"
 #include "photos_po.h"
 #include "cloud_media_define.h"
+#include "dfx_transcode.h"
 
 namespace OHOS::Media {
 using namespace OHOS::Media::ORM;
@@ -48,7 +49,7 @@ public:
     int32_t ConvertFormatPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
         const std::string &extension);
     int32_t CreateTmpCompatibleDup(const std::string &srcPath, size_t &size,
-        int32_t width = 0, int32_t height = 0);
+        int32_t width = 0, int32_t height = 0, TranscodeType transcodeType = TranscodeType::DEFAULT);
     int32_t DeletePhoto(const PhotosPo &photoInfo);
     int32_t DeleteThumbnail(const PhotosPo &photoInfo);
     std::string GetAuditLog() const;

@@ -115,6 +115,7 @@ const bool PROCESS_TRANSCODE_SIZE = false;
 static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
+static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 const int32_t PACKOPTION_QUALITY = 90;
 const int32_t PACKOPTION_QUALITY_HEIF = 95;
@@ -465,6 +466,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     PhotoColumn::PHOTO_WIDTH,
     PhotoColumn::PHOTO_HEIGHT,
+    MediaColumn::MEDIA_MIME_TYPE,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -649,6 +651,28 @@ static bool CheckPermissionToOpenFileAsset(const shared_ptr<FileAsset>& fileAsse
     return true;
 }
 
+static void SetTranscodeType(std::shared_ptr<FileAsset> &fileAsset, TranscodeType &transcodeType)
+{
+    int32_t width = fileAsset->GetWidth();
+    int32_t height = fileAsset->GetHeight();
+    string mimeType = fileAsset->GetMimeType();
+    bool isHeif = (mimeType == "image/heic" || mimeType == "image/heif");
+    bool isHighPixel = (width * height >= HIGH_PIXEL_SIZE);
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -704,7 +728,9 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         ret = OpenAsset(fileAsset, mode, cmd.GetApi(), isMovingPhotoVideo, type);
     }
     if (err == 0 && ret >= 0) {
-        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
+        TranscodeType transcodeType = TranscodeType::DEFAULT;
+        SetTranscodeType(fileAsset, transcodeType);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB, transcodeType);
     }
     return ret;
 }
@@ -1338,7 +1364,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, notifyUris);
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     // 4、AssetRefresh -> Notify()
@@ -1954,6 +1979,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     }
     int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
+    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     if (hiddenState == 0) {
         int32_t ret = LakeFileOperations::MoveAssetsToLake(assetRefresh, predicates.GetWhereArgs());
         CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when cancel hide asset");
@@ -1963,10 +1989,6 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     }
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, notifyUris);
-    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     SendHideNotify(notifyUris, hiddenState);
     assetRefresh.Notify();
     return changedRows;
@@ -2949,9 +2971,12 @@ static int32_t RevertMetadata(int32_t fileId, int64_t time, int32_t effectMode, 
     }
     cmd.SetValueBucket(updateValues);
     int32_t rowId = 0;
-    int32_t result = rdbStore->Update(cmd, rowId);
-    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK && rowId > 0, E_HAS_DB_ERROR,
-        "Failed to revert metadata. Result %{public}d.", result);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t errCode = assetRefresh.Update(cmd, rowId);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.NotifyForAnalysisInfoChange();
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && rowId > 0, E_HAS_DB_ERROR,
+        "Failed to revert metadata. Result %{public}d.", errCode);
     return E_OK;
 }
 
@@ -3226,7 +3251,10 @@ int32_t MediaLibraryPhotoOperations::UpdateMovingPhotoSubtype(int32_t fileId, in
     }
     updateCmd.SetValueBucket(updateValues);
     int32_t updateRows = -1;
-    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t errCode = assetRefresh.Update(updateCmd, updateRows);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.NotifyForAnalysisInfoChange();
     CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && updateRows >= 0, E_HAS_DB_ERROR,
         "Update subtype field failed. errCode:%{public}d, updateRows:%{public}d", errCode, updateRows);
     return E_OK;
@@ -4330,7 +4358,10 @@ int32_t UpdateEffectModeWhenGraffiti(int32_t fileId)
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT));
     updateValues.PutInt(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     updateCmd.SetValueBucket(updateValues);
-    int32_t errCode = rdbStore->Update(updateCmd, updatedRows);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t errCode = assetRefresh.Update(updateCmd, updatedRows);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.NotifyForAnalysisInfoChange();
     CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && updatedRows >= 0, E_HAS_DB_ERROR,
         "Failed to update db, errCode:%{public}d, updatedRows:%{public}d", errCode, updatedRows);
     return E_OK;
