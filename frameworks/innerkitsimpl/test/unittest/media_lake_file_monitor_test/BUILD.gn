@@ -31,6 +31,8 @@ ohos_unittest("media_lake_file_monitor_test") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/include",
   ]
+
+  cflags = [ "-fno-access-control" ]
  
   media_lake_scanner_source = [
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner.cpp",
@@ -161,12 +163,6 @@ ohos_unittest("media_lake_file_monitor_test") {
     defines += [ "CLOUD_SYNC_MANAGER" ]
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
   }
- 
-  cflags = [
-    "-fno-access-control",
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
  
   sanitize = {
     cfi = true
