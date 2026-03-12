@@ -37,7 +37,7 @@ using namespace Media;
 
 FuzzedDataProvider *provider = nullptr;
 
-static void PtpSpecialHandlesTest(const uint8_t* data, size_t size)
+static void PtpSpecialHandlesTest()
 {
     auto specialInstance = PtpSpecialHandles::GetInstance();
     uint32_t deleteHandle = provider->ConsumeIntegral<uint32_t>();
@@ -68,6 +68,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::provider = &fdp;
     
-    OHOS::PtpSpecialHandlesTest(data, size);
+    OHOS::PtpSpecialHandlesTest();
     return 0;
 }
