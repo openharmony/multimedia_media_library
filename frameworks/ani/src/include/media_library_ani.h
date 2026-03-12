@@ -287,6 +287,10 @@ public:
     static void PhotoAccessOffHiddenAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static void PhotoAccessOffTrashedAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static ani_object QueryMediaDataReady(ani_env *env, ani_object object, ani_string dataKey);
+    static ani_object PhotoAccessAcquireDebugDatabase(ani_env* env, ani_object object, ani_string betaIssueId,
+        ani_string betaScenario);
+    static void PhotoAccessReleaseDebugDatabase(ani_env* env, ani_object object, ani_string betaIssueId,
+        ani_int fileFd);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
@@ -396,6 +400,7 @@ struct MediaLibraryAsyncContext : public AniError {
     int32_t photoIndex = -1;
     std::string strParam;
     bool boolResult = false;
+    std::map<std::string, std::string> debugDatabaseMap;
 };
 } // namespace Media
 } // namespace OHOS

@@ -60,6 +60,7 @@
 #include "database_adapter.h"
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
+#include "notify_register_permission.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -1046,9 +1047,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
     auto startTime = std::chrono::high_resolution_clock::now();
     size_t size = 0;
     int32_t dupExist = 0;
+    TranscodeType transcodeType = TranscodeType::DEFAULT;
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
-    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist);
+    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist, transcodeType);
     if (err == E_OK && dupExist == 0) {
         err = this->rdbOperation_.UpdateTmpCompatibleDup(fileId, size);
         if (err == E_OK) {
@@ -1056,10 +1058,10 @@ int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupD
             std::chrono::duration<uint16_t, std::milli> duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             MEDIA_INFO_LOG("CreateTmpCompatibleDup duration:%{public}d ms", duration.count());
-            dfxManager->HandleTranscodeCostTime(duration.count());
+            dfxManager->HandleTranscodeCostTime(duration.count(), transcodeType);
         } else {
             MEDIA_ERR_LOG("CreateTmpCompatibleDup dfx updata database failed");
-            dfxManager->HandleTranscodeFailed(INNER_FAILED);
+            dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);
         }
     }
     return err;
@@ -1822,5 +1824,15 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     int32_t ret = MediaLibraryPhotoOperations::GetCompressAssetSize(uris, respBody.totalSize);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to get compress asset size, errCode = %{public}d", ret);
     return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
+    Notification::NotifyRegisterPermission permissionHandle;
+    int32_t ret =
+        permissionHandle.SinglePermissionCheck(static_cast<Notification::NotifyUriType>(registerType), fileId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
+    return E_OK;
 }
 } // namespace OHOS::Media

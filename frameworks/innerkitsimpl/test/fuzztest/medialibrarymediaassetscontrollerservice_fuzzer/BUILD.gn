@@ -18,10 +18,6 @@ ohos_fuzztest("MediaLibraryMediaAssetsControllerServiceFuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
-  # defines = [
-  #   "MEDIALIBRARY_SECURITY_OPEN",
-  # ]
-
   include_dirs = [
     "./",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include",
@@ -45,26 +41,12 @@ ohos_fuzztest("MediaLibraryMediaAssetsControllerServiceFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_set_relationship_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_order_position_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_set_order_position_vo.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_asset_analysis_data_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_camera_character_service/src/vo/add_image_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/asset_change_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/clone_asset_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cloud_enhancement_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/commit_edited_asset_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/convert_format_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_completed_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/form_info_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_assets_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_cloudmedia_asset_status_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_edit_data_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/log_cinematic_access_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/modify_assets_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/retain_cloud_media_asset_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/revert_to_original_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/save_camera_photo_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_download_cloud_media_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/submit_cache_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_batch_download_cloud_resources_vo.cpp",
@@ -73,7 +55,6 @@ ohos_fuzztest("MediaLibraryMediaAssetsControllerServiceFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_batch_download_cloud_resources_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_status_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_size_vo.cpp",
     "./medialibrarymediaassetscontrollerservice_fuzzer.cpp",
   ]
 

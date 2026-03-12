@@ -82,7 +82,7 @@ static string g_fuzzCopyName = "test_fuzzy_copy.txt";
 static string g_dirPath = "/data/local/tmp";
 const uint16_t GALLERY_PROP_OFFSET = 255;
 
-static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
+static MtpOperationContext FuzzMtpOperationContext()
 {
     MtpOperationContext context;
 
@@ -116,10 +116,10 @@ static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t s
 }
 
 // header_data
-static void MtpHeaderDataTest(const uint8_t* data, size_t size)
+static void MtpHeaderDataTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -132,10 +132,10 @@ static void MtpHeaderDataTest(const uint8_t* data, size_t size)
 }
 
 // mtp_data_utils
-static void MtpDataUtilsTest(const uint8_t* data, size_t size)
+static void MtpDataUtilsTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -173,14 +173,14 @@ static void MtpDataUtilsTest(const uint8_t* data, size_t size)
 }
 
 // mtp_operation
-static void MtpOperationTest(const uint8_t* data, size_t size)
+static void MtpOperationTest()
 {
     if (mtpOperation_ == nullptr) {
         return;
     }
 
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -223,10 +223,10 @@ static void InitMtpMedialibraryManager()
 }
 
 // mtp_medialibrary_manager
-static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
+static void MtpMedialibraryManagerTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -276,9 +276,9 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
 }
 
 // mtp_medialibrary
-static void MtpMedialibraryTest(const uint8_t* data, size_t size)
+static void MtpMedialibraryTest()
 {
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -355,7 +355,6 @@ static void DatabaseDataInitial()
     albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, provider->ConsumeBytesAsString(NUM_BYTES));
     g_albumId = 0;
     rdbStore_->Insert(g_albumId, PhotoAlbumColumns::TABLE, albumValues);
-    MEDIA_INFO_LOG("albumId: %{public}lld.", g_albumId);
     
     NativeRdb::ValuesBucket photoValues;
     photoValues.PutInt(PhotoColumn::PHOTO_POSITION, FuzzPhotoPosition());
@@ -375,7 +374,6 @@ static void DatabaseDataInitial()
     photoValues.PutString(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
     g_fileId = 0;
     rdbStore_->Insert(g_fileId, PhotoColumn::PHOTOS_TABLE, photoValues);
-    MEDIA_INFO_LOG("fileId: %{public}lld.", g_fileId);
 }
 
 static void DatabaseDataClear()
@@ -389,7 +387,7 @@ static void DatabaseDataClear()
     int32_t deletedRows = -1;
     int32_t ret = rdbStore_->Delete(deletedRows, PhotoAlbumColumns::TABLE, whereClause, whereArgs);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("DeleteAlbumAsset by albumId %{public}lld Failed %{public}d", g_albumId, ret);
+        MEDIA_ERR_LOG("DeleteAlbumAsset Failed %{public}d", ret);
     }
 
     whereClause = MediaColumn::MEDIA_ID + " = ? ";
@@ -397,7 +395,7 @@ static void DatabaseDataClear()
     deletedRows = -1;
     ret = rdbStore_->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("DeletePhotoAsset by fileId %{public}lld Failed %{public}d", g_fileId, ret);
+        MEDIA_ERR_LOG("DeletePhotoAsset Failed %{public}d", ret);
     }
 }
 
@@ -548,14 +546,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::provider = &fdp;
 
-    OHOS::MtpHeaderDataTest(data, size);
+    OHOS::MtpHeaderDataTest();
     OHOS::DatabaseDataInitial();
-    OHOS::MtpDataUtilsTest(data, size);
-    OHOS::MtpOperationTest(data, size);
+    OHOS::MtpDataUtilsTest();
+    OHOS::MtpOperationTest();
     OHOS::InitMtpMedialibraryManager();
-    OHOS::MtpMedialibraryManagerTest(data, size);
+    OHOS::MtpMedialibraryManagerTest();
     OHOS::DatabaseDataClear();
-    OHOS::MtpMedialibraryTest(data, size);
+    OHOS::MtpMedialibraryTest();
 
     return 0;
 }

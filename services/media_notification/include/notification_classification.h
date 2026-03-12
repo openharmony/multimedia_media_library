@@ -59,6 +59,12 @@ private:
     static std::vector<MediaChangeInfo> HandleAssetUnhidden(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAssetRecheck(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleYuvReady(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAssetAddWithAnalysis(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAssetRemoveWithAnalysis(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAssetUpdateWithAnalysis(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAssetAdd(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAssetRemove(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAssetRecheck(NotifyInfoInner &notifyInfoInner);
  
     static std::vector<MediaChangeInfo> HandleAlbumAdd(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumRemove(NotifyInfoInner &notifyInfoInner);
@@ -67,6 +73,10 @@ private:
     static std::vector<MediaChangeInfo> HandleAlbumUpdateTrash(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumRecheck(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumAddAndUpdate(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAlbumAdd(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAlbumRemove(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAlbumUpdate(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAnalysisAlbumRecheck(NotifyInfoInner &notifyInfoInner);
 private:
     static std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         std::function<std::vector<MediaChangeInfo>(NotifyInfoInner&)>> classificationMap;

@@ -39,6 +39,8 @@
 #include "medialibrary_rdb_transaction.h"
 #include "asset_accurate_refresh.h"
 #include "cloud_sync_manager.h"
+#include "dfx_transcode.h"
+
 //LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
