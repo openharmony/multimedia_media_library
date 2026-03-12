@@ -38,7 +38,7 @@ string JsInterfaceHelper::MaskString(const string& str)
     } else if (length <= garbleSmall) {
         maskedString = string(length - garbleLastOne, garble) + str.substr(length - garbleLastOne);
     } else {
-        maskedString = string(length - garbleLastTwo, garble) + str.substr(length - garbleLastTwo);
+        maskedString = "*" + str.substr(length - garbleLastTwo);
     }
     return maskedString;
 }
