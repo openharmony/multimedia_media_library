@@ -21,10 +21,13 @@
 #include "message_parcel.h"
 #include "message_option.h"
 
+#include "analysis_data_manager.h"
+
 namespace OHOS {
 namespace Media {
 using namespace testing::ext;
 using namespace std;
+using namespace AnalysisData;
 
 void MediaAnalysisCallbackStubTest::SetUpTestCase()
 {
@@ -115,6 +118,60 @@ HWTEST_F(MediaAnalysisCallbackStubTest, OnRemoteRequest_005, TestSize.Level0)
     data.WriteInterfaceToken(MediaAnalysisCallbackStub::GetDescriptor());
     data.WriteString(albumId);
     EXPECT_EQ(stub->OnRemoteRequest(code, data, reply, option), ERR_INVALID_DATA);
+}
+
+HWTEST_F(MediaAnalysisCallbackStubTest, GetInstance_SingletonTest, TestSize.Level1)
+{
+    // 用例说明：测试GetInstance单例功能；覆盖单例模式分支（触发条件：多次调用GetInstance）；验证返回同一实例
+    auto& instance1 = AnalysisDataManager::GetInstance();
+    auto& instance2 = AnalysisDataManager::GetInstance();
+    EXPECT_EQ(&instance1, &instance2);
+}
+
+HWTEST_F(MediaAnalysisCallbackStubTest, GetInstance_MultipleCalls, TestSize.Level1)
+{
+    // 用例说明：测试GetInstance多次调用功能；覆盖多次获取分支（触发条件：连续调用10次GetInstance）；验证所有调用返回同一实例
+    auto& firstInstance = AnalysisDataManager::GetInstance();
+    for (int i = 0; i < 10; i++) {
+        auto& instance = AnalysisDataManager::GetInstance();
+        EXPECT_EQ(&instance, &firstInstance);
+    }
+}
+
+HWTEST_F(MediaAnalysisCallbackStubTest, GetInstance_ThreadSafety, TestSize.Level1)
+{
+    // 用例说明：测试GetInstance线程安全功能；覆盖多线程并发分支（触发条件：多线程同时调用GetInstance）；验证所有线程获取到同一实例
+    auto& mainInstance = AnalysisDataManager::GetInstance();
+    std::vector<std::thread> threads;
+    std::vector<AnalysisDataManager*> instancePointers(10);
+    
+    for (int i = 0; i < 10; i++) {
+        threads.emplace_back([i, &instancePointers]() {
+            auto& instance = AnalysisDataManager::GetInstance();
+            instancePointers[i] = &instance;
+        });
+    }
+    
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    
+    for (auto ptr : instancePointers) {
+        EXPECT_EQ(ptr, &mainInstance);
+    }
+}
+
+HWTEST_F(MediaAnalysisCallbackStubTest, GetInstance_ReferenceStability, TestSize.Level1)
+{
+    // 用例说明：测试GetInstance引用稳定性功能；覆盖引用生命周期分支（触发条件：存储引用并多次调用）；验证引用保持有效
+    auto& instance1 = AnalysisDataManager::GetInstance();
+    auto* ptr1 = &instance1;
+    
+    auto& instance2 = AnalysisDataManager::GetInstance();
+    auto* ptr2 = &instance2;
+    
+    EXPECT_EQ(ptr1, ptr2);
+    EXPECT_EQ(&instance1, &instance2);
 }
 } // namespace Media
 } // namespace OHOS
