@@ -57,6 +57,8 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_lpath_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_merge_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_upload_status_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/picture_data_operations.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/picture_manager_thread.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
@@ -81,6 +83,8 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/photo_album_operation/photo_album_lpath_operation_test.cpp",
     "./src/photo_album_operation/photo_album_merge_operation_test.cpp",
     "./src/photo_album_operation/photo_album_upload_status_operation_test.cpp",
+    "./src/picture_data_operations_test.cpp",
+    "./src/picture_manager_thread_test.cpp",
   ]
 
   if (media_library_facard_enable) {
@@ -131,6 +135,8 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "dfs_service:cloudsync_kit_inner",
     "access_token:libaccesstoken_sdk",
     "access_token:libprivacy_sdk",
+    "graphic_surface:surface",
+    "image_framework:image_native",
   ]
 
   defines = []
