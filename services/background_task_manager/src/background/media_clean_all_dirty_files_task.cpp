@@ -17,28 +17,27 @@
 
 #include "media_clean_all_dirty_files_task.h"
 
-#include "rdb_predicates.h"
+#include "dfx_utils.h"
+#include "media_assets_service.h"
+#include "media_file_utils.h"
+#include "media_path_utils.h"
+#include "media_log.h"
+#include "medialibrary_asset_operations.h"
+#include "medialibrary_bundle_manager.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_subscriber.h"
+#include "medialibrary_related_system_state_manager.h"
+#include <nlohmann/json.hpp>
 #include "preferences.h"
 #include "preferences_helper.h"
-#include "dfx_utils.h"
-#include "media_file_utils.h"
 #include "photo_file_utils.h"
-#include "medialibrary_subscriber.h"
-#include "media_log.h"
-#include "medialibrary_errno.h"
-#include "thumbnail_service.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_related_system_state_manager.h"
-#include "result_set_utils.h"
-#include "media_file_utils.h"
-#include "thumbnail_const.h"
-#include "medialibrary_asset_operations.h"
 #include "userfile_manager_types.h"
-#include "media_path_utils.h"
+#include "rdb_predicates.h"
+#include "result_set_utils.h"
 #include "submit_cache_dto.h"
-#include "media_assets_service.h"
-#include "medialibrary_bundle_manager.h"
-#include <nlohmann/json.hpp>
+#include "thumbnail_const.h"
+#include "thumbnail_service.h"
 
 using namespace OHOS::NativeRdb;
 
@@ -79,10 +78,10 @@ constexpr int64_t FOUR_WEEK = 4 * 7 * 24 * 60 * 60;
 constexpr int64_t THREE_DAY_MS = 72 * 60 * 60 * 1000;
 constexpr int64_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
-const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.huawei.hmos.photos";
+const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.hmos.photos";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
 const std::string SPECIAL_EDIT_EDIT_DATA = "";
-const std::string SPECIAL_EDIT_APP_ID = "com.huawei.hmos.photos";
+const std::string SPECIAL_EDIT_APP_ID = "com.hmos.photos";
 
 static bool Starts_With(const std::string& str, const std::string& prefix)
 {
