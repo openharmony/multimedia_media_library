@@ -64,7 +64,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_001, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = nullptr;
     changeInfo.size_ = 0;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
+    free(changeInfo.data_);
 }
 
 HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_002, TestSize.Level1)
@@ -73,7 +76,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_002, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(100));
     changeInfo.size_ = 100;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -83,7 +88,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_003, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(200 * 1024));
     changeInfo.size_ = 200 * 1024;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -93,7 +100,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_004, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(200 * 1024 + 1));
     changeInfo.size_ = 200 * 1024 + 1;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -103,7 +112,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_005, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(50));
     changeInfo.size_ = 50;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -113,7 +124,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_006, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(150));
     changeInfo.size_ = 150;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -123,7 +136,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_007, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(300));
     changeInfo.size_ = 300;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -133,7 +148,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_008, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(500));
     changeInfo.size_ = 500;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -143,7 +160,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_009, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1000));
     changeInfo.size_ = 1000;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -153,7 +172,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_010, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(204800));
     changeInfo.size_ = 204800;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -163,7 +184,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_011, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1));
     changeInfo.size_ = 1;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -173,7 +196,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_012, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(10));
     changeInfo.size_ = 10;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -183,7 +208,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_013, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(100));
     changeInfo.size_ = 100;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -193,7 +220,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_014, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(99999));
     changeInfo.size_ = 99999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -203,7 +232,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_015, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(123456));
     changeInfo.size_ = 123456;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -213,7 +244,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_016, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(987654));
     changeInfo.size_ = 987654;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -223,7 +256,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_017, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(555555));
     changeInfo.size_ = 555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -233,7 +268,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_018, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1111111));
     changeInfo.size_ = 1111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -243,7 +280,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_019, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(2222222));
     changeInfo.size_ = 2222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -253,7 +292,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_020, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(3333333));
     changeInfo.size_ = 3333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -263,7 +304,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_021, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444));
     changeInfo.size_ = 4444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -273,7 +316,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_022, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555));
     changeInfo.size_ = 5555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -283,7 +328,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_023, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666));
     changeInfo.size_ = 6666666;
-    MediaOnNotifyAssetManagerObserver::OnChangeOnChange(changeInfo);
+    size_t sizeBefore = changeInfo.size_;
+    MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -293,7 +340,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_024, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777));
     changeInfo.size_ = 7777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -303,7 +352,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_025, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888));
     changeInfo.size_ = 8888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -313,7 +364,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_026, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999));
     changeInfo.size_ = 9999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -323,7 +376,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_027, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(10000000));
     changeInfo.size_ = 10000000;
-    MediaOnNotifyAssetAsManagerObserver::OnChange(changeInfo);
+    size_t sizeBefore = changeInfo.size_;
+    MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -333,7 +388,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_028, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(50000000));
     changeInfo.size_ = 50000000;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -343,7 +400,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_029, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(100000000));
     changeInfo.size_ = 100000000;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -353,7 +412,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_030, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1234567890));
     changeInfo.size_ = 1234567890;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -363,7 +424,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_031, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(12345678901));
     changeInfo.size_ = 12345678901;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -373,7 +436,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_032, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(987654321012));
     changeInfo.size_ = 987654321012;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -383,7 +448,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_033, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -393,7 +460,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_034, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1111111111111));
     changeInfo.size_ = 1111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -403,7 +472,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_035, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(2222222222222));
     changeInfo.size_ = 2222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -413,7 +484,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_036, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(3333333333333));
     changeInfo.size_ = 3333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -423,7 +496,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_037, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444));
     changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -433,7 +508,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_038, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -443,7 +520,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_039, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -453,7 +532,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_040, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -463,7 +544,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_041, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -473,7 +556,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_042, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -483,7 +568,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_043, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(12345678901234));
     changeInfo.size_ = 12345678901234;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -493,7 +580,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_044, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(98765432101234));
     changeInfo.size_ = 98765432101234;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -503,7 +592,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_045, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -513,7 +604,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_046, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -523,7 +616,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_047, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
     changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -533,7 +628,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_048, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
     changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -543,7 +640,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_049, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
     changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -553,7 +652,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_050, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(55555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -563,7 +664,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_051, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -573,7 +676,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_052, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -583,7 +688,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_053, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -593,7 +700,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_054, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -603,7 +712,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_055, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(123456789012345));
     changeInfo.size_ = 123456789012345;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -613,7 +724,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_056, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(987654321012345));
     changeInfo.size_ = 987654321012345;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -623,7 +736,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_057, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(555555555555555));
     changeInfo.size_ = 55555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -633,7 +748,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_058, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -643,7 +760,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_059, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
     changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -653,7 +772,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_060, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
     changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -663,7 +784,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_061, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
     changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -673,7 +796,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_062, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -683,7 +808,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_063, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -693,7 +820,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_064, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -703,7 +832,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_065, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -713,7 +844,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_066, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -723,7 +856,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_067, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(1234567890123456));
     changeInfo.size_ = 1234567890123456;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -733,7 +868,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_068, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9876543210123456));
     changeInfo.size_ = 9876543210123456;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -743,7 +880,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_069, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(555555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -753,7 +892,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_070, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -762,8 +903,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_071, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_071::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
-    changeInfo.size_ 22222222222222222;
+    changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -773,7 +916,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_072, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
     changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -782,8 +927,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_073, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_073::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
-    changeInfo.size_ 4444444444444;
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -793,7 +940,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_074, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -803,7 +952,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_075, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -812,8 +963,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_076, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_076::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
-    changeInfo.size_ 7777777777777;
+    changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -821,9 +974,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_077, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_077::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ = static_cast;*>(malloc(8888888888888888));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -833,7 +988,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_078, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -843,7 +1000,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_079, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(12345678901234567));
     changeInfo.size_ = 12345678901234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -853,7 +1012,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_080, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(98765432101234567));
     changeInfo.size_ = 98765432101234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -863,7 +1024,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_081, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -873,7 +1036,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_082, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -883,7 +1048,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_083, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
     changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -893,7 +1060,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_084, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
     changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -902,8 +1071,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_085, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_085::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
-    changeInfo.size_ 4444444444444;
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -912,8 +1083,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_086, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_086::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -923,7 +1096,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_087, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -932,8 +1107,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_088, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_088::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
-    changeInfo.size_ 7777777777777;
+    changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -941,9 +1118,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_089, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_089::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ = static_castuint8_t*>(malloc(8888888888888888));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -953,7 +1132,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_090, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -963,7 +1144,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_091, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(12345678901234567));
     changeInfo.size_ = 12345678901234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -973,7 +1156,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_092, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(98765432101234567));
     changeInfo.size_ = 98765432101234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -982,8 +1167,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_093, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_093::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -993,7 +1180,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_094, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1003,7 +1192,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_095, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
     changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1011,9 +1202,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_096, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_096::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(33333333333333333));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
     changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1023,7 +1216,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_097, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(44444444444440));
     changeInfo.size_ = 444444444440;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1033,7 +1228,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_098, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1043,7 +1240,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_099, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
     changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1053,7 +1252,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_100, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1061,9 +1262,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_101, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_101::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(8888888888888888));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1073,7 +1276,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_102, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1083,7 +1288,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_103, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(12345678901234567));
     changeInfo.size_ = 12345678901234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1092,8 +1299,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_104, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_104::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(98765432101234567));
-    changeInfo.size_ 98765432101234567;
+    changeInfo.size_ = 98765432101234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1102,8 +1311,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_105, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_105::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1112,8 +1323,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_106, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_106::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
-    changeInfo.size_ 11111111111111111;
+    changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1122,8 +1335,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_107, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_107::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
-    changeInfo.size = 22222222222222222;
+    changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1131,9 +1346,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_108, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_108::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(33333333333333333));
-    changeInfo.size_ 33333333333333333;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
+    changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1142,8 +1359,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_109, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_109::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
-    changeInfo.size = 4444444444444;
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1152,8 +1371,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_110, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_110::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1162,8 +1383,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_111, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_111::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
-    changeInfo.size_ 6666666666666;
+    changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1172,8 +1395,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_112, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_112::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
-    changeInfo.size_ 7777777777777;
+    changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1181,9 +1406,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_113, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_113::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(8888888888888888));
-    changeInfo.size = 8888888888888;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
+    changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1192,8 +1419,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_114, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_114::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
-    changeInfo.size_ 9999999999999;
+    changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1203,7 +1432,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_115, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(123456789012345678));
     changeInfo.size_ = 123456789012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1212,8 +1443,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_116, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_116::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(987654321012345678));
-    changeInfo.size_ 987654321012345678;
+    changeInfo.size_ = 987654321012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1223,7 +1456,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_117, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1233,7 +1468,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_118, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
     changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1242,8 +1479,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_119, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_119::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
-    changeInfo.size_ 22222222222222222;
+    changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1251,9 +1490,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_120, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_120::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(33333333333333333));
-    changeInfo.size_ 33333333333333333;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
+    changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1262,8 +1503,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_121, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_121::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
-    changeInfo.size = 4444444444444;
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1272,8 +1515,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_122, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_122::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1282,8 +1527,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_123, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_123::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
-    changeInfo.size_ 6666666666666;
+    changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1293,7 +1540,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_124, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1301,9 +1550,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_125, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_125::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(8888888888888888));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
     changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1313,7 +1564,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_126, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
     changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1323,7 +1576,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_127, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(123456789012345678));
     changeInfo.size_ = 123456789012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1331,9 +1586,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_128, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_128::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(987654321012345678));
-    changeInfo.size_ 987654321012345678;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(987654321012345678));
+    changeInfo.size_ = 987654321012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1343,7 +1600,9 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_129, TestSize.Level1)
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
     changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1351,9 +1610,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_130, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_130::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast<uint8_t*>(malloc(11111111111111111));
-    changeInfo.size_ 11111111111111111;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(11111111111111111));
+    changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1362,8 +1623,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_131, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_131::start");
     ChangeInfo changeInfo;
     changeInfo.data_ = static_cast<uint8_t*>(malloc(22222222222222222));
-    changeInfo.size = 22222222222222222;
+    changeInfo.size_ = 22222222222222222;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1371,9 +1634,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_132, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_132::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(33333333333333333));
-    changeInfo.size_ 33333333333333333;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
+    changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1381,9 +1646,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_133, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_133::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast<uint8_t*>(malloc(4444444444444));
-    changeInfo.size = 4444444444444;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1391,9 +1658,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_134, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_134::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast<uint8_t*>(malloc(5555555555555));
-    changeInfo.size_ 5555555555555;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1401,9 +1670,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_135, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_135::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast<uint8_t*>(malloc(6666666666666));
-    changeInfo.size = 66666666666;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
+    changeInfo.size_ = 66666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1411,9 +1682,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_136, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_136::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(7777777777777));
-    changeInfo.size = 7777777777777;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
+    changeInfo.size_ = 7777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1421,9 +1694,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_137, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_137::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast<uint8_t*>(malloc(8888888888888888));
-    changeInfo.size = 8888888888888;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
+    changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1431,9 +1706,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_138, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_138::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast<uint8_t*>(malloc(9999999999999999));
-    changeInfo.size_ 9999999999999;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
+    changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1441,9 +1718,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_139, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_139::start");
     ChangeInfo changeInfo;
-    changeInfo.data_ static_cast uint8_t*>(malloc(123456789012345678));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(123456789012345678));
     changeInfo.size_ 123456789012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1451,9 +1730,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_140, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_140::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(98765432101234567));
-    changeInfo.size = 98765432101234567;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(98765432101234567));
+    changeInfo.size_ = 98765432101234567;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1461,9 +1742,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_141, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_141::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(5555555555555));
-    changeInfo.size = 5555555555555;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1472,8 +1755,10 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_142, TestSize.Level1)
     MEDIA_INFO_LOG("OnChange_142::start");
     ChangeInfo changeInfo;
     changeInfo.data_ static_cast uint8_t*>(malloc(11111111111111111));
-    changeInfo.size = 11111111111111111;
-    MediaOnNotifyAssetManagerObserverAsManagerObserver::OnChange(changeInfo);
+    changeInfo.size_ = 11111111111111111;
+    size_t sizeBefore = changeInfo.size_;
+    MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1481,9 +1766,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_143, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_143::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(33333333333333333));
-    changeInfo.size_ 33333333333333333;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(33333333333333333));
+    changeInfo.size_ = 33333333333333333;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1491,9 +1778,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_144, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_144::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(4444444444444));
-    changeInfo.size = 4444444444444;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(4444444444444));
+    changeInfo.size_ = 4444444444444;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1501,9 +1790,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_145, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_145::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(5555555555555));
-    changeInfo.size = 5555555555555;
-    MediaOnAsManagerObserver::OnChange(changeInfo);
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(5555555555555));
+    changeInfo.size_ = 5555555555555;
+    size_t sizeBefore = changeInfo.size_;
+    MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1511,9 +1802,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_146, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_146::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(6666666666666));
-    changeInfo.size = 6666666666666;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(6666666666666));
+    changeInfo.size_ = 6666666666666;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1521,9 +1814,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_147, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_147::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_castra_cast<uint8_t*>(malloc(7777777777777));
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(7777777777777));
     changeInfo.size = 777777777777;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1531,9 +1826,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_148, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_148::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(8888888888888888));
-    changeInfo.size = 8888888888888;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(8888888888888888));
+    changeInfo.size_ = 8888888888888;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1541,9 +1838,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_149, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_149::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(9999999999999999));
-    changeInfo.size = 9999999999999;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(9999999999999999));
+    changeInfo.size_ = 9999999999999;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
@@ -1551,9 +1850,11 @@ HWTEST_F(MediaOnNotifyAssetManagerObserverTest, OnChange_150, TestSize.Level1)
 {
     MEDIA_INFO_LOG("OnChange_150::start");
     ChangeInfo changeInfo;
-    changeInfo.data = static_cast uint8_t*>(malloc(123456789012345678));
-    changeInfo.size = 123456789012345678;
+    changeInfo.data_ = static_cast<uint8_t*>(malloc(123456789012345678));
+    changeInfo.size_ = 123456789012345678;
+    size_t sizeBefore = changeInfo.size_;
     MediaOnNotifyAssetManagerObserver::OnChange(changeInfo);
+    EXPECT_EQ(sizeBefore, changeInfo.size_);
     free(changeInfo.data_);
 }
 
