@@ -131,6 +131,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/restore/photos_data_handler_test.cpp",
     "./src/restore/photos_restore_test.cpp",
     "./src/restore/tab_old_photos_restore_test.cpp",
+    "./src/video_ringtone_processor_test.cpp",
     "./src/utils/database_utils.cpp",
   ]
 
@@ -166,6 +167,8 @@ ohos_unittest("medialibrary_backup_test") {
     "data_share:datashare_provider",
     "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
+    "googletest:gtest_main",
+    "googletest:gmock_main",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "i18n:intl_util",
