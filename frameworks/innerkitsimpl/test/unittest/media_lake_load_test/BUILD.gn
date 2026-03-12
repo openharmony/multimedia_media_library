@@ -28,6 +28,8 @@ ohos_unittest("media_lake_load_test") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/include",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   media_lake_scanner_source = [
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner_utils.cpp",
@@ -64,6 +66,7 @@ ohos_unittest("media_lake_load_test") {
   ]
 
   sources = [
+    "./src/folder_scanner_test.cpp",
     "./src/global_scanner_test.cpp",
     "./src/lake_file_operations_test.cpp",
     "./src/file_parser_test.cpp",
