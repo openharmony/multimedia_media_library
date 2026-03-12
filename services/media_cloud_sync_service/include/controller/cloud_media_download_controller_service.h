@@ -43,6 +43,7 @@ private:
     int32_t OnDownloadAsset(MessageParcel &data, MessageParcel &reply);
     int32_t OnDownloadLakeAsset(MessageParcel &data, MessageParcel &reply);
     int32_t CleanAttachment(MessageParcel &data, MessageParcel &reply);
+    int32_t GetFullSyncDownloadInfo(MessageParcel &data, MessageParcel &reply);
 
 private:
     using RequestHandle = int32_t (CloudMediaDownloadControllerService::*)(MessageParcel &, MessageParcel &);
@@ -63,6 +64,8 @@ private:
             &CloudMediaDownloadControllerService::OnDownloadLakeAsset},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_CLEAN_ATTACHMENT),
             &CloudMediaDownloadControllerService::CleanAttachment},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_FULL_SYNC_DOWNLOAD_INFO),
+            &CloudMediaDownloadControllerService::GetFullSyncDownloadInfo},
     };
 
 public:

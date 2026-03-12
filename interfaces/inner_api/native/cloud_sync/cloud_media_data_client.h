@@ -80,6 +80,7 @@ public:
     int32_t UpdateData(const std::string &tableName, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value, const std::string &operateName) override;
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize) override;
+    int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo) override;
 
 private:
     std::shared_ptr<ICloudMediaDataClient> dataHandler_;

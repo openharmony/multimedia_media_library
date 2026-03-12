@@ -56,6 +56,7 @@ public:
     int32_t OnDownloadLakeAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
         std::vector<MediaOperateResultDto> &result);
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize);
+    int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo);
 
 private:
     bool IsCloudInsertTaskPriorityHigh();
@@ -72,7 +73,7 @@ private:
         const std::string &videoPath, const std::string &extraDataPath);
     int32_t SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo);
     void HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
-    void NotifyDownloadLcd(const std::vector<std::string> &cloudIds);
+    void NotifyDownloadLcdOrThm(const std::vector<std::string> &cloudIds, const std::string &notifyUri);
     int32_t FixDownloadAssetExifRotate(const ORM::PhotosPo &photo, const CloudMediaScanService::ScanResult &scanResult);
     int32_t CheckRegenerateThumbnail(const ORM::PhotosPo &photo, const int32_t exifRotate);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
@@ -82,6 +83,7 @@ private:
     int32_t FindAttachments(const std::vector<PhotosPo> &photoInfos, std::vector<PhotoAttachmentDto> &attachmentList);
     int32_t CleanAttachments(std::vector<PhotoAttachmentDto> &attachmentList, int64_t &attachmentSize);
     void NotifyCoverContentChange(const std::vector<std::string> &notifyVector);
+    int32_t GetDownloadNumberOfLcd(int64_t &lcdNumber);
 
 private:
     const uint32_t TYPE_THM_MASK = 0x1;
@@ -95,6 +97,7 @@ private:
         TYPE_THM_AND_LCD = 3,
         TYPE_ASTC = 4,
     };
+    const std::string DOWNLOAD_LCD = "DOWNLOAD_LCD";
 
 private:
     CloudMediaDownloadDao dao_;

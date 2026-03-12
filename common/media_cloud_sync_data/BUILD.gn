@@ -41,6 +41,7 @@ ohos_shared_library("media_cloud_sync_data") {
     "./src/vo/get_download_thm_num_vo.cpp",
     "./src/vo/get_download_thm_vo.cpp",
     "./src/vo/get_file_pos_stat_vo.cpp",
+    "./src/vo/get_full_sync_download_info_vo.cpp",
     "./src/vo/get_retey_records_vo.cpp",
     "./src/vo/get_video_to_cache_vo.cpp",
     "./src/vo/media_operate_result_vo.cpp",

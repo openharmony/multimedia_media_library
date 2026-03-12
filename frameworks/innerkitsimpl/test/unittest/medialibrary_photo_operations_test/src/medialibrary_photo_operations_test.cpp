@@ -3389,13 +3389,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_0
 
     const int32_t testPhotoId = 1;
     const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
-    string testLCDPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_LCD_SUFFIX);
-    string testTHUMBPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_SUFFIX);
-    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_ASTC_SUFFIX);
+    string testLCDPath = "/storage/media/local/files/.thumbs/Photo/1/IMG_test.jpg/LCD.jpg";
+    string testTHUMBPath = "/storage/media/local/files/.thumbs/Photo/1/IMG_test.jpg/THM.jpg";
+    string testTHUMBASTCPath = "/storage/media/local/files/.thumbs/Photo/1/IMG_test.jpg/THM_ASTC.astc";
 
     // Create temporary thumbnail file
 
-    bool ret = MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_test.jpg/");
+    bool ret = MediaFileUtils::CreateDirectory("/storage/media/local/files/.thumbs/Photo/1/IMG_test.jpg/");
     EXPECT_EQ(ret, true);
 
     const size_t numBytes = 10;

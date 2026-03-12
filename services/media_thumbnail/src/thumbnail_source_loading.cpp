@@ -106,6 +106,11 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::UPGRADE_VIDEO_S
     { SourceState::CLOUD_LCD, SourceState::FINISH },
 };
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_THM_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_THUMB },
+    { SourceState::CLOUD_THUMB, SourceState::FINISH },
+};
+
 std::string GetLocalThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
@@ -265,7 +270,7 @@ int32_t ParseDesiredMinSide(const ThumbnailType &type)
         default:
             break;
     }
-    return std::numeric_limits<int32_t>::max();
+    return SHORT_SIDE_THRESHOLD;
 }
 
 void SwitchToNextState(ThumbnailData &data, SourceState &state)

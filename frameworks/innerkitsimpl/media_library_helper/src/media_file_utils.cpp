@@ -95,7 +95,7 @@ const std::string DEFAULT_VIDEO_NAME = "VID_";
 const std::string DEFAULT_AUDIO_NAME = "AUD_";
 const int64_t UNIT = 1000;
 const int64_t STD_UNIT = 1024;
-const int64_t THRESHOLD = 512;
+const int64_t THRESHOLD = 1024;
 const int64_t VIRTUAL_ID_MAX_SIZE = 18;
 const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)

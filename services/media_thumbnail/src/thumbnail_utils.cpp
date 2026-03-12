@@ -882,7 +882,10 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
         ->EndWrap()->Or()->BeginWrap()
-        ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")->Or()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "1")
+        ->EndWrap()
         ->EndWrap()->EndWrap();
     rdbPredicates.OrderByDesc(CONST_MEDIA_DATA_DB_DATE_TAKEN);
 
@@ -1758,20 +1761,7 @@ bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const Thumbnai
         default:
             break;
     }
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(tmpPath, opts, err);
-    if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
-        return false;
-    }
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
-        "Failed to Get ImageInfo, path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
-    size.height = imageInfo.size.height;
-    size.width = imageInfo.size.width;
-    return true;
+    return GetThumbSizeByPath(tmpPath, size);
 }
 
 void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column)
@@ -1946,6 +1936,34 @@ bool ThumbnailUtils::IsUseRotatedSource(const ThumbnailData& data)
 {
     return data.lastLoadSource == SourceState::LOCAL_THUMB ||
         data.lastLoadSource == SourceState::LOCAL_LCD;
+}
+
+bool ThumbnailUtils::GetLocalThmSize(const ThumbnailData &data, Size& size)
+{
+    std::string thmPath = ThumbnailUtils::IsExCloudThumbnail(data) ?
+        GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX) :
+        GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+    CHECK_AND_RETURN_RET_LOG(!thmPath.empty(), false,
+        "Failed to Get GetLocalThumbnailPath, path:%{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    return GetThumbSizeByPath(thmPath, size);
+}
+
+bool ThumbnailUtils::GetThumbSizeByPath(const std::string &thumbPath, Size& size)
+{
+    uint32_t err = 0;
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(thumbPath, opts, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", DfxUtils::GetSafePath(thumbPath).c_str());
+        return false;
+    }
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Failed to Get ImageInfo, path:%{public}s", DfxUtils::GetSafePath(thumbPath).c_str());
+    size.height = imageInfo.size.height;
+    size.width = imageInfo.size.width;
+    return true;
 }
 // LCOV_EXCL_STOP
 } // namespace Media

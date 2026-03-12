@@ -41,6 +41,7 @@
 #include "cloud_media_scan_service.h"
 #undef private
 #include "cloud_file_error.h"
+#include "lcd_aging_utils.h"
 
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -1997,5 +1998,19 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaAlbumService_PullDelete_Test_001, 
     OnFetchRecordsAlbumRespBody resp;
     int32_t ret = service.PullDelete(record, changeType, resp);
     EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetFullSyncDownloadInfo_test_001, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    std::map<std::string, int64_t> flagsInfo;
+    int32_t ret = service.GetFullSyncDownloadInfo(flagsInfo);
+    EXPECT_EQ(ret, E_OK);
+    int64_t lcdThresholdNumber = -1;
+    ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
+    EXPECT_EQ(ret, E_OK);
+    bool isValid = flagsInfo.find("DOWNLOAD_LCD") != flagsInfo.end();
+    EXPECT_TRUE(isValid);
+    EXPECT_GE(flagsInfo["DOWNLOAD_LCD"], lcdThresholdNumber);
 }
 }
