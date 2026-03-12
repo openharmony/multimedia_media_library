@@ -304,7 +304,7 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
 
     int32_t res = OHOS::Media::ParseDesiredMinSide(type);
 
-    EXPECT_EQ(res, std::numeric_limits<int32_t>::max());
+    EXPECT_EQ(res, SHORT_SIDE_THRESHOLD);
 }
 
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,

@@ -123,6 +123,7 @@ public:
     EXPORT static bool IsUseRotatedSource(const ThumbnailData &data);
     EXPORT static void PostProcPixelMapSource(ThumbnailData &data);
     EXPORT static void PostProcPictureSource(ThumbnailData &data);
+    EXPORT static bool GetLocalThmSize(const ThumbnailData &data, Size& size);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -152,6 +153,7 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static bool GetThumbSizeByPath(const std::string &thumbPath, Size& size);
 };
 } // namespace Media
 } // namespace OHOS

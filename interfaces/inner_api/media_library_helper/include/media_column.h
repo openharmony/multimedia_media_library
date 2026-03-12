@@ -274,6 +274,7 @@ public:
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
     static const std::string PHOTO_CLOUD_TRIGGER_PREFIX EXPORT;
     static const std::string PHOTO_GALLERY_CLOUD_URI_PREFIX EXPORT;
+    static const std::string PHOTO_THM_DOWNLOAD_URI_PREFIX EXPORT;
 
     // cloud notify uri
     static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;

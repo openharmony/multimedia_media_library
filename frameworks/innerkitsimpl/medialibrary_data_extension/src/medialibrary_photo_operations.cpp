@@ -3643,8 +3643,8 @@ void MediaLibraryPhotoOperations::ParseCloudEnhancementEditData(string& editData
 
 static bool ConvertPhotoPathToThumbnailDirPath(std::string& path)
 {
-    const std::string photoRelativePath = "/Photo/";
-    const std::string thumbRelativePath = "/.thumbs/Photo/";
+    const std::string photoRelativePath = "/storage/cloud/files/Photo/";
+    const std::string thumbRelativePath = "/storage/media/local/files/.thumbs/Photo/";
     size_t pos = path.find(photoRelativePath);
     CHECK_AND_RETURN_RET_LOG(pos != string::npos, false, "source file invalid! path is %{public}s", path.c_str());
     path.replace(pos, photoRelativePath.length(), thumbRelativePath);

@@ -152,6 +152,35 @@ bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data
     valueObject.GetLong(thumbReady);
     return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
 }
+
+int32_t ThumbnailGenerationPostProcess::SetRegenerateAstcStatus(const ThumbnailData& data, const ThumbRdbOpt& opts)
+{
+    ThumbnailUtils::StoreThumbnailSize(opts, data);
+
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, data.id);
+    // 下载的THM短边小于350时，仅生成年月纹理，设置thumbnail_ready = 8
+    constexpr int64_t THUMB_NEED_REGENERATE_ASTC = 8;
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, THUMB_NEED_REGENERATE_ASTC);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
+    Size thumbSize;
+    if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
+        ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
+    }
+
+    int32_t changedRows = -1;
+    int32_t ret = assetRefresh.Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "assetRefresh update err: %{public}d", ret);
+    CHECK_AND_RETURN_RET(changedRows <= 0, assetRefresh.Notify());
+
+    auto deleteRes = ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data);
+    MEDIA_ERR_LOG("There is no such id: %{public}s path: %{public}s in the db,"
+        " the corresponding thumb needs to be deleted. deleteRes: %{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), deleteRes);
+    return E_ERR;
+}
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

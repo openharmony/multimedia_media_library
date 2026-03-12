@@ -47,6 +47,8 @@
 #include "media_edit_utils.h"
 #include "photo_attachment_dto.h"
 #include "userfile_manager_types.h"
+#include "lcd_aging_dao.h"
+#include "lcd_aging_utils.h"
 
 // LCOV_EXCL_START
 namespace OHOS::Media::CloudSync {
@@ -125,12 +127,6 @@ int32_t CloudMediaDownloadService::OnDownloadThm(
     if (ret == E_OK && !thmVector.empty()) {
         CloudMediaDfxService::UpdateAttachmentStat(INDEX_THUMB_SUCCESS, thmVector.size());
     }
-    /* 通知
-     DataSyncNotifier::GetInstance().TryNotify(PHOTO_URI_PREFIX, ChangeType::INSERT, "");
-     DataSyncNotifier::GetInstance().FinalNotify();
-    */
-    MediaGallerySyncNotify::GetInstance().TryNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, ChangeType::INSERT, "");
-    MediaGallerySyncNotify::GetInstance().FinalNotify();
     for (auto &thm : thmVector) {  // collect results
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = thm;
@@ -179,13 +175,14 @@ int32_t CloudMediaDownloadService::OnDownloadThmAndLcd(
     return ret;
 }
 
-void CloudMediaDownloadService::NotifyDownloadLcd(const std::vector<std::string> &cloudIds)
+void CloudMediaDownloadService::NotifyDownloadLcdOrThm(const std::vector<std::string> &cloudIds,
+    const std::string &notifyUri)
 {
     std::vector<std::string> fileIds;
     this->dao_.GetFileIdFromCloudId(cloudIds, fileIds);
     MEDIA_INFO_LOG("size of fileIds is %{public}zu", fileIds.size());
     for (auto &fileId : fileIds) {
-        std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + fileId;
+        std::string uri = notifyUri + fileId;
         MediaGallerySyncNotify::GetInstance().TryNotify(uri, ChangeType::INSERT, "");
     }
     MediaGallerySyncNotify::GetInstance().FinalNotify();
@@ -237,7 +234,8 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
     NotifyCoverContentChange(notifyVector);
     CHECK_AND_RETURN_RET(sceneCode == 0, E_OK);
     //Only sceneCode is Default(0) can notify ASC task.
-    this->NotifyDownloadLcd(astcVector);
+    this->NotifyDownloadLcdOrThm(astcVector, PhotoColumn::PHOTO_CLOUD_URI_PREFIX);
+    this->NotifyDownloadLcdOrThm(thmVector, PhotoColumn::PHOTO_THM_DOWNLOAD_URI_PREFIX);
     return E_OK;
 }
 
@@ -774,6 +772,35 @@ void CloudMediaDownloadService::NotifyCoverContentChange(const std::vector<std::
     this->dao_.GetFileIdFromCloudId(notifyVector, fileIds);
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
     albumRefresh.IsCoverContentChange(fileIds);
+}
+
+int32_t CloudMediaDownloadService::GetDownloadNumberOfLcd(int64_t &lcdNumber)
+{
+    int64_t lcdCurrentNumber = -1;
+    int32_t ret = LcdAgingDao().GetCurrentNumberOfLcd(lcdCurrentNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetCurrentNumberOfLcd, ret: %{public}d", ret);
+
+    int64_t lcdThresholdNumber = -1;
+    ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetScaleThresholdOfLcd, ret: %{public}d", ret);
+
+    lcdNumber = lcdThresholdNumber - lcdCurrentNumber;
+    CHECK_AND_EXECUTE(lcdNumber > 0, lcdNumber = 0);
+    MEDIA_INFO_LOG("get lcdCurrentNumber: %{public}" PRId64 ", lcdThresholdNumber: %{public}" PRId64
+        ", lcdNumber: %{public}" PRId64, lcdCurrentNumber, lcdThresholdNumber, lcdNumber);
+    return E_OK;
+}
+
+int32_t CloudMediaDownloadService::GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo)
+{
+    int32_t ret = E_OK;
+    if (flagsInfo.empty() || flagsInfo.find(DOWNLOAD_LCD) != flagsInfo.end()) {
+        int64_t lcdNumber = -1;
+        ret = GetDownloadNumberOfLcd(lcdNumber);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetDownloadNumberOfLcd, ret: %{public}d", ret);
+        flagsInfo[DOWNLOAD_LCD] = lcdNumber;
+    }
+    return ret;
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP
