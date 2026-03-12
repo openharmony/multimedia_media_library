@@ -43,9 +43,7 @@
 #include "change_request_set_album_name_vo.h"
 #include "change_request_set_cover_uri_vo.h"
 #include "change_request_set_display_level_vo.h"
-#include "change_request_set_highlight_attribute_vo.h"
 #include "change_request_set_is_me_vo.h"
-#include "change_request_set_upload_status_vo.h"
 #include "change_request_add_assets_vo.h"
 #include "change_request_remove_assets_vo.h"
 #include "change_request_move_assets_vo.h"
@@ -59,18 +57,14 @@
 #include "album_add_assets_vo.h"
 #include "album_remove_assets_vo.h"
 #include "album_recover_assets_vo.h"
-#include "query_albums_vo.h"
 #include "get_albums_by_ids_vo.h"
-#include "get_albums_lpath_by_ids_vo.h"
 #include "get_photo_album_object_vo.h"
 #include "get_cloned_album_uris_vo.h"
 #include "get_order_position_vo.h"
 #include "get_face_id_vo.h"
-#include "set_photo_album_order_vo.h"
 #include "get_photo_index_vo.h"
 #include "get_analysis_process_vo.h"
 #include "get_highlight_album_info_vo.h"
-#include "album_get_selected_assets_vo.h"
 #include "album_get_assets_vo.h"
 #include "get_relationship_vo.h"
 #include "change_request_set_relationship_vo.h"
@@ -85,14 +79,8 @@ using namespace std;
 using namespace OHOS::Media;
 
 static constexpr int32_t NUM_BYTES = 8;
-static constexpr int32_t MIN_HIGHLIGHT_ALBUM_CHANGE_ATTRIBUTE = -1;
-static constexpr int32_t MAX_HIGHLIGHT_ALBUM_CHANGE_ATTRIBUTE = 2;
 static constexpr int32_t MAX_BYTE_VALUE = 256;
 static constexpr int32_t SEED_SIZE = 1024;
-const string TABLE = "PhotoAlbum";
-static std::vector<std::string> ALBUM_FETCH_COLUMNS = {
-    PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_SUBTYPE
-};
 
 FuzzedDataProvider* provider;
 shared_ptr<MediaAlbumsControllerService> mediaAlbumsControllerService = make_shared<MediaAlbumsControllerService>();
@@ -121,12 +109,6 @@ static inline int32_t FuzzPhotoAlbumSubType()
     return provider->PickValueInArray(g_photoAlbumSubTypeArray);
 }
 
-static inline int32_t FuzzHighlightAlbumChangeAttribute()
-{
-    return provider->ConsumeIntegralInRange<int32_t>(MIN_HIGHLIGHT_ALBUM_CHANGE_ATTRIBUTE,
-        MAX_HIGHLIGHT_ALBUM_CHANGE_ATTRIBUTE);
-}
-
 static int32_t InsertAnalysisAlbum()
 {
     if (g_rdbStore == nullptr) {
@@ -139,22 +121,6 @@ static int32_t InsertAnalysisAlbum()
     values.PutString(ALBUM_RELATIONSHIP, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t albumId = 0;
     int32_t ret = g_rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "g_rdbStore failed to insert ret=%{public}d", ret);
-    return static_cast<int32_t>(albumId);
-}
-
-static int32_t InsertAlbumAsset(int32_t albumType, int32_t albumSubType)
-{
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("InsertAnalysisAlbum g_rdbStore is null");
-        return E_ERR;
-    }
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, albumType);
-    values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
-    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, CONST_MEDIA_DATA_DB_DATE_ADDED);
-    int64_t albumId = 0;
-    int32_t ret = g_rdbStore->Insert(albumId, TABLE, values);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "g_rdbStore failed to insert ret=%{public}d", ret);
     return static_cast<int32_t>(albumId);
 }
@@ -231,99 +197,6 @@ static void GetPhotoAlbumObjectFuzzer()
     mediaAlbumsControllerService->GetPhotoAlbumObject(data, reply);
 }
 
-static void UpdatePhotoAlbumOrderFuzzer()
-{
-    SetPhotoAlbumOrderReqBody reqBody;
-    int32_t value = provider->ConsumeIntegral<int32_t>();
-    reqBody.albumIds = {value};
-    reqBody.albumOrders = {value};
-    reqBody.orderSection = {value};
-    reqBody.orderType = {value};
-    reqBody.orderStatus = {value};
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->UpdatePhotoAlbumOrder(data, reply);
-}
-
-static void QueryAlbumsLpathsFuzzer()
-{
-    int32_t albumType = FuzzPhotoAlbumType();
-    int32_t albumSubType = FuzzPhotoAlbumSubType();
-    InsertAlbumAsset(albumType, albumSubType);
-    QueryAlbumsReqBody reqBody;
-    reqBody.albumType = albumType;
-    reqBody.albumSubType = albumSubType;
-    reqBody.columns = {CONST_MEDIA_DATA_DB_DATE_ADDED};
-    std::string whereClause = "QueryAlbumsLpathsFuzzer between ? and ?";
-    reqBody.predicates.SetWhereClause(whereClause);
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->QueryAlbumsLpaths(data, reply);
-}
-
-static void GetAlbumsLpathByIdsFuzzer()
-{
-    GetAlbumsLpathByIdsReqBody reqBody;
-    int32_t albumType = FuzzPhotoAlbumType();
-    int32_t albumSubType = FuzzPhotoAlbumSubType();
-    int32_t albumId = InsertAlbumAsset(albumType, albumSubType);
-    reqBody.albumId = albumId;
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->GetAlbumsLpathByIds(data, reply);
-}
-
-static void ChangeRequestSetHighlightAttributeFuzzer()
-{
-    ChangeRequestSetHighlightAttributeReqBody reqBody;
-    int32_t albumType = FuzzPhotoAlbumType();
-    int32_t albumSubType = FuzzPhotoAlbumSubType();
-    int32_t albumId = InsertAlbumAsset(albumType, albumSubType);
-    reqBody.albumId = albumId;
-    reqBody.albumType = albumType;
-    reqBody.albumSubType = albumSubType;
-    reqBody.highlightAlbumChangeAttribute = FuzzHighlightAlbumChangeAttribute();
-    reqBody.highlightAlbumChangeAttributeValue = "0";
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestSetHighlightAttribute(data, reply);
-}
-
-static void ChangeRequestSetUploadStatusFuzzer()
-{
-    ChangeRequestSetUploadStatusReqBody reqBody;
-    int32_t albumType = FuzzPhotoAlbumType();
-    int32_t albumSubType = FuzzPhotoAlbumSubType();
-    int32_t albumId = InsertAlbumAsset(albumType, albumSubType);
-    reqBody.albumIds = {to_string(albumId)};
-    reqBody.photoAlbumTypes = {albumType};
-    reqBody.photoAlbumSubtypes = {albumSubType};
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestSetUploadStatus(data, reply);
-}
-
-static void AlbumGetSelectAssetsFuzzer()
-{
-    AlbumGetSelectedAssetsReqBody reqBody;
-    reqBody.filter = provider->ConsumeBytesAsString(NUM_BYTES);
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->AlbumGetSelectAssets(data, reply);
-}
-
 static void MediaAlbumsControllerService2Fuzzer()
 {
     ChangeRequestResetCoverUriFuzzer();
@@ -331,12 +204,6 @@ static void MediaAlbumsControllerService2Fuzzer()
     GetRelationshipFuzzer();
     GetClonedAlbumUrisFuzzer();
     GetPhotoAlbumObjectFuzzer();
-    UpdatePhotoAlbumOrderFuzzer();
-    QueryAlbumsLpathsFuzzer();
-    GetAlbumsLpathByIdsFuzzer();
-    ChangeRequestSetHighlightAttributeFuzzer();
-    ChangeRequestSetUploadStatusFuzzer();
-    AlbumGetSelectAssetsFuzzer();
 }
 
 void SetTables()

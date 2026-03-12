@@ -161,7 +161,7 @@ static int32_t InsertPhotoAsset()
     }
     NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
-    values.PutString(PhotoColumn::PHOTO_CLOUD_ID, "cloudId");
+    values.PutString(PhotoColumn::PHOTO_CLOUD_ID, provider->ConsumeBytesAsString(NUM_BYTES));
     values.PutString(PhotoColumn::MEDIA_NAME, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     int32_t ret = g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
