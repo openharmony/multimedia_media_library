@@ -318,7 +318,7 @@ int32_t MediaCleanAllDirtyFilesTask::UpdatePendingInfoByPath(int32_t fileId, int
 
 void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dirtyFileInfo)
 {
-    // pending文件 充电息屏且保存超过24小时 扫描原图转正
+    // pending文件 充电息屏且保存超过72小时 扫描原图转正
     if (dirtyFileInfo.pending != 0) {
         int64_t timeMs = MediaFileUtils::UTCTimeMilliSeconds();
         if (timeMs - dirtyFileInfo.addTime > THREE_DAY_MS) {
