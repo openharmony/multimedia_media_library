@@ -45,8 +45,6 @@ constexpr int32_t MIN_TIME_OUT = 4;
 const std::string MEDIA_LIBRARY_BUNDLE = "com.ohos.medialibrary.medialibrarydata";
 const std::string FILE_MANAGER_BUNDLE = "com.huawei.hmos.filemanager";
 const std::string INVALID_BUNDLE = "com.invalid.bundle";
-const std::string RESTORE_START_ACTION = "usual.event.RESTORE_START";
-const std::string RESTORE_END_ACTION = "usual.event.RESTORE_END";
 const std::string INVALID_ACTION = "invalid.action";
 
 void MediaLakeCloneEventManagerTest::SetUpTestCase(void)
@@ -76,7 +74,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_RestoreStartWithValidBun
     TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     bool result = MediaLakeCloneEventManager::IsRestoreEvent(want);
@@ -88,7 +86,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_RestoreEndWithValidBundl
     TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want.SetParam("bundleName", FILE_MANAGER_BUNDLE);
 
     bool result = MediaLakeCloneEventManager::IsRestoreEvent(want);
@@ -110,7 +108,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_InvalidAction_ReturnFals
 HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_InvalidBundle_ReturnFalse, TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool result = MediaLakeCloneEventManager::IsRestoreEvent(want);
@@ -132,8 +130,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_EmptyAction_ReturnFalse,
 HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoreEvent_EmptyBundle_ReturnFalse, TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
-    want.SetParam("bundleName", "");
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
 
     bool result = MediaLakeCloneEventManager::IsRestoreEvent(want);
 
@@ -153,7 +150,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoring_AfterRestoreStart_ReturnTru
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -166,12 +163,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoring_AfterRestoreEnd_ReturnFalse
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -184,12 +181,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoring_MultipleRestoreStart_Return
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want1;
-    want1.SetAction(RESTORE_START_ACTION);
+    want1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(want1);
 
     AAFwk::Want want2;
-    want2.SetAction(RESTORE_START_ACTION);
+    want2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(want2);
 
@@ -198,21 +195,21 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoring_MultipleRestoreStart_Return
     EXPECT_TRUE(result);
 }
 
-HWTEST_F(MediaLakeEvent_ManagerTest, IsRestoring_PartialRestoreEnd_ReturnTrue, TestSize.Level1)
+HWTEST_F(MediaLakeCloneEventManagerTest, IsRestoring_PartialRestoreEnd_ReturnTrue, TestSize.Level1)
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant1;
-    startWant1.SetAction(RESTORE_START_ACTION);
+    startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant1);
 
     AAFwk::Want startWant2;
-    startWant2.SetAction(RESTORE_START_ACTION);
+    startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant2);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -226,7 +223,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_RestoreStartWithMedi
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -239,7 +236,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_RestoreStartWithFile
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", FILE_MANAGER_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -252,12 +249,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_RestoreEndWithMediaL
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -269,12 +266,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_RestoreEndWithFileMa
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -299,7 +296,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_InvalidBundle_NoActi
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -314,11 +311,11 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_ConcurrentStartEnd_H
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(startWant);
@@ -331,7 +328,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleDeathRecipient_DefaultState_Reset
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -340,7 +337,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleDeathRecipient_DefaultState_Reset
     EXPECT_FALSE(manager.IsRestoring());
 }
 
-HWTEST_F(MediaLakeEventManagerTest, HandleDeathRecipient_NoRestoreInProgress_NoAction, TestSize.Level1)
+HWTEST_F(MediaLakeCloneEventManagerTest, HandleDeathRecipient_NoRestoreInProgress_NoAction, TestSize.Level1)
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
 
@@ -355,12 +352,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleDeathRecipient_MultipleRestore_Re
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant1;
-    startWant1.SetAction(RESTORE_START_ACTION);
+    startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant1);
 
     AAFwk::Want startWant2;
-    startWant2.SetAction(RESTORE_START_ACTION);
+    startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant2);
 
@@ -374,7 +371,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleDeathRecipient_ConcurrentCalls_Ha
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -392,7 +389,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreStartEvent_MediaLibrary_Se
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -408,7 +405,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreStartEvent_FileManager_Set
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", FILE_MANAGER_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -423,7 +420,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreStartEvent_InvalidBundle_N
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -437,8 +434,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreStartEvent_EmptyBundle_NoA
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
-    want.SetParam("bundleName", "");
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
 
     bool beforeState = manager.IsRestoring();
     manager.HandleRestoreEvent(want);
@@ -452,12 +448,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEndEvent_MediaLibrary_Clea
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -469,12 +465,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEndEvent_FileManager_Clear
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -485,7 +481,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEndEvent_InvalidBundle_NoA
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -499,8 +495,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEndEvent_EmptyBundle_NoAct
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
-    want.SetParam("bundleName", "");
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
 
     bool beforeState = manager.IsRestoring();
     manager.HandleRestoreEvent(want);
@@ -523,7 +518,6 @@ HWTEST_F(MediaLakeCloneEventManagerTest, GetBitByBundleName_MediaLibrary_ReturnB
 HWTEST_F(MediaLakeCloneEventManagerTest, GetBitByBundleName_FileManager_ReturnBit1, TestSize.Level1)
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
-();
     uint8_t bit = 0xFF;
 
     bool result = manager.GetBitByBundleName(FILE_MANAGER_BUNDLE, bit);
@@ -557,7 +551,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ShouldUnregisterLakeFileMonitor_FirstRe
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -570,12 +564,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ShouldUnregisterLakeFileMonitor_Already
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want1;
-    want1.SetAction(RESTORE_START_ACTION);
+    want1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(want1);
 
     AAFwk::Want want2;
-    want2.SetAction(RESTORE_START_ACTION);
+    want2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(want2);
 
@@ -587,12 +581,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ShouldRegisterLakeFileMonitor_LastResto
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -604,17 +598,17 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ShouldRegisterLakeFileMonitor_PartialRe
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant1;
-    startWant1.SetAction(RESTORE_START_ACTION);
+    startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant1);
 
     AAFwk::Want startWant2;
-    startWant2.SetAction(RESTORE_START_ACTION);
+    startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant2);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -626,7 +620,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ResetRestoreStatusBitMap_DefaultState_R
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -640,12 +634,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ResetRestoreStatusBitMap_MultipleRestor
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant1;
-    startWant1.SetAction(RESTORE_START_ACTION);
+    startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant1);
 
     AAFwk::Want startWant2;
-    startWant2.SetAction(RESTORE_START_ACTION);
+    startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant2);
 
@@ -659,12 +653,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, CheckIsExecuteGlobalScan_MediaLibrary_E
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -676,12 +670,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, CheckIsExecuteGlobalScan_FileManager_Sk
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -693,7 +687,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForStart_MediaLib
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -709,7 +703,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForStart_FileMana
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", FILE_MANAGER_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -725,7 +719,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForStart_InvalidB
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -740,12 +734,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForEnd_MediaLibra
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -757,12 +751,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForEnd_FileManage
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -774,7 +768,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetRestoreStatusBitMapForEnd_InvalidBun
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want.SetParam("bundleName", INVALID_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -795,20 +789,10 @@ HWTEST_F(MediaLakeCloneEventManagerTest, GetEventBundleName_ValidBundle_ReturnBu
     EXPECT_EQ(bundleName, MEDIA_LIBRARY_BUNDLE);
 }
 
-HWTEST_F(MediaLakeCloneEventManagerTest, GetEventBundleName_EmptyBundle_ReturnEmpty, TestSize.Level1)
-{
-    AAFwk::Want want;
-    want.SetParam("bundleName", "");
-
-    std::string bundleName = want.GetStringParam("bundleName");
-
-    EXPECT_TRUE(bundleName.empty());
-}
-
 HWTEST_F(MediaLakeCloneEventManagerTest, IsSubscribedAction_RestoreStart_ReturnTrue, TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
 
     std::string action = want.GetAction();
     bool result = (action == EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START ||
@@ -820,7 +804,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsSubscribedAction_RestoreStart_ReturnT
 HWTEST_F(MediaLakeCloneEventManagerTest, IsSubscribedAction_RestoreEnd_ReturnTrue, TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
 
     std::string action = want.GetAction();
     bool result = (action == EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START ||
@@ -889,7 +873,6 @@ HWTEST_F(MediaLakeCloneEventManagerTest, IsSubscribedBundle_InvalidBundle_Return
 HWTEST_F(MediaLakeCloneEventManagerTest, IsSubscribedBundle_EmptyBundle_ReturnFalse, TestSize.Level1)
 {
     AAFwk::Want want;
-    want.SetParam("bundleName", "");
 
     std::string bundleName = want.GetStringParam("bundleName");
     bool result = (bundleName == MEDIA_LIBRARY_BUNDLE || bundleName == FILE_MANAGER_BUNDLE);
@@ -902,7 +885,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, UnregisterLakeFileMonitor_DuringRestore
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -915,12 +898,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, RegisterLakeFileMonitor_AfterRestoreEnd
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -931,12 +914,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, RunGlobalScanner_IdleScanner_StartScan,
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -947,12 +930,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, RunGlobalScanner_RunningScanner_SkipSca
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -963,7 +946,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetDeathRecipient_NoRemoteObject_NoActi
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -976,7 +959,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, SetDeathRecipient_WithRemoteObject_AddR
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -995,7 +978,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_ConcurrentRestoreStart_Hand
     for (int32_t i = 0; i < threadCount; ++i) {
         threads.emplace_back([&]() {
             AAFwk::Want want;
-            want.SetAction(RESTORE_START_ACTION);
+            want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
             want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
             manager.HandleRestoreEvent(want);
             successCount++;
@@ -1015,7 +998,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_ConcurrentRestoreEnd_Handle
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -1026,7 +1009,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_ConcurrentRestoreEnd_Handle
     for (int32_t i = 0; i < threadCount; ++i) {
         threads.emplace_back([&]() {
             AAFwk::Want want;
-            want.SetAction(RESTORE_END_ACTION);
+            want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
             want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
             manager.HandleRestoreEvent(want);
             successCount++;
@@ -1046,7 +1029,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_ConcurrentIsRestoring_Handl
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -1074,7 +1057,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_ConcurrentHandleDeathRecipi
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -1109,12 +1092,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, MultiThread_MixedOperations_HandleSafel
         threads.emplace_back([&, i]() {
             if (i % 2 == 0) {
                 AAFwk::Want want;
-                want.SetAction(RESTORE_START_ACTION);
+                want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
                 want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
                 manager.HandleRestoreEvent(want);
             } else {
                 AAFwk::Want want;
-                want.SetAction(RESTORE_END_ACTION);
+                want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
                 want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
                 manager.HandleRestoreEvent(want);
             }
@@ -1133,24 +1116,24 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_MaxRestoreStatus_HandleCorrect
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant1;
-    startWant1.SetAction(RESTORE_START_ACTION);
+    startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant1);
 
     AAFwk::Want startWant2;
-    startWant2.SetAction(RESTORE_START_ACTION);
+    startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(startWant2);
 
     EXPECT_TRUE(manager.IsRestoring());
 
     AAFwk::Want endWant1;
-    endWant1.SetAction(RESTORE_END_ACTION);
+    endWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant1);
 
     AAFwk::Want endWant2;
-    endWant2.SetAction(RESTORE_END_ACTION);
+    endWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(endWant2);
 
@@ -1163,12 +1146,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_RapidStartEnd_HandleCorrectly,
 
     for (int32_t i = 0; i < 100; ++i) {
         AAFwk::Want startWant;
-        startWant.SetAction(RESTORE_START_ACTION);
+        startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant);
 
         AAFwk::Want endWant;
-        endWant.SetAction(RESTORE_END_ACTION);
+        endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant);
     }
@@ -1192,7 +1175,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_NullBundleName_HandleSafely, T
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
 
     bool beforeState = manager.IsRestoring();
     manager.HandleRestoreEvent(want);
@@ -1204,10 +1187,11 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_NullBundleName_HandleSafely, T
 HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_SpecialCharactersInBundle_HandleSafely,
     TestSize.Level1)
 {
+    std::string bundleNameWithSpecialCharacters = "com.test.special!@#$%";
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
-    want.SetParam("bundleName", "com.test.special!@#$%");
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
+    want.SetParam("bundleName", bundleNameWithSpecialCharacters);
 
     bool beforeState = manager.IsRestoring();
     manager.HandleRestoreEvent(want);
@@ -1221,7 +1205,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Boundary_VeryLongBundleName_HandleSafel
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     std::string longBundle(1000, 'a');
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", longBundle);
 
     bool beforeState = manager.IsRestoring();
@@ -1236,7 +1220,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, EdgeCase_RestoreStartWithoutEnd_HandleC
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_START_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     manager.HandleRestoreEvent(want);
@@ -1249,7 +1233,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, EdgeCase_RestoreEndWithoutStart_HandleC
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want want;
-    want.SetAction(RESTORE_END_ACTION);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
 
     bool beforeState = manager.IsRestoring();
@@ -1264,7 +1248,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, EdgeCase_MultipleDeathRecipientCalls_Ha
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -1280,14 +1264,14 @@ HWTEST_F(MediaLakeCloneEventManagerTest, EdgeCase_InterleavedStartEndDeath_Handl
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
     manager.HandleDeathRecipient();
 
     AAFwk::Want endWant;
-    endWant.SetAction(RESTORE_END_ACTION);
+    endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(endWant);
 
@@ -1302,12 +1286,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_RapidRestoreEvents_HandleCor
 
     for (int32_t i = 0; i < iterations; ++i) {
         AAFwk::Want startWant;
-        startWant.SetAction(RESTORE_START_ACTION);
+        startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant);
 
         AAFwk::Want endWant;
-        endWant.SetAction(RESTORE_END_ACTION);
+        endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant);
     }
@@ -1329,9 +1313,9 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_ConcurrentAccess_HandleSafel
             for (int32_t j = 0; j < iterations; ++j) {
                 AAFwk::Want want;
                 if (j % 2 == 0) {
-                    want.SetAction(RESTORE_START_ACTION);
+                    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
                 } else {
-                    want.SetAction(RESTORE_END_ACTION);
+                    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
                 }
                 want.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
                 manager.HandleRestoreEvent(want);
@@ -1355,22 +1339,22 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_MixedBundles_HandleCorrectly
 
     for (int32_t i = 0; i < iterations; ++i) {
         AAFwk::Want startWant1;
-        startWant1.SetAction(RESTORE_START_ACTION);
+        startWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant1);
 
         AAFwk::Want startWant2;
-        startWant2.SetAction(RESTORE_START_ACTION);
+        startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
         manager.HandleRestoreEvent(startWant2);
 
         AAFwk::Want endWant1;
-        endWant1.SetAction(RESTORE_END_ACTION);
+        endWant1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant1);
 
         AAFwk::Want endWant2;
-        endWant2.SetAction(RESTORE_END_ACTION);
+        endWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
         manager.HandleRestoreEvent(endWant2);
     }
@@ -1383,7 +1367,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_RapidIsRestoringCalls_Handle
 {
     auto &manager = MediaLakeCloneEventManager::GetInstance();
     AAFwk::Want startWant;
-    startWant.SetAction(RESTORE_START_ACTION);
+    startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(startWant);
 
@@ -1407,7 +1391,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_AlternatingDeathRecipient_Ha
 
     for (int32_t i = 0; i < iterations; ++i) {
         AAFwk::Want startWant;
-        startWant.SetAction(RESTORE_START_ACTION);
+        startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant);
 
@@ -1416,7 +1400,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_AlternatingDeathRecipient_Ha
         }
 
         AAFwk::Want endWant;
-        endWant.SetAction(RESTORE_END_ACTION);
+        endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant);
     }
@@ -1431,12 +1415,12 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_MemoryLeakCheck_NoLeaks, Tes
 
     for (int32_t i = 0; i < iterations; ++i) {
         AAFwk::Want startWant;
-        startWant.SetAction(RESTORE_START_ACTION);
+        startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant);
 
         AAFwk::Want endWant;
-        endWant.SetAction(RESTORE_END_ACTION);
+        endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant);
 
@@ -1455,14 +1439,14 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_StateConsistency_CheckConsis
 
     for (int32_t i = 0; i < iterations; ++i) {
         AAFwk::Want startWant;
-        startWant.SetAction(RESTORE_START_ACTION);
+        startWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
         startWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(startWant);
 
         bool state1 = manager.IsRestoring();
 
         AAFwk::Want endWant;
-        endWant.SetAction(RESTORE_END_ACTION);
+        endWant.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
         endWant.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
         manager.HandleRestoreEvent(endWant);
 
@@ -1482,35 +1466,35 @@ HWTEST_F(MediaLakeCloneEventManagerTest, Coverage_AllBranches_Covered, TestSize.
     auto &manager = MediaLakeCloneEventManager::GetInstance();
 
     AAFwk::Want want1;
-    want1.SetAction(RESTORE_START_ACTION);
+    want1.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want1.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(want1);
 
     EXPECT_TRUE(manager.IsRestoring());
 
     AAFwk::Want want2;
-    want2.SetAction(RESTORE_START_ACTION);
+    want2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(want2);
 
     EXPECT_TRUE(manager.IsRestoring());
 
     AAFwk::Want want3;
-    want3.SetAction(RESTORE_END_ACTION);
+    want3.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want3.SetParam("bundleName", MEDIA_LIBRARY_BUNDLE);
     manager.HandleRestoreEvent(want3);
 
     EXPECT_TRUE(manager.IsRestoring());
 
     AAFwk::Want want4;
-    want4.SetAction(RESTORE_END_ACTION);
+    want4.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
     want4.SetParam("bundleName", FILE_MANAGER_BUNDLE);
     manager.HandleRestoreEvent(want4);
 
     EXPECT_FALSE(manager.IsRestoring());
 
     AAFwk::Want want5;
-    want5.SetAction(RESTORE_START_ACTION);
+    want5.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want5.SetParam("bundleName", INVALID_BUNDLE);
     manager.HandleRestoreEvent(want5);
 
