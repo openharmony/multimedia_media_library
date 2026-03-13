@@ -956,8 +956,6 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectFileNotExistInEditFolder(int32
         int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
         MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
     } else {
-        int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
-        MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
@@ -975,7 +973,7 @@ bool MediaCleanAllDirtyFilesTask::DealEffectFileNotExistInEditFolder(int32_t cur
         }
     }
     if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
-        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s",
+        MEDIA_ERR_LOG("DirtyMediaHandler DealEffectFileNotExistInEditFolder Cp To Org: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
         return true;
     }
@@ -1003,7 +1001,7 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectMovingPhotoNotExistInEditFolde
         }
     }
     if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
-        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s",
+        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectMovingPhotoNotExistInEditFolder Cp To Org: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
         return true;
     }
@@ -1024,8 +1022,6 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectMovingPhotoNotExistInEditFolde
         int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
         MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
     } else {
-        int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
-        MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
