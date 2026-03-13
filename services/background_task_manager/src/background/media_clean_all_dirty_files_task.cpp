@@ -88,6 +88,23 @@ static bool Starts_With(const std::string& str, const std::string& prefix)
     return str.rfind(prefix, 0) == 0;  // 从位置 0 开始查找
 }
 
+static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::string> &vecStr)
+{
+    std::vector<int32_t> vecInt;
+    for (const auto& s : vecStr) {
+        if (all_of(s.begin(), s.end(), ::isdigit)) {
+            size_t processCount = 0;
+            int32_t val = std::stoi(s, &processCount);
+            if (processCount == s.length()) {
+                vecInt.push_back(val);
+            }
+        } else {
+            continue;
+        }
+    }
+    return vecInt;
+}
+
 bool MediaCleanAllDirtyFilesTask::Accept()
 {
     return MedialibrarySubscriber::IsCurrentStatusOn() &&
@@ -100,7 +117,16 @@ void MediaCleanAllDirtyFilesTask::Execute()
         MEDIA_ERR_LOG("MediaCleanAllDirtyFilesTask Interrupt");
         return;
     }
-    this->HandleMediaAllDirtyFiles();
+    {
+        std::unique_lock<std::mutex> taskLock(taskRunningMutex_, std::defer_lock);
+        CHECK_AND_RETURN_WARN_LOG(taskLock.try_lock(), "MediaCleanAllDirtyFilesTask is running");
+    }
+    std::thread([this] {
+        std::unique_lock<std::mutex> taskLock(taskRunningMutex_, std::defer_lock);
+        CHECK_AND_RETURN_WARN_LOG(taskLock.try_lock(), "MediaCleanAllDirtyFilesTask thread is running");
+        this->HandleMediaAllDirtyFiles();
+    }).detach();
+
     return;
 }
 
@@ -330,8 +356,9 @@ void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dir
 
 void MediaCleanAllDirtyFilesTask::HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // pending文件 充电息屏且保存超过72小时 扫描原图转正
-    DealWithPendingToEffectFile(dirtyFileInfo);
+    // pending文件 充电息屏且保存超过72小时 扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
+    MEDIA_ERR_LOG("HandleBothExistStrategy path %{public}s",
+        MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
 void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &dirtyFileInfo)
@@ -381,8 +408,9 @@ void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirt
 
 void MediaCleanAllDirtyFilesTask::HandleOriginExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
-    // pending文件，充电息屏且保存超过72小时扫描原图转正
-    DealWithPendingToEffectFile(dirtyFileInfo);
+    // pending文件，充电息屏且保存超过72小时扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
+    MEDIA_ERR_LOG("HandleOriginExistStrategy path %{public}s",
+        MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
 void MediaCleanAllDirtyFilesTask::HandleSingleRecord(DirtyFileInfo &dirtyFileInfo)
@@ -396,7 +424,9 @@ void MediaCleanAllDirtyFilesTask::HandleSingleRecord(DirtyFileInfo &dirtyFileInf
         HandleOriginNotExistStrategy(dirtyFileInfo);
     }
     if (!existOrigin && !existThumb) {
-        HandleBothNotExistStrategy(dirtyFileInfo);
+        MEDIA_ERR_LOG("HandleBothNotExistStrategy path %{public}s",
+            MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
+        // 都不存在 HandleBothNotExistStrategy(dirtyFileInfo);
     }
     if (existOrigin && !existThumb) {
         HandleOriginExistStrategy(dirtyFileInfo);
@@ -525,6 +555,28 @@ bool MediaCleanAllDirtyFilesTask::IsMovingPhotosInEditFolder(int32_t curBucketNu
         }
     }
     return false;
+}
+
+bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &path)
+{
+    // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' and position =2)
+    // AS recordExist
+    bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
+    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "' AND " +
+        PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)) +
+    ") AS recordExist";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, recordExist, "Query ExistCloudAssetPathInDB Fails");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Go To First Row Fails");
+        resultSet->Close();
+        return true;
+    }
+    recordExist = GetInt32Val("recordExist", resultSet) == 0 ? false : true;  // 默认要为true 否则可能误判
+    resultSet->Close();
+    return recordExist;
 }
 
 bool MediaCleanAllDirtyFilesTask::ExistPhotoPathInDB(const std::string &path)
@@ -743,6 +795,10 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginBucketFolder(int32_t curBucketNum)
         }
         CHECK_AND_CONTINUE_ERR_LOG(IsLegalMediaAsset(fileName), // 文件名合法性校验 Report point
             "DirtyMediaHandler Skip Illegal File While HandleOriginBucketFolder %{public}s", fileName.c_str());
+        std::string dataPath = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + fileName;
+        CHECK_AND_CONTINUE_INFO_LOG(!ExistCloudAssetPathInDB(dataPath), // 纯云图跳过
+            "DirtyMediaHandler Skip cloud File While HandleOriginBucketFolder %{public}s",
+            MediaFileUtils::DesensitizePath(dataPath).c_str());
         bool finish = ProcessOriginFolderBatch(curBucketNum, fileName);
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create ProcessOriginFolderBatch %{public}s", fileName.c_str());
@@ -751,7 +807,7 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginBucketFolder(int32_t curBucketNum)
 }
 
 bool MediaCleanAllDirtyFilesTask::DealThumbsEffectAssetNotExist(int32_t curBucketNum, const std::string &folderName)
-{ // 以缩略图填充原图
+{ // 以缩略图填充原图 后续考虑旋转角度 ext目录
     std::string originBucketFolderFile = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) +
         SLASH_STR + folderName;
     std::string thumbsBucketFolderName = ROOT_MEDIA_THUMBS_DIR + std::to_string(curBucketNum) +
@@ -861,9 +917,13 @@ bool MediaCleanAllDirtyFilesTask::HandleThumbsBucketFolder(int32_t curBucketNum)
         }
         MEDIA_DEBUG_LOG("HandleThumbsBucketFolder Name: %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        CHECK_AND_RETURN_RET_LOG(IsLegalMediaAsset(folderName), true, // 文件名合法性校验 Report point 空文件夹跳过 删除等
+        CHECK_AND_CONTINUE_ERR_LOG(IsLegalMediaAsset(folderName), // 文件名合法性校验 Report point 空文件夹跳过 删除等
             "DirtyMediaHandler Skip Illegal File While HandleThumbsBucketFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
+        std::string dataPath = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + folderName;
+        CHECK_AND_CONTINUE_INFO_LOG(!ExistCloudAssetPathInDB(dataPath), // 纯云图跳过
+            "DirtyMediaHandler Skip cloud File While HandleThumbsBucketFolder %{public}s",
+            MediaFileUtils::DesensitizePath(dataPath).c_str());
         bool finish = ProcessThumbsFolderBatch(curBucketNum, folderName);
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed to create ProcessThumbsFolderBatch %{public}s",
@@ -1236,9 +1296,13 @@ bool MediaCleanAllDirtyFilesTask::HandleEditBucketFolder(int32_t curBucketNum)
         }
         MEDIA_DEBUG_LOG("HandleEditBucketFolder Loop Name: %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        CHECK_AND_RETURN_RET_LOG(IsLegalMediaAsset(folderName), true, // 文件名合法性校验 Report point
+        CHECK_AND_CONTINUE_ERR_LOG(IsLegalMediaAsset(folderName), // 文件名合法性校验 Report point
             "DirtyMediaHandler Skip Illegal File While HandleEditBucketFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
+        std::string dataPath = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + folderName;
+        CHECK_AND_CONTINUE_INFO_LOG(!ExistCloudAssetPathInDB(dataPath), // 纯云图跳过
+            "DirtyMediaHandler Skip cloud File While HandleEditBucketFolder %{public}s",
+            MediaFileUtils::DesensitizePath(dataPath).c_str());
         bool finish = ProcessEditFolderBatch(curBucketNum, folderName);
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create ProcessEditFolderBatch %{public}s",
@@ -1342,7 +1406,7 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyFolders(int32_t curStartBucketId
     std::vector<std::string> bucketsVec;
     MediaFileUtils::GetFolderListUnderPath(ROOT_MEDIA_LOCAL_ORG_DIR, bucketsVec);
     CHECK_AND_RETURN_INFO_LOG(!bucketsVec.empty(), "HandleAllDirtyFolders BucketsVec Empty");
-    std::vector<int32_t> bucketsIntVec = MediaFileUtils::ConvertBucketNameVector(bucketsVec);
+    std::vector<int32_t> bucketsIntVec = ConvertBucketNameVector(bucketsVec);
     std::sort(bucketsIntVec.begin(), bucketsIntVec.end());
     for (const auto& curBucketNum : bucketsIntVec) {
         CHECK_AND_RETURN_INFO_LOG(!IsCurrentTaskTimeOut(), "HandleAllDirtyFolders Timeout");
