@@ -56,7 +56,6 @@ private:
     int32_t GetValuesBucket(const PhotosPo &photoInfo, NativeRdb::ValuesBucket &valuesBucket);
     int32_t ClearCloudInfo(PhotosPo &photoInfo);
     int32_t ResetNullableFields(PhotosPo &photoInfo);
-    int32_t GetCleanFileInfo(const PhotosPo &photoInfo, FileManagement::CloudSync::CleanFileInfo &cleanFileInfo);
     int32_t CleanLocalFileAndCreateDentryFile(
         const PhotosPo &photoInfo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t CreateLocalAssetWithFile(const PhotosPo &photoInfo, PhotosPo &targetPhotoInfo,
@@ -110,6 +109,7 @@ private:
     int32_t GenerateThumbnail(const PhotosPo &targetPhotosPo);
     int32_t MoveOrGenerateLocalThumbnail(const PhotosPo &photoInfo, const PhotosPo &targetPhotoInfo);
     int32_t ResetSouthDeviceType(PhotosPo &photoInfo);
+    int32_t GetDentryFileInfo(const PhotosPo &photoInfo, FileManagement::CloudSync::DentryFileInfo &dentryInfo) const;
 
 private:
     MediaAssetsDao mediaAssetsDao_;
