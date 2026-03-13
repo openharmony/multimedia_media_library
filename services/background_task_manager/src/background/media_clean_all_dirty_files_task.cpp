@@ -677,7 +677,7 @@ int32_t MediaCleanAllDirtyFilesTask::AddMovingPhotoFileToTableWithFixedName(int3
     return ret;
 }
 
-bool MediaCleanAllDirtyFilesTask::DealOriginFileAndReocrdNotExistPhotos(int32_t curBucketNum,
+bool MediaCleanAllDirtyFilesTask::DealOriginFileAndRecordNotExistPhotos(int32_t curBucketNum,
     const std::string &fileName)
 {
     std::string path = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + fileName;
@@ -726,7 +726,7 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
     }
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
         if (!ExistPhotoPathInDB(path)) { // 扫描原图填充元数据 元数据不存在 insert 动图需要判断
-            DealOriginFileAndReocrdNotExistPhotos(curBucketNum, fileName);
+            DealOriginFileAndRecordNotExistPhotos(curBucketNum, fileName);
             return true;
         }
         MEDIA_DEBUG_LOG("DirtyMediaHandler File Skip Bk:%{public}d, File: %{public}s", curBucketNum, fileName.c_str());
