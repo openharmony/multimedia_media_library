@@ -85,6 +85,7 @@ ohos_unittest("media_library_cloud_sync_test") {
     "./src/cloud_media_photo_handler_onfetchrecords_test.cpp",
     "./src/cloud_media_photo_handler_test.cpp",
     "./src/database_data_mock_test.cpp",
+    "./src/mdk_record_field_test.cpp",
     "./src/mdk_record_reader_test.cpp",
     "./src/cloud_int64_fields_hash_map_test.cpp",
   ]
