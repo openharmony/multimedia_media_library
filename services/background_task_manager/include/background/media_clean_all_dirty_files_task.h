@@ -139,8 +139,11 @@ private:
     void MoveToNextId(int32_t &startFileId);
     bool ProcessMovingPhotosInEditFolder(int32_t curBucketNum, const std::string &folderName,
         DirtyFilePathInfo &dirtyFilePathInfo);
+    bool ExistCloudAssetPathInDB(const std::string &path);
+
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
+    std::mutex taskRunningMutex_;
     std::set<std::string> filesCacheSet_; // 已处理过的文件名
     std::set<int32_t> fileIdsCacheSet_; // 已处理过的文件ID
     int64_t triggerTime_ = 0;
