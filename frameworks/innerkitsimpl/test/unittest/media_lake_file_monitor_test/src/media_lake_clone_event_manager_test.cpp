@@ -330,7 +330,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, HandleRestoreEvent_InvalidBundle_NoActi
     bool afterState = manager.IsRestoring();
 
     EXPECT_EQ(beforeState, afterState);
-    MEDIA_INFO_INFO_LOG("End HandleRestoreEvent_InvalidBundle_NoAction");
+    MEDIA_INFO_LOG("End HandleRestoreEvent_InvalidBundle_NoAction");
 }
 
 // Test HandleRestoreEvent with concurrent start and end
@@ -673,7 +673,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, ShouldUnregisterLakeFileMonitor_Already
     AAFwk::Want startWant2;
     startWant2.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     startWant2.SetParam("bundleName", FILE_MANAGER_BUNDLE);
-    manager.HandleRestoreEvent(startWant1);
+    manager.HandleRestoreEvent(startWant2);
 
     bool result = manager.ShouldUnregisterLakeFileMonitor();
 
@@ -873,7 +873,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, OnRemoteDied_NullObject_NoAction, TestS
 {
     MEDIA_INFO_LOG("Start OnRemoteDied_NullObject_NoAction");
     AAFwk::Want want;
-    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_END);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_RESTORE_START);
     want.SetParam("bundleName", FILE_MANAGER_BUNDLE);
 
     auto &manager = MediaLakeCloneEventManager::GetInstance();
@@ -1257,7 +1257,7 @@ HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_RapidRestoreEvents_HandleCor
 }
 
 // Test stress: mixed bundles
-HWTEST_F(MediaLakeCloneEventManagerTest, ressTest_MixedBundles_HandleCorrectly, TestSize.Level1)
+HWTEST_F(MediaLakeCloneEventManagerTest, StressTest_MixedBundles_HandleCorrectly, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Start StressTest_MixedBundles_HandleCorrectly");
     auto &manager = MediaLakeCloneEventManager::GetInstance();
