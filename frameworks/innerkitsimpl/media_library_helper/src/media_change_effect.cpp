@@ -37,7 +37,7 @@ int32_t MediaChangeEffect::TakeEffect(const string &inputPath, const string &out
 {
 #ifdef IMAGE_EFFECT_SUPPORT
     Effect::ErrorCode ret = Effect::ErrorCode::ERR_UNKNOWN;
-    std::shared_ptr<Effect::ImageEffect> imageEffect = Effect::ImageEffect::Restore(editdata);
+    std::shared_ptr<Effect::ImageEffect> imageEffect = std::make_shared<Effect::ImageEffect>();
     CHECK_AND_RETURN_RET(imageEffect != nullptr, ParseInt(ret));
 
     ret = imageEffect->SetDefaultQuality(quality);
@@ -47,6 +47,9 @@ int32_t MediaChangeEffect::TakeEffect(const string &inputPath, const string &out
     CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
 
     ret = imageEffect->SetOutputPath(outputPath);
+    CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
+
+    ret = imageEffect->Load(editdata);
     CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
 
     ret = imageEffect->Start();
@@ -59,10 +62,13 @@ int32_t MediaChangeEffect::TakeEffectForPicture(std::shared_ptr<Media::Picture> 
 {
 #ifdef IMAGE_EFFECT_SUPPORT
     Effect::ErrorCode ret = Effect::ErrorCode::ERR_UNKNOWN;
-    std::shared_ptr<Effect::ImageEffect> imageEffect = Effect::ImageEffect::Restore(editData);
+    std::shared_ptr<Effect::ImageEffect> imageEffect = std::make_shared<Effect::ImageEffect>();
     CHECK_AND_RETURN_RET(imageEffect != nullptr, ParseInt(ret));
 
     ret = imageEffect->SetInputPicture(inPicture.get()); // 原图修改
+    CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
+
+    ret = imageEffect->Load(editData);
     CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
 
     ret = imageEffect->Start();

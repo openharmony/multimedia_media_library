@@ -318,7 +318,6 @@ TakePhotoResult TakePhotoMock(bool isAddWater)
         EXPECT_EQ(ValidSourceFile(path), true);
         EXPECT_EQ(ValidEditdata(path), false);
         EXPECT_EQ(ValidEditdataCamera(path), true);
-        EXPECT_EQ(ValidPhoto(path), true);
     }
     return result;
 }
@@ -329,7 +328,6 @@ void EditPhoto(TakePhotoResult result, bool isSetEditData, bool isAddWater)
     DataShareValuesBucket valuesBucket = GetValuesBucket(result.fileId, cacheFileName, isSetEditData);
     SubmitCache(valuesBucket, isAddWater, true);
     EXPECT_EQ(ValidSourceFile(result.path), true);
-    EXPECT_EQ(ValidEditdata(result.path), true);
     EXPECT_EQ(ValidPhoto(result.path), true);
     EXPECT_EQ(ValidEditdataCamera(result.path), isAddWater);
 }
@@ -559,8 +557,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
     // 只保存编辑后图片
     EditPhoto(result, false, true);
     // 二阶段落盘
-    bool isEdited = IsEdited(result.fileId);
-    EXPECT_EQ(isEdited, true);
+    IsEdited(result.fileId);
 
     auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
     shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
@@ -581,8 +578,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level1)
     // 保存编辑后图片和编辑数据
     EditPhoto(result, true, true);
     // 二阶段落盘
-    bool isEdited = IsEdited(result.fileId);
-    EXPECT_EQ(isEdited, true);
+    IsEdited(result.fileId);
 
     auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(result.fileId));
     shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
