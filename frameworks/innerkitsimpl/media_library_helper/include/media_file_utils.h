@@ -234,8 +234,6 @@ public:
     EXPORT static void GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders);
     EXPORT static void GetAllFileNameListUnderPath(const std::filesystem::path &path,
         std::vector<std::string> &fileNames);
-    EXPORT static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::string> &vecStr);
-    EXPORT static bool HasPrefix(const std::vector<std::string>& strings, const std::string& prefix);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
