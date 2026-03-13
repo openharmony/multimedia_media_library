@@ -340,45 +340,25 @@ int32_t MediaAssetsDeleteService::CopyAndMoveCloudAssetToTrash(const PhotosPo &p
 int32_t MediaAssetsDeleteService::CleanLocalFileAndCreateDentryFile(
     const PhotosPo &photoInfo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    FileManagement::CloudSync::CleanFileInfo cleanFileInfo;
-    int32_t ret = this->GetCleanFileInfo(photoInfo, cleanFileInfo);
+    FileManagement::CloudSync::DentryFileInfo dentryInfo;
+    int32_t ret = this->GetDentryFileInfo(photoInfo, dentryInfo);
     std::vector<std::string> failCloudIdList;
-    ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().BatchCleanFile({cleanFileInfo}, failCloudIdList);
-    MEDIA_INFO_LOG("BatchCleanFile, ret: %{public}d, fileId: %{public}d, failSize: %{public}zu.",
+    std::vector<FileManagement::CloudSync::DentryFileInfo> dentryInfoList = {dentryInfo};
+    ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().BatchDentryFileInsert(dentryInfoList,
+                                                                                           failCloudIdList);
+    MEDIA_INFO_LOG("BatchDentryFileInsert completed, "
+                   "ret: %{public}d, fileId: %{public}d, cloudId: %{public}s, failSize: %{public}zu.",
         ret,
         photoInfo.fileId.value_or(-1),
+        photoInfo.cloudId.value_or("").c_str(),
         failCloudIdList.size());
-    CHECK_AND_RETURN_RET(ret != E_OK, ret);
-    // Case when BatchCleanFile exception, update position to cloud only.
+    // update position to cloud only.
     ret = this->mediaAssetsDao_.ResetPositionToCloudOnly(photoRefresh, photoInfo.fileId.value_or(-1));
     MEDIA_INFO_LOG("ResetPositionToCloudOnly, "
                    "ret: %{public}d, fileId: %{public}d.",
         ret,
         photoInfo.fileId.value_or(-1));
     return ret;
-}
-
-int32_t MediaAssetsDeleteService::GetCleanFileInfo(
-    const PhotosPo &photoInfo, FileManagement::CloudSync::CleanFileInfo &cleanFileInfo)
-{
-    std::shared_ptr<FileAsset> fileAssetPtr = make_shared<FileAsset>();
-    auto &map = fileAssetPtr->GetMemberMap();
-    map[PhotoColumn::PHOTO_CLOUD_ID] = photoInfo.cloudId.value_or("");
-    map[MediaColumn::MEDIA_SIZE] = photoInfo.size.value_or(0);
-    map[MediaColumn::MEDIA_DATE_MODIFIED] = photoInfo.dateModified.value_or(0);
-    map[MediaColumn::MEDIA_FILE_PATH] = photoInfo.data.value_or("");
-    map[MediaColumn::MEDIA_NAME] = photoInfo.displayName.value_or("");
-    map[MediaColumn::MEDIA_ID] = photoInfo.fileId.value_or(-1);
-    map[PhotoColumn::PHOTO_POSITION] = photoInfo.position.value_or(-1);
-    map[PhotoColumn::PHOTO_BURST_KEY] = photoInfo.burstKey.value_or("");
-    map[PhotoColumn::PHOTO_SUBTYPE] = photoInfo.subtype.value_or(-1);
-    map[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = photoInfo.movingPhotoEffectMode.value_or(-1);
-    map[PhotoColumn::PHOTO_ORIGINAL_SUBTYPE] = photoInfo.originalSubtype.value_or(-1);
-    map[PhotoColumn::PHOTO_EDIT_TIME] = photoInfo.editTime.value_or(0);
-    map[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = photoInfo.fileSourceType.value_or(0);
-    map[PhotoColumn::PHOTO_STORAGE_PATH] = photoInfo.storagePath.value_or("");
-    cleanFileInfo = MediaLibraryAssetOperations::GetCleanFileInfo(fileAssetPtr);
-    return E_OK;
 }
 
 // Copy the LOCAL asset record from LOCAL_AND_CLOUD asset record, and move it into trash.
@@ -978,6 +958,19 @@ int32_t MediaAssetsDeleteService::MoveOrGenerateLocalThumbnail(const PhotosPo &p
 int32_t MediaAssetsDeleteService::ResetSouthDeviceType(PhotosPo &photoInfo)
 {
     photoInfo.southDeviceType.reset();
+    return E_OK;
+}
+
+int32_t MediaAssetsDeleteService::GetDentryFileInfo(
+    const PhotosPo &photoInfo, FileManagement::CloudSync::DentryFileInfo &dentryInfo) const
+{
+    const std::string DENTRY_INFO_ORIGIN = "CONTENT";
+    dentryInfo.cloudId = photoInfo.cloudId.value_or("");
+    dentryInfo.modifiedTime = photoInfo.dateModified.value_or(0);
+    dentryInfo.fileType = DENTRY_INFO_ORIGIN;
+    dentryInfo.size = photoInfo.size.value_or(0);
+    dentryInfo.path = photoInfo.data.value_or("");
+    dentryInfo.fileName = photoInfo.displayName.value_or("");
     return E_OK;
 }
 }  // namespace OHOS::Media::Common
