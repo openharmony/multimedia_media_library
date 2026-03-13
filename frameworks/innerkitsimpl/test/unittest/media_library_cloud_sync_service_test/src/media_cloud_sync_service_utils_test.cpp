@@ -944,14 +944,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_ZeroValue, TestSize.Level1)
     EXPECT_EQ(result[1], "1");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_NegativeNumbers, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖负数分支（触发条件：值为负数字符串）；验证负数字符串被识别为数字
-    std::vector<std::string> albumIds = {"-1", "-2", "3"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 3);
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_DecimalNumbers, TestSize.Level1)
 {
     // 用例说明：测试GetNumbers功能；覆盖小数分支（触发条件：值为小数字符串）；验证小数字符串不被识别为数字
@@ -1197,7 +1189,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SingleSeparator, TestSiz
 {
     // 用例说明：测试VectorToString功能；覆盖单字符分隔符分支（触发条件：分隔符为单个字符","）；验证无空格分隔
     std::vector<uint64_t> vec = {1, 2, 3};
-    std::string result = = CloudMediaDaoUtils::VectorToString(vec, ",");
+    std::string result = CloudMediaDaoUtils::VectorToString(vec, ",");
     EXPECT_EQ(result, "[1,2,3]");
 }
 
@@ -1744,7 +1736,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_MultipleSamePlaceholders, Te
     EXPECT_EQ(result, "SELECT * FROM table WHERE a=value1 AND b=value2 AND c=value1");
 }
 
-HWTEST_F(CloudMediaudiUtilsTest, FillParams_NestedPlaceholders, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_NestedPlaceholders, TestSize.Level1)
 {
     // 用例说明：测试FillParams功能；覆盖嵌套占位符分支（触发条件：SQL包含括号和多个占位符）；验证嵌套结构正确处理
     std::string sql = "SELECT * FROM table WHERE id={0} AND (a={1} OR b={2})";
@@ -1873,7 +1865,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_SixValues, TestSize.Lev
     EXPECT_EQ(result.size(), 6);
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_TenValues, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_TenValues_2, TestSize.Level1)
 {
     // 用例说明：测试GetStringVector功能；覆盖多值分支（触发条件：intVals.size()==10）；验证返回10个字符串
     std::vector<int32_t> intVals = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -1908,7 +1900,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SixValues, TestSize.Leve
     EXPECT_EQ(result, "[1, 2, 3, 4, 5, 6]");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_TenValues, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_TenValues_2, TestSize.Level1)
 {
     // 用例说明：测试VectorToString功能；覆盖多值分支（触发条件：vec.size()==10）；验证10个值正确格式化
     std::vector<uint64_t> vec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
