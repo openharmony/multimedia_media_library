@@ -47,6 +47,8 @@
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
 #include "vision_video_aesthetics_score_column.h"
+#include "vision_dedup_selection_column.h"
+#include "vision_profile_column.h"
 #include "album_operation_uri.h"
 #include "vision_db_sqls.h"
 #include "location_db_sqls.h"
@@ -100,6 +102,8 @@ static std::vector<std::string> createTableSqlLists = {
     CREATE_TAB_ANALYSIS_PET_FACE,
     CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_TAB_ANALYSIS_DEDUP_SELECTION,
+    CREATE_TAB_ANALYSIS_PROFILE,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_GEO_DICTIONARY_TABLE,
@@ -439,6 +443,211 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteLabel_Test_001, TestSize.Level1)
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 2), true);
     MEDIA_INFO_LOG("Vision_DeleteLabel_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test inserting a new record into tab_analysis_dedup_selection table
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertDedupSelection_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertDedupSelection_Test_001::Start");
+    Uri dedupSelectionUri(URI_DEDUP_SELECTION);
+    MediaLibraryCommand cmd(dedupSelectionUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(GROUP_ID_REP, 100);
+    valuesBucket.Put(GROUP_ID_SIM, 200);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertDedupSelection_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test duplicate insert into tab_analysis_dedup_selection table (should fail due to PRIMARY KEY constraint on FILE_ID)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertDedupSelection_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertDedupSelection_Test_002::Start");
+    Uri dedupSelectionUri(URI_DEDUP_SELECTION);
+    MediaLibraryCommand cmd(dedupSelectionUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(GROUP_ID_REP, 101);
+    valuesBucket.Put(GROUP_ID_SIM, 201);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(GROUP_ID_REP, 102);
+    valuesBucket2.Put(GROUP_ID_SIM, 202);
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertDedupSelection_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
+        retVal, retVal2);
+}
+
+// Test updating records in tab_analysis_dedup_selection table
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateDedupSelection_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdateDedupSelection_Test_001::Start");
+    Uri dedupSelectionUri(URI_DEDUP_SELECTION);
+    MediaLibraryCommand cmd(dedupSelectionUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(GROUP_ID_REP, 103);
+    valuesBucket.Put(GROUP_ID_SIM, 203);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(GROUP_ID_REP, 104);
+    updateValues.Put(GROUP_ID_SIM, 204);
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("123421");
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_UpdateDedupSelection_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test deleting records from tab_analysis_dedup_selection table
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteDedupSelection_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeleteDedupSelection_Test_001::Start");
+    Uri dedupSelectionUri(URI_DEDUP_SELECTION);
+    MediaLibraryCommand cmd(dedupSelectionUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(GROUP_ID_REP, 105);
+    valuesBucket.Put(GROUP_ID_SIM, 205);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 5);
+    valuesBucket2.Put(GROUP_ID_REP, 106);
+    valuesBucket2.Put(GROUP_ID_SIM, 206);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    DataShare::DataSharePredicates predicates;
+    predicates.GreaterThan(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ((retVal == 2), true);
+    MEDIA_INFO_LOG("Vision_DeleteDedupSelection_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test inserting a new record into tab_analysis_profile table
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertProfile_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertProfile_Test_001::Start");
+    Uri profileUri(URI_PROFILE);
+    MediaLibraryCommand cmd(profileUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket.Put(TOTAL_SCORE, 85);
+    valuesBucket.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket.Put(FACE_SCORE, 90);
+    valuesBucket.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket.Put(PERSONALIZATION_SCORE, 75);
+    valuesBucket.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertProfile_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test duplicate insert into tab_analysis_profile table (should fail due to PRIMARY KEY constraint on FILE_ID)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertProfile_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertProfile_Test_002::Start");
+    Uri profileUri(URI_PROFILE);
+    MediaLibraryCommand cmd(profileUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket.Put(TOTAL_SCORE, 88);
+    valuesBucket.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket.Put(FACE_SCORE, 92);
+    valuesBucket.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket.Put(PERSONALIZATION_SCORE, 78);
+    valuesBucket.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket2.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket2.Put(TOTAL_SCORE, 88);
+    valuesBucket2.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket2.Put(FACE_SCORE, 92);
+    valuesBucket2.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket2.Put(PERSONALIZATION_SCORE, 78);
+    valuesBucket2.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertProfile_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+// Test updating records in tab_analysis_profile table
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateProfile_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdateProfile_Test_001::Start");
+    Uri profileUri(URI_PROFILE);
+    MediaLibraryCommand cmd(profileUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket.Put(TOTAL_SCORE, 80);
+    valuesBucket.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket.Put(FACE_SCORE, 85);
+    valuesBucket.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket.Put(PERSONALIZATION_SCORE, 70);
+    valuesBucket.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(TOTAL_SCORE, 95);
+    updateValues.Put(TOTAL_SCORE_VERSION, "2.01");
+    updateValues.Put(FACE_SCORE, 98);
+    updateValues.Put(FACE_SCORE_VERSION, "2.01");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("123421");
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_UpdateProfile_Test_001::retVal = %{public}d. End", retVal);
+}
+
+// Test deleting records from tab_analysis_profile table
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteProfile_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeleteProfile_Test_001::Start");
+    Uri profileUri(URI_PROFILE);
+    MediaLibraryCommand cmd(profileUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket.Put(TOTAL_SCORE, 82);
+    valuesBucket.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket.Put(FACE_SCORE, 87);
+    valuesBucket.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket.Put(PERSONALIZATION_SCORE, 72);
+    valuesBucket.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 5);
+    valuesBucket2.Put(FINGERPRINT_VERSION, "1.01");
+    valuesBucket2.Put(NEURALHASH_VERSION, "1.0");
+    valuesBucket2.Put(TOTAL_SCORE, 83);
+    valuesBucket2.Put(TOTAL_SCORE_VERSION, "1.01");
+    valuesBucket2.Put(FACE_SCORE, 88);
+    valuesBucket2.Put(FACE_SCORE_VERSION, "1.01");
+    valuesBucket2.Put(PERSONALIZATION_SCORE, 73);
+    valuesBucket2.Put(PERSONALIZATION_SCORE_VERSION, "1.01");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    DataShare::DataSharePredicates predicates;
+    predicates.GreaterThan(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ((retVal == 2), true);
+    MEDIA_INFO_LOG("Vision_DeleteProfile_Test_001::retVal = %{public}d. End", retVal);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_001, TestSize.Level1)
