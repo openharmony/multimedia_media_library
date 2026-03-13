@@ -695,7 +695,7 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileAndRecordNotExistPhotos(int32_t 
     }
     // 静图
     AddFileToTableWithFixedName(curBucketNum, fileName);
-    MEDIA_INFO_LOG("DirtyMediaHandler File Insert FileAndReocrdNotExist Bk:%{public}d, Path: %{public}s",
+    MEDIA_INFO_LOG("DirtyMediaHandler File Insert FileAndRecordNotExist Bk:%{public}d, Path: %{public}s",
         curBucketNum, MediaFileUtils::DesensitizePath(path).c_str());
     return true;
 }
@@ -716,7 +716,7 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
             }
             // 视频
             AddFileToTableWithFixedName(curBucketNum, fileName);
-            MEDIA_INFO_LOG("DirtyMediaHandler File Insert Video FileAndReocrdNotExist Bk:%{public}d, Path: %{public}s",
+            MEDIA_INFO_LOG("DirtyMediaHandler File Insert Video FileAndRecordNotExist Bk:%{public}d, Path: %{public}s",
                 curBucketNum, MediaFileUtils::DesensitizePath(path).c_str());
             return true;
         }
