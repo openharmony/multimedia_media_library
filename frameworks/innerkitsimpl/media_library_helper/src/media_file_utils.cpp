@@ -2698,32 +2698,5 @@ void MediaFileUtils::GetAllFileNameListUnderPath(const std::filesystem::path &pa
     }
     std::sort(fileNames.begin(), fileNames.end());
 }
-
-std::vector<int32_t> MediaFileUtils::ConvertBucketNameVector(const std::vector<std::string> &vecStr)
-{
-    std::vector<int32_t> vecInt;
-    for (const auto& s : vecStr) {
-        if (all_of(s.begin(), s.end(), ::isdigit)) {
-            size_t processCount = 0;
-            int32_t val = std::stoi(s, &processCount);
-            if (processCount == s.length()) {
-                vecInt.push_back(val);
-            }
-        } else {
-            continue;
-        }
-    }
-    return vecInt;
-}
-
-bool MediaFileUtils::HasPrefix(const std::vector<std::string>& strings, const std::string& prefix)
-{
-    // 使用 lambda 函数来检查字符串是否以 prefix 开头
-    auto it = std::find_if(strings.begin(), strings.end(),
-                           [prefix](const std::string& str) {
-                               return str.length() >= prefix.length() && str.substr(0, prefix.length()) == prefix;
-                           });
-    return it != strings.end();
-}
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP
