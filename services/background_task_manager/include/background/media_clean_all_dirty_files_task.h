@@ -128,7 +128,7 @@ private:
     int32_t UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataEsxist);
     int32_t QueryPhotoAddTimeByPath(const std::string &path, int64_t &addTime);
     bool DealThumbsEffectAssetNotExist(int32_t curBucketNum, const std::string &folderName);
-    bool DealOriginFileAndReocrdNotExistPhotos(int32_t curBucketNum, const std::string &fileName);
+    bool DealOriginFileAndRecordNotExistPhotos(int32_t curBucketNum, const std::string &fileName);
     std::set<int32_t> ProcessCacheSet(const std::set<std::string>& cacheSet, int32_t batchSize);
     int32_t GetFileIdByPathsFromDB(std::vector<std::string> &paths, std::set<int32_t> &fileIdSet);
     void SaveCacheSetToCacheDB();
