@@ -241,6 +241,7 @@ void CloneRestoreTableStatusBranchTest::TearDown()
     ClearDb(g_missDb);
 }
 
+// 场景：检查单列存在性，命中有效条件。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumn_True_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -248,6 +249,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumn_True_001, TestSize.Level1)
     EXPECT_TRUE(restore.HasColumn(columns, "a"));
 }
 
+// 场景：检查单列存在性，命中无效条件。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumn_False_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -255,6 +257,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumn_False_001, TestSize.Level1
     EXPECT_FALSE(restore.HasColumn(columns, "x"));
 }
 
+// 场景：检查多列完整性，所需列全部存在。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_AllPresent_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -263,6 +266,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_AllPresent_001, TestSize.
     EXPECT_TRUE(restore.HasColumns(columns, required));
 }
 
+// 场景：检查多列完整性，存在缺失列。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_Missing_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -271,6 +275,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_Missing_001, TestSize.Lev
     EXPECT_FALSE(restore.HasColumns(columns, required));
 }
 
+// 场景：检查多列完整性，所需列集合为空。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_EmptyRequired_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -279,12 +284,14 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasColumns_EmptyRequired_001, TestSi
     EXPECT_TRUE(restore.HasColumns(columns, required));
 }
 
+// 场景：判断表是否可恢复，未写入状态。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, IsReadyForRestore_DefaultFalse_001, TestSize.Level1)
 {
     CloneRestore restore;
     EXPECT_FALSE(restore.IsReadyForRestore(PhotoColumn::PHOTOS_TABLE));
 }
 
+// 场景：判断表是否可恢复，命中有效条件。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, IsReadyForRestore_True_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -292,6 +299,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, IsReadyForRestore_True_001, TestSize
     EXPECT_TRUE(restore.IsReadyForRestore(PhotoColumn::PHOTOS_TABLE));
 }
 
+// 场景：判断表是否可恢复，显式写入 false。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, IsReadyForRestore_FalseAfterSet_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -299,6 +307,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, IsReadyForRestore_FalseAfterSet_001,
     EXPECT_FALSE(restore.IsReadyForRestore(PhotoColumn::PHOTOS_TABLE));
 }
 
+// 场景：构造基础查询条件，照片表在非云场景且字段齐全。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosNonCloudAll_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -315,6 +324,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosNonCloudAl
     EXPECT_TRUE(Contains(clause, PhotoColumn::PHOTO_FILE_SOURCE_TYPE));
 }
 
+// 场景：构造基础查询条件，照片表在云场景且字段齐全。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosCloudAll_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -326,6 +336,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosCloudAll_0
     EXPECT_TRUE(Contains(clause, "IN (1, 2, 3)"));
 }
 
+// 场景：构造基础查询条件，照片表仅具备部分字段。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosPartial_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -340,6 +351,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_PhotosPartial_00
     EXPECT_FALSE(Contains(clause, PhotoColumn::PHOTO_CLEAN_FLAG));
 }
 
+// 场景：构造基础查询条件，相册表字段完整。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AlbumAll_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -350,6 +362,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AlbumAll_001, Te
     EXPECT_TRUE(Contains(clause, PhotoAlbumColumns::ALBUM_TYPE));
 }
 
+// 场景：构造基础查询条件，相册表仅提供名称字段。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AlbumOnlyName_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -360,6 +373,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AlbumOnlyName_00
     EXPECT_FALSE(Contains(clause, "album_type !="));
 }
 
+// 场景：构造基础查询条件，分析相册字段完整。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AnalysisAlbumAll_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -370,6 +384,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AnalysisAlbumAll
     EXPECT_TRUE(Contains(clause, PhotoAlbumColumns::ALBUM_SUBTYPE));
 }
 
+// 场景：构造基础查询条件，分析相册仅提供名称字段。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AnalysisAlbumOnlyName_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -380,6 +395,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_AnalysisAlbumOnl
     EXPECT_FALSE(Contains(clause, PhotoAlbumColumns::ALBUM_SUBTYPE));
 }
 
+// 场景：构造基础查询条件，目标表不存在。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_UnknownTable_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -389,6 +405,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClause_UnknownTable_001
         restore.tableQueryWhereClauseMap_["unknown_table"].empty());
 }
 
+// 场景：构造相册扩展查询条件，普通相册链路。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_PhotoAlbum_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -399,6 +416,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_PhotoA
     EXPECT_TRUE(Contains(clause, PhotoColumn::PHOTOS_TABLE));
 }
 
+// 场景：构造相册扩展查询条件，分析相册链路。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_AnalysisAlbum_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -409,6 +427,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_Analys
     EXPECT_TRUE(Contains(clause, PhotoColumn::PHOTOS_TABLE));
 }
 
+// 场景：构造相册扩展查询条件，输入非法表名。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_InvalidTable_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -416,6 +435,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_Invali
     EXPECT_TRUE(restore.tableExtraQueryWhereClauseMap_.count("invalid_table") == 0);
 }
 
+// 场景：构造相册扩展查询条件，复用照片查询条件。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_UsesPhotoClause_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -425,12 +445,14 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetAlbumExtraQueryWhereClause_UsesPh
     EXPECT_TRUE(Contains(clause, "position IN (1, 3)"));
 }
 
+// 场景：按表合并查询条件，无初始条件。结果应只保留当前输入对应的最小行为。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_None_001, TestSize.Level1)
 {
     CloneRestore restore;
     EXPECT_TRUE(restore.GetQueryWhereClauseByTable(PhotoColumn::PHOTOS_TABLE).empty());
 }
 
+// 场景：按表合并查询条件，仅基础条件存在。结果应只保留当前输入对应的最小行为。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_OnlyBase_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -438,6 +460,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_OnlyBase_
     EXPECT_EQ(restore.GetQueryWhereClauseByTable(PhotoColumn::PHOTOS_TABLE), "a = 1");
 }
 
+// 场景：按表合并查询条件，基础与扩展条件同时存在。结果应覆盖组合路径并体现分支差异。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_Both_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -446,6 +469,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_Both_001,
     EXPECT_EQ(restore.GetQueryWhereClauseByTable(PhotoColumn::PHOTOS_TABLE), "a = 1 AND b = 2");
 }
 
+// 场景：检查表列状态并更新可恢复标记，同组中任一表缺列。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckTableColumnStatus_GlobalFalseIfOneMissing_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -457,6 +481,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckTableColumnStatus_GlobalFalseIf
     EXPECT_FALSE(restore.IsReadyForRestore(PhotoAlbumColumns::TABLE));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，数据库句柄为空。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_NullDb_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -464,6 +489,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_FALSE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，开关值非法。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_InvalidSwitch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -471,6 +497,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_FALSE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::NONE));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，数据为空集合。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_EmptyResultTrue_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -478,6 +505,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，所有记录均匹配 CLOUD。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_CloudMatch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -489,6 +517,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，所有记录均匹配 HDC。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_HdcMatch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -500,6 +529,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::HDC));
 }
 
+// 场景：校验 south_device_type 与开关状态的一致性，多行记录全部匹配。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatus_MultiRowsAllMatch_001,
     TestSize.Level1)
 {
@@ -516,6 +546,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
 
+// 场景：批量查询并回填相册映射，一条命中一条未命中。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_OneHitOneMiss_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -546,6 +577,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_OneHitOneMiss_001, T
     EXPECT_TRUE(restore.tableAlbumIdMap_[PhotoAlbumColumns::TABLE].count(2) == 0);
 }
 
+// 场景：批量查询并回填相册映射，查询无返回。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_NoRow_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -562,6 +594,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_NoRow_001, TestSize.
     EXPECT_TRUE(restore.tableAlbumIdMap_[PhotoAlbumColumns::TABLE].count(10) == 0);
 }
 
+// 场景：批量查询并回填相册映射，多条均命中。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_MultiHit_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -590,6 +623,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, BatchQueryAlbum_MultiHit_001, TestSi
     EXPECT_EQ(infos[1].albumIdNew, 202);
 }
 
+// 场景：判断是否存在同名同类型相册，目标已存在。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreTableStatusBranchTest, HasSameAlbum_Found_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -604,6 +638,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, HasSameAlbum_Found_001, TestSize.Lev
     EXPECT_TRUE(restore.HasSameAlbum(info, PhotoAlbumColumns::TABLE));
 }
 
+// 场景：按表合并查询条件，表名与缓存条件无关。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_UnrelatedTable_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -612,6 +647,7 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, GetQueryWhereClauseByTable_Unrelated
     EXPECT_TRUE(restore.GetQueryWhereClauseByTable("t3").empty());
 }
 
+// 场景：判断云恢复前置条件，多种布尔组合。结果应覆盖组合路径并体现分支差异。
 HWTEST_F(CloneRestoreTableStatusBranchTest, IsCloudRestoreSatisfied_Branches_001, TestSize.Level1)
 {
     CloneRestore restore;

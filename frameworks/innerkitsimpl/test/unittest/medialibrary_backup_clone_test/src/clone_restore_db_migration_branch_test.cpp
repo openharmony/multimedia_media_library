@@ -189,6 +189,7 @@ void CloneRestoreDbMigrationBranchTest::TearDown()
     ClearDb(g_dstDb);
 }
 
+// 场景：检查风险列状态，源端与目标端都含风险列。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, CheckRiskColumnStatus_BothSides_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -198,6 +199,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, CheckRiskColumnStatus_BothSides_001,
     EXPECT_TRUE(restore.CheckDestDbHasRiskStatusColumn());
 }
 
+// 场景：检查风险列状态，源端缺少风险列。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, CheckRiskColumnStatus_SrcNoRisk_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -207,6 +209,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, CheckRiskColumnStatus_SrcNoRisk_001,
     EXPECT_TRUE(restore.CheckDestDbHasRiskStatusColumn());
 }
 
+// 场景：更新同照片风险状态，输入中存在无效行。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_SkipInvalidRows_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -233,6 +236,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_SkipIn
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT is_critical FROM Photos WHERE file_id = 1", "is_critical"), 0);
 }
 
+// 场景：更新同照片风险状态，源端没有风险列。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_SrcNoRiskColumn_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -251,6 +255,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_SrcNoR
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT photo_risk_status FROM Photos WHERE file_id = 2", "photo_risk_status"), 0);
 }
 
+// 场景：更新同照片风险状态，风险状态为未识别。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_Unidentified_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -268,6 +273,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_Uniden
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT photo_risk_status FROM Photos WHERE file_id = 3", "photo_risk_status"), 0);
 }
 
+// 场景：更新同照片风险状态，风险可疑且关键。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_SuspiciousCritical_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -288,6 +294,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_Suspic
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT is_critical FROM Photos WHERE file_id = 4", "is_critical"), 1);
 }
 
+// 场景：更新同照片风险状态，风险拒绝且关键。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_RejectedCritical_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -308,6 +315,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_Reject
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT is_critical FROM Photos WHERE file_id = 5", "is_critical"), 1);
 }
 
+// 场景：更新同照片风险状态，风险非关键。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_NonCritical_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -328,6 +336,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdateRiskStatusForSamePhotos_NonCri
     EXPECT_EQ(QueryInt(g_dstDb, "SELECT is_critical FROM Photos WHERE file_id = 6", "is_critical"), 0);
 }
 
+// 场景：更新同照片包名，输入中存在无效行。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdatePackageNameForSamePhotos_SkipInvalidRows_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -353,6 +362,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdatePackageNameForSamePhotos_SkipI
     EXPECT_EQ(QueryString(g_dstDb, "SELECT package_name FROM Photos WHERE file_id = 11", "package_name"), "");
 }
 
+// 场景：更新同照片包名，仅更新空包名。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdatePackageNameForSamePhotos_UpdateOnlyEmpty_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -375,6 +385,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, UpdatePackageNameForSamePhotos_Updat
     EXPECT_EQ(QueryString(g_dstDb, "SELECT package_name FROM Photos WHERE file_id = 13", "package_name"), "keep.me");
 }
 
+// 场景：构建系统相册 ID 映射，正常映射流程。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_NormalMapping_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -398,6 +409,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_NormalMappi
     EXPECT_EQ(idMap[1002], 2002);
 }
 
+// 场景：构建系统相册 ID 映射，重复键保留首个。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_DuplicateKeyKeepFirst_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -417,6 +429,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_DuplicateKe
     EXPECT_EQ(idMap[1101], 2101);
 }
 
+// 场景：构建系统相册 ID 映射，已映射项应跳过。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_SkipAlreadyMapped_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -433,6 +446,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateSystemAlbumIdMap_SkipAlready
     EXPECT_EQ(restore.tableAlbumIdMap_[PhotoAlbumColumns::TABLE][1201], 9999);
 }
 
+// 场景：构建分析相册 ID 映射，已映射项应跳过。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateAnalysisAlbumIdMap_SkipAlreadyMapped_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -449,6 +463,7 @@ HWTEST_F(CloneRestoreDbMigrationBranchTest, PopulateAnalysisAlbumIdMap_SkipAlrea
     EXPECT_EQ(restore.tableAlbumIdMap_[ANALYSIS_ALBUM_TABLE][3101], 123456);
 }
 
+// 场景：写入高光相册映射关系，合法数据插入，异常数据跳过。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreDbMigrationBranchTest, StoreHighlightAlbumMappings_InsertAndSkip_001, TestSize.Level1)
 {
     CloneRestore restore;
