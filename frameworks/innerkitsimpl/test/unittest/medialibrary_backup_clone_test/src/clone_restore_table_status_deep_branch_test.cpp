@@ -22,12 +22,7 @@
 #include <unordered_set>
 #include <vector>
 
-#define private public
-#define protected public
 #include "clone_restore.h"
-#undef private
-#undef protected
-
 #include "backup_database_utils.h"
 #include "photo_album_column.h"
 #include "rdb_helper.h"
@@ -41,79 +36,85 @@ namespace {
 const std::string DB_PATH = "/data/test/backup/clone_restore_table_status_deep_branch.db";
 std::shared_ptr<RdbStore> g_db = nullptr;
 
+int ExecSqlList(RdbStore &store, const std::vector<std::string> &sqls)
+{
+    for (const auto &sql : sqls) {
+        int ret = store.ExecuteSql(sql);
+        if (ret != E_OK) {
+            return ret;
+        }
+    }
+    return E_OK;
+}
+
+const std::vector<std::string> DEEP_SCHEMA_SQLS = {
+    "CREATE TABLE IF NOT EXISTS Photos ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 1, "
+        "display_name TEXT, "
+        "date_added BIGINT DEFAULT 0, "
+        "date_modified BIGINT DEFAULT 0, "
+        "date_taken BIGINT DEFAULT 0, "
+        "orientation INT DEFAULT 0, "
+        "subtype INT DEFAULT 0, "
+        "date_trashed BIGINT DEFAULT 0, "
+        "hidden INT DEFAULT 0, "
+        "position INT DEFAULT 1, "
+        "sync_status INT DEFAULT 0, "
+        "clean_flag INT DEFAULT 0, "
+        "time_pending BIGINT DEFAULT 0, "
+        "is_temp INT DEFAULT 0, "
+        "photo_file_source_type INT DEFAULT 0, "
+        "south_device_type INT DEFAULT 0, "
+        "owner_album_id INT DEFAULT 0, "
+        "package_name TEXT DEFAULT '', "
+        "photo_risk_status INT DEFAULT 0, "
+        "is_critical INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT DEFAULT '', "
+        "album_bundle_name TEXT DEFAULT '', "
+        "album_lpath TEXT DEFAULT '', "
+        "date_modified BIGINT DEFAULT 0, "
+        "bundle_name TEXT DEFAULT '', "
+        "lpath TEXT DEFAULT '', "
+        "priority INT DEFAULT 1, "
+        "upload_status INT DEFAULT 0, "
+        "is_local INT DEFAULT 1, "
+        "cloud_id TEXT DEFAULT '', "
+        "relative_path TEXT DEFAULT '', "
+        "dirty INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS PhotoMap ("
+        "map_album INT DEFAULT 0, "
+        "map_asset INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT DEFAULT '', "
+        "tag_id TEXT DEFAULT '');",
+    "CREATE TABLE IF NOT EXISTS AnalysisPhotoMap ("
+        "map_album INT DEFAULT 0, "
+        "map_asset INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS Audios ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 2, "
+        "display_name TEXT, "
+        "date_added BIGINT DEFAULT 0, "
+        "date_modified BIGINT DEFAULT 0);",
+};
+
 class DeepSchemaCallback final : public RdbOpenCallback {
 public:
     int OnCreate(RdbStore &store) override
     {
-        std::vector<std::string> sqls = {
-            "CREATE TABLE IF NOT EXISTS Photos ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 1, "
-                "display_name TEXT, "
-                "date_added BIGINT DEFAULT 0, "
-                "date_modified BIGINT DEFAULT 0, "
-                "date_taken BIGINT DEFAULT 0, "
-                "orientation INT DEFAULT 0, "
-                "subtype INT DEFAULT 0, "
-                "date_trashed BIGINT DEFAULT 0, "
-                "hidden INT DEFAULT 0, "
-                "position INT DEFAULT 1, "
-                "sync_status INT DEFAULT 0, "
-                "clean_flag INT DEFAULT 0, "
-                "time_pending BIGINT DEFAULT 0, "
-                "is_temp INT DEFAULT 0, "
-                "photo_file_source_type INT DEFAULT 0, "
-                "south_device_type INT DEFAULT 0, "
-                "owner_album_id INT DEFAULT 0, "
-                "package_name TEXT DEFAULT '', "
-                "photo_risk_status INT DEFAULT 0, "
-                "is_critical INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT DEFAULT '', "
-                "album_bundle_name TEXT DEFAULT '', "
-                "album_lpath TEXT DEFAULT '', "
-                "date_modified BIGINT DEFAULT 0, "
-                "bundle_name TEXT DEFAULT '', "
-                "lpath TEXT DEFAULT '', "
-                "priority INT DEFAULT 1, "
-                "upload_status INT DEFAULT 0, "
-                "is_local INT DEFAULT 1, "
-                "cloud_id TEXT DEFAULT '', "
-                "relative_path TEXT DEFAULT '', "
-                "dirty INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS PhotoMap ("
-                "map_album INT DEFAULT 0, "
-                "map_asset INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT DEFAULT '', "
-                "tag_id TEXT DEFAULT '');",
-            "CREATE TABLE IF NOT EXISTS AnalysisPhotoMap ("
-                "map_album INT DEFAULT 0, "
-                "map_asset INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS Audios ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 2, "
-                "display_name TEXT, "
-                "date_added BIGINT DEFAULT 0, "
-                "date_modified BIGINT DEFAULT 0);",
-        };
-        for (const auto &sql : sqls) {
-            int ret = store.ExecuteSql(sql);
-            if (ret != E_OK) {
-                return ret;
-            }
-        }
-        return E_OK;
+        return ExecSqlList(store, DEEP_SCHEMA_SQLS);
     }
 
     int OnUpgrade(RdbStore &store, int oldVersion, int newVersion) override

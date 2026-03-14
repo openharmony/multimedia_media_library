@@ -16,13 +16,7 @@
 #define MLOG_TAG "CloneRestoreStateBranchTest"
 
 #include "clone_restore_state_branch_test.h"
-
-#define private public
-#define protected public
 #include "clone_restore.h"
-#undef private
-#undef protected
-
 #include "rdb_helper.h"
 
 using namespace OHOS::NativeRdb;

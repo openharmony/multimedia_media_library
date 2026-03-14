@@ -17,14 +17,9 @@
 
 #include "clone_restore_cloud_asset_coverage_test.h"
 
-#define private public
-#define protected public
 #include "backup_const.h"
 #include "clone_restore.h"
 #include "media_column.h"
-#undef private
-#undef protected
-
 #include "media_log.h"
 #include "medialibrary_errno.h"
 

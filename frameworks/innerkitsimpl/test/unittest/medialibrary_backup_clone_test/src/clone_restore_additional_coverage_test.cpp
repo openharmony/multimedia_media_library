@@ -16,13 +16,7 @@
 #define MLOG_TAG "CloneRestoreAdditionalCoverageTest"
 
 #include "clone_restore_additional_coverage_test.h"
-
-#define private public
-#define protected public
 #include "clone_restore.h"
-#undef private
-#undef protected
-
 #include "medialibrary_errno.h"
 
 using namespace testing::ext;

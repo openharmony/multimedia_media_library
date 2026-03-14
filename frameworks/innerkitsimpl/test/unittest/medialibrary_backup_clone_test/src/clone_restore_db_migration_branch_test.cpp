@@ -21,13 +21,8 @@
 #include <string>
 #include <vector>
 
-#define private public
-#define protected public
 #include "clone_restore.h"
 #include "clone_restore_highlight.h"
-#undef private
-#undef protected
-
 #include "photo_album_column.h"
 #include "rdb_helper.h"
 
@@ -44,37 +39,62 @@ std::shared_ptr<RdbStore> g_srcDb = nullptr;
 std::shared_ptr<RdbStore> g_srcNoRiskDb = nullptr;
 std::shared_ptr<RdbStore> g_dstDb = nullptr;
 
+int ExecSqlList(RdbStore &store, const std::vector<std::string> &sqls)
+{
+    for (const auto &sql : sqls) {
+        int ret = store.ExecuteSql(sql);
+        if (ret != E_OK) {
+            return ret;
+        }
+    }
+    return E_OK;
+}
+
+const std::vector<std::string> DB_MIGRATION_SCHEMA_SQLS = {
+    "CREATE TABLE IF NOT EXISTS Photos ("
+        "file_id INTEGER PRIMARY KEY, "
+        "photo_risk_status INT DEFAULT 0, "
+        "is_critical INT DEFAULT 0, "
+        "package_name TEXT DEFAULT '', "
+        "position INT DEFAULT 1);",
+    "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT, "
+        "album_lpath TEXT DEFAULT '');",
+    "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT, "
+        "tag_id TEXT DEFAULT '');",
+};
+
+const std::vector<std::string> DB_MIGRATION_NO_RISK_SCHEMA_SQLS = {
+    "CREATE TABLE IF NOT EXISTS Photos ("
+        "file_id INTEGER PRIMARY KEY, "
+        "package_name TEXT DEFAULT '', "
+        "position INT DEFAULT 1);",
+    "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT, "
+        "album_lpath TEXT DEFAULT '');",
+    "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT, "
+        "tag_id TEXT DEFAULT '');",
+};
+
 class DbMigrationOpenCallback final : public RdbOpenCallback {
 public:
     int OnCreate(RdbStore &store) override
     {
-        std::vector<std::string> sqls = {
-            "CREATE TABLE IF NOT EXISTS Photos ("
-                "file_id INTEGER PRIMARY KEY, "
-                "photo_risk_status INT DEFAULT 0, "
-                "is_critical INT DEFAULT 0, "
-                "package_name TEXT DEFAULT '', "
-                "position INT DEFAULT 1);",
-            "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT, "
-                "album_lpath TEXT DEFAULT '');",
-            "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT, "
-                "tag_id TEXT DEFAULT '');",
-        };
-        for (const auto &sql : sqls) {
-            int ret = store.ExecuteSql(sql);
-            if (ret != E_OK) {
-                return ret;
-            }
-        }
-        return E_OK;
+        return ExecSqlList(store, DB_MIGRATION_SCHEMA_SQLS);
     }
 
     int OnUpgrade(RdbStore &store, int oldVersion, int newVersion) override
@@ -87,31 +107,7 @@ class NoRiskOpenCallback final : public RdbOpenCallback {
 public:
     int OnCreate(RdbStore &store) override
     {
-        std::vector<std::string> sqls = {
-            "CREATE TABLE IF NOT EXISTS Photos ("
-                "file_id INTEGER PRIMARY KEY, "
-                "package_name TEXT DEFAULT '', "
-                "position INT DEFAULT 1);",
-            "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT, "
-                "album_lpath TEXT DEFAULT '');",
-            "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT, "
-                "tag_id TEXT DEFAULT '');",
-        };
-        for (const auto &sql : sqls) {
-            int ret = store.ExecuteSql(sql);
-            if (ret != E_OK) {
-                return ret;
-            }
-        }
-        return E_OK;
+        return ExecSqlList(store, DB_MIGRATION_NO_RISK_SCHEMA_SQLS);
     }
 
     int OnUpgrade(RdbStore &store, int oldVersion, int newVersion) override
