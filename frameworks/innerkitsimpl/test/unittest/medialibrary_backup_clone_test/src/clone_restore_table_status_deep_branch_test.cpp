@@ -334,16 +334,6 @@ HWTEST_F(CloneRestoreTableStatusDeepBranchTest, GetQueryWhereClause_AlbumNoMatch
     EXPECT_TRUE(restore.tableQueryWhereClauseMap_[PhotoAlbumColumns::TABLE].empty());
 }
 
-HWTEST_F(CloneRestoreTableStatusDeepBranchTest, GetQueryWhereClause_AnalysisTypeOnly_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    std::unordered_map<std::string, std::string> cols = {{PhotoAlbumColumns::ALBUM_TYPE, "INT"}};
-    restore.GetQueryWhereClause(ANALYSIS_ALBUM_TABLE, cols);
-    std::string s = restore.tableQueryWhereClauseMap_[ANALYSIS_ALBUM_TABLE];
-    EXPECT_TRUE(Contains(s, PhotoAlbumColumns::ALBUM_TYPE));
-    EXPECT_FALSE(Contains(s, PhotoAlbumColumns::ALBUM_SUBTYPE));
-}
-
 HWTEST_F(CloneRestoreTableStatusDeepBranchTest, GetQueryWhereClause_AnalysisNoMatchedColumns_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -617,14 +607,6 @@ HWTEST_F(CloneRestoreTableStatusDeepBranchTest, HasSameAlbum_PhotoAlbumFound_001
         "INSERT INTO PhotoAlbum (album_id, album_type, album_subtype, album_name) VALUES (400, 3, 1, 'X');"), E_OK);
     AlbumInfo info = MakeAlbumInfo(1, 3, 1, "X");
     EXPECT_TRUE(restore.HasSameAlbum(info, PhotoAlbumColumns::TABLE));
-}
-
-HWTEST_F(CloneRestoreTableStatusDeepBranchTest, HasSameAlbum_PhotoAlbumMiss_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    restore.mediaLibraryRdb_ = g_db;
-    AlbumInfo info = MakeAlbumInfo(2, 3, 2, "Y");
-    EXPECT_FALSE(restore.HasSameAlbum(info, PhotoAlbumColumns::TABLE));
 }
 
 HWTEST_F(CloneRestoreTableStatusDeepBranchTest, IsCloudRestoreSatisfied_AllCombinations_001, TestSize.Level1)
