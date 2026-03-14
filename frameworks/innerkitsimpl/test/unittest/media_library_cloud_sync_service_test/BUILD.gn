@@ -48,6 +48,7 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_album_controller_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_download_dao.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/cloud_media_service_test.cpp",
     "./src/media_background_task_factory_test.cpp",
@@ -60,6 +61,7 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "./src/cloud_media_dao_utils_extended_test.cpp",
     "./src/cloud_media_photos_rename_service_test.cpp",
     "./src/cloud_media_attachment_utils_test.cpp",
+    "./src/cloud_media_download_dao_test.cpp",
   ]
 
   deps = [
