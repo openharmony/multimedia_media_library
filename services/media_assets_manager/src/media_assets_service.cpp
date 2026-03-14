@@ -26,6 +26,7 @@
 #include "media_visit_count_manager.h"
 #include "result_set_utils.h"
 #include "dfx_manager.h"
+#include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_request_task_manager.h"
 #include "multistages_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1260,6 +1261,14 @@ int32_t MediaAssetsService::SyncCloudEnhancementTaskStatus()
 
 int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp)
 {
+    if (req.deliveryMode != -1) {
+        MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(GetClientBundleName(),
+            static_cast<RequestPolicy>(req.deliveryMode));
+    }
+    if (!req.needsExtraInfo) {
+        MEDIA_WARN_LOG("no need query from db.");
+        return E_SUCCESS;
+    }
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, req.fileId);
     using namespace RdbDataShareAdapter;
