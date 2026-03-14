@@ -169,3 +169,234 @@ int32_t TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount()
     return DatabaseUtils::QueryInt(g_rdbStore->GetRaw(), "count(1)", QUERY_SQL);
 }
 }  // namespace OHOS::Media
+/*
+ * Test interface: TabOldPhotosRestoreHelper::AddPlaceHolders
+ * Test content: Verify placeholder addition to helper
+ * Cover branches: Normal placeholder addition flow
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_add_placeholders, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_add_placeholders");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    restoreHelper.AddPlaceHolders();
+    restoreHelper.AddPlaceHolders();
+    
+    size_t insertSize = restoreHelper.GetInsertSize();
+    EXPECT_EQ(insertSize, 3);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_add_placeholders");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::GetBindArgs
+ * Test content: Verify bind arguments retrieval
+ * Cover branches: Normal bind args retrieval flow
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_get_bind_args, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_get_bind_args");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    FileInfo fileInfo;
+    fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+    fileInfo.oldPath = TEST_OLD_DATA;
+    fileInfo.cloudPath = TEST_NEW_DATA;
+    
+    restoreHelper.AddBindArgs(fileInfo);
+    restoreHelper.AddBindArgs(fileInfo);
+    
+    std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
+    EXPECT_EQ(bindArgs.size(), 6);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_get_bind_args");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::GetInputTableClause
+ * Test content: Verify input table clause generation
+ * Cover branches: Normal SQL clause generation flow
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_get_input_table_clause, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_get_input_table_clause");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    restoreHelper.AddPlaceHolders();
+    
+    std::string inputClause = restoreHelper.GetInputTableClause();
+    EXPECT_FALSE(inputClause.empty());
+    EXPECT_TRUE(inputClause.find("WITH INPUT") != std::string::npos);
+    EXPECT_TRUE(inputClause.find("VALUES") != std::string::npos);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_get_input_table_clause");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::GetInsertSize
+ * Test content: Verify insert size retrieval
+ * Cover branches: Normal size retrieval flow
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_get_insert_size, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_get_insert_size");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    restoreHelper.AddPlaceHolders();
+    restoreHelper.AddPlaceHolders();
+    
+    size_t insertSize = restoreHelper.GetInsertSize();
+    EXPECT_EQ(insertSize, 3);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_get_insert_size");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::IsEmpty
+ * Test content: Verify empty state check with no data
+ * Cover branches: Empty placeholders and bind args branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_is_empty_true, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_is_empty_true");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    bool isEmpty = restoreHelper.IsEmpty();
+    EXPECT_TRUE(isEmpty);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_is_empty_true");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::IsEmpty
+ * Test content: Verify empty state check with placeholders only
+ * Cover branches: Placeholders without bind args branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_is_empty_placeholders_only, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_is_empty_placeholders_only");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    
+    bool isEmpty = restoreHelper.IsEmpty();
+    EXPECT_TRUE(isEmpty);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_is_empty_placeholders_only");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::IsEmpty
+ * Test content: Verify empty state check with bind args only
+ * Cover branches: Bind args without placeholders branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_is_empty_bind_args_only, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_is_empty_bind_args_only");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    FileInfo fileInfo;
+    fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+    fileInfo.oldPath = TEST_OLD_DATA;
+    fileInfo.cloudPath = TEST_NEW_DATA;
+    
+    restoreHelper.AddBindArgs(fileInfo);
+    
+    bool isEmpty = restoreHelper.IsEmpty();
+    EXPECT_TRUE(isEmpty);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_is_empty_bind_args_only");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::IsEmpty
+ * Test content: Verify empty state check with both placeholders and bind args
+ * Cover branches: Non-empty state branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_is_empty_false, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_is_empty_false");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    FileInfo fileInfo;
+    fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+    fileInfo.oldPath = TEST_OLD_DATA;
+    fileInfo.cloudPath = TEST_NEW_DATA;
+    restoreHelper.AddBindArgs(fileInfo);
+    
+    bool isEmpty = restoreHelper.IsEmpty();
+    EXPECT_FALSE(isEmpty);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_is_empty_false");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::GetInsertSql
+ * Test content: Verify insert SQL generation
+ * Cover branches: Normal SQL generation flow
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_get_insert_sql, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_get_insert_sql");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    restoreHelper.AddPlaceHolders();
+    
+    std::string insertSql = restoreHelper.GetInsertSql();
+    EXPECT_FALSE(insertSql.empty());
+    EXPECT_TRUE(insertSql.find("INSERT INTO tab_old_photos") != std::string::npos);
+    EXPECT_TRUE(insertSql.find("WITH INPUT") != std::string::npos);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_get_insert_sql");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::SetPlaceHoldersAndBindArgs
+ * Test content: Verify placeholders and bind args setting with multiple files
+ * Cover branches: Multiple file info handling branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_set_placeholders_and_bind_args_multiple, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_set_placeholders_and_bind_args_multiple");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    std::vector<FileInfo> fileInfos;
+    for (int i = 0; i < 5; i++) {
+        FileInfo fileInfo;
+        fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID + i;
+        fileInfo.oldPath = TEST_OLD_DATA + std::to_string(i);
+        fileInfo.cloudPath = TEST_NEW_DATA + std::to_string(i);
+        fileInfos.push_back(fileInfo);
+    }
+    
+    restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
+    
+    size_t insertSize = restoreHelper.GetInsertSize();
+    EXPECT_EQ(insertSize, 5);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_set_placeholders_and_bind_args_multiple");
+}
+
+/*
+ * Test interface: TabOldPhotosRestoreHelper::AddBindArgs
+ * Test content: Verify bind args addition with various file info
+ * Cover branches: Different file info values branch
+ */
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_add_bind_args_variants, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_add_bind_args_variants");
+    TabOldPhotosRestoreHelper restoreHelper;
+    
+    std::vector<std::string> testPaths = {
+        "/storage/emulated/0/Pictures/test1.jpg",
+        "/storage/emulated/0/Pictures/test2.png",
+        "/storage/emulated/0/Pictures/test3.mp4",
+        "/storage/cloud/files/Photo/16/test4.jpg"
+    };
+    
+    for (const auto& path : testPaths) {
+        FileInfo fileInfo;
+        fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+        fileInfo.oldPath = path;
+        fileInfo.cloudPath = path;
+        restoreHelper.AddBindArgs(fileInfo);
+    }
+    
+    std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
+    EXPECT_EQ(bindArgs.size(), testPaths.size() * 3);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_add_bind_args_variants");
+}
