@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "cloud_media_download_dao.h"
 #include "cloud_media_dao_utils.h"
 #include "cloud_media_define.h"
+#include "media_cloud_sync_test_utils.h"
 
 #include <string>
 #include <vector>
@@ -257,7 +258,7 @@ HWTEST_F(CloudMediaDownloadDaoTest, GetFileIdFromCloudId_Test_001, TestSize.Leve
     std::vector<std::string> cloudIds;
     std::vector<std::string> FileIds;
     
-    int32_t ret = downloadDao.GetFileIdFromCloudId(cloudIds, fileIds);
+    int32_t ret = downloadDao.GetFileIdFromCloudId(cloudIds, FileIds);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -265,7 +266,7 @@ HWTEST_F(CloudMediaDownloadDaoTest, GetFileIdFromCloudId_Test_002, TestSize.Leve
 {
     CloudMediaDownloadDao downloadDao;
     std::vector<std::string> cloudIds = {"cloud_id_1", "cloud_id_2"};
-    std::vector<PhotosPo> fileIds;
+    std::vector<std::string> fileIds;
     
     int32_t ret = downloadDao.GetFileIdFromCloudId(cloudIds, fileIds);
     EXPECT_EQ(ret, E_OK);
@@ -552,9 +553,9 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_004, TestSize.L
 
 HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_005, TestSize.Level1)
 {
-       CloudMediaDownloadDao downloadDao;
+    CloudMediaDownloadDao downloadDao;
     OnDownloadAssetData assetData;
-    assetData.fix.fixFileType = false;
+    assetData.fixFileType = false;
     assetData.path = "/storage/test.jpg";
     
     CloudMediaScanService::ScanResult scanResult;
