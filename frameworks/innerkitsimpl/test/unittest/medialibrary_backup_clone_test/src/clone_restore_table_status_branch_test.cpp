@@ -14,11 +14,7 @@
 #include <unordered_set>
 #include <vector>
 
-#define private public
-#define protected public
 #include "clone_restore.h"
-#undef private
-#undef protected
 
 #include "backup_database_utils.h"
 #include "photo_album_column.h"
@@ -35,68 +31,104 @@ const std::string MISS_DB_PATH = "/data/test/backup/clone_restore_table_status_m
 std::shared_ptr<RdbStore> g_fullDb = nullptr;
 std::shared_ptr<RdbStore> g_missDb = nullptr;
 
+int ExecSqlList(RdbStore &store, const std::vector<std::string> &sqls)
+{
+    for (const auto &sql : sqls) {
+        int ret = store.ExecuteSql(sql);
+        if (ret != E_OK) {
+            return ret;
+        }
+    }
+    return E_OK;
+}
+
+const std::vector<std::string> FULL_SCHEMA_SQLS = {
+    "CREATE TABLE IF NOT EXISTS Photos ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 1, "
+        "display_name TEXT, "
+        "date_added BIGINT DEFAULT 0, "
+        "date_modified BIGINT DEFAULT 0, "
+        "orientation INT DEFAULT 0, "
+        "subtype INT DEFAULT 0, "
+        "date_trashed BIGINT DEFAULT 0, "
+        "hidden INT DEFAULT 0, "
+        "position INT DEFAULT 1, "
+        "sync_status INT DEFAULT 0, "
+        "clean_flag INT DEFAULT 0, "
+        "time_pending BIGINT DEFAULT 0, "
+        "is_temp INT DEFAULT 0, "
+        "photo_file_source_type INT DEFAULT 0, "
+        "south_device_type INT DEFAULT 0, "
+        "photo_risk_status INT DEFAULT 0, "
+        "is_critical INT DEFAULT 0, "
+        "package_name TEXT DEFAULT '');",
+    "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT, "
+        "album_bundle_name TEXT DEFAULT '', "
+        "album_lpath TEXT DEFAULT '', "
+        "date_modified BIGINT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS PhotoMap ("
+        "map_album INT DEFAULT 0, "
+        "map_asset INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT);",
+    "CREATE TABLE IF NOT EXISTS AnalysisPhotoMap ("
+        "map_album INT DEFAULT 0, "
+        "map_asset INT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS Audios ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 2, "
+        "display_name TEXT, "
+        "date_added BIGINT DEFAULT 0, "
+        "date_modified BIGINT DEFAULT 0);",
+};
+
+const std::vector<std::string> MISSING_SCHEMA_SQLS = {
+    "CREATE TABLE IF NOT EXISTS Photos ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 1, "
+        "display_name TEXT, "
+        "date_added BIGINT DEFAULT 0, "
+        "date_modified BIGINT DEFAULT 0, "
+        "orientation INT DEFAULT 0, "
+        "subtype INT DEFAULT 0, "
+        "date_trashed BIGINT DEFAULT 0);",
+    "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT);",
+    "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
+        "album_id INTEGER PRIMARY KEY, "
+        "album_type INT DEFAULT 0, "
+        "album_subtype INT DEFAULT 0, "
+        "album_name TEXT);",
+    "CREATE TABLE IF NOT EXISTS Audios ("
+        "file_id INTEGER PRIMARY KEY, "
+        "data TEXT, "
+        "size BIGINT DEFAULT 0, "
+        "media_type INT DEFAULT 2, "
+        "display_name TEXT);",
+};
+
 class FullSchemaCallback final : public RdbOpenCallback {
 public:
     int OnCreate(RdbStore &store) override
     {
-        std::vector<std::string> sqls = {
-            "CREATE TABLE IF NOT EXISTS Photos ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 1, "
-                "display_name TEXT, "
-                "date_added BIGINT DEFAULT 0, "
-                "date_modified BIGINT DEFAULT 0, "
-                "orientation INT DEFAULT 0, "
-                "subtype INT DEFAULT 0, "
-                "date_trashed BIGINT DEFAULT 0, "
-                "hidden INT DEFAULT 0, "
-                "position INT DEFAULT 1, "
-                "sync_status INT DEFAULT 0, "
-                "clean_flag INT DEFAULT 0, "
-                "time_pending BIGINT DEFAULT 0, "
-                "is_temp INT DEFAULT 0, "
-                "photo_file_source_type INT DEFAULT 0, "
-                "south_device_type INT DEFAULT 0, "
-                "photo_risk_status INT DEFAULT 0, "
-                "is_critical INT DEFAULT 0, "
-                "package_name TEXT DEFAULT '');",
-            "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT, "
-                "album_bundle_name TEXT DEFAULT '', "
-                "album_lpath TEXT DEFAULT '', "
-                "date_modified BIGINT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS PhotoMap ("
-                "map_album INT DEFAULT 0, "
-                "map_asset INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT);",
-            "CREATE TABLE IF NOT EXISTS AnalysisPhotoMap ("
-                "map_album INT DEFAULT 0, "
-                "map_asset INT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS Audios ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 2, "
-                "display_name TEXT, "
-                "date_added BIGINT DEFAULT 0, "
-                "date_modified BIGINT DEFAULT 0);",
-        };
-        for (const auto &sql : sqls) {
-            int ret = store.ExecuteSql(sql);
-            if (ret != E_OK) {
-                return ret;
-            }
-        }
-        return E_OK;
+        return ExecSqlList(store, FULL_SCHEMA_SQLS);
     }
 
     int OnUpgrade(RdbStore &store, int oldVersion, int newVersion) override
@@ -109,42 +141,7 @@ class MissingSchemaCallback final : public RdbOpenCallback {
 public:
     int OnCreate(RdbStore &store) override
     {
-        std::vector<std::string> sqls = {
-            "CREATE TABLE IF NOT EXISTS Photos ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 1, "
-                "display_name TEXT, "
-                "date_added BIGINT DEFAULT 0, "
-                "date_modified BIGINT DEFAULT 0, "
-                "orientation INT DEFAULT 0, "
-                "subtype INT DEFAULT 0, "
-                "date_trashed BIGINT DEFAULT 0);",
-            "CREATE TABLE IF NOT EXISTS PhotoAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT);",
-            "CREATE TABLE IF NOT EXISTS AnalysisAlbum ("
-                "album_id INTEGER PRIMARY KEY, "
-                "album_type INT DEFAULT 0, "
-                "album_subtype INT DEFAULT 0, "
-                "album_name TEXT);",
-            "CREATE TABLE IF NOT EXISTS Audios ("
-                "file_id INTEGER PRIMARY KEY, "
-                "data TEXT, "
-                "size BIGINT DEFAULT 0, "
-                "media_type INT DEFAULT 2, "
-                "display_name TEXT);",
-        };
-        for (const auto &sql : sqls) {
-            int ret = store.ExecuteSql(sql);
-            if (ret != E_OK) {
-                return ret;
-            }
-        }
-        return E_OK;
+        return ExecSqlList(store, MISSING_SCHEMA_SQLS);
     }
 
     int OnUpgrade(RdbStore &store, int oldVersion, int newVersion) override
@@ -486,7 +483,8 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     CloneRestore restore;
     restore.mediaRdb_ = g_fullDb;
     ASSERT_EQ(g_fullDb->ExecuteSql(
-        "INSERT INTO Photos (file_id, data, sync_status, clean_flag, time_pending, is_temp, position, south_device_type)"
+        "INSERT INTO Photos (file_id, data, sync_status,"
+        " clean_flag, time_pending, is_temp, position, south_device_type)"
         " VALUES (2, 'b', 0, 0, 0, 0, 2, 2);"), E_OK);
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
@@ -496,7 +494,8 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     CloneRestore restore;
     restore.mediaRdb_ = g_fullDb;
     ASSERT_EQ(g_fullDb->ExecuteSql(
-        "INSERT INTO Photos (file_id, data, sync_status, clean_flag, time_pending, is_temp, position, south_device_type)"
+        "INSERT INTO Photos (file_id, data, sync_status, clean_flag,"
+        " time_pending, is_temp, position, south_device_type)"
         " VALUES (3, 'c', 0, 0, 0, 0, 2, 3);"), E_OK);
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::HDC));
 }
@@ -507,10 +506,12 @@ HWTEST_F(CloneRestoreTableStatusBranchTest, CheckSouthDeviceTypeMatchSwitchStatu
     CloneRestore restore;
     restore.mediaRdb_ = g_fullDb;
     ASSERT_EQ(g_fullDb->ExecuteSql(
-        "INSERT INTO Photos (file_id, data, sync_status, clean_flag, time_pending, is_temp, position, south_device_type)"
+        "INSERT INTO Photos (file_id, data, sync_status, clean_flag,"
+        " time_pending, is_temp, position, south_device_type)"
         " VALUES (4, 'd', 0, 0, 0, 0, 2, 2);"), E_OK);
     ASSERT_EQ(g_fullDb->ExecuteSql(
-        "INSERT INTO Photos (file_id, data, sync_status, clean_flag, time_pending, is_temp, position, south_device_type)"
+        "INSERT INTO Photos (file_id, data, sync_status, clean_flag,"
+        " time_pending, is_temp, position, south_device_type)"
         " VALUES (5, 'e', 0, 0, 0, 0, 2, 2);"), E_OK);
     EXPECT_TRUE(restore.CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
 }
