@@ -190,7 +190,9 @@ void CreateAstcBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
     if (thumbnailData.isLocalFile) {
         thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         IThumbnailHelper::CreateThumbnail(data);
-    } else {
+        return;
+    }
+    if (thumbnailData.thumbnailStatus == static_cast<int32_t>(PhotoThumbStatusType::DOWNLOADED)) {
         CHECK_AND_RETURN_WARN_LOG(CanCloudPhotoLoadLocalThumbnail(thumbnailData),
             "Local lcd or thumb is not exist, id:%{public}s, path:%{public}s, thumbStatus:%{public}d",
             thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.thumbnailStatus);
@@ -199,7 +201,15 @@ void CreateAstcBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
             SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
         ThumbnailUtils::IsExCloudThumbnail(thumbnailData) ?
             IThumbnailHelper::CreateAstcEx(data) : IThumbnailHelper::CreateAstc(data);
+        return;
     }
+    // thumbnailData.thumbnailStatus == PhotoThumbStatusType::ONLY_THM_DOWNLOADED
+    CHECK_AND_RETURN_WARN_LOG(ThumbnailGenerateHelper::CanLoadLocalThm(thumbnailData),
+        "Local thumb is not exist, id:%{public}s, path:%{public}s, thumbStatus:%{public}d",
+        thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.thumbnailStatus);
+    thumbnailData.needGenerateExThumbnail = false;
+    thumbnailData.loaderOpts.loadingStates = SourceLoader::CLOUD_THM_SOURCE_LOADING_STATES;
+    IThumbnailHelper::CreateAstcOnlyWithThm(data);
 }
 
 int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
@@ -1033,6 +1043,50 @@ int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbR
         needDeleteFromVisionTables ? taskWithDeleteFromVisionTables : FixThumbnailExifRotateAfterDownloadAssetTask,
         opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
     return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::CreateAstcOnlyDownloadThm(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh)
+{
+    ThumbnailData data;
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+
+    data.needGenerateExThumbnail = false;
+    data.loaderOpts.loadingStates = SourceLoader::CLOUD_THM_SOURCE_LOADING_STATES;
+
+    if (isCloudInsertTaskPriorityHigh) {
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcOnlyWithThm,
+            opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
+        return E_OK;
+    }
+
+    auto lowPriorityCreateAstcCloudDownloadTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        CHECK_AND_RETURN_LOG(ThumbnailFileUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+            "LowPriorityCreateAstcCloudDownloadTask free size is not enough, id:%{public}s, path:%{public}s",
+            thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        IThumbnailHelper::CreateAstcOnlyWithThm(data);
+    };
+    IThumbnailHelper::AddThumbnailGenerateTask(lowPriorityCreateAstcCloudDownloadTask,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
+bool ThumbnailGenerateHelper::CanLoadLocalThm(const ThumbnailData &data)
+{
+    std::string localThmPath = ThumbnailUtils::IsExCloudThumbnail(data) ?
+        ThumbnailFileUtils::GetLocalThumbnailFilePath(data.path, ThumbnailType::THUMB_EX) :
+        ThumbnailFileUtils::GetLocalThumbnailFilePath(data.path, ThumbnailType::THUMB);
+    CHECK_AND_RETURN_RET_LOG(!localThmPath.empty(), false,
+        "Failed to Get GetLocalThumbnailFilePath, path:%{public}s", DfxUtils::GetSafePath(data.path).c_str());
+
+    bool isLocalThumbExist = MediaFileUtils::IsFileExists(localThmPath);
+    CHECK_AND_RETURN_RET_LOG(isLocalThumbExist, false,
+        "Local thumb: %{public}s is not exist", DfxUtils::GetSafePath(localThmPath).c_str());
+    return true;
 }
 // LCOV_EXCL_STOP
 } // namespace Media

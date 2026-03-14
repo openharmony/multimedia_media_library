@@ -28,6 +28,7 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
+#include "thumbnail_rdb_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
 #include "medialibrary_object_utils.h"
@@ -79,7 +80,7 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
     CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
 
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
+    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
     CacheThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
     CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
@@ -1158,8 +1159,8 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateAstcMthAndYear, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateAstcMthAndYear, id: %{public}s, path: %{public}s, gen thumb scene: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), GetGenThumbSceneName(data.genThumbScene).c_str());
     data.loaderOpts.decodeInThumbSize = true;
     data.loaderOpts.desiredType = ThumbnailType::MTH_ASTC;
     if (!TryLoadSource(opts, data)) {
@@ -1358,6 +1359,28 @@ bool IThumbnailHelper::IsPureCloudImage(ThumbRdbOpt &opts)
 
     // if current image is a pure cloud image, it's photo position column in database will be 2
     return photoPosition == 2;
+}
+
+void IThumbnailHelper::CreateAstcOnlyWithThm(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+    auto &thumbnailData = data->thumbnailData_;
+    ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::CLOUD, LoadSourceType::LOCAL_PHOTO);
+
+    Size thmSize;
+    bool isValid = ThumbnailUtils::GetLocalThmSize(thumbnailData, thmSize);
+    CHECK_AND_RETURN_LOG(isValid, "GetLocalThmSize failed, path: %{public}s",
+        DfxUtils::GetSafePath(thumbnailData.path).c_str());
+    int32_t minSize = thmSize.width < thmSize.height ? thmSize.width : thmSize.height;
+    // 短边小于350，仅生成年月纹理
+    if (minSize < SHORT_SIDE_THRESHOLD) {
+        thumbnailData.genThumbScene = GenThumbScene::CLOUD_DOWNLOAD_THM_SHORT_SIDE_NOT_SATISFIED;
+        IThumbnailHelper::DoCreateAstcMthAndYear(data->opts_, data->thumbnailData_);
+        ThumbnailGenerationPostProcess::SetRegenerateAstcStatus(data->thumbnailData_, data->opts_);
+        return;
+    }
+    thumbnailData.genThumbScene = GenThumbScene::CLOUD_DOWNLOAD_THM_SHORT_SIDE_SATISFIED;
+    IThumbnailHelper::CreateAstc(data);
 }
 // LCOV_EXCL_STOP
 } // namespace Media

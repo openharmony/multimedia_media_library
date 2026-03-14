@@ -123,6 +123,7 @@ public:
     EXPORT static void UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static bool CacheThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
     EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static void CreateAstcOnlyWithThm(std::shared_ptr<ThumbnailTaskData> &data);
 private:
     EXPORT static bool TrySavePixelMap(ThumbnailData &data, ThumbnailType type);
     EXPORT static bool TrySavePicture(ThumbnailData &data, const bool isSourceEx, const std::string &tempOutputPath);

@@ -32,6 +32,7 @@
 #include "get_download_asset_vo.h"
 #include "on_download_asset_vo.h"
 #include "clean_attachment_vo.h"
+#include "get_full_sync_download_info_vo.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDownloadControllerService::GetDownloadThms(MessageParcel &data, MessageParcel &reply)
@@ -218,5 +219,19 @@ int32_t CloudMediaDownloadControllerService::CleanAttachment(MessageParcel &data
     ret = this->service_.CleanAttachment(req.cloudIdList, attachmentSize);
     resp.attachmentSize = attachmentSize;
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
+}
+
+int32_t CloudMediaDownloadControllerService::GetFullSyncDownloadInfo(MessageParcel &data, MessageParcel &reply)
+{
+    GetFullSyncDownloadInfoBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret), "ReadRequestBody failed");
+    std::map<std::string, int64_t> flagsInfo = reqBody.flagsInfo;
+    ret = this->service_.GetFullSyncDownloadInfo(flagsInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "GetFullSyncDownloadInfo failed, ret: %{public}d", ret);
+    GetFullSyncDownloadInfoBody respBody;
+    respBody.flagsInfo = flagsInfo;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 }  // namespace OHOS::Media::CloudSync
