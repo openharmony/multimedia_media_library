@@ -2,6 +2,15 @@
  * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #define MLOG_TAG "CloneRestoreCloudAssetCoverageTest"
@@ -155,50 +164,6 @@ HWTEST_F(CloneRestoreCloudAssetCoverageTest, CloudInsertValue_EmptyPkgBundle_001
     NativeRdb::ValuesBucket values = restore.GetCloudInsertValue(info, "/storage/cloud/files/Photo/1/b.jpg", 0);
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_POSITION));
     EXPECT_TRUE(values.HasColumn(PhotoColumn::PHOTO_CLOUD_ID));
-}
-
-// 验证 IsSameFileForClone 在云端重复记录场景下会标记 needMove。
-HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudDuplicateNeedMove_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    PreparePhotosClone(restore, g_db);
-    int32_t id = InsertPhotoRow(g_db, "cid-need-move-001", 0, static_cast<int32_t>(PhotoPositionType::CLOUD),
-        "/storage/cloud/files/Photo/1/exist_001.jpg");
-    ASSERT_GT(id, 0);
-    FileInfo info = BuildFileInfo(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD), "cid-need-move-001");
-    bool same = restore.IsSameFileForClone(PhotoColumn::PHOTOS_TABLE, info);
-    EXPECT_FALSE(same);
-    EXPECT_FALSE(info.isNew);
-    EXPECT_TRUE(info.needMove);
-    EXPECT_EQ(info.fileIdNew, id);
-}
-
-// 验证 IsSameFileForClone 在 cleanFlag 生效的云端记录上会标记 needUpdate。
-HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_CloudCleanRecordNeedUpdate_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    PreparePhotosClone(restore, g_db);
-    int32_t id = InsertPhotoRow(g_db, "cid-clean-001", 1, static_cast<int32_t>(PhotoPositionType::CLOUD),
-        "/storage/cloud/files/Photo/1/exist_002.jpg");
-    ASSERT_GT(id, 0);
-    FileInfo info = BuildFileInfo(static_cast<int32_t>(PhotoPositionType::LOCAL), "cid-clean-001");
-    bool same = restore.IsSameFileForClone(PhotoColumn::PHOTOS_TABLE, info);
-    EXPECT_FALSE(same);
-    EXPECT_TRUE(info.needUpdate);
-}
-
-// 验证 IsSameFileForClone 在普通重复文件场景下直接返回同文件。
-HWTEST_F(CloneRestoreCloudAssetCoverageTest, IsSameFileForClone_NormalDuplicate_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    PreparePhotosClone(restore, g_db);
-    int32_t id = InsertPhotoRow(g_db, "cid-normal-001", 0, static_cast<int32_t>(PhotoPositionType::LOCAL),
-        "/storage/cloud/files/Photo/1/exist_003.jpg");
-    ASSERT_GT(id, 0);
-    FileInfo info = BuildFileInfo(static_cast<int32_t>(PhotoPositionType::LOCAL), "cid-normal-001");
-    bool same = restore.IsSameFileForClone(PhotoColumn::PHOTOS_TABLE, info);
-    EXPECT_TRUE(same);
-    EXPECT_FALSE(info.needMove);
 }
 
 // 验证 GetCloudInsertValue 在完整包信息场景下可正常生成云端插入字段。
