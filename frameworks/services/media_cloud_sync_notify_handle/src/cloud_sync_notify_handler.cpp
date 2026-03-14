@@ -77,7 +77,11 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
+        if (uriString.find(PhotoColumn::PHOTO_THM_DOWNLOAD_URI_PREFIX) != string::npos) {
+            ThumbnailService::GetInstance()->CreateAstcOnlyDownloadThm(idString, isCloudInsertTaskPriorityHigh);
+        } else {
+            ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
+        }
     }
 }
 

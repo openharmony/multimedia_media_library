@@ -901,6 +901,22 @@ int32_t ThumbnailService::FixThumbnailExifRotateAfterDownloadAsset(const std::st
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "FixThumbnailExifRotateAfterDownloadAsset failed, err: %{public}d", err);
     return E_OK;
 }
+
+int32_t ThumbnailService::CreateAstcOnlyDownloadThm(const string &id, bool isCloudInsertTaskPriorityHigh)
+{
+    if (!isCloudInsertTaskPriorityHigh && !currentStatusForTask_) {
+        return E_CLOUD_NOT_SUITABLE_FOR_TASK;
+    }
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
+    };
+
+    int err = ThumbnailGenerateHelper::CreateAstcOnlyDownloadThm(opts, isCloudInsertTaskPriorityHigh);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CreateAstcOnlyDownloadThm failed : %{public}d", err);
+    return err;
+}
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

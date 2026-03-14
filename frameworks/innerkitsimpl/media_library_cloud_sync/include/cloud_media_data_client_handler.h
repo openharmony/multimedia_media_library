@@ -85,6 +85,7 @@ public:
     int32_t UpdateData(const std::string &tableName, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value, const std::string &operateName) override;
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize) override;
+    int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo) override;
 
 private:
     int32_t GetAgingFile(uint32_t operationCode, GetAgingFileReqBody &reqBody, std::vector<CloudMetaData> &metaData);

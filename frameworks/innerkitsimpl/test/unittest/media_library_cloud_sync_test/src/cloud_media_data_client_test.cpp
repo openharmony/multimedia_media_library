@@ -1335,4 +1335,24 @@ HWTEST_F(CloudMediaDataClientTest, CleanAttachment_test_02, TestSize.Level1)
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(rowCount, 0);
 }
+
+HWTEST_F(CloudMediaDataClientTest, GetFullSyncDownloadInfo_test_001, TestSize.Level1)
+{
+    std::map<std::string, int64_t> flagsInfo;
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
+    int32_t ret = cloudMediaDataClient.GetFullSyncDownloadInfo(flagsInfo);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(flagsInfo.size(), 1);
+}
+
+HWTEST_F(CloudMediaDataClientTest, GetFullSyncDownloadInfo_test_002, TestSize.Level1)
+{
+    std::map<std::string, int64_t> flagsInfo = {
+        { "DOWNLOAD_LCD", -1 }
+    };
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
+    int32_t ret = cloudMediaDataClient.GetFullSyncDownloadInfo(flagsInfo);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(flagsInfo.size(), 1);
+}
 }  // namespace OHOS::Media::CloudSync

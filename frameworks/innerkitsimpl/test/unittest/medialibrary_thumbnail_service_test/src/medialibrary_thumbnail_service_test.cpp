@@ -1479,5 +1479,19 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_007, T
     thumbnailRestoreManager.Reset();
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_CreateAstcBackground_test_001, TestSize.Level1)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::CreateAstcBackground(opts);
+    EXPECT_EQ(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_CreateAstcBackground_test_002, TestSize.Level1)
+{
+    ThumbRdbOpt opts;
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
+    auto res = ThumbnailGenerateHelper::CreateAstcBackground(opts);
+    EXPECT_EQ(res, E_ERR);
+}
 } // namespace Media
 } // namespace OHOS

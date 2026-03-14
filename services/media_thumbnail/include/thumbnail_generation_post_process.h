@@ -28,6 +28,7 @@ public:
     ThumbnailGenerationPostProcess() = delete;
     virtual ~ThumbnailGenerationPostProcess() = delete;
     EXPORT static int32_t PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts);
+    EXPORT static int32_t SetRegenerateAstcStatus(const ThumbnailData& data, const ThumbRdbOpt& opts);
 
 private:
     EXPORT static int32_t UpdateCachedRdbValue(ThumbnailData& data, const ThumbRdbOpt& opts);

@@ -53,6 +53,7 @@ enum class CloudMediaOperationCode : uint32_t {
     CMD_QUERY_DATA,
     CMD_UPDATE_DATA,
     CMD_CLEAN_ATTACHMENT,
+    CMD_GET_FULL_SYNC_DOWNLOAD_INFO,
 };
 
 enum class CloudMediaPhotoOperationCode : uint32_t {

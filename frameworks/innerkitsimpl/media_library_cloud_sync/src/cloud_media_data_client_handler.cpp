@@ -50,6 +50,7 @@
 #include "query_data_vo.h"
 #include "update_data_vo.h"
 #include "clean_attachment_vo.h"
+#include "get_full_sync_download_info_vo.h"
 namespace OHOS::Media::CloudSync {
 // LCOV_EXCL_START
 void CloudMediaDataClientHandler::SetUserId(const int32_t &userId)
@@ -643,6 +644,20 @@ int32_t CloudMediaDataClientHandler::CleanAttachment(const std::vector<std::stri
         MEDIA_ERR_LOG("Failed to CleanAttachment, ret: %{public}d, Idsize: %{public}zu", ret, cloudIdList.size());
     }
     attachmentSize = respBody.attachmentSize;
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo)
+{
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_FULL_SYNC_DOWNLOAD_INFO);
+    GetFullSyncDownloadInfoBody reqBody;
+    reqBody.flagsInfo = flagsInfo;
+    GetFullSyncDownloadInfoBody respBody;
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
+            .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GetFullSyncDownloadInfo, ret: %{public}d", ret);
+    MEDIA_INFO_LOG("GetFullSyncDownloadInfo: %{public}s", respBody.ToString().c_str());
+    flagsInfo = respBody.flagsInfo;
     return ret;
 }
 // LCOV_EXCL_STOP

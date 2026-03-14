@@ -175,6 +175,11 @@ public:
      */
     static const std::unordered_map<SourceState, SourceState> UPGRADE_VIDEO_SOURCE_LOADING_STATES;
 
+    /*
+     * Define source loading states sequence for creating astc resolved cloud THM.
+     */
+    static const std::unordered_map<SourceState, SourceState> CLOUD_THM_SOURCE_LOADING_STATES;
+
     SourceLoader(Size &desiredSize, ThumbnailData &data) : data_(data), desiredSize_(desiredSize)
     {
         GetSourcePath = nullptr;
