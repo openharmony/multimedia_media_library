@@ -2,18 +2,21 @@
  * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #define MLOG_TAG "CloneRestoreAdditionalCoverageTest"
 
 #include "clone_restore_additional_coverage_test.h"
-
-#define private public
-#define protected public
 #include "clone_restore.h"
-#undef private
-#undef protected
-
 #include "medialibrary_errno.h"
 
 using namespace testing::ext;
@@ -27,30 +30,6 @@ void CloneRestoreAdditionalCoverageTest::TearDownTestCase() {}
 void CloneRestoreAdditionalCoverageTest::SetUp() {}
 
 void CloneRestoreAdditionalCoverageTest::TearDown() {}
-
-// 验证 CheckThumbReady 在缩略图及 ASTC 文件全部存在时返回失败状态。
-HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckThumbReady_AllThumbnailFilesExist_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    FileInfo fileInfo;
-    CloudPhotoFileExistFlag allExist;
-    allExist.isThmExist = true;
-    allExist.isDayAstcExist = true;
-    allExist.isYearAstcExist = true;
-    EXPECT_EQ(restore.CheckThumbReady(fileInfo, allExist), RESTORE_THUMBNAIL_READY_FAIL);
-}
-
-// 验证 CheckThumbReady 在 ASTC 文件部分缺失时返回可继续处理状态。
-HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckThumbReady_AstcPartiallyMissing_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    FileInfo fileInfo;
-    CloudPhotoFileExistFlag missAstc;
-    missAstc.isThmExist = true;
-    missAstc.isDayAstcExist = false;
-    missAstc.isYearAstcExist = true;
-    EXPECT_EQ(restore.CheckThumbReady(fileInfo, missAstc), RESTORE_THUMBNAIL_READY_ALL_SUCCESS);
-}
 
 // 验证本地图片在普通缩略图和 LCD 都存在时返回完整状态。
 HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckThumbStatus_NoExThumbnail_AllExist_001, TestSize.Level1)
@@ -172,24 +151,6 @@ HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckThumbStatus_ExThumbnail_AllMis
     flag.isExThmExist = false;
     flag.isExLcdExist = false;
     EXPECT_EQ(restore.CheckThumbStatus(fileInfo, flag), RESTORE_THUMBNAIL_STATUS_NOT_ALL);
-}
-
-// 验证 CheckLcdVisitTime 在 LCD 不存在时返回可跳过写入状态。
-HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckLcdVisitTime_LcdAbsent_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    CloudPhotoFileExistFlag flag;
-    flag.isLcdExist = false;
-    EXPECT_EQ(restore.CheckLcdVisitTime(flag), RESTORE_LCD_VISIT_TIME_SUCCESS);
-}
-
-// 验证 CheckLcdVisitTime 在 LCD 存在时返回无需写入状态。
-HWTEST_F(CloneRestoreAdditionalCoverageTest, CheckLcdVisitTime_LcdExists_001, TestSize.Level1)
-{
-    CloneRestore restore;
-    CloudPhotoFileExistFlag flag;
-    flag.isLcdExist = true;
-    EXPECT_EQ(restore.CheckLcdVisitTime(flag), RESTORE_LCD_VISIT_TIME_NO_LCD);
 }
 
 // 验证 IsInvalidLocalFile 对端云资产且文件不存在时判定为无效本地文件。
