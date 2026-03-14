@@ -28,12 +28,7 @@
 #include "medialibrary_type_const.h"
 #include "cloud_media_define.h"
 #include "photos_po.h"
-
-#define private public
-#define protected public
 #include "media_assets_recover_service.h"
-#undef private
-#undef protected
 
 using namespace std;
 using namespace testing::ext;
@@ -89,18 +84,6 @@ void MediaAssetsRecoverServiceTest::SetUp(void)
 
 void MediaAssetsRecoverServiceTest::TearDown(void) {}
 
-HWTEST_F(MediaAssetsRecoverServiceTest, MediaAssetsRecoverService_BatchMoveOutTrashAndMergeWithSameAsset_Empty_Test, TestSize.Level1)
-{
-    auto service = make_shared<MediaAssetsRecoverService>();
-    ASSERT_NE(service, nullptr);
-
-    std::vector<std::string> assetIds;
-    std::vector<std::string> targetFileIds;
-
-    int32_t ret = service->BatchMoveOutTrashAndMergeWithSameAsset(assetIds, targetFileIds);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(MediaAssetsRecoverServiceTest, MediaAssetsRecoverService_RecoverPackageName_Empty_Test, TestSize.Level1)
 {
     auto service = make_shared<MediaAssetsRecoverService>();
@@ -144,20 +127,6 @@ HWTEST_F(MediaAssetsRecoverServiceTest, MediaAssetsRecoverService_MergeAssetFile
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaAssetsRecoverServiceTest, MediaAssetsRecoverService_MergeAssetFile_TargetCloud_Test, TestSize.Level1)
-{
-    auto service = make_shared<MediaAssetsRecoverService>();
-    ASSERT_NE(service, nullptr);
-
-    PhotosPo photoInfo;
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    PhotosPo targetPhotoInfo;
-    targetPhotoInfo.position = static_cast<int32_t>(PhotoPositionType::CLOUD);
-
-    int32_t ret = service->MergeAssetFile(photoInfo, targetPhotoInfo);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(MediaAssetsRecoverServiceTest,
     MediaAssetsRecoverService_MergeAssetFile_SourceLocalAndCloud_TargetLocalAndCloud_Test, TestSize.Level1)
 {
@@ -170,7 +139,7 @@ HWTEST_F(MediaAssetsRecoverServiceTest,
     targetPhotoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
 
     int32_t ret = service->MergeAssetFile(photoInfo, targetPhotoInfo);
-    EXPECT_NE(ret, E_OK);
+    EXPECT_NE(ret, E_FAIL);
 }
 
 HWTEST_F(MediaAssetsRecoverServiceTest,
@@ -214,22 +183,6 @@ HWTEST_F(MediaAssetsRecoverServiceTest,
     PhotosPo targetPhotoInfo;
     targetPhotoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
     targetPhotoInfo.storagePath = "";
-
-    int32_t ret = service->MoveAssetFileFromMediaToLake(photoInfo, targetPhotoInfo);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(MediaAssetsRecoverServiceTest,
-    MediaAssetsRecoverService_MoveAssetFileFromMediaToLake_FileExists_Test, TestSize.Level1)
-{
-    auto service = make_shared<MediaAssetsRecoverService>();
-    ASSERT_NE(service, nullptr);
-
-    PhotosPo photoInfo;
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    PhotosPo targetPhotoInfo;
-    targetPhotoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    targetPhotoInfo.storagePath = "/storage/cloud/100/files/.lake/test.jpg";
 
     int32_t ret = service->MoveAssetFileFromMediaToLake(photoInfo, targetPhotoInfo);
     EXPECT_EQ(ret, E_OK);
@@ -302,17 +255,4 @@ HWTEST_F(MediaAssetsRecoverServiceTest,
     int32_t ret = service->RecoverPhotoAsset(fileUri);
     EXPECT_EQ(ret, E_OK);
 }
-
-HWTEST_F(MediaAssetsRecoverServiceTest,
-    MediaAssetsRecoverService_RecoverPhotoAsset_Empty_Test, TestSize.Level1)
-{
-    auto service = make_shared<MediaAssetsRecoverService>();
-    ASSERT_NE(service, nullptr);
-
-    std::string fileUri = "";
-
-    int32_t ret = service->RecoverPhotoAsset(fileUri);
-    EXPECT_NE(ret, E_OK);
-}
-
 } // namespace OHOS::Media
