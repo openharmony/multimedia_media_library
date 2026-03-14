@@ -148,7 +148,6 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/pet_album/pet_album_clone_test.cpp",
     "./src/pet_album/pet_album_source.cpp",
     "./src/analysis_data/clone_restore_analysis_data_test.cpp",
-    "./src/analysis_data/clone_restore_analysis_data_branch_test.cpp",
     "./src/analysis_data/clone_restore_analysis_total_test.cpp",
     "./src/analysis_album/beauty_score_clone_test.cpp",
     "./src/analysis_album/video_face_clone_test.cpp",
