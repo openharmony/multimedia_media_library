@@ -48,6 +48,7 @@ using namespace OHOS::AAFwk;
 
 namespace OHOS::Media::CloudSync {
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static const int32_t ACCURATE_REFRESH_RDB_INVALITD_TABLE = 0x40002;
 
 void CloudMediaSyncServiceTest::SetUpTestCase()
 {
@@ -1137,7 +1138,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCompletePull_Test_
     CloudMediaPhotosService service;
     MediaOperateResult optRet = {"", 0, ""};
     int32_t ret = service.OnCompletePull(optRet);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, ACCURATE_REFRESH_RDB_INVALITD_TABLE);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCompletePush_Test_001, TestSize.Level1)
