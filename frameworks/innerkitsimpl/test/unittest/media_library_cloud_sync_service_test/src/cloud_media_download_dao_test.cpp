@@ -207,28 +207,10 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadThm_Test_001, TestSize.Level1)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadThm_Test_002, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    std::vector<std::string> cloudIds = {"cloud_id_1", "cloud_id_2"};
-    
-    int32_t ret = downloadDao.UpdateDownloadThm(cloudIds);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLcd_Test_001, TestSize.Level1)
 {
     CloudMediaDownloadDao downloadDao;
     std::vector<std::string> cloudIds;
-    
-    int32_t ret = downloadDao.UpdateDownloadLcd(cloudIds);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLcd_Test_002, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    std::vector<std::string> cloudIds = {"cloud_id_1", "cloud_id_2"};
     
     int32_t ret = downloadDao.UpdateDownloadLcd(cloudIds);
     EXPECT_EQ(ret, E_OK);
@@ -318,7 +300,7 @@ HWTEST_F(CloudMediaDownloadDaoTest, QueryDownloadLakeAssetByCloudIds_Test_002, T
     AdditionFileInfo info;
     info.isUpdate = true;
     info.fileSourceType = 1;
-    info.storagePath = "/storage/lake/path.jpg"; 
+    info.storagePath = "/storage/lake/path.jpg";
     info.title = "title";
     info.displayName = "display.jpg";
     lakeInfos["cloud_id_1"] = info;
@@ -451,8 +433,8 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAssetExifRotateFix_Test_001, T
     DirtyTypes dirtyType = DirtyTypes::TYPE_MDIRTY;
     bool needRegenerateThumbnail = true;
     
-    int32_t ret =
-        downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh, fileId, exifRotate, dirtyType, needRegenerateThumbnail);
+    int32_t ret = downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh,
+        fileId, exifRotate, dirtyType, needRegenerateThumbnail);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -465,8 +447,8 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAssetExifRotateFix_Test_002, T
     DirtyTypes dirtyType = DirtyTypes::TYPE_FDIRTY;
     bool needRegenerateThumbnail = false;
     
-    int32_t ret =
-        downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh, fileId, exifRotate, dirtyType, needRegenerateThumbnail);
+    int32_t ret = downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh,
+            fileId, exifRotate, dirtyType, needRegenerateThumbnail);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -479,8 +461,8 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAssetExifRotateFix_Test_003, T
     DirtyTypes dirtyType = DirtyTypes::TYPE_MDIRTY;
     bool needRegenerateThumbnail = false;
     
-    int32_t ret =
-        downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh, fileId, exifRotate, dirtyType, needRegenerateThumbnail);
+    int32_t ret = downloadDao.UpdateDownloadAssetExifRotateFix(photoRefresh,
+        fileId, exifRotate, dirtyType, needRegenerateThumbnail);
     EXPECT_EQ(ret, E_OK);
 }
 

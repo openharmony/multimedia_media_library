@@ -49,6 +49,7 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_album_controller_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_download_dao.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/service/media_assets_delete_service.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/cloud_media_service_test.cpp",
     "./src/media_background_task_factory_test.cpp",
