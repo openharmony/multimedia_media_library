@@ -68,5 +68,427 @@ HWTEST_F(MediaPathUtilsUnitTest, medialib_get_extension_test_001, TestSize.Level
     std::string resutl6 = MediaPathUtils::GetExtension(filePath6);
     EXPECT_EQ(resutl6, "");
 }
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_ValidPath_Test_001, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/image.jpg";
+    int32_t userId = 100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, "/storage/cloud/100/files/image.jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_ValidPath_Test_002, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/Photo/image.jpg";
+    int32_t userId = 100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, "/storage/cloud/100/files/Photo/image.jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_ValidPath_Test_003, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/Video/video.mp4";
+    int32_t userId = 200;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, "/storage/cloud/200/files/Video/video.mp4");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_ValidPath_Test_004, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/Audio/audio.mp3";
+    int32_t userId = 300;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, "/storage/cloud/300/files/Audio/audio.mp3");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_InvalidUserId_Test_001, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/image.jpg";
+    int32_t userId = -1;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_InvalidUserId_Test_002, TestSize.Level1)
+{
+    std::string path = "/storage/cloud/files/image.jpg";
+    int32_t userId = -100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_InvalidPath_Test_001, TestSize.Level1)
+{
+    std::string path = "/local/files/image.jpg";
+    int32_t userId = 100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_InvalidPath_Test_002, TestSize.Level1)
+{
+    std::string path = "/storage/files/image.jpg";
+    int32_t userId = 100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, AppendUserId_EmptyPath_Test_001, TestSize.Level1)
+{
+    std::string path = "";
+    int32_t userId = 100;
+    std::string result = MediaPathUtils::AppendUserId(path, userId);
+    EXPECT_EQ(result, path);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ValidPath_Test_001, TestSize.Level1)
+{
+    std::string photoPath = "/storage/cloud/files/image.jpg";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, true);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ValidPath_Test_002, TestSize.Level1)
+{
+    std::string photoPath = "/storage/cloud/files/Photo/image.jpg";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, true);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ValidPath_Test_003, TestSize.Level1)
+{
+    std::string photoPath = "/storage/cloud/files/Video/video.mp4";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, true);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_InvalidPath_Test_001, TestSize.Level1)
+{
+    std::string photoPath = "/local/files/image.jpg";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_InvalidPath_Test_002, TestSize.Level1)
+{
+    std::string photoPath = "/storage/files/image.jpg";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_EmptyPath_Test_001, TestSize.Level1)
+{
+    std::string photoPath = "";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ShortPath_Test_001, TestSize.Level1)
+{
+    std::string photoPath = "/storage";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ShortPath_Test_002, TestSize.Level1)
+{
+    std::string photoPath = "/storage/cloud";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, CheckPhotoPath_ShortPath_Test_003, TestSize.Level1)
+{
+    std::string photoPath = "/storage/cloud/";
+    bool result = MediaPathUtils::CheckPhotoPath(photoPath);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_EmptyPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_NoSlash_Test_001, TestSize.Level1)
+{
+    std::string filePath = "filename.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_EndsWithSlash_Test_001, TestSize.Level1)
+{
+    std::string filePath = "path/to/dir/";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_SingleSlash_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/filename.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "filename.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_MultipleSlashes_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/path/to/filename.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "filename.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_DirectoryPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Photo/";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_ImageFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Photo/image.jpg";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "image.jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_VideoFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Video/video.mp4";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "video.mp4");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_AudioFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Audio/audio.mp3";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "audio.mp3");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_HiddenFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/.hidden";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, ".hidden");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_FileWithDots_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/file.name.with.dots.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file.name.with.dots.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_UnixPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/usr/local/bin/file";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_RelativePath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "relative/path/to/file.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_DocumentFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Docs/document.pdf";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "document.pdf");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_DownloadFile_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Download/file.zip";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file.zip");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_LongFileName_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/very_long_filename_with_many_characters.jpg";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "very_long_filename_with_many_characters.jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_SpecialChars_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/file-name_123.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file-name_123.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_UnicodeChars_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/文件名.jpg";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "文件名.jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_DoubleSlash_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/path//to//file.txt";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "file.txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_TrailingSlash_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/path/to/file.txt/";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_RootPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_CurrentDir_Test_001, TestSize.Level1)
+{
+    std::string filePath = ".";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetFileName_ParentDir_Test_001, TestSize.Level1)
+{
+    std::string filePath = "..";
+    std::string result = MediaPathUtils::GetFileName(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_EmptyPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_NoExtension_Test_001, TestSize.Level1)
+{
+    std::string filePath = "filename";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_DotAtStart_Test_001, TestSize.Level1)
+{
+    std::string filePath = ".hiddenfile";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_SingleDot_Test_001, TestSize.Level1)
+{
+    std::string filePath = ".";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_DoubleDot_Test_001, TestSize.Level1)
+{
+    std::string filePath = "..";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_UpperCase_Test_001, TestSize.Level1)
+{
+    std::string filePath = "image.JPG";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_MixedCase_Test_001, TestSize.Level1)
+{
+    std::string filePath = "image.JpG";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_MultipleDots_Test_001, TestSize.Level1)
+{
+    std::string filePath = "file.name.with.dots.txt";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_PathWithExtension_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/path/to/image.jpg";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_PathWithExtension_Test_002, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Photo/image.jpg";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_PathWithExtension_Test_0033, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Video/video.mp4";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "mp4");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_PathWithExtension_Test_004, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Audio/audio.mp3";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "mp3");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_PathWithoutExtension_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/path/to/filename";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_DirectoryPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "/storage/cloud/files/Photo/";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_SpecialChars_Test_001, TestSize.Level1)
+{
+    std::string filePath = "file-name_123.txt";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_UnicodeChars_Test_001, TestSize.Level1)
+{
+    std::string filePath = "文件名.jpg";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_WindowsPath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "C:\\Users\\file.txt";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "txt");
+}
+
+HWTEST_F(MediaPathUtilsUnitTest, GetExtension_RelativePath_Test_001, TestSize.Level1)
+{
+    std::string filePath = "relative/path/to/file.jpg";
+    std::string result = MediaPathUtils::GetExtension(filePath);
+    EXPECT_EQ(result, "jpg");
+}
 } // namespace Media
 } // namespace OHOS
