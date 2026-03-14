@@ -79,6 +79,7 @@ void CloneRestoreStateBranchTest::TearDown()
     ClearOrientationTable();
 }
 
+// 场景：校验源端与目标端开关匹配，配置项无效。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_InvalidConfig_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -88,6 +89,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_InvalidConfig
     EXPECT_FALSE(restore.isSrcDstSwitchStatusMatch_);
 }
 
+// 场景：校验源端与目标端开关匹配，源端开关关闭。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_SrcClose_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -99,6 +101,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_SrcClose_001,
     EXPECT_FALSE(restore.isSrcDstSwitchStatusMatch_);
 }
 
+// 场景：校验源端与目标端开关匹配，目标端开关关闭。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_DstClose_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -110,6 +113,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_DstClose_001,
     EXPECT_FALSE(restore.isSrcDstSwitchStatusMatch_);
 }
 
+// 场景：校验源端与目标端开关匹配，两端配置不一致。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_NotEqual_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -123,6 +127,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_NotEqual_001,
     EXPECT_FALSE(restore.isSrcDstSwitchStatusMatch_);
 }
 
+// 场景：校验源端与目标端开关匹配，两端配置一致。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_Equal_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -136,6 +141,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CheckSrcDstSwitchStatusMatch_Equal_001, Te
     EXPECT_TRUE(restore.isSrcDstSwitchStatusMatch_);
 }
 
+// 场景：解析目标端备份信息，restoreInfo 为空。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_EmptyRestoreInfo_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -145,6 +151,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_EmptyRestoreInfo_
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，输入 JSON 非法。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_InvalidJson_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -153,6 +160,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_InvalidJson_001, 
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，缺少 compatibilityInfo。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_NoCompatibilityInfo_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -161,6 +169,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_NoCompatibilityIn
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，compatibilityInfo 解析失败。结果为不满足条件或不进行映射。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_InvalidCompatibilityJson_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -169,6 +178,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_InvalidCompatibil
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，缺少 hdcEnabled 字段。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_MissingHdcKey_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -177,6 +187,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_MissingHdcKey_001
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，hdcEnabled 非布尔类型。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_NonBooleanHdcKey_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -185,6 +196,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_NonBooleanHdcKey_
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，hdcEnabled 为 true。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_HdcEnabledTrue_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -193,6 +205,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_HdcEnabledTrue_00
     EXPECT_TRUE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：解析目标端备份信息，hdcEnabled 为 false。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_HdcEnabledFalse_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -201,6 +214,7 @@ HWTEST_F(CloneRestoreStateBranchTest, ParseDstDeviceBackupInfo_HdcEnabledFalse_0
     EXPECT_FALSE(restore.dstDeviceBackupInfo_.hdcEnabled);
 }
 
+// 场景：判断云恢复前置条件，布尔与分支。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, IsCloudRestoreSatisfied_AndBranch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -214,6 +228,7 @@ HWTEST_F(CloneRestoreStateBranchTest, IsCloudRestoreSatisfied_AndBranch_001, Tes
     EXPECT_TRUE(restore.IsCloudRestoreSatisfied());
 }
 
+// 场景：修正时间戳单位，输入已为毫秒。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_AlreadyMilliseconds_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -221,6 +236,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_AlreadyMilliseconds_001, 
     EXPECT_EQ(restore.CorrectTimestamp(input), input);
 }
 
+// 场景：修正时间戳单位，输入为秒需转毫秒。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_SecondsConvertToMilliseconds_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -228,6 +244,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_SecondsConvertToMilliseco
     EXPECT_EQ(restore.CorrectTimestamp(input), input * 1000);
 }
 
+// 场景：修正时间戳单位，小值保持不变。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_KeepOriginalSmallValue_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -235,6 +252,7 @@ HWTEST_F(CloneRestoreStateBranchTest, CorrectTimestamp_KeepOriginalSmallValue_00
     EXPECT_EQ(restore.CorrectTimestamp(input), input);
 }
 
+// 场景：判断扩展缩略图可用性，云端图片场景。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, HasExThumbnail_CloudImageTrue_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -246,6 +264,7 @@ HWTEST_F(CloneRestoreStateBranchTest, HasExThumbnail_CloudImageTrue_001, TestSiz
     EXPECT_TRUE(restore.HasExThumbnail(info));
 }
 
+// 场景：判断本地文件是否无效，全部判定条件满足。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_AllConditionsTrue_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -255,6 +274,7 @@ HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_AllConditionsTrue_001, 
     EXPECT_TRUE(restore.IsInvalidLocalFile(E_NO_SUCH_FILE, info));
 }
 
+// 场景：判断本地文件是否无效，错误码不匹配。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_ErrCodeMismatch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -264,6 +284,7 @@ HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_ErrCodeMismatch_001, Te
     EXPECT_FALSE(restore.IsInvalidLocalFile(E_FAIL, info));
 }
 
+// 场景：判断本地文件是否无效，位置不匹配。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_PositionMismatch_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -273,6 +294,7 @@ HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_PositionMismatch_001, T
     EXPECT_FALSE(restore.IsInvalidLocalFile(E_NO_SUCH_FILE, info));
 }
 
+// 场景：判断本地文件是否无效，cloudId 为空。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_EmptyCloudId_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -282,6 +304,7 @@ HWTEST_F(CloneRestoreStateBranchTest, IsInvalidLocalFile_EmptyCloudId_001, TestS
     EXPECT_FALSE(restore.IsInvalidLocalFile(E_NO_SUCH_FILE, info));
 }
 
+// 场景：提取方向与 ExifRotate，存在 exif_rotate 列。结果应满足条件并成功命中目标分支。
 HWTEST_F(CloneRestoreStateBranchTest, GetOrientationAndExifRotateValue_WithExifColumn_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -299,6 +322,7 @@ HWTEST_F(CloneRestoreStateBranchTest, GetOrientationAndExifRotateValue_WithExifC
     resultSet->Close();
 }
 
+// 场景：提取方向与 ExifRotate，orientation 为 0。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, GetOrientationAndExifRotateValue_OrientationZero_001, TestSize.Level1)
 {
     CloneRestore restore;
@@ -315,6 +339,7 @@ HWTEST_F(CloneRestoreStateBranchTest, GetOrientationAndExifRotateValue_Orientati
     resultSet->Close();
 }
 
+// 场景：提取方向与 ExifRotate，非图片类型。结果应与该场景的分支设计保持一致。
 HWTEST_F(CloneRestoreStateBranchTest, GetOrientationAndExifRotateValue_NonImage_001, TestSize.Level1)
 {
     CloneRestore restore;
