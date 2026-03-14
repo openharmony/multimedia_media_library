@@ -56,5 +56,288 @@ HWTEST_F(MediaTimeUtilsUnitTest, medialib_create_time_test_001, TestSize.Level1)
     EXPECT_EQ(MediaTimeUtils::StrCreateTimeByMilliseconds(PHOTO_DETAIL_TIME_FORMAT, milliSecondTime),
         "2025:12:25 14:26:44");
 }
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_Zero_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 0;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_SecondOnly_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 1;
+    time.tv_nsec = 0;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 1000);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_NanoOnly_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 500000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 500);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_Mixed_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 1;
+    time.tv_nsec = 500000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 1500);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_LargeValue_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 1000;
+    time.tv_nsec = 999999999;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 1000999);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_Negative_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = -1;
+    time.tv_nsec = 0;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, -1000);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_NanoRounding_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 123456789;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 123);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_MaxNano_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 999999999;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 999);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_MinNano_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 1;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_HalfSecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 500000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 500);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_QuarterSecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 250000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 250);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_TenthSecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 100000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 100);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_HundredthSecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 10000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 10);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, Timespec2Millisecond_ThousandthSecond_Test_001, TestSize.Level1)
+{
+    struct timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 1000000;
+    int64_t result = MediaTimeUtils::Timespec2Millisecond(time);
+    EXPECT_EQ(result, 1);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeSeconds_Positive_Test_001, TestSize.Level1)
+{
+    int64_t result = MediaTimeUtils::UTCTimeSeconds();
+    EXPECT_GT(result, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeSeconds_Monotonic_Test_001, TestSize.Level1)
+{
+    int64_t result1 = MediaTimeUtils::UTCTimeSeconds();
+    sleep(1);
+    int64_t result2 = MediaTimeUtils::UTCTimeSeconds();
+    EXPECT_GT(result2, result1);
+    EXPECT_GE(result2 - result1, 1);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeMilliSeconds_Positive_Test_001, TestSize.Level1)
+{
+    int64_t result = MediaTimeUtils::UTCTimeMilliSeconds();
+    EXPECT_GT(result, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeMilliSeconds_Monotonic_Test_001, TestSize.Level1)
+{
+    int64_t result1 = MediaTimeUtils::UTCTimeMilliSeconds();
+    usleep(100000);
+    int64_t result2 = MediaTimeUtils::UTCTimeMilliSeconds();
+    EXPECT_GT(result2, result1);
+    EXPECT_GE(result2 - result1, 100);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeMilliSeconds_Granularity_Test_001, TestSize.Level1)
+{
+    int64_t result1 = MediaTimeUtils::UTCTimeMilliSeconds();
+    int64_t result2 = MediaTimeUtils::UTCTimeMilliSeconds();
+    EXPECT_GE(result2 - result1, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeNanoSeconds_Positive_Test_001, TestSize.Level1)
+{
+    int64_t result = MediaTimeUtils::UTCTimeNanoSeconds();
+    EXPECT_GT(result, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeNanoSeconds_Monotonic_Test_001, TestSize.Level1)
+{
+    int64_t result1 = MediaTimeUtils::UTCTimeNanoSeconds();
+    usleep(1000);
+    int64_t result2 = MediaTimeUtils::UTCTimeNanoSeconds();
+    EXPECT_GT(result2, result1);
+    EXPECT_GE(result2 - result1, 1000000);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, UTCTimeNanoSeconds_Granularity_Test_001, TestSize.Level1)
+{
+    int64_t result1 = MediaTimeUtils::UTCTimeNanoSeconds();
+    int64_t result2 = MediaTimeUtils::UTCTimeNanoSeconds();
+    EXPECT_GE(result2 - result1, 0);
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_NegativeTime_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y";
+    int64_t time = -1;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_DateFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y-%m-%d";
+    int64_t time = 1766644004;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "2025-12-25");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_TimeFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%H:%M:%S";
+    int64_t time = 1766644004;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "14:26:44");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_FullFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y-%m-%d %H:%M:%S";
+    int64_t time = 1766644004;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "2025-12-25 14:26:44");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_SlashFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y/%m/%d";
+    int64_t time = 1766644004;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "2025/12/25");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTime_EmptyFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "";
+    int64_t time = 1766644004;
+    std::string result = MediaTimeUtils::StrCreateTime(format, time);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_TimeFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%H:%M:%S";
+    int64_t time = 1766644004132;
+    std::string result = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_EQ(result, "14:26:44");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_FullFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y-%m-%d %H:%M:%S";
+    int64_t time = 1766644004132;
+    std::string result = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_EQ(result, "2025-12-25 14:26:44");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_EmptyFormat_Test_001, TestSize.Level1)
+{
+    const std::string format = "";
+    int64_t time = 1766644004132;
+    std::string result = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_LargeTime_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y";
+    int64_t time = 4102444800000;
+    std::string result = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_EQ(result, "2100");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_SmallTime_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y";
+    int64_t time = 0;
+    std::string result = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time);
+    EXPECT_EQ(result, "1970");
+}
+
+HWTEST_F(MediaTimeUtilsUnitTest, StrCreateTimeByMilliseconds_MillisecondPrecision_Test_001, TestSize.Level1)
+{
+    const std::string format = "%Y-%m-%d %H:%M:%S";
+    int64_t time1 = 1766644004000;
+    int64_t time2 = 1766644004999;
+    std::string result1 = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time1);
+    std::string result2 = MediaTimeUtils::StrCreateTimeByMilliseconds(format, time2);
+    EXPECT_EQ(result1, result2);
+}
 } // namespace Media
 } // namespace OHOS
