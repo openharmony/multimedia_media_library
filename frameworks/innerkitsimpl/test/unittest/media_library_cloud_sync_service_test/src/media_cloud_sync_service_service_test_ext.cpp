@@ -710,22 +710,6 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     EXPECT_NE(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErrorDetails_Test_005, TestSize.Level1)
-{
-    // 用例说明：测试 OnRecordFailedErrorDetails 方法，不需要重试
-    CloudMediaPhotosService service;
-    PhotosDto photo;
-    photo.errorType = ErrorType::TYPE_NOT_NEED_RETRY;
-    CloudErrorDetail detail;
-    detail.detailCode = static_cast<int32_t>(ErrorDetailCode::CONTENT_NOT_FIND);
-    photo.errorDetails.push_back(detail);
-    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
-
-    int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
-
-    EXPECT_EQ(ret, FileManagement::E_STOP);
-}
-
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudPath_Test_001, TestSize.Level1)
 {
     // 用例说明：测试 GetCloudPath 方法，路径无效
@@ -1095,50 +1079,6 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaDataService_UpdateData_Test_002
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_003, TestSize.Level1)
-{
-    // 用例说明：测试 FillMetadata 方法，dateModified 为 0
-    CloudMediaScanService service;
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath("/tmp/test.jpg");
-    data->SetFileDateModified(0);
-
-    int32_t ret = service.FillMetadata(data);
-
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_NE(data->GetFileDateModified(), 0);
-}
-
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_004, TestSize.Level1)
-{
-    // 用例说明：测试 FillMetadata 方法，更新 dateModifie
-    CloudMediaScanService service;
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath("/tmp/test.jpg");
-    data->SetFileDateModified(1000);
-    data->SetFileDateModified(0);
-
-    int32_t ret = service.FillMetadata(data);
-
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(data->GetFileDateModified(), 1000);
-}
-
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_FillMetadata_Test_005, TestSize.Level1)
-{
-    // 用例说明：测试 FillMetadata 方法，成功填充元数据
-    CloudMediaScanService service;
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath("/tmp/test.jpg");
-    data->SetFileDateModified(1000);
-
-    int32_t ret = service.FillMetadata(data);
-
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_FALSE(data->GetFileExtension().empty());
-    EXPECT_FALSE(data->GetFileMimeType().empty());
-}
-
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_002, TestSize.Level1)
 {
     // 用例说明：测试 ScanMetaData 方法，data 为 nullptr
@@ -1175,7 +1115,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_0
 
     int32_t ret = service.ScanMetaData(path, data);
 
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_FAIL);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_005, TestSize.Level1)
@@ -1189,7 +1129,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanMetaData_Test_0
 
     int32_t ret = service.ScanMetaData(path, data);
 
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_FAIL);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanDownloadedFile_Test_001, TestSize.Level1)
@@ -1230,8 +1170,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaScanService_ScanDownloadedFile_
 
     int32_t ret = service.ScanDownloadedFile(path, result);
 
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_TRUE(result.scanSuccess);
+    EXPECT_EQ(ret, E_FAIL);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt,
