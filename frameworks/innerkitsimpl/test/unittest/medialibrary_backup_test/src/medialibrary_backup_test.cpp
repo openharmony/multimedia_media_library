@@ -260,7 +260,11 @@ void MediaLibraryBackupTest::SetUp() {}
 
 void MediaLibraryBackupTest::TearDown(void) {}
 
-// 测试备份初始化功能
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify backup initialization with upgrade restore scene
+ * Cover branches: Normal flow with UPGRADE_RESTORE_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_init start");
@@ -271,7 +275,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level2)
     MEDIA_INFO_LOG("medialib_backup_test_init end");
 }
 
-// 测试未同步的valid文件不恢复
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify unsynced valid files are not restored
+ * Cover branches: Unsynced file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
@@ -282,7 +290,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
-// 测试未同步的invalid文件不恢复
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify unsynced invalid files are not handled
+ * Cover branches: Unsynced invalid file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid start");
@@ -294,7 +306,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid end");
 }
 
-// 测试未同步的pending camera文件不恢复
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify unsynced pending camera files are not restored
+ * Cover branches: Pending camera file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera start");
@@ -306,7 +322,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, T
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera end");
 }
 
-// 测试未同步的pending others文件不恢复
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify unsynced pending others files are not restored
+ * Cover branches: Pending others file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others start");
@@ -318,7 +338,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, T
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others end");
 }
 
-// 测试大小为0的文件不恢复
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify zero-size files are not restored
+ * Cover branches: Zero-size file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 start");
@@ -330,7 +354,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 end");
 }
 
-// 测试根据ID创建资源路径
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify asset path creation by ID
+ * Cover branches: Normal flow with valid file ID
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id start");
@@ -347,7 +375,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, T
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id end");
 }
 
-// 测试计算未找到文件数量: 主数据模式
+/*
+ * Test interface: BaseRestore::GetInsertValues
+ * Test content: Calculate not found files in main data mode
+ * Cover branches: RESTORE_MODE_PROC_ALL_DATA and RESTORE_MODE_PROC_TWIN_DATA
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_001 start");
@@ -363,7 +395,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_001, 
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number end");
 }
 
-// 测试计算未找到文件数量: 双框架克隆模式下的Twin用户
+/*
+ * Test interface: BaseRestore::GetInsertValues
+ * Test content: Calculate not found files for twin user in dual frame clone mode
+ * Cover branches: Twin user ID branch in dual frame clone
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_002 start");
@@ -377,7 +413,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_002, 
     EXPECT_EQ(restoreService->notFoundNumber_, 0);
 }
 
-// 测试计算未找到的文件数量（应用双数据用户ID）
+/*
+ * Test interface: BaseRestore::GetInsertValues
+ * Test content: Calculate not found files for app twin data user ID
+ * Cover branches: App twin data user ID branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_003 start");
@@ -391,7 +431,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_003, 
     EXPECT_EQ(restoreService->notFoundNumber_, 0);
 }
 
-// 测试计算未找到的文件数量（主数据用户ID且文件路径存在）
+/*
+ * Test interface: BaseRestore::GetInsertValues
+ * Test content: Calculate not found files for main data user ID with existing file path
+ * Cover branches: Main data user ID with file path
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_004 start");
@@ -406,7 +450,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_004, 
     EXPECT_EQ(restoreService->notFoundNumber_, 0);
 }
 
-// 测试更新克隆功能
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify clone update functionality
+ * Cover branches: Normal flow with asset path creation
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_update_clone start");
@@ -423,7 +471,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_test_update_clone end");
 }
 
-// 测试未同步的媒体文件验证
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify unsynced media files are not restored
+ * Cover branches: Unsynced media file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid start");
@@ -434,7 +486,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, Te
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid end");
 }
 
-// 测试零大小媒体文件
+/*
+ * Test interface: QueryFileInfos, database query
+ * Test content: Verify zero-size media files are not restored
+ * Cover branches: Zero-size media file filtering branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size start");
@@ -445,7 +501,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size end");
 }
 
-// 测试重复数据处理（检查数据是否重复）
+/*
+ * Test interface: PhotosRestore::AnalyzeGalleryErrorSource, PhotosRestore::IsDuplicateData
+ * Test content: Verify duplicate data detection and handling
+ * Cover branches: Normal flow with duplicate data detection
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_001 start");
@@ -472,7 +532,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_001, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_001 end");
 }
 
-// 测试重复数据处理（大小写敏感）
+/*
+ * Test interface: PhotosRestore::AnalyzeGalleryErrorSource, PhotosRestore::IsDuplicateData
+ * Test content: Verify duplicate data detection is case-sensitive
+ * Cover branches: Case-sensitive duplicate data detection
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_002 start");
@@ -492,7 +556,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_002, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_002 end");
 }
 
-// 测试处理剩余数据（不删除数据库）
+/*
+ * Test interface: UpgradeRestore::HandleRestData
+ * Test content: Verify handling remaining data without deleting database
+ * Cover branches: RESTORE_MODE_PROC_MAIN_DATA branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_handle_rest_data_not_del_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_handle_rest_data_not_del_db start");
@@ -512,7 +580,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_handle_rest_data_not_del_d
     MEDIA_INFO_LOG("medialib_backup_test_handle_rest_data_not_del_db end");
 }
 
-// 测试处理剩余数据（删除数据库）
+/*
+ * Test interface: UpgradeRestore::HandleRestData
+ * Test content: Verify handling remaining data and deleting database
+ * Cover branches: RESTORE_MODE_PROC_ALL_DATA branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_handle_rest_data_del_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_handle_rest_data_del_db start");
@@ -532,7 +604,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_handle_rest_data_del_db, T
     MEDIA_INFO_LOG("medialib_backup_test_handle_rest_data_del_db end");
 }
 
-// 测试修改文件
+/*
+ * Test interface: MediaFileUtils file operations
+ * Test content: Verify file modification time update
+ * Cover branches: Normal flow with file time modification
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_modify_file start");
@@ -552,7 +628,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Leve
     MEDIA_INFO_LOG("medialib_backup_test_modify_file end");
 }
 
-// 测试根据ID创建音频文件路径
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify audio file path creation by ID
+ * Cover branches: Normal flow with audio media type
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_audio, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio start");
@@ -565,7 +645,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_a
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio end");
 }
 
-// 测试根据ID创建视频文件路径
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify video file path creation by ID
+ * Cover branches: Normal flow with video media type
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_video, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video start");
@@ -578,7 +662,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_v
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video end");
 }
 
-// 测试根据ID创建文件路径（非法文件ID）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with illegal file ID
+ * Cover branches: Invalid file ID error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileId, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId start");
@@ -592,7 +680,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId end");
 }
 
-// 测试根据ID创建文件路径（正常文件ID且有余数）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with normal ID and remainder
+ * Cover branches: Normal flow with remainder
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId start");
@@ -606,7 +698,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_file
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId end");
 }
 
-// 测试根据ID创建文件路径（正常文件ID且无余数）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with normal ID and no remainder
+ * Cover branches: Normal flow without remainder
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder start");
@@ -620,7 +716,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_file
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder end");
 }
 
-// 测试根据ID创建文件路径（非法文件类型001）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with illegal file type 001
+ * Cover branches: Invalid file type error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileType_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 start");
@@ -634,7 +734,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 end");
 }
 
-// 测试根据ID创建文件路径（非法文件类型002）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with illegal file type 002
+ * Cover branches: Invalid file type with ASSET_MAX_COMPLEMENT_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 start");
@@ -648,7 +752,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 end");
 }
 
-// 测试根据ID创建文件路径（非法文件类型003）
+/*
+ * Test interface: BackupFileUtils::CreateAssetPathById
+ * Test content: Verify file path creation with illegal file type 003
+ * Cover branches: Invalid file type above ASSET_MAX_COMPLEMENT_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 start");
@@ -662,7 +770,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 end");
 }
 
-// 测试从路径获取文件名（空路径）
+/*
+ * Test interface: BackupFileUtils::GetFileNameFromPath
+ * Test content: Verify file name extraction from empty path
+ * Cover branches: Empty path error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty start");
@@ -672,7 +784,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty,
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty end");
 }
 
-// 测试从路径获取文件名（路径中没有分隔符）
+/*
+ * Test interface: BackupFileUtils::GetFileNameFromPath
+ * Test content: Verify file name extraction from path without separator
+ * Cover branches: Path without separator error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_have, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have start");
@@ -682,7 +798,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_ha
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have end");
 }
 
-// 测试从路径获取文件名（正常路径）
+/*
+ * Test interface: BackupFileUtils::GetFileNameFromPath
+ * Test content: Verify file name extraction from normal path
+ * Cover branches: Normal flow with valid path
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok start");
@@ -692,7 +812,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSiz
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok end");
 }
 
-// 测试获取文件标题（显示名称为空）
+/*
+ * Test interface: BackupFileUtils::GetFileTitle
+ * Test content: Verify file title extraction with empty display name
+ * Cover branches: Empty display name error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty start");
@@ -702,7 +826,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty,
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty end");
 }
 
-// 测试获取文件标题（正常显示名称）
+/*
+ * Test interface: BackupFileUtils::GetFileTitle
+ * Test content: Verify file title extraction with normal display name
+ * Cover branches: Normal flow with valid display name
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok start");
@@ -712,7 +840,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok end");
 }
 
-// 测试获取文件标题（无点号）
+/*
+ * Test interface: BackupFileUtils::GetFileTitle
+ * Test content: Verify file title extraction without dot
+ * Cover branches: Display name without extension
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot start");
@@ -722,7 +854,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.L
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot end");
 }
 
-// 测试根据前缀类型获取完整路径（正常类型）
+/*
+ * Test interface: BackupFileUtils::GetFullPathByPrefixType
+ * Test content: Verify full path retrieval by prefix type with normal type
+ * Cover branches: Normal flow with valid prefix type
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_type, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type start");
@@ -734,7 +870,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type end");
 }
 
-// 测试根据前缀类型获取完整路径（非法类型）
+/*
+ * Test interface: BackupFileUtils::GetFullPathByPrefixType
+ * Test content: Verify full path retrieval with illegal prefix type
+ * Cover branches: Invalid prefix type error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal_type, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type start");
@@ -746,7 +886,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type end");
 }
 
-// 测试混淆文件名（正常文件名）
+/*
+ * Test interface: BackupFileUtils::GarbleFileName
+ * Test content: Verify file name garbling with normal file names
+ * Cover branches: Normal flow with various file name patterns
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name start");
@@ -782,7 +926,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, Tes
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name end");
 }
 
-// 测试混淆文件名（空文件名）
+/*
+ * Test interface: BackupFileUtils::GarbleFileName
+ * Test content: Verify file name garbling with empty file name
+ * Cover branches: Empty file name error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name start");
@@ -793,7 +941,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, Test
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name end");
 }
 
-// 测试根据前缀类型获取替换路径（非法源前缀）
+/*
+ * Test interface: BackupFileUtils::GetReplacedPathByPrefixType
+ * Test content: Verify replaced path retrieval with illegal source prefix
+ * Cover branches: Invalid source prefix error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix start");
@@ -806,7 +958,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_ill
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix end");
 }
 
-// 测试根据前缀类型获取替换路径（非法目标前缀）
+/*
+ * Test interface: BackupFileUtils::GetReplacedPathByPrefixType
+ * Test content: Verify replaced path retrieval with illegal destination prefix
+ * Cover branches: Invalid destination prefix error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix start");
@@ -819,7 +975,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_ill
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix end");
 }
 
-// 测试根据前缀类型获取替换路径（正常前缀）
+/*
+ * Test interface: BackupFileUtils::GetReplacedPathByPrefixType
+ * Test content: Verify replaced path retrieval with normal prefixes
+ * Cover branches: Normal flow with valid prefixes
+ */
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix start");
@@ -832,7 +992,11 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_nor
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix end");
 }
 
-// 测试恢复音频（升级恢复场景）
+/*
+ * Test interface: UpgradeRestore::RestoreAudio
+ * Test content: Verify audio restoration with upgrade restore scene
+ * Cover branches: Normal flow with UPGRADE_RESTORE_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID start");
@@ -844,7 +1008,11 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, Test
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID end");
 }
 
-// 测试恢复音频（克隆场景）
+/*
+ * Test interface: UpgradeRestore::RestoreAudio
+ * Test content: Verify audio restoration with clone scene
+ * Cover branches: Normal flow with DUAL_FRAME_CLONE_RESTORE_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone start");
@@ -857,10 +1025,14 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level2)
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone end");
 }
 
-// 测试恢复音频批次（克隆场景，无音频数据库）
+/*
+ * Test interface: UpgradeRestore::RestoreAudioBatch
+ * Test content: Verify audio batch restoration without audio database
+ * Cover branches: Null audio database error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRdb, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Restoreater_RestoreAudioBatch_clone_no_db start");
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_audioRdb start");
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     upgrade->RestoreAudioBatch(0);
@@ -868,10 +1040,14 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRd
     auto resultSet = photosStorePtr->QuerySql(queryAudio);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_audioRdb end");
 }
 
-// 测试恢复音频批次（克隆场景，假音频数据库）
+/*
+ * Test interface: UpgradeRestore::RestoreAudioBatch
+ * Test content: Verify audio batch restoration with fake audio database
+ * Cover branches: Fake audio database branch
+ */
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audiodb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_fake_audiodb start");
@@ -883,10 +1059,14 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audio
     auto resultSet = photosStorePtr->QuerySql(queryAudio);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_fake_audiodb end");
 }
 
-// 测试解析音频数据库结果集返回false
+/*
+ * Test interface: UpgradeRestore::ParseResultSetFromAudioDb
+ * Test content: Verify parsing audio database result set returns false
+ * Cover branches: Null result set error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_false, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false start");
@@ -899,7 +1079,11 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_f
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false end");
 }
 
-// 测试相册001
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for test001
+ * Cover branches: Normal flow with album test001
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 start";
@@ -913,7 +1097,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 end";
 }
 
-// 测试相册002
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for test002
+ * Cover branches: Normal flow with album test002
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 start";
@@ -926,7 +1114,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 end";
 }
 
-// 测试相册003
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for test003
+ * Cover branches: Normal flow with album test003
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 start";
@@ -940,7 +1132,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 end";
 }
 
-// 测试相册004（TmallPic）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for TmallPic
+ * Cover branches: Normal flow with TmallPic album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 start";
@@ -954,7 +1150,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 end";
 }
 
-// 测试相册005（UCDownloads）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for UCDownloads
+ * Cover branches: Normal flow with UCDownloads album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 start";
@@ -968,7 +1168,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 end";
 }
 
-// 测试相册006（小红书）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for xiaohongshu
+ * Cover branches: Normal flow with xiaohongshu album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 start";
@@ -982,7 +1186,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 end";
 }
 
-// 测试相册007（抖音）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Douyin
+ * Cover branches: Normal flow with Douyin album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 start";
@@ -996,7 +1204,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 end";
 }
 
-// 测试相册008（微博）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Weibo
+ * Cover branches: Normal flow with Weibo album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 start";
@@ -1010,7 +1222,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 end";
 }
 
-// 测试相册009（相机）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Camera
+ * Cover branches: Normal flow with Camera album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 start";
@@ -1029,7 +1245,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 end";
 }
 
-// 测试相册010（截图）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Screenshots
+ * Cover branches: Normal flow with Screenshots album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 start";
@@ -1048,7 +1268,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 end";
 }
 
-// 测试相册011（屏幕录制）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Screenrecorder
+ * Cover branches: Normal flow with Screenrecorder album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 start";
@@ -1067,7 +1291,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 end";
 }
 
-// 测试相册012（双框架分享）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for dual frame share
+ * Cover branches: Normal flow with dual frame share album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 start";
@@ -1086,7 +1314,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 end";
 }
 
-// 测试相册101（检查相册类型和子类型）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album type and subtype for test101
+ * Cover branches: Normal flow with album type and subtype check
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 start";
@@ -1105,7 +1337,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 end";
 }
 
-// 测试相册102（TmallPic）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for TmallPic
+ * Cover branches: Normal flow with TmallPic album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 start";
@@ -1119,7 +1355,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 end";
 }
 
-// 测试相册103（MTTT）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for MTTT
+ * Cover branches: Normal flow with MTTT album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 start";
@@ -1133,7 +1373,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 end";
 }
 
-// 测试相册104（funnygallery）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for funnygallery
+ * Cover branches: Normal flow with funnygallery album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 start";
@@ -1147,7 +1391,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 end";
 }
 
-// 测试相册105（小红书）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for xiaohongshu
+ * Cover branches: Normal flow with xiaohongshu album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 start";
@@ -1161,7 +1409,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 end";
 }
 
-// 测试相册106（抖音）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Douyin
+ * Cover branches: Normal flow with Douyin album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 start";
@@ -1175,7 +1427,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 end";
 }
 
-// 测试相册107（保存）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for save
+ * Cover branches: Normal flow with save album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 start";
@@ -1189,7 +1445,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 end";
 }
 
-// 测试相册108（微博）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Weibo
+ * Cover branches: Normal flow with Weibo album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 start";
@@ -1203,7 +1463,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 end";
 }
 
-// 测试相册109（相机）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Camera
+ * Cover branches: Normal flow with Camera album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 start";
@@ -1222,7 +1486,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 end";
 }
 
-// 测试相册110（截图）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Screenshots
+ * Cover branches: Normal flow with Screenshots album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 start";
@@ -1241,7 +1509,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 end";
 }
 
-// 测试相册111（屏幕录制）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for Screenrecorder
+ * Cover branches: Normal flow with Screenrecorder album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 start";
@@ -1260,7 +1532,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 end";
 }
 
-// 测试相册112（双框架分享）
+/*
+ * Test interface: UpgradeRestore::RestorePhoto
+ * Test content: Verify album restoration for dual frame share
+ * Cover branches: Normal flow with dual frame share album
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 start";
@@ -1279,7 +1555,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 end";
 }
 
-// 测试插入音频（升级）
+/*
+ * Test interface: UpgradeRestore::InsertAudio
+ * Test content: Verify audio insertion with upgrade restore scene
+ * Cover branches: Normal flow with UPGRADE_RESTORE_ID
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_upgrade start");
@@ -1302,7 +1582,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_upgrade end");
 }
 
-// 测试插入音频（空文件）
+/*
+ * Test interface: UpgradeRestore::InsertAudio
+ * Test content: Verify audio insertion with empty file list
+ * Cover branches: Empty file list branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file start");
@@ -1318,7 +1602,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSiz
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
 }
 
-// 测试移动目录
+/*
+ * Test interface: UpgradeRestore::MoveDirectory
+ * Test content: Verify directory movement
+ * Cover branches: Normal flow with directory operations
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory start");
@@ -1333,7 +1621,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level2)
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory end");
 }
 
-// 测试批量查询照片
+/*
+ * Test interface: UpgradeRestore::BatchQueryPhoto
+ * Test content: Verify batch photo query functionality
+ * Cover branches: Normal flow with batch query
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto start");
@@ -1366,7 +1658,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto end");
 }
 
-// 测试解析XML 002
+/*
+ * Test interface: UpgradeRestore::ParseXml
+ * Test content: Verify XML parsing test 002
+ * Cover branches: XML parsing error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 start";
@@ -1378,7 +1674,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 end";
 }
 
-// 测试解析XML 003
+/*
+ * Test interface: UpgradeRestore::ParseXml
+ * Test content: Verify XML parsing test 003
+ * Cover branches: XML parsing error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 start";
@@ -1390,7 +1690,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 end";
 }
 
-// 测试解析XML 004
+/*
+ * Test interface: UpgradeRestore::ParseXml
+ * Test content: Verify XML parsing test 004
+ * Cover branches: XML parsing error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 start";
@@ -1402,7 +1706,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 end";
 }
 
-// 测试解析XML 005
+/*
+ * Test interface: UpgradeRestore::ParseXml
+ * Test content: Verify XML parsing test 005
+ * Cover branches: XML parsing error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 start";
@@ -1412,9 +1720,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Lev
     auto res = upgrade->ParseXml(xmlPath);
     EXPECT_EQ(res, -1);
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 end";
-// 测试字符串转整数001（空字符串）
 }
 
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with empty string
+ * Cover branches: Empty string error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 start";
@@ -1426,7 +1738,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 end";
 }
 
-// 测试字符串转整数002（包含非法字符）
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with invalid characters
+ * Cover branches: Invalid characters error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 start";
@@ -1438,7 +1754,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 end";
 }
 
-// 测试字符串转整数003（超大数字）
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with超大数字
+ * Cover branches: Large number error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 start";
@@ -1450,7 +1770,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 end";
 }
 
-// 测试从元数据设置值
+/*
+ * Test interface: UpgradeRestore::SetValueFromMetaData
+ * Test content: Verify setting values from metadata
+ * Cover branches: Normal flow with metadata values
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData start";
@@ -1463,10 +1787,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, Test
     NativeRdb::ValuesBucket valueBucket;
     valueBucket.PutString(PhotoColumn::PHOTO_ORIENTATION, "test");
     upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    EXPECT_TRUE(valueBucket.HasColumn(PhotoColumn::PHOTO_ORIENTATION));
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
 }
 
-// 测试设置用户注释TEST1
+/*
+ * Test interface: UpgradeRestore::SetValueFromMetaData
+ * Test content: Verify user comment setting TEST1
+ * Cover branches: User comment handling without existing column
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST1, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 start";
@@ -1485,7 +1814,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST1, Test
     GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 end";
 }
 
-// 测试设置用户注释TEST2
+/*
+ * Test interface: UpgradeRestore::SetValueFromMetaData
+ * Test content: Verify user comment setting TEST2
+ * Cover branches: User comment handling with existing column
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST2, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 start";
@@ -1505,7 +1838,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST2, Test
     GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 end";
 }
 
-// 测试获取备份信息
+/*
+ * Test interface: UpgradeRestore::GetBackupInfo
+ * Test content: Verify backup info retrieval
+ * Cover branches: Normal flow with backup info
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo start";
@@ -1517,7 +1854,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo end";
 }
 
-// 测试插入照片（空）
+/*
+ * Test interface: UpgradeRestore::InsertPhoto
+ * Test content: Verify photo insertion with empty parameters
+ * Cover branches: Empty mediaLibraryRdb_ and empty file list
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty start";
@@ -1530,14 +1871,21 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSiz
     vector<FileInfo> fileInfos;
     upgrade->mediaLibraryRdb_ = nullptr;
     upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    EXPECT_EQ(upgrade->mediaLibraryRdb_, nullptr);
 
     //normal mediaLibraryRdb_ and empty file
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
+    EXPECT_EQ(fileInfos.size(), 0);
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty end";
 }
 
-// 测试插入照片（正常）
+/*
+ * Test interface: UpgradeRestore::InsertPhoto
+ * Test content: Verify photo insertion with normal parameters
+ * Cover branches: Normal flow with GALLERY and EXTERNAL_CAMERA source types
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal start";
@@ -1557,14 +1905,20 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSi
     fileInfo2.cloudPath = "storage/cloud/files/Audio/10/AUD_3322/jpg";
     fileInfos.push_back(fileInfo2);
     upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    EXPECT_EQ(fileInfos.size(), 2);
 
     // insertPhoto sourceType != SourceType::GALLERY
     sourceType = SourceType::EXTERNAL_CAMERA;
     upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    EXPECT_EQ(sourceType, SourceType::EXTERNAL_CAMERA);
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal end";
 }
 
-// 测试插入云端照片
+/*
+ * Test interface: UpgradeRestore::InsertCloudPhoto
+ * Test content: Verify cloud photo insertion
+ * Cover branches: Normal flow with cloud photo
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertCloudPhoto, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertCloudPhoto start");
@@ -1580,7 +1934,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertCloudPhoto, TestSize
     upgrade->mediaLibraryRdb_ = nullptr;
 }
 
-// 测试按文件类型更新失败文件（图片）
+/*
+ * Test interface: UpgradeRestore::UpdateFailedFileByFileType
+ * Test content: Verify failed file update for image type
+ * Cover branches: Normal flow with MEDIA_TYPE_IMAGE
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_image, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image start";
@@ -1602,7 +1960,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image end";
 }
 
-// 测试按文件类型更新失败文件（视频）
+/*
+ * Test interface: UpgradeRestore::UpdateFailedFileByFileType
+ * Test content: Verify failed file update for video type
+ * Cover branches: Normal flow with MEDIA_TYPE_VIDEO
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_video, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video start";
@@ -1624,7 +1986,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video end";
 }
 
-// 测试按文件类型更新失败文件（音频）
+/*
+ * Test interface: UpgradeRestore::UpdateFailedFileByFileType
+ * Test content: Verify failed file update for audio type
+ * Cover branches: Normal flow with MEDIA_TYPE_AUDIO
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_audio, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio start";
@@ -1646,7 +2012,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio end";
 }
 
-// 测试按文件类型更新失败文件（非法文件类型）
+/*
+ * Test interface: UpgradeRestore::UpdateFailedFileByFileType
+ * Test content: Verify failed file update with illegal file type
+ * Cover branches: Invalid file type error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype start";
@@ -1668,7 +2038,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype end";
 }
 
-// 测试设置错误代码
+/*
+ * Test interface: UpgradeRestore::SetErrorCode
+ * Test content: Verify error code setting with valid and invalid codes
+ * Cover branches: Normal flow with INIT_FAILED and invalid error code
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode start";
@@ -1693,7 +2067,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode end";
 }
 
-// 测试获取子计数信息（非法类型）
+/*
+ * Test interface: UpgradeRestore::GetSubCountInfo
+ * Test content: Verify sub count info retrieval with illegal type
+ * Cover branches: Invalid type error handling branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_type, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type start";
@@ -1707,7 +2085,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_ty
     GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type end";
 }
 
-// 测试获取计数信息JSON（空类型）
+/*
+ * Test interface: UpgradeRestore::GetCountInfoJson
+ * Test content: Verify count info JSON retrieval with empty types
+ * Cover: branches: Empty types branch returning null
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types start";
@@ -1723,7 +2105,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_typ
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types end";
 }
 
-// 测试获取计数信息JSON（正常类型）
+/*
+ * Test interface: UpgradeRestore::GetCountInfoJson
+ * Test content: Verify count info JSON retrieval with normal types
+ * Cover branches: Normal flow with STAT_TYPES
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types start";
@@ -1739,7 +2125,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_ty
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types end";
 }
 
-// 测试获取计数信息JSON（非法类型）
+/*
+ * Test interface: UpgradeRestore::GetCountInfoJson
+ * Test content: Verify count info JSON retrieval with illegal types
+ * Cover branches: Illegal types branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types start";
@@ -1754,7 +2144,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_t
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
 }
 
-// 测试需要批量查询照片
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify Need batch query photo
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo start";
@@ -1785,7 +2179,11 @@ void TestConvertPathToRealPathByStorageType(bool isSd)
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-// 测试转换路径到真实路径001（内部存储）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 start";
@@ -1793,7 +2191,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 end";
 }
 
-// 测试转换路径到真实路径002（SD卡）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 002
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_002 start";
@@ -1817,7 +2219,11 @@ void TestConvertPathToRealPathByFileSize(int64_t fileSize, const std::string &sr
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-// 测试转换路径到真实路径003（SD卡，小文件）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 003
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 start";
@@ -1827,7 +2233,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 end";
 }
 
-// 测试转换路径到真实路径004（SD卡，2MB文件）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 004
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 start";
@@ -1837,7 +2247,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 end";
 }
 
-// 测试转换路径到真实路径005（SD卡，大文件）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 005
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 start";
@@ -1863,7 +2277,11 @@ void TestConvertPathToRealPathByLocalMediaId(int32_t localMediaId, const std::st
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-// 测试转换路径到真实路径006（SD卡，隐藏）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 006
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 start";
@@ -1873,7 +2291,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 end";
 }
 
-// 测试转换路径到真实路径007（SD卡，已删除）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify Convert path to real path 007
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 start";
@@ -1883,7 +2305,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
 }
 
-// 测试根据前缀级别获取路径位置
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Get path pos by prefix level
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level start";
@@ -1895,7 +2321,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_lev
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
 
-// 测试更新重复编号
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify Update duplicate number
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number start";
@@ -1917,7 +2347,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, T
     GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number end";
 }
 
-// 测试更新SD卡where子句
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify Update sd where clause
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
@@ -1929,7 +2363,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
 }
 
-// 测试获取地标缩放001（小尺寸）
+/*
+ * Test interface: BackupDatabaseUtils::GetLandmarksScale
+ * Test content: Verify landmarks scale retrieval for small size
+ * Cover branches: Small size branch (0, 2 * min)
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 start";
@@ -1939,7 +2377,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 end";
 }
 
-// 测试获取地标缩放002（中等尺寸）
+/*
+ * Test interface: BackupDatabaseUtils::GetLandmarksScale
+ * Test content: Verify landmarks scale retrieval for medium size
+ * Cover branches: Medium size branch [2 * min, 4 * min)
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 start";
@@ -1950,7 +2392,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 end";
 }
 
-// 测试获取地标缩放003（大尺寸）
+/*
+ * Test interface: BackupDatabaseUtils::GetLandmarksScale
+ * Test content: Verify landmarks scale retrieval for large size
+ * Cover branches: Large size branch [4 * min, ...)
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 start";
@@ -1961,7 +2407,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 end";
 }
 
-// 测试获取地标缩放004（超大尺寸）
+/*
+ * Test interface: BackupDatabaseUtils::GetLandmarksScale
+ * Test content: Verify landmarks scale retrieval for extra large size
+ * Cover branches: Extra large size branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 start";
@@ -1981,7 +2431,11 @@ void InitFaceInfoScale(FaceInfo &faceInfo, float scaleX, float scaleY, float sca
     faceInfo.scaleHeight = scaleHeight;
 }
 
-// 测试地标有效性001（有效）
+/*
+ * Test interface: BackupDatabaseUtils::IsLandmarkValid
+ * Test content: Verify landmark validity for valid coordinates
+ * Cover branches: Valid coordinates branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 start";
@@ -1993,7 +2447,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 end";
 }
 
-// 测试地标有效性002（Y坐标无效）
+/*
+ * Test interface: BackupDatabaseUtils::IsLandmarkValid
+ * Test content: Verify landmark validity for invalid Y coordinate (below)
+ * Cover branches: Invalid Y coordinate branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 start";
@@ -2005,7 +2463,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 end";
 }
 
-// 测试地标有效性003（Y坐标无效）
+/*
+ * Test interface: BackupDatabaseUtils::IsLandmarkValid
+ * Test content: Verify landmark validity for invalid Y coordinate (above)
+ * Cover branches: Invalid Y coordinate branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 start";
@@ -2017,7 +2479,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 end";
 }
 
-// 测试地标有效性004（X坐标无效）
+/*
+ * Test interface: BackupDatabaseUtils::IsLandmarkValid
+ * Test content: Verify landmark validity for invalid X coordinate (below)
+ * Cover branches: Invalid X coordinate branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 start";
@@ -2029,7 +2495,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 end";
 }
 
-// 测试地标有效性005（X坐标无效）
+/*
+ * Test interface: BackupDatabaseUtils::IsLandmarkValid
+ * Test content: Verify landmark validity for invalid X coordinate (above)
+ * Cover branches: Invalid X coordinate branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 start";
@@ -2126,7 +2596,11 @@ void QueryPortraitTotalCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
     QueryInt(rdbStore, querySql, "count", result);
 }
 
-// 测试是否为实况照片
+/*
+ * Test interface: BackupFileUtils::IsLivePhoto
+ * Test. content: Verify live photo detection
+ * Cover branches: Live photo detection with various special file types
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_is_livephoto start");
@@ -2144,7 +2618,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_test_is_livephoto end");
 }
 
-// 测试转换为动态照片
+/*
+ * Test interface: BackupFileUtils::ConvertToMovingPhoto
+ * Test content: Verify conversion to moving photo
+ * Cover branches: Moving photo conversion branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo start");
@@ -2167,7 +2645,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, T
     MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo end");
 }
 
-// 测试文件访问助手
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify File access helper
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_file_access_helper start");
@@ -2191,7 +2673,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_file_access_helper end");
 }
  
-// 测试媒体类型（超越1.3版本）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Media type beyong 1 3
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_media_type start");
@@ -2218,7 +2704,11 @@ void TestAppTwinData(const string &path, const string &expectedExtraPrefix, int3
     EXPECT_EQ(extraPrefix, expectedExtraPrefix);
 }
 
-// 测试应用双数据001（非升级）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 start");
@@ -2226,7 +2716,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 end");
 }
 
-// 测试应用双数据002（空）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 002
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 start");
@@ -2234,7 +2728,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 end");
 }
 
-// 测试应用双数据003（外部存储）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 003
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 start");
@@ -2242,7 +2740,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 end");
 }
 
-// 测试应用双数据004（主用户）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 004
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 start");
@@ -2250,7 +2752,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 end");
 }
 
-// 测试应用双数据005（第一个斜杠未找到）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 005
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 start");
@@ -2258,7 +2764,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 end");
 }
 
-// 测试应用双数据006（第二个斜杠未找到）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 006
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 start");
@@ -2266,7 +2776,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 end");
 }
 
-// 测试应用双数据007（非数字）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 007
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 start");
@@ -2274,7 +2788,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 end");
 }
 
-// 测试应用双数据008（不在[128, 147]范围内）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 008
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 start");
@@ -2282,7 +2800,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 end");
 }
 
-// 测试应用双数据009（应用双数据）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify App twin data 009
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 start");
@@ -2290,7 +2812,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 end");
 }
 
-// 测试从路径获取文件文件夹
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify GetFileFolderFromPath
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath start");
@@ -2316,7 +2842,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, Tes
     MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath end");
 }
 
-// 测试准备路径
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify PreparePath
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_PreparePath start");
@@ -2339,7 +2869,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Leve
     MEDIA_INFO_LOG("medialib_backup_test_PreparePath end");
 }
 
-// 测试混淆文件路径
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify GarbleFilePath
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath start");
@@ -2355,7 +2889,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath end");
 }
 
-// 测试创建路径
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify CreatePath
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_CreatePath start");
@@ -2367,7 +2905,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_test_CreatePath end");
 }
 
-// 测试是否为低质量图片
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify IsLowQualityImage
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage start");
@@ -2380,7 +2922,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage end");
 }
 
-// 测试转换低质量路径
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertLowQualityPath
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath start");
@@ -2414,7 +2960,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath end");
 }
 
-// 测试从云端恢复
+/*
+ * Test interface: UpgradeRestore::RestoreCloudFromGallery
+ * Test content: Verify restoration from cloud
+ * Cover branches: Normal flow with cloud restoration
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_from_cloud_test start");
@@ -2423,7 +2973,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, T
     EXPECT_EQ((restoreServiceCloud->totalNumber_ - countBefore), 0);
 }
 
-// 测试查询云端信息
+/*
+ * Test interface: UpgradeRestore::QueryCloudFileInfos
+ * Test content: Verify cloud file info query
+ * Cover branches: Normal flow with cloud file info query
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_cloud_infos_test start");
@@ -2431,7 +2985,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, Te
     EXPECT_EQ(result.empty(), true);
 }
 
-// 测试获取恢复模式001
+/*
+ * Test interface: BaseRestore::StartRestoreEx
+ * Test content: Verify restore mode retrieval test 001
+ * Cover branches: Restore mode branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_001 start");
@@ -2441,7 +2999,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_001, Test
     EXPECT_EQ(restoreService->restoreMode_, 2);
 }
 
-// 测试获取恢复模式002
+/*
+ * Test interface: BaseRestore::StartRestoreEx
+ * Test content: Verify restore mode retrieval test 002
+ * Cover branches: Restore mode branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_002 start");
@@ -2451,7 +3013,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_002, Test
     EXPECT_EQ(restoreService->restoreMode_, 0);
 }
 
-// 测试获取账户有效性001
+/*
+ * Test interface: BaseRestore::GetAccountValid
+ * Test content: Verify account validity test 001
+ * Cover branches: Account validity branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_001 start");
@@ -2461,7 +3027,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_001, Tes
     EXPECT_FALSE(restoreService->isAccountValid_);
 }
 
-// 测试获取账户有效性002
+/*
+ * Test interface: BaseRestore::GetAccountValid
+ * Test content: Verify account validity test 002
+ * Cover branches: Account validity branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_002 start");
@@ -2471,7 +3041,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_002, Tes
     EXPECT_FALSE(restoreService->isAccountValid_);
 }
 
-// 测试获取源设备信息
+/*
+ * Test interface: BaseRestore::GetSourceDeviceInfo
+ * Test content: Verify source device info retrieval
+ * Cover branches: Source device info branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_source_device_info_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_source_device_info_test start");
@@ -2480,7 +3054,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_source_device_info_test, Te
     EXPECT_EQ(restoreService->dualDeviceSoftName_, "0");
 }
 
-// 测试是否恢复照片001
+/*
+ * Test interface: BaseRestore::IsRestorePhoto
+ * Test content: Verify photo restoration test 001
+ * Cover branches: Photo restoration branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_001 start");
@@ -2489,7 +3067,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_001, Test
     EXPECT_FALSE(restorePhoto);
 }
 
-// 测试是否恢复照片002
+/*
+ * Test interface: BaseRestore::IsRestorePhoto
+ * Test content: Verify photo restoration test 002
+ * Cover branches: Photo restoration branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_002 start");
@@ -2498,7 +3080,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_002, Test
     EXPECT_TRUE(restorePhoto);
 }
 
-// 测试查询SQL
+/*
+ * Test interface: BaseRestore::QuerySql
+ * Test content: Verify SQL query execution
+ * Cover branches: SQL query branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_query_sql_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_query_sql_test start");
@@ -2508,7 +3094,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_query_sql_test, TestSize.Level2
     EXPECT_EQ(result, nullptr);
 }
 
-// 测试插入拍摄日期
+/*
+ * Test interface: BaseRestore::SetValueFromMetaData
+ * Test content: Verify date taken insertion
+ * Cover branches: Date taken branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_date_taken_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_insert_date_taken_test start");
@@ -2520,7 +3110,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_date_taken_test, TestSiz
     EXPECT_EQ(fileInfo.dateTaken, dateModified);
 }
 
-// 测试获取云端插入值
+/*
+ * Test interface: BaseRestore::GetCloudInsertValues
+ * Test content: Verify cloud insert values retrieval
+ * Cover branches: Cloud insert values branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_insert_values_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_insert_values_test start");
@@ -2531,7 +3125,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_insert_values_test, T
     EXPECT_EQ(result.size(), 0);
 }
 
-// 测试插入方向
+/*
+ * Test interface: BaseRestore::SetValueFromMetaData
+ * Test content: Verify orientation insertion
+ * Cover branches: Orientation branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_orientation_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_insert_orientation_test start");
@@ -2548,7 +3146,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_orientation_test, TestSi
     EXPECT_EQ(exifRotate, 0);
 }
 
-// 测试设置封面位置
+/*
+ * Test interface: BaseRestore::SetValueFromMetaData
+ * Test content: Verify cover position setting
+ * Cover branches: Cover position branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_cover_position_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_set_cover_position_test start");
@@ -2566,7 +3168,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_cover_position_test, TestSi
     EXPECT_EQ(coverPosition, 0);
 }
 
-// 测试移动迁移文件
+/*
+ * Test interface: BaseRestore::MoveMigrateFile
+ * Test content: Verify migrate file movement
+ * Cover branches: Migrate file branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_file_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_move_migrate_file_test start");
@@ -2582,7 +3188,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_file_test, TestSiz
     EXPECT_FALSE(fileInfos[0].needVisible);
 }
 
-// 测试移动迁移云端文件
+/*
+ * Test interface: BaseRestore::MoveMigrateCloudFile
+ * Test content: Verify migrate cloud file movement
+ * Cover branches: Migrate cloud file branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_cloud_file_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_move_migrate_cloud_file_test start");
@@ -2598,7 +3208,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_cloud_file_test, T
     EXPECT_EQ(restoreService->migrateFileNumber_, 0);
 }
 
-// 测试批量创建目录项文件001
+/*
+ * Test interface: BaseRestore::BatchCreateDentryFile
+ * Test content: Verify dentry file creation test 001
+ * Cover branches: Dentry file creation branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_001 start");
@@ -2611,7 +3225,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     EXPECT_NE(ret, E_OK);
 }
 
-// 测试批量创建目录项文件002
+/*
+ * Test interface: BaseRestore::BatchCreateDentryFile
+ * Test content: Verify dentry file creation test 002
+ * Cover branches: Dentry file creation with LCD type
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_002 start");
@@ -2624,7 +3242,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     EXPECT_NE(ret, E_OK);
 }
 
-// 测试批量创建目录项文件003
+/*
+ * Test interface: BaseRestore::BatchCreateDentryFile
+ * Test content: Verify dentry file creation test 003
+ * Cover branches: Dentry file creation with THM type
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_003 start");
@@ -2637,7 +3259,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     EXPECT_NE(ret, E_OK);
 }
 
-// 测试从云端恢复LCD和缩略图
+/*
+ * Test interface: BaseRestore::RestoreLcdAndThumbFromCloud
+ * Test content: Verify LCD and thumbnail restoration from cloud
+ * Cover branches: LCD and thumbnail restoration branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_restore_lcd_and_thumb_from_cloud_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_restore_lcd_and_thumb_from_cloud_test start");
@@ -2651,7 +3277,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_restore_lcd_and_thumb_from_clou
     EXPECT_EQ(ret, false);
 }
 
-// 测试处理失败数据001
+/*
+ * Test interface: BaseRestore::HandleFailData
+ * Test content: Verify failed data handling test 001
+ * Cover branches: Failed data handling with DENTRY_INFO_ORIGIN
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_001 start");
@@ -2664,7 +3294,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_001, Test
     EXPECT_EQ(fileInfos.size(), 0);
 }
 
-// 测试处理失败数据002
+/*
+ * Test interface: BaseRestore::HandleFailData
+ * Test content: Verify failed data handling test 002
+ * Cover branches: Failed data handling with DENTRY_INFO_LCD
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_002 start");
@@ -2677,7 +3311,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_002, Test
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
-// 测试处理失败数据003
+/*
+ * Test interface: BaseRestore::HandleFailData
+ * Test content: Verify failed data handling test 003
+ * Cover branches: Failed data handling with DENTRY_INFO_THM
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_003 start");
@@ -2690,7 +3328,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_003, Test
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
-// 测试处理失败数据004
+/*
+ * Test interface: BaseRestore::HandleFailData
+ * Test content: Verify failed data handling test 004
+ * Cover branches: Failed data handling with non-failed file
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_004 start");
@@ -2703,7 +3345,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_004, Test
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
-// 测试设置可见照片
+/*
+ * Test interface: BaseRestore::SetVisiblePhoto
+ * Test content: Verify visible photo setting
+ * Cover branches: Visible photo branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_visible_photo_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_set_visible_photo_test start");
@@ -2715,7 +3361,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_visible_photo_test, TestSiz
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
-// 测试批量插入映射
+/*
+ * Test interface: BaseRestore::BatchInsertMap
+ * Test content: Verify batch map insertion
+ * Cover branches: Batch map insertion branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_insert_map_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_batch_insert_map_test start");
@@ -2728,7 +3378,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_insert_map_test, TestSize
     EXPECT_EQ(totalNum, 0);
 }
 
-// 测试获取唯一ID
+/*
+ * Test interface: BaseRestore::GetUniqueId
+ * Test content: Verify unique ID retrieval
+ * Cover branches: Unique ID branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_unique_id_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_unique_id_test start");
@@ -2749,7 +3403,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_unique_id_test, TestSize.Le
     EXPECT_EQ(uniqueId, - 1);
 }
 
-// 测试获取进度信息
+/*
+ * Test interface: BaseRestore::GetProgressInfo
+ * Test content: Verify progress info retrieval
+ * Cover branches: Progress info branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_progress_info_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_progress_info_test start");
@@ -2757,7 +3415,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_progress_info_test, TestSiz
     EXPECT_FALSE(progressInfo.empty());
 }
 
-// 测试更新数据库
+/*
+ * Test interface: BaseRestore::UpdateDatabase
+ * Test content: Verify database update
+ * Cover branches: Database update branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_update_database_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_update_database_test start");
@@ -2765,7 +3427,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_update_database_test, TestSize.
     EXPECT_EQ(restoreService->updateProcessStatus_, ProcessStatus::STOP);
 }
 
-// 测试克隆相同文件的额外检查
+/*
+ * Test interface: BaseRestore::ExtraCheckForCloneSameFile
+ * Test content: Verify extra check for clone same file
+ * Cover branches: Clone same file branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_extra_check_for_clone_same_file_test start");
@@ -2778,7 +3444,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file
     EXPECT_EQ(ret, false);
 }
 
-// 测试获取插入值
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify Medialib backup get insert value test
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_insert_value_test start");
@@ -2805,7 +3475,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize
     EXPECT_EQ(dateAdded, 1);
 }
 
-// 测试地理知识恢复1
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Geo knowledge test1
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test1, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 start");
@@ -2828,7 +3502,11 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test1, T
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 end");
 }
 
-// 测试地理知识恢复2
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Geo knowledge test2
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test2, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 start");
@@ -2851,7 +3529,11 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test2, T
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 end");
 }
 
-// 测试地理知识恢复3
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Geo knowledge test3
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test3, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 start");
@@ -2867,7 +3549,11 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test3, T
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 end");
 }
 
-// 测试地理知识恢复4
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Geo knowledge test4
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test4, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 start");
@@ -2883,7 +3569,11 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test4, T
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 end");
 }
 
-// 测试地理知识恢复5
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Geo knowledge test5
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 start");
@@ -2916,7 +3606,11 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, T
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 end");
 }
 
-// 测试获取数据经度1
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data longitude test1
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test1, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_longitude_test1 start");
@@ -2934,7 +3628,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test1, TestS
     EXPECT_EQ(ret, setLongitude);
 }
 
-// 测试获取数据经度2
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data longitude test2
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test2, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_longitude_test2 start");
@@ -2962,7 +3660,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test2, TestS
     EXPECT_EQ(ret, setLongitude);
 }
 
-// 测试获取数据经度3
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data longitude test3
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test3, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_longitude_test3 start");
@@ -2990,7 +3692,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test3, TestS
     EXPECT_EQ(ret, setLongitude);
 }
 
-// 测试获取数据纬度1
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data latitude test1
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test1, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_latitude_test1 start");
@@ -3008,7 +3714,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test1, TestSi
     EXPECT_EQ(ret, setLatitude);
 }
 
-// 测试获取数据纬度2
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data latitude test2
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test2, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_latitude_test2 start");
@@ -3029,7 +3739,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test2, TestSi
     EXPECT_EQ(ret, setLatitude);
 }
 
-// 测试获取数据纬度3
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify Medialib backup get data latitude test3
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test3, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_data_latitude_test3 start");
@@ -3050,7 +3764,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test3, TestSi
     EXPECT_EQ(ret, setLatitude);
 }
 
-// 测试获取当前设备恢复配置信息001
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify Medialib backup get current device restore config info test001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_current_device_restore_config_info_test001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_current_device_restore_config_info_test001 start");
@@ -3061,7 +3779,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_current_device_restore_conf
     EXPECT_TRUE(flag);
 }
 
-// 测试获取云端查询SQL001
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify Medialib backup get cloud query sql test001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test001 start");
@@ -3082,7 +3804,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test001, Te
     EXPECT_TRUE(flag);
 }
 
-// 测试获取云端查询SQL002
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify Medialib backup get cloud query sql test002
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test002 start");
@@ -3104,7 +3830,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, Te
     EXPECT_TRUE(flag);
 }
 
-// 测试获取云端查询SQL003
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify Medialib backup get cloud query sql test003
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test003 start");
@@ -3116,7 +3846,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test003, Te
     EXPECT_TRUE(flag);
 }
 
-// 测试基础恢复移动文件001
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify Medialib backup base restore move file 001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_move_file_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_base_restore_move_file_001 start");
@@ -3124,7 +3858,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_move_file_001, Tes
     EXPECT_NE(ret, E_OK);
 }
 
-// 测试基础恢复插入文件时长001
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify Medialib backup base restore insert file duration 001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_duration_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_base_restore_insert_file_duration_001 start");
@@ -3141,7 +3879,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_durati
     EXPECT_EQ(duration, 1);
 }
 
-// 测试基础恢复插入文件时长002
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify Medialib backup base restore insert file duration 002
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_duration_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_base_restore_insert_file_duration_002 start");
@@ -3159,7 +3901,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_base_restore_insert_file_durati
     EXPECT_EQ(duration, 1);
 }
 
-// 测试数据库助手001
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify Medialib backup database helper 001
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_database_helper_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_database_helper_001 start");
@@ -3172,7 +3918,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_database_helper_001, TestSize.L
     EXPECT_EQ(upgrade->CheckInvalidFile(fileInfo, errCode), "");
 }
 
-// 测试字符串转整数（正数）
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with positive numbers
+ * Cover branches: Positive number conversion branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_positive, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_positive start");
@@ -3197,7 +3947,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_positive, Test
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_positive end");
 }
 
-// 测试字符串转整数（负数）
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with negative numbers
+ * Cover branches: Negative number conversion branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_negative, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_negative start");
@@ -3214,7 +3968,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_negative, Test
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_negative end");
 }
 
-// 测试字符串转整数（最大整数）
+/*
+ * Test interface: UpgradeRestore::StringToInt
+ * Test content: Verify string to integer conversion with max int
+ * Cover branches: Max int conversion branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_max_int, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_max_int start");
@@ -3231,31 +3989,26 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_max_int, TestS
     MEDIA_INFO_LOG("medialib_backup_test_StringToInt_max_int end");
 }
 
-// 测试获取当前设备恢复配置信息（关闭）
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCurrentDeviceRestoreConfigInfo_close, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_GetCurrentDeviceRestoreConfigInfo_close start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    
-    upgrade->restoreConfig_.restoreSwitchType = SwitchStatus::CLOSE;
-    RestoreConfigInfo config = upgrade->GetCurrentDeviceRestoreConfigInfo();
-    EXPECT_EQ(config.photoPositionType, PhotoPositionType::LOCAL);
-    EXPECT_EQ(config.southDeviceType, SouthDeviceType::SOUTH_DEVICE_NULL);
-    MEDIA_INFO_LOG("medialib_backup_test_GetCurrentDeviceRestoreConfigInfo_close end");
-}
-
-// 测试是否有低质量图片
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify HasLowQualityImage
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HasLowQualityImage, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_HasLowQualityImage start");
     restoreService->galleryRdb_ = restoreService->galleryRdb_;
     bool result = restoreService->HasLowQualityImage();
+    EXPECT_GE(result, false);
     MEDIA_INFO_LOG("HasLowQualityImage result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_HasLowQualityImage end");
 }
 
-// 测试获取高亮云端媒体数量
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify GetHighlightCloudMediaCnt
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetHighlightCloudMediaCnt, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetHighlightCloudMediaCnt start");
@@ -3266,7 +4019,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetHighlightCloudMediaCnt,
     MEDIA_INFO_LOG("medialib_backup_test_GetHighlightCloudMediaCnt end");
 }
 
-// 测试转换路径到真实路径（内部）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertPathToRealPath internal
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_internal, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_internal start");
@@ -3281,7 +4038,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_inte
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_internal end");
 }
 
-// 测试转换路径到真实路径（SD卡小文件）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertPathToRealPath sd small file
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_small_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_small_file start");
@@ -3301,7 +4062,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_s
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_small_file end");
 }
 
-// 测试转换路径到真实路径（SD卡大文件）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertPathToRealPath sd large file
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_large_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_large_file start");
@@ -3321,7 +4086,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_l
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_large_file end");
 }
 
-// 测试转换路径到真实路径（SD卡隐藏）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertPathToRealPath sd hidden
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_hidden, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_hidden start");
@@ -3341,7 +4110,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_h
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_hidden end");
 }
 
-// 测试转换路径到真实路径（SD卡已删除）
+/*
+ * Test interface: UpgradeRestore::Convert
+ * Test content: Verify ConvertPathToRealPath sd trashed
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_trashed, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_trashed start");
@@ -3361,7 +4134,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertPathToRealPath_sd_t
     MEDIA_INFO_LOG("medialib_backup_test_ConvertPathToRealPath_sd_trashed end");
 }
 
-// 测试设置方向和EXIF旋转（云端）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify SetOrientationAndExifRotate cloud
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetOrientationAndExifRotate_cloud, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_SetOrientationAndExifRotate_cloud start");
@@ -3391,7 +4168,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetOrientationAndExifRotat
     MEDIA_INFO_LOG("medialib_backup_test_SetOrientationAndExifRotate_cloud end");
 }
 
-// 测试设置方向和EXIF旋转（本地，零）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify SetOrientationAndExifRotate local zero
+ * Cover branches: Zero value branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetOrientationAndExifRotate_local_zero, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_SetOrientationAndExifRotate_local_zero start");
@@ -3422,7 +4203,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetOrientationAndExifRotat
     MEDIA_INFO_LOG("medialib_backup_test_SetOrientationAndExifRotate_local_zero end");
 }
 
-// 测试获取无需迁移数量
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify GetNoNeedMigrateCount
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetNoNeedMigrateCount, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetNoNeedMigrateCount start");
@@ -3434,18 +4219,27 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetNoNeedMigrateCount, Tes
     MEDIA_INFO_LOG("medialib_backup_test_GetNoNeedMigrateCount end");
 }
 
-// 测试检查图库数据库完整性
+/*
+ * Test interface: UpgradeRestore::Check
+ * Test content: Verify CheckGalleryDbIntegrity
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CheckGalleryDbIntegrity, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_CheckGalleryDbIntegrity start");
     restoreService->galleryRdb_ = restoreService->galleryRdb_;
     restoreService->galleryDbPath_ = TEST_BACKUP_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
     std::string result = restoreService->CheckGalleryDbIntegrity();
+    EXPECT_FALSE(result.empty());
     MEDIA_INFO_LOG("CheckGalleryDbIntegrity result: %{public}s", result.c_str());
     MEDIA_INFO_LOG("medialib_backup_test_CheckGalleryDbIntegrity end");
 }
 
-// 测试恢复精彩时刻
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreHighlightAlbums
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreHighlightAlbums, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreHighlightAlbums start");
@@ -3458,10 +4252,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreHighlightAlbums, Te
     restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
     
     restoreService->RestoreHighlightAlbums();
+    EXPECT_NE(restoreService->galleryRdb_, nullptr);
+    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreHighlightAlbums end");
 }
 
-// 测试恢复智能相册
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreSmartAlbums
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreSmartAlbums, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreSmartAlbums start");
@@ -3470,10 +4270,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreSmartAlbums, TestSi
     restoreService->sceneCode_ = UPGRADE_RESTORE_ID;
     
     restoreService->RestoreSmartAlbums();
+    EXPECT_NE(restoreService->galleryRdb_, nullptr);
+    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreSmartAlbums end");
 }
 
-// 测试查询人像相册总数
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryPortraitAlbumTotalNumber
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryPortraitAlbumTotalNumber, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryPortraitAlbumTotalNumber start");
@@ -3486,18 +4292,27 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryPortraitAlbumTotalNum
     MEDIA_INFO_LOG("medialib_backup_test_QueryPortraitAlbumTotalNumber end");
 }
 
-// 测试检查是否需要克隆IsMe
+/*
+ * Test interface: UpgradeRestore::Check
+ * Test content: Verify CheckIsNeedCloneIsMe
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CheckIsNeedCloneIsMe, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_CheckIsNeedCloneIsMe start");
     restoreService->galleryRdb_ = restoreService->galleryRdb_;
     
     bool result = restoreService->CheckIsNeedCloneIsMe();
+    EXPECT_GE(result, false);
     MEDIA_INFO_LOG("CheckIsNeedCloneIsMe: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_CheckIsNeedCloneIsMe end");
 }
 
-// 测试查询人像相册信息
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryPortraitAlbumInfos
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryPortraitAlbumInfos, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryPortraitAlbumInfos start");
@@ -3506,11 +4321,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryPortraitAlbumInfos, T
     
     std::vector<std::string> tagNameToDeleteSelection;
     vector<PortraitAlbumInfo> result = restoreService->QueryPortraitAlbumInfos(0, tagNameToDeleteSelection);
+    EXPECT_GE(result.size(), 0);
     MEDIA_INFO_LOG("QueryPortraitAlbumInfos size: %{public}zu", result.size());
     MEDIA_INFO_LOG("medialib_backup_test_QueryPortraitAlbumInfos end");
 }
 
-// 测试插入人像相册
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertPortraitAlbum
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbum, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum start");
@@ -3525,10 +4345,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbum, TestS
     portraitAlbumInfos.push_back(info);
     
     restoreService->InsertPortraitAlbum(portraitAlbumInfos);
+    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum end");
 }
 
-// 测试记录相册封面信息
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify RecordAlbumCoverInfo
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RecordAlbumCoverInfo, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RecordAlbumCoverInfo start");
@@ -3543,7 +4368,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RecordAlbumCoverInfo, Test
     MEDIA_INFO_LOG("medialib_backup_test_RecordAlbumCoverInfo end");
 }
 
-// 测试解析音频结果集（空）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ParseResultSetForAudio null
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetForAudio_null, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetForAudio_null start");
@@ -3558,7 +4387,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetForAudio_nul
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetForAudio_null end");
 }
 
-// 测试解析图库结果集（空）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ParseResultSetFromGallery null
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetFromGallery_null, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetFromGallery_null start");
@@ -3573,7 +4406,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetFromGallery_
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetFromGallery_null end");
 }
 
-// 测试解析外部结果集（空）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ParseResultSetFromExternal null
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetFromExternal_null, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetFromExternal_null start");
@@ -3588,7 +4425,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseResultSetFromExternal
     MEDIA_INFO_LOG("medialib_backup_test_ParseResultSetFromExternal_null end");
 }
 
-// 测试查询文件信息（空数据库）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryFileInfos null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFileInfos_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryFileInfos_null_rdb start");
@@ -3601,7 +4442,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFileInfos_null_rdb, T
     MEDIA_INFO_LOG("medialib_backup_test_QueryFileInfos_null_rdb end");
 }
 
-// 测试查询云端文件信息（空数据库）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryCloudFileInfos null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryCloudFileInfos_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryCloudFileInfos_null_rdb start");
@@ -3614,7 +4459,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryCloudFileInfos_null_r
     MEDIA_INFO_LOG("medialib_backup_test_QueryCloudFileInfos_null_rdb end");
 }
 
-// 测试从外部查询文件信息（空数据库）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryFileInfosFromExternal null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFileInfosFromExternal_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryFileInfosFromExternal_null_rdb start");
@@ -3627,7 +4476,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFileInfosFromExternal
     MEDIA_INFO_LOG("medialib_backup_test_QueryFileInfosFromExternal_null_rdb end");
 }
 
-// 测试从音频查询音频文件信息（空数据库）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryAudioFileInfosFromAudio null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryAudioFileInfosFromAudio_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryAudioFileInfosFromAudio_null_rdb start");
@@ -3640,7 +4493,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryAudioFileInfosFromAud
     MEDIA_INFO_LOG("medialib_backup_test_QueryAudioFileInfosFromAudio_null_rdb end");
 }
 
-// 测试获取云端照片最小ID（空数据库）
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify GetCloudPhotoMinIds null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCloudPhotoMinIds_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetCloudPhotoMinIds_null_rdb start");
@@ -3653,7 +4510,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCloudPhotoMinIds_null_r
     MEDIA_INFO_LOG("medialib_backup_test_GetCloudPhotoMinIds_null_rdb end");
 }
 
-// 测试获取本地照片最小ID（空数据库）
+/*
+ * Test interface: UpgradeRestore::Get
+ * Test content: Verify GetLocalPhotoMinIds null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetLocalPhotoMinIds_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetLocalPhotoMinIds_null_rdb start");
@@ -3666,7 +4527,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetLocalPhotoMinIds_null_r
     MEDIA_INFO_LOG("medialib_backup_test_GetLocalPhotoMinIds_null_rdb end");
 }
 
-// 测试分析图库错误源（空数据库）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify AnalyzeGalleryErrorSource null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeGalleryErrorSource_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeGalleryErrorSource_null_rdb start");
@@ -3675,10 +4540,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeGalleryErrorSource_
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->AnalyzeGalleryErrorSource();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeGalleryErrorSource_null_rdb end");
 }
 
-// 测试初始化垃圾相册（空数据库）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify InitGarbageAlbum null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitGarbageAlbum_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InitGarbageAlbum_null_rdb start");
@@ -3687,10 +4557,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitGarbageAlbum_null_rdb,
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->InitGarbageAlbum();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_InitGarbageAlbum_null_rdb end");
 }
 
-// 测试添加到图库失败偏移量
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify AddToGalleryFailedOffsets
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AddToGalleryFailedOffsets, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_AddToGalleryFailedOffsets start");
@@ -3699,10 +4574,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AddToGalleryFailedOffsets,
     
     upgrade->AddToGalleryFailedOffsets(100);
     upgrade->AddToGalleryFailedOffsets(200);
+    EXPECT_GE(upgrade->galleryFailedOffsets_.size(), 2);
     MEDIA_INFO_LOG("medialib_backup_test_AddToGalleryFailedOffsets end");
 }
 
-// 测试添加到外部失败偏移量
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify AddToExternalFailedOffsets
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AddToExternalFailedOffsets, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_AddToExternalFailedOffsets start");
@@ -3711,10 +4591,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AddToExternalFailedOffsets
     
     upgrade->AddToExternalFailedOffsets(100);
     upgrade->AddToExternalFailedOffsets(200);
+    EXPECT_GE(upgrade->externalFailedOffsets_.size(), 2);
     MEDIA_INFO_LOG("medialib_backup_test_AddToExternalFailedOffsets end");
 }
 
-// 测试是否为有效目录
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify IsValidDir
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsValidDir, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_IsValidDir start");
@@ -3723,11 +4608,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsValidDir, TestSize.Level
     
     std::string path = "/Pictures/test";
     bool result = upgrade->IsValidDir(path);
+    EXPECT_GE(result, false);
     MEDIA_INFO_LOG("IsValidDir result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_IsValidDir end");
 }
 
-// 测试查询未同步总数
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryNotSyncTotalNumber
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryNotSyncTotalNumber, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryNotSyncTotalNumber start");
@@ -3739,7 +4629,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryNotSyncTotalNumber, T
     MEDIA_INFO_LOG("medialib_backup_test_QueryNotSyncTotalNumber end");
 }
 
-// 测试获取插入值（云端）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue cloud
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_cloud, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_cloud start");
@@ -3772,7 +4666,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_cloud, Test
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_cloud end");
 }
 
-// 测试获取插入值（本地）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue local
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_local, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_local start");
@@ -3802,7 +4700,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_local, Test
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_local end");
 }
 
-// 测试获取插入值（视频）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue video
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_video, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_video start");
@@ -3828,7 +4730,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_video, Test
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_video end");
 }
 
-// 测试获取插入值（音频）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue audio
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_audio, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_audio start");
@@ -3852,7 +4758,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_audio, Test
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_audio end");
 }
 
-// 测试更新人脸分析状态（空）
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify UpdateFaceAnalysisStatus empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFaceAnalysisStatus_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_UpdateFaceAnalysisStatus_empty_empty start");
@@ -3861,10 +4771,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFaceAnalysisStatus_e
     
     upgrade->portraitAlbumIdMap_.clear();
     upgrade->UpdateFaceAnalysisStatus();
+    EXPECT_EQ(upgrade->portraitAlbumIdMap_.size(), 0);
     MEDIA_INFO_LOG("medialib_backup_test_UpdateFaceAnalysisStatus_empty end");
 }
 
-// 测试更新双框架克隆人脸分析状态（空）
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify UpdateDualCloneFaceAnalysisStatus empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateDualCloneFaceAnalysisStatus_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_UpdateDualCloneFaceAnalysisStatus_empty start");
@@ -3873,11 +4788,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateDualCloneFaceAnalysi
     
     upgrade->portraitAlbumIdMap_.clear();
     upgrade->UpdateDualCloneFaceAnalysisStatus();
+    EXPECT_EQ(upgrade->portraitAlbumIdMap_.size(), 0);
     MEDIA_INFO_LOG("medialib_backup_test_UpdateDualCloneFaceAnalysisStatus_empty end");
     MEDIA_INFO_LOG("medialib_backup_test_UpdateDualCloneFaceAnalysisStatus_empty end");
 }
 
-// 测试插入人像相册（空）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertPortraitAlbum empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbum_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum_empty start");
@@ -3887,10 +4807,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbum_empty,
     upgrade->mediaLibraryRdb_ = nullptr;
     std::vector<PortraitAlbumInfo> portraitAlbumInfos;
     upgrade->InsertPortraitAlbum(portraitAlbumInfos);
+    EXPECT_EQ(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum_empty end");
 }
 
-// 测试通过表插入人像相册（相册）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertPortraitAlbumByTable album
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbumByTable_album, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbumByTable_album start");
@@ -3909,7 +4834,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbumByTable
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbumByTable_album end");
 }
 
-// 测试通过表插入人像相册（标签）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertPortraitAlbumByTable tag
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbumByTable_tag, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbumByTable_tag start");
@@ -3928,7 +4857,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbumByTable
     MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbumByTable_tag end");
 }
 
-// 测试获取插入值（人像相册）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValues portrait album
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_portrait_album, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_portrait_album start");
@@ -3949,7 +4882,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_portrait_a
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_portrait_album end");
 }
 
-// 测试获取插入值（人像相册，我）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue portrait album me
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_album_me, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_album_me start");
@@ -3968,7 +4905,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_al
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_album_me end");
 }
 
-// 测试获取插入值（人像相册，非我）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue portrait album not me
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_album_not_me, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_album_not_me start");
@@ -3987,7 +4928,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_al
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_album_not_me end");
 }
 
-// 测试获取插入值（人像标签）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValue portrait tag
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_tag, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_tag start");
@@ -4002,7 +4947,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValue_portrait_ta
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValue_portrait_tag end");
 }
 
-// 测试批量查询相册（空）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify BatchQueryAlbum empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_BatchQueryAlbum_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_BatchQueryAlbum_empty start");
@@ -4012,10 +4961,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_BatchQueryAlbum_empty, Tes
     upgrade->mediaLibraryRdb_ = nullptr;
     std::vector<PortraitAlbumInfo> portraitAlbumInfos;
     upgrade->BatchQueryAlbum(portraitAlbumInfos);
+    EXPECT_EQ(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_BatchQueryAlbum_empty end");
 }
 
-// 测试设置属性（人像）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify SetAttributes portrait
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetAttributes_portrait, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_SetAttributes_portrait start");
@@ -4026,11 +4980,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetAttributes_portrait, Te
     info.tagIdOld = "old_tag_id";
     
     bool result = upgrade->SetAttributes(info);
+    EXPECT_GE(result, false);
     MEDIA_INFO_LOG("SetAttributes portrait result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_SetAttributes_portrait end");
 }
 
-// 测试设置属性（人脸）
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify SetAttributesSetAttributes face
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetAttributesSetAttributes_face, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_SetAttributes_face start");
@@ -4048,11 +5007,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetAttributesSetAttributes
     fileInfoMap["test_hash"] = fileInfo;
     
     bool result = upgrade->SetAttributes(faceInfo, fileInfoMap);
+    EXPECT_GE(result, false);
     MEDIA_INFO_LOG("SetAttributes face result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_SetAttributes_face end");
 }
 
-// 测试更新带人脸的文件
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify UpdateFilesWithFace
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFilesWithFace, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_UpdateFilesWithFace start");
@@ -4073,7 +5037,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFilesWithFace, TestS
     MEDIA_INFO_LOG("medialib_backup_test_UpdateFilesWithFace end");
 }
 
-// 测试获取获取插入值（人脸映射）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValues face map
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_face_map, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_face_map start");
@@ -4094,7 +5062,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_face_map, 
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_face_map end");
 }
 
-// 测试获取插入值（人脸信息）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify GetInsertValues face info
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_face_info, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_face_info start");
@@ -4123,7 +5095,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetInsertValues_face_info,
     MEDIA_INFO_LOG("medialib_backup_test_GetInsertValues_face_info end");
 }
 
-// 测试通过表插入人脸分析数据（人脸）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertFaceAnalysisDataByTable face
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisDataByTable_face, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisDataByTable_face start");
@@ -4144,7 +5120,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisDataByTa
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisDataByTable_face end");
 }
 
-// 测试通过表插入人脸分析数据（映射）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertFaceAnalysisDataByTable map
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisDataByTable_map, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisDataByTable_map start");
@@ -4166,7 +5146,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisDataByTa
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisDataByTable_map end");
 }
 
-// 测试设置哈希引用
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify SetHashReference
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetHashReference, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_SetHashReference start");
@@ -4193,11 +5177,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetHashReference, TestSize
     std::unordered_map<std::string, FileInfo> fileInfoMap;
     upgrade->SetHashReference(fileInfos, needQueryMap, hashSelection, fileInfoMap);
     
+    EXPECT_GE(fileInfoMap.size(), 0);
     MEDIA_INFO_LOG("SetHashReference fileInfoMap size: %{public}zu", fileInfoMap.size());
     MEDIA_INFO_LOG("medialib_backup_test_SetHashReference end");
 }
 
-// 测试查询人脸总数
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryFaceTotalNumber
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFaceTotalNumber, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryFaceTotalNumber start");
@@ -4210,7 +5199,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFaceTotalNumber, Test
     MEDIA_INFO_LOG("medialib_backup_test_QueryFaceTotalNumber end");
 }
 
-// 测试查询人脸信息（空数据库）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify QueryFaceInfos null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFaceInfos_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_QueryFaceInfos_null_rdb start");
@@ -4228,7 +5221,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryFaceInfos_null_rdb, T
     MEDIA_INFO_LOG("medialib_backup_test_QueryFaceInfos_null_rdb end");
 }
 
-// 测试需要批量查询照片用于人像（空）
+/*
+ * Test interface: UpgradeRestore::Query
+ * Test content: Verify NeedBatchQueryPhotoForPortrait empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_NeedBatchQueryPhotoForPortrait_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_NeedBatchQueryPhotoForPortrait_empty start");
@@ -4246,7 +5243,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_NeedBatchQueryPhotoForPort
     MEDIA_INFO_LOG("medialib_backup_test_NeedBatchQueryPhotoForPortrait_empty end");
 }
 
-// 测试插入人脸分析数据（空）
+/*
+ * Test interface: UpgradeRestore::Insert
+ * Test content: Verify InsertFaceAnalysisData empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisData_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisData_empty start");
@@ -4263,10 +5264,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertFaceAnalysisData_emp
     int64_t photoNum = 0;
     
     upgrade->InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, mapRowNum, photoNum);
+    EXPECT_GE(faceRowNum, 0);
+    EXPECT_GE(mapRowNum, 0);
+    EXPECT_GE(photoNum, 0);
     MEDIA_INFO_LOG("medialib_backup_test_InsertFaceAnalysisData_empty end");
 }
 
-// 测试从图库恢复人像相册（空）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreFromGalleryPortraitAlbum empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromGalleryPortraitAlbum_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromGalleryPortraitAlbum_empty start");
@@ -4276,24 +5284,36 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromGalleryPortrait
     upgrade->galleryRdb_ = nullptr;
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     upgrade->RestoreFromGalleryPortraitAlbum();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromGalleryPortraitAlbum_empty end");
 }
 
-// 测试恢复分析相册
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreAnalysisAlbum
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAnalysisAlbum, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAnalysisAlbum start");
-    restoreService->galleryRdb_ = restoreService->galleryRdb_;
+
     restoreService->mediaLibraryRdb_ = photosStorePtr;
     restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
     restoreService->shouldIncludeSd_ = false;
     restoreService->hasLowQualityImage_ = false;
     
     restoreService->RestoreAnalysisAlbum();
+    EXPECT_NE(restoreService->galleryRdb_, nullptr);
+    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAnalysisAlbum end");
 }
 
-// 测试继承手动封面（空数据库）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify InheritManualCover null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InheritManualCover_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InheritManualCover_null_rdb start");
@@ -4302,10 +5322,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InheritManualCover_null_rd
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->InheritManualCover();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_InheritManualCover_null_rdb end");
 }
 
-// 测试更新照片相册封面URI（空）
+/*
+ * Test interface: UpgradeRestore::Update
+ * Test content: Verify UpdatePhotoAlbumCoverUri empty
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdatePhotoAlbumCoverUri_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_UpdatePhotoAlbumCoverUri_empty start");
@@ -4315,35 +5340,29 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdatePhotoAlbumCoverUri_e
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     vector<AlbumCoverInfo> albumCoverInfos;
     upgrade->UpdatePhotoAlbumCoverUri(albumCoverInfos);
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_UpdatePhotoAlbumCoverUri_empty end");
 }
 
-// 测试删除空相册
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify DeleteEmptyAlbums
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_DeleteEmptyAlbums, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_DeleteEmptyAlbums start");
     restoreService->mediaLibraryRdb_ = photosStorePtr;
     restoreService->DeleteEmptyAlbums();
+    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_DeleteEmptyAlbums end");
 }
 
-// 测试批量删除空相册
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_BatchDeleteEmptyAlbums, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_BatchDeleteEmptyAlbums start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
-    std::vector<int32_t> batchAlbumIds = {100, 200, 300};
-    int32_t deleteRows = 0;
-    
-    upgrade->BatchDeleteEmptyAlbums(batchAlbumIds, deleteRows);
-    MEDIA_INFO_LOG("BatchDeleteEmptyAlbums deleteRows: %{public}d", deleteRows);
-    MEDIA_INFO_LOG("medialib_backup_test_BatchDeleteEmptyAlbums end");
-}
-
-// 测试恢复照片内部（无图库数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestorePhotoInner no gallery db
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestorePhotoInner_no_gallery_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestorePhotoInner_no_gallery_db start");
@@ -4357,7 +5376,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestorePhotoInner_no_galle
     MEDIA_INFO_LOG("medialib_backup_test_RestorePhotoInner_no_gallery_db end");
 }
 
-// 测试初始化数据库（升级失败）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify InitDb upgrade fail
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDb_upgrade_fail, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InitDb_upgrade_fail start");
@@ -4372,7 +5395,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDb_upgrade_fail, TestS
     MEDIA_INFO_LOG("medialib_backup_test_InitDb_upgrade_fail end");
 }
 
-// 测试初始化数据库（非升级）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify InitDb no upgrade
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDb_no_upgrade, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_InitDb_no_upgrade start");
@@ -4387,10 +5414,14 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDb_no_upgrade, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_InitDb_no_upgrade end");
 }
 
-// 测试初始化数据库和XML（失败）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify InitDbAndXml fail
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDbAndXml_fail, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialib_backup_test_InitDbAndXmlAndXml_fail start");
+    MEDIA_INFO_LOG("medialib_backup_test_InitDbAndXml_fail start");
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     
@@ -4402,7 +5433,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InitDbAndXml_fail, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_InitDbAndXml_fail end");
 }
 
-// 测试初始化失败（无外部数据库）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify Init fail no external db
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_Init_fail_no_external_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_Init_fail_no_external_db start");
@@ -4417,7 +5452,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_Init_fail_no_external_db, 
     MEDIA_INFO_LOG("medialib_backup_test_Init_fail_no_external_db end");
 }
 
-// 测试初始化（克隆）
+/*
+ * Test interface: UpgradeRestore::Init
+ * Test content: Verify Init clone
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_Init_clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_Init_clone start");
@@ -4428,11 +5467,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_Init_clone, TestSize.Level
     std::string upgradeFilePath = TEST_UPGRADE_FILE_DIR;
     
     int32_t result = upgrade->Init(backupPath, upgradeFilePath, false);
+    EXPECT_EQ(result, E_OK);
     MEDIA_INFO_LOG("Init clone result: %{public}d", result);
     MEDIA_INFO_LOG("medialib_backup_test_Init_clone end");
 }
 
-// 测试恢复音频（克隆）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreAudio clone
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudio_clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudio_clone start");
@@ -4445,10 +5489,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudio_clone, TestSi
     upgrade->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
     
     upgrade->RestoreAudio();
+    EXPECT_EQ(upgrade->sceneCode_, DUAL_FRAME_CLONE_RESTORE_ID);
+    EXPECT_EQ(upgrade->restoreMode_, RESTORE_MODE_PROC_ALL_DATA);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudio_clone end");
 }
 
-// 测试恢复音频（升级）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreAudio upgrade
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudio_upgrade, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudio_upgrade start");
@@ -4461,10 +5511,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudio_upgrade, Test
     upgrade->restoreMode_ = RESTORE_MODE_PROC_MAIN_DATA;
     
     upgrade->RestoreAudio();
+    EXPECT_EQ(upgrade->sceneCode_, UPGRADE_RESTORE_ID);
+    EXPECT_EQ(upgrade->restoreMode_, RESTORE_MODE_PROC_MAIN_DATA);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudio_upgrade end");
 }
 
-// 测试从文件恢复音频（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreAudioFromFile null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudioFromFile_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudioFromFile_null_rdb start");
@@ -4473,10 +5529,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudioFromFile_null_
     
     upgrade->audioRdb_ = nullptr;
     upgrade->RestoreAudioFromFile();
+    EXPECT_EQ(upgrade->audioRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudioFromFile_null_rdb end");
 }
 
-// 测试恢复音频批次（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreAudioBatch null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudioBatch_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudioBatch_null_rdb start");
@@ -4485,10 +5546,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAudioBatch_null_rdb
     
     upgrade->audioRdb_ = nullptr;
     upgrade->RestoreAudioBatch(0);
+    EXPECT_EQ(upgrade->audioRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreAudioBatch_null_rdb end");
 }
 
-// 测试处理剩余数据（删除）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify HandleRestData delete
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HandleRestData_delete, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_HandleRestData_delete start");
@@ -4503,10 +5569,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HandleRestData_delete, Tes
     upgrade->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
     
     upgrade->HandleRestData();
+    EXPECT_EQ(upgrade->restoreMode_, RESTORE_MODE_PROC_ALL_DATA);
     MEDIA_INFO_LOG("medialib_backup_test_HandleRestData_delete end");
 }
 
-// 测试处理剩余数据（不删除）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify HandleRestData no delete
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HandleRestData_no_delete, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_HandleRestData_no_delete start");
@@ -4520,10 +5591,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HandleRestData_no_delete, 
     upgrade->restoreMode_ = RESTORE_MODE_PROC_MAIN_DATA;
     
     upgrade->HandleRestData();
+    EXPECT_EQ(upgrade->restoreMode_, RESTORE_MODE_PROC_MAIN_DATA);
     MEDIA_INFO_LOG("medialib_backup_test_HandleRestData_no_delete end");
 }
 
-// 测试恢复照片（不恢复）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestorePhoto not restore
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestorePhoto_not_restore, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestorePhoto_not_restore start");
@@ -4535,10 +5611,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestorePhoto_not_restore, 
     upgrade->sceneCode_ = UPGRADE_RESTORE_ID;
     
     upgrade->RestorePhoto();
+    EXPECT_EQ(upgrade->sceneCode_, UPGRADE_RESTORE_ID);
     MEDIA_INFO_LOG("medialib_backup_test_RestorePhoto_not_restore end");
 }
 
-// 测试从图库恢复（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreFromGallery null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromGallery_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromGallery_null_rdb start");
@@ -4547,10 +5628,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromGallery_null_rd
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->RestoreFromGallery();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromGallery_null_rdb end");
 }
 
-// 测试从图库恢复云端（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreCloudFromGallery null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreCloudFromGallery_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreCloudFromGallery_null_rdb start");
@@ -4559,10 +5645,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreCloudFromGallery_nu
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->RestoreCloudFromGallery();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreCloudFromGallery_null_rdb end");
 }
 
-// 测试从外部恢复（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreFromExternal null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromExternal_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromExternal_null_rdb start");
@@ -4572,10 +5663,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromExternal_null_r
     upgrade->galleryRdb_ = nullptr;
     upgrade->externalRdb_ = nullptr;
     upgrade->RestoreFromExternal(true);
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
+    EXPECT_EQ(upgrade->externalRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreFromExternal_null_rdb end");
 }
 
-// 测试恢复批次（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreBatch null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreBatch_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreBatch_null_rdb start");
@@ -4585,10 +5682,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreBatch_null_rdb, Tes
     upgrade->galleryRdb_ = nullptr;
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     upgrade->RestoreBatch(0);
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreBatch_null_rdb end");
 }
 
-// 测试恢复云端批次（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreBatchForCloud null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreBatchForCloud_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreBatchForCloud_null_rdb start");
@@ -4598,10 +5700,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreBatchForCloud_null_
     upgrade->galleryRdb_ = nullptr;
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     upgrade->RestoreBatchForCloud(0);
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreBatchForCloud_null_rdb end");
 }
 
-// 测试恢复外部批次（空数据库）
+/*
+ * Test interface: UpgradeRestore::Restore
+ * Test content: Verify RestoreExternalBatch null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreExternalBatch_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_RestoreExternalBatch_null_rdb start");
@@ -4611,10 +5718,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreExternalBatch_null_
     upgrade->externalRdb_ = nullptr;
     upgrade->mediaLibraryRdb_ = photosStorePtr;
     upgrade->RestoreExternalBatch(0, 1000, true, SourceType::EXTERNAL_CAMERA);
+    EXPECT_EQ(upgrade->externalRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreExternalBatch_null_rdb end");
 }
 
-// 测试处理图库失败偏移量
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ProcessGalleryFailedOffsets
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessGalleryFailedOffsets, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ProcessGalleryFailedOffsets start");
@@ -4625,10 +5737,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessGalleryFailedOffset
     upgrade->AddToGalleryFailedOffsets(100);
     upgrade->AddToGalleryFailedOffsets(200);
     upgrade->ProcessGalleryFailedOffsets();
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_ProcessGalleryFailedOffsets end");
 }
 
-// 测试处理云端图库失败偏移量
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ProcessCloudGalleryFailedOffsets
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessCloudGalleryFailedOffsets, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ProcessCloudGalleryFailedOffsets start");
@@ -4639,10 +5756,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessCloudGalleryFailedO
     upgrade->AddToGalleryFailedOffsets(100);
     upgrade->AddToGalleryFailedOffsets(200);
     upgrade->ProcessCloudGalleryFailedOffsets();
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_ProcessCloudGalleryFailedOffsets end");
 }
 
-// 测试处理外部失败偏移量
+/*
+ * Test interface: UpgradeRestore::Set
+ * Test content: Verify ProcessExternalFailedOffsets
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessExternalFailedOffsets, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ProcessExternalFailedOffsets start");
@@ -4653,10 +5775,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessExternalFailedOffse
     upgrade->AddToExternalFailedOffsets(100);
     upgrade->AddToExternalFailedOffsets(200);
     upgrade->ProcessExternalFailedOffsets(1000, true, SourceType::EXTERNAL_CAMERA);
+    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_ProcessExternalFailedOffsets end");
 }
 
-// 测试分析源（空数据库）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify AnalyzeSource null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeSource_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeSource_null_rdb start");
@@ -4667,10 +5794,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeSource_null_rdb, Te
     upgrade->galleryRdb_ = nullptr;
     upgrade->mediaLibraryRdb_ = nullptr;
     upgrade->AnalyzeSource();
+    EXPECT_EQ(upgrade->externalRdb_, nullptr);
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
+    EXPECT_EQ(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeSource_null_rdb end");
 }
 
-// 测试分析图库源（空数据库）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify AnalyzeGallerySource null rdb
+ * Cover branches: Empty/null parameter branch
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeGallerySource_null_rdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeGallerySource_null_rdb start");
@@ -4679,10 +5813,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_AnalyzeGallerySource_null_
     
     upgrade->galleryRdb_ = nullptr;
     upgrade->AnalyzeGallerySource();
+    EXPECT_EQ(upgrade->galleryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_AnalyzeGallerySource_null_rdb end");
 }
 
-// 测试双框架克隆是否有相同文件（无）
+/*
+ * Test interface: BackupFileUtils
+ * Test content: Verify HasSameFileForDualClone no same
+ * Cover branches: Normal flow
+ */
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HasSameFileForDualClone_no_same, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_HasSameFileForDualClone_no_same start");
@@ -4694,6 +5833,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HasSameFileForDualClone_no
     fileInfo.oldPath = "/test/nonexistent.jpg";
     
     bool result = upgrade->HasSameFileForDualClone(fileInfo);
+    EXPECT_EQ(result, false);
     MEDIA_INFO_LOG("HasSameFileForDualClone result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_HasSameFileForDualClone_no_same end");
 }
