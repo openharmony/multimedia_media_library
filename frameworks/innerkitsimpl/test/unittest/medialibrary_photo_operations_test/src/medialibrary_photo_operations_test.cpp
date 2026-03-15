@@ -5329,5 +5329,193 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_non_critical_test_001
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_non_critical_test_001");
 }
+
+static string GetUniqueIdByFileId(int32_t fileId)
+{
+    auto fileAsset = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("GetUniqueIdByFileId: fileAsset is nullptr, fileId: %{public}d", fileId);
+        return "";
+    }
+    return fileAsset->GetUniqueId();
+}
+
+static int32_t GetLivePhoto4dStatusByFileId(int32_t fileId)
+{
+    string querySql = "SELECT " + PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+    auto resultSet = g_rdbStore->QuerySql(querySql);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        return GetInt32Val(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, resultSet);
+    }
+    return -1;
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_001");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_001.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNIDENTIFIED), "");
+    EXPECT_EQ(ret, E_OK);
+
+    int32_t dbStatus = GetLivePhoto4dStatusByFileId(photoId);
+    EXPECT_EQ(dbStatus, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNIDENTIFIED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_001 end, ret: %{public}d, dbStatus: %{public}d", ret, dbStatus);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_002");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_002.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_SUPPORTED), "");
+    EXPECT_EQ(ret, E_OK);
+
+    int32_t dbStatus = GetLivePhoto4dStatusByFileId(photoId);
+    EXPECT_EQ(dbStatus, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_SUPPORTED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_002 end, ret: %{public}d, dbStatus: %{public}d", ret, dbStatus);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_003");
+    int32_t photoIdA = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairA_003.jpg", true);
+    ASSERT_GE(photoIdA, 0);
+    string uniqueIdA = GetUniqueIdByFileId(photoIdA);
+    ASSERT_FALSE(uniqueIdA.empty());
+
+    int32_t photoIdB = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairB_003.jpg", true);
+    ASSERT_GE(photoIdB, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoIdB,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED), uniqueIdA);
+    EXPECT_EQ(ret, E_OK);
+
+    int32_t dbStatus = GetLivePhoto4dStatusByFileId(photoIdB);
+    EXPECT_EQ(dbStatus, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_003 end, ret: %{public}d, dbStatus: %{public}d", ret, dbStatus);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_004");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_004.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D), "");
+    EXPECT_EQ(ret, E_OK);
+
+    int32_t dbStatus = GetLivePhoto4dStatusByFileId(photoId);
+    EXPECT_EQ(dbStatus, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_004 end, ret: %{public}d, dbStatus: %{public}d", ret, dbStatus);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_005, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_005");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_005.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNSUPPORTED), "");
+    EXPECT_EQ(ret, E_OK);
+
+    int32_t dbStatus = GetLivePhoto4dStatusByFileId(photoId);
+    EXPECT_EQ(dbStatus, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNSUPPORTED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_005 end, ret: %{public}d, dbStatus: %{public}d", ret, dbStatus);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_006, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_006");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_4d_live_006.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED), "");
+    EXPECT_NE(ret, E_OK);
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_006 end, ret: %{public}d", ret);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_007, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_007");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_4d_live_007.jpg", true);
+    ASSERT_GE(photoId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoId, 100, "");
+    EXPECT_NE(ret, E_OK);
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_007 end, ret: %{public}d", ret);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_008, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_008");
+    int32_t photoIdA = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairA_008.jpg", true);
+    ASSERT_GE(photoIdA, 0);
+    string uniqueIdA = GetUniqueIdByFileId(photoIdA);
+    ASSERT_FALSE(uniqueIdA.empty());
+
+    int32_t photoIdB = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairB_008.jpg", true);
+    ASSERT_GE(photoIdB, 0);
+
+    int32_t ret1 = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoIdB,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_SUPPORTED), "");
+    EXPECT_EQ(ret1, E_OK);
+
+    int32_t dbStatus1 = GetLivePhoto4dStatusByFileId(photoIdB);
+    EXPECT_EQ(dbStatus1, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_SUPPORTED));
+
+    int32_t ret2 = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoIdB,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED), uniqueIdA);
+    EXPECT_EQ(ret2, E_OK);
+
+    int32_t dbStatus2 = GetLivePhoto4dStatusByFileId(photoIdB);
+    EXPECT_EQ(dbStatus2, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_008 end, ret1: %{public}d, ret2: %{public}d", ret1, ret2);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_009, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start SetLivePhoto4dStatus_test_009");
+    int32_t photoIdA = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairA_009.jpg", true);
+    ASSERT_GE(photoIdA, 0);
+    string uniqueIdA = GetUniqueIdByFileId(photoIdA);
+    ASSERT_FALSE(uniqueIdA.empty());
+
+    int32_t photoIdB = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test_4d_live_pairB_009.jpg", true);
+    ASSERT_GE(photoIdB, 0);
+
+    int32_t ret1 = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoIdB,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNSUPPORTED), "");
+    EXPECT_EQ(ret1, E_OK);
+
+    int32_t dbStatus1 = GetLivePhoto4dStatusByFileId(photoIdB);
+    EXPECT_EQ(dbStatus1, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNSUPPORTED));
+
+    int32_t ret2 = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(photoIdB,
+        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_USED), uniqueIdA);
+    EXPECT_EQ(ret2, E_OK);
+
+    int32_t dbStatus2 = GetLivePhoto4dStatusByFileId(photoIdB);
+    EXPECT_EQ(dbStatus2, static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNSUPPORTED));
+
+    MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_009 end, ret1: %{public}d, ret2: %{public}d, dbStatus: %{public}d",
+        ret1, ret2, dbStatus2);
+}
 } // namespace Media
 } // namespace OHOS

@@ -58,6 +58,7 @@ enum class AssetChangeOperation {
     SET_COMPOSITE_DISPLAY_MODE,
     ADD_RESOURCE_FOR_PICKER,
     SET_APPLINK_STATE,
+    SET_LIVEPHOTO_4D_STATUS,
 };
 
 enum class AddResourceMode {
@@ -65,6 +66,8 @@ enum class AddResourceMode {
     FILE_URI,
     PHOTO_PROXY,
 };
+
+struct MediaAssetChangeRequestAsyncContext;
 
 class MediaDataSource : public IMediaDataSource {
 public:
@@ -165,6 +168,7 @@ private:
     EXPORT static napi_value JSDeleteLocalAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteCloudAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetLivePhoto4dStatus(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
@@ -173,6 +177,7 @@ private:
     int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyMovingPhotoVideo(const std::string& assetUri);
     void SetNewFileAsset(int32_t id, const std::string& uri);
+    bool CheckSetLivePhoto4dStatus(napi_env env, unique_ptr<MediaAssetChangeRequestAsyncContext>& context);
 
     static thread_local napi_ref constructor_;
     static std::atomic<uint32_t> cacheFileId_;

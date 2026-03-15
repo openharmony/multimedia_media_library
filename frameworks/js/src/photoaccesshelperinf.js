@@ -1530,5 +1530,6 @@ export default {
   GridLevel: GridLevel,
   GridPinchMode: GridPinchMode,
   CloudDownloadNetworkPolicy: photoAccessHelper.CloudDownloadNetworkPolicy,
-  AppLinkState: photoAccessHelper.AppLinkState
+  AppLinkState: photoAccessHelper.AppLinkState,
+  LivePhoto4dStatus: photoAccessHelper.LivePhoto4dStatus
 };

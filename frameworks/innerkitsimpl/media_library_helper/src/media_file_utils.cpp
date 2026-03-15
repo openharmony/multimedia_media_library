@@ -2666,5 +2666,11 @@ int32_t MediaFileUtils::FindNormalPhotoAttachments(const std::string &cloudPath,
     cloudPathList.insert(cloudPathList.end(), attachmentPathList.begin(), attachmentPathList.end());
     return E_OK;
 }
+
+bool MediaFileUtils::CheckLivePhoto4dStatus(int32_t livePhoto4dStatus)
+{
+    return livePhoto4dStatus >= static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNIDENTIFIED) &&
+        livePhoto4dStatus <= static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D);
+}
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP

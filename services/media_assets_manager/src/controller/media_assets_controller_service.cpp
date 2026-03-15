@@ -615,6 +615,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION),
         &MediaAssetsControllerService::CheckSinglePhotoPermission
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS),
+        &MediaAssetsControllerService::SetLivePhoto4dStatus
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -3013,6 +3017,25 @@ int32_t MediaAssetsControllerService::CheckSinglePhotoPermission(MessageParcel &
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().CheckSinglePhotoPermission(reqBody.fileId, reqBody.registerType);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetLivePhoto4dStatus(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("livePhoto4d:enter SetLivePhoto4dStatus");
+    AssetChangeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("livePhoto4d:AssetChangeSetFavorite Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    if (reqBody.fileId <= 0) {
+        MEDIA_ERR_LOG("livePhoto4d:fileId is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
+    }
+
+    ret = MediaAssetsService::GetInstance().SetLivePhoto4dStatus(reqBody.fileId, reqBody.livePhoto4dStatus,
+        reqBody.livePhoto4dLatestPair);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

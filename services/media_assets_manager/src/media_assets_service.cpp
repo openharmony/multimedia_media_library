@@ -1835,4 +1835,16 @@ int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_PERMISSION_DENIED, "Permission verification failed");
     return E_OK;
 }
+
+int32_t MediaAssetsService::SetLivePhoto4dStatus(
+    const int32_t fileId, const int32_t livePhoto4dStatus, const std::string &livePhoto4dLatestPair)
+{
+    MEDIA_INFO_LOG(
+        "livePhoto4d:livePhoto4dStatus:%{public}d, livePhoto4dLatestPair:%{public}s",
+        livePhoto4dStatus, livePhoto4dLatestPair.c_str());
+    int32_t ret = MediaLibraryPhotoOperations::SetLivePhoto4dStatus(
+        fileId, livePhoto4dStatus, livePhoto4dLatestPair);
+    MEDIA_INFO_LOG("livePhoto4d:MediaAssetsService::SetLivePhoto4dStatus ret:%{public}d", ret);
+    return ret;
+}
 } // namespace OHOS::Media
