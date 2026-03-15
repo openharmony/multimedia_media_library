@@ -125,7 +125,8 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     0, //fileSourceType
     "", // shooting_mode
     0, // effect_mode
-    "" // front_camera
+    "", // front_camera
+    0 //livephoto4dStatus
 };
 
 void SetTables()

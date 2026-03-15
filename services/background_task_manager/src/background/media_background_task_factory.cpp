@@ -23,6 +23,7 @@
 #include "media_video_mode_task.h"
 #include "media_deleted_file_task.h"
 #include "media_thumbnail_acl_task.h"
+#include "media_live_photo_4d_status_task.h"
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
 #include "media_critical_label_task.h"
 #endif
@@ -44,6 +45,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
         std::make_shared<MediaCriticalLabelTask>(),
         #endif
+        std::make_shared<MediaLivePhoto4dStatusTask>(),
     };
 }
 

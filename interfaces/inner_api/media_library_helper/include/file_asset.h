@@ -256,6 +256,12 @@ public:
     EXPORT void SetChangeTime(const int64_t changeTime);
     EXPORT int64_t GetChangeTime() const;
 
+    EXPORT void SetLivePhoto4dStatus(int32_t livePhoto4dStatus);
+    EXPORT int32_t GetLivePhoto4dStatus() const;
+
+    EXPORT void SetLivePhoto4dLatestPair(const std::string &livePhoto4dLatestPair);
+    EXPORT const std::string &GetLivePhoto4dLatestPair() const;
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;
@@ -289,6 +295,9 @@ public:
     EXPORT int32_t GetCritical() const;
     EXPORT void SetRiskStatus(int32_t photoRiskStatus);
     EXPORT int32_t GetRiskStatus() const;
+
+    EXPORT void SetUniqueId(const std::string &uniqueId);
+    EXPORT const std::string GetUniqueId() const;
 
 private:
     int32_t userId_ = -1;

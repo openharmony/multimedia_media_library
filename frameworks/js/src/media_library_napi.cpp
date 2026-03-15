@@ -290,6 +290,7 @@ thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRiskStatusEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAppLinkStateRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sLivePhoto4dStatusEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -405,6 +406,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoRiskStatus", CreatePhotoRiskStatusEnum(env)),
         DECLARE_NAPI_PROPERTY("AppLinkState", CreateAppLinkStateEnum(env)),
+        DECLARE_NAPI_PROPERTY("LivePhoto4dStatus", CreateLivePhoto4dStatusEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -9107,6 +9109,11 @@ napi_value MediaLibraryNapi::CreateStrongAssociationTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateCompositeDisplayModeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, compositeDisplayModeEnum, sCompositeDisplayModeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateLivePhoto4dStatusEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, livePhoto4dStatusTypeEnum, sLivePhoto4dStatusEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

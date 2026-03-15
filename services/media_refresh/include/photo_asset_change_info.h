@@ -41,7 +41,8 @@ public:
         int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp, int32_t burstCoverLevel,
         int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName,
         std::string path, int32_t position, int64_t size, int32_t fileSourceType,
-        std::string shootingMode, int32_t movingPhotoEffectMode, std::string frontCamera) : fileId_(fileId), uri_(uri),
+        std::string shootingMode, int32_t movingPhotoEffectMode, std::string frontCamera,
+        int32_t livephoto4dStatus) : fileId_(fileId), uri_(uri),
         dateDay_(dateDay), ownerAlbumUri_(ownerAlbumUri), isFavorite_(isFavorite), mediaType_(mediaType),
         mimeType_(mimeType), isHidden_(isHidden), dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation),
         thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs),
@@ -50,7 +51,7 @@ public:
         burstCoverLevel_(burstCoverLevel), ownerAlbumId_(ownerAlbumId), hiddenTime_(hiddenTime),
         thumbnailReady_(thumbnailReady), displayName_(displayName), path_(path), position_(position), size_(size),
         fileSourceType_(fileSourceType), shootingMode_(shootingMode), movingPhotoEffectMode_(movingPhotoEffectMode),
-        frontCamera_(frontCamera) {}
+        frontCamera_(frontCamera), livephoto4dStatus_(livephoto4dStatus) {}
         
 public:
     int32_t fileId_ = INVALID_INT32_VALUE;
@@ -93,6 +94,8 @@ public:
     std::string shootingMode_ = EMPTY_STR;
     int32_t movingPhotoEffectMode_ = INVALID_INT32_VALUE;
     std::string frontCamera_ = EMPTY_STR;
+    // 子弹时刻
+    int32_t livephoto4dStatus_ = INVALID_INT32_VALUE;
 
     std::string ToString(bool isDetail = false) const;
     bool Marshalling(Parcel &parcel) const override;

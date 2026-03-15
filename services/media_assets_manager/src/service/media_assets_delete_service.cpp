@@ -390,6 +390,7 @@ int32_t MediaAssetsDeleteService::CreateLocalTrashedPhotosPo(const PhotosPo &pho
     this->ResetNullableFields(targetPhotoInfo);
     this->ResetFileSourceType(targetPhotoInfo);  // Set file_source_type to MEDIA (default).
     this->ResetSouthDeviceType(targetPhotoInfo);  // Reset south_device_type to default: SOUTH_DEVICE_NULL(0).
+    this->ResetUniqueId(targetPhotoInfo);
     return E_OK;
 }
 
@@ -423,6 +424,7 @@ int32_t MediaAssetsDeleteService::CreateCloudTrashedPhotosPo(const PhotosPo &pho
     // Scenario, Cloud pulled data, require targetPhotoInfo's dirty should be same as photoInfo.
     CHECK_AND_EXECUTE(this->isCloudPullData_, this->SetMdirty(targetPhotoInfo));
     this->ResetFileSourceType(targetPhotoInfo);  // Set file_source_type to MEDIA (default).
+    this->ResetUniqueId(targetPhotoInfo);
     return E_OK;
 }
 
@@ -971,6 +973,12 @@ int32_t MediaAssetsDeleteService::GetDentryFileInfo(
     dentryInfo.size = photoInfo.size.value_or(0);
     dentryInfo.path = photoInfo.data.value_or("");
     dentryInfo.fileName = photoInfo.displayName.value_or("");
+    return E_OK;
+}
+
+int32_t MediaAssetsDeleteService::ResetUniqueId(PhotosPo &photoInfo)
+{
+    photoInfo.uniqueId.emplace("-1");
     return E_OK;
 }
 }  // namespace OHOS::Media::Common
