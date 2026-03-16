@@ -50,7 +50,7 @@ public:
 
 private:
     bool GetFileIdsByGroupTag(CloneGroupPhotoAlbum::GroupAlbumInfo &info);
-    std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> GetGroupPhotoAlbumInfo(int32_t offset);
+    std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> GetGroupPhotoAlbumInfo(int32_t offset, int32_t &count);
     int64_t GetShouldEndTime(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void ModifyGroupVersion(const std::map<int32_t, std::vector<string>> &groupPhotoMap);
     void QueryGroupPhotoAlbum(const std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> &groupPhotoAlbumInfos,
@@ -67,6 +67,7 @@ private:
     std::string taskId_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
+    int32_t groupAlbumMaxId_ {0};
 };
 }
 }
