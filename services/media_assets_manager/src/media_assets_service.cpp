@@ -1837,16 +1837,6 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::string &path)
-{
-    MEDIA_INFO_LOG("ScanExistFileRecord FileId:%{public}d, Path: %{public}s",
-        fileId, MediaFileUtils::DesensitizePath(path).c_str());
-
-    int32_t ret = MediaLibraryPhotoOperations::ScanExistFileRecord(fileId, path);
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::ScanExistFileRecord Failed");
-    return E_OK;
-}
-
 int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
