@@ -168,7 +168,7 @@ int32_t TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount()
     const std::string QUERY_SQL = "SELECT count(1) FROM tab_old_photos";
     return DatabaseUtils::QueryInt(g_rdbStore->GetRaw(), "count(1)", QUERY_SQL);
 }
-}  // namespace OHOS::Media
+
 /*
  * Test interface: TabOldPhotosRestoreHelper::AddPlaceHolders
  * Test content: Verify placeholder addition to helper
@@ -400,3 +400,4 @@ HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_add_bind_args_variants, 
     EXPECT_EQ(bindArgs.size(), testPaths.size() * 3);
     MEDIA_INFO_LOG("End tab_old_photos_helper_add_bind_args_variants");
 }
+}  // namespace OHOS::Media
