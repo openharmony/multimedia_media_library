@@ -27,6 +27,7 @@
 #include "shooting_mode_column.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"
+#include "js_interface_helper.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -517,7 +518,9 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
             return nullptr;
         }
         // sort by hidden time desc if is hidden asset
-        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+        if (!JsInterfaceHelper::PredicatesHasOrderClause(context->predicates)) {
+            context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        }
     }
 
     napi_value result = nullptr;
