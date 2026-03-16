@@ -83,17 +83,6 @@ constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
-#ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
-static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
-{
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr");
-    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
-    CHECK_AND_RETURN_LOG(data != nullptr, "UpdateVisionAsyncTaskData is nullptr");
-    string fileId = to_string(data->fileId_);
-    MediaAssetsRdbOperations::DeleteFromVisionTables(fileId);
-}
-#endif
-
 MediaAssetsService &MediaAssetsService::GetInstance()
 {
     static MediaAssetsService service;
