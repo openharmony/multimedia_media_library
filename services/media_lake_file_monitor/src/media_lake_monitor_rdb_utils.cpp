@@ -535,6 +535,6 @@ bool MediaLakeMonitorRdbUtils::DeleteLakeAlbums(std::shared_ptr<MediaLibraryRdbS
     bool cond = (ret != NativeRdb::E_OK || deletedRow < 0);
     CHECK_AND_PRINT_LOG(!cond, "Story Delete db failed, errCode = %{public}d", ret);
     MEDIA_INFO_LOG("album Delete retVal:%{public}d, deletedRow:%{public}d", ret, deletedRow);
-    return cond;
+    return !cond;
 }
 } // namespace OHOS::Media
