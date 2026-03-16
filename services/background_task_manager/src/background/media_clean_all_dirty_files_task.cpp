@@ -206,10 +206,8 @@ int32_t MediaCleanAllDirtyFilesTask::GetMinFileId()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, minFileId, "RdbStore Is Nullptr");
     std::string QUERY_MIN_FILE_ID = "SELECT MIN(file_id) as q_id FROM Photos WHERE " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE)) + " AND " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " = " +
+        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
         PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
@@ -232,10 +230,8 @@ int32_t MediaCleanAllDirtyFilesTask::QueryNextId(int32_t startFileId, int32_t &n
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RdbStore Is Nullptr");
     std::string sql = "SELECT file_id FROM Photos WHERE file_id > "+ to_string(startFileId) + " " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE)) + " AND " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " = " +
+        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
         PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
@@ -259,10 +255,8 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "RdbStore Is Nullptr");
     std::string sql = "SELECT data, time_pending, date_added, media_type FROM Photos WHERE " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE)) + " AND " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " != " +
-        std::to_string(static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) + " AND " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " = " +
+        std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) + " AND " +
         PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " +
         MediaColumn::MEDIA_ID + " = " + std::to_string(startFileId) + " AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
@@ -559,15 +553,19 @@ bool MediaCleanAllDirtyFilesTask::IsMovingPhotosInEditFolder(int32_t curBucketNu
 
 bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &path)
 {
-    // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' and position =2)
-    // AS recordExist
+    // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' and
+    // (position != 1 or file_source_type != 0 or is_temp = 1 or clean_flag != 0)) AS recordExist 纯云图和文管,临时文件跳过
     bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
-    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "' AND " +
-        PhotoColumn::PHOTO_POSITION  + " = " + to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)) +
-    ") AS recordExist";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    std::string querySql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = ? AND (" +
+        PhotoColumn::PHOTO_POSITION  + " != " + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " OR " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE  + " != " + std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) +
+        " OR " + PhotoColumn::PHOTO_CLEAN_FLAG + " != " +
+        std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " OR " + PhotoColumn::PHOTO_IS_TEMP  + " = 1)" + ") AS recordExist";
+    std::vector<NativeRdb::ValueObject> params = { path };
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, recordExist, "Query ExistCloudAssetPathInDB Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
