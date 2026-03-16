@@ -20,7 +20,7 @@
 #include "backup_database_utils.h"
 #include "backup_log_utils.h"
 #include "media_column.h"
-#include "media_file_utils.h"
+#include "media_time_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -118,27 +118,41 @@ void CloneGroupPhotoAlbum::QueryTagIdFromMergeTag(CloneGroupPhotoAlbum::GroupAlb
     querySql += tagStr + ")";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
+    std::unordered_map<std::string, std::vector<std::string>> groupTagMap;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string tagId = GetStringVal(GALLERY_MERGE_TAG_TAG_ID, resultSet);
         std::string groupTag = GetStringVal(GALLERY_GROUP_TAG, resultSet);
         CHECK_AND_RETURN_LOG(!tagId.empty() && !groupTag.empty(), "tagId or groupTag is empty.");
-        info.groupTagMap[groupTag].emplace_back(std::move(tagId));
+        groupTagMap[groupTag].emplace_back(std::move(tagId));
     }
     resultSet->Close();
+    for (const auto& tagIt : tagVector) {
+        if (groupTagMap.find(tagIt) == groupTagMap.end()) {
+            info.groupTagMap.clear();
+            MEDIA_WARN_LOG("groupTagMap do not find tagIt: %{public}s.", tagIt.c_str());
+            return;
+        }
+        info.groupTagMap[tagIt] = groupTagMap[tagIt];
+    }
     return;
 }
 
-std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> CloneGroupPhotoAlbum::GetGroupPhotoAlbumInfo(int32_t offset)
+std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> CloneGroupPhotoAlbum::GetGroupPhotoAlbumInfo(int32_t offset,
+    int32_t &count)
 {
     MEDIA_INFO_LOG("Start GetGroupPhotoAlbumInfo.");
-    std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
+    count = 0;
+    std::string querySql = "SELECT _id, " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
         GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
-        " FROM merge_tag WHERE group_tag LIKE '%|%' ORDER BY _id LIMIT " + std::to_string(PAGE_SIZE) +
-        " OFFSET " + std::to_string(offset);
+        " FROM merge_tag WHERE group_tag LIKE '%|%' AND _id > " + std::to_string(offset) + " LIMIT "+
+        std::to_string(PAGE_SIZE);
     std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> result;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
+    resultSet->GetRowCount(count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val("_id", resultSet);
+        groupAlbumMaxId_ = id > groupAlbumMaxId_ ? id : groupAlbumMaxId_;
         CloneGroupPhotoAlbum::GroupAlbumInfo info;
         std::vector<std::string> tagVector;
         string groupTag = GetStringVal(GALLERY_GROUP_TAG, resultSet);
@@ -223,7 +237,7 @@ void CloneGroupPhotoAlbum::InsertAnalysisPhotoMap(const std::map<int32_t, std::v
     int32_t currentBatchSize = 0;
     string sql = baseSql;
     bool isFirst = true;
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t start = MediaTimeUtils::UTCTimeMilliSeconds();
     int32_t count = 0;
     for (const auto& albumIdIt : groupPhotoMap) {
         string albumIdStr = "(" + std::to_string(albumIdIt.first) + ", ";
@@ -250,7 +264,7 @@ void CloneGroupPhotoAlbum::InsertAnalysisPhotoMap(const std::map<int32_t, std::v
         CHECK_AND_RETURN_LOG(ret >= 0, "execute insert AnalysisPhotoMap failed, ret=%{public}d", ret);
         count += currentBatchSize;
     }
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t end = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t time = end - start;
     std::stringstream albumReport;
     albumReport << "InsertAnalysisPhotoMap rowCount: " << count << ", InsertAnalysisPhotoMap time: " << time;
@@ -295,10 +309,10 @@ int64_t CloneGroupPhotoAlbum::GetShouldEndTime(const std::unordered_map<int32_t,
 void CloneGroupPhotoAlbum::InsertAnalysisAlbumTable(const std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> &result,
     const std::vector<NativeRdb::ValuesBucket> &values)
 {
-    int64_t analysisAlbumStart = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t analysisAlbumStart = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(ANALYSIS_ALBUM_TABLE, values, rowNum);
-    int64_t analysisAlbumEnd = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t analysisAlbumEnd = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t analysisAlbumTime = analysisAlbumEnd - analysisAlbumStart;
     MEDIA_INFO_LOG("End InsertAnalysisAlbum. AnalysisAlbumRowNum = %{public}" PRId64
         ", AnalysisAlbumTime = %{public}" PRId64, rowNum, analysisAlbumTime);
@@ -315,21 +329,24 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
 {
     MEDIA_INFO_LOG("Start to update group photo album.");
     std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> result;
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t start = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t shouldEndTime = GetShouldEndTime(photoInfoMap);
     int32_t offset = 0;
     int32_t count = 0;
+    int32_t retSize = 0;
     bool firstBatch = true;
     do {
-        int64_t partOne = MediaFileUtils::UTCTimeMilliSeconds();
+        int64_t partOne = MediaTimeUtils::UTCTimeMilliSeconds();
         CHECK_AND_EXECUTE(partOne <= shouldEndTime || !firstBatch, exitCode_ = BEGIN_EXIT_CODE);
         CHECK_AND_EXECUTE(partOne <= shouldEndTime || firstBatch, exitCode_ = MIDDLE_EXIT_CODE);
         CHECK_AND_BREAK_INFO_LOG(partOne <= shouldEndTime,
             "current time: %{public}" PRId64 ", over shouldEndTime: %{public}" PRId64
-            ", RestoreGroupPhotoAlbum cost: %{public}" PRId64,
-            partOne, shouldEndTime, (partOne - start));
-        result = GetGroupPhotoAlbumInfo(offset);
-        CHECK_AND_BREAK_ERR_LOG(result.size() != 0, "Query resultSql is null.");
+            ", RestoreGroupPhotoAlbum cost: %{public}" PRId64, partOne, shouldEndTime, (partOne - start));
+        result = GetGroupPhotoAlbumInfo(offset, retSize);
+        offset = groupAlbumMaxId_;
+        count += result.size();
+        firstBatch = false;
+        CHECK_AND_CONTINUE_ERR_LOG(result.size() != 0, "Query resultSql is null.");
         std::vector<NativeRdb::ValuesBucket> values;
         for (const auto& info : result) {
             NativeRdb::ValuesBucket valuesBucket;
@@ -346,12 +363,9 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
             values.emplace_back(valuesBucket);
         }
         InsertAnalysisAlbumTable(result, values);
-        offset += PAGE_SIZE;
-        count += result.size();
-        firstBatch = false;
-    } while (result.size() == PAGE_SIZE);
+    } while (retSize >= PAGE_SIZE);
     exitCode_ = NORMAL_EXIT_CODE;
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t end = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t sumTime = end - start;
     std::stringstream updateGroupReport;
     updateGroupReport <<"GroupPhotoRestoreSumTime: " << sumTime <<", GroupPhotoRestoreExitCode: " << exitCode_;
