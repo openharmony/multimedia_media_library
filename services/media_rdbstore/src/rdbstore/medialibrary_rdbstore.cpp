@@ -1978,6 +1978,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
     CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER,
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
     PhotoExtUpgrade::CREATE_PHOTO_EXT_TABLE,
@@ -5919,6 +5920,18 @@ static void Add4DLivePhotoStatusAndLatestPair(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add live_Photo_4d_status and  livePhoto_4d_latest_pair columns end");
 }
 
+static void AddAnalysisAlbumUpdateAlbumStatusTrigger(RdbStore &store, int32_t version)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Start update album modify trigger");
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("End update album modify trigger");
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -5935,7 +5948,7 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true)) {
-        AddCinematicVideoAlbum(store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
+        UpdateTriggerForAnalysisAlbum(store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, true);
     }
 
@@ -5961,6 +5974,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true)) {
         Add4DLivePhotoStatusAndLatestPair(store, VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER, true)) {
+        AddAnalysisAlbumUpdateAlbumStatusTrigger(store, VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER, true);
     }
 }
 
