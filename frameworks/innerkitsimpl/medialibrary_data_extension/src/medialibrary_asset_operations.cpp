@@ -203,6 +203,8 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_DATE_ADDED_DAY, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_DATE_ADDED_MONTH, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_DATE_ADDED_YEAR, MEMBER_TYPE_STRING },
+    {PhotoColumn::UNIQUE_ID, MEMBER_TYPE_STRING},
+    {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, MEMBER_TYPE_INT32},
 };
 
 const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
@@ -1149,7 +1151,9 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     HandleDateAdded(nowTime,
         cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO ? MEDIA_TYPE_PHOTO : MEDIA_TYPE_DEFAULT,
         assetInfo);
-    assetInfo.PutString(PhotoColumn::UNIQUE_ID, MedialibraryEventDbOperations::GenerateUuid());
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        assetInfo.PutString(PhotoColumn::UNIQUE_ID, MedialibraryEventDbOperations::GenerateUuid());
+    }
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
         if (fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
             fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) {
@@ -2527,6 +2531,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_IS_AUTO, { IsInt32 } },
     { PhotoColumn::PHOTO_IS_RECENT_SHOW, { IsBool, IsUniqueValue } },
     { PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, { IsInt32 } },
+    { PhotoColumn::UNIQUE_ID, { IsString } },
+    { PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
