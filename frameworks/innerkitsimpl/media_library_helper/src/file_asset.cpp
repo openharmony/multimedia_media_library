@@ -782,6 +782,26 @@ void FileAsset::SetStoragePath(const std::string &storagePath)
     member_[PhotoColumn::PHOTO_STORAGE_PATH] = storagePath;
 }
 
+void FileAsset::SetLivePhoto4dStatus(int32_t livePhoto4dStatus)
+{
+    member_[PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS] = livePhoto4dStatus;
+}
+
+int32_t FileAsset::GetLivePhoto4dStatus() const
+{
+    return GetInt32Member(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS);
+}
+
+void FileAsset::SetLivePhoto4dLatestPair(const std::string &livePhoto4dLatestPair)
+{
+    member_[PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR] = livePhoto4dLatestPair;
+}
+
+const std::string &FileAsset::GetLivePhoto4dLatestPair() const
+{
+    return GetStrMember(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR);
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
@@ -982,6 +1002,16 @@ void FileAsset::SetRiskStatus(int32_t photoRiskStatus)
 int32_t FileAsset::GetRiskStatus() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_RISK_STATUS);
+}
+
+void FileAsset::SetUniqueId(const string &uniqueId)
+{
+    member_[PhotoColumn::UNIQUE_ID] = uniqueId;
+}
+
+const string FileAsset::GetUniqueId() const
+{
+    return GetStrMember(PhotoColumn::UNIQUE_ID);
 }
 }  // namespace Media
 }  // namespace OHOS

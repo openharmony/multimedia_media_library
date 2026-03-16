@@ -43,7 +43,9 @@ bool AssetChangeReqBody::Unmarshalling(MessageParcel &parcel)
         longitude,
         values,
         compositeDisplayMode,
-        appLinkState);
+        appLinkState,
+        livePhoto4dStatus,
+        livePhoto4dLatestPair);
 }
 
 bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
@@ -67,7 +69,9 @@ bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
         longitude,
         values,
         compositeDisplayMode,
-        appLinkState);
+        appLinkState,
+        livePhoto4dStatus,
+        livePhoto4dLatestPair);
 }
 
 bool AssetChangeRespBody::Unmarshalling(MessageParcel &parcel)

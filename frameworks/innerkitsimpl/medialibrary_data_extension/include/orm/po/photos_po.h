@@ -91,6 +91,7 @@ public:
     std::optional<std::string> thumbSize;             // PhotoColumn::PHOTO_THUMB_SIZE
     std::optional<std::string> packageName;           // MediaColumn::MEDIA_PACKAGE_NAME
     std::optional<int32_t> southDeviceType;           // PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE
+    std::optional<std::string> uniqueId;
 
     /* keep cloud_id at the last; so RecordToValueBucket can skip it*/
     std::optional<int32_t> fileId;       //  MediaColumn::MEDIA_ID;

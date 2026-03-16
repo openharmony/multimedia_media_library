@@ -27,6 +27,7 @@
 #include "photo_file_utils.h"
 #include "media_audio_column.h"
 #include "media_values_bucket_utils.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -168,6 +169,30 @@ static void HandleDetailTimeAndYearMonthDay(const Metadata &metadata, ValuesBuck
     outValues.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
 }
 
+static void HandleSetLivePhoto4dStatus(const Metadata &metadata, ValuesBucket &outValues)
+{
+    int64_t coverposition = metadata.GetCoverPosition();
+    string filePath = metadata.GetFilePath();
+    string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(filePath);
+    // 如果修改封面针
+    uint32_t version = 0;
+    MovingPhotoFileUtils::GetExtraDataVersion(extraDataPath, version);
+    if (version != LIVE_PHOTO_4D_VERSION && coverposition > 0) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+        int32_t fileId = metadata.GetFileId();
+        string sql = " SELECT " + PhotoColumn::PHOTO_SUBTYPE + "," + PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS +
+            " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = 3 AND " +
+            PhotoColumn::MEDIA_ID + " = " + to_string(fileId);
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+        CHECK_AND_RETURN_LOG(resultSet != nullptr, "livePhoto4d:failed to query photo.");
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            outValues.Put(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
+                static_cast<int32_t>(LivePhoto4dStatusType::TYPE_UNIDENTIFIED));
+        }
+    }
+}
+
 static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     const string &table)
 {
@@ -187,6 +212,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
     HandleDateAdded(metadata, isInsert, values);
     HandleDetailTimeAndYearMonthDay(metadata, values);
+    HandleSetLivePhoto4dStatus(metadata, values);
 }
 
 static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &values)
@@ -302,6 +328,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
 
     HandleDateAdded(metadata, isInsert, values);
     HandleDetailTimeAndYearMonthDay(metadata, values);
+    HandleSetLivePhoto4dStatus(metadata, values);
 }
 
 static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")

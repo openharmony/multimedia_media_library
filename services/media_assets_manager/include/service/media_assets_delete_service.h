@@ -110,6 +110,7 @@ private:
     int32_t MoveOrGenerateLocalThumbnail(const PhotosPo &photoInfo, const PhotosPo &targetPhotoInfo);
     int32_t ResetSouthDeviceType(PhotosPo &photoInfo);
     int32_t GetDentryFileInfo(const PhotosPo &photoInfo, FileManagement::CloudSync::DentryFileInfo &dentryInfo) const;
+    int32_t ResetUniqueId(PhotosPo &photoInfo);
 
 private:
     MediaAssetsDao mediaAssetsDao_;

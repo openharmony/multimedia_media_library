@@ -209,6 +209,10 @@ const std::vector<std::string> appLinkStateEnum {
     "DEFAULT", "HAS_NO_LINK", "HAS_LINK"
 };
 
+const std::vector<std::string> livePhoto4dStatusTypeEnum {
+    "UNIDENTIFIED", "UNSUPPORTED", "SUPPORTED", "USED", "FOURD_LIVEPHOTO"
+};
+
 const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
     std::make_pair("DEFAULT",           static_cast<int32_t>(PhotoSubType::DEFAULT)),
     std::make_pair("SCREENSHOT",        static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
@@ -334,6 +338,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_ADDED_YEAR",           PhotoColumn::PHOTO_DATE_ADDED_YEAR),
     std::make_pair("DATE_ADDED_MONTH",          PhotoColumn::PHOTO_DATE_ADDED_MONTH),
     std::make_pair("DATE_ADDED_DAY",            PhotoColumn::PHOTO_DATE_ADDED_DAY),
+    std::make_pair("LIVEPHOTO_4D_STATUS",       PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
