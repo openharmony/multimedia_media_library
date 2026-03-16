@@ -17,22 +17,14 @@
 
 #include "media_lake_monitor_rdb_utils_test.h"
 
-#include <memory>
 #include <string>
 #include <vector>
 #include <unordered_map>
 
-#include "asset_accurate_refresh.h"
-#include "datashare_result_set.h"
-#include "dfx_utils.h"
-#include "lake_const.h"
 #include "media_column.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_notify.h"
 #include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "media_lake_monitor_rdb_utils.h"
@@ -40,10 +32,7 @@
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
 #include "rdb_utils.h"
-#include "thumbnail_service.h"
-#include "media_edit_utils.h"
 #include "media_upgrade.h"
-#include "vision_db_sqls_more.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -73,30 +62,25 @@ void MediaLakeMonitorRdbUtilsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    EXPECT_NE(g_rdbStore, nullptr);
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE});
 }
 
 void MediaLakeMonitorRdbUtilsTest::TearDownTestCase()
 {
-    MediaLibraryUnitTestUtils::StopUnistore();
+    MediaLibraryUnitTestUtils::CleanTestTables(
+        g_rdbStore, {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE}, false);
 }
 
 void MediaLakeMonitorRdbUtilsTest::SetUp()
 {
-    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, { PhotoColumn::PHOTOS_TABLE,
-        PhotoAlbumColumns::TABLE }, false);
-    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, { PhotoColumn::PHOTOS_TABLE,
-        PhotoAlbumColumns::TABLE });
+    MediaLibraryUnitTestUtils::CleanTestTables(
+        g_rdbStore, {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE}, false);
 }
 
-void MediaLakeMonitorRdbUtilsTest::TearDown()
-{
-    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, { PhotoColumn::PHOTOS_TABLE,
-        PhotoAlbumColumns::TABLE }, false);
-}
+void MediaLakeMonitorRdbUtilsTest::TearDown() {}
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_ValidData_ReturnSuccess start");
 
@@ -124,13 +108,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_ValidData_R
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_NullRdbStore_ReturnFalse start");
 
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
     LakeMonitorQueryResultData data;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(nullptr,
+    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(nullRdbStore,
         TEST_STORAGE_PATH, data);
 
     EXPECT_FALSE(result);
@@ -138,22 +122,19 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_NullRdbStor
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_EmptyPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_EmptyPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_EmptyPath_ReturnFalse start");
 
     LakeMonitorQueryResultData data;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore,
-        "", data);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore, "", data);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_EmptyPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_TrashedFile_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_TrashedFile_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_TrashedFile_ReturnFalse start");
 
@@ -177,8 +158,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_TrashedFile
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_TrashedFile_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_HiddenFile_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_HiddenFile_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_HiddenFile_ReturnFalse start");
 
@@ -202,33 +182,28 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_HiddenFile_
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_HiddenFile_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_CloudPosition_ReturnFalse,
-    TestSize.Level.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_CloudPosition_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_CloudPosition_ReturnFalse start");
 
-    string insertSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
-        MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
-        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-        PhotoColumn::PHOTO_STORAGE_PATH + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
-        MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_POSITION + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "', '" +
-        TEST_STORAGE_PATH + "', 0, 0, 1)";
-    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    string insertSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" + MediaColumn::MEDIA_ID + ", " +
+        PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " + MediaColumn::MEDIA_DATE_TAKEN + ", " +
+        MediaColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::PHOTO_STORAGE_PATH + ", " +
+        MediaColumn::MEDIA_DATE_TRASHED + ", " + MediaColumn::MEDIA_HIDDEN + ", " +
+        PhotoColumn::PHOTO_POSITION + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    std::vector<NativeRdb::ValueObject> args = {TEST_FILE_ID_1, TEST_ALBUM_ID_1, TEST_DATE_TAKEN, TEST_PHOTO_PATH,
+        TEST_STORAGE_PATH, 0, 0, static_cast<int32_t>(PhotoPositionType::CLOUD)};
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql, args);
     EXPECT_EQ(ret, E_OK);
 
     LakeMonitorQueryResultData data;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore,
-        TEST_STORAGE_PATH, data);
-
+    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore, TEST_STORAGE_PATH, data);
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_CloudPosition_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_ValidData_ReturnSuccess start");
 
@@ -237,8 +212,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_ValidData_ReturnSucc
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" +
-        TEST_LPATH + "')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     EXPECT_EQ(ret, E_OK);
 
@@ -253,8 +227,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_ValidData_ReturnSucc
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_Subdirectory_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_Subdirectory_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_Subdirectory_ReturnSuccess start");
 
@@ -263,8 +236,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_Subdirectory_ReturnS
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" +
-        TEST_LPATH + "')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     string insertSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
@@ -287,50 +259,44 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_Subdirectory_ReturnS
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_Subdirectory_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NullRdbStore_ReturnFalse start");
 
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(nullptr, TEST_LPATH,
-        albumIds);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(nullRdbStore, TEST_LPATH, albumIds);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_EmptyLPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_EmptyLPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_EmptyLPath_ReturnFalse start");
 
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, "",
-        albumIds);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, "", albumIds);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_EmptyLPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NoMatchingAlbums_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NoMatchingAlbums_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NoMatchingAlbums_ReturnFalse start");
 
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore,
-        "/test/nonexistent", albumIds);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, "/test/nonexistent", albumIds);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NoMatchingAlbums_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumByLPath_ValidData_ReturnSuccess start");
 
@@ -339,7 +305,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ValidData_ReturnSuccess
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 5)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 5)";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     EXPECT_EQ(ret, E_OK);
 
@@ -356,8 +322,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ValidData_ReturnSuccess
     MEDIA_INFO_LOG("QueryAlbumByLPath_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_MultipleAlbums_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_MultipleAlbums_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumByLPath_MultipleAlbums_ReturnSuccess start");
 
@@ -366,7 +331,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_MultipleAlbums_ReturnSu
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 5)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 5)";
     string insertSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
@@ -391,23 +356,21 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_MultipleAlbums_ReturnSu
     MEDIA_INFO_LOG("QueryAlbumByLPath_MultipleAlbums_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumByLPath_NullRdbStore_ReturnFalse start");
 
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
     vector<int32_t> albumIds;
     unordered_map<int32_t, int32_t> albumCounts;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumByLPath(nullptr, TEST_LPATH,
-        albumIds, albumCounts);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumByLPath(nullRdbStore, TEST_LPATH, albumIds, albumCounts);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumByLPath_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_ValidData_ReturnSuccess start");
 
@@ -428,10 +391,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_ValidData_ReturnS
     int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
     EXPECT_EQ(retPhoto, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore,
-        albumIds, dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore, albumIds, dataList);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(dataList.size(), 1);
@@ -441,8 +403,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_ValidData_ReturnS
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_MultipleAlbums_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_MultipleAlbums_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_MultipleAlbums_ReturnSuccess start");
 
@@ -478,10 +439,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_MultipleAlbums_Re
     EXPECT_EQ(retPhoto1, E_OK);
     EXPECT_EQ(retPhoto2, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1, TEST_ALBUM_ID_2 };
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1, TEST_ALBUM_ID_2};
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore,
-        albumIds, dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore, albumIds, dataList);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(dataList.size(), 2);
@@ -489,30 +449,27 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_MultipleAlbums_Re
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_MultipleAlbums_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_NullRdbStore_ReturnFalse start");
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(nullptr, albumIds,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(nullRdbStore, albumIds, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_EmptyAlbumIds_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_EmptyAlbumIds_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_EmptyAlbumIds_ReturnSuccess start");
 
     vector<int32_t> albumIds;
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore,
-        albumIds, dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore, albumIds, dataList);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(dataList.size(), 0);
@@ -520,8 +477,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_EmptyAlbumIds_Ret
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_EmptyAlbumIds_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_ValidData_ReturnSuccess start");
 
@@ -541,17 +497,15 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_ValidData_Ret
     int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
     EXPECT_EQ(retPhoto, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore,
-        albumIds);
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore, albumIds);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_MultipleAlbums_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_MultipleAlbums_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_MultipleAlbums_ReturnSuccess start");
 
@@ -585,44 +539,40 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_MultipleAlbum
     EXPECT_EQ(retPhoto1, E_OK);
     EXPECT_EQ(retPhoto2, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1, TEST_ALBUM_ID_2 };
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore,
-        albumIds);
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1, TEST_ALBUM_ID_2};
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore, albumIds);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_MultipleAlbums_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_EmptyAlbumIds_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_EmptyAlbumIds_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_EmptyAlbumIds_ReturnFalse start");
 
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore,
-        albumIds);
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore, albumIds);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_EmptyAlbumIds_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_NullRdbStore_ReturnFalse start");
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(nullptr, albumIds);
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(nullRdbStore, albumIds);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_ValidData_ReturnSuccess start");
 
@@ -631,20 +581,18 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_ValidData_Return
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 0)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 0)";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     EXPECT_EQ(ret, E_OK);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore,
-        TEST_LPATH);
+    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore, TEST_LPATH);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NonEmptyAlbum_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NonEmptyAlbum_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NonEmptyAlbum_ReturnFalse start");
 
@@ -653,32 +601,30 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NonEmptyAlbum_Re
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 5)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 5)";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     EXPECT_EQ(ret, E_OK);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore,
-        TEST_LPATH);
+    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore, TEST_LPATH);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NonEmptyAlbum_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NullRdbStore_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(nullptr, TEST_LPATH);
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
+    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(nullRdbStore, TEST_LPATH);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidAlbumId_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidAlbumId_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateAlbumInfo_ValidAlbumId_ReturnSuccess start");
 
@@ -689,8 +635,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidAlbumId_ReturnSucces
     MEDIA_INFO_LOG("UpdateAlbumInfo_ValidAlbumId_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_DefaultAlbumId_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_DefaultAlbumId_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateAlbumInfo_DefaultAlbumId_ReturnSuccess start");
 
@@ -701,20 +646,19 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_DefaultAlbumId_ReturnSucc
     MEDIA_INFO_LOG("UpdateAlbumInfo_DefaultAlbumId_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateAlbumInfo_NullRdbStore_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::UpdateAlbumInfo(nullptr, TEST_ALBUM_ID_1);
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
+    bool result = MediaLakeMonitorRdbUtils::UpdateAlbumInfo(nullRdbStore, TEST_ALBUM_ID_1);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("UpdateAlbumInfo_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_EmptyAlbumIds_ReturnVoid,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_EmptyAlbumIds_ReturnVoid, TestSize.Level1)
 {
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_EmptyAlbumIds_ReturnVoid start");
 
@@ -724,37 +668,38 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_EmptyAlbumIds_ReturnV
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_EmptyAlbumIds_ReturnVoid end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_ValidAlbumIds_ReturnVoid,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_ValidAlbumIds_ReturnVoid, TestSize.Level1)
 {
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_ValidAlbumIds_ReturnVoid start");
 
-    vector<string> albumIds = { "1001", "1002" };
+    vector<string> albumIds = {"1001", "1002"};
     MediaLakeMonitorRdbUtils::NotifyAnalysisAlbum(albumIds);
 
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_ValidAlbumIds_ReturnVoid end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ValidData_ReturnTrue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ValidData_ReturnTrue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_ValidData_ReturnTrue start");
 
-    string insertAlbumSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
-        PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
-        PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
-        PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 1)";
+    string insertAlbumSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_ID + ", " +
+        PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
+        PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_LPATH + ", " +
+        PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" + to_string(TEST_ALBUM_ID_1) + ", " +
+        to_string(TEST_ALBUM_TYPE) + ", " + to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" +
+        TEST_LPATH + "', 1)";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
     string insertPhotoSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
-        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
-    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
+        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + ", " + PhotoColumn::PHOTO_STORAGE_PATH +
+        ") VALUES (?, ?, ?, ?, ?, ?)";
+    std::vector<NativeRdb::ValueObject> photoArgs = {TEST_FILE_ID_1, TEST_ALBUM_ID_1,
+        TEST_DATE_TAKEN, TEST_PHOTO_PATH,
+        static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE), TEST_STORAGE_PATH};
+    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql, photoArgs);
     EXPECT_EQ(retPhoto, E_OK);
 
     unordered_map<int32_t, int32_t> albumCounts;
@@ -767,16 +712,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ValidData_ReturnTrue,
     data.photoPath = TEST_PHOTO_PATH;
     dataList.push_back(data);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
-
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_ValidData_ReturnTrue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_CountMismatch_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_CountMismatch_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_CountMismatch_ReturnFalse start");
 
@@ -785,7 +727,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_CountMismatch_ReturnFals
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 5)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 5)";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
@@ -807,64 +749,55 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_CountMismatch_ReturnFals
     data.photoPath = TEST_PHOTO_PATH;
     dataList.push_back(data);
 
-);
-
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_CountMismatch_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_NullRdbStore_ReturnFalse start");
 
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
     unordered_map<int32_t, int32_t> albumCounts;
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(nullptr, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(nullRdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_EmptyAlbumCounts_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_EmptyAlbumCounts_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_EmptyAlbumCounts_ReturnFalse start");
 
     unordered_map<int32_t, int32_t> albumCounts;
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_EmptyAlbumCounts_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_EmptyDataList_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_EmptyDataList_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_EmptyDataList_ReturnFalse start");
 
     unordered_map<int32_t, int32_t> albumCounts;
     albumCounts[TEST_ALBUM_ID_1] = 1;
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_EmptyDataList_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_InvalidAlbumIdInData_ReturnFalse,
-    TestSizeSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_InvalidAlbumIdInData_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_InvalidAlbumIdInData_ReturnFalse start");
 
@@ -878,16 +811,14 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_InvalidAlbumIdInData_Ret
     data.photoPath = TEST_PHOTO_PATH;
     dataList.push_back(data);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_InvalidAlbumIdInData_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_ReturnTrue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_ReturnTrue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_MultipleMatchingAlbums_ReturnTrue start");
 
@@ -896,13 +827,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_R
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test1', '" + TEST_LPATH + "', 1)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 1)";
     string insertAlbumSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test2', '" + TEST_LPATH_SUB + "', 1)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'sub', '" + TEST_LPATH_SUB + "', 1)";
     int32_t retAlbum1 = g_rdbStore->ExecuteSql(insertAlbumSql1);
     int32_t retAlbum2 = g_rdbStore->ExecuteSql(insertAlbumSql2);
     EXPECT_EQ(retAlbum1, E_OK);
@@ -940,73 +871,38 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_R
     data2.photoPath = "/test2.jpg";
     dataList.push_back(data2);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_MultipleMatchingAlbums_ReturnTrue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_ValidData_ReturnSuccess,
-    TestSize.Level1)
-{
-    MEDIA_INFO_LOG("DeleteLakeDirByLakePath_ValidData_ReturnSuccess start");
-
-    string insertAlbumSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
-        PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
-        PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
-        PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 1)";
-    int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
-    EXPECT_EQ(retAlbum, E_OK);
-
-    string insertPhotoSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
-        MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
-        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
-    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
-    EXPECT_EQ(retPhoto, E_OK);
-
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(TEST_HO_PATH,
-        g_rdbStore);
-
-    EXPECT_TRUE(result);
-
-    MEDIA_INFO_LOG("DeleteLakeDirByLakePath_ValidData_ReturnSuccess end");
-}
-
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_InvalidPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_InvalidPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_InvalidPath_ReturnFalse start");
 
     string invalidPath = "/invalid/path";
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(invalidPath,
-        g_rdbStore);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(invalidPath, g_rdbStore);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_InvalidPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_NullRdbStore_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_NullRdbStore_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_NullRdbStore_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(TEST_HO_PATH,
-        nullptr);
+    std::shared_ptr<MediaLibraryRdbStore> nullRdbStore;
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(TEST_HO_PATH, nullRdbStore);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_NullRdbStore_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidData_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidData_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteDirByLakePath_ValidData_ReturnSuccess start");
 
@@ -1015,7 +911,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidData_ReturnSucce
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
@@ -1028,31 +924,14 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidData_ReturnSucce
     EXPECT_EQ(retPhoto, E_OK);
 
     int32_t delNum = 0;
-    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH,
-        g_rdbStore, &delNum);
+    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH, g_rdbStore, &delNum);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteDirByLakePath_ValidData_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_InvalidPath_ReturnFalse,
-    TestSize.Level1)
-{
-    MEDIA_INFO_LOG("DeleteDirByLakePath_InvalidPath_ReturnFalse start");
-
-    string invalidPath = "/invalid/path";
-    int32_t delNum = 0;
-    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(invalidPath,
-        g_rdbStore, &delNum);
-
-    EXPECT_FALSE(result);
-
-    MEDIA_INFO_LOG("DeleteDirByLakePath_InvalidPath_ReturnFalse end");
-}
-
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_NullDelNum_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_NullDelNum_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteDirByLakePath_NullDelNum_ReturnSuccess start");
 
@@ -1061,7 +940,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_NullDelNum_ReturnSucc
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
@@ -1073,51 +952,44 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_NullDelNum_ReturnSucc
     int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
     EXPECT_EQ(retPhoto, E_OK);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH,
-        g_rdbStore, nullptr);
+    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH, g_rdbStore, nullptr);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteDirByLakePath_NullDelNum_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetByStoragePath_NullAssetRefresh_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetByStoragePath_NullAssetRefresh_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetByStoragePath_NullAssetRefresh_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetByStoragePath(nullptr,
-        TEST_STORAGE_PATH);
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetByStoragePath(nullptr, TEST_STORAGE_PATH);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteAssetByStoragePath_NullAssetRefresh_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteRelatedResource_ValidParameters_ReturnVoid,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteRelatedResource_ValidParameters_ReturnVoid, TestSize.Level1)
 {
-    MEDIA_INFO_INFO_LOG("DeleteRelatedResource_ValidParameters_ReturnVoid start");
+    MEDIA_INFO_LOG("DeleteRelatedResource_ValidParameters_ReturnVoid start");
 
-    MediaLakeMonitorRdbUtils::DeleteRelatedResource(TEST_PHOTO_PATH,
-        to_string(TEST_FILE_ID_1), to_string(TEST_DATE_TAKEN));
+    MediaLakeMonitorRdbUtils::DeleteRelatedResource(
+        TEST_PHOTO_PATH, to_string(TEST_FILE_ID_1), to_string(TEST_DATE_TAKEN));
 
     MEDIA_INFO_LOG("DeleteRelatedResource_ValidParameters_ReturnVoid end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteRelatedResource_EmptyPhotoPath_ReturnVoid,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteRelatedResource_EmptyPhotoPath_ReturnVoid, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteRelatedResource_EmptyPhotoPath_ReturnVoid start");
 
-    MediaLakeMonitorRdbUtils::DeleteRelatedResource("", to_string(TEST_FILE_ID_1),
-        to_string(TEST_DATE_TAKEN));
+    MediaLakeMonitorRdbUtils::DeleteRelatedResource("", to_string(TEST_FILE_ID_1), to_string(TEST_DATE_TAKEN));
 
     MEDIA_INFO_LOG("DeleteRelatedResource_EmptyPhotoPath_ReturnVoid end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_ValidData_ReturnTrue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_ValidData_ReturnTrue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CheckValidData_ValidData_ReturnTrue start");
 
@@ -1133,8 +1005,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_ValidData_ReturnTrue,
     MEDIA_INFO_LOG("CheckValidData_ValidData_ReturnTrue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidFileId_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidFileId_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CheckValidData_InvalidFileId_ReturnFalse start");
 
@@ -1150,8 +1021,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidFileId_ReturnFalse,
     MEDIA_INFO_LOG("CheckValidData_InvalidFileId_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidAlbumId_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidAlbumId_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CheckValidData_InvalidAlbumId_ReturnFalse start");
 
@@ -1167,8 +1037,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidAlbumId_ReturnFalse
     MEDIA_INFO_LOG("CheckValidData_InvalidAlbumId_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidDateTaken_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidDateTaken_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CheckValidData_InvalidDateTaken_ReturnFalse start");
 
@@ -1184,8 +1053,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_InvalidDateTaken_ReturnFal
     MEDIA_INFO_LOG("CheckValidData_InvalidDateTaken_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_EmptyPhotoPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_EmptyPhotoPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CheckValidData_EmptyPhotoPath_ReturnFalse start");
 
@@ -1201,8 +1069,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, CheckValidData_EmptyPhotoPath_ReturnFalse
     MEDIA_INFO_LOG("CheckValidData_EmptyPhotoPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, FillQueryResultData_ValidResultSet_ReturnTrue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, FillQueryResultData_ValidResultSet_ReturnTrue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("FillQueryResultData_ValidResultSet_ReturnTrue start");
 
@@ -1219,13 +1086,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, FillQueryResultData_ValidResultSet_Return
         MediaColumn::MEDIA_FILE_PATH + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         MediaColumn::MEDIA_ID + " = " + to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
     int rowCount = 0;
     resultSet->GetRowCount(rowCount);
     EXPECT_GT(rowCount, 0);
 
-    resultSet resultSet->GoToFirstRow();
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
     LakeMonitorQueryResultData data;
     bool result = MediaLakeMonitorRdbUtils::FillQueryResultData(resultSet, data);
     EXPECT_TRUE(result);
@@ -1237,33 +1104,28 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, FillQueryResultData_ValidResultSet_Return
     MEDIA_INFO_LOG("FillQueryResultData_ValidResultSet_ReturnTrue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildDeletePredicatesByStoragePath_ValidPath_ReturnPredicates,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildDeletePredicatesByStoragePath_ValidPath_ReturnPredicates, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BuildDeletePredicatesByStoragePath_ValidPath_ReturnPredicates start");
 
-    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildDeletePredicatesByStoragePath(
-        TEST_STORAGE_PATH);
+    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildDeletePredicatesByStoragePath(TEST_STORAGE_PATH);
     EXPECT_FALSE(predicates.GetWhereClause().empty());
 
     MEDIA_INFO_LOG("BuildDeletePredicatesByStoragePath_ValidPath_ReturnPredicates end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildQueryPredicatesByAlbumIds_ValidAlbumIds_ReturnPredicates,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildQueryPredicatesByAlbumIds_ValidAlbumIds_ReturnPredicates, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BuildQueryPredicatesByAlbumIds_ValidAlbumIds_ReturnPredicates start");
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1, TEST_ALBUM_ID_2 };
-    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildQueryPredicatesByAlbumIds(
-        albumIds);
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1, TEST_ALBUM_ID_2};
+    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildQueryPredicatesByAlbumIds(albumIds);
     EXPECT_FALSE(predicates.GetWhereClause().empty());
 
     MEDIA_INFO_LOG("BuildQueryPredicatesByAlbumIds_ValidAlbumIds_ReturnPredicates end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_MultipleRecords_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_MultipleRecords_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_MultipleRecords_ReturnFalse start");
 
@@ -1289,23 +1151,20 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_MultipleRec
     EXPECT_EQ(ret2, E_OK);
 
     LakeMonitorQueryResultData data;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore,
-        TEST_STORAGE_PATH, data);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore, TEST_STORAGE_PATH, data);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_MultipleRecords_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_NoMatchingRecords_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_NoMatchingRecords_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_NoMatchingRecords_ReturnSuccess start");
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore,
-        albumIds, dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore, albumIds, dataList);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(dataList.size(), 0);
@@ -1313,8 +1172,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_NoMatchingRecords
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_NoMatchingRecords_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_MultipleEmptyAlbums_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_MultipleEmptyAlbums_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_MultipleEmptyAlbums_ReturnSuccess start");
 
@@ -1323,28 +1181,26 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_MultipleEmptyAlb
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test1', '" + TEST_LPATH + "', 0)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 0)";
     string insertSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test2', '" + TEST_LPATH_SUB + "', 0)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'sub', '" + TEST_LPATH_SUB + "', 0)";
     int32_t ret1 = g_rdbStore->ExecuteSql(insertSql1);
     int32_t ret2 = g_rdbStore->ExecuteSql(insertSql2);
     EXPECT_EQ(ret1, E_OK);
     EXPECT_EQ(ret2, E_OK);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore,
-        TEST_LPATH);
+    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore, TEST_LPATH);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_MultipleEmptyAlbums_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NestedDirectories_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NestedDirectories_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NestedDirectories_ReturnSuccess start");
 
@@ -1353,7 +1209,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NestedDirectories_Re
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" +
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" +
         TEST_LPATH + "')";
     string insertSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
@@ -1377,8 +1233,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NestedDirectories_Re
     EXPECT_EQ(ret3, E_OK);
 
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, TEST_LPATH,
-        albumIds);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, TEST_LPATH, albumIds);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(albumIds.size(), 3);
@@ -1386,8 +1241,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_NestedDirectories_Re
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_NestedDirectories_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_NoAssets_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_NoAssets_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_NoAssets_ReturnSuccess start");
 
@@ -1399,28 +1253,25 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_NoAssets_Retu
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
-    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore,
-        albumIds);
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
+    bool result = MediaLakeMonitorRdbUtils::DeleteAssetsByOwnerAlbumIds(g_rdbStore, albumIds);
 
     EXPECT_TRUE(result);
 
     MEDIA_INFO_LOG("DeleteAssetsByOwnerAlbumIds_NoAssets_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_SingleAlbumId_ReturnVoid,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, NotifyAnalysisAlbum_SingleAlbumId_ReturnVoid, TestSize.Level1)
 {
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_SingleAlbumId_ReturnVoid start");
 
-    vector<string> albumIds = { "1001" };
+    vector<string> albumIds = {"1001"};
     MediaLakeMonitorRdbUtils::NotifyAnalysisAlbum(albumIds);
 
     MEDIA_INFO_LOG("NotifyAnalysisAlbum_SingleAlbumId_ReturnVoid end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_PartialMatch_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_PartialMatch_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_PartialMatch_ReturnFalse start");
 
@@ -1429,7 +1280,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_PartialMatch_ReturnFalse
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 2)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 2)";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
@@ -1451,58 +1302,50 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_PartialMatch_ReturnFalse
     data.photoPath = TEST_PHOTO_PATH;
     dataList.push_back(data);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_PartialMatch_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_NonExistentPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataByDeletedStoragePath_NonExistentPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_NonExistentPath_ReturnFalse start");
 
     LakeMonitorQueryResultData data;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore,
-        "/nonexistent/path.jpg", data);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataByDeletedStoragePath(g_rdbStore, "/nonexistent/path.jpg", data);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryDataByDeletedStoragePath_NonExistentPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_NonExistentLPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_NonExistentLPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumByLPath_NonExistentLPath_ReturnFalse start");
 
     vector<int32_t> albumIds;
     unordered_map<int32_t, int32_t> albumCounts;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumByLPath(g_rdbStore,
-        "/nonexistent/path", albumIds, albumCounts);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumByLPath(g_rdbStore, "/nonexistent/path", albumIds, albumCounts);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumByLPath_NonExistentLPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NonExistentLPath_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteEmptyAlbumsByLPath_NonExistentLPath_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NonExistentLPath_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore,
-        "/nonexistent/path");
+    bool result = MediaLakeMonitorRdbUtils::DeleteEmptyAlbumsByLPath(g_rdbStore, "/nonexistent/path");
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteEmptyAlbumsByLPath_NonExistentLPath_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_LakeFileSourceType_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_LakeFileSourceType_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_LakeFileSourceType_ReturnSuccess start");
 
@@ -1531,10 +1374,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_LakeFileSourceTyp
     EXPECT_EQ(retPhoto1, E_OK);
     EXPECT_EQ(retPhoto2, E_OK);
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
     vector<LakeMonitorQueryResultData> dataList;
-    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore,
-        albumIds, dataList);
+    bool result = MediaLakeMonitorRdbUtils::QueryDataListByAlbumIds(g_rdbStore, albumIds, dataList);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(dataList.size(), 1);
@@ -1542,8 +1384,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_LakeFileSourceTyp
     MEDIA_INFO_LOG("QueryDataListByAlbumIds_LakeFileSourceType_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_AlbumNotInCounts_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_AlbumNotInCounts_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_AlbumNotInCounts_ReturnFalse start");
 
@@ -1565,16 +1406,14 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_AlbumNotInCounts_ReturnF
     data.photoPath = TEST_PHOTO_PATH;
     dataList.push_back(data);
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts,
-        dataList);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeAlbums_AlbumNotInCounts_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ZeroCountInData_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ZeroCountInData_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeAlbums_ZeroCountInData_ReturnFalse start");
 
@@ -1583,7 +1422,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ZeroCountInData_ReturnFa
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "', 0)";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 0)";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
@@ -1598,8 +1437,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_ZeroCountInData_ReturnFa
     MEDIA_INFO_LOG("DeleteLakeAlbums_ZeroCountInData_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteDirByLakePath_ValidDataAndDelNum_ReturnSuccess start");
 
@@ -1608,21 +1446,23 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_Re
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test', '" + TEST_LPATH + "')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
 
     string insertPhotoSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
-        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
-    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
+        MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + ", " + PhotoColumn::PHOTO_STORAGE_PATH +
+        ") VALUES (?, ?, ?, ?, ?, ?)";
+    std::vector<NativeRdb::ValueObject> photoArgs = {TEST_FILE_ID_1, TEST_ALBUM_ID_1,
+        TEST_DATE_TAKEN, TEST_PHOTO_PATH,
+        static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE), TEST_STORAGE_PATH};
+    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql, photoArgs);
     EXPECT_EQ(retPhoto, E_OK);
 
     int32_t delNum = 0;
-    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH,
-        g_rdbStore, &delNum);
+    bool result = MediaLakeMonitorRdbUtils::DeleteDirByLakePath(TEST_HO_PATH, g_rdbStore, &delNum);
 
     EXPECT_TRUE(result);
     EXPECT_GT(delNum, 0);
@@ -1630,21 +1470,18 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_Re
     MEDIA_INFO_LOG("DeleteDirByLakePath_ValidDataAndDelNum_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_EmptyAlbums_ReturnFalse,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeDirByLakePath_EmptyAlbums_ReturnFalse, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_EmptyAlbums_ReturnFalse start");
 
-    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(TEST_HO_PATH,
-        g_rdbStore);
+    bool result = MediaLakeMonitorRdbUtils::DeleteLakeDirByLakePath(TEST_HO_PATH, g_rdbStore);
 
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("DeleteLakeDirByLakePath_EmptyAlbums_ReturnFalse end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidRdbStore_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidRdbStore_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateAlbumInfo_ValidRdbStore_ReturnSuccess start");
 
@@ -1655,8 +1492,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, UpdateAlbumInfo_ValidRdbStore_ReturnSucce
     MEDIA_INFO_LOG("UpdateAlbumInfo_ValidRdbStore_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt32_ParseValue_ValidData_ReturnOk,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt32_ParseValue_ValidData_ReturnOk, TestSize.Level1)
 {
     MEDIA_INFO_LOG("ColumnValueParserInt32_ParseValue_ValidData_ReturnOk start");
 
@@ -1670,9 +1506,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt32_ParseValue_ValidDa
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
     int32_t value = 0;
     int result = ColumnValueParser<int32_t>::ParseValue(*resultSet, 0, value);
     EXPECT_EQ(result, E_OK);
@@ -1681,8 +1517,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt32_ParseValue_ValidDa
     MEDIA_INFO_LOG("ColumnValueParserInt32_ParseValue_ValidData_ReturnOk end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt64_ParseValue_ValidData_ReturnOk,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt64_ParseValue_ValidData_ReturnOk, TestSize.Level1)
 {
     MEDIA_INFO_LOG("ColumnValueParserInt64_ParseValue_ValidData_ReturnOk start");
 
@@ -1696,19 +1531,18 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserInt64_ParseValue_ValidDa
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
     int64_t value = 0;
-    int result = ColumnValueParser<int64_t>::ParseValue(*resultSet, 1, value);
+    int result = ColumnValueParser<int64_t>::ParseValue(*resultSet, 0, value);
     EXPECT_EQ(result, E_OK);
     EXPECT_EQ(value, TEST_DATE_TAKEN);
 
     MEDIA_INFO_LOG("ColumnValueParserInt64_ParseValue_ValidData_ReturnOk end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserString_ParseValue_ValidData_ReturnOk,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserString_ParseValue_ValidData_ReturnOk, TestSize.Level1)
 {
     MEDIA_INFO_LOG("ColumnValueParserString_ParseValue_ValidData_ReturnOk start");
 
@@ -1722,9 +1556,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserString_ParseValue_ValidD
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
     string value = "";
     int result = ColumnValueParser<string>::ParseValue(*resultSet, 0, value);
     EXPECT_EQ(result, E_OK);
@@ -1733,8 +1567,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, ColumnValueParserString_ParseValue_ValidD
     MEDIA_INFO_LOG("ColumnValueParserString_ParseValue_ValidData_ReturnOk end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt32_ValidResultSet_ReturnValue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt32_ValidResultSet_ReturnValue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetColumnValueInt32_ValidResultSet_ReturnValue start");
 
@@ -1747,32 +1580,28 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt32_ValidResultSet_Return
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
-    int32_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(resultSet,
-        MediaColumn::MEDIA_ID, -1);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int32_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(resultSet, MediaColumn::MEDIA_ID, -1);
     EXPECT_EQ(value, TEST_FILE_ID_1);
 
     MEDIA_INFO_LOG("GetColumnValueInt32_ValidResultSet_ReturnValue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt32_NullResultSet_ReturnDefaultValue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt32_NullResultSet_ReturnDefaultValue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetColumnValueInt32_NullResultSet_ReturnDefaultValue start");
 
     shared_ptr<ResultSet> resultSet = nullptr;
     int32_t defaultValue = -1;
-    int32_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(resultSet,
-        MediaColumn::MEDIA_ID, defaultValue);
+    int32_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int32_t>(resultSet, MediaColumn::MEDIA_ID, defaultValue);
     EXPECT_EQ(value, defaultValue);
 
     MEDIA_INFO_LOG("GetColumnValueInt32_NullResultSet_ReturnDefaultValue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt64_ValidResultSet_ReturnValue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt64_ValidResultSet_ReturnValue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetColumnValueInt64_ValidResultSet_ReturnValue start");
 
@@ -1786,18 +1615,16 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt64_ValidResultSet_Return
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
-    int64_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int64_t>(resultSet,
-        MediaColumn::MEDIA_DATE_TAKEN, -1);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int64_t value = MediaLakeMonitorRdbUtils::GetColumnValue<int64_t>(resultSet, MediaColumn::MEDIA_DATE_TAKEN, -1);
     EXPECT_EQ(value, TEST_DATE_TAKEN);
 
     MEDIA_INFO_LOG("GetColumnValueInt64_ValidResultSet_ReturnValue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, Get GetColumnValueString_ValidResultSet_ReturnValue,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueString_ValidResultSet_ReturnValue, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetColumnValueString_ValidResultSet_ReturnValue start");
 
@@ -1811,18 +1638,16 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, Get GetColumnValueString_ValidResultSet_R
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
         to_string(TEST_FILE_ID_1);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
-    EXPECT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet, nullptr);
 
-    resultSet->GoToFirstRow();
-    string value = MediaLakeMonitorRdbUtils::GetColumnValue<string>(resultSet,
-        MediaColumn::MEDIA_FILE_PATH, "");
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string value = MediaLakeMonitorRdbUtils::GetColumnValue<string>(resultSet, MediaColumn::MEDIA_FILE_PATH, "");
     EXPECT_EQ(value, TEST_PHOTO_PATH);
 
     MEDIA_INFO_LOG("GetColumnValueString_ValidResultSet_ReturnValue end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsUtilsTest, QueryAlbumIdsByLPath_ExcludePaths_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumIdsByLPath_ExcludePaths_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_ExcludePaths_ReturnSuccess start");
 
@@ -1837,28 +1662,24 @@ HWTEST_F(MediaLakeMonitorRdbUtilsUtilsTest, QueryAlbumIdsByLPath_ExcludePaths_Re
     EXPECT_EQ(ret, E_OK);
 
     vector<int32_t> albumIds;
-    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore,
-        "/Pictures/Screenrecords", albumIds);
+    bool result = MediaLakeMonitorRdbUtils::QueryAlbumIdsByLPath(g_rdbStore, "/Pictures/Screenrecords", albumIds);
     EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("QueryAlbumIdsByLPath_ExcludePaths_ReturnSuccess end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildQueryPredicatesByAlbumIds_SingleAlbumId_ReturnPredicates,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, BuildQueryPredicatesByAlbumIds_SingleAlbumId_ReturnPredicates, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BuildQueryPredicatesByAlbumIds_SingleAlbumId_ReturnPredicates start");
 
-    vector<int32_t> albumIds = { TEST_ALBUM_ID_1 };
-    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildQueryPredicatesByAlbumIds(
-        albumIds);
+    vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
+    RdbPredicates predicates = MediaLakeMonitorRdbUtils::BuildQueryPredicatesByAlbumIds(albumIds);
     EXPECT_FALSE(predicates.GetWhereClause().empty());
 
     MEDIA_INFO_LOG("BuildQueryPredicatesByAlbumIds_SingleAlbumId_ReturnPredicates end");
 }
 
-HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ExcludePaths_ReturnSuccess,
-    TestSize.Level1)
+HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryAlbumByLPath_ExcludePaths_ReturnSuccess, TestSize.Level1)
 {
     MEDIA_INFO_LOG("QueryAlbumByLPath_ExcludePaths_ReturnSuccess start");
 
