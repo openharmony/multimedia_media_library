@@ -190,7 +190,8 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     0, //fileSourceType
     "", // shooting_mode
     0, // effect_mode
-    "" // front_camera
+    "", // front_camera
+    0 //livephoto4dStatus
 };
 
 const std::vector<PhotoAlbumSubType> PHOTO_ALBUM_SUB_TYPE = {

@@ -67,6 +67,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
     { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
+    { PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, TYPE_INT32 },
 };
 
 static void AlbumChangeInfosToString(stringstream &ss,
@@ -144,6 +145,7 @@ static void FillFromResultSet(PhotoAssetChangeInfo &assetChangeInfo, const share
     assetChangeInfo.movingPhotoEffectMode_ =
         getInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
     assetChangeInfo.frontCamera_ = getStr(PhotoColumn::PHOTO_FRONT_CAMERA);
+    assetChangeInfo.livephoto4dStatus_ = getInt(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS);
 }
 
 vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(
@@ -202,6 +204,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", position_: " << position_ << ", size_: " << size_;
         ss << ", mimeType_: " << mimeType_ << ", shootingMode_: " << shootingMode_;
         ss << ", frontCamera_: " << frontCamera_ << ", movingPhotoEffectMode_: " << movingPhotoEffectMode_;
+        ss << ", livephoto4dStatus_: " << livephoto4dStatus_;
         AlbumChangeInfosToString(ss, albumChangeInfos_);
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
@@ -253,6 +256,7 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteString(displayName_);
         ret = ret && parcel.WriteInt64(size_);
         ret = ret && MarshallingAlbumChangeInfos(parcel);
+        ret = ret && parcel.WriteInt32(livephoto4dStatus_);
     }
     return ret;
 }
@@ -302,6 +306,7 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
         ret = ret && parcel.ReadString(displayName_);
         ret = ret && parcel.ReadInt64(size_);
         ret = ret && ReadAlbumChangeInfos(parcel);
+        ret = ret && parcel.ReadInt32(livephoto4dStatus_);
     }
     return ret;
 }
@@ -349,6 +354,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         movingPhotoEffectMode_ = info.movingPhotoEffectMode_;
         frontCamera_ = info.frontCamera_;
         albumChangeInfos_ = info.albumChangeInfos_;
+        livephoto4dStatus_ = info.livephoto4dStatus_;
     }
     return *this;
 }
@@ -385,6 +391,7 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         shootingMode_ == info.shootingMode_ &&
         movingPhotoEffectMode_ == info.movingPhotoEffectMode_ &&
         frontCamera_ == info.frontCamera_ &&
+        livephoto4dStatus_ == info.livephoto4dStatus_ &&
         albumChangeInfos_ == info.albumChangeInfos_;
 }
 
@@ -435,6 +442,7 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     GET_ASSET_DIFF(dirty_);
     GET_ASSET_DIFF(position_);
     GET_ASSET_DIFF(size_);
+    GET_ASSET_DIFF(livephoto4dStatus_);
     if (asset.displayName_ != compare.displayName_) {
         ss << "displayName_: " << MediaFileUtils::DesensitizeName(asset.displayName_) << " -> ";
         ss << MediaFileUtils::DesensitizeName(compare.displayName_) << ", ";

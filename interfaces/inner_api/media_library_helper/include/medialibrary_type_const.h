@@ -248,6 +248,14 @@ enum class BatchDownloadAutoPauseReasonType : int32_t {
     TYPE_ROM_LOW
 };
 
+enum class LivePhoto4dStatusType : int32_t {
+    TYPE_UNIDENTIFIED = 0,
+    TYPE_UNSUPPORTED,
+    TYPE_SUPPORTED,
+    TYPE_USED,
+    TYPE_LIVEPHOTO_4D
+};
+
 struct ColumnSchema {
     bool defaultNull;
     std::string defaultValue;

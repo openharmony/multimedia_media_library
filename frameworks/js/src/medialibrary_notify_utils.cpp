@@ -394,6 +394,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     SetValueInt32(env, "position", photoAssetChangeInfo.position_, result);
     SetValueString(env, "displayName", photoAssetChangeInfo.displayName_, result);
     SetValueInt64(env, "size", photoAssetChangeInfo.size_, result);
+    SetValueInt64(env, "livephoto4dStatus", photoAssetChangeInfo.livephoto4dStatus_, result);
 
     {
         napi_value albumArray = BuildAlbumChangeInfosArray(env, photoAssetChangeInfo.albumChangeInfos_);

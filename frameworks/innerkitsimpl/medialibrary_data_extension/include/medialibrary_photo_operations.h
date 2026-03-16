@@ -149,6 +149,9 @@ public:
         NativeRdb::RdbPredicates &predicates, const std::string &photoId, const std::string &albumId);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
         const std::string &photoId, const std::string &albumId);
+    EXPORT static int32_t SetLivePhoto4dStatus(const int32_t fileId, const int32_t livePhoto4dStatus,
+        const std::string &livePhoto4dLatestPair);
+    EXPORT static int32_t SetExtraDataVersionByLivePhoto4d(const int32_t fileId);
 private:
     static int32_t HandleSaveCameraPhoto(MediaLibraryCommand &cmd);
     static bool CheckAndReport(bool cond, const int32_t &fileId,

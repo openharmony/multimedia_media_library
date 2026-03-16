@@ -125,6 +125,7 @@ private:
         {MediaColumn::MEDIA_PACKAGE_NAME, {&PhotosPoWriter::GetPackageName, &PhotosPoWriter::SetPackageName}},
         {PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
             {&PhotosPoWriter::GetSouthDeviceType, &PhotosPoWriter::SetSouthDeviceType}},
+        {PhotoColumn::UNIQUE_ID, {&PhotosPoWriter::GetUniqueId, &PhotosPoWriter::SetUniqueId}},
     };
     const std::map<std::string, GetSetNode> EXTRA_HANDLERS = {
         {"album_cloud_id", {&PhotosPoWriter::GetAlbumCloudId, &PhotosPoWriter::SetAlbumCloudId}},
@@ -252,6 +253,8 @@ private:
     void SetPackageName(std::variant<int32_t, int64_t, double, std::string> &val);
     void SetSouthDeviceType(std::variant<int32_t, int64_t, double, std::string> &val);
     bool GetSouthDeviceType(std::string &val);
+    void SetUniqueId(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetUniqueId(std::string &val);
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTOS_PO_WRITER_H

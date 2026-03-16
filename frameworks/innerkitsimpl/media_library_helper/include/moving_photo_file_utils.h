@@ -29,6 +29,7 @@ EXPORT constexpr int32_t PLAY_INFO_LEN = 20;
 EXPORT constexpr int32_t VERSION_TAG_LEN = 20;
 EXPORT constexpr int32_t CINEMAGRAPH_INFO_SIZE_LEN = 4;
 EXPORT constexpr int32_t MIN_STANDARD_SIZE = LIVE_TAG_LEN + PLAY_INFO_LEN + VERSION_TAG_LEN;
+EXPORT constexpr uint32_t LIVE_PHOTO_4D_VERSION = 8;
 
 class MovingPhotoFileUtils : public PhotoFileUtils {
 public:
@@ -73,6 +74,8 @@ public:
     EXPORT static bool IsExistsLivePhotoFiles(const std::string &imagePath);
     EXPORT static int32_t FindMovingPhotoAttachments(const std::string &cloudPath,
         std::vector<std::string> &cloudPathList);
+    EXPORT static int32_t ModifyExtraDataVersion(const std::string& extraPath, uint32_t newVersion);
+    EXPORT static int32_t GetExtraDataVersion(const std::string& extraPath, uint32_t& version);
 };
 } // namespace OHOS::Media
 
