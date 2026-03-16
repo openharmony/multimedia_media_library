@@ -20,11 +20,23 @@
 namespace OHOS::Media {
 bool QueryPhotoReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return parcel.ReadString(this->fileId);
+    bool status = parcel.ReadString(this->fileId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->deliveryMode);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadBool(this->needsExtraInfo);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
 }
 bool QueryPhotoReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return parcel.WriteString(this->fileId);
+    bool status = parcel.WriteString(this->fileId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->deliveryMode);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteBool(this->needsExtraInfo);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
 }
 
 bool QueryPhotoRespBody::Unmarshalling(MessageParcel &parcel)

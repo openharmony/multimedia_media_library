@@ -29,12 +29,6 @@ enum class ReturnDataType {
     TYPE_READY,
 };
 
-enum class DeliveryMode {
-    FAST = 0,
-    HIGH_QUALITY,
-    BALANCED_MODE,
-};
-
 enum class SourceMode {
     ORIGINAL_MODE = 0,
     EDITED_MODE,
