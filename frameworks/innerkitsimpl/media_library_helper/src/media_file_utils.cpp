@@ -2698,5 +2698,30 @@ void MediaFileUtils::GetAllFileNameListUnderPath(const std::filesystem::path &pa
     }
     std::sort(fileNames.begin(), fileNames.end());
 }
+
+void MediaFileUtils::GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders)
+{
+    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            // 检查是否为目录且非隐藏（不以.开头）
+            if (entry.is_directory() && entry.path().filename().string()[0] != '.') {
+                folders.push_back(entry.path().filename().string());
+            }
+        }
+    }
+}
+
+void MediaFileUtils::GetAllFileNameListUnderPath(const std::filesystem::path &path, std::vector<std::string> &fileNames)
+{
+    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            // 仅获取普通文件，排除目录
+            if (std::filesystem::is_regular_file(entry) && entry.path().filename().string()[0] != '.') {
+                fileNames.push_back(entry.path().filename().string());
+            }
+        }
+    }
+    std::sort(fileNames.begin(), fileNames.end());
+}
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP
