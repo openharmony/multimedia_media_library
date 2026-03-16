@@ -5890,7 +5890,8 @@ int32_t MediaLibraryPhotoOperations::SetLivePhoto4dStatus(const int32_t fileId, 
 {
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckLivePhoto4dStatus(livePhoto4dStatus),
         E_ERR, "livePhoto4d:Failed to check live photo 4d status");
-
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidUuid(livePhoto4dLatestPair),
+        E_ERR, "livePhoto4d:Failed to check live photo 4d latest pair");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RdbStore is null");
     bool haveLivePhoto4d = false;
