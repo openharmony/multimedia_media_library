@@ -28,6 +28,7 @@ ohos_shared_library("media_library_manager") {
   sources = [
     "./media_library_manager.cpp",
     "./src/media_library_tab_old_photos_client.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/js_interface_helper.cpp",
   ]
 
   include_dirs = [
