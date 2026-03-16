@@ -338,6 +338,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_ADDED_YEAR",           PhotoColumn::PHOTO_DATE_ADDED_YEAR),
     std::make_pair("DATE_ADDED_MONTH",          PhotoColumn::PHOTO_DATE_ADDED_MONTH),
     std::make_pair("DATE_ADDED_DAY",            PhotoColumn::PHOTO_DATE_ADDED_DAY),
+    std::make_pair("UNIQUE_ID",                 PhotoColumn::UNIQUE_ID),
     std::make_pair("LIVEPHOTO_4D_STATUS",       PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS),
 };
 
