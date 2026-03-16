@@ -3012,8 +3012,8 @@ int32_t MediaAssetsControllerService::CheckSinglePhotoPermission(MessageParcel &
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (static_cast<NotifyUriType>(reqBody.registerType) != NotifyUriType::SINGLE_PHOTO_URI) {
-        MEDIA_ERR_LOG("CheckSinglePhotoPermissionReqBody Invalid RegisterType");
-        ret = E_INVALID_ARGUMENTS;
+        MEDIA_INFO_LOG("CheckSinglePhotoPermissionReqBody Only Check Single Photo");
+        ret = E_OK;
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().CheckSinglePhotoPermission(reqBody.fileId, reqBody.registerType);
