@@ -199,7 +199,7 @@ public:
     int32_t GetAssetCompressVersion(int32_t &version);
     int32_t GetCompressAssetSize(const std::vector<std::string> &uris, GetCompressAssetSizeRespBody &respBody);
     int32_t QueryMediaDataStatus(const std::string &dataKey, bool &result);
-    int32_t CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType);
+    int32_t CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType);
     int32_t SetLivePhoto4dStatus(const int32_t fileId, const int32_t livePhoto4dStatus,
         const std::string &livePhoto4dLatestPair);
     int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);

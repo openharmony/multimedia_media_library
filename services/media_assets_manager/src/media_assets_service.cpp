@@ -18,6 +18,7 @@
 #include "media_assets_service.h"
 
 #include <unordered_set>
+#include <charconv>
 
 #include "medialibrary_bundle_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
@@ -1835,9 +1836,16 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
+int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
+    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), E_INVALID_FILEID, "fileId is empty");
+    int64_t id = 0;
+    auto [ptr, ec] = std::from_chars(fileId.data(), fileId.data() + fileId.size(), id);
+    if (ec != std::errc() || ptr != fileId.data() + fileId.size()) {
+        MEDIA_ERR_LOG("Invalid fileId");
+        return E_INVALID_FILEID;
+    }
     Notification::NotifyRegisterPermission permissionHandle;
     int32_t ret =
         permissionHandle.SinglePermissionCheck(static_cast<Notification::NotifyUriType>(registerType), fileId);
