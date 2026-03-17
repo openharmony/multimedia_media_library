@@ -268,12 +268,28 @@ void MediaCleanAllDirtyFilesTaskTest::TearDown()
 HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_SetBatchExecuteTime_01, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Mcadft_SetBatchExecuteTime_01 Start");
-    MediaCleanAllDirtyFilesTask task;
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
     int64_t testTime = 1234567890;
-    task.SetBatchExecuteTime();
-    int64_t saveTime = task.GetBatchExecuteTime();
+    task->SetBatchExecuteTime();
+    int64_t saveTime = task->GetBatchExecuteTime();
     EXPECT_NE(testTime, saveTime);
     MEDIA_INFO_LOG("Mcadft_SetBatchExecuteTime_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_SetBatchProgressId_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_SetBatchProgressId_01 Start");
+    int32_t startFileId = 1;
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    task->GetMaxFileId();
+    task->GetMinFileId();
+    int32_t nextFileId = 0;
+    task->QueryNextId(startFileId, nextFileId);
+    const std::string START_FILE_ID_STR = "startFileId";
+    task->SetBatchProgressId(startFileId, START_FILE_ID_STR);
+    int32_t curStartFileId = task->GetBatchProgressId(START_FILE_ID_STR);
+    EXPECT_EQ(curStartFileId, startFileId);
+    MEDIA_INFO_LOG("Mcadft_SetBatchProgressId_01 End");
 }
 } // namespace Media
 } // namespace OHOS
