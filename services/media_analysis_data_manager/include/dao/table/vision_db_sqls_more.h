@@ -75,14 +75,36 @@ const std::string CREATE_ANALYSIS_ALBUM_FOR_ONCREATE = "CREATE TABLE IF NOT EXIS
     ANALYSIS_STATUS + " INT, " +
     EDIT_OPERATION + " INT ) ";
 const std::string ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "analysis_album_update_search_trigger";
-const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS " + ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER + " AFTER UPDATE OF " + ALBUM_NAME + ", " +
-    IS_ME + ", " + ALBUM_RELATIONSHIP + ", " + COVER_URI + ", " + RANK + ", " + TAG_ID + ", " + USER_OPERATION + ", " +
-    GROUP_TAG + ", " + USER_DISPLAY_LEVEL + " ON " + ANALYSIS_ALBUM_TABLE + " FOR EACH ROW WHEN (NEW." + ALBUM_SUBTYPE +
-    " = " + std::to_string(PORTRAIT) + ")" + " BEGIN " + " UPDATE " + "tab_analysis_search_index" + " SET " +
-    "album_status" + " = CASE WHEN " + "album_status" + " != 0 THEN 2 ELSE " + "album_status" + " END " + " WHERE (" +
-    FILE_ID + " IN( " + " SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE (old." + ALBUM_ID +
-    " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" + ")); END;";
+const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "CREATE TRIGGER IF NOT EXISTS " +
+    ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER +
+    " AFTER UPDATE OF " + ALBUM_NAME + ", " + IS_ME + ", " + ALBUM_RELATIONSHIP +
+    " ON " + ANALYSIS_ALBUM_TABLE +
+    " FOR EACH ROW WHEN (NEW." + ALBUM_SUBTYPE + " = " + std::to_string(PORTRAIT) + ")" +
+    " BEGIN " +
+    " UPDATE " + "tab_analysis_search_index" +
+    " SET " + "cv_status" + " = 0 " +
+    " WHERE (" + FILE_ID + " IN( " +
+    " SELECT " + MAP_ASSET +
+    " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    " WHERE (old." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" +
+    ")); END;";
+
+const std::string ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER = "analysis_album_update_album_status_trigger";
+const std::string CREATE_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER =
+    "CREATE TRIGGER IF NOT EXISTS " + ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER +
+    " AFTER UPDATE OF " + ALBUM_NAME + ", " + IS_ME + ", " + ALBUM_RELATIONSHIP + ", " + COVER_URI + ", " + RANK +
+    ", " + TAG_ID + ", " + USER_OPERATION + ", " + GROUP_TAG + ", " + USER_DISPLAY_LEVEL +
+    " ON " + ANALYSIS_ALBUM_TABLE +
+    " FOR EACH ROW WHEN (NEW." + ALBUM_SUBTYPE + " = " + std::to_string(PORTRAIT) + ")" +
+    " BEGIN " +
+    " UPDATE " + "tab_analysis_search_index" +
+    " SET " + "album_status" + " = CASE WHEN " + "album_status" + " != 0 THEN 2 ELSE " + "album_status" +
+    " END " +
+    " WHERE (" + FILE_ID + " IN( " +
+    " SELECT " + MAP_ASSET +
+    " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    " WHERE (old." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" +
+    ")); END;";
 
 const std::string IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP = "idx_fileid_for_analysis_photo_map";
 const std::string CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP = "CREATE INDEX IF NOT EXISTS " +
