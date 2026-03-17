@@ -47,7 +47,6 @@ ohos_unittest("media_clean_all_dirty_files_task_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/restore_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/convert_format_dto.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_by_old_uris_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_rdb_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_related_system_state_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_clean_all_dirty_files_task.cpp",
