@@ -39,6 +39,7 @@ int GetPartialObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t rea
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetPartialObjectData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -47,9 +48,14 @@ int GetPartialObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t rea
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->offset = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->length = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+        MTP_ERROR_PACKET_INCORRECT, "GetPartialObjectData::parser get handle failed");
+    uint32_t offsetValue = 0;
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, offsetValue),
+        MTP_ERROR_PACKET_INCORRECT, "GetPartialObjectData::parser get offset failed");
+    context_->offset = offsetValue;
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->length),
+        MTP_ERROR_PACKET_INCORRECT, "GetPartialObjectData::parser get length failed");
     return MTP_SUCCESS;
 }
 

@@ -42,6 +42,7 @@ int GetNumObjectsData::Parser(const std::vector<uint8_t> &buffer, int32_t readSi
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("paramCount=%{public}u, needCount=%{public}d", parameterCount, PARSER_PARAM_SUM);
@@ -49,9 +50,14 @@ int GetNumObjectsData::Parser(const std::vector<uint8_t> &buffer, int32_t readSi
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->storageID = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->format = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->parent = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->storageID),
+        MTP_ERROR_PACKET_INCORRECT, "GetNumObjectsData::parser get storageID failed");
+    uint32_t format = 0;
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, format),
+        MTP_ERROR_PACKET_INCORRECT, "GetNumObjectsData::parser get format failed");
+    context_->format = static_cast<uint16_t>(format);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->parent),
+        MTP_ERROR_PACKET_INCORRECT, "GetNumObjectsData::parser get parent failed");
 
     if (!MtpStorageManager::GetInstance()->HasStorage(context_->storageID)) {
         MEDIA_ERR_LOG("no match storage");

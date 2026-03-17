@@ -29,10 +29,7 @@ namespace Media {
 MtpEvent::MtpEvent(const std::shared_ptr<MtpOperationContext> &context)
 {
     CHECK_AND_RETURN_LOG(context != nullptr, "MtpEvent failed, context is nullptr");
-
-    if (context != nullptr) {
-        mtpContextPtr_ = context;
-    }
+    mtpContextPtr_ = context;
 }
 
 MtpEvent::~MtpEvent()

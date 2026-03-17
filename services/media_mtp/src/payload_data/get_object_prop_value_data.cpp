@@ -39,6 +39,7 @@ int GetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_FAIL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropValueData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -47,8 +48,10 @@ int GetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->property = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropValueData::parser get handle failed");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->property),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropValueData::parser get property failed");
     return MTP_SUCCESS;
 }
 

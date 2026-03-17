@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_packet_tools.h"
+#include "mtp_storage_manager.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
@@ -43,6 +44,7 @@ int SendObjectInfoData::Parser(const std::vector<uint8_t> &buffer, int32_t readS
     }
 
     if (!context_->indata) {
+        CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
         int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
         if (parameterCount < PARSER_PARAM_SUM) {
             MEDIA_ERR_LOG("SendObjectInfoData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -51,8 +53,12 @@ int SendObjectInfoData::Parser(const std::vector<uint8_t> &buffer, int32_t readS
         }
 
         size_t offset = MTP_CONTAINER_HEADER_SIZE;
-        context_->storageID = MtpPacketTool::GetUInt32(buffer, offset);
-        context_->parent = MtpPacketTool::GetUInt32(buffer, offset);
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->storageID),
+            MTP_ERROR_PACKET_INCORRECT, "SendObjectInfoData::parser get storageID failed");
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->parent),
+            MTP_ERROR_PACKET_INCORRECT, "SendObjectInfoData::parser get parent failed");
+        CHECK_AND_RETURN_RET_LOG(MtpStorageManager::GetInstance()->HasStorage(context_->storageID),
+            MTP_ERROR_INVALID_STORAGE_ID, "parser no match storage [%{public}d]", context_->storageID);
     } else {
         size_t offset = MTP_CONTAINER_HEADER_SIZE;
         int res = ParserData(buffer, offset);

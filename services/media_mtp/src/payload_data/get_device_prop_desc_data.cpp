@@ -39,8 +39,10 @@ int GetDevicePropDescData::Parser(const std::vector<uint8_t> &buffer, int32_t re
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->property = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->property),
+        MTP_ERROR_PACKET_INCORRECT, "GetDevicePropDescData::parser get property failed");
     return MTP_SUCCESS;
 }
 

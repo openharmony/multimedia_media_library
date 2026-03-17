@@ -289,19 +289,6 @@ static const map<uint16_t, int> ObjMediaPropTypeMap = {
     { MTP_PROPERTY_PARENT_OBJECT_CODE, MTP_TYPE_UINT32_CODE }
 };
 
-static const map<std::string, uint16_t> ColumnToPropTypeMap = {
-    { CONST_MEDIA_DATA_DB_SIZE, MTP_PROPERTY_OBJECT_SIZE_CODE },
-    { CONST_MEDIA_DATA_DB_NAME, MTP_PROPERTY_OBJECT_FILE_NAME_CODE },
-    { CONST_MEDIA_DATA_DB_DATE_MODIFIED, MTP_PROPERTY_DATE_MODIFIED_CODE },
-    { CONST_MEDIA_DATA_DB_PARENT_ID, MTP_PROPERTY_PARENT_OBJECT_CODE },
-    { CONST_MEDIA_DATA_DB_NAME, MTP_PROPERTY_NAME_CODE },
-    { CONST_MEDIA_DATA_DB_NAME, MTP_PROPERTY_DISPLAY_NAME_CODE },
-    { CONST_MEDIA_DATA_DB_DATE_ADDED, MTP_PROPERTY_DATE_ADDED_CODE },
-    { CONST_MEDIA_DATA_DB_ARTIST, MTP_PROPERTY_ARTIST_CODE },
-    { CONST_MEDIA_DATA_DB_DURATION, MTP_PROPERTY_DURATION_CODE },
-    { CONST_MEDIA_DATA_DB_DESCRIPTION, MTP_PROPERTY_DESCRIPTION_CODE },
-};
-
 static const map<std::string, ResultSetDataType> ColumnTypeMap = {
     { CONST_MEDIA_DATA_DB_ID, TYPE_INT32 },
     { CONST_MEDIA_DATA_DB_SIZE, TYPE_INT64 },
@@ -397,10 +384,7 @@ int32_t MtpDataUtils::SolveSetObjectPropValueData(const shared_ptr<MtpOperationC
 
 void MtpDataUtils::GetMediaTypeByformat(const uint16_t format, MediaType &outMediaType)
 {
-    if (FormatMediaTypeMap.find(format) == FormatMediaTypeMap.end()) {
-        MEDIA_ERR_LOG("Can not find format");
-        outMediaType = MEDIA_TYPE_DEFAULT;
-    }
+    outMediaType = MEDIA_TYPE_DEFAULT;
     if (FormatMediaTypeMap.find(format) != FormatMediaTypeMap.end()) {
         outMediaType = FormatMediaTypeMap.at(format);
     }
@@ -482,11 +466,12 @@ void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &
 
     std::string column;
     for (uint16_t property : *properties) {
-        if (PropColumnMap.find(property) != PropColumnMap.end()) {
+        auto it = PropColumnMap.find(property);
+        if (it != PropColumnMap.end()) {
             auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
             Property prop(property, properType);
             prop.handle_ = context->handle;
-            column = PropColumnMap.at(property);
+            column = it->second;
             if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
                 uint16_t format = MTP_FORMAT_UNDEFINED_CODE;
                 GetMtpFormatByPath(path, format);
@@ -782,6 +767,7 @@ void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, sh
 
 int32_t MtpDataUtils::GetMediaTypeByName(std::string &displayName, MediaType &outMediaType)
 {
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), E_ERR, "displayName is empty");
     size_t displayNameIndex = displayName.find_last_of('.');
     std::string extension;
     if (displayNameIndex != std::string::npos) {
