@@ -76,7 +76,6 @@ const std::string QUERY_FILE_ID_STR = "q_id";
 constexpr int64_t THREE_HOURS = 3 * 60 * 60;
 constexpr int64_t FOUR_WEEK = 4 * 7 * 24 * 60 * 60;
 constexpr int64_t THREE_DAY_MS = 72 * 60 * 60 * 1000;
-constexpr int64_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.hmos.photos";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
@@ -365,7 +364,7 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
         if (!existThumbnail) {
             std::string lcdPath = GetThumbnailPath(dirtyFileInfo.path, THUMBNAIL_LCD_SUFFIX);
             bool existThumbnailLCD = MediaFileUtils::IsFileExists(lcdPath);
-            if (!MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
+            if (existThumbnailLCD && !MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
                 MediaFileUtils::CopyFileUtil(lcdPath, dirtyFileInfo.path);
                 MEDIA_INFO_LOG("Copy Lcd %{public}s to Id %{public}d", lcdPath.c_str(), dirtyFileInfo.fileId);
             }
@@ -541,8 +540,7 @@ bool MediaCleanAllDirtyFilesTask::IsMovingPhotosInEditFolder(int32_t curBucketNu
         if (MediaFileUtils::IsFileExists(videoPath)) {
             MEDIA_INFO_LOG("DirtyMediaHandler Find Video Path: %{public}s",
                 MediaFileUtils::DesensitizePath(videoPath).c_str());
-            MediaType mediaTypeOther = MediaFileUtils::GetMediaType(OtherFileName);
-                return true;
+            return true;
         } else {
             MEDIA_DEBUG_LOG("DirtyMediaHandler Cannot Find Video Path: %{public}s",
                 MediaFileUtils::DesensitizePath(videoPath).c_str());
