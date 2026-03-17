@@ -43,6 +43,7 @@ int SetObjectReferencesData::Parser(const std::vector<uint8_t> &buffer, int32_t 
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("SetObjectReferencesData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -51,7 +52,8 @@ int SetObjectReferencesData::Parser(const std::vector<uint8_t> &buffer, int32_t 
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+        MTP_ERROR_PACKET_INCORRECT, "SetObjectReferencesData::parser get handle failed");
     context_->handles = MtpPacketTool::GetAUInt32(buffer, offset);
     return MTP_SUCCESS;
 }
