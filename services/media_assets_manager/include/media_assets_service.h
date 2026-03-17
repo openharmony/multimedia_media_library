@@ -81,6 +81,8 @@
 #include "get_compress_asset_size_vo.h"
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
+#include "transcode_compatible_info_operations.h"
+#include "compatible_info_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -204,6 +206,8 @@ public:
         const std::string &livePhoto4dLatestPair);
     int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
     int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
+    int32_t SetCompatibleInfo(CompatibleInfo &compatibleInfo);
+    int32_t GetCompatibleInfo(const int64_t tokenId, GetCompatibleInfoRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

@@ -619,6 +619,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS),
         &MediaAssetsControllerService::SetLivePhoto4dStatus
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO),
+        &MediaAssetsControllerService::SetCompatibleInfo
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO),
+        &MediaAssetsControllerService::GetCompatibleInfo
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -3037,5 +3045,44 @@ int32_t MediaAssetsControllerService::SetLivePhoto4dStatus(MessageParcel &data, 
     ret = MediaAssetsService::GetInstance().SetLivePhoto4dStatus(reqBody.fileId, reqBody.livePhoto4dStatus,
         reqBody.livePhoto4dLatestPair);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetCompatibleInfo(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::SetCompatibleInfo start");
+    SetCompatibleInfoReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetCompatibleInfo Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    CompatibleInfo compatibleInfo;
+    compatibleInfo.tokenId = reqBody.tokenId;
+    compatibleInfo.highResolution = reqBody.supportedHighResolution;
+    compatibleInfo.encodings = reqBody.supportedMimeTypes;
+    ret = MediaAssetsService::GetInstance().SetCompatibleInfo(compatibleInfo);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::SetCompatibleInfo fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetCompatibleInfo(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetCompatibleInfo start");
+    GetCompatibleInfoReqBody reqBody;
+    GetCompatibleInfoRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetCompatibleInfo Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetCompatibleInfo(reqBody.tokenId, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetCompatibleInfo fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

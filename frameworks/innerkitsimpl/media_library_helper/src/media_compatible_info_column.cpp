@@ -19,6 +19,7 @@ namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
 
+const string TabCompatibleInfoColumn::TOKEN_ID = "token_id";
 const string TabCompatibleInfoColumn::BUNDLE_NAME = "bundle_name";
 const string TabCompatibleInfoColumn::HIGH_RESOLUTION = "high_resolution";
 const string TabCompatibleInfoColumn::ENCODINGS = "encodings";
@@ -28,6 +29,15 @@ const string TabCompatibleInfoColumn::TABLE = "tab_compatible_info";
 const string TabCompatibleInfoColumn::CREATE_TABLE = "\
     CREATE TABLE IF NOT EXISTS tab_compatible_info ( \
         bundle_name TEXT NOT NULL PRIMARY KEY, \
+        high_resolution INT NOT NULL DEFAULT 0, \
+        encodings TEXT \
+    );";
+const string TabCompatibleInfoColumn::DORP_TABLE =
+    "DROP TABLE tab_compatible_info;";
+
+const string TabCompatibleInfoColumn::CREATE_TABLE_NEW = "\
+    CREATE TABLE IF NOT EXISTS tab_compatible_info ( \
+        token_id INTEGER NOT NULL PRIMARY KEY, \
         high_resolution INT NOT NULL DEFAULT 0, \
         encodings TEXT \
     );";

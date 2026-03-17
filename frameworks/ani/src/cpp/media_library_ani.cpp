@@ -82,6 +82,7 @@
 #include "media_string_utils.h"
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
+#include "compatible_info_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -267,6 +268,12 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessAcquireDebugDatabase)},
     ani_native_function {"releaseDebugDatabaseInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessReleaseDebugDatabase)},
+    ani_native_function {"setFileCompatibleConfigSysInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::setFileCompatibleConfigSys)},
+    ani_native_function {"setFileCompatibleConfigInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SetFileCompatibleConfig)},
+    ani_native_function {"getAssetCompatibleConfigInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetAssetCompatibleConfig)},
 };
 } // namespace
 
@@ -5977,6 +5984,195 @@ void MediaLibraryAni::PhotoAccessReleaseDebugDatabase(ani_env* env, ani_object o
     SetUserIdFromObjectInfo(asyncContext);
     ReleaseDebugDatabaseExecute(env, asyncContext);
     return ReleaseDebugDatabaseComplete(env, asyncContext);
+}
+
+static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_long tokenId, ani_object config,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return ANI_ERROR;
+    }
+    int64_t srcTokenId = static_cast<int64_t>(tokenId);
+    CHECK_COND_RET(srcTokenId > 0, ANI_ERROR, "srcTokenId <= 0");
+    context->tokenId = srcTokenId;
+    bool supportedHighResolution = false;
+    ani_object propertyValue;
+    ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedHighResolution", propertyValue);
+    if (ret == ANI_OK) {
+        bool value = false;
+        ret = MediaLibraryAniUtils::GetBool(env, propertyValue, value);
+        CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
+        supportedHighResolution = value;
+    }
+    context->supportedHighResolution = supportedHighResolution;
+    return ANI_OK;
+}
+
+static ani_status ParseArgsSetFileCompatibleConfig(ani_env *env, ani_object config,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    context->tokenId = IPCSkeleton::GetCallingTokenID();
+    bool supportedHighResolution = false;
+    ani_object propertyValue;
+    ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedHighResolution", propertyValue);
+    if (ret == ANI_OK) {
+        bool value = false;
+        ret = MediaLibraryAniUtils::GetBool(env, propertyValue, value);
+        CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
+        supportedHighResolution = value;
+    }
+    context->supportedHighResolution = supportedHighResolution;
+    return ANI_OK;
+}
+
+
+static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (context == nullptr) {
+        return;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("SetFileCompatibleConfigExec");
+    SetCompatibleInfoReqBody reqBody;
+    reqBody.tokenId = context->tokenId;
+    reqBody.supportedHighResolution = context->supportedHighResolution;
+
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
+    if (ret != 0) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return;
+    }
+
+    context->retVal = E_OK;
+}
+
+void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_long tokenId, ani_object config)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("setFileCompatibleConfigSysInner");
+    
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        return;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    if (ParseArgsSetFileCompatibleSysConfig(env, tokenId, config, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    SetFileCompatibleConfigExec(env, context);
+}
+
+void MediaLibraryAni::SetFileCompatibleConfig(ani_env *env, ani_object object, ani_object config)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetFileCompatibleConfig");
+    
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        return;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    if (ParseArgsSetFileCompatibleConfig(env, config, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    SetFileCompatibleConfigExec(env, context);
+}
+
+static ani_status ParseArgsGetAssetCompatibleConfig(ani_env *env, ani_long tokenId,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return ANI_ERROR;
+    }
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    int64_t srcTokenId = static_cast<int64_t>(tokenId);
+    CHECK_COND_RET(srcTokenId > 0, ANI_ERROR, "srcTokenId <= 0");
+    context->tokenId = srcTokenId;
+    return ANI_OK;
+}
+
+static void GetAssetCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (context == nullptr) {
+        return;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleConfigExec");
+
+    GetCompatibleInfoReqBody reqBody;
+    GetCompatibleInfoRespBody respBody;
+    reqBody.tokenId = context->tokenId;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return;
+    }
+    context->supportedHighResolution = respBody.supportedHighResolution;
+    context->retVal = E_OK;
+}
+
+static ani_object GetAssetCompatibleConfigComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    ani_object result {};
+    ani_object aniresult;
+    bool supportedHighResolution = context->supportedHighResolution;
+    ani_status status = MediaLibraryAniUtils::ToAniBooleanObject(env, supportedHighResolution, aniresult);
+    if (status == ANI_OK) {
+        env->Object_SetPropertyByName_Ref(result, "supportedHighResolution", aniresult);
+    }
+    return result;
+}
+
+
+ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_long tokenId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleConfig");
+    
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        ani_object result {};
+        return result;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        ani_object result {};
+        return result;
+    }
+
+    if (ParseArgsGetAssetCompatibleConfig(env, tokenId, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        ani_object result {};
+        return result;
+    }
+
+    GetAssetCompatibleConfigExec(env, context);
+    return GetAssetCompatibleConfigComplete(env, context);
 }
 
 } // namespace Media

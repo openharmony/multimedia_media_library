@@ -141,6 +141,8 @@ public:
     EXPORT int32_t QueryMediaDataStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CheckSinglePhotoPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetLivePhoto4dStatus(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAssetsControllerService() = default;

@@ -75,23 +75,24 @@ int32_t TranscodeCompatibleInfoOperation::InsertCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
-        "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(compatibleInfo.tokenId > 0, E_INVALID_ARGUMENTS,
+        "tokenId <= 0");
 
-    ValuesBucket values;
-    values.PutString(TabCompatibleInfoColumn::BUNDLE_NAME, compatibleInfo.bundleName);
-    values.PutInt(TabCompatibleInfoColumn::HIGH_RESOLUTION, compatibleInfo.highResolution ? 1 : 0);
-    values.PutString(TabCompatibleInfoColumn::ENCODINGS, VectorToString(compatibleInfo.encodings));
+    string sql = "INSERT OR REPLACE INTO " + TabCompatibleInfoColumn::TABLE + " (" +
+                    TabCompatibleInfoColumn::TOKEN_ID + ", " +
+                    TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
+                    TabCompatibleInfoColumn::ENCODINGS + ") VALUES (?, ?, ?)";
 
-    int64_t rowId;
-    int32_t ret = rdbStore->Insert(rowId, TabCompatibleInfoColumn::TABLE, values);
+    vector<NativeRdb::ValueObject> values = {
+        NativeRdb::ValueObject(to_string(compatibleInfo.tokenId)),
+        NativeRdb::ValueObject(to_string(compatibleInfo.highResolution)),
+        NativeRdb::ValueObject(VectorToString(compatibleInfo.encodings))
+    };
+    int32_t ret = rdbStore->ExecuteSql(sql, values);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
         "Insert compatibleInfo failed, ret : %{public}d", ret);
     
-    MEDIA_INFO_LOG("Insert compatibleInfo success, bundleName: %{public}s,"
-        "highResolution: %{public}d, encodings: %{public}s",
-        compatibleInfo.bundleName.c_str(), compatibleInfo.highResolution,
-        VectorToString(compatibleInfo.encodings).c_str());
+    MEDIA_INFO_LOG("Insert compatibleInfo success");
     return E_OK;
 }
 
@@ -99,15 +100,15 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
-        "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(compatibleInfo.tokenId > 0, E_INVALID_ARGUMENTS,
+        "tokenId <= 0");
     
     ValuesBucket values;
     values.PutInt(TabCompatibleInfoColumn::HIGH_RESOLUTION, compatibleInfo.highResolution ? 1 : 0);
     values.PutString(TabCompatibleInfoColumn::ENCODINGS, VectorToString(compatibleInfo.encodings));
 
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, compatibleInfo.bundleName);
+    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(compatibleInfo.tokenId));
 
     int32_t changedRows;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
@@ -115,52 +116,44 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
         "Update compatibleInfo failed, ret : %{public}d", ret);
     
     if (changedRows == 0) {
-        MEDIA_ERR_LOG("Update compatibleInfo no rows affected, bundle_name: %{public}s",
-            compatibleInfo.bundleName.c_str());
+        MEDIA_ERR_LOG("Update compatibleInfo no rows affected");
         return E_DB_FAIL;
     }
 
-    MEDIA_INFO_LOG("Update compatibleInfo success, bundleName: %{public}s,"
-        "highResolution: %{public}d, encodings: %{public}s",
-        compatibleInfo.bundleName.c_str(), compatibleInfo.highResolution,
-        VectorToString(compatibleInfo.encodings).c_str());
+    MEDIA_INFO_LOG("Update compatibleInfo success");
     return E_OK;
 }
 
-int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::string &bundleName)
+int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::int64_t tokenId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
-        "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(tokenId > 0, E_INVALID_ARGUMENTS,
+        "tokenId <= 0");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, bundleName);
+    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(tokenId));
 
     int32_t deletedRows;
     int32_t ret = rdbStore->Delete(deletedRows, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
         "Delete compatibleInfo failed, ret : %{public}d", ret);
-    
-    MEDIA_INFO_LOG("Delete compatibleInfo, bundleName: %{public}s, "
-        "deletedRows: %{public}d", bundleName.c_str(), deletedRows);
-    
     return E_OK;
 }
 
 int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
-    const std::string &bundleName, CompatibleInfo& compatibleInfo)
+    const std::int64_t tokenId, CompatibleInfo& compatibleInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
-        "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(tokenId > 0, E_INVALID_ARGUMENTS,
+        "tokenId <= 0");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, bundleName);
+    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(tokenId));
 
     vector<string> columns = {
-        TabCompatibleInfoColumn::BUNDLE_NAME,
+        TabCompatibleInfoColumn::TOKEN_ID,
         TabCompatibleInfoColumn::HIGH_RESOLUTION,
         TabCompatibleInfoColumn::ENCODINGS
     };
@@ -170,14 +163,13 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
         "Query compatibleInfo failed, resultSet is null");
 
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Query compatibleInfo not found, bundleName: %{public}s",
-            bundleName.c_str());
-        return E_GET_ASSET_FAIL;
+        MEDIA_INFO_LOG("Query compatibleInfo not found");
+        return E_OK;
     }
 
     int index;
-    resultSet->GetColumnIndex(TabCompatibleInfoColumn::BUNDLE_NAME, index);
-    resultSet->GetString(index, compatibleInfo.bundleName);
+    resultSet->GetColumnIndex(TabCompatibleInfoColumn::TOKEN_ID, index);
+    resultSet->GetLong(index, compatibleInfo.tokenId);
 
     resultSet->GetColumnIndex(TabCompatibleInfoColumn::HIGH_RESOLUTION, index);
     int32_t highResolution;
@@ -189,7 +181,7 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
     resultSet->GetString(index, encodingsStr);
     compatibleInfo.encodings = StringToVector(encodingsStr);
 
-    MEDIA_INFO_LOG("Query compatibleInfo success, bundleName: %{public}s", bundleName.c_str());
+    MEDIA_INFO_LOG("Query compatibleInfo success");
 
     return E_OK;
 }
