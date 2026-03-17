@@ -14,6 +14,7 @@
 */
 #include "lake_file_utils.h"
 
+#include <regex>
 #include <safe_map.h>
 #include <uuid.h>
 #include <sys/sendfile.h>
@@ -199,9 +200,19 @@ std::string LakeFileUtils::FindTitlePrefix(InnerFileInfo &fileInfo)
     return displayName.substr(0, std::min<int32_t>(pos, DISPLAY_NAME_PREFIX_LENGTH) + 1);
 }
 
+std::string CleanBurstFileName(const std::string& fileName)
+{
+    // 核心正则：
+    // 匹配 BURST + 数字 + 可选(括号数字) + 可选_COVER
+    // 捕获括号内的内容，保留！删除数字和COVER
+    const std::regex reg(R"(BURST\d+(\(\d+\))?(_COVER)?)");
+    // 替换为 BURST + 捕获的括号内容（无则为空）
+    return std::regex_replace(fileName, reg, "BURST$1");
+}
+
 std::string LakeFileUtils::FindGroupHash(InnerFileInfo &fileInfo)
 {
-    return  std::to_string(fileInfo.ownerAlbumId) + "#" + FindTitlePrefix(fileInfo) + "#" +
+    return  std::to_string(fileInfo.ownerAlbumId) + "#" + CleanBurstFileName(fileInfo.displayName) + "#" +
         std::to_string(FindGroupIndex(fileInfo));
 }
 
