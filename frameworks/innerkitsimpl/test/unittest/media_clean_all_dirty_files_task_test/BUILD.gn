@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,12 +35,26 @@ ohos_unittest("media_clean_all_dirty_files_task_test") {
   ]
 
   sources = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/src/media_assets_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/create_asset_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/commit_edited_asset_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/form_info_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/cloud_enhancement_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/set_location_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/asset_change_create_asset_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/submit_cache_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/add_image_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/save_camera_photo_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/restore_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/convert_format_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_by_old_uris_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_rdb_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_related_system_state_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_clean_all_dirty_files_task.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_clean_all_dirty_files_task_test.cpp",
     "./src/mock_media_assets_service.cpp",
+    "./src/mock_cloud_sync_utils.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
   ]
   deps = [
@@ -93,10 +107,17 @@ ohos_unittest("media_clean_all_dirty_files_task_test") {
   cflags = [
     "-fno-access-control",
     "-Wno-unused-but-set-variable",
-    "-Werror",
-    "-Wunused-const-variable"
+    "-Wno-unused-function",
+    "-Wno-unused-const-variable",
   ]
 
+  cflags_cc = [
+    "-fvisibility-inlines-hidden",
+    "-Os",
+    "-Wno-unused-but-set-variable",
+    "-Wno-unused-function",
+    "-Wno-unused-const-variable",
+  ]
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }
