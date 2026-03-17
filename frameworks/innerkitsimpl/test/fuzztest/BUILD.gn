@@ -20,6 +20,8 @@ group("media_library_fuzztest") {
     "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
     "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
     "medialibrarycloudmediaassetmanager_fuzzer:MediaLibraryCloudMediaAssetManagerFuzzTest",
+    "medialibrarycloudmediaassetmanager2_fuzzer:MediaLibraryCloudMediaAssetManager2FuzzTest",
+    "medialibrarycloudmediaassetmanager3_fuzzer:MediaLibraryCloudMediaAssetManager3FuzzTest",
     "medialibraryclouduploadchecker_fuzzer:MediaLibraryCloudUploadCheckerFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
     "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
@@ -38,13 +40,6 @@ group("media_library_fuzztest") {
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
     "medialibraryfileparseinterface_fuzzer:MediaLibraryFileParseInterfaceFuzzTest",
     "medialibraryfileparseinterface2_fuzzer:MediaLibraryFileParseInterface2FuzzTest",
-    "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
-    "medialibrarymediaalbumscontrollerservice2_fuzzer:MediaLibraryMediaAlbumsControllerService2FuzzTest",
-    "medialibrarymediaalbumscontrollerservice3_fuzzer:MediaLibraryMediaAlbumsControllerService3FuzzTest",
-    "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
-    "medialibrarymediaassetscontrollerservice2_fuzzer:MediaLibraryMediaAssetsControllerService2FuzzTest",
-    "medialibrarymediaassetscontrollerservice3_fuzzer:MediaLibraryMediaAssetsControllerService3FuzzTest",
-    "medialibrarymediaassetscontrollerservice4_fuzzer:MediaLibraryMediaAssetsControllerService4FuzzTest",
     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
     "medialibrarymetarecover_fuzzer:MediaLibraryMetaRecoverFuzzTest",
     "medialibrarymtp_fuzzer:MediaLibraryMtpFuzzTest",
@@ -63,6 +58,7 @@ group("media_library_fuzztest") {
     "medialibrarymtpptpspecialhandles_fuzzer:MediaLibraryMtpPtpSpecialHandlesFuzzTest",
     "medialibrarymultistagescapture_fuzzer:MediaLibraryMultistagesCaptureFuzzTest",
     "medialibrarymultistagesdeferredcapture2_fuzzer:MediaLibraryMultistagesDeferredCapture2FuzzTest",
+    "medialibrarymultistagesdeferredcapture3_fuzzer:MediaLibraryMultistagesDeferredCapture3FuzzTest",
     "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
     "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
     "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
@@ -72,9 +68,10 @@ group("media_library_fuzztest") {
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
+    "medialibrarythumbnail2_fuzzer:MediaLibraryThumbnail2FuzzTest",
+    "medialibrarythumbnail3_fuzzer:MediaLibraryThumbnail3FuzzTest",
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
-    "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
     "medialibrarybackupextension_fuzzer:MediaLibraryBackupExtensionFuzzTest",
   ]
 
@@ -85,6 +82,8 @@ group("media_library_fuzztest") {
     "medialibrarycloudmediaphotosdao_fuzzer:MediaLibraryCloudMediaPhotosDaoFuzzTest",
     "medialibrarycloudmediaservice_fuzzer:MediaLibraryCloudMediaServiceFuzzTest",
     "medialibrarycloudmediaservice2_fuzzer:MediaLibraryCloudMediaService2FuzzTest",
+    "medialibrarycloudmediaservice3_fuzzer:MediaLibraryCloudMediaService3FuzzTest",
+    "medialibrarycloudmediaservice4_fuzzer:MediaLibraryCloudMediaService4FuzzTest",
     "medialibrarycloudmediajsonhelper_fuzzer:MediaLibraryCloudMediaJsonHelperFuzzTest",
     "medialibrarycloudmediamdkrecord_fuzzer:MediaLibraryCloudMediaMdkRecordFuzzTest",
     "medialibrarycloudmediadataclient_fuzzer:MediaLibraryCloudMediaDataClientFuzzTest",
@@ -107,7 +106,11 @@ group("media_library_fuzztest") {
   }
 
   if (media_library_feature_cloud_enhancement) {
-    deps += [ "medialibraryenhancement_fuzzer:MediaLibraryEnhancementFuzzTest" ]
+    deps += [
+      "medialibraryenhancement_fuzzer:MediaLibraryEnhancementFuzzTest",
+      "medialibraryenhancement2_fuzzer:MediaLibraryEnhancement2FuzzTest",
+      "medialibraryenhancement3_fuzzer:MediaLibraryEnhancement3FuzzTest"
+    ]
   }
 
   if (media_library_feature_cloud_download) {
@@ -125,60 +128,16 @@ group("media_library_fuzztest") {
     deps += [ "medialibrarymtp_fuzzer:MediaLibraryMtpFuzzTest" ]
   }
 
-  if (!media_library_analysis_data_enable) {
-    deps = []
+  if (media_library_analysis_data_enable) {
     deps += [
-      "medialibraryappstateobserver_fuzzer:MediaLibraryAppstateObserverFuzzTest",
-      "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
-      "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
-      "medialibrarycloudmediaassetmanager_fuzzer:MediaLibraryCloudMediaAssetManagerFuzzTest",
-      "medialibrarycloudmediaassetmanager2_fuzzer:MediaLibraryCloudMediaAssetManager2FuzzTest",
-      "medialibraryclouduploadchecker_fuzzer:MediaLibraryCloudUploadCheckerFuzzTest",
-      "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
-      "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
-      "medialibraryduplicatephotooperation_fuzzer:MediaLibraryDuplicatePhotoOperationFuzzTest",
-      "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
-      "medialibraryextensionbatchinsert_fuzzer:MediaLibraryExtensionBatchInsertFuzzTest",
-      "medialibraryextensiondelete_fuzzer:MediaLibraryExtensionDeleteFuzzTest",
-      "medialibraryextensiongetfiletypes_fuzzer:MediaLibraryExtensionGetFileTypesFuzzTest",
-      "medialibraryextensioninsert_fuzzer:MediaLibraryExtensionInsertFuzzTest",
-      "medialibraryextensionnotifychange_fuzzer:MediaLibraryExtensionNotifyChangeFuzzTest",
-      "medialibraryextensionopenfile_fuzzer:MediaLibraryExtensionOpenFileFuzzTest",
-      "medialibraryextensionquery_fuzzer:MediaLibraryExtensionQueryFuzzTest",
-      "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
-      "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
-      "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
-      "medialibraryfileparseinterface_fuzzer:MediaLibraryFileParseInterfaceFuzzTest",
-      "medialibraryfileparseinterface2_fuzzer:MediaLibraryFileParseInterface2FuzzTest",
-      "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
-      "medialibrarymetarecover_fuzzer:MediaLibraryMetaRecoverFuzzTest",
-      "medialibrarymtp_fuzzer:MediaLibraryMtpFuzzTest",
-      "medialibrarymtpcoverage_fuzzer:MediaLibraryMtpCoverageFuzzTest",
-      "medialibrarymtpdatautils_fuzzer:MediaLibraryMtpDataUtilsFuzzTest",
-      "medialibrarymtpevent_fuzzer:MediaLibraryMtpEventFuzzTest",
-      "medialibrarymtpheaderdata_fuzzer:MediaLibraryMtpHeaderDataFuzzTest",
-      "medialibrarymtpmedialibrary_fuzzer:MediaLibraryMtpMediaLibraryFuzzTest",
-      "medialibrarymtpmedialibrarymanager_fuzzer:MediaLibraryMtpMediaLibraryManagerFuzzTest",
-      "medialibrarymtpmediasyncobserver_fuzzer:MediaLibraryMtpMediaSyncObserverFuzzTest",
-      "medialibrarymtpoperationutils_fuzzer:MediaLibraryMtpOperationUtilsFuzzTest",
-      "medialibrarymtppackettool_fuzzer:MediaLibraryMtpPacketToolFuzzTest",
-      "medialibrarymtppayloaddata_fuzzer:MediaLibraryMtpPayLoadDataFuzzTest",
-      "medialibrarymtpproperty_fuzzer:MediaLibraryMtpPropertyFuzzTest",
-      "medialibrarymtpptpproxy_fuzzer:MediaLibraryMtpPtpProxyFuzzTest",
-      "medialibrarymtpptpspecialhandles_fuzzer:MediaLibraryMtpPtpSpecialHandlesFuzzTest",
-      "medialibrarymultistagescapture_fuzzer:MediaLibraryMultistagesCaptureFuzzTest",
-      "medialibrarymultistagesdeferredcapture2_fuzzer:MediaLibraryMultistagesDeferredCapture2FuzzTest",
-      "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
-      "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
-      "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
-      "medialibraryphotodaymonthyearoperation_fuzzer:MediaLibraryPhotoDayMonthYearOperationFuzzTest",
-      "medialibraryphotoowneralbumidoperation_fuzzer:MediaLibraryPhotoOwnerAlbumIdOperationFuzzTest",
-      "medialibraryrefresh_fuzzer:MediaLibraryRefreshFuzzTest",
-      "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
-      "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
-      "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
-      "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
-      "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
+      "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
+      "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
+      "medialibrarymediaalbumscontrollerservice2_fuzzer:MediaLibraryMediaAlbumsControllerService2FuzzTest",
+      "medialibrarymediaalbumscontrollerservice3_fuzzer:MediaLibraryMediaAlbumsControllerService3FuzzTest",
+      "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
+      "medialibrarymediaassetscontrollerservice2_fuzzer:MediaLibraryMediaAssetsControllerService2FuzzTest",
+      "medialibrarymediaassetscontrollerservice3_fuzzer:MediaLibraryMediaAssetsControllerService3FuzzTest",
+      "medialibrarymediaassetscontrollerservice4_fuzzer:MediaLibraryMediaAssetsControllerService4FuzzTest",
     ]
   }
 }

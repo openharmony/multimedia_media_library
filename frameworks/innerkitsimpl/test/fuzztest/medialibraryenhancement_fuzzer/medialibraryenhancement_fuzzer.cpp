@@ -57,78 +57,24 @@
 #include "media_log.h"
 #include "runtime.h"
 #include "media_upgrade.h"
+#include "media_assets_controller_service.h"
+#include "asset_change_vo.h"
 
 namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-static const string TESTING_DISPLAYNAME = "IMG_20240904_133901.jpg";
 static const int32_t NO = 0;
 static const int32_t YES = 1;
-static const int32_t E_ERR = -1;
 static const int32_t NUM_BYTES = 1;
-static const int32_t MAX_MIMETYPE_FUZZER_LISTS = 1;
-static const int32_t MAX_DYNAMEIC_RANGE_TYPE = 1;
 static const int32_t MAX_SUB_TYPE = 5;
-static const int32_t MAX_ENHANCEMENT_FUZZER_URI_LISTS = 6;
-static const int32_t MAX_CLOUD_ENHANCEMENT_AVAILABLE_TYPE = 8;
 static const int32_t MIN_CEERROR_CODE_TYPE = 100;
 static const int32_t MAX_CEERROR_CODE_TYPE = 109;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
-static const string PHOTOS_TABLE = "Photos";
-static const string PHOTO_URI_PREFIX = "file://media/Photo/";
-static const string PHOTO_URI_PREFIX_UNDEDINED = "undedined/";
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 FuzzedDataProvider *provider = nullptr;
-
-static inline vector<string> FuzzVectorString()
-{
-    return {provider->ConsumeBytesAsString(NUM_BYTES)};
-}
-
-static inline Uri FuzzUriWithKeyValue(string uriStr)
-{
-    if (provider->ConsumeBool()) {
-        Media::MediaFileUtils::UriAppendKeyValue(uriStr, CONST_MEDIA_OPERN_KEYWORD, "true");
-    } else {
-        Media::MediaFileUtils::UriAppendKeyValue(uriStr, CONST_MEDIA_OPERN_KEYWORD, "false");
-    }
-    Uri addTask(uriStr);
-    return addTask;
-}
-
-static inline Uri FuzzUri()
-{
-    uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0, MAX_ENHANCEMENT_FUZZER_URI_LISTS);
-    string uriStr = Media::ENHANCEMENT_FUZZER_URI_LISTS[data];
-    return FuzzUriWithKeyValue(uriStr);
-}
-
-static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd()
-{
-    return Media::MediaLibraryCommand(FuzzUri());
-}
-
-static inline Media::CloudEnhancementAvailableType FuzzCloudEnhancementAvailableType()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_ENHANCEMENT_AVAILABLE_TYPE);
-    return static_cast<Media::CloudEnhancementAvailableType>(value);
-}
-
-static inline void FuzzMimeTypeAndDisplayNameExtension(string &mimeType, string &displayName)
-{
-    int32_t data = provider->ConsumeIntegralInRange<int32_t>(0, MAX_MIMETYPE_FUZZER_LISTS);
-    mimeType = Media::MIMETYPE_FUZZER_LISTS[data];
-    displayName = provider->ConsumeBytesAsString(NUM_BYTES) + Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS[data];
-}
-
-static inline Media::DynamicRangeType FuzzDynamicRangeType()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DYNAMEIC_RANGE_TYPE);
-    return static_cast<Media::DynamicRangeType>(value);
-}
 
 static inline Media::PhotoSubType FuzzPhotoSubType()
 {
@@ -144,22 +90,6 @@ static inline Media::CEErrorCodeType FuzzCEErrorCodeType()
         return static_cast<Media::CEErrorCodeType>(value);
     }
     return Media::CEErrorCodeType::NON_RECOVERABLE;
-}
-
-static int32_t CreatePhotoApi10(int mediaType, const string &displayName)
-{
-    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::CREATE,
-        Media::MediaLibraryApi::API_10);
-    NativeRdb::ValuesBucket values;
-    values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
-    values.PutInt(Media::MediaColumn::MEDIA_TYPE, mediaType);
-    cmd.SetValueBucket(values);
-    int32_t ret = Media::MediaLibraryPhotoOperations::Create(cmd);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Create Photo failed, errCode=%{public}d", ret);
-        return ret;
-    }
-    return ret;
 }
 
 string GetFilePath(int fileId)
@@ -230,82 +160,6 @@ int32_t MakePhotoUnpending(int fileId, bool isRefresh)
     return E_OK;
 }
 
-int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool isFresh = true)
-{
-    int fileId = CreatePhotoApi10(mediaType, displayName);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("create photo failed, res=%{public}d", fileId);
-        return fileId;
-    }
-    int32_t errCode = MakePhotoUnpending(fileId, isFresh);
-    if (errCode != E_OK) {
-        return errCode;
-    }
-    return fileId;
-}
-
-int32_t PrepareHighQualityPhoto(const string &photoId, const string &displayName)
-{
-    auto fileId = SetDefaultPhotoApi10(Media::MediaType::MEDIA_TYPE_IMAGE, displayName);
-    // update multi-stages capture db info
-    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE,
-        Media::MediaLibraryApi::API_10);
-    NativeRdb::ValuesBucket values;
-    values.Put(Media::PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(Media::MultiStagesPhotoQuality::FULL));
-    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(Media::CloudEnhancementAvailableType::PROCESSING_AUTO));
-    values.Put(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.Put(Media::PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
-    cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(Media::MediaColumn::MEDIA_ID, to_string(fileId));
-    Media::MediaLibraryPhotoOperations::Update(cmd);
-
-    return fileId;
-}
-
-int32_t UpdateCEAvailable(int32_t fileId, int32_t ceAvailable, bool hasCloudWaterMark = false)
-{
-    // update cloud enhancement ce_available
-    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO,
-        Media::OperationType::UPDATE, Media::MediaLibraryApi::API_10);
-    NativeRdb::ValuesBucket values;
-    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
-    if (hasCloudWaterMark) {
-        values.Put(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, 1);
-    }
-    cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(Media::MediaColumn::MEDIA_ID, to_string(fileId));
-    return Media::MediaLibraryPhotoOperations::Update(cmd);
-}
-
-static int32_t InsertAsset(string photoId)
-{
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
-    NativeRdb::ValuesBucket values;
-    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
-
-    string mimeType = "undefined";
-    string displayName = ".undefined";
-    FuzzMimeTypeAndDisplayNameExtension(mimeType, displayName);
-    values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
-    values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, mimeType);
-    int32_t hidden = provider->ConsumeBool() ? YES : NO;
-    values.PutInt(Media::MediaColumn::MEDIA_HIDDEN, hidden);
-    values.PutInt(Media::PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(FuzzPhotoSubType()));
-    values.PutInt(Media::PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, static_cast<int32_t>(FuzzDynamicRangeType()));
-    int32_t hasCloudWatermark = provider->ConsumeBool() ? YES : NO;
-    values.PutInt(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark);
-    values.PutInt(Media::PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(FuzzCloudEnhancementAvailableType()));
-
-    int64_t fileId = 0;
-    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
-    return static_cast<int32_t>(fileId);
-}
-
 static MediaEnhance::MediaEnhanceBundleHandle* FuzzMediaEnhanceBundle(string photoId)
 {
     MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
@@ -344,74 +198,6 @@ static void Init()
     SetTables();
 }
 
-static void EnhancementManagerTest()
-{
-    int32_t fileId = InsertAsset(provider->ConsumeBytesAsString(NUM_BYTES));
-    Media::EnhancementManager::GetInstance().Init();
-    vector<string> fileIds = { to_string(fileId) };
-    vector<string> photoIds;
-    Media::EnhancementManager::GetInstance().CancelTasksInternal(fileIds, photoIds,
-        FuzzCloudEnhancementAvailableType());
-    Media::EnhancementManager::GetInstance().RemoveTasksInternal(fileIds, photoIds);
-    Media::EnhancementManager::GetInstance().RevertEditUpdateInternal(provider->ConsumeIntegral<int32_t>());
-    Media::EnhancementManager::GetInstance().RecoverTrashUpdateInternal(fileIds);
-
-    DataSharePredicates predicates;
-    string prefix = provider->ConsumeBool() ? PHOTO_URI_PREFIX : PHOTO_URI_PREFIX_UNDEDINED;
-    string photoUri = prefix + "1/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
-    predicates.EqualTo(Media::MediaColumn::MEDIA_ID, photoUri);
-    int32_t hasCloudWatermark = provider->ConsumeBool() ? YES : NO;
-    predicates.EqualTo(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark);
-    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd();
-    cmd.SetDataSharePred(predicates);
-    Media::EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
-    vector<string> columns = FuzzVectorString();
-    Media::EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
-
-    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
-        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
-    Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, provider->ConsumeIntegral<int32_t>(),
-        provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeBool());
-}
-
-static void EnhancementManagerExtraTest()
-{
-    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
-        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
-    string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    int32_t testFileId = PrepareHighQualityPhoto(photoId, provider->ConsumeBytesAsString(NUM_BYTES));
-    UpdateCEAvailable(testFileId, provider->ConsumeIntegral<int32_t>());
-    vector<string> testFileIds;
-    testFileIds.push_back(to_string(testFileId));
-    testFileIds.push_back("-1");
-    vector<string> testphotoIds;
-
-    Media::CloudEnhancementAvailableType cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::TRASH;
-    if (provider->ConsumeBool()) {
-        cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::EDIT;
-    }
-    Media::EnhancementManager::GetInstance().CancelTasksInternal(testFileIds, testphotoIds,
-        cloudEnhancementAvailableType);
-    NativeRdb::RdbPredicates servicePredicates(provider->ConsumeBytesAsString(NUM_BYTES));
-    Media::EnhancementManager::GetInstance().GenerateAddAutoServicePredicates(servicePredicates);
-    Media::EnhancementManager::GetInstance().GenerateCancelOperationPredicates(provider->ConsumeIntegral<int32_t>(),
-        servicePredicates);
-    Media::EnhancementManager::GetInstance().AddAutoServiceTask(mediaEnhanceBundle,
-        provider->ConsumeIntegral<int32_t>(), provider->ConsumeBytesAsString(NUM_BYTES));
-    Media::EnhancementManager::GetInstance().SetCompositeDisplayMode(testFileId, provider->ConsumeIntegral<int32_t>());
-    Media::EnhancementManager::GetInstance().HandleCancelAllAutoOperation();
-    Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
-    Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
-    Media::EnhancementManager::GetInstance().HandleStateChangedOperation(provider->ConsumeBool());
-    Media::EnhancementManager::GetInstance().HandleNetChange(provider->ConsumeBool(), provider->ConsumeBool());
-    string photosAutoOption = Media::PHOTO_OPTION_CLOSE;
-    if (provider->ConsumeBool()) {
-        photosAutoOption = provider->ConsumeBytesAsString(NUM_BYTES);
-    }
-    Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(photosAutoOption);
-    Media::EnhancementManager::GetInstance().HandlePhotosWaterMarkChange(provider->ConsumeBool());
-}
-
 static void EnhancementTaskManagerTest()
 {
     int32_t fileId = provider->ConsumeIntegral<int32_t>();
@@ -420,7 +206,7 @@ static void EnhancementTaskManagerTest()
     Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
     Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
 
-    vector<string> taskIds = FuzzVectorString();
+    vector<string> taskIds = {provider->ConsumeBytesAsString(NUM_BYTES)};
     Media::EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
     fileId = provider->ConsumeIntegral<int32_t>();
     photoId = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -444,26 +230,8 @@ static void CloudEnhancementGetCountTest()
     cloudEnhancementGetCount.RemoveStartTime(photoId);
 }
 
-static void EnhancementServiceAdpterTest()
-{
-    shared_ptr<Media::EnhancementServiceAdapter> enhancementService = make_shared<Media::EnhancementServiceAdapter>();
-    enhancementService->LoadEnhancementService();
-
-    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
-        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
-    string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    enhancementService->AddTask(provider->ConsumeBytesAsString(NUM_BYTES), mediaEnhanceBundle);
-    enhancementService->RemoveTask(provider->ConsumeBytesAsString(NUM_BYTES));
-    enhancementService->CancelTask(provider->ConsumeBytesAsString(NUM_BYTES));
-    enhancementService->CancelAllTasks();
-
-    vector<string> taskIdList = FuzzVectorString();
-    enhancementService->GetPendingTasks(taskIdList);
-}
-
 static void EnhancementServiceCallbackTest()
 {
-    Media::EnhancementServiceCallback::OnServiceReconnected();
     auto assetRefresh = std::make_shared<Media::AccurateRefresh::AssetAccurateRefresh>();
 
     string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -539,11 +307,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (data == nullptr) {
         return 0;
     }
-    OHOS::EnhancementManagerTest();
-    OHOS::EnhancementManagerExtraTest();
     OHOS::EnhancementTaskManagerTest();
     OHOS::CloudEnhancementGetCountTest();
-    OHOS::EnhancementServiceAdpterTest();
     OHOS::EnhancementServiceCallbackTest();
 #endif
     return 0;
