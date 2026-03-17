@@ -24,7 +24,9 @@ namespace OHOS::Media {
 class QueryPhotoReqBody : public IPC::IMediaParcelable {
 public:
     std::string fileId;
- 
+    int32_t deliveryMode{-1};
+    bool needsExtraInfo{true};
+
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
@@ -33,7 +35,7 @@ public:  // functions of Parcelable.
 class QueryPhotoRespBody : public IPC::IMediaParcelable {
 public:
     std::string photoId;
-    int32_t photoQuality;
+    int32_t photoQuality{-1};
  
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

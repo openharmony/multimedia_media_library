@@ -28,7 +28,6 @@
 #include "file_uri.h"
 #include "image_source_napi.h"
 #include "log_cinematic_access_vo.h"
-#include "media_file_uri.h"
 #include "medialibrary_business_code.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_utils_ext.h"
@@ -44,8 +43,6 @@
 #include "user_define_ipc_client.h"
 #include "userfile_client.h"
 #include "media_call_transcode.h"
-#include "medialibrary_operation.h"
-#include "media_asset_rdbstore.h"
 #include "cancel_request_vo.h"
 #include "get_progress_callback_vo.h"
 #include "process_video_vo.h"
@@ -60,9 +57,6 @@ static std::map<std::string, std::map<std::string, AssetHandler*>> inProcessUriM
 static std::mutex registerTaskLock;
 static std::map<std::string,
     std::map<ObserverType, std::shared_ptr<MediaOnNotifyUserDefineObserver>>> multiStagesObserverNewMap;
-
-const int32_t LOW_QUALITY_IMAGE = 1;
-const int32_t HIGH_QUALITY_IMAGE = 0;
 
 const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
@@ -348,80 +342,6 @@ static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestU
         DeleteInProcessMapRecord(uriLocal, requestId);
     }
     inProcessFastRequests.Erase(requestId);
-}
-
-static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
-    const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
-{
-    photoId = "";
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID};
-    string queryUri;
-    if (hasReadPermission) {
-        queryUri = CONST_PAH_QUERY_PHOTO;
-    } else {
-        queryUri = photoUri;
-        MediaFileUri::RemoveAllFragment(queryUri);
-    }
-    Uri uri(queryUri);
-    int errCode = 0;
-    OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
-        shared_ptr<DataShare::DataShareResultSet> resultSet = MediaAssetRdbStore::GetInstance()->Query(
-            predicates, fetchColumn, object, errCode);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-            NAPI_ERR_LOG("query resultSet is nullptr");
-            return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-        }
-        int indexOfPhotoId = -1;
-        resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
-        resultSet->GetString(indexOfPhotoId, photoId);
-
-        int columnIndexQuality = -1;
-        resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
-        int currentPhotoQuality = HIGH_QUALITY_IMAGE;
-        resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-        if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-            HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status : lowQuality",
-                MLOG_TAG, __FUNCTION__, __LINE__);
-            return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
-        }
-        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status quality: %{public}d",
-            MLOG_TAG, __FUNCTION__, __LINE__, currentPhotoQuality);
-        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    } else {
-        return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
-    }
-}
-
-MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId,
-    const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
-{
-    MultiStagesCapturePhotoStatus status = QueryViaSandBox(fileId, photoUri, photoId, hasReadPermission, userId);
-    if (status != MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL) {
-        return status;
-    }
-    QueryPhotoReqBody reqBody;
-    reqBody.fileId = std::to_string(fileId);
-    QueryPhotoRespBody respBody;
-    std::unordered_map<std::string, std::string> headerMap {
-        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}};
-    int ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, respBody);
-    if (ret < 0) {
-        NAPI_ERR_LOG("ret = %{public}d", ret);
-        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    }
-    photoId = respBody.photoId;
-    if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
-        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status : lowQuality",
-            MLOG_TAG, __FUNCTION__, __LINE__);
-        return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
-    }
-    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} query photo status quality: %{public}d",
-        MLOG_TAG, __FUNCTION__, __LINE__, respBody.photoQuality);
-    return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
 void MediaAssetManagerNapi::ProcessImage(const int fileId, const int deliveryMode)
@@ -1294,20 +1214,21 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} OnHandleRequestImage mode: %{public}d.",
         MLOG_TAG, __FUNCTION__, __LINE__, static_cast<int32_t>(asyncContext->deliveryMode));
-    MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    QueryPhotoStatusInput param = {
+        .fileId = asyncContext->fileId,
+        .mode = asyncContext->deliveryMode,
+        .photoUri = asyncContext->photoUri,
+        .hasReadPermission = asyncContext->hasReadPermission,
+        .needsExtraInfo = (asyncContext->deliveryMode != DeliveryMode::FAST) ? true : asyncContext->needsExtraInfo,
+        .userId = asyncContext->userId,
+    };
+    auto status = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:
-            if (asyncContext->needsExtraInfo) {
-                asyncContext->photoQuality =
-                    MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId, asyncContext->photoUri,
-                    asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
-            }
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             break;
         case DeliveryMode::HIGH_QUALITY:
-            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
             asyncContext->photoQuality = status;
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
@@ -1318,8 +1239,6 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             }
             break;
         case DeliveryMode::BALANCED_MODE:
-            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
             asyncContext->photoQuality = status;
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
@@ -1350,13 +1269,18 @@ void MediaAssetManagerNapi::RequestVidoForFastMode(napi_env env, MediaAssetManag
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
 
-    if (asyncContext->needsExtraInfo) {
-        asyncContext->photoQuality = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-            asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
-        if (asyncContext->subType == PhotoSubType::CINEMATIC_VIDEO) {
-            DfxLogCinematicVideo(asyncContext->photoQuality == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS,
-                asyncContext->userId);
-        }
+    QueryPhotoStatusInput param = {
+        .fileId = asyncContext->fileId,
+        .mode = asyncContext->deliveryMode,
+        .photoUri = asyncContext->photoUri,
+        .hasReadPermission = asyncContext->hasReadPermission,
+        .needsExtraInfo = asyncContext->needsExtraInfo,
+        .userId = asyncContext->userId,
+    };
+    asyncContext->photoQuality = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
+    if (asyncContext->subType == PhotoSubType::CINEMATIC_VIDEO) {
+        DfxLogCinematicVideo(asyncContext->photoQuality == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS,
+            asyncContext->userId);
     }
     MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
     ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
@@ -1366,8 +1290,15 @@ void MediaAssetManagerNapi::RequestVideoForHighQualityMode(napi_env env, MediaAs
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
 
-    MultiStagesCapturePhotoStatus status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-        asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
+    QueryPhotoStatusInput param = {
+        .fileId = asyncContext->fileId,
+        .mode = asyncContext->deliveryMode,
+        .photoUri = asyncContext->photoUri,
+        .hasReadPermission = asyncContext->hasReadPermission,
+        .needsExtraInfo = true,
+        .userId = asyncContext->userId,
+    };
+    auto status = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
     asyncContext->photoQuality = status;
     if (asyncContext->subType == PhotoSubType::CINEMATIC_VIDEO) {
         if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
@@ -2468,9 +2399,6 @@ void MediaAssetManagerNapi::OnHandleProgressForRequest(
     napi_env env, MediaAssetManagerAsyncContext *asyncContext, CameraProgressMode &cameraProgressMode)
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
-    MultiStagesCapturePhotoStatus status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-        asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
-    asyncContext->photoQuality = status;
     NAPI_INFO_LOG("OnHandleProgressForRequest mode: %{public}d.", asyncContext->deliveryMode);
     ProgressMode progressMode = GetProgressMode(env, asyncContext);
     CheckProgressMode(env, asyncContext, progressMode);

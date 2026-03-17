@@ -2674,6 +2674,21 @@ bool MediaFileUtils::CheckLivePhoto4dStatus(int32_t livePhoto4dStatus)
         livePhoto4dStatus <= static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D);
 }
 
+bool MediaFileUtils::IsValidUuid(const std::string& uuidStr)
+{
+    // UUID格式: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    // 8-4-4-4-12 格式的十六进制字符串
+    if (uuidStr.empty()) {
+        return true;
+    }
+    std::regex uuid_regex(
+        "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        std::regex_constants::icase  // 忽略大小写
+    );
+
+    return std::regex_match(uuidStr, uuid_regex);
+}
+
 void MediaFileUtils::GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders)
 {
     if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
