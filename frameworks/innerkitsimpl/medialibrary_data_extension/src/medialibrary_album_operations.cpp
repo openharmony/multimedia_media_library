@@ -80,7 +80,7 @@ constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
 constexpr int32_t ALBUM_SETNAME_OK = 1;
 constexpr int32_t HIGHLIGHT_DELETED = -3;
-constexpr int32_t SET_IS_COVER_SATISFIED = 0;
+constexpr int32_t IS_COVER_SATISFIED_DEFAULT_COVER = 1;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 constexpr int32_t ALBUM_RENAMED = 2;
@@ -3789,7 +3789,7 @@ int32_t UpdateForPortraitCoverUri(const string &albumId, const string &coverUri,
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.In(GROUP_TAG, groupTags);
     ValuesBucket values;
-    values.PutInt(IS_COVER_SATISFIED, SET_IS_COVER_SATISFIED);
+    values.PutInt(IS_COVER_SATISFIED, IS_COVER_SATISFIED_DEFAULT_COVER);
     values.PutString(COVER_URI, coverUri);
     int32_t changedRows = -1;
     int32_t result = uniStore->Update(changedRows, values, predicates);
