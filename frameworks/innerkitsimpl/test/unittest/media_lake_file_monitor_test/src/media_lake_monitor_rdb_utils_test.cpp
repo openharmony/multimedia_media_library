@@ -513,16 +513,14 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_MultipleAlbum
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ") VALUES (" +
         to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test1')";
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'testMultipleAlbums1')";
     string insertAlbumSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ") VALUES (" +
         to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
-        to_string(TEST_ALBUM_SUBTYPE) + ", 'test2')";
-    int32_t retAlbum1 = g_rdbStore->ExecuteSql(insertAlbumSql1);
-    int32_t retAlbum2 = g_rdbStore->ExecuteSql(insertAlbumSql2);
-    EXPECT_EQ(retAlbum1, E_OK);
-    EXPECT_EQ(retAlbum2, E_OK);
+        to_string(TEST_ALBUM_SUBTYPE) + ", 'testMultipleAlbums2')";
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertAlbumSql1), E_OK);
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertAlbumSql2), E_OK);
 
     string insertPhotoSql1 = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
@@ -533,7 +531,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteAssetsByOwnerAlbumIds_MultipleAlbum
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
         to_string(TEST_FILE_ID_2) + ", " + to_string(TEST_ALBUM_ID_2) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '/test2.jpg')";
+        to_string(TEST_DATE_TAKEN) + ", '/testMultipleAlbums.jpg')";
     int32_t retPhoto1 = g_rdbStore->ExecuteSql(insertPhotoSql1);
     int32_t retPhoto2 = g_rdbStore->ExecuteSql(insertPhotoSql2);
     EXPECT_EQ(retPhoto1, E_OK);
@@ -806,13 +804,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_R
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
+        to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
         to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "', 1)";
     string insertAlbumSql2 = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" +
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_COUNT + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
+        to_string(TEST_ALBUM_ID_3) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
         to_string(TEST_ALBUM_SUBTYPE) + ", 'sub', '" + TEST_LPATH_SUB + "', 1)";
     EXPECT_EQ(g_rdbStore->ExecuteSql(insertAlbumSql1), E_OK);
     EXPECT_EQ(g_rdbStore->ExecuteSql(insertAlbumSql2), E_OK);
@@ -820,23 +818,23 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_MultipleMatchingAlbums_R
     string insertPhotoSql1 = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
+        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_2) + ", " +
         to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
     string insertPhotoSql2 = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_2) + ", " + to_string(TEST_ALBUM_ID_2) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '/test2.jpg')";
+        to_string(TEST_FILE_ID_2) + ", " + to_string(TEST_ALBUM_ID_3) + ", " +
+        to_string(TEST_DATE_TAKEN) + ", '/testMultipleMatchingAlbums.jpg')";
     EXPECT_EQ(g_rdbStore->ExecuteSql(insertPhotoSql1), E_OK);
     EXPECT_EQ(g_rdbStore->ExecuteSql(insertPhotoSql2), E_OK);
 
     unordered_map<int32_t, int32_t> albumCounts;
-    albumCounts[TEST_ALBUM_ID_1] = 1;
     albumCounts[TEST_ALBUM_ID_2] = 1;
+    albumCounts[TEST_ALBUM_ID_3] = 1;
     vector<LakeMonitorQueryResultData> dataList;
-    LakeMonitorQueryResultData data1 = {TEST_FILE_ID_1, TEST_ALBUM_ID_1, TEST_DATE_TAKEN, TEST_PHOTO_PATH};
+    LakeMonitorQueryResultData data1 = {TEST_FILE_ID_1, TEST_ALBUM_ID_2, TEST_DATE_TAKEN, TEST_PHOTO_PATH};
     dataList.push_back(data1);
-    LakeMonitorQueryResultData data2 = {TEST_FILE_ID_2, TEST_ALBUM_ID_2, TEST_DATE_TAKEN, "/test2.jpg"};
+    LakeMonitorQueryResultData data2 = {TEST_FILE_ID_2, TEST_ALBUM_ID_3, TEST_DATE_TAKEN, "/test3.jpg"};
     dataList.push_back(data2);
 
     bool result = MediaLakeMonitorRdbUtils::DeleteLakeAlbums(g_rdbStore, albumCounts, dataList);
@@ -907,15 +905,14 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_NullDelNum_ReturnSucc
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
+        to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
         to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
-    int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
-    EXPECT_EQ(retAlbum, E_OK);
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertAlbumSql), E_OK);
 
     string insertPhotoSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + ", " +
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
+        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_2) + ", " +
         to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
     int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
     EXPECT_EQ(retPhoto, E_OK);
@@ -1228,8 +1225,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteLakeAlbums_PartialMatch_ReturnFalse
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ") VALUES (" +
         to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
         to_string(TEST_DATE_TAKEN) + ", '" + TEST_PHOTO_PATH + "')";
-    int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql);
-    EXPECT_EQ(retPhoto, E_OK);
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertPhotoSql), E_OK);
 
     unordered_map<int32_t, int32_t> albumCounts;
     albumCounts[TEST_ALBUM_ID_1] = 2;
@@ -1307,11 +1303,9 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, QueryDataListByAlbumIds_LakeFileSourceTyp
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE + ") VALUES (" +
         to_string(TEST_FILE_ID_2) + ", " + to_string(TEST_ALBUM_ID_1) + ", " +
-        to_string(TEST_DATE_TAKEN) + ", '/test2.jpg', 0)";
-    int32_t retPhoto1 = g_rdbStore->ExecuteSql(insertPhotoSql1);
-    int32_t retPhoto2 = g_rdbStore->ExecuteSql(insertPhotoSql2);
-    EXPECT_EQ(retPhoto1, E_OK);
-    EXPECT_EQ(retPhoto2, E_OK);
+        to_string(TEST_DATE_TAKEN) + ", '/testLakeFileSourceType.jpg', 0)";
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertPhotoSql1), E_OK);
+    EXPECT_EQ(g_rdbStore->ExecuteSql(insertPhotoSql2), E_OK);
 
     vector<int32_t> albumIds = {TEST_ALBUM_ID_1};
     vector<LakeMonitorQueryResultData> dataList;
@@ -1384,7 +1378,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_Re
         PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
         PhotoAlbumColumns::ALBUM_LPATH + ") VALUES (" +
-        to_string(TEST_ALBUM_ID_1) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
+        to_string(TEST_ALBUM_ID_2) + ", " + to_string(TEST_ALBUM_TYPE) + ", " +
         to_string(TEST_ALBUM_SUBTYPE) + ", 'album', '" + TEST_LPATH + "')";
     int32_t retAlbum = g_rdbStore->ExecuteSql(insertAlbumSql);
     EXPECT_EQ(retAlbum, E_OK);
@@ -1394,7 +1388,7 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, DeleteDirByLakePath_ValidDataAndDelNum_Re
         MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE + ", " + PhotoColumn::PHOTO_STORAGE_PATH +
         ") VALUES (?, ?, ?, ?, ?, ?)";
-    std::vector<NativeRdb::ValueObject> photoArgs = {TEST_FILE_ID_1, TEST_ALBUM_ID_1,
+    std::vector<NativeRdb::ValueObject> photoArgs = {TEST_FILE_ID_1, TEST_ALBUM_ID_2,
         TEST_DATE_TAKEN, TEST_PHOTO_PATH,
         static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE), TEST_STORAGE_PATH};
     int32_t retPhoto = g_rdbStore->ExecuteSql(insertPhotoSql, photoArgs);
@@ -1546,13 +1540,13 @@ HWTEST_F(MediaLakeMonitorRdbUtilsTest, GetColumnValueInt64_ValidResultSet_Return
 
     string insertSql = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_DATE_TAKEN + ") VALUES (" +
-        to_string(TEST_FILE_ID_1) + ", " + to_string(TEST_DATE_TAKEN) + ")";
+        to_string(TEST_FILE_ID_2) + ", " + to_string(TEST_DATE_TAKEN) + ")";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     EXPECT_EQ(ret, E_OK);
 
     string querySql = "SELECT " + MediaColumn::MEDIA_DATE_TAKEN + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " +
-        to_string(TEST_FILE_ID_1);
+        to_string(TEST_FILE_ID_2);
     auto resultSet = g_rdbStore->QuerySql(querySql, vector<string>());
     ASSERT_NE(resultSet, nullptr);
 
