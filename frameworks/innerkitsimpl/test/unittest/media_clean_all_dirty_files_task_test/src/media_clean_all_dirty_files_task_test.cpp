@@ -303,7 +303,7 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_PathExist_01, TestSize.Level1)
     std::string fileName = "aaa.jpgx";
     std::string path = originBucketFolder + fileName;
     auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
-    bool existOrigin = task->OriginSourceExist(path); // 原图判断
+    task->OriginSourceExist(path); // 原图判断
     task->DealWithZeroSizeFile(path);
     std::string OtherFileName;
     task->GetFileNameWithSameNameOtherType(originBucketFolder, fileName, OtherFileName);
