@@ -2008,7 +2008,7 @@ static const vector<string> onCreateSqlStrs = {
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 
     TabOperationLogColumn::CREATE_TABLE,
-    TabCompatibleInfoColumn::CREATE_TABLE,
+    TabCompatibleInfoColumn::CREATE_TABLE_NEW,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -5942,6 +5942,18 @@ static void AddHighlightGrowingTime(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns end");
 }
 
+static void UpdateTabComPatibleInfo(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("update tab_compatible_info starts");
+    const vector<string> sqls = {
+        TabCompatibleInfoColumn::DORP_TABLE,
+        TabCompatibleInfoColumn::CREATE_TABLE_NEW
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("update tab_compatible_info ends");
+
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -5974,12 +5986,6 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true);
     }
 
-    if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
-        CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
-    }
-
     if (oldVersion < VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true)) {
         Add4DLivePhotoStatusAndLatestPair(store, VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS);
@@ -5996,6 +6002,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HIGHLIGHT_GROWING_TIME, true)) {
         AddHighlightGrowingTime(store, VERSION_ADD_HIGHLIGHT_GROWING_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_GROWING_TIME, true);
+    }
+
+    if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true)) {
+        UpdateTabComPatibleInfo(store, VERSION_UPDATE_TAB_COMPATIBLE_INFO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
     }
 }
 
