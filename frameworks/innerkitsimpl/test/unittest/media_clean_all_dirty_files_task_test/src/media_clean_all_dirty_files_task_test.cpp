@@ -285,11 +285,64 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_SetBatchProgressId_01, TestSize
     task->GetMinFileId();
     int32_t nextFileId = 0;
     task->QueryNextId(startFileId, nextFileId);
+    
+    DirtyFileInfo dirtyFileInfo;
+    task->QueryFileInfos(startFileId, dirtyFileInfo);
+    task->MoveToNextId(startFileId);
     const std::string START_FILE_ID_STR = "startFileId";
     task->SetBatchProgressId(startFileId, START_FILE_ID_STR);
     int32_t curStartFileId = task->GetBatchProgressId(START_FILE_ID_STR);
     EXPECT_EQ(curStartFileId, startFileId);
     MEDIA_INFO_LOG("Mcadft_SetBatchProgressId_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_PathExist_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_PathExist_01 Start");
+    std::string originBucketFolder = "/storage/cloud/files/Photo/16/";
+    std::string fileName = "aaa.jpgx";
+    std::string path = originBucketFolder + fileName;
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    bool existOrigin = task->OriginSourceExist(path); // 原图判断
+    task->DealWithZeroSizeFile(path);
+    std::string OtherFileName;
+    task->GetFileNameWithSameNameOtherType(originBucketFolder, fileName, OtherFileName);
+    task->IsMovingPhotosInOrgFolder(1, fileName);
+    task->IsMovingPhotosInEditFolder(1, fileName);
+    task->ExistPhotoPathInDB(path);
+    
+    bool existThumb = task->ThumbnailSourceExist(path); // 缩略图判断
+    EXPECT_EQ(existThumb, false);
+    MEDIA_INFO_LOG("Mcadft_PathExist_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_TimeOut_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_TimeOut_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    task->triggerTime_ = 0;
+    task->IsCurrentTaskTimeOut();
+
+    task->triggerTime_ = MediaFileUtils::UTCTimeSeconds();
+    bool ret = task->IsCurrentTaskTimeOut();
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("Mcadft_TimeOut_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_Cache_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_Cache_01 Start");
+    std::string originBucketFolder = "/storage/cloud/files/Photo/16/";
+    std::string fileName = "1.jpg";
+    std::string path = originBucketFolder + fileName;
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    task->AddToFilesCacheSet(path);
+    task->SaveCacheSetToCacheDB();
+    task->ContainsFileIdsCacheSet(1000);
+    task->ClearFilesCacheSet();
+    task->ClearFileIdsCacheSet();
+    EXPECT_EQ(task->filesCacheSet_.size(), 0);
+    MEDIA_INFO_LOG("Mcadft_Cache_01 End");
 }
 } // namespace Media
 } // namespace OHOS
