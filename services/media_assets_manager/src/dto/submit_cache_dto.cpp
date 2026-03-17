@@ -22,6 +22,7 @@ SubmitCacheDto SubmitCacheDto::Create(const SubmitCacheReqBody &req)
     SubmitCacheDto dto;
     dto.isWriteGpsAdvanced = req.isWriteGpsAdvanced;
     dto.values = req.values;
+    dto.isOriginalImageResource = req.isOriginalImageResource;
     return dto;
 }
 
