@@ -1346,7 +1346,7 @@ void MediaCleanAllDirtyFilesTask::ClearFileIdsCacheSet()
     fileIdsCacheSet_.clear();
 }
 
-bool MediaCleanAllDirtyFilesTask::ContainsFileIdsCacheSet(int32_t &val)
+bool MediaCleanAllDirtyFilesTask::ContainsFileIdsCacheSet(int32_t val)
 {
     std::lock_guard<std::mutex> lock(fileIdsCacheSetMtx_);
     return fileIdsCacheSet_.count(val) > 0;
