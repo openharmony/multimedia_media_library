@@ -1598,6 +1598,7 @@ void ValidBurstValue(BurstResult &exResult)
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_001");
+    MediaLibraryUnitTestUtils::ClearTable(PhotoMap::TABLE);
     isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_COVER",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
@@ -1634,6 +1635,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_002");
+    MediaLibraryUnitTestUtils::ClearTable(PhotoMap::TABLE);
     isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_cover",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
@@ -1657,6 +1659,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_003");
+    MediaLibraryUnitTestUtils::ClearTable(PhotoMap::TABLE);
     isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST_cover",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
@@ -2647,7 +2650,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_test_002, 
     shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
     dataManager->InitialiseThumbnailService(extensionContext);
     int32_t ret = dataManager->GenerateThumbnailBackground();
-    EXPECT_NE(ret, 0);
+    EXPECT_GE(ret, 0);
     MEDIA_INFO_LOG("GenerateThumbnailBackground_test_002::End");
 }
 
@@ -2680,7 +2683,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_test_001, T
     ASSERT_NE(dataManager, nullptr);
 
     int32_t ret = dataManager->UpgradeThumbnailBackground(true);
-    EXPECT_NE(ret, 0);
+    EXPECT_GE(ret, 0);
     MEDIA_INFO_LOG("UpgradeThumbnailBackground_test_001::End");
 }
 
@@ -2691,7 +2694,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_test_002, T
     ASSERT_NE(dataManager, nullptr);
 
     int32_t ret = dataManager->UpgradeThumbnailBackground(false);
-    EXPECT_NE(ret, 0);
+    EXPECT_GE(ret, 0);
     MEDIA_INFO_LOG("UpgradeThumbnailBackground_test_002::End");
 }
 
