@@ -545,8 +545,6 @@ void MultiStagesPhotoCaptureManager::ProcessImage(int fileId, int deliveryMode)
 
     string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(callerBundleName,
-        static_cast<RequestPolicy>(deliveryMode));
     MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId, fileId);
     int32_t currentRequestCount =
         MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);

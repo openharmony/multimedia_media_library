@@ -94,6 +94,8 @@ static int32_t CheckSystemApiKeys(const string &key)
         PhotoColumn::PHOTO_DATE_ADDED_YEAR,
         PhotoColumn::PHOTO_DATE_ADDED_MONTH,
         PhotoColumn::PHOTO_DATE_ADDED_DAY,
+        PhotoColumn::UNIQUE_ID,
+        PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {

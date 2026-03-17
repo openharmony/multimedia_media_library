@@ -25,6 +25,7 @@
 #include "data_ability_observer_stub.h"
 #include "data_ability_predicates.h"
 #include "media_asset_data_handler.h"
+#include "media_asset_manager_adapter.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
 #include "napi_base_context.h"
@@ -35,12 +36,6 @@
 namespace OHOS {
 namespace Media {
 using MediaAssetDataHandlerPtr = std::shared_ptr<NapiMediaAssetDataHandler>;
-enum class MultiStagesCapturePhotoStatus {
-    QUERY_INNER_FAIL = 0,
-    HIGH_QUALITY_STATUS,
-    LOW_QUALITY_STATUS,
-};
-
 enum ProgressReturnInfoType : int32_t {
     INFO_TYPE_TRANSCODER_COMPLETED = 0,
     INFO_TYPE_PROGRESS_UPDATE,
@@ -139,8 +134,6 @@ public:
     MediaAssetManagerNapi() = default;
     ~MediaAssetManagerNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
-    static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
-        std::string &photoId, bool hasReadPermission, int32_t userId);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void NotifyOnProgress(int32_t type, int32_t progress, std::string requestId);
     static void DeleteInProcessMapRecord(const std::string &requestUri);
