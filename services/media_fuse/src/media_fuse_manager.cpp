@@ -560,8 +560,8 @@ static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid)
 {
     AccessTokenID tokenId;
     PermissionUtils::GetTokenCallerForUid(uid, tokenId);
-    bool IsSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
-    if (isHighPixel && !IsSystemApp) {
+    bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    if (isHighPixel && !isSystemApp) {
         uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
         if (IsSupportHighResolution(tokenId)) {
             return false;
@@ -589,9 +589,11 @@ static void SetTranscodeType(bool isHighPixel, bool isHeif, TranscodeType& trans
     }
 }
 
-static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode,
+static int32_t GetTranscodeUri(string &filePath, const string &fileId, const string &mode,
     const int uid, TranscodeType& transcodeType)
 {
+    string bundleName;
+    PermissionUtils::GetClientBundle(uid, bundleName);
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, filePath: %{private}s", filePath.c_str());
     int32_t compatibleMode = 0;
@@ -644,7 +646,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     }
     TranscodeType transcodeType = TranscodeType::DEFAULT;
     string path = filePath;
-    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode, uid, transcodeType);
+    int32_t err = GetTranscodeUri(path, fileId, mode, uid, transcodeType);
     int32_t ret = MediaPrivacyManager(path, mode, fileId, appId, bundleName, uid, tokenCaller).Open();
     if (err == 0 && ret >= 0) {
         MEDIA_INFO_LOG("libc open transcode file success");
