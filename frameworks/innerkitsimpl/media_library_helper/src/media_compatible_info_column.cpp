@@ -32,7 +32,7 @@ const string TabCompatibleInfoColumn::CREATE_TABLE = "\
         high_resolution INT NOT NULL DEFAULT 0, \
         encodings TEXT \
     );";
-const string TabCompatibleInfoColumn::DORP_TABLE =
+const string TabCompatibleInfoColumn::DROP_TABLE =
     "DROP TABLE tab_compatible_info;";
 
 const string TabCompatibleInfoColumn::CREATE_TABLE_NEW = "\

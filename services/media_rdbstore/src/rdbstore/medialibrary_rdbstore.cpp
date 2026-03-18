@@ -5985,6 +5985,13 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true);
     }
 
+    if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO && 
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) { 
+        // 此处原逻辑为创建一张未使用的空表，
+        // 由于业务逻辑变更，此表需要修改，创建动作冗余，放到UpdateTabComPatibleInfo中进行
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true); 
+    }
+
     if (oldVersion < VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS, true)) {
         Add4DLivePhotoStatusAndLatestPair(store, VERSION_ADD_LIVEPHOTO_4D_COLUMN_ON_PHOTOS);
