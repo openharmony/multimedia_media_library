@@ -3748,7 +3748,7 @@ export namespace photoAccessHelper {
           }
           return result;
         };
-        taskpool.execute(cb).then((ret: (AssetCompatibleAbility | MediaLibraryAniError)): void => {
+        taskpool.execute(cb).then((ret: Any): void => {
           if (ret instanceof MediaLibraryAniError) {
             let err = ret as MediaLibraryAniError;
             reject(businessError<string>(err.code as int, err.message));
