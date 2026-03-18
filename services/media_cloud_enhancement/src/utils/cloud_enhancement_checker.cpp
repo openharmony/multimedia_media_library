@@ -82,8 +82,8 @@ void CloudEnhancementChecker::AddPermissionForCloudEnhancement()
         int32_t targetId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         EnhancementDatabaseOperations::InsertCloudEnhancementPerm(sourceId, targetId);
         prefs->PutInt(PERMISSION_ADDED_FILE_ID, targetId);
-        prefs->FlushSync();
     } while (resultSet->GoToNextRow() == E_OK);
+    prefs->FlushSync();
     MEDIA_INFO_LOG("end add permission for cloud enhancement photo!");
 }
 
