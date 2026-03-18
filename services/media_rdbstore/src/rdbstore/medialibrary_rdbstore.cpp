@@ -5951,7 +5951,6 @@ static void UpdateTabComPatibleInfo(RdbStore &store, int32_t version)
     };
     ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("update tab_compatible_info ends");
-
 }
 
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
