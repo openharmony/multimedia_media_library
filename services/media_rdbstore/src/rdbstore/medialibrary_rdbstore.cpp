@@ -5953,6 +5953,15 @@ static void UpdateTabComPatibleInfo(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("update tab_compatible_info ends");
 }
 
+static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true)) {
+        UpdateTabComPatibleInfo(store, VERSION_UPDATE_TAB_COMPATIBLE_INFO);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
+    }
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -6009,12 +6018,7 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         AddHighlightGrowingTime(store, VERSION_ADD_HIGHLIGHT_GROWING_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_GROWING_TIME, true);
     }
-
-    if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true)) {
-        UpdateTabComPatibleInfo(store, VERSION_UPDATE_TAB_COMPATIBLE_INFO);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
-    }
+    UpgradeExtensionPart16(store, oldVersion);
 }
 
 static void UpgradeExtensionPart14(RdbStore &store, int32_t oldVersion)
