@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
+ohos_fuzztest("MediaLibraryCloudMediaService4FuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
@@ -24,30 +24,16 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
   ]
 
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_retain_smart_data.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_sync_mutex.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_asset_retain_compare_dao.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_file_utils.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/photos_field_iterator.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_dao.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_utils.cpp",
     "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
-    "./medialibrarycloudmediaservice_fuzzer.cpp",
+    "./medialibrarycloudmediaservice4_fuzzer.cpp",
   ]
+
+  cflags = [ "-fno-access-control" ]
 
   deps = [
     "${MEDIALIB_CLOUD_SYNC_CLIENT}:media_library_cloud_sync",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "${MEDIALIB_COMMON_PATH}:media_library_common",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
     "${MEDIALIB_CLOUD_SYNC_DATA}:media_cloud_sync_data",
   ]
 
@@ -55,7 +41,6 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "ability_base:configuration",
     "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
-    "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "c_utils:utils",
@@ -64,14 +49,11 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
     "dfs_service:libdistributedfileutils_lite",
-    "e2fsprogs:libext2_uuid",
-    "ffrt:libffrt",
     "hilog:libhilog",
     "image_framework:image_native",
     "ipc:ipc_napi",
     "ipc:ipc_single",
     "napi:ace_napi",
-    "netmanager_base:net_conn_manager_if",
     "os_account:os_account_innerkits",
     "player_framework:media_client",
     "preferences:native_preferences",

@@ -13,9 +13,4 @@
  * limitations under the License.
  */
 
-#ifndef NOTIFYCHANGE_FUZZER_H
-#define NOTIFYCHANGE_FUZZER_H
-
-#define FUZZ_PROJECT_NAME "medialibrarycloudmediaassetmanager_fuzzer"
-
-#endif
+FUZZ

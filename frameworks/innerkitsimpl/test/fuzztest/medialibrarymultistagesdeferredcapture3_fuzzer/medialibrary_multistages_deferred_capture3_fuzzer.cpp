@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "medialibrary_multistages_deferred_capture2_fuzzer.h"
+#include "medialibrary_multistages_deferred_capture3_fuzzer.h"
 #include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
@@ -27,15 +27,9 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_kvstore_manager.h"
 #include "picture_adapter.h"
 #include "dfx_const.h"
-
-#define private public
-#define protected public
 #include "multistages_capture_deferred_photo_proc_session_callback.h"
-#undef private
-#undef protected
 #include "media_upgrade.h"
 
 namespace OHOS {
@@ -45,31 +39,20 @@ static const int32_t IS_TEMP = 0;
 static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_DATA = 1;
 static const int32_t MAX_PHOTO_QUALITY = 1;
-static const int32_t MAX_MODIFY_TYPE = 2;
-static const int32_t MAX_DPS_ERROR_CODE = 10;
 static const int32_t MAX_MEDIA_TYPE = 14;
+static const uint8_t ARRAY_SIZE = 255;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
 static const string PHOTOS_TABLE = "Photos";
+constexpr const char* CLOUD_FLAG = "cloudImageEnhanceFlag";
+constexpr const char* CPATURE_FLAG = "captureEnhancementFlag";
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-
-static inline CameraStandard::DpsErrorCode FuzzDpsErrorCode()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DPS_ERROR_CODE);
-    return static_cast<CameraStandard::DpsErrorCode>(value);
-}
 
 static inline MultiStagesPhotoQuality FuzzMultiStagesPhotoQuality()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_PHOTO_QUALITY);
     return static_cast<MultiStagesPhotoQuality>(value);
-}
-
-static inline FirstStageModifyType FuzzFirstStageModifyType()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_MODIFY_TYPE);
-    return static_cast<FirstStageModifyType>(value);
 }
 
 static inline string FuzzMimeTypeAndDisplayNameExtension()
@@ -105,41 +88,6 @@ static int32_t InsertAsset(string photoId)
     return static_cast<int32_t>(fileId);
 }
 
-unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
-{
-    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        columnName + "='" + value + "';";
-
-    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("g_rdbStore is nullptr");
-        return nullptr;
-    }
-    auto resultSet = g_rdbStore->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Get resultSet failed");
-        return nullptr;
-    }
-
-    int32_t resultSetCount = 0;
-    int32_t ret = resultSet->GetRowCount(resultSetCount);
-    if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
-        MEDIA_ERR_LOG("resultSet row count is 0");
-        return nullptr;
-    }
-
-    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
-    if (fetchFileResult == nullptr) {
-        MEDIA_ERR_LOG("Get fetchFileResult failed");
-        return nullptr;
-    }
-    auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
-    if (fileAsset == nullptr || fileAsset->GetId() < 0) {
-        return nullptr;
-    }
-    return fileAsset;
-}
-
 void SetTables()
 {
     vector<string> createTableSqlList = { Media::PhotoUpgrade::CREATE_PHOTO_TABLE };
@@ -168,23 +116,32 @@ static void Init()
     SetTables();
 }
 
-static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
+static void MultistagesCaptureDeferredPhotoProcSessionCallback3Test()
 {
-    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcSessionCallbackTest start");
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcSessionCallback3Test start");
     shared_ptr<Media::MultiStagesCaptureDeferredPhotoProcSessionCallback> callback =
         make_shared<Media::MultiStagesCaptureDeferredPhotoProcSessionCallback>();
     std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    int32_t fileId = InsertAsset(photoId);
-    MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
-    CameraStandard::DpsErrorCode errCode = FuzzDpsErrorCode();
-    callback->OnError(photoId, errCode);
+    InsertAsset(photoId);
 
-    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
-    shared_ptr<FileAsset> fileAsset = std::move(fileAssetPtr);
-    callback->NotifyIfTempFile(fileAsset, provider->ConsumeBool());
-    callback->UpdateHighQualityPictureInfo(fileId, provider->ConsumeBool(),
-        static_cast<int32_t>(FuzzFirstStageModifyType()));
-    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcSessionCallbackTest end");
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
+    picture->Create(surfaceBuffer);
+    uint8_t *addr = new uint8_t[ARRAY_SIZE];
+    long bytes = provider->ConsumeIntegralInRange<uint8_t>(0, ARRAY_SIZE);
+    DpsMetadata metadata;
+    uint32_t cloudImageEnhanceFlag = provider->ConsumeIntegral<uint32_t>();
+    uint32_t captureEnhancementFlag = provider->ConsumeIntegral<uint32_t>();
+    metadata.Set(CLOUD_FLAG, cloudImageEnhanceFlag);
+    metadata.Set(CPATURE_FLAG, captureEnhancementFlag);
+    callback->OnProcessImageDone(photoId, picture, metadata);
+    callback->OnProcessImageDone(photoId, addr, bytes, cloudImageEnhanceFlag);
+
+    photoId = "/test" + SPLIT_PATH + provider->ConsumeBytesAsString(NUM_BYTES);
+    callback->OnDeliveryLowQualityImage(photoId, picture);
+    delete[] addr;
+    addr = nullptr;
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcSessionCallback3Test end");
 }
 
 static int32_t AddSeed()
@@ -225,6 +182,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (data == nullptr) {
         return 0;
     }
-    OHOS::Media::MultistagesCaptureDeferredPhotoProcSessionCallbackTest();
+    OHOS::Media::MultistagesCaptureDeferredPhotoProcSessionCallback3Test();
     return 0;
 }
