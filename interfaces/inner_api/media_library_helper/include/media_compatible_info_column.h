@@ -33,7 +33,7 @@ public:
     static const std::string ENCODINGS EXPORT;
 
     static const std::string CREATE_TABLE;
-    static const std::string DORP_TABLE;
+    static const std::string DROP_TABLE;
     static const std::string CREATE_TABLE_NEW;
 };
 }
