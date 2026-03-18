@@ -29,6 +29,7 @@
 #include "media_file_utils.h"
 #include "permission_utils.h"
 #include "userfile_manager_types.h"
+#include "moving_photo_file_utils.h"
 
 using namespace OHOS::Security::AccessToken;
 
@@ -988,7 +989,7 @@ static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 
     std::string durationStr = resultMap.at(AV_KEY_DURATION);
     int32_t duration = std::atoi(durationStr.c_str());
-    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(duration)) {
         LOGE("Failed to check duration of moving photo video: %{public}d ms", duration);
         return false;
     }
@@ -1001,7 +1002,7 @@ int32_t MediaAssetChangeRequestImpl::AddMovingPhotoVideoResource(std::string fil
     if (!ParseFileUri(fileUri, MediaType::MEDIA_TYPE_VIDEO, realPath)) {
         return OHOS_INVALID_PARAM_CODE;
     }
-    if (!MediaFileUtils::CheckMovingPhotoVideo(realPath)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideo(realPath)) {
         LOGE("Failed to check video resource of moving photo");
         return OHOS_INVALID_PARAM_CODE;
     }

@@ -56,6 +56,7 @@ using namespace std;
 namespace OHOS::Media {
 std::shared_ptr<PhotoCustomRestoreOperation> PhotoCustomRestoreOperation::instance_ = nullptr;
 std::mutex PhotoCustomRestoreOperation::objMutex_;
+static const int32_t INVALID_DURATION = -1;
 
 PhotoCustomRestoreOperation &PhotoCustomRestoreOperation::GetInstance()
 {
@@ -1413,6 +1414,23 @@ static void UpdateCoverPosition(const string &filePath, int64_t coverPosition)
         " ret = %{public}d", errCode);
 }
 
+static void UpdateDuration(const string &filePath, int32_t duration)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore when updating duration");
+
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::MEDIA_DURATION, duration);
+    updateCmd.SetValueBucket(updateValues);
+
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    CHECK_AND_RETURN_LOG((errCode == NativeRdb::E_OK && updateRows > 0),
+        "Update duration failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
+}
+
 int32_t PhotoCustomRestoreOperation::RenameFiles(const vector<FileInfo> &restoreFiles)
 {
     int32_t renameNum = 0;
@@ -1458,6 +1476,16 @@ int32_t PhotoCustomRestoreOperation::MoveLivePhoto(const string &originFilePath,
         (void)MediaFileUtils::DeleteDir(extraPathDir);
         return ret;
     }
+
+    // parse moving photo duration
+    int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(videoPath);
+    if (duration < 0) {
+        MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
+        duration = INVALID_DURATION;
+    }
+    UpdateDuration(filePath, duration);
+
+    // parse moving photo cover position
     uint64_t coverPosition = 0;
     uint32_t version = 0;
     uint32_t frameIndex = 0;

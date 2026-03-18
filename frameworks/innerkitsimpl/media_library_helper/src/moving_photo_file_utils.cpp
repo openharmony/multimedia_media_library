@@ -1114,5 +1114,89 @@ int32_t MovingPhotoFileUtils::GetExtraDataVersion(const string& extraPath, uint3
     bool hasCinemagraph = false;
     return MovingPhotoFileUtils::GetVersionAndFrameNum(fd.Get(), version, frameIndex, hasCinemagraph);
 }
+
+int32_t MovingPhotoFileUtils::GetMovingPhotoVideoDuration(const string &path)
+{
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path, path: %{private}s", path.c_str());
+        return E_ERR;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to check path for %{private}s, errno: %{public}d", path.c_str(), errno);
+        return E_ERR;
+    }
+
+    string extension = MediaFileUtils::GetExtensionFromPath(absFilePath);
+    if (!MediaFileUtils::CheckMovingPhotoVideoExtension(extension)) {
+        MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
+        return E_ERR;
+    }
+
+    UniqueFd uniqueFd(open(absFilePath.c_str(), O_RDONLY));
+    return GetMovingPhotoVideoDuration(uniqueFd);
+}
+
+int32_t MovingPhotoFileUtils::GetMovingPhotoVideoDuration(const UniqueFd &uniqueFd)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MovingPhotoFileUtils::GetMovingPhotoVideoDuration");
+
+    if (uniqueFd.Get() <= 0) {
+        MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
+        return E_ERR;
+    }
+    struct stat64 st;
+    if (fstat64(uniqueFd.Get(), &st) != 0) {
+        MEDIA_ERR_LOG("Failed to get file state, errno = %{public}d", errno);
+        return E_ERR;
+    }
+
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    CHECK_AND_RETURN_RET_WARN_LOG(avMetadataHelper != nullptr, E_ERR,
+        "Failed to create AVMetadataHelper, ignore getting duration");
+
+    int32_t err = avMetadataHelper->SetSource(uniqueFd.Get(), 0,
+        static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
+    CHECK_AND_RETURN_RET_LOG(err == 0, E_ERR, "SetSource failed for the given file descriptor, err = %{public}d", err);
+
+    unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultMap.find(AV_KEY_DURATION) == resultMap.end()) {
+        MEDIA_ERR_LOG("AV_KEY_DURATION does not exist");
+        return E_ERR;
+    }
+    string durationStr = resultMap.at(AV_KEY_DURATION);
+    int32_t duration = std::atoi(durationStr.c_str());
+    MEDIA_DEBUG_LOG("Duration of moving photo video is %{public}d ms", duration);
+    return duration;
+}
+
+bool MovingPhotoFileUtils::CheckMovingPhotoVideo(const string &path)
+{
+    int32_t duration = GetMovingPhotoVideoDuration(path);
+    if (!CheckMovingPhotoVideoDuration(duration)) {
+        MEDIA_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
+        return false;
+    }
+    return true;
+}
+
+bool MovingPhotoFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
+{
+    int32_t duration = GetMovingPhotoVideoDuration(uniqueFd);
+    if (!CheckMovingPhotoVideoDuration(duration)) {
+        MEDIA_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
+        return false;
+    }
+    return true;
+}
+
+bool MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
+{
+    // duration of moving photo video must be 0~10 s
+    constexpr int32_t MIN_DURATION_MS = 0;
+    constexpr int32_t MAX_DURATION_MS = 10000;
+    return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
+}
 // LCOV_EXCL_STOP
 } // namespace OHOS::Media

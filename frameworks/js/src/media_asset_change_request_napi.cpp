@@ -43,6 +43,7 @@
 #include "save_camera_photo_vo.h"
 #include "qos.h"
 #include "media_change_request_utils.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -1727,7 +1728,7 @@ static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 
     string durationStr = resultMap.at(AV_KEY_DURATION);
     int32_t duration = std::atoi(durationStr.c_str());
-    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(duration)) {
         NAPI_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
         return false;
     }
@@ -1750,7 +1751,7 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) { // addResource by file uri
         CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
-        if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+        if (!MovingPhotoFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
             NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
             return nullptr;
         }
@@ -1798,7 +1799,7 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResourceForPicker(nap
 
     // addResource by file uri
     CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), JS_E_PARAM_INVALID);
-    if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check video resource of moving photo");
         return nullptr;
     }

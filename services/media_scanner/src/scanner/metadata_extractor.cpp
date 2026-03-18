@@ -895,9 +895,13 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     }
 
     int32_t duration = videoData->GetFileDuration();
-    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+    data->SetFileDuration(duration);
+    if (!MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(duration)) {
         MEDIA_ERR_LOG("Failed to check video duration (%{public}d ms) of moving photo", duration);
         return E_MOVING_PHOTO;
+    }
+    if (data->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        data->SetFileDuration(duration);
     }
     return E_OK;
 }
