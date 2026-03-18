@@ -71,6 +71,7 @@ const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
 const int32_t SINGLE_LEN_EXTRADATA = 20;
 const int32_t MAX_FILE_PATH_LENGTH = 256;
+const int32_t INVALID_DURATION = -1;
 const double DOUBLE_EPSILON = 1e-15;
 
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
@@ -646,6 +647,18 @@ void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBu
     value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
 }
 
+void BaseRestore::SetMovingPhotoDuration(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(fileInfo.movingPhotoVideoPath);
+        if (duration < 0) {
+            MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
+            duration = INVALID_DURATION;
+        }
+        value.Put(PhotoColumn::MEDIA_DURATION, duration);
+    }
+}
+
 void BaseRestore::SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
 {
     data->SetFilePath(fileInfo.filePath);
@@ -743,6 +756,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     fileInfo.dateAdded = dateAdded;
     SetCoverPosition(fileInfo, value);
+    SetMovingPhotoDuration(fileInfo, value);
     Set3DgsSubtype(fileInfo, value, data);
     InsertVideoMode(data, value);
 }

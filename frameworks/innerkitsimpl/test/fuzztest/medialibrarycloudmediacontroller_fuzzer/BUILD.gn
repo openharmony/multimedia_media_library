@@ -92,6 +92,8 @@ ohos_fuzztest("MediaLibraryCloudMediaControllerFuzzTest") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_dao.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/duration_parser.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/parser_task_queue_base.cpp",
     "./medialibrarycloudmediacontroller_fuzzer.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/hi_audit.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",

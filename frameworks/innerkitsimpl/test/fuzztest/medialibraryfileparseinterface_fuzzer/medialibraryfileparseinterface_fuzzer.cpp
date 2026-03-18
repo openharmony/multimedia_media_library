@@ -168,7 +168,7 @@ static void MediaFileUtilsTest()
     if (!MediaFileUtils::IsFileExists(path)) {
         MediaFileUtils::CreateFile(path);
     }
-    MediaFileUtils::CheckMovingPhotoVideo(path);
+    MovingPhotoFileUtils::CheckMovingPhotoVideo(path);
     MEDIA_INFO_LOG("MediaFileUtilsTest end");
 }
 

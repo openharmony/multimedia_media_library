@@ -26,6 +26,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_errno.h"
 #include "userfile_manager_types.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -726,27 +727,27 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoImage_Test_0
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideo_Test_001, TestSize.Level1)
 {
     string videoPath = "/storage/cloud/files/Photo/1/IMG_test_invalid.mp4";
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideo(videoPath), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideo(videoPath), false);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuration_Test_001, TestSize.Level1)
 {
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-11000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-10000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-5000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-4000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-3000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2500), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-1000), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(0), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(1000), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2000), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2500), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(3000), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(5000), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(10000), true);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(11000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-11000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-10000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-5000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-4000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-3000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-2500), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-2000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(-1000), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(1000), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(2000), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(2500), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(3000), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(5000), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(10000), true);
+    EXPECT_EQ(MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(11000), false);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoEffectMode_Test_001, TestSize.Level1)

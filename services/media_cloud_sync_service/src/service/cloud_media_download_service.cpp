@@ -19,6 +19,7 @@
 
 #include "background_cloud_batch_selected_file_processor.h"
 #include "cover_position_parser.h"
+#include "duration_parser.h"
 #include "directory_ex.h"
 #include "parameters.h"
 #include "media_log.h"
@@ -293,6 +294,7 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(const Phot
     bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
     bool isLivePhoto = CloudMediaSyncUtils::IsLivePhoto(photosPo);
     bool isInvalidCover = photosPo.coverPosition.value_or(0) == 0 && photosPo.isRectificationCover.value_or(0) == 0;
+    bool isInvalidDuration = photosPo.duration.value_or(0) == 0;
     MEDIA_INFO_LOG("GetOnDownloadAssetData %{public}d,%{public}d,%{public}d", isMovingPhoto, isGraffiti, isLivePhoto);
     assetData.fixFileType = isMovingPhoto && !isGraffiti && !isLivePhoto;
     assetData.needSliceContent = (isMovingPhoto && !isGraffiti) && isLivePhoto;
@@ -309,6 +311,8 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(const Phot
     assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0 || photosPo.editTime.value_or(0) > 0 ||
         photosPo.movingPhotoEffectMode.value_or(0) > 0;
+    assetData.needParseDuration = isInvalidDuration &&
+        photosPo.subtype.value_or(0) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
     return assetData;
 }
 
@@ -431,6 +435,10 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         if (ret == E_OK && assetData.needParseCover) {
             MEDIA_DEBUG_LOG("cover position is invalid, parse cover position from file");
             CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
+        }
+        if (ret == E_OK && assetData.needParseDuration) {
+            MEDIA_DEBUG_LOG("duration is invalid, parse duration from file");
+            DurationParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
     }
     // for cloud enhancement composite photo

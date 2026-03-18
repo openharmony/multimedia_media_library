@@ -28,9 +28,13 @@ ohos_unittest("medialibrary_cover_position_parser_test") {
     "./include",
   ]
 
+  cflags = ["-fno-access-control"]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/duration_parser.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/parser_task_queue_base.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_cover_position_parser_test.cpp",
   ]
