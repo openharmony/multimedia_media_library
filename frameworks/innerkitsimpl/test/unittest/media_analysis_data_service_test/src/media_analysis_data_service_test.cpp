@@ -153,21 +153,6 @@ static void InsertPhotos(const std::string &filePath, int32_t mediaType, int32_t
     }
 }
 
-// 辅助函数：插入VISION_TOTAL_TABLE数据
-static void InsertVisionTotalData(int32_t fileId, int32_t label, int32_t face, int32_t ocr,
-    int32_t saliency, int32_t segmentation, int32_t head, int32_t aestheticsScore)
-{
-    std::string insertSql = "INSERT INTO " + VISION_TOTAL_TABLE +
-        " (" + MediaColumn::MEDIA_ID + ", label, face, ocr, saliency, segmentation, head, aesthetics_score) VALUES "
-        "(" + std::to_string(fileId) + ", " + std::to_string(label) + ", " + std::to_string(face) + ", " +
-        std::to_string(ocr) + ", " + std::to_string(saliency) + ", " + std::to_string(segmentation) + ", " +
-        std::to_string(head) + ", " + std::to_string(aestheticsScore) + ")";
-    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
-    }
-}
-
 // 辅助函数：插入ANALYSIS_PHOTO_MAP_TABLE数据
 static void InsertAnalysisPhotoMap(int32_t albumId, int32_t fileId)
 {
