@@ -5932,6 +5932,16 @@ static void AddAnalysisAlbumUpdateAlbumStatusTrigger(RdbStore &store, int32_t ve
     MEDIA_INFO_LOG("End update album modify trigger");
 }
 
+static void AddHighlightGrowingTime(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + GROWING_TIME + " TEXT ",
+    };
+    MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns end");
+}
+
 static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH &&
@@ -5980,6 +5990,12 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER, true)) {
         AddAnalysisAlbumUpdateAlbumStatusTrigger(store, VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_ALBUM_UPDATE_ALBUM_STATUS_TRIGGER, true);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_GROWING_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HIGHLIGHT_GROWING_TIME, true)) {
+        AddHighlightGrowingTime(store, VERSION_ADD_HIGHLIGHT_GROWING_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_GROWING_TIME, true);
     }
 }
 
