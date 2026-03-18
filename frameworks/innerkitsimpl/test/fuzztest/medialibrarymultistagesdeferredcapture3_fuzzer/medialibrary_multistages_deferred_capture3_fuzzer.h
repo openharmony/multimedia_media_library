@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,9 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef NOTIFYCHANGE_FUZZER_H
-#define NOTIFYCHANGE_FUZZER_H
+#ifndef MEDIALIBRARY_MULTISTAGES_DEFERRED_CAPTURE3_FUZZER_H
+#define MEDIALIBRARY_MULTISTAGES_DEFERRED_CAPTURE3_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "medialibrarycloudmediaassetmanager_fuzzer"
+#define FUZZ_PROJECT_NAME "medialibrary_multistages_deferred_capture3_fuzzer"
+
+#include "userfile_manager_types.h"
+
+namespace OHOS {
+namespace Media {
+
+const std::vector<std::string> DISPLAY_NAME_EXTENSION_FUZZER_LISTS = {
+    ".jpg",
+    ".hif",
+};
+
+} // namespace Media
+} // namespace OHOS
 
 #endif

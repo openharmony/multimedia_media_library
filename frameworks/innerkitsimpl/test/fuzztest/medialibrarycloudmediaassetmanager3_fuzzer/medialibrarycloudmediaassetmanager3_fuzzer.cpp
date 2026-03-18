@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "medialibrarycloudmediaassetmanager_fuzzer.h"
+#include "medialibrarycloudmediaassetmanager3_fuzzer.h"
 #include "medialibrary_rdbstore_utils_fuzzer.h"
 
 #include <cstdint>
@@ -22,16 +22,8 @@
 #include <pixel_map.h>
 #include <fuzzer/FuzzedDataProvider.h>
 
-#define private public
 #include "cloud_media_asset_manager.h"
-#include "cloud_media_asset_callback.h"
-#include "cloud_media_asset_observer.h"
-#include "cloud_media_asset_types.h"
-#undef private
-#include "ability_context_impl.h"
 #include "media_log.h"
-#include "medialibrary_command.h"
-#include "medialibrary_data_manager.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -43,32 +35,23 @@ using namespace std;
 using namespace AbilityRuntime;
 using namespace FileManagement::CloudSync;
 using Status = CloudMediaAssetDownloadOperation::Status;
-static const int32_t MAX_CLOUD_MEDIA_DOWNLOAD_TYPE = 1;
-static const int32_t MIN_CLOUD_MEDIA_TASK_RECOVER_CAUSE = 1;
-static const int32_t MAX_CLOUD_MEDIA_TASK_RECOVER_CAUSE = 7;
-static const int32_t MAX_CLOUD_MEDIA_TASK_PAUSE_CAUSE = 9;
+static const int32_t MAX_URI_LIST = 5;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
 std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 FuzzedDataProvider *provider = nullptr;
 
-static inline CloudMediaDownloadType FuzzCloudMediaDownloadType()
+static inline Uri FuzzUri()
 {
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_MEDIA_DOWNLOAD_TYPE);
-    return static_cast<CloudMediaDownloadType>(value);
+    int32_t data = provider->ConsumeIntegralInRange<int32_t>(0, MAX_URI_LIST);
+    string uriStr = CLOUD_MEDIA_ASSET_MANAGER_FUZZER_URI_LISTS[data];
+    Uri uri(uriStr);
+    return uri;
 }
 
-static inline CloudMediaTaskRecoverCause FuzzCloudMediaTaskRecoverCause()
+static inline MediaLibraryCommand FuzzMediaLibraryCmd()
 {
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_CLOUD_MEDIA_TASK_RECOVER_CAUSE,
-        MAX_CLOUD_MEDIA_TASK_RECOVER_CAUSE);
-    return static_cast<CloudMediaTaskRecoverCause>(value);
-}
-
-static inline CloudMediaTaskPauseCause FuzzCloudMediaTaskPauseCause()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CLOUD_MEDIA_TASK_PAUSE_CAUSE);
-    return static_cast<CloudMediaTaskPauseCause>(value);
+    return MediaLibraryCommand(FuzzUri());
 }
 
 void SetTables()
@@ -99,23 +82,11 @@ static void Init()
     SetTables();
 }
 
-static void CloudMediaAssetDownloadFuzzer()
+static void CloudMediaAssetManagerFuzzer()
 {
-    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
-    int32_t value = provider->ConsumeIntegral<int32_t>();
-    instance.CheckDownloadTypeOfTask(static_cast<CloudMediaDownloadType>(value));
-
-    instance.StartDownloadCloudAsset(static_cast<CloudMediaDownloadType>(value));
-    instance.StartDownloadCloudAsset(FuzzCloudMediaDownloadType());
-    instance.RecoverDownloadCloudAsset(FuzzCloudMediaTaskRecoverCause());
-    instance.PauseDownloadCloudAsset(FuzzCloudMediaTaskPauseCause());
-    instance.CancelDownloadCloudAsset();
-    instance.GetCloudMediaAssetTaskStatus();
-    instance.SetIsThumbnailUpdate();
-    instance.GetTaskStatus();
-    instance.GetDownloadType();
-    instance.SetBgDownloadPermission(provider->ConsumeBool());
-    instance.CheckStorageAndRecoverDownloadTask();
+    MediaLibraryCommand cmd = FuzzMediaLibraryCmd();
+    CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
+    CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetGetTypeOperations(cmd);
 }
 
 static int32_t AddSeed()
@@ -149,11 +120,11 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
-    OHOS::Media::provider = &fdp;
     if (data == nullptr) {
         return 0;
     }
-    OHOS::Media::CloudMediaAssetDownloadFuzzer();
+    FuzzedDataProvider fdp(data, size);
+    OHOS::Media::provider = &fdp;
+    OHOS::Media::CloudMediaAssetManagerFuzzer();
     return 0;
 }
