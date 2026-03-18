@@ -5946,7 +5946,7 @@ static void UpdateTabComPatibleInfo(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("update tab_compatible_info starts");
     const vector<string> sqls = {
-        TabCompatibleInfoColumn::DORP_TABLE,
+        TabCompatibleInfoColumn::DROP_TABLE,
         TabCompatibleInfoColumn::CREATE_TABLE_NEW
     };
     ExecSqlsWithDfx(sqls, store, version);
