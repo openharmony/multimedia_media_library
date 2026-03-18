@@ -59,6 +59,7 @@
 #include "lake_const.h"
 #include "medialibrary_bundle_manager.h"
 #include "transcode_compatible_info_operations.h"
+#include "tokenid_kit.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -555,9 +556,12 @@ static bool IsSupportHighResolution(const uint32_t tokenId)
     return false;
 }
 
-static bool NeedTranscodeHighPixelPicture(bool isHighPixel)
+static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid)
 {
-    if (isHighPixel && !PermissionUtils::IsSystemApp()) {
+    AccessTokenID tokenId;
+    PermissionUtils::GetTokenCallerForUid(uid, tokenId);
+    bool IsSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    if (isHighPixel && !IsSystemApp) {
         uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
         if (IsSupportHighResolution(tokenId)) {
             return false;
@@ -586,7 +590,7 @@ static void SetTranscodeType(bool isHighPixel, bool isHeif, TranscodeType& trans
 }
 
 static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode,
-    TranscodeType& transcodeType)
+    const int uid, TranscodeType& transcodeType)
 {
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, filePath: %{private}s", filePath.c_str());
@@ -604,7 +608,7 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
     bool isHighPixel = IsHighPixelPicture(fileId);
     bool isHeif = (MediaFileUtils::GetExtensionFromPath(filePath) == "heif" ||
         MediaFileUtils::GetExtensionFromPath(filePath) == "heic");
-    if (!NeedTranscodeHighPixelPicture(isHighPixel)) {
+    if (!NeedTranscodeHighPixelPicture(isHighPixel, uid)) {
         if (!isHeif) {
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
             return E_INNER_FAIL;
@@ -640,7 +644,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     }
     TranscodeType transcodeType = TranscodeType::DEFAULT;
     string path = filePath;
-    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode, transcodeType);
+    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode, uid, transcodeType);
     int32_t ret = MediaPrivacyManager(path, mode, fileId, appId, bundleName, uid, tokenCaller).Open();
     if (err == 0 && ret >= 0) {
         MEDIA_INFO_LOG("libc open transcode file success");
