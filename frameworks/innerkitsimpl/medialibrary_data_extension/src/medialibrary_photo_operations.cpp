@@ -3471,7 +3471,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        if (AddFiltersToPhoto(sourcePath, path, editData) != E_OK) {
+        if (AddFiltersToPhoto(sourcePath, path, editData, "", true) != E_OK) {
             CHECK_AND_RETURN_RET_LOG(DoRevertAfterAddFiltersFailed(fileAsset, path, sourcePath) == E_OK, E_HAS_FS_ERROR,
                 "Failed to do revertAfterAddFiltersFailed");
         }
@@ -3575,7 +3575,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourceImagePath, imagePath, editData) == E_OK,
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourceImagePath, imagePath, editData, "", true) == E_OK,
             E_FAIL, "Failed to add filters to photo");
     }
     return E_OK;
@@ -4728,13 +4728,12 @@ int32_t MediaLibraryPhotoOperations::EnableYuvAndNotify(
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
+    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus, bool isRevert)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
-        "MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
-        MLOG_TAG, __FUNCTION__, __LINE__,
+        "MultistagesCapture inputPath: %{public}s, outputPath: %{public}s", MLOG_TAG, __FUNCTION__, __LINE__,
         MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
     std::string info = editdata;
     size_t lastSlash = outputPath.rfind('/');
@@ -4748,7 +4747,11 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     tracer.Start("MediaChangeEffect::TakeEffect");
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
     int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
-    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
+    if (isRevert) {
+        ret = MediaChangeEffect::TakeEffectRevert(inputPath, tempOutputPath, info);
+    } else {
+        ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
+    }
     tracer.Finish();
     if (ret != E_OK) {
         HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} MultistagesCapture, TakeEffect error. ret = %{public}d",
@@ -4758,9 +4761,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 
     string editDataPath = MediaEditUtils::GetEditDataPath(outputPath);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
-        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
-            "Editdata path: %{private}s exists, cannot add filters to photo",
-            MLOG_TAG, __FUNCTION__, __LINE__, editDataPath.c_str());
+        HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} Editdata path: %{private}s exists, cannot add filters"
+            " to photo", MLOG_TAG, __FUNCTION__, __LINE__, editDataPath.c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return E_OK;
