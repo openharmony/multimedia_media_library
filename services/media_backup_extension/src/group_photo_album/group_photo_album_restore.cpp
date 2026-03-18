@@ -335,6 +335,7 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
     int32_t count = 0;
     int32_t retSize = 0;
     bool firstBatch = true;
+    exitCode_ = NORMAL_EXIT_CODE;
     do {
         int64_t partOne = MediaTimeUtils::UTCTimeMilliSeconds();
         CHECK_AND_EXECUTE(partOne <= shouldEndTime || !firstBatch, exitCode_ = BEGIN_EXIT_CODE);
@@ -364,7 +365,6 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
         }
         InsertAnalysisAlbumTable(result, values);
     } while (retSize >= PAGE_SIZE);
-    exitCode_ = NORMAL_EXIT_CODE;
     int64_t end = MediaTimeUtils::UTCTimeMilliSeconds();
     int64_t sumTime = end - start;
     std::stringstream updateGroupReport;
