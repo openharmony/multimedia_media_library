@@ -322,6 +322,24 @@ static bool CheckIfFFRNapiNotEmpty(SendableFetchFileResultNapi* obj)
     return true;
 }
 
+static bool CheckIfFetchResultNotEmpty(SendableFetchFileResultNapi* obj, FetchResType fetchResType)
+{
+    if (fetchResType == FetchResType::TYPE_FILE && obj->GetFetchFileResultObject() == nullptr) {
+        NAPI_ERR_LOG("GetFetchFileResultObject is nullptr");
+        return false;
+    } else if (fetchResType == FetchResType::TYPE_ALBUM && obj->GetFetchAlbumResultObject() == nullptr) {
+        NAPI_ERR_LOG("GetFetchAlbumResultObject is nullptr");
+        return false;
+    } else if (fetchResType == FetchResType::TYPE_PHOTOALBUM && obj->GetFetchPhotoAlbumResultObject() == nullptr) {
+        NAPI_ERR_LOG("GetFetchPhotoAlbumResultObject is nullptr");
+        return false;
+    } else if (fetchResType == FetchResType::TYPE_SMARTALBUM && obj->GetFetchSmartAlbumResultObject() == nullptr) {
+        NAPI_ERR_LOG("GetFetchSmartAlbumResultObject is nullptr");
+        return false;
+    }
+    return true;
+}
+
 napi_value SendableFetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -896,7 +914,8 @@ napi_value SendableFetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callbac
     }
 
     status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&obj));
-    if ((status == napi_ok) && CheckIfFFRNapiNotEmpty(obj)) {
+    FetchResType fetchResType = obj->GetFetchResType();
+    if ((status == napi_ok) && CheckIfFFRNapiNotEmpty(obj) && CheckIfFetchResultNotEmpty(obj, fetchResType)) {
         switch (obj->GetFetchResType()) {
             case FetchResType::TYPE_FILE:
                 isAfterLast = obj->GetFetchFileResultObject()->IsAtLastRow();
