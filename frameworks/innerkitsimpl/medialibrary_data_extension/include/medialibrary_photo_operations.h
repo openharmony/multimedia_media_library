@@ -34,7 +34,7 @@
 #include "multistages_capture_dfx_capture_fault.h"
 #include "multistages_capture_dfx_capture_times.h"
 #include "multistages_capture_dfx_save_camera_photo.h"
-//LCOV_EXCL_START
+// LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
 struct PhotoExtInfo {
@@ -221,7 +221,7 @@ private:
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t BatchSetRecentShow(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
-        const std::string &editdata, const std::string &photoStatus = "");
+        const std::string &editdata, const std::string &photoStatus = "", bool isRevert = false);
     static int32_t AddFiltersToExistPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,

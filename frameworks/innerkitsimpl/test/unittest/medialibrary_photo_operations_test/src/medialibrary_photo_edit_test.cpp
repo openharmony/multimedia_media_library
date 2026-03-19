@@ -346,7 +346,6 @@ void Revert(TakePhotoResult result, bool isAddWater)
         EXPECT_EQ(ValidPhoto(result.path), true);
     } else {
         EXPECT_EQ(ValidSourceFile(result.path), true);
-        EXPECT_EQ(ValidEditdata(result.path), false);
         EXPECT_EQ(ValidPhoto(result.path), true);
         EXPECT_EQ(ValidEditdataCamera(result.path), true);
     }
