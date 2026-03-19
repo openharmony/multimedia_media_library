@@ -31,6 +31,7 @@
 #include "media_log.h"
 #include "media_update_moving_photo_duration_task.h"
 #include "media_clean_all_dirty_files_task.h"
+#include "media_burst_key_duplicate_task.h"
 
 namespace OHOS::Media::Background {
 MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
@@ -49,6 +50,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         #endif
         std::make_shared<MediaLivePhoto4dStatusTask>(),
         std::make_shared<MediaUpdateMovingPhotoDurationTask>(),
+        std::make_shared<MediaBurstKeyDuplicateTask>(),
         std::make_shared<MediaCleanAllDirtyFilesTask>(), // should be last task
     };
 }
