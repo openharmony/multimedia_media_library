@@ -102,6 +102,19 @@ static std::vector<std::string> testTables = {
     ANALYSIS_VIDEO_TOTAL_TABLE,
 };
 
+struct WaterMarkExpectInfo {
+    int32_t fileId = -1;
+    int32_t status = -1;
+    int32_t type = -1;
+    double validRegionX = -1.0;
+    double validRegionY = -1.0;
+    double validRegionWidth = -1.0;
+    double validRegionHeight = -1.0;
+    std::string algoVersion = "";
+
+    WaterMarkExpectInfo() = default;
+};
+
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
 };
