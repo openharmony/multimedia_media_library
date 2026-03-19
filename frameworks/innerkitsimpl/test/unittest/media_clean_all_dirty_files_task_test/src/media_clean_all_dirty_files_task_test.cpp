@@ -32,6 +32,12 @@
 #include "media_column.h"
 #include "download_resources_column.h"
 #include "media_upgrade.h"
+#include <cstdlib>
+#include <fcntl.h>
+#include <fstream>
+#include <securec.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +51,7 @@ static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+const std::string THUMBNAIL_THUMB_SUFFIX = "THM";
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -183,42 +190,6 @@ vector<string> PreparePhotos(const int count, const MediaType &mediaType, int32_
     return photos;
 }
 
-void InsertBatchDownloadTask(int32_t fileId, std::string path, std::string displayName, int32_t status)
-{
-    EXPECT_NE((rdbStore == nullptr), true);
-    int64_t rowId = -1;
-    NativeRdb::ValuesBucket values;
-    values.PutInt(DownloadResourcesColumn::MEDIA_ID, fileId);
-    values.PutString(DownloadResourcesColumn::MEDIA_NAME, displayName);
-    values.PutLong(DownloadResourcesColumn::MEDIA_SIZE, 3096); // 3096 size
-    values.PutString(DownloadResourcesColumn::MEDIA_URI, path);
-    values.PutLong(DownloadResourcesColumn::MEDIA_DATE_ADDED, 0);
-    values.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
-    values.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, status);
-    values.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, -1);
-    values.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, 1);
-    values.PutInt(DownloadResourcesColumn::MEDIA_COVER_LEVEL, 1);
-    values.PutInt(DownloadResourcesColumn::MEDIA_TASK_SEQ, 1);
-    values.PutInt(DownloadResourcesColumn::MEDIA_NETWORK_POLICY, 1);
-    int32_t ret = rdbStore->Insert(rowId, DownloadResourcesColumn::TABLE, values);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("InsertBatchDownloadTask fileId is %{public}s", to_string(fileId).c_str());
-}
-
-vector<string> PrepareBatchDownloadTask(const int32_t count)
-{
-    vector<string> uris;
-    for (int32_t index = 1; index <= count; ++index) {
-        int64_t timestamp = GetTimestamp();
-        string title = GetTitle(timestamp);
-        string displayName = title + to_string(index) + ".jpg";
-        string path = "file://media/Photo/" + to_string(index) + "/" + displayName;
-        InsertBatchDownloadTask(index, path, displayName, 0);
-        uris.push_back(path);
-    }
-    return uris;
-}
-
 void MediaCleanAllDirtyFilesTaskTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaCleanAllDirtyFilesTaskTest SetUpTestCase");
@@ -310,7 +281,6 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_PathExist_01, TestSize.Level1)
     task->IsMovingPhotosInOrgFolder(1, fileName);
     task->IsMovingPhotosInEditFolder(1, fileName);
     task->ExistPhotoPathInDB(path);
-    
     bool existThumb = task->ThumbnailSourceExist(path); // 缩略图判断
     EXPECT_EQ(existThumb, false);
     MEDIA_INFO_LOG("Mcadft_PathExist_01 End");
@@ -336,13 +306,558 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_Cache_01, TestSize.Level1)
     std::string fileName = "1.jpg";
     std::string path = originBucketFolder + fileName;
     auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::set<std::string> cacheSet;
+    cacheSet.insert("/storage/cloud/files/photo/1/test1.jpg");
+    cacheSet.insert("/storage/cloud/files/photo/1/test2.jpg");
+    cacheSet.insert("/storage/cloud/files/photo/1/test3.jpg");
     task->AddToFilesCacheSet(path);
     task->SaveCacheSetToCacheDB();
+    int32_t batchSize = 2;
+    std::set<int32_t> result = task->ProcessCacheSet(cacheSet, batchSize);
     task->ContainsFileIdsCacheSet(1000);
     task->ClearFilesCacheSet();
     task->ClearFileIdsCacheSet();
+    task->Execute();
     EXPECT_EQ(task->filesCacheSet_.size(), 0);
     MEDIA_INFO_LOG("Mcadft_Cache_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsLegalMediaAsset_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsLegalMediaAsset_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    bool isLegalImage = task->IsLegalMediaAsset("test.jpg");
+    EXPECT_EQ(isLegalImage, true);
+    bool isLegalVideo = task->IsLegalMediaAsset("test.mp4");
+    EXPECT_EQ(isLegalVideo, true);
+    bool isIllegal = task->IsLegalMediaAsset("test.txt");
+    task->HandleMediaAllDirtyFiles();
+    task->Accept();
+    EXPECT_EQ(isIllegal, false);
+    MEDIA_INFO_LOG("Mcadft_IsLegalMediaAsset_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsLegalMediaAsset_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsLegalMediaAsset_02 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    bool isLegalPng = task->IsLegalMediaAsset("test.png");
+    EXPECT_EQ(isLegalPng, true);
+    bool isLegalHeic = task->IsLegalMediaAsset("test.heic");
+    EXPECT_EQ(isLegalHeic, true);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_IsLegalMediaAsset_02 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsIllegalThumbFolderFile_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsIllegalThumbFolderFile_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string thumbsFolder = "/storage/cloud/files/.thumbs/Photo/" + std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(thumbsFolder);
+    std::string thmFile = thumbsFolder + "/THM.jpg";
+    MediaFileUtils::CreateFile(thmFile);
+    std::string content = "thm content";
+    MediaFileUtils::WriteStrToFile(thmFile, content);
+    std::string lcdFile = thumbsFolder + "/LCD.jpg";
+    MediaFileUtils::CreateFile(lcdFile);
+    content = "lcd content";
+    MediaFileUtils::WriteStrToFile(lcdFile, content);
+    bool result = task->IsIllegalThumbFolderFile(curBucketNum, folderName);
+    EXPECT_EQ(result, false);
+    MediaFileUtils::DeleteFileWithRetry(thmFile);
+    MediaFileUtils::DeleteFileWithRetry(lcdFile);
+    MediaFileUtils::DeleteFileWithRetry(thumbsFolder);
+    MEDIA_INFO_LOG("Mcadft_IsIllegalThumbFolderFile_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsIllegalThumbFolderFile_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsIllegalThumbFolderFile_02 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string thumbsFolder = "/storage/cloud/files/.thumbs/Photo/" + std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(thumbsFolder);
+    std::string illegalFile = thumbsFolder + "/illegal.jpg";
+    MediaFileUtils::CreateFile(illegalFile);
+    std::string content = "illegal content";
+    MediaFileUtils::WriteStrToFile(illegalFile, content);
+    bool result = task->IsIllegalThumbFolderFile(curBucketNum, folderName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(illegalFile);
+    MediaFileUtils::DeleteFileWithRetry(thumbsFolder);
+    MEDIA_INFO_LOG("Mcadft_IsIllegalThumbFolderFile_02 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_GetFileIdByPathsFromDB_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_GetFileIdByPathsFromDB_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::vector<std::string> paths;
+    paths.push_back("/storage/cloud/files/photo/1/test1.jpg");
+    paths.push_back("/storage/cloud/files/photo/1/test2.jpg");
+    std::set<int32_t> fileIdSet;
+    int32_t result = task->GetFileIdByPathsFromDB(paths, fileIdSet);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Mcadft_GetFileIdByPathsFromDB_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsMovingPhotosInEditFolder_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsMovingPhotosInEditFolder_02 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string fileName = "test.jpg";
+    std::string editBucketFolder = "/storage/cloud/files/.editData/Photo/" +
+        std::to_string(curBucketNum) + "/" + fileName;
+    MediaFileUtils::CreateDirectory(editBucketFolder);
+    std::string editOriginFile = editBucketFolder + "/source.jpg";
+    MediaFileUtils::CreateFile(editOriginFile);
+    std::string content = "edit origin content";
+    MediaFileUtils::WriteStrToFile(editOriginFile, content);
+    std::string editOriginVideo = editBucketFolder + "/source.mp4";
+    MediaFileUtils::CreateFile(editOriginVideo);
+    content = "edit video content";
+    MediaFileUtils::WriteStrToFile(editOriginVideo, content);
+    bool result = task->IsMovingPhotosInEditFolder(curBucketNum, fileName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(editOriginFile);
+    MediaFileUtils::DeleteFileWithRetry(editOriginVideo);
+    MediaFileUtils::DeleteFileWithRetry(editBucketFolder);
+    MEDIA_INFO_LOG("Mcadft_IsMovingPhotosInEditFolder_02 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_IsMovingPhotosInOrgFolder_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_IsMovingPhotosInOrgFolder_02 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string fileName = "test.jpg";
+    std::string originBucketFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(originBucketFolder);
+    std::string originFile = originBucketFolder + "/" + fileName;
+    MediaFileUtils::CreateFile(originFile);
+    std::string content = "origin content";
+    MediaFileUtils::WriteStrToFile(originFile, content);
+    std::string originVideo = originBucketFolder + "/test.mp4";
+    MediaFileUtils::CreateFile(originVideo);
+    std::string contentV = "video content";
+    MediaFileUtils::WriteStrToFile(originVideo, contentV);
+    bool result = task->IsMovingPhotosInOrgFolder(curBucketNum, fileName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(originFile);
+    MediaFileUtils::DeleteFileWithRetry(originVideo);
+    MEDIA_INFO_LOG("Mcadft_IsMovingPhotosInOrgFolder_02 End");
+}
+
+static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffix = (key == "THM_ASTC") ? ".astc" : ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + suffix;
+}
+
+// ============ 新增测试用例 ============
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleBothExistStrategy_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleBothExistStrategy_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    DirtyFileInfo dirtyFileInfo;
+    dirtyFileInfo.fileId = 1;
+    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.pending = 0;
+    dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    std::string testFile = dirtyFileInfo.path;
+    MediaFileUtils::CreateFile(testFile);
+    std::string content = "test content";
+    MediaFileUtils::WriteStrToFile(testFile, content);
+    std::string thumbPath = GetThumbnailPath(testFile, THUMBNAIL_THUMB_SUFFIX);
+    MediaFileUtils::CreateDirectory(MediaFileUtils::GetParentPath(thumbPath));
+    MediaFileUtils::CreateFile(thumbPath);
+    std::string contentT = "thumb content";
+    MediaFileUtils::WriteStrToFile(thumbPath, contentT);
+    task->HandleBothExistStrategy(dirtyFileInfo);
+    MediaFileUtils::DeleteFileWithRetry(testFile);
+    MediaFileUtils::DeleteFileWithRetry(thumbPath);
+    MEDIA_INFO_LOG("Mcadft_HandleBothExistStrategy_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleOriginNotExistStrategy_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleOriginNotExistStrategy_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    DirtyFileInfo dirtyFileInfo;
+    dirtyFileInfo.fileId = 1;
+    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.pending = 0;
+    dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    std::string thumbPath = GetThumbnailPath(dirtyFileInfo.path, THUMBNAIL_THUMB_SUFFIX);
+    MediaFileUtils::CreateDirectory(MediaFileUtils::GetParentPath(thumbPath));
+    MediaFileUtils::CreateFile(thumbPath);
+    std::string content = "thumb content";
+    MediaFileUtils::WriteStrToFile(thumbPath, content);
+    task->HandleOriginNotExistStrategy(dirtyFileInfo);
+    bool originExists = MediaFileUtils::IsFileExists(dirtyFileInfo.path);
+    MediaFileUtils::DeleteFileWithRetry(dirtyFileInfo.path);
+    MediaFileUtils::DeleteFileWithRetry(thumbPath);
+    EXPECT_EQ(originExists, false);
+    MEDIA_INFO_LOG("Mcadft_HandleOriginNotExistStrategy_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleOriginExistStrategy_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleOriginExistStrategy_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    DirtyFileInfo dirtyFileInfo;
+    dirtyFileInfo.fileId = 1;
+    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.pending = 0;
+    dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    MediaFileUtils::CreateFile(dirtyFileInfo.path);
+    std::string content = "test content";
+    MediaFileUtils::WriteStrToFile(dirtyFileInfo.path, content);
+    task->HandleOriginExistStrategy(dirtyFileInfo);
+    MediaFileUtils::DeleteFileWithRetry(dirtyFileInfo.path);
+    MEDIA_INFO_LOG("Mcadft_HandleOriginExistStrategy_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleSingleRecord_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleSingleRecord_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    DirtyFileInfo dirtyFileInfo;
+    dirtyFileInfo.fileId = 1;
+    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.pending = 0;
+    dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    MediaFileUtils::CreateFile(dirtyFileInfo.path);
+    std::string content = "test content";
+    MediaFileUtils::WriteStrToFile(dirtyFileInfo.path, content);
+    task->HandleSingleRecord(dirtyFileInfo);
+    MediaFileUtils::DeleteFileWithRetry(dirtyFileInfo.path);
+    MEDIA_INFO_LOG("Mcadft_HandleSingleRecord_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_DealWithPendingToEffectFile_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_DealWithPendingToEffectFile_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    DirtyFileInfo dirtyFileInfo;
+    dirtyFileInfo.fileId = 1;
+    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.pending = 1;
+    dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    task->DealWithPendingToEffectFile(dirtyFileInfo);
+    MEDIA_INFO_LOG("Mcadft_DealWithPendingToEffectFile_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ProcessEditFolderBatch_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ProcessEditFolderBatch_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string editBucketFolder = "/storage/cloud/files/.editData/Photo/" +
+        std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(editBucketFolder);
+    std::string editOriginFile = editBucketFolder + "/source.jpg";
+    MediaFileUtils::CreateFile(editOriginFile);
+    std::string content = "edit origin content";
+    MediaFileUtils::WriteStrToFile(editOriginFile, content);
+    std::string effectFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(effectFolder);
+    std::string effectFile = effectFolder + "/" + folderName;
+    MediaFileUtils::CreateFile(effectFile);
+    content = "effect content";
+    MediaFileUtils::WriteStrToFile(effectFile, content);
+
+    bool result = task->ProcessEditFolderBatch(curBucketNum, folderName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(editOriginFile);
+    MediaFileUtils::DeleteFileWithRetry(effectFile);
+    MediaFileUtils::DeleteFileWithRetry(editBucketFolder);
+    MEDIA_INFO_LOG("Mcadft_ProcessEditFolderBatch_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ProcessMovingPhotosInEditFolder_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ProcessMovingPhotosInEditFolder_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string editBucketFolder = "/storage/cloud/files/.editData/Photo/" +
+        std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(editBucketFolder);
+    std::string editOriginFile = editBucketFolder + "/source.jpg";
+    std::ofstream originFile(editOriginFile);
+    originFile << "edit origin content";
+    originFile.close();
+    DirtyFilePathInfo dirtyFilePathInfo;
+    dirtyFilePathInfo.curBucketNum = curBucketNum;
+    dirtyFilePathInfo.fileName = folderName;
+    dirtyFilePathInfo.editOriginFile = editOriginFile;
+    dirtyFilePathInfo.effectFolderFile = "/storage/cloud/files/Photo/" +
+        std::to_string(curBucketNum) + "/" + folderName;
+    dirtyFilePathInfo.editDataFile = editBucketFolder + "/editdata";
+    dirtyFilePathInfo.editBucketFolder = editBucketFolder;
+    bool result = task->ProcessMovingPhotosInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(editOriginFile);
+    MediaFileUtils::DeleteFileWithRetry(editBucketFolder);
+    MEDIA_INFO_LOG("Mcadft_ProcessMovingPhotosInEditFolder_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ProcessOriginFolderBatch_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ProcessOriginFolderBatch_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string fileName = "test.jpg";
+    std::string originFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(originFolder);
+    std::string originFile = originFolder + "/" + fileName;
+    std::ofstream file(originFile);
+    file << "origin content";
+    file.close();
+    bool result = task->ProcessOriginFolderBatch(curBucketNum, fileName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(originFile);
+    MEDIA_INFO_LOG("Mcadft_ProcessOriginFolderBatch_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleOriginBucketFolder_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleOriginBucketFolder_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string originFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(originFolder);
+    std::string testFile = originFolder + "/test.jpg";
+    std::ofstream file(testFile);
+    file << "test content";
+    file.close();
+    bool result = task->HandleOriginBucketFolder(curBucketNum);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(testFile);
+    MEDIA_INFO_LOG("Mcadft_HandleOriginBucketFolder_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ProcessThumbsFolderBatch_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ProcessThumbsFolderBatch_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string thumbsFolder = "/storage/cloud/files/.thumbs/Photo/" + std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(thumbsFolder);
+    std::string thumbFile = thumbsFolder + "/THM.jpg";
+    MediaFileUtils::CreateFile(thumbFile);
+    std::string content = "thm content";
+    MediaFileUtils::WriteStrToFile(thumbFile, content);
+    bool result = task->ProcessThumbsFolderBatch(curBucketNum, folderName);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(thumbFile);
+    MediaFileUtils::DeleteFileWithRetry(thumbsFolder);
+    MEDIA_INFO_LOG("Mcadft_ProcessThumbsFolderBatch_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleThumbsBucketFolder_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleThumbsBucketFolder_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string thumbsFolder = "/storage/cloud/files/.thumbs/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(thumbsFolder);
+    std::string testFolder = thumbsFolder + "/test.jpg";
+    MediaFileUtils::CreateDirectory(testFolder);
+    bool result = task->HandleThumbsBucketFolder(curBucketNum);
+    EXPECT_EQ(result, true);
+    MediaFileUtils::DeleteFileWithRetry(testFolder);
+    MEDIA_INFO_LOG("Mcadft_HandleThumbsBucketFolder_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_DealThumbsEffectAssetNotExist_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_DealThumbsEffectAssetNotExist_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    std::string folderName = "test.jpg";
+    std::string thumbsFolder = "/storage/cloud/files/.thumbs/Photo/" + std::to_string(curBucketNum) + "/" + folderName;
+    MediaFileUtils::CreateDirectory(thumbsFolder);
+    std::string thumbFile = thumbsFolder + "/THM.jpg";
+    MediaFileUtils::CreateFile(thumbFile);
+    std::string content = "thm content";
+    MediaFileUtils::WriteStrToFile(thumbFile, content);
+    std::string originFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(originFolder);
+    bool result = task->DealThumbsEffectAssetNotExist(curBucketNum, folderName);
+    EXPECT_EQ(result, true);
+    std::string originFile = originFolder + "/" + folderName;
+    bool originExists = MediaFileUtils::IsFileExists(originFile);
+    EXPECT_EQ(originExists, true);
+    MediaFileUtils::DeleteFileWithRetry(thumbFile);
+    MediaFileUtils::DeleteFileWithRetry(originFile);
+    MediaFileUtils::DeleteFileWithRetry(thumbsFolder);
+    MEDIA_INFO_LOG("Mcadft_DealThumbsEffectAssetNotExist_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_QueryPhotoAddTimeByPath_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_QueryPhotoAddTimeByPath_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string testPath = "/storage/cloud/files/photo/1/test.jpg";
+    int64_t addTime = 0;
+    int32_t result = task->QueryPhotoAddTimeByPath(testPath, addTime);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Mcadft_QueryPhotoAddTimeByPath_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_UpdatePendingInfoByPath_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_UpdatePendingInfoByPath_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t fileId = 1;
+    int64_t modifyTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t pending = 0;
+    int32_t result = task->UpdatePendingInfoByPath(fileId, modifyTime, pending);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Mcadft_UpdatePendingInfoByPath_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleHandleAllDirtyFoldersInner_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleHandleAllDirtyFoldersInner_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 16;
+    task->HandleHandleAllDirtyFoldersInner(curBucketNum);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_HandleHandleAllDirtyFoldersInner_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleHandleAllDirtyFoldersInner_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleHandleAllDirtyFoldersInner_02 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curBucketNum = 0;
+    task->HandleHandleAllDirtyFoldersInner(curBucketNum);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_HandleHandleAllDirtyFoldersInner_02 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleAllDirtyFolders_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleAllDirtyFolders_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curStartBucketId = 1;
+    task->HandleAllDirtyFolders(curStartBucketId);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_HandleAllDirtyFolders_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleAllDirtyTable_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleAllDirtyTable_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curStartFileId = 1;
+    task->HandleAllDirtyTable(curStartFileId);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_HandleAllDirtyTable_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleAllTableAndFolder_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_HandleAllTableAndFolder_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    int32_t curStartFileId = 1;
+    int32_t curStartBucketId = 1;
+    task->HandleAllTableAndFolder(curStartFileId, curStartBucketId);
+    bool isLegalMov = task->IsLegalMediaAsset("test.mov");
+    EXPECT_EQ(isLegalMov, true);
+    MEDIA_INFO_LOG("Mcadft_HandleAllTableAndFolder_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ExistCloudAssetPathInDB_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ExistCloudAssetPathInDB_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string path = "/storage/cloud/files/photo/16/test.jpg";
+    bool result = task->ExistCloudAssetPathInDB(path);
+    EXPECT_EQ(result, false);
+    MEDIA_INFO_LOG("Mcadft_ExistCloudAssetPathInDB_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_UpdateEditTimeByPath_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_UpdateEditTimeByPath_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string path = "/storage/cloud/files/photo/16/test.jpg";
+    int64_t editTime = 0;
+    int32_t editDataExist = 0;
+    int32_t result = task->UpdateEditTimeByPath(path, editTime, editDataExist);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("Mcadft_UpdateEditTimeByPath_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_DealWithZeroSizeFile_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_DealWithZeroSizeFile_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string testFile = "/data/test/zero_size.jpg";
+    size_t size = 0;
+    bool ret = MediaFileUtils::GetFileSize(testFile, size);
+    MEDIA_INFO_LOG("Mcadft_DealWithZeroSizeFile_01 ret %{public}d", ret);
+    MediaFileUtils::CreateFile(testFile);
+    task->DealWithZeroSizeFile(testFile);
+    MediaFileUtils::DeleteFileWithRetry(testFile);
+    bool fileExists = MediaFileUtils::IsFileExists(testFile);
+    EXPECT_EQ(fileExists, false);
+    MEDIA_INFO_LOG("Mcadft_DealWithZeroSizeFile_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_OriginSourceExist_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_OriginSourceExist_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string emptyPath = "";
+    bool result1 = task->OriginSourceExist(emptyPath);
+    EXPECT_EQ(result1, false);
+    std::string notExistPath = "/storage/cloud/files/photo/16/not_exist.jpg";
+    bool result2 = task->OriginSourceExist(notExistPath);
+    EXPECT_EQ(result2, false);
+    std::string existPath = "/storage/cloud/files/photo/16/exist.jpg";
+    MediaFileUtils::CreateFile(existPath); // empty
+    bool result3 = task->OriginSourceExist(existPath);
+    EXPECT_EQ(result3, false);
+    MediaFileUtils::DeleteFileWithRetry(existPath);
+    MEDIA_INFO_LOG("Mcadft_OriginSourceExist_01 End");
+}
+
+HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_ThumbnailSourceExist_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Mcadft_ThumbnailSourceExist_01 Start");
+    auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
+    std::string emptyPath = "";
+    bool result1 = task->ThumbnailSourceExist(emptyPath);
+    EXPECT_EQ(result1, false);
+    std::string notExistPath = "/storage/cloud/files/photo/16/not_exist.jpg";
+    bool result2 = task->ThumbnailSourceExist(notExistPath);
+    EXPECT_EQ(result2, false);
+    MEDIA_INFO_LOG("Mcadft_ThumbnailSourceExist_01 End");
 }
 } // namespace Media
 } // namespace OHOS
