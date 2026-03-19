@@ -187,6 +187,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE), {{READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION), {{}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO), {{SYSTEMAPI_PERM, READ_PERM}}},
 };
 
 static std::unordered_set<uint32_t> mediaAssetsPermissionDbBypass = {

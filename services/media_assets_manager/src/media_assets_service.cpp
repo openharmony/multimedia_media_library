@@ -1903,4 +1903,24 @@ int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::strin
     CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::ScanExistFileRecord Failed");
     return E_OK;
 }
+
+int32_t MediaAssetsService::SetCompatibleInfo(CompatibleInfo &compatibleInfo)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::SetCompatibleInfo start");
+    int32_t ret = TranscodeCompatibleInfoOperation::InsertCompatibleInfo(compatibleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to SetCompatibleInfo, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetCompatibleInfo(const int64_t tokenId, GetCompatibleInfoRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetCompatibleInfo start");
+    CompatibleInfo compatibleInfo;
+    int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(tokenId, compatibleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to GetCompatibleInfo, errCode = %{public}d", ret);
+    respBody.tokenId = tokenId;
+    respBody.supportedHighResolution = compatibleInfo.highResolution;
+    respBody.supportedMimeTypes = compatibleInfo.encodings;
+    return E_SUCCESS;
+}
 } // namespace OHOS::Media

@@ -98,6 +98,7 @@
 #include "release_debug_database_vo.h"
 #include "query_media_data_status_vo.h"
 #include "userfilemgr_uri.h"
+#include "compatible_info_vo.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -484,6 +485,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("onAnalysisAlbumChange", AnalysisAlbumAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("offAnalysisAlbumChange", AnalysisAlbumAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
+            DECLARE_NAPI_FUNCTION("setAssetCompatibleAbility", PhotoAccessHelperSetFileCompatibleConfig),
+            DECLARE_NAPI_FUNCTION("getAssetCompatibleAbility", PhotoAccessHelperGetAssetCompatibleConfig),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -14638,6 +14641,199 @@ napi_value MediaLibraryNapi::QueryMediaDataReady(napi_env env, napi_callback_inf
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "QueryMediaDataReady",
        QueryMediaDataReadyExecute, QueryMediaDataReadyCompleteCallback);
+}
+
+static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+    NAPI_ERR_LOG("1");
+    napi_value configObj;
+    napi_valuetype valueType = napi_undefined;
+    if (context->argc == 2) {
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
+            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+            return nullptr;
+        }
+        uint32_t tokenId;
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], tokenId), JS_E_PARAM_INVALID);
+        CHECK_COND(env, tokenId > 0, JS_E_PARAM_INVALID);
+        context->tokenId = tokenId;
+        configObj = context->argv[ARGS_ONE];
+    } else {
+        context->tokenId = IPCSkeleton::GetSelfTokenID();
+        configObj = context->argv[ARGS_ZERO];
+    }
+    CHECK_ARGS(env, napi_typeof(env, configObj, &valueType), JS_E_PARAM_INVALID);
+    if (valueType != napi_object) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Config must be an object");
+        return nullptr;
+    }
+    bool supportedHighResolution = false;
+    napi_value supportedHighResolutionValue = nullptr;
+    if (napi_get_named_property(env, configObj, "supportedHighResolution", &supportedHighResolutionValue) == napi_ok) {
+        CHECK_ARGS(env, napi_get_value_bool(env, supportedHighResolutionValue, &supportedHighResolution),
+            JS_E_PARAM_INVALID);
+    }
+    context->supportedHighResolution = supportedHighResolution;
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSSetFileCompatibleConfigExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetFileCompatibleConfigExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+
+    SetCompatibleInfoReqBody reqBody;
+    reqBody.tokenId = context->tokenId;
+    reqBody.supportedHighResolution = context->supportedHighResolution;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    context->retVal = E_OK;
+}
+
+static void JSSetFileCompatibleConfigCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetFileCompatibleConfigCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperSetFileCompatibleConfig(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetFileCompatibleConfig");
+
+    NAPI_INFO_LOG("PhotoAccessHelperSetFileCompatibleConfig");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSetFileCompatibleConfig(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetFileCompatibleConfig",
+        JSSetFileCompatibleConfigExecute, JSSetFileCompatibleConfigCompleteCallback);
+}
+
+static napi_value ParseArgsGetAssetCompatibleConfig(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    uint32_t tokenId;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], tokenId), JS_E_PARAM_INVALID);
+    CHECK_COND(env, tokenId > 0, JS_E_PARAM_INVALID);
+    
+    context->tokenId = tokenId;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSGetAssetCompatibleConfigExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAssetCompatibleConfigExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    GetCompatibleInfoReqBody reqBody;
+    GetCompatibleInfoRespBody respBody;
+    reqBody.tokenId = context->tokenId;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO), reqBody, respBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    context->supportedHighResolution = respBody.supportedHighResolution;
+    context->retVal = E_OK;
+}
+
+static void JSGetAssetCompatibleConfigCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAssetCompatibleConfigCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+
+        napi_value configObj = nullptr;
+        napi_create_object(env, &configObj);
+
+        bool supportedHighResolution = context->supportedHighResolution;
+        napi_value supportedHighResolutionValue = nullptr;
+        napi_get_boolean(env, supportedHighResolution, &supportedHighResolutionValue);
+        napi_set_named_property(env, configObj, "supportedHighResolution", supportedHighResolutionValue);
+
+        jsContext->data = configObj;
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetCompatibleConfig(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetAssetCompatibleConfig");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetAssetCompatibleConfig(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAssetCompatibleConfig",
+        JSGetAssetCompatibleConfigExecute, JSGetAssetCompatibleConfigCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS
