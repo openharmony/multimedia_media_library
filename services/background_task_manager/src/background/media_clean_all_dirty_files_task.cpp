@@ -1476,7 +1476,7 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
-        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > FOUR_WEEK) { // 执行完成过 重新全量执行 FOUR_WEEK
+        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > FOUR_WEEK) { // 执行完成过 重新全量执行
             ClearFileIdsCacheSet();
             HandleAllTableAndFolder(scanBeginCode, scanBeginCode);
             return;
