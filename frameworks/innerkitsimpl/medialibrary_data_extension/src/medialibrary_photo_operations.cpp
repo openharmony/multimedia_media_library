@@ -1083,8 +1083,10 @@ static void GetPhotoHiddenStatus(std::shared_ptr<AlbumData> data, const string& 
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    const std::string queryAssetHiddenInfo = "SELECT hidden FROM Photos WHERE file_id = " + assetId;
-    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAssetHiddenInfo);
+    const std::string queryAssetHiddenInfo = "SELECT hidden FROM Photos WHERE file_id = ?";
+    vector<ValueObject> bindArgs;
+    bindArgs.push_back(ValueObject(assetId));
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAssetHiddenInfo, bindArgs);
     if (resultSet == nullptr) {
         return;
     }
