@@ -37,6 +37,10 @@ void ModalUICallback::SetSessionId(int32_t sessionId)
 void ModalUICallback::OnRelease(int32_t releaseCode)
 {
     LOGI("OnRelease enter. release code is %{public}d", releaseCode);
+    if (pickerCallBack_ == nullptr || this->uiContent == nullptr) {
+        LOGE("pickerCallBack_ or uiContent is null");
+        return;
+    }
     this->uiContent->CloseModalUIExtension(this->sessionId_);
     pickerCallBack_->ready = true;
 }
@@ -45,6 +49,10 @@ void ModalUICallback::OnError(int32_t code, const std::string& name, const std::
 {
     LOGE("OnError enter. errorCode=%{public}d, name=%{public}s, message=%{public}s",
         code, name.c_str(), message.c_str());
+    if (pickerCallBack_ == nullptr || this->uiContent == nullptr) {
+        LOGE("pickerCallBack_ or uiContent is null");
+        return;
+    }
     if (!pickerCallBack_->ready) {
         this->uiContent->CloseModalUIExtension(this->sessionId_);
         pickerCallBack_->ready = true;
