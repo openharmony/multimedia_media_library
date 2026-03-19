@@ -2495,6 +2495,9 @@ export namespace photoAccessHelper {
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
     acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
     releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
+    setAssetCompatibleAbility(tokenId: long, config: AssetCompatibleAbility): Promise<void>;
+    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void>;
+    getAssetCompatibleAbility(tokenId: long): Promise<AssetCompatibleAbility>;
   }
 
   interface AppInfo {
@@ -3692,6 +3695,74 @@ export namespace photoAccessHelper {
       });
     }
 
+    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.setFileCompatibleConfigInner(config);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code as int, err.message));
+          }
+        });
+      });
+    }
+
+    setAssetCompatibleAbility(tokenId: long, config: AssetCompatibleAbility): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+              this.setFileCompatibleConfigSysInner(tokenId, config);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code as int, err.message));
+          }
+        });
+      });
+    }
+
+    getAssetCompatibleAbility(tokenId: long): Promise<AssetCompatibleAbility> {
+      return new Promise<AssetCompatibleAbility>((resolve: (v: AssetCompatibleAbility) => void, reject: RejectString) => {
+        let cb = (): AssetCompatibleAbility | MediaLibraryAniError => {
+          let result: AssetCompatibleAbility | MediaLibraryAniError;
+          try {
+            result = this.getAssetCompatibleConfigInner(tokenId);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as AssetCompatibleAbility);
+            }
+          }
+        });
+      });
+    }
+
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
       callback: AsyncCallback<void>): int;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -3753,6 +3824,18 @@ export namespace photoAccessHelper {
     native getPhotoAlbumsOrderInner(orderStyle: int, options?: FetchOptions): FetchResult<AlbumOrder>;
     native setPhotoAlbumsOrderInner(orderStyle: int, albumOrders: Array<AlbumOrder>): void;
     native isMediaDataReadyInner(mediaDataKey: string): boolean;
+    native setFileCompatibleConfigSysInner(tokenId: long, config: AssetCompatibleAbility): void;
+    native setFileCompatibleConfigInner(config: AssetCompatibleAbility): void;
+    native getAssetCompatibleConfigInner(tokenId: long): AssetCompatibleAbility;
+  }
+
+  export interface AssetCompatibleAbility {
+    supportedHighResolution: boolean;
+  }
+
+  class AssetCompatibleAbilityHandle implements AssetCompatibleAbility {
+    constructor() {}
+    supportedHighResolution: boolean;
   }
 
   export interface GalleryFormInfo {
