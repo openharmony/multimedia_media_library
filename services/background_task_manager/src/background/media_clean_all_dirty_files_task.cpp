@@ -485,7 +485,8 @@ bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::st
     std::vector<std::string> fileNameVec;
     MediaFileUtils::GetAllFileNameListUnderPath(path, fileNameVec);
     for (std::string fileNameInside : fileNameVec) {
-        if (fileNameInside != fileName && fileNameInside.compare(0, title.size(), title) == 0) {
+        if (fileNameInside != fileName && fileNameInside.size() > title.size()
+            && fileNameInside.compare(0, title.size(), title) == 0) {
             std::string constStr(fileNameInside);
             OtherFileName = fileNameInside;
             return true;
@@ -1475,7 +1476,7 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
         int64_t timeWindow = triggerTime_ - lastExecuteTime;
         MEDIA_INFO_LOG("DirtyMediaHandler Continue Fid: %{public}d, Bucket: %{public}d, Interval: %{public}" PRId64,
             curStartFileId, curStartBucketId, timeWindow);
-        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > FOUR_WEEK) { // 执行完成过 重新全量执行
+        if (curStartFileId <= 0 && curStartBucketId <= 0 && timeWindow > FOUR_WEEK) { // 执行完成过 重新全量执行 FOUR_WEEK
             ClearFileIdsCacheSet();
             HandleAllTableAndFolder(scanBeginCode, scanBeginCode);
             return;
