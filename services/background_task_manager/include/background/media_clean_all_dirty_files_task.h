@@ -133,7 +133,7 @@ private:
     int32_t GetFileIdByPathsFromDB(std::vector<std::string> &paths, std::set<int32_t> &fileIdSet);
     void SaveCacheSetToCacheDB();
     void ClearFileIdsCacheSet();
-    bool ContainsFileIdsCacheSet(int32_t &val);
+    bool ContainsFileIdsCacheSet(int32_t val);
     int32_t UpdatePendingInfoByPath(int32_t fileId, int64_t modifyTime, int64_t pending);
     void DealWithPendingToEffectFile(DirtyFileInfo &dirtyFileInfo);
     void MoveToNextId(int32_t &startFileId);
