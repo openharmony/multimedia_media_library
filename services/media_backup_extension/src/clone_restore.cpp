@@ -445,6 +445,7 @@ bool CloneRestore::BackupPreprocess()
         srcCloneRestoreConfigInfo_.switchStatus == SwitchStatus::HDC)) {
         MEDIA_INFO_LOG("dst device does not support hdc while current hdc sync is on");
         MEDIA_INFO_LOG("Start BackupDb");
+
         // create temp DB path
         CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, false, "mediaLibraryRdb_ is nullptr!");
         std::string tmpDir = backupRestoreDir_ + "/storage/media/local/files/.backup/backup/media_temp_rdb";
@@ -453,16 +454,22 @@ bool CloneRestore::BackupPreprocess()
             MediaFileUtils::DeleteDir(tmpDir));
         CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(tmpDbPath_) == E_OK,
             false, "Prepare backup dir failed");
+
+        // execute database backup operation
         int32_t errCode = mediaLibraryRdb_->Backup(tmpDbPath_);
-        CHECK_AND_RETURN_RET_LOG(errCode == 0, E_FAIL, "rdb backup fail: %{public}d", errCode);
+        CHECK_AND_RETURN_RET_LOG(errCode == 0, false, "rdb backup fail: %{public}d", errCode);
         MEDIA_INFO_LOG("End BackupDb");
         auto context = AbilityRuntime::Context::GetApplicationContext();
-        CHECK_AND_RETURN_RET_LOG(context != nullptr, E_FAIL, "Failed to get context");
+        CHECK_AND_RETURN_RET_LOG(context != nullptr, false, "Failed to get context");
+
+        // initialize backup database connection
         std::shared_ptr<NativeRdb::RdbStore> backupRdb;
         int32_t err = BackupDatabaseUtils::InitDb(backupRdb, CONST_MEDIA_DATA_ABILITY_DB_NAME, tmpDbPath_,
             CONST_BUNDLE_NAME, true, context->GetArea());
-        CHECK_AND_RETURN_RET_LOG(backupRdb != nullptr, E_FAIL, "Init remote medialibrary rdb fail, err = %{public}d",
+        CHECK_AND_RETURN_RET_LOG(backupRdb != nullptr, false, "Init remote medialibrary rdb fail, err = %{public}d",
             err);
+
+        // mark hdc data in temp database as invalid
         bool ret = InvalidateHdcCloudData(backupRdb);
         MEDIA_INFO_LOG("add restore dir");
         dirMappingList_.push_back("/data/storage/el2/database/rdb/");
