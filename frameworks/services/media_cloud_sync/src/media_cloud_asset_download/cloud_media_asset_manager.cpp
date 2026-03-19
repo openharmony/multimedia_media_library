@@ -1130,7 +1130,6 @@ int32_t CloudMediaAssetManager::SetNetworkPolicyForBatchDownload(SetNetworkPolic
     this->batchDownloadResourcesTaskDao_.FromUriToAllFileIds(reqBody.uris, allFileIds);
     std::vector<std::string> newTaskFileIds;
     std::vector<std::string> existedFileIds;
-    std::vector<std::string> invalidFileIds;
     this->batchDownloadResourcesTaskDao_.ClassifyExistedDownloadTasks(allFileIds, newTaskFileIds, existedFileIds);
     int32_t ret = this->batchDownloadResourcesTaskDao_.UpdateNetworkPolicyDownloadTasks(existedFileIds,
         networkPolicy);
