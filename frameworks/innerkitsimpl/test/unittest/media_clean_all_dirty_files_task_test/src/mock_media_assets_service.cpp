@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -280,16 +280,6 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetDuplicateA
     return nullptr;
 }
 
-int32_t MediaAssetsService::SetSupportedDeferredEffects(const int32_t fileId, const int32_t deferredEffects)
-{
-    return E_OK;
-}
-
-int32_t MediaAssetsService::SetDeferredEffectsStatus(const int32_t fileId, const int32_t deferredEffectStatus)
-{
-    return E_OK;
-}
-
 int32_t MediaAssetsService::CreateAsset(CreateAssetDto& dto)
 {
     return E_OK;
@@ -363,23 +353,6 @@ bool MediaAssetsService::CheckMimeType(const int32_t fileId)
 }
 
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)
-{
-    return E_OK;
-}
-
-int32_t MediaAssetsService::SlowMotionTranscode(const SlowMotionTranscodeReqBody &transcodeReq,
-    SlowMotionTranscodeRespBody &resp)
-{
-    return E_OK;
-}
-
-int32_t MediaAssetsService::SlowMotionTranscodeProgress(const std::string &requestId,
-    SlowMotionTranscodeProgressRespBody &resp)
-{
-    return E_OK;
-}
-
-int32_t MediaAssetsService::CancelSlowMotionTranscode(const std::string &requestId)
 {
     return E_OK;
 }
@@ -512,11 +485,6 @@ static int BuildPredicates(const std::vector<std::string> &queryTabOldPhotosUris
 int32_t MediaAssetsService::GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getUrisByOldUrisInnerDto)
 {
     return E_OK;
-}
-
-std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssetsByOldUris(GetAssetsByOldUrisDto& dto)
-{
-    return nullptr;
 }
 
 int32_t MediaAssetsService::Restore(const RestoreDto &dto)
@@ -698,7 +666,7 @@ int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::strin
     return E_OK;
 }
 
-int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t &registerType)
+int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType)
 {
     return E_OK;
 }
