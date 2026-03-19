@@ -5515,5 +5515,231 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_group_photo_albu
     MEDIA_INFO_LOG("medialibrary_backup_clone_group_photo_album_restore_test002 end");
 }
 
+static void VerifyWaterMarkRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+    const WaterMarkExpectInfo& expectInfo)
+{
+    if (!destRdb) {
+        MEDIA_ERR_LOG("Destination RDB store is null for watermark verification");
+        return;
+    }
+
+    std::string querySql = "SELECT * FROM tab_analysis_watermark WHERE file_id = "
+        + std::to_string(expectInfo.fileId);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
+
+    ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB file_id=" << expectInfo.fileId;
+
+    int32_t currentFileId = -1;
+    int32_t currentStatus = -1;
+    int32_t currentType = -1;
+    double currentValidRegionX = -1.0;
+    double currentValidRegionY = -1.0;
+    double currentValidRegionWidth = -1.0;
+    double currentValidRegionHeight = -1.0;
+    std::string currentAlgoVersion = "";
+
+    bool hasRow = (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(hasRow) << "No Watermark record found for file_id=" << expectInfo.fileId;
+
+    int32_t colIndex = -1;
+    resultSet->GetColumnIndex("file_id", colIndex);
+    resultSet->GetInt(colIndex, currentFileId);
+
+    resultSet->GetColumnIndex("status", colIndex);
+    resultSet->GetInt(colIndex, currentStatus);
+
+    resultSet->GetColumnIndex("type", colIndex);
+    resultSet->GetInt(colIndex, currentType);
+
+    resultSet->GetColumnIndex("valid_region_x", colIndex);
+    resultSet->GetDouble(colIndex, currentValidRegionX);
+
+    resultSet->GetColumnIndex("valid_region_y", colIndex);
+    resultSet->GetDouble(colIndex, currentValidRegionY);
+
+    resultSet->GetColumnIndex("valid_region_width", colIndex);
+    resultSet->GetDouble(colIndex, currentValidRegionWidth);
+
+    resultSet->GetColumnIndex("valid_region_height", colIndex);
+    resultSet->GetDouble(colIndex, currentValidRegionHeight);
+
+    resultSet->GetColumnIndex("algo_version", colIndex);
+    resultSet->GetString(colIndex, currentAlgoVersion);
+
+    double ESP = 0.000001;
+    EXPECT_EQ(currentFileId, expectInfo.fileId);
+    EXPECT_EQ(currentStatus, expectInfo.status);
+    EXPECT_EQ(currentType, expectInfo.type);
+    EXPECT_NEAR(currentValidRegionX, expectInfo.validRegionX, ESP);
+    EXPECT_NEAR(currentValidRegionY, expectInfo.validRegionY, ESP);
+    EXPECT_NEAR(currentValidRegionWidth, expectInfo.validRegionWidth, ESP);
+    EXPECT_NEAR(currentValidRegionHeight, expectInfo.validRegionHeight, ESP);
+    EXPECT_EQ(currentAlgoVersion, expectInfo.algoVersion);
+
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_water_mark_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_water_mark_test_001");
+    CloneSource cloneSource;
+    vector<string> tableList = {ANALYSIS_WATERMARK_TABLE, PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 101;
+    int32_t newFileId = 11;
+    photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "DROP TABLE IF EXISTS tab_analysis_watermark;",
+        CREATE_TAB_ANALYSIS_WATERMARK,
+     });
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "INSERT OR REPLACE INTO Photos (file_id) VALUES (101);",
+        "INSERT OR REPLACE INTO tab_analysis_watermark (file_id, status, type, valid_region_x, "
+        "valid_region_y, valid_region_width, valid_region_height, algo_version) "
+        "VALUES (101, 1, 1, 10.5, 10.8, 10.0, 10.0, '2.0.0');",
+    });
+
+    MEDIA_INFO_LOG("Start executesql distance");
+
+    ExecuteSqls(g_rdbStore->GetRaw(), {
+        "INSERT OR REPLACE INTO tab_analysis_watermark (file_id, status, type, valid_region_x, "
+        "valid_region_y, valid_region_width, valid_region_height, algo_version) "
+        "VALUES (10, 1, 1, 10.5, 20.8, 50.0, 30.0, '1.0.0');",
+        "INSERT OR REPLACE INTO tab_analysis_watermark (file_id, status, type, valid_region_x, "
+        "valid_region_y, valid_region_width, valid_region_height, algo_version) "
+        "VALUES (11, 2, 2, 20.5, 20.8, 20.0, 20.0, '1.0.0');",
+    });
+
+    WaterMarkClone WaterMarkClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    bool cloneSuccess = WaterMarkClone.Clone();
+    ASSERT_TRUE(cloneSuccess) << "WaterMarkClone::WaterMarkClone failed";
+    WaterMarkExpectInfo expectInfo1{10, 1, 1, 10.5, 20.8, 50.0, 30.0, "1.0.0"};
+    WaterMarkExpectInfo expectInfo2{11, 1, 1, 10.5, 10.8, 10.0, 10.0, "2.0.0"};
+    VerifyWaterMarkRestore(g_rdbStore->GetRaw(), expectInfo1);
+    VerifyWaterMarkRestore(g_rdbStore->GetRaw(), expectInfo2);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_water_mark_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_water_mark_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_water_mark_test_002");
+    CloneSource cloneSource;
+    vector<string> tableList = {ANALYSIS_WATERMARK_TABLE, PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 101;
+    int32_t newFileId = 11;
+    photoInfoMap[sourceOldFileId] = {};
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "DROP TABLE IF EXISTS tab_analysis_watermark;",
+        CREATE_TAB_ANALYSIS_WATERMARK,
+     });
+
+    WaterMarkClone WaterMarkClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    bool cloneSuccess = WaterMarkClone.Clone();
+    ASSERT_TRUE(cloneSuccess) << "WaterMarkClone::WaterMarkClone failed";
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_water_mark_test_002");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_water_mark_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_water_mark_test_003");
+    CloneSource cloneSource;
+    vector<string> tableList = {ANALYSIS_WATERMARK_TABLE, PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 101;
+    int32_t newFileId = 11;
+    photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "DROP TABLE IF EXISTS tab_analysis_watermark;",
+        CREATE_TAB_ANALYSIS_WATERMARK,
+     });
+
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "INSERT OR REPLACE INTO Photos (file_id) VALUES (101);",
+        "INSERT OR REPLACE INTO tab_analysis_watermark (file_id, status, type, valid_region_x, "
+        "valid_region_y, valid_region_width, valid_region_height, algo_version) "
+        "VALUES (101, 1, 1, 10.5, 10.8, 10.0, 10.0, '2.0.0');",
+    });
+
+    WaterMarkClone WaterMarkClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    std::string fileIdOldInClause1 = "(101)";
+    std::string fileIdOldInClause2 = "(102)";
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    bool cloneResult1 = WaterMarkClone.ShouldClone(fileIdOldInClause1, start);
+    bool cloneResult2 = WaterMarkClone.ShouldClone(fileIdOldInClause2, start);
+    ASSERT_TRUE(cloneResult1);
+    ASSERT_FALSE(cloneResult2);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_water_mark_test_003");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_water_mark_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_water_mark_test_004");
+    CloneSource cloneSource;
+    vector<string> tableList = {ANALYSIS_WATERMARK_TABLE, PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 101;
+    int32_t targetNewFileId = 11;
+    photoInfoMap[sourceOldFileId] = { .fileIdNew = targetNewFileId };
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "DROP TABLE IF EXISTS tab_analysis_watermark;",
+        CREATE_TAB_ANALYSIS_WATERMARK,
+    });
+    ExecuteSqls(cloneSource.cloneStorePtr_, {
+        "INSERT OR REPLACE INTO Photos (file_id) VALUES (101);",
+        "INSERT OR REPLACE INTO tab_analysis_watermark "
+        "(file_id, status, type, valid_region_x, valid_region_y, valid_region_width, "
+        "valid_region_height, algo_version) "
+        "VALUES (101, 1, 1, 10.5, 10.8, 10.0, 10.0, '2.0.0');",
+    });
+    ExecuteSqls(g_rdbStore->GetRaw(), {
+        "DROP TABLE IF EXISTS tab_analysis_watermark;",
+        CREATE_TAB_ANALYSIS_WATERMARK,
+    });
+    ExecuteSqls(g_rdbStore->GetRaw(), {
+        "INSERT OR REPLACE INTO tab_analysis_watermark "
+        "(file_id, status, type, valid_region_x, valid_region_y, valid_region_width, "
+        "valid_region_height, algo_version) "
+        "VALUES (10, 1, 1, 10.5, 20.8, 50.0, 30.0, '1.0.0');",
+
+        "INSERT OR REPLACE INTO tab_analysis_watermark "
+        "(file_id, status, type, valid_region_x, valid_region_y, valid_region_width, "
+        "valid_region_height, algo_version) "
+        "VALUES (11, 2, 2, 20.5, 20.8, 20.0, 20.0, '1.0.0');",
+    });
+    WaterMarkClone waterMarkClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    bool cloneSuccess = waterMarkClone.Clone();
+    ASSERT_TRUE(cloneSuccess) << "WaterMarkClone::Clone failed for same file_id scenario";
+    EXPECT_EQ(waterMarkClone.GetMigratedWaterCount(), 1);
+    EXPECT_EQ(waterMarkClone.GetMigratedFileCount(), 1);
+    EXPECT_GT(waterMarkClone.GetTotalTimeCost(), 0);
+    WaterMarkExpectInfo expectInfoUnchanged{10, 1, 1, 10.5, 20.8, 50.0, 30.0, "1.0.0"};
+    VerifyWaterMarkRestore(g_rdbStore->GetRaw(), expectInfoUnchanged);
+    WaterMarkExpectInfo expectInfoReplaced{11, 1, 1, 10.5, 10.8, 10.0, 10.0, "2.0.0"};
+    VerifyWaterMarkRestore(g_rdbStore->GetRaw(), expectInfoReplaced);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_water_mark_test_004");
+}
+
 } // namespace Media
 } // namespace OHOS
