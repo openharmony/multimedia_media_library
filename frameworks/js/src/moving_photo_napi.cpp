@@ -297,6 +297,10 @@ int32_t MovingPhotoNapi::OpenReadOnlyMetadata(const string& movingPhotoUri)
 
 static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
 {
+    if (srcFd < 0 || destFd < 0) {
+        NAPI_ERR_LOG("Invalid file descriptor, srcFd: %{public}d, destFd: %{public}d", srcFd, destFd);
+        return E_HAS_FS_ERROR;
+    }
     constexpr size_t bufferSize = 4096;
     char buffer[bufferSize];
     ssize_t bytesRead;
@@ -863,7 +867,6 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     }
     int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
-        close(destFd);
         NAPI_ERR_LOG("Open dest file failed, error: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
@@ -882,6 +885,36 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     movingPhotoProgressHandler->contextData = context;
     movingPhotoProgressHandler->onProgressFunc = context->threadsafeFunction;
     return CallDoTranscoder(std::move(movingPhotoProgressHandler), context->isTranscoder);
+}
+
+static int32_t AllocateAndConvertResource(int32_t fd, size_t fileSize, MovingPhotoAsyncContext* context)
+{
+    uint32_t MAX_ALLOWED_SIZE = 500 * 1024 * 1024;
+    if (fileSize <= 0 || fileSize > MAX_ALLOWED_SIZE) {
+        NAPI_ERR_LOG("Invalid file size: %{public}d", fileSize);
+        return E_ERR;
+    }
+    context->arrayBufferData = malloc(fileSize);
+    if (!context->arrayBufferData) {
+        NAPI_ERR_LOG("Failed to allocate memory for resource, size: %{public}d", fileSize);
+        return E_ERR;
+    }
+
+    int32_t ret = E_FAIL;
+    if (context->resourceType == ResourceType::IMAGE_RESOURCE) {
+        ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
+    } else if (context->resourceType == ResourceType::VIDEO_RESOURCE) {
+        ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
+    }
+
+    if (ret != E_OK) {
+        free(context->arrayBufferData);
+        context->arrayBufferData = nullptr;
+        NAPI_ERR_LOG("Failed to convert resource, type: %{public}d, ret: %{public}d",
+            static_cast<int32_t>(context->resourceType), ret);
+        return E_ERR;
+    }
+    return E_OK;
 }
 
 void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
@@ -909,13 +942,11 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
     switch (context->resourceType) {
         case ResourceType::IMAGE_RESOURCE:
             fileSize = static_cast<size_t>(imageSize);
-            context->arrayBufferData = malloc(fileSize);
-            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
+            ret = AllocateAndConvertResource(fd, fileSize, context);
             break;
         case ResourceType::VIDEO_RESOURCE:
             fileSize = static_cast<size_t>(videoSize);
-            context->arrayBufferData = malloc(fileSize);
-            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
+            ret = AllocateAndConvertResource(fd, fileSize, context);
             break;
         default:
             NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
@@ -923,6 +954,10 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
     }
 
     if (!context->arrayBufferData || ret != E_OK) {
+        if (context->arrayBufferData) {
+            free(context->arrayBufferData);
+            context->arrayBufferData = nullptr;
+        }
         NAPI_ERR_LOG(
             "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
         context->error = JS_INNER_FAIL;
