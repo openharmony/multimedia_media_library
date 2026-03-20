@@ -2495,9 +2495,9 @@ export namespace photoAccessHelper {
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
     acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
     releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
-    setAssetCompatibleAbility(bundleName: string, config: AssetCompatibleAbility): Promise<void>;
-    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void>;
-    getAssetCompatibleAbility(bundleName: string): Promise<AssetCompatibleAbility>;
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void>;
+    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void>;
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility>;
   }
 
   interface AppInfo {
@@ -3695,7 +3695,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3716,7 +3716,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleAbility(bundleName: string, config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3737,7 +3737,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAssetCompatibleAbility(bundleName: string): Promise<AssetCompatibleAbility> {
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility> {
       return new Promise<AssetCompatibleAbility>((resolve: (v: AssetCompatibleAbility) => void, reject: RejectString) => {
         let cb = (): AssetCompatibleAbility | MediaLibraryAniError => {
           let result: AssetCompatibleAbility | MediaLibraryAniError;
