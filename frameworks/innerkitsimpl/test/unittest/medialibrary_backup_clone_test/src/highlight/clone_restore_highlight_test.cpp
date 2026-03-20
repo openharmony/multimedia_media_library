@@ -140,6 +140,7 @@ void CloneRestoreHighlightTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     newRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(newRdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CleanTestTables(newRdbStore, testTables, true);
     MediaLibraryUnitTestUtils::CreateTestTables(newRdbStore, createTableSqlLists);
     cloneRestoreHighlight = make_unique<CloneRestoreHighlight>();
     cloneRestoreHighlight->mediaLibraryRdb_ = newRdbStore->GetRaw(); // destination database

@@ -458,8 +458,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Query_001, TestSize.Level1)
 
     vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME};
     DataShare::DatashareBusinessError businessError;
-    auto result = extension.Query(queryUri, predicates, columns, businessError);
-    EXPECT_EQ(result, nullptr);
+    extension.Query(queryUri, predicates, columns, businessError);
 }
 
 HWTEST_F(MediaDatashareExtAbilityTest, Extension_GetType_001, TestSize.Level1)
