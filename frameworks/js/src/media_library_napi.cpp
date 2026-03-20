@@ -14658,13 +14658,12 @@ static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_i
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
             return nullptr;
         }
-        uint32_t tokenId;
-        CHECK_ARGS(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], tokenId), JS_E_PARAM_INVALID);
-        CHECK_COND(env, tokenId > 0, JS_E_PARAM_INVALID);
-        context->tokenId = tokenId;
+        string bundleName;
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+            JS_E_PARAM_INVALID);
+        context->bundleName = bundleName;
         configObj = context->argv[ARGS_ONE];
     } else {
-        context->tokenId = IPCSkeleton::GetSelfTokenID();
         configObj = context->argv[ARGS_ZERO];
     }
     CHECK_ARGS(env, napi_typeof(env, configObj, &valueType), JS_E_PARAM_INVALID);
@@ -14692,7 +14691,7 @@ static void JSSetFileCompatibleConfigExecute(napi_env env, void *data)
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
 
     SetCompatibleInfoReqBody reqBody;
-    reqBody.tokenId = context->tokenId;
+    reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
@@ -14757,11 +14756,11 @@ static napi_value ParseArgsGetAssetCompatibleConfig(napi_env env, napi_callback_
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_E_PARAM_INVALID);
 
-    uint32_t tokenId;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], tokenId), JS_E_PARAM_INVALID);
-    CHECK_COND(env, tokenId > 0, JS_E_PARAM_INVALID);
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+            JS_E_PARAM_INVALID);
     
-    context->tokenId = tokenId;
+    context->bundleName = bundleName;
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -14776,7 +14775,7 @@ static void JSGetAssetCompatibleConfigExecute(napi_env env, void *data)
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetCompatibleInfoReqBody reqBody;
     GetCompatibleInfoRespBody respBody;
-    reqBody.tokenId = context->tokenId;
+    reqBody.bundleName = context->bundleName;
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO), reqBody, respBody);
     if (ret != 0) {

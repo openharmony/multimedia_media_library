@@ -2008,7 +2008,7 @@ static const vector<string> onCreateSqlStrs = {
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 
     TabOperationLogColumn::CREATE_TABLE,
-    TabCompatibleInfoColumn::CREATE_TABLE_NEW,
+    TabCompatibleInfoColumn::CREATE_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -5942,22 +5942,11 @@ static void AddHighlightGrowingTime(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns end");
 }
 
-static void UpdateTabComPatibleInfo(RdbStore &store, int32_t version)
-{
-    MEDIA_INFO_LOG("update tab_compatible_info starts");
-    const vector<string> sqls = {
-        TabCompatibleInfoColumn::DROP_TABLE,
-        TabCompatibleInfoColumn::CREATE_TABLE_NEW
-    };
-    ExecSqlsWithDfx(sqls, store, version);
-    MEDIA_INFO_LOG("update tab_compatible_info ends");
-}
-
 static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true)) {
-        UpdateTabComPatibleInfo(store, VERSION_UPDATE_TAB_COMPATIBLE_INFO);
+        // 此处升级回退，未合入主干
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
     }
 }
@@ -5996,8 +5985,7 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
-        // 此处原逻辑为创建一张未使用的空表，
-        // 由于业务逻辑变更，此表需要修改，创建动作冗余，放到UpdateTabComPatibleInfo中进行
+        CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
     }
 

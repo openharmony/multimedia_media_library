@@ -545,25 +545,25 @@ static bool IsHighPixelPicture(const string &fileId)
     return false;
 }
 
-static bool IsSupportHighResolution(const uint32_t tokenId)
+static bool IsSupportHighResolution(const string &bundleName)
 {
     CompatibleInfo compatibleInfo;
-    MEDIA_DEBUG_LOG("tokenId : %{public}u", tokenId);
-    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(tokenId, compatibleInfo);
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     if (compatibleInfo.highResolution) {
         return true;
     }
     return false;
 }
 
-static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid)
+static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
+    const string &bundleName)
 {
     AccessTokenID tokenId;
     PermissionUtils::GetTokenCallerForUid(uid, tokenId);
     bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
     if (isHighPixel && !isSystemApp) {
         uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-        if (IsSupportHighResolution(tokenId)) {
+        if (IsSupportHighResolution(bundleName)) {
             return false;
         }
         MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
@@ -610,7 +610,7 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
     bool isHighPixel = IsHighPixelPicture(fileId);
     bool isHeif = (MediaFileUtils::GetExtensionFromPath(filePath) == "heif" ||
         MediaFileUtils::GetExtensionFromPath(filePath) == "heic");
-    if (!NeedTranscodeHighPixelPicture(isHighPixel, uid)) {
+    if (!NeedTranscodeHighPixelPicture(isHighPixel, uid, bundleName)) {
         if (!isHeif) {
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
             return E_INNER_FAIL;
