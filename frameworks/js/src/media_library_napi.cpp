@@ -485,8 +485,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("onAnalysisAlbumChange", AnalysisAlbumAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("offAnalysisAlbumChange", AnalysisAlbumAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
-            DECLARE_NAPI_FUNCTION("setAssetCompatibleAbility", PhotoAccessHelperSetFileCompatibleConfig),
-            DECLARE_NAPI_FUNCTION("getAssetCompatibleAbility", PhotoAccessHelperGetAssetCompatibleConfig),
+            DECLARE_NAPI_FUNCTION("setAssetCompatibleCapability", PhotoAccessHelperSetFileCompatibleConfig),
+            DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
