@@ -3138,8 +3138,7 @@ void MediaLibraryPhotoOperations::UpdateEditDataPath(std::string filePath, const
 void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId,
     const std::string &oldFilePath)
 {
-    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, assetPath = %{public}s",
-        fileId,
+    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, assetPath = %{public}s", fileId,
         MediaFileUtils::DesensitizePath(assetPath).c_str());
     MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -3149,6 +3148,7 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(args);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "query file path failed");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MediaFileUtils::DeleteFile(oldFilePath);
         DeleteRevertMessage(oldFilePath);
