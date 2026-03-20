@@ -2132,6 +2132,8 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to query file asset vector from db, errCode=%{private}d", errCode);
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
     
     // 进行兼容性转换，写入数据库后再转换回来，写入图片exif的备注原封不动
     std::string userComment = GetUserComment(cmd);
@@ -2155,6 +2157,8 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
             PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri);
         watch->Notify(assetUri, NotifyType::NOTIFY_UPDATE);
     }
+    MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     return updateRows;
 }
 
