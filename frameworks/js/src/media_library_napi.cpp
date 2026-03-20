@@ -14650,7 +14650,6 @@ static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_i
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_E_PARAM_INVALID);
-    NAPI_ERR_LOG("1");
     napi_value configObj;
     napi_valuetype valueType = napi_undefined;
     if (context->argc == 2) {
@@ -14661,6 +14660,7 @@ static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_i
         string bundleName;
         CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
             JS_E_PARAM_INVALID);
+        CHECK_COND(!bundleName.empty(), JS_E_PARAM_INVALID);
         context->bundleName = bundleName;
         configObj = context->argv[ARGS_ONE];
     } else {
@@ -14759,6 +14759,7 @@ static napi_value ParseArgsGetAssetCompatibleConfig(napi_env env, napi_callback_
     string bundleName;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
             JS_E_PARAM_INVALID);
+    CHECK_COND(!bundleName.empty(), JS_E_PARAM_INVALID);
     
     context->bundleName = bundleName;
 
