@@ -656,6 +656,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     InvalidateThumbnail(cmd.GetOprnFileId());
     string dstFileName = MediaFileUtils::GetFileName(dstFilePath);
     if ((ProcessNoMediaFile(dstFileName, dstAlbumPath) == E_SUCCESS) ||
+        (ProcessNoMediaFile(dstFileName, dstAlbumPath) == E_DB_FAIL) ||
         (ProcessHiddenFile(dstFileName, srcFilePath) == E_SUCCESS)) {
         MEDIA_ERR_LOG("New file is a .nomedia file or hidden file.");
         // why: return fail insteal of success
@@ -1037,6 +1038,7 @@ int32_t MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, c
     int32_t deletedRows = -1;
     if (uniStore->Delete(cmd, deletedRows) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete rows for the hidden album failed");
+        return E_DB_FAIL;
     }
     return E_SUCCESS;
 }
