@@ -291,9 +291,9 @@ public:
         ani_string betaScenario);
     static void PhotoAccessReleaseDebugDatabase(ani_env* env, ani_object object, ani_string betaIssueId,
         ani_int fileFd);
-    static void setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_long tokenId, ani_object config);
+    static void setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_string bundleName, ani_object config);
     static void SetFileCompatibleConfig(ani_env *env, ani_object object, ani_object config);
-    static ani_object GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_long tokenId);
+    static ani_object GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_string bundleName);
 
 private:
     int32_t GetListenerType(const std::string &str) const;

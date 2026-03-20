@@ -207,7 +207,7 @@ public:
     int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
     int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
     int32_t SetCompatibleInfo(CompatibleInfo &compatibleInfo);
-    int32_t GetCompatibleInfo(const int64_t tokenId, GetCompatibleInfoRespBody &respBody);
+    int32_t GetCompatibleInfo(const std::string &bundleName, GetCompatibleInfoRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

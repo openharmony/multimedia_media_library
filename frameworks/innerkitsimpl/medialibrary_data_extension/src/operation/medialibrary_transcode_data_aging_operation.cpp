@@ -242,11 +242,10 @@ static bool IsHighPixelPicture(int32_t width, int32_t height)
     return false;
 }
 
-static bool IsSupportHighResolution(const uint32_t tokenId)
+static bool IsSupportHighResolution(const string& bundleName)
 {
     CompatibleInfo compatibleInfo;
-    MEDIA_DEBUG_LOG("tokenId : %{public}u", tokenId);
-    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(tokenId, compatibleInfo);
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     if (compatibleInfo.highResolution) {
         return true;
     }
@@ -256,8 +255,8 @@ static bool IsSupportHighResolution(const uint32_t tokenId)
 static bool NeedTranscodeHighPixelPicture(int32_t width, int32_t height)
 {
     if (IsHighPixelPicture(width, height) && !PermissionUtils::IsSystemApp()) {
-        uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-        if (IsSupportHighResolution(tokenId)) {
+        string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        if (IsSupportHighResolution(clientBundle)) {
             return false;
         }
         MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
