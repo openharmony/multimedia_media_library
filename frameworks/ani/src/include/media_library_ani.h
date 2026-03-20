@@ -405,6 +405,7 @@ struct MediaLibraryAsyncContext : public AniError {
     bool boolResult = false;
     std::map<std::string, std::string> debugDatabaseMap;
     bool supportedHighResolution = false;
+    std::string bundleName;
 };
 } // namespace Media
 } // namespace OHOS
