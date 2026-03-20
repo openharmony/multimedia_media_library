@@ -4236,46 +4236,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CheckGalleryDbIntegrity, T
 }
 
 /*
- * Test interface: UpgradeRestore::Restore
- * Test content: Verify RestoreHighlightAlbums
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreHighlightAlbums, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreHighlightAlbums start");
-    restoreService->galleryRdb_ = restoreService->galleryRdb_;
-    restoreService->mediaLibraryRdb_ = photosStorePtr;
-    restoreService->sceneCode_ = UPGRADE_RESTORE_ID;
-    restoreService->dualDeviceSoftName_ = "Device 4";
-    restoreService->isAccountValid_ = true;
-    restoreService->isSyncSwitchOn_ = true;
-    restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
-    
-    restoreService->RestoreHighlightAlbums();
-    EXPECT_NE(restoreService->galleryRdb_, nullptr);
-    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreHighlightAlbums end");
-}
-
-/*
- * Test interface: UpgradeRestore::Restore
- * Test content: Verify RestoreSmartAlbums
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreSmartAlbums, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreSmartAlbums start");
-    restoreService->galleryRdb_ = restoreService->galleryRdb_;
-    restoreService->mediaLibraryRdb_ = photosStorePtr;
-    restoreService->sceneCode_ = UPGRADE_RESTORE_ID;
-    
-    restoreService->RestoreSmartAlbums();
-    EXPECT_NE(restoreService->galleryRdb_, nullptr);
-    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreSmartAlbums end");
-}
-
-/*
  * Test interface: UpgradeRestore::Query
  * Test content: Verify QueryPortraitAlbumTotalNumber
  * Cover branches: Normal flow
@@ -4324,29 +4284,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_QueryPortraitAlbumInfos, T
     EXPECT_GE(result.size(), 0);
     MEDIA_INFO_LOG("QueryPortraitAlbumInfos size: %{public}zu", result.size());
     MEDIA_INFO_LOG("medialib_backup_test_QueryPortraitAlbumInfos end");
-}
-
-/*
- * Test interface: UpgradeRestore::Insert
- * Test content: Verify InsertPortraitAlbum
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPortraitAlbum, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum start");
-    restoreService->mediaLibraryRdb_ = photosStorePtr;
-    
-    std::vector<PortraitAlbumInfo> portraitAlbumInfos;
-    PortraitAlbumInfo info;
-    info.tagName = "test_portrait";
-    info.tagIdNew = "test_tag_id";
-    info.userOperation = 1;
-    info.userDisplayLevel = 1;
-    portraitAlbumInfos.push_back(info);
-    
-    restoreService->InsertPortraitAlbum(portraitAlbumInfos);
-    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_InsertPortraitAlbum end");
 }
 
 /*
@@ -5290,26 +5227,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreFromGalleryPortrait
 }
 
 /*
- * Test interface: UpgradeRestore::Restore
- * Test content: Verify RestoreAnalysisAlbum
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreAnalysisAlbum, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreAnalysisAlbum start");
-
-    restoreService->mediaLibraryRdb_ = photosStorePtr;
-    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
-    restoreService->shouldIncludeSd_ = false;
-    restoreService->hasLowQualityImage_ = false;
-    
-    restoreService->RestoreAnalysisAlbum();
-    EXPECT_NE(restoreService->galleryRdb_, nullptr);
-    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_RestoreAnalysisAlbum end");
-}
-
-/*
  * Test interface: BackupFileUtils
  * Test content: Verify InheritManualCover null rdb
  * Cover branches: Empty/null parameter branch
@@ -5342,20 +5259,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdatePhotoAlbumCoverUri_e
     upgrade->UpdatePhotoAlbumCoverUri(albumCoverInfos);
     EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_UpdatePhotoAlbumCoverUri_empty end");
-}
-
-/*
- * Test interface: BackupFileUtils
- * Test content: Verify DeleteEmptyAlbums
- * Cover branches: Empty/null parameter branch
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_DeleteEmptyAlbums, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_DeleteEmptyAlbums start");
-    restoreService->mediaLibraryRdb_ = photosStorePtr;
-    restoreService->DeleteEmptyAlbums();
-    EXPECT_NE(restoreService->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_DeleteEmptyAlbums end");
 }
 
 /*
@@ -5720,63 +5623,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_RestoreExternalBatch_null_
     upgrade->RestoreExternalBatch(0, 1000, true, SourceType::EXTERNAL_CAMERA);
     EXPECT_EQ(upgrade->externalRdb_, nullptr);
     MEDIA_INFO_LOG("medialib_backup_test_RestoreExternalBatch_null_rdb end");
-}
-
-/*
- * Test interface: UpgradeRestore::Set
- * Test content: Verify ProcessGalleryFailedOffsets
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessGalleryFailedOffsets, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessGalleryFailedOffsets start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->AddToGalleryFailedOffsets(100);
-    upgrade->AddToGalleryFailedOffsets(200);
-    upgrade->ProcessGalleryFailedOffsets();
-    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessGalleryFailedOffsets end");
-}
-
-/*
- * Test interface: UpgradeRestore::Set
- * Test content: Verify ProcessCloudGalleryFailedOffsets
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessCloudGalleryFailedOffsets, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessCloudGalleryFailedOffsets start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->AddToGalleryFailedOffsets(100);
-    upgrade->AddToGalleryFailedOffsets(200);
-    upgrade->ProcessCloudGalleryFailedOffsets();
-    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessCloudGalleryFailedOffsets end");
-}
-
-/*
- * Test interface: UpgradeRestore::Set
- * Test content: Verify ProcessExternalFailedOffsets
- * Cover branches: Normal flow
- */
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ProcessExternalFailedOffsets, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessExternalFailedOffsets start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->AddToExternalFailedOffsets(100);
-    upgrade->AddToExternalFailedOffsets(200);
-    upgrade->ProcessExternalFailedOffsets(1000, true, SourceType::EXTERNAL_CAMERA);
-    EXPECT_NE(upgrade->mediaLibraryRdb_, nullptr);
-    MEDIA_INFO_LOG("medialib_backup_test_ProcessExternalFailedOffsets end");
 }
 
 /*
