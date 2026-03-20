@@ -649,14 +649,32 @@ void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBu
 
 void BaseRestore::SetMovingPhotoDuration(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(fileInfo.movingPhotoVideoPath);
-        if (duration < 0) {
-            MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
-            duration = INVALID_DURATION;
-        }
-        value.Put(PhotoColumn::MEDIA_DURATION, duration);
+    bool isHandleIosLivePhoto = (sceneCode_ == I_PHONE_CLONE_RESTORE &&
+        fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    bool isHandleLivePhoto = BackupFileUtils::IsLivePhoto(fileInfo);
+    if (!isHandleIosLivePhoto && !isHandleLivePhoto) {
+        MEDIA_DEBUG_LOG("file is not moving photo");
+        return;
     }
+
+    string videoPath;
+    if (isHandleIosLivePhoto) {
+        size_t destPos = fileInfo.filePath.find_last_of(".");
+        CHECK_AND_RETURN_LOG(destPos != std::string::npos, "fileInfo.filePath not contain '.'");
+        videoPath = fileInfo.filePath.substr(0, destPos) + ".MOV";
+    }
+    if (isHandleLivePhoto) {
+        videoPath = fileInfo.movingPhotoVideoPath;
+    }
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsFileExists(videoPath),
+        "videoPath does not exist, path: %{public}s",
+        BackupFileUtils::GarbleFilePath(videoPath, sceneCode_).c_str());
+    int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(videoPath);
+    if (duration <= 0) {
+        MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
+        duration = INVALID_DURATION;
+    }
+    value.Put(PhotoColumn::MEDIA_DURATION, duration);
 }
 
 void BaseRestore::SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
