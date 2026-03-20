@@ -6053,7 +6053,8 @@ static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsy
     context->retVal = E_OK;
 }
 
-void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_string bundleName, ani_object config)
+void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object,
+    ani_string bundleName, ani_object config)
 {
     MediaLibraryTracer tracer;
     tracer.Start("setFileCompatibleConfigSysInner");
