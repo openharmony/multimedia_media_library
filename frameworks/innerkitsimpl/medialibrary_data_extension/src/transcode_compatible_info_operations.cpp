@@ -75,7 +75,7 @@ int32_t TranscodeCompatibleInfoOperation::InsertCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,	 
+    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
         "bundleName is empty");
 
     string sql = "INSERT OR REPLACE INTO " + TabCompatibleInfoColumn::TABLE + " (" +
@@ -100,7 +100,7 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,	 
+    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
         "bundleName is empty");
     
     ValuesBucket values;
@@ -128,7 +128,7 @@ int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::string
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,	 
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
         "bundleName is empty");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
@@ -146,7 +146,7 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,	 
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
         "bundleName is empty");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
