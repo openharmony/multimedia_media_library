@@ -1225,6 +1225,9 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
     auto status = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:
+            if (asyncContext->needsExtraInfo) {
+                asyncContext->photoQuality = status;
+            }
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             break;
@@ -1277,7 +1280,9 @@ void MediaAssetManagerNapi::RequestVidoForFastMode(napi_env env, MediaAssetManag
         .needsExtraInfo = asyncContext->needsExtraInfo,
         .userId = asyncContext->userId,
     };
-    asyncContext->photoQuality = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
+    if (asyncContext->needsExtraInfo) {
+        asyncContext->photoQuality = MediaAssetManagerAdapter::QueryPhotoStatusWithDfx(param, asyncContext->photoId);
+    }
     if (asyncContext->subType == PhotoSubType::CINEMATIC_VIDEO) {
         DfxLogCinematicVideo(asyncContext->photoQuality == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS,
             asyncContext->userId);
