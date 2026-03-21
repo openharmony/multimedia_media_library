@@ -448,7 +448,7 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyTable(int32_t curStartFileId)
     int32_t startFileId = (curStartFileId == scanBeginCode || curStartFileId < minFileId) ? minFileId : curStartFileId;
     MEDIA_INFO_LOG("HandleAllDirtyTable Start From Id: %{public}d, Min: %{public}d, Max: %{public}d", startFileId,
         minFileId, maxFileId);
-    while (startFileId <= maxFileId) {
+    while (startFileId <= GetMaxFileId()) {
         CHECK_AND_RETURN_INFO_LOG(!IsCurrentTaskTimeOut(), "HandleAllDirtyTable Timeout");
         if (!this->Accept()) {
             MEDIA_ERR_LOG("MediaCleanAllDirtyFilesTask Exit");
@@ -487,7 +487,6 @@ bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::st
     for (std::string fileNameInside : fileNameVec) {
         if (fileNameInside != fileName && fileNameInside.size() > title.size()
             && fileNameInside.compare(0, title.size(), title) == 0) {
-            std::string constStr(fileNameInside);
             OtherFileName = fileNameInside;
             return true;
         }
@@ -569,7 +568,7 @@ bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &pat
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
         resultSet->Close();
-        return true;
+        return true; // 默认要为true 避免异常误判 处理正常图片
     }
     recordExist = GetInt32Val("recordExist", resultSet) == 0 ? false : true;  // 默认要为true 否则可能误判
     resultSet->Close();
@@ -582,8 +581,9 @@ bool MediaCleanAllDirtyFilesTask::ExistPhotoPathInDB(const std::string &path)
     bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
-    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "') AS recordExist";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = ?) AS recordExist";
+    std::vector<NativeRdb::ValueObject> params = { path };
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, recordExist, "Query ExistPhotoPathInDB Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
@@ -600,9 +600,10 @@ bool MediaCleanAllDirtyFilesTask::ExistMovingPhotoPathInDB(const std::string &pa
     // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' AND subtype = 3)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, true, "RdbStore Is Nullptr");
-    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "' AND subtype = " +
+    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = ? AND subtype = " +
         std::to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + ") AS recordExist";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    std::vector<NativeRdb::ValueObject> params = { path };
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, true, "Query ExistMovingPhotoPathInDB Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
