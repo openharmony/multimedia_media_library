@@ -3108,7 +3108,8 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
     vector<CleanFileInfo> subFileInfo;
     int32_t count = 0;
     for (const auto& element : fileInfos) {
-        MEDIA_INFO_LOG("delete local and cloud file displayName is %{public}s", element.fileName.c_str());
+        MEDIA_INFO_LOG("delete local and cloud file displayName is %{public}s",
+            MediaFileUtils::DesensitizeName(element.fileName).c_str());
         subFileInfo.push_back(element);
         count++;
         if (count == MAX_PROCESS_NUM) {

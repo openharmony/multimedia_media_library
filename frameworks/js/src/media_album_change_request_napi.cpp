@@ -1456,10 +1456,9 @@ static napi_value ParseArgsSetUploadStatus(
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_E_PARAM_INVALID);
     CHECK_COND_WITH_ERR_MESSAGE(env, valueType == napi_object, JS_E_PARAM_INVALID, "Argument must be array of album");
  
-    constexpr size_t sizeOfArray = 0;
     constexpr size_t kBatchSetMaxNumber = 500;
-    if (napiValues.size() > kBatchSetMaxNumber || napiValues.size() == sizeOfArray) {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of albums is 0 or over 500.");
+    if (napiValues.size() > kBatchSetMaxNumber) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of albums is over 500.");
         return nullptr;
     }
     for (const auto& napiValue : napiValues) {

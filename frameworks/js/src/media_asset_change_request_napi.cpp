@@ -96,6 +96,12 @@ int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_
         return SOURCE_ERROR_EOF;
     }
 
+    if (readPos_ + static_cast<int64_t>(length) > size_) {
+        NAPI_ERR_LOG("Source buffer overflow, readPos_=%{public}" PRId64 ", length=%{public}u, size_=%{public}" PRId64,
+            readPos_, length, size_);
+        return SOURCE_ERROR_EOF;
+    }
+
     if (memcpy_s(mem->GetBase(), mem->GetSize(), (char*)buffer_ + readPos_, length) != E_OK) {
         NAPI_ERR_LOG("Failed to copy buffer to mem");
         return SOURCE_ERROR_IO;
