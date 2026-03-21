@@ -4243,7 +4243,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersForSourcePicture(std::shared_ptr<
     if (ret != E_OK) {
         return ret;
     }
-    FileUtils::DealPicture(mimeType, assetPath, picture, true);
+    FileUtils::DealPicture(mimeType, assetPath, picture, true, false);
     return E_OK;
 }
 
