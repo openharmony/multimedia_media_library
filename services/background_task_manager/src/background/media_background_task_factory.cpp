@@ -67,8 +67,7 @@ void MediaBackgroundTaskFactory::Execute()
     // Execute all tasks.
     for (auto &task : this->tasks_) {
         CHECK_AND_CONTINUE_ERR_LOG(task != nullptr, "task is null");
-        CHECK_AND_RETURN_INFO_LOG(this->Accept(), "check accept failed");
-        
+        CHECK_AND_CONTINUE_INFO_LOG(task->Accept(), "check accept failed");
         task->Execute();
     }
     return;
