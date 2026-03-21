@@ -87,10 +87,11 @@ static void UpdateSourcePath(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::RdbPredicates &predicates)
 {
     for (auto albumId: predicates.GetWhereArgs()) {
-        const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id FROM Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag =0 AND hidden =0";
-        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        vector<string> fileAssetsIds, fileAssetsUri;
+        const std::string QUERY_FILE_ASSET_INFO =
+            "SELECT file_id FROM Photos WHERE owner_album_id = ? AND clean_flag = 0 AND hidden = 0";
+        const std::vector<NativeRdb::ValueObject> bindArgs = {albumId};
+        std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO, bindArgs);
+        std::vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             fileAssetsIds.push_back(to_string(fileId));

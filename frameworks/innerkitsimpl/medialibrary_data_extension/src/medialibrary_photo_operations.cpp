@@ -1141,7 +1141,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         ") "
         "WHERE file_id IN (" + inClause + ")";
     int32_t result = rdbStore->ExecuteSql(updateSql);
-    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d", result);
+    MEDIA_INFO_LOG("UpdateSourcePath completed, ret: %{public}d, inClause: %{public}s", result, inClause.c_str());
 }
 
 static void GetAlbumNamesById(DeleteBehaviorParams &filesParams)
