@@ -3995,6 +3995,8 @@ int32_t MediaLibraryDataManager::RestoreInvalidPosData()
 
 static int32_t BackupDebugDatabase(const std::string &path)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("BackupDebugDatabase");
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OPR_DEBUG_DB_FAIL, "RdbStore is nullptr");
     int32_t errCode = rdbStore->Backup(path);
@@ -4059,6 +4061,8 @@ static int32_t DeleteTempDatabaseFile(const std::string &tempFilePath)
 
 static int64_t HandleDebugDatabaseUpload(const string &filePath, const string &tempName, const string &destName)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleDebugDatabaseUpload");
     string tempFile = filePath + tempName;
     string destFile = filePath + destName;
     CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFile, destFile) == E_OK, E_OPR_DEBUG_DB_FAIL, "Fail to zip DBFile");
@@ -4096,13 +4100,11 @@ int32_t MediaLibraryDataManager::AcquireDebugDatabase(const string &betaIssueId,
     }
     std::string tempFileName = "media_library_temp_" + betaIssueId + ".db";
     std::string tempFile = filePath + tempFileName;
-
-    tracer.Start("BackupDebugDatabase");
+    
     int32_t errCode = BackupDebugDatabase(tempFile);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Rdb backup fail: %{public}d", errCode);
 
     //数据库上传 故障路径 betaScenario = 1024_1041_1018
-    tracer.Start("HandleDebugDatabaseUpload");
     int64_t ret = HandleDebugDatabaseUpload(filePath, tempFileName, fileName);
     CHECK_AND_RETURN_RET_LOG(ret != E_OPR_DEBUG_DB_FAIL, static_cast<int32_t>(ret), "Failed to handle debug database");
     fileSize = std::to_string(ret);

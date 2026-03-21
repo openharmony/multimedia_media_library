@@ -3987,6 +3987,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
         E_ERR, "result set is empty");
     if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
+        resultSet->Close();
         return E_OK;
     }
     resultSet->Close();

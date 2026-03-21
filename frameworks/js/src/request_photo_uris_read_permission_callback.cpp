@@ -166,7 +166,10 @@ static void GenerateStringArrayValue(napi_env &env, const std::vector<std::strin
     if (len == 0) {
         return;
     }
-
+    
+    NapiScopeHandler scopeHandler(env);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is nullptr");
+    
     CHECK_ARGS_RET_VOID(env, napi_create_array_with_length(env, len, &value), JS_INNER_FAIL); // set array length
 
     for (size_t i = 0; i < len; ++i) {
