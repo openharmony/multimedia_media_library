@@ -274,6 +274,7 @@ bool MediaCleanAllDirtyFilesTask::QueryFileInfos(int32_t startFileId, DirtyFileI
     dirtyFileInfo.pending = GetInt32Val(MediaColumn::MEDIA_TIME_PENDING, resultSet);
     dirtyFileInfo.addTime = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
     dirtyFileInfo.mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    dirtyFileInfo.localPath = MediaFileUtils::GetLocalPath(dirtyFileInfo.path);
     MEDIA_DEBUG_LOG("Handle Data %{public}s, Pending %{public}d, Mtype %{public}d, Addtime %{public}" PRId64,
         MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str(), dirtyFileInfo.pending, dirtyFileInfo.mediaType,
         dirtyFileInfo.addTime);
@@ -364,18 +365,21 @@ void MediaCleanAllDirtyFilesTask::HandleOriginNotExistStrategy(DirtyFileInfo &di
         if (!existThumbnail) {
             std::string lcdPath = GetThumbnailPath(dirtyFileInfo.path, THUMBNAIL_LCD_SUFFIX);
             bool existThumbnailLCD = MediaFileUtils::IsFileExists(lcdPath);
-            if (existThumbnailLCD && !MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
-                MediaFileUtils::CopyFileUtil(lcdPath, dirtyFileInfo.path);
-                MEDIA_INFO_LOG("Copy Lcd %{public}s to Id %{public}d", lcdPath.c_str(), dirtyFileInfo.fileId);
+            if (existThumbnailLCD && !MediaFileUtils::IsFileExists(dirtyFileInfo.path)
+                && !MediaFileUtils::IsFileExists(dirtyFileInfo.localPath)) {
+                MediaFileUtils::CopyFileUtil(lcdPath, dirtyFileInfo.localPath);
+                MEDIA_INFO_LOG("DirtyMediaHandler HandleOriginNotExistStrategy Lcd Cp To Org %{public}s to Id"
+                    " %{public}d", lcdPath.c_str(), dirtyFileInfo.fileId);
             }
             // SCAN 扫描更新size等column
             MediaAssetsService::GetInstance().ScanExistFileRecord(dirtyFileInfo.fileId, dirtyFileInfo.path);
             return;
         }
-        if (!MediaFileUtils::IsFileExists(dirtyFileInfo.path)) {
-            MediaFileUtils::CopyFileUtil(thumbnailPath, dirtyFileInfo.path);
-            MEDIA_INFO_LOG("HandleOriginNotExistStrategy Copy Thumbnail %{public}s to Id %{public}d",
-                MediaFileUtils::DesensitizePath(thumbnailPath).c_str(), dirtyFileInfo.fileId);
+        if (!MediaFileUtils::IsFileExists(dirtyFileInfo.path) &&
+            !MediaFileUtils::IsFileExists(dirtyFileInfo.localPath)) {
+            MediaFileUtils::CopyFileUtil(thumbnailPath, dirtyFileInfo.localPath);
+            MEDIA_INFO_LOG("DirtyMediaHandler HandleOriginNotExistStrategy Thumbnail Cp To Org %{public}s to Id"
+                " %{public}d", MediaFileUtils::DesensitizePath(thumbnailPath).c_str(), dirtyFileInfo.fileId);
         }
         // SCAN 扫描更新size等column
         MediaAssetsService::GetInstance().ScanExistFileRecord(dirtyFileInfo.fileId, dirtyFileInfo.path);
@@ -448,7 +452,7 @@ void MediaCleanAllDirtyFilesTask::HandleAllDirtyTable(int32_t curStartFileId)
     int32_t startFileId = (curStartFileId == scanBeginCode || curStartFileId < minFileId) ? minFileId : curStartFileId;
     MEDIA_INFO_LOG("HandleAllDirtyTable Start From Id: %{public}d, Min: %{public}d, Max: %{public}d", startFileId,
         minFileId, maxFileId);
-    while (startFileId <= maxFileId) {
+    while (startFileId <= GetMaxFileId()) {
         CHECK_AND_RETURN_INFO_LOG(!IsCurrentTaskTimeOut(), "HandleAllDirtyTable Timeout");
         if (!this->Accept()) {
             MEDIA_ERR_LOG("MediaCleanAllDirtyFilesTask Exit");
@@ -487,7 +491,6 @@ bool MediaCleanAllDirtyFilesTask::GetFileNameWithSameNameOtherType(const std::st
     for (std::string fileNameInside : fileNameVec) {
         if (fileNameInside != fileName && fileNameInside.size() > title.size()
             && fileNameInside.compare(0, title.size(), title) == 0) {
-            std::string constStr(fileNameInside);
             OtherFileName = fileNameInside;
             return true;
         }
@@ -569,7 +572,7 @@ bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &pat
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
         resultSet->Close();
-        return true;
+        return true; // 默认要为true 避免异常误判 处理正常图片
     }
     recordExist = GetInt32Val("recordExist", resultSet) == 0 ? false : true;  // 默认要为true 否则可能误判
     resultSet->Close();
@@ -582,8 +585,9 @@ bool MediaCleanAllDirtyFilesTask::ExistPhotoPathInDB(const std::string &path)
     bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
-    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "') AS recordExist";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = ?) AS recordExist";
+    std::vector<NativeRdb::ValueObject> params = { path };
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, recordExist, "Query ExistPhotoPathInDB Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
@@ -600,9 +604,10 @@ bool MediaCleanAllDirtyFilesTask::ExistMovingPhotoPathInDB(const std::string &pa
     // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' AND subtype = 3)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, true, "RdbStore Is Nullptr");
-    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = '" + path + "' AND subtype = " +
+    std::string sql = "SELECT EXISTS(SELECT 1 FROM photos WHERE data = ? AND subtype = " +
         std::to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + ") AS recordExist";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    std::vector<NativeRdb::ValueObject> params = { path };
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, true, "Query ExistMovingPhotoPathInDB Fails");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Go To First Row Fails");
@@ -809,18 +814,22 @@ bool MediaCleanAllDirtyFilesTask::DealThumbsEffectAssetNotExist(int32_t curBucke
         SLASH_STR + folderName;
     std::string thumbsBucketFolderName = ROOT_MEDIA_THUMBS_DIR + std::to_string(curBucketNum) +
         SLASH_STR + folderName;
+    std::string originLocalBucketFile = MediaFileUtils::GetLocalPath(originBucketFolderFile);
     std::string thumbsBucketFolderFile = thumbsBucketFolderName + SLASH_STR + THM_FILE_NAME;
     std::string thumbsBucketFolderLCDFile = thumbsBucketFolderName + SLASH_STR + LCD_FILE_NAME;
-    if (MediaFileUtils::IsFileExists(thumbsBucketFolderFile) && !MediaFileUtils::IsFileExists(originBucketFolderFile)) {
-        MediaFileUtils::CopyFileUtil(thumbsBucketFolderFile, originBucketFolderFile);
-        MEDIA_INFO_LOG("Copy thumbs to Bucket:%{public}d, Name: %{public}s", curBucketNum,
-            MediaFileUtils::DesensitizePath(folderName).c_str());
+    if (MediaFileUtils::IsFileExists(thumbsBucketFolderLCDFile) &&
+        !MediaFileUtils::IsFileExists(originBucketFolderFile) &&
+        !MediaFileUtils::IsFileExists(originLocalBucketFile)) { // LCD 优先
+        MediaFileUtils::CopyFileUtil(thumbsBucketFolderLCDFile, originLocalBucketFile);
+        MEDIA_INFO_LOG("DirtyMediaHandler DealThumbsEffectAssetNotExist lcd Cp To Org Bucket:%{public}d,"
+            "Name: %{public}s", curBucketNum, MediaFileUtils::DesensitizePath(folderName).c_str());
         return true;
-    } else if (MediaFileUtils::IsFileExists(thumbsBucketFolderLCDFile) &&
-        !MediaFileUtils::IsFileExists(originBucketFolderFile)) {
-        MediaFileUtils::CopyFileUtil(thumbsBucketFolderLCDFile, originBucketFolderFile);
-        MEDIA_INFO_LOG("Copy lcd to Bucket:%{public}d, Name: %{public}s", curBucketNum,
-            MediaFileUtils::DesensitizePath(folderName).c_str());
+    } else if (MediaFileUtils::IsFileExists(thumbsBucketFolderFile) &&
+        !MediaFileUtils::IsFileExists(originBucketFolderFile) &&
+        !MediaFileUtils::IsFileExists(originLocalBucketFile)) {
+        MediaFileUtils::CopyFileUtil(thumbsBucketFolderFile, originLocalBucketFile);
+        MEDIA_INFO_LOG("DirtyMediaHandler DealThumbsEffectAssetNotExist thumbs Cp To Org Bucket:%{public}d,"
+            "Name: %{public}s", curBucketNum, MediaFileUtils::DesensitizePath(folderName).c_str());
         return true;
     }
     return false;
@@ -939,13 +948,14 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectFileNotExistInEditFolder(int32
             return true; // failed but finish
         }
     }
-    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
-        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s",
-            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
+    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
+        MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
+        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder exist: %{public}s",
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
     // 静图
-    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.effectFolderFile);
+    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.localEffectFile);
     MEDIA_INFO_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s, Ret: %{public}d",
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc);
     if (cpSucc && !ExistPhotoPathInDB(dirtyFilePathInfo.effectFolderFile)) {
@@ -969,14 +979,15 @@ bool MediaCleanAllDirtyFilesTask::DealEffectFileNotExistInEditFolder(int32_t cur
             return true; // failed but finish
         }
     }
-    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
+    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
+        MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
         MEDIA_ERR_LOG("DirtyMediaHandler DealEffectFileNotExistInEditFolder Cp To Org: %{public}s",
-            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
     // 静图
-    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.effectFolderFile);
-    MEDIA_INFO_LOG("DirtyMediaHandler DealEffectFileNotExistInEditFolder Copy To Org: %{public}s, Ret: %{public}d",
+    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.localEffectFile);
+    MEDIA_INFO_LOG("DirtyMediaHandler DealEffectFileNotExistInEditFolder Cp To Org: %{public}s, Ret: %{public}d",
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc);
     if (cpSucc && !ExistPhotoPathInDB(dirtyFilePathInfo.effectFolderFile)) {
         AddFileToTableWithFixedName(curBucketNum, fileName);
@@ -997,23 +1008,26 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectMovingPhotoNotExistInEditFolde
             return true; // failed but finish
         }
     }
-    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
+    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
+        MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
         MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectMovingPhotoNotExistInEditFolder Cp To Org: %{public}s",
-            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
     // 动图图片
-    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.effectFolderFile);
+    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.localEffectFile);
     // 动图视频
     std::string videoPath = dirtyFilePathInfo.effectFolder + SLASH_STR +
         MediaFileUtils::GetTitleFromDisplayName(dirtyFilePathInfo.fileName) + MOVING_PHOTO_SUFFIX;
+    std::string localVideoPath = MediaFileUtils::GetLocalPath(videoPath);
     bool cpSuccV = true;
-    if (!MediaFileUtils::IsFileExists(videoPath)) { // 不存在就拷贝一份 存在直接跳过
-        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    if (!MediaFileUtils::IsFileExists(videoPath) &&
+        !MediaFileUtils::IsFileExists(localVideoPath)) { // 不存在就拷贝一份 存在直接跳过
+        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, localVideoPath);
     }
-    MEDIA_INFO_LOG("DirtyMediaHandler DealEditedEffectMovingPhotoNotExistInEditFolder Copy to Org: %{public}s, "
+    MEDIA_INFO_LOG("DirtyMediaHandler DealEditedEffectMovingPhotoNotExistInEditFolder Cp To Org: %{public}s, "
         "Ret: %{public}d, RetV: %{public}d",
-        MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc, cpSuccV);
+        MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str(), cpSucc, cpSuccV);
     if (cpSucc && cpSuccV && !ExistPhotoPathInDB(dirtyFilePathInfo.effectFolderFile)) {
         AddMovingPhotoFileToTableWithFixedName(curBucketNum, fileName);
         int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
@@ -1035,21 +1049,24 @@ bool MediaCleanAllDirtyFilesTask::DealEffectMovingPhotoNotExistInEditFolder(int3
             return true; // failed but finish
         }
     }
-    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile)) { // 再查一次 避免误操作
+    if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
+        MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
         MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s",
-            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
+            MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
     // 动图图片
-    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.effectFolderFile);
+    bool cpSucc = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginFile, dirtyFilePathInfo.localEffectFile);
     // 动图视频
     std::string videoPath = dirtyFilePathInfo.effectFolder + SLASH_STR +
         MediaFileUtils::GetTitleFromDisplayName(dirtyFilePathInfo.fileName) + MOVING_PHOTO_SUFFIX;
+    std::string localVideoPath = MediaFileUtils::GetLocalPath(videoPath);
     bool cpSuccV = true;
-    if (!MediaFileUtils::IsFileExists(videoPath)) { // 不存在就拷贝一份 存在直接跳过
-        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, videoPath);
+    if (!MediaFileUtils::IsFileExists(videoPath) &&
+        !MediaFileUtils::IsFileExists(localVideoPath)) { // 不存在就拷贝一份 存在直接跳过
+        cpSuccV = MediaFileUtils::CopyFileUtil(dirtyFilePathInfo.editOriginMovingPhotoVideo, localVideoPath);
     }
-    MEDIA_INFO_LOG("DirtyMediaHandler DealEffectMovingPhotoNotExistInEditFolder Copy To Org: %{public}s, "
+    MEDIA_INFO_LOG("DirtyMediaHandler DealEffectMovingPhotoNotExistInEditFolder Cp To Org: %{public}s, "
         "Ret: %{public}d, RetV: %{public}d",
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc, cpSuccV);
     if (cpSucc && cpSuccV && !ExistPhotoPathInDB(dirtyFilePathInfo.effectFolderFile)) {
@@ -1130,6 +1147,7 @@ DirtyFilePathInfo MediaCleanAllDirtyFilesTask::BuildDirtyFilePathInfo(int32_t cu
         DOT_STR + dirtyFilePathInfo.extension;
     dirtyFilePathInfo.editOriginMovingPhotoVideo = dirtyFilePathInfo.editBucketFolder + SLASH_STR +
         SOURCE_FILE_VIDEO_NAME;
+    dirtyFilePathInfo.localEffectFile = MediaFileUtils::GetLocalPath(dirtyFilePathInfo.effectFolderFile);
     return dirtyFilePathInfo;
 }
 
