@@ -296,17 +296,6 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateTrashedAssetOnAlbum_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateTrashedAssetOnAlbum_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateRemovedAssetToTrash_test_001, testing::ext::TestSize.Level1)
-{
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateRemovedAssetToTrash_test_001:start");
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    auto rdbStore = std::make_shared<MediaLibraryRdbStore>(context);
-    vector<string> whereIdArgs = {""};
-    int32_t ret = MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(rdbStore, whereIdArgs);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateRemovedAssetToTrash_test_001:stop");
-}
-
 HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateHighlightPlayInfo_test_001:start");

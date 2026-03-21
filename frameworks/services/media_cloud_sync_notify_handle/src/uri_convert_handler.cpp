@@ -95,6 +95,7 @@ void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
             string mediaUriStr;
             if (pos == string::npos) {
                 pos = uriString.find(org_uri_prefix);
+                CHECK_AND_CONTINUE_ERR_LOG(pos != string::npos, "uriString: %{public}s", uriString.c_str());
                 mediaUriStr = uriString.replace(pos, org_uri_prefix.length(), new_uri_prefix);
             } else {
                 mediaUriStr = uriString.replace(pos, gallery_uri_perfix.length(), new_uri_prefix);

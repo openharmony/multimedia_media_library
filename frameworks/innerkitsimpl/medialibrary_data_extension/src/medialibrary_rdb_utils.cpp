@@ -2097,21 +2097,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
     return newWhereIdArgs.size();
 }
 
-int32_t MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &whereIdArgs)
-{
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    int32_t updateRows = 0;
-    RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
-    predicatesPhotos.In(MediaColumn::MEDIA_ID, whereIdArgs);
-    ValuesBucket values;
-    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
-    rdbStore->Update(updateRows, values, predicatesPhotos);
-    CHECK_AND_RETURN_RET_LOG(updateRows > 0, E_HAS_DB_ERROR,
-        "Failed to remove assets, updateRows: %{public}d", updateRows);
-    return updateRows;
-}
-
 int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string &albumId)
 {
