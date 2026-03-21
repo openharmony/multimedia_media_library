@@ -22,6 +22,7 @@
 #include "medialibrary_bundle_manager.h"
 #include "permission_utils.h"
 #include "cloud_media_operation_code.h"
+#include "medialibrary_subscriber.h"
 
 namespace OHOS {
 namespace Media {
@@ -277,17 +278,18 @@ DfxTimer::~DfxTimer()
     } else {
         bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     }
-
+    std::string caller = (bundleName == "") ? "uid=" + std::to_string(IPCSkeleton::GetCallingUid()) : bundleName;
     if (timeCost_ > timeOut_) {
-        std::string caller = (bundleName == "") ? "uid=" + std::to_string(IPCSkeleton::GetCallingUid()) : bundleName;
         MEDIA_WARN_LOG("timeout! caller: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
             caller.c_str(), type_, object_, (int) (timeCost_));
 
         if (timeCost_ > TO_MILLION)
-            DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));
+            DfxManager::GetInstance()->HandleTimeOutOperation(caller, type_, object_, (int) (timeCost_));
     }
 
-    DfxManager::GetInstance()->HandleCommonBehavior(bundleName, type_);
+    if (!bundleName.empty() || !MedialibrarySubscriber::IsCharging()) {
+        DfxManager::GetInstance()->HandleCommonBehavior(caller, type_);
+    }
 }
 
 void DfxTimer::End()
