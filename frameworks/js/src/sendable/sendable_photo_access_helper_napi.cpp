@@ -737,42 +737,6 @@ static void AddDefaultColumnsForNonAnalysisAlbums(SendablePhotoAccessHelperAsync
     }
 }
 
-napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_value argv[],
-                                        SendablePhotoAccessHelperAsyncContext &asyncContext)
-{
-    const int32_t refCount = 1;
-    napi_value result = nullptr;
-    auto context = &asyncContext;
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
-    size_t res = 0;
-    char buffer[PATH_MAX];
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
-    for (size_t i = 0; i < argc; i++) {
-        napi_valuetype valueType = napi_undefined;
-        napi_typeof(env, argv[i], &valueType);
-        if (i == 0 && valueType == napi_number) {
-            napi_get_value_int32(env, argv[i], &context->parentSmartAlbumId);
-        } else if (i == PARAM1 && valueType == napi_string) {
-            napi_get_value_string_utf8(env, argv[i], buffer, PATH_MAX, &res);
-        } else if (i == PARAM2 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
-            break;
-        } else {
-            NAPI_ASSERT(env, false, "type mismatch");
-        }
-    }
-    if (context->parentSmartAlbumId < 0) {
-        NAPI_ASSERT(env, false, "type mismatch");
-    }
-    string smartName = string(buffer);
-    if (smartName.empty()) {
-        NAPI_ASSERT(env, false, "type mismatch");
-    }
-    context->valuesBucket.Put(SMARTALBUM_DB_NAME, smartName);
-    napi_get_boolean(env, true, &result);
-    return result;
-}
-
 static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     unique_ptr<SendablePhotoAccessHelperAsyncContext> &context, bool needExtraOption = false)
 {
