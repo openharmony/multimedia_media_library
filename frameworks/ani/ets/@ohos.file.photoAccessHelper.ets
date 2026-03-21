@@ -2495,9 +2495,9 @@ export namespace photoAccessHelper {
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
     acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
     releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
-    setAssetCompatibleAbility(tokenId: long, config: AssetCompatibleAbility): Promise<void>;
-    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void>;
-    getAssetCompatibleAbility(tokenId: long): Promise<AssetCompatibleAbility>;
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void>;
+    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void>;
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility>;
   }
 
   interface AppInfo {
@@ -3695,7 +3695,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleAbility(config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3716,11 +3716,11 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleAbility(tokenId: long, config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
-              this.setFileCompatibleConfigSysInner(tokenId, config);
+              this.setFileCompatibleConfigSysInner(bundleName, config);
             return undefined;
           } catch(e) {
             return e as MediaLibraryAniError;
@@ -3737,12 +3737,12 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAssetCompatibleAbility(tokenId: long): Promise<AssetCompatibleAbility> {
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility> {
       return new Promise<AssetCompatibleAbility>((resolve: (v: AssetCompatibleAbility) => void, reject: RejectString) => {
         let cb = (): AssetCompatibleAbility | MediaLibraryAniError => {
           let result: AssetCompatibleAbility | MediaLibraryAniError;
           try {
-            result = this.getAssetCompatibleConfigInner(tokenId);
+            result = this.getAssetCompatibleConfigInner(bundleName);
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
@@ -3824,9 +3824,9 @@ export namespace photoAccessHelper {
     native getPhotoAlbumsOrderInner(orderStyle: int, options?: FetchOptions): FetchResult<AlbumOrder>;
     native setPhotoAlbumsOrderInner(orderStyle: int, albumOrders: Array<AlbumOrder>): void;
     native isMediaDataReadyInner(mediaDataKey: string): boolean;
-    native setFileCompatibleConfigSysInner(tokenId: long, config: AssetCompatibleAbility): void;
+    native setFileCompatibleConfigSysInner(bundleName: string, config: AssetCompatibleAbility): void;
     native setFileCompatibleConfigInner(config: AssetCompatibleAbility): void;
-    native getAssetCompatibleConfigInner(tokenId: long): AssetCompatibleAbility;
+    native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleAbility;
   }
 
   export interface AssetCompatibleAbility {

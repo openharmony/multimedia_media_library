@@ -26,7 +26,7 @@ namespace OHOS::Media {
 using namespace std;
 bool SetCompatibleInfoReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadInt64(this->tokenId);
+    bool status = parcel.ReadString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadBool(this->supportedHighResolution);
     CHECK_AND_RETURN_RET(status, status);
@@ -37,7 +37,7 @@ bool SetCompatibleInfoReqBody::Unmarshalling(MessageParcel &parcel)
 
 bool SetCompatibleInfoReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteInt64(this->tokenId);
+    bool status = parcel.WriteString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteBool(this->supportedHighResolution);
     CHECK_AND_RETURN_RET(status, status);
@@ -48,21 +48,21 @@ bool SetCompatibleInfoReqBody::Marshalling(MessageParcel &parcel) const
 
 bool GetCompatibleInfoReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadInt64(this->tokenId);
+    bool status = parcel.ReadString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
 bool GetCompatibleInfoReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteInt64(this->tokenId);
+    bool status = parcel.WriteString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
 bool GetCompatibleInfoRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadInt64(this->tokenId);
+    bool status = parcel.ReadString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadBool(this->supportedHighResolution);
     CHECK_AND_RETURN_RET(status, status);
@@ -73,7 +73,7 @@ bool GetCompatibleInfoRespBody::Unmarshalling(MessageParcel &parcel)
 
 bool GetCompatibleInfoRespBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteInt64(this->tokenId);
+    bool status = parcel.WriteString(this->bundleName);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteBool(this->supportedHighResolution);
     CHECK_AND_RETURN_RET(status, status);

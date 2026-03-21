@@ -3057,7 +3057,7 @@ int32_t MediaAssetsControllerService::SetCompatibleInfo(MessageParcel &data, Mes
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     CompatibleInfo compatibleInfo;
-    compatibleInfo.tokenId = reqBody.tokenId;
+    compatibleInfo.bundleName = reqBody.bundleName;
     compatibleInfo.highResolution = reqBody.supportedHighResolution;
     compatibleInfo.encodings = reqBody.supportedMimeTypes;
     ret = MediaAssetsService::GetInstance().SetCompatibleInfo(compatibleInfo);
@@ -3078,7 +3078,7 @@ int32_t MediaAssetsControllerService::GetCompatibleInfo(MessageParcel &data, Mes
         MEDIA_ERR_LOG("GetCompatibleInfo Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ret = MediaAssetsService::GetInstance().GetCompatibleInfo(reqBody.tokenId, respBody);
+    ret = MediaAssetsService::GetInstance().GetCompatibleInfo(reqBody.bundleName, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaAssetsControllerService::GetCompatibleInfo fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);

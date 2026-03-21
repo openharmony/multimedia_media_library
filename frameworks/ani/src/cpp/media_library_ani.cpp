@@ -5986,7 +5986,7 @@ void MediaLibraryAni::PhotoAccessReleaseDebugDatabase(ani_env* env, ani_object o
     return ReleaseDebugDatabaseComplete(env, asyncContext);
 }
 
-static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_long tokenId, ani_object config,
+static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_string bundleName, ani_object config,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
@@ -5995,9 +5995,11 @@ static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_long tok
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
         return ANI_ERROR;
     }
-    int64_t srcTokenId = static_cast<int64_t>(tokenId);
-    CHECK_COND_RET(srcTokenId > 0, ANI_ERROR, "srcTokenId <= 0");
-    context->tokenId = srcTokenId;
+    string bundleNameStr;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) == ANI_OK,
+        JS_E_PARAM_INVALID, ANI_ERROR, "Failed to parse bundleName");
+    context->bundleName = bundleNameStr;
     bool supportedHighResolution = false;
     ani_object propertyValue;
     ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedHighResolution", propertyValue);
@@ -6016,7 +6018,6 @@ static ani_status ParseArgsSetFileCompatibleConfig(ani_env *env, ani_object conf
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
-    context->tokenId = IPCSkeleton::GetCallingTokenID();
     bool supportedHighResolution = false;
     ani_object propertyValue;
     ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedHighResolution", propertyValue);
@@ -6039,7 +6040,7 @@ static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsy
     MediaLibraryTracer tracer;
     tracer.Start("SetFileCompatibleConfigExec");
     SetCompatibleInfoReqBody reqBody;
-    reqBody.tokenId = context->tokenId;
+    reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
 
     int32_t ret = IPC::UserDefineIPCClient().Call(
@@ -6052,7 +6053,8 @@ static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsy
     context->retVal = E_OK;
 }
 
-void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_long tokenId, ani_object config)
+void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object,
+    ani_string bundleName, ani_object config)
 {
     MediaLibraryTracer tracer;
     tracer.Start("setFileCompatibleConfigSysInner");
@@ -6067,7 +6069,7 @@ void MediaLibraryAni::setFileCompatibleConfigSys(ani_env *env, ani_object object
         return;
     }
 
-    if (ParseArgsSetFileCompatibleSysConfig(env, tokenId, config, context) != ANI_OK) {
+    if (ParseArgsSetFileCompatibleSysConfig(env, bundleName, config, context) != ANI_OK) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return;
     }
@@ -6098,7 +6100,7 @@ void MediaLibraryAni::SetFileCompatibleConfig(ani_env *env, ani_object object, a
     SetFileCompatibleConfigExec(env, context);
 }
 
-static ani_status ParseArgsGetAssetCompatibleConfig(ani_env *env, ani_long tokenId,
+static ani_status ParseArgsGetAssetCompatibleConfig(ani_env *env, ani_string bundleName,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     if (!MediaLibraryAniUtils::IsSystemApp()) {
@@ -6106,9 +6108,11 @@ static ani_status ParseArgsGetAssetCompatibleConfig(ani_env *env, ani_long token
         return ANI_ERROR;
     }
     CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
-    int64_t srcTokenId = static_cast<int64_t>(tokenId);
-    CHECK_COND_RET(srcTokenId > 0, ANI_ERROR, "srcTokenId <= 0");
-    context->tokenId = srcTokenId;
+    string bundleNameStr;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) == ANI_OK,
+        JS_E_PARAM_INVALID, ANI_ERROR, "Failed to parse bundleName");
+    context->bundleName = bundleNameStr;
     return ANI_OK;
 }
 
@@ -6122,7 +6126,7 @@ static void GetAssetCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAs
 
     GetCompatibleInfoReqBody reqBody;
     GetCompatibleInfoRespBody respBody;
-    reqBody.tokenId = context->tokenId;
+    reqBody.bundleName = context->bundleName;
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO), reqBody, respBody);
     if (ret != 0) {
@@ -6147,7 +6151,7 @@ static ani_object GetAssetCompatibleConfigComplete(ani_env *env, unique_ptr<Medi
 }
 
 
-ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_long tokenId)
+ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_string bundleName)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetAssetCompatibleConfig");
@@ -6165,7 +6169,7 @@ ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object ob
         return result;
     }
 
-    if (ParseArgsGetAssetCompatibleConfig(env, tokenId, context) != ANI_OK) {
+    if (ParseArgsGetAssetCompatibleConfig(env, bundleName, context) != ANI_OK) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         ani_object result {};
         return result;
