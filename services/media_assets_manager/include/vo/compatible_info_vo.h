@@ -24,7 +24,7 @@
 namespace OHOS::Media {
 class SetCompatibleInfoReqBody : public IPC::IMediaParcelable {
 public:
-    std::int64_t tokenId;
+    std::string bundleName;
     bool supportedHighResolution;
     std::vector<std::string> supportedMimeTypes;
 
@@ -35,7 +35,7 @@ public:  // functions of Parcelable.
 
 class GetCompatibleInfoReqBody : IPC::IMediaParcelable {
 public:
-    std::int64_t tokenId;
+    std::string bundleName;
 public:
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
@@ -43,7 +43,7 @@ public:
 
 class GetCompatibleInfoRespBody : IPC::IMediaParcelable {
 public:
-    std::int64_t tokenId;
+    std::string bundleName;
     bool supportedHighResolution;
     std::vector<std::string> supportedMimeTypes;
 

@@ -30,7 +30,7 @@ namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 struct CompatibleInfo {
-    std::int64_t tokenId;
+    std::string bundleName;
     bool highResolution = false;
     std::vector<std::string> encodings;
 };
@@ -39,8 +39,8 @@ class TranscodeCompatibleInfoOperation {
 public:
     static int32_t InsertCompatibleInfo(CompatibleInfo& compatibleInfo);
     static int32_t UpdataCompatibleInfo(CompatibleInfo& compatibleInfo);
-    static int32_t DeleteCompatibleInfo(const std::int64_t tokenId);
-    static int32_t QueryCompatibleInfo(const std::int64_t tokenId, CompatibleInfo& compatibleInfo);
+    static int32_t DeleteCompatibleInfo(const std::string &bundleName);
+    static int32_t QueryCompatibleInfo(const std::string &bundleName, CompatibleInfo& compatibleInfo);
 private:
     static std::string VectorToString(const std::vector<std::string> &encodings);
     static std::vector<std::string> StringToVector(const std::string &str);

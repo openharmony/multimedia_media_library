@@ -75,16 +75,16 @@ int32_t TranscodeCompatibleInfoOperation::InsertCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(compatibleInfo.tokenId > 0, E_INVALID_ARGUMENTS,
-        "tokenId <= 0");
+    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
+        "bundleName is empty");
 
     string sql = "INSERT OR REPLACE INTO " + TabCompatibleInfoColumn::TABLE + " (" +
-                    TabCompatibleInfoColumn::TOKEN_ID + ", " +
+                    TabCompatibleInfoColumn::BUNDLE_NAME + ", " +
                     TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
                     TabCompatibleInfoColumn::ENCODINGS + ") VALUES (?, ?, ?)";
 
     vector<NativeRdb::ValueObject> values = {
-        NativeRdb::ValueObject(to_string(compatibleInfo.tokenId)),
+        NativeRdb::ValueObject(compatibleInfo.bundleName),
         NativeRdb::ValueObject(to_string(compatibleInfo.highResolution)),
         NativeRdb::ValueObject(VectorToString(compatibleInfo.encodings))
     };
@@ -100,15 +100,15 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(compatibleInfo.tokenId > 0, E_INVALID_ARGUMENTS,
-        "tokenId <= 0");
+    CHECK_AND_RETURN_RET_LOG(!compatibleInfo.bundleName.empty(), E_INVALID_ARGUMENTS,
+        "bundleName is empty");
     
     ValuesBucket values;
     values.PutInt(TabCompatibleInfoColumn::HIGH_RESOLUTION, compatibleInfo.highResolution ? 1 : 0);
     values.PutString(TabCompatibleInfoColumn::ENCODINGS, VectorToString(compatibleInfo.encodings));
 
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(compatibleInfo.tokenId));
+    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, compatibleInfo.bundleName);
 
     int32_t changedRows;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
@@ -124,15 +124,15 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
     return E_OK;
 }
 
-int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::int64_t tokenId)
+int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::string &bundleName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(tokenId > 0, E_INVALID_ARGUMENTS,
-        "tokenId <= 0");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
+        "bundleName is empty");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(tokenId));
+    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, bundleName);
 
     int32_t deletedRows;
     int32_t ret = rdbStore->Delete(deletedRows, predicates);
@@ -142,18 +142,18 @@ int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::int64_
 }
 
 int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
-    const std::int64_t tokenId, CompatibleInfo& compatibleInfo)
+    const std::string &bundleName, CompatibleInfo& compatibleInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-    CHECK_AND_RETURN_RET_LOG(tokenId > 0, E_INVALID_ARGUMENTS,
-        "tokenId <= 0");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS,
+        "bundleName is empty");
     
     AbsRdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
-    predicates.EqualTo(TabCompatibleInfoColumn::TOKEN_ID, to_string(tokenId));
+    predicates.EqualTo(TabCompatibleInfoColumn::BUNDLE_NAME, bundleName);
 
     vector<string> columns = {
-        TabCompatibleInfoColumn::TOKEN_ID,
+        TabCompatibleInfoColumn::BUNDLE_NAME,
         TabCompatibleInfoColumn::HIGH_RESOLUTION,
         TabCompatibleInfoColumn::ENCODINGS
     };
@@ -168,9 +168,9 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
     }
 
     int index;
-    resultSet->GetColumnIndex(TabCompatibleInfoColumn::TOKEN_ID, index);
-    resultSet->GetLong(index, compatibleInfo.tokenId);
-
+    resultSet->GetColumnIndex(TabCompatibleInfoColumn::BUNDLE_NAME, index);
+    resultSet->GetString(index, compatibleInfo.bundleName);
+    
     resultSet->GetColumnIndex(TabCompatibleInfoColumn::HIGH_RESOLUTION, index);
     int32_t highResolution;
     resultSet->GetInt(index, highResolution);

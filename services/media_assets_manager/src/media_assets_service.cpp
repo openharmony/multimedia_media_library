@@ -1907,18 +1907,20 @@ int32_t MediaAssetsService::ScanExistFileRecord(int32_t fileId, const std::strin
 int32_t MediaAssetsService::SetCompatibleInfo(CompatibleInfo &compatibleInfo)
 {
     MEDIA_INFO_LOG("MediaAssetsService::SetCompatibleInfo start");
+    compatibleInfo.bundleName = compatibleInfo.bundleName.empty() ?
+        GetClientBundleName() : compatibleInfo.bundleName;
     int32_t ret = TranscodeCompatibleInfoOperation::InsertCompatibleInfo(compatibleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to SetCompatibleInfo, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::GetCompatibleInfo(const int64_t tokenId, GetCompatibleInfoRespBody &respBody)
+int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompatibleInfoRespBody &respBody)
 {
     MEDIA_INFO_LOG("MediaAssetsService::GetCompatibleInfo start");
     CompatibleInfo compatibleInfo;
-    int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(tokenId, compatibleInfo);
+    int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to GetCompatibleInfo, errCode = %{public}d", ret);
-    respBody.tokenId = tokenId;
+    respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution = compatibleInfo.highResolution;
     respBody.supportedMimeTypes = compatibleInfo.encodings;
     return E_SUCCESS;
