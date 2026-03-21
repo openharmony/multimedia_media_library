@@ -32,6 +32,7 @@ struct DirtyFileInfo {
     int32_t pending{0};
     int32_t mediaType{0};
     int64_t addTime{0};
+    std::string localPath;
 };
 
 // 结构体带着所有目录
@@ -47,6 +48,7 @@ struct DirtyFilePathInfo {
     std::string editDataFile; // 编辑文件目录下editdata
     std::string editOriginFile; // 编辑文件目录下source.jpg
     std::string editOriginMovingPhotoVideo; // 编辑文件目录下source.mp4
+    std::string localEffectFile;
 };
 
 class MediaCleanAllDirtyFilesTask : public IMediaBackGroundTask {
