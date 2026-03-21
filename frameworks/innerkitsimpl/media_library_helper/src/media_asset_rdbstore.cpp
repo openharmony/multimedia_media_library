@@ -441,14 +441,18 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         int columnIndex = 0;
         int64_t dateTakenTime = 0;
         int fileId = 0;
-        bool cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK);
-        CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR, "Fail to get dateTaken");
-
-        cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK);
-        CHECK_AND_RETURN_RET_LOG(!cond,  NativeRdb::E_ERROR, "Fail to get fileId");
-
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fail to get dateTaken");
+            resultSet->Close();
+            return NativeRdb::E_ERROR;
+        }
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fail to get fileId");
+            resultSet->Close();
+            return NativeRdb::E_ERROR;
+        }
         std::string timeId;
         CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::GenerateKvStoreKey(to_string(fileId),
             to_string(dateTakenTime), timeId),
