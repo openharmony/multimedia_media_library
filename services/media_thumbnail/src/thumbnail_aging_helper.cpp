@@ -32,8 +32,10 @@ static void AgingLcd(AsyncTaskData *data)
 {
     CHECK_AND_RETURN(data != nullptr);
     AgingAsyncTaskData* taskData = static_cast<AgingAsyncTaskData*>(data);
+    CHECK_AND_RETURN(taskData != nullptr);
     int32_t err = ThumbnailAgingHelper::ClearLcdFromFileTable(taskData->opts);
     CHECK_AND_PRINT_LOG(err == E_OK, "Failed to ClearLcdFormFileTable %{public}d", err);
+    delete taskData;
 }
 
 int32_t ThumbnailAgingHelper::AgingLcdBatch(ThumbRdbOpt &opts)
