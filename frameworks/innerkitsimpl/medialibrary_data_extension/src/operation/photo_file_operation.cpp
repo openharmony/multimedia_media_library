@@ -17,7 +17,7 @@
 #include "photo_file_operation.h"
 
 #include <sstream>
-
+#include "directory_ex.h"
 #include "dfx_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -436,13 +436,19 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
     bool cond = (srcFolder.empty() || targetFolder.empty());
     CHECK_AND_RETURN_RET(!cond, E_OK);
 
+    std::string realSrcFolder;
+    if (!PathToRealPath(srcFolder, realSrcFolder)) {
+        MEDIA_ERR_LOG("Media_Operation: Incalid path! src: %{public}s", srcFolder.c_str());
+        return E_INVALID_PATH;
+    }
+
     if (!MediaFileUtils::IsFileExists(srcFolder)) {
         MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{public}s",
             srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
         return E_NO_SUCH_FILE;
     }
-    int32_t opRet = MediaFileUtils::CopyDirectory(srcFolder, targetFolder);
-    this->AuditLog(srcFolder, TAG_COPY_SOURCE, opRet);
+    int32_t opRet = MediaFileUtils::CopyDirectory(realSrcFolder, targetFolder);
+    this->AuditLog(realSrcFolder, TAG_COPY_SOURCE, opRet);
     this->AuditLog(targetFolder, TAG_COPY_TARGET, opRet);
     CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
         "Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
