@@ -1665,8 +1665,8 @@ bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const Thu
         return false;
     }
 
-    int status = monthKvStore->Delete(formerKey) && yearKvStore->Delete(formerKey);
-    CHECK_AND_RETURN_RET_LOG(status == E_OK, false, "Former kv delete failed, fileId %{public}s", opts.row.c_str());
+    bool status = (monthKvStore->Delete(formerKey) == E_OK) && (yearKvStore->Delete(formerKey) == E_OK);
+    CHECK_AND_RETURN_RET_LOG(status, false, "Former kv delete failed, fileId %{public}s", opts.row.c_str());
     return true;
 }
 

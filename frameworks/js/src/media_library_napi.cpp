@@ -2971,7 +2971,7 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     if (albumAssetPtr == nullptr) {
         return trashAlbumUri_;
     }
-    trashAlbumUri_ = albumSet->GetFirstObject()->GetAlbumUri();
+    trashAlbumUri_ = albumAssetPtr->GetAlbumUri();
     trashAlbumUserId_ = currentUserId;
     return trashAlbumUri_;
 }
@@ -3053,21 +3053,8 @@ void ChangeListenerNapi::GetIdsFromUris(std::list<Uri>& listValue, std::vector<s
     }
 }
 
-void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
+void ChangeListenerNapi::HandleMessageData(UvChangeMsg *msg, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper)
 {
-    std::vector<string> ids = {};
-    std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
-    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
-        GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
-        sharedAssets = GetSharedResultSetFromIds(ids, false);
-    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
-        GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
-        sharedAssets = GetSharedResultSetFromIds(ids, true);
-    } else {
-        NAPI_DEBUG_LOG("other albums notify");
-    }
-    wrapper->uriSize_ = ids.size();
-    wrapper->sharedAssets_ = sharedAssets;
     shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
     std::vector<string> extraIds = {};
     if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
@@ -3103,6 +3090,26 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
     } else {
         free(msg->data_);
     }
+}
+
+void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
+{
+    CHECK_NULL_PTR_RETURN_VOID(msg, "msg is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(wrapper, "wrapper is nullptr");
+    std::vector<string> ids = {};
+    std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
+        sharedAssets = GetSharedResultSetFromIds(ids, false);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
+        sharedAssets = GetSharedResultSetFromIds(ids, true);
+    } else {
+        NAPI_DEBUG_LOG("other albums notify");
+    }
+    wrapper->uriSize_ = ids.size();
+    wrapper->sharedAssets_ = sharedAssets;
+    HandleMessageData(msg, wrapper);   
 }
 
 void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref cbRef)
