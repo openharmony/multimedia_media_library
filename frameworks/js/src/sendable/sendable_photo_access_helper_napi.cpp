@@ -606,7 +606,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
     auto context = &asyncContext;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
-    char buffer[PATH_MAX];
+    char buffer[PATH_MAX] = {0};
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 

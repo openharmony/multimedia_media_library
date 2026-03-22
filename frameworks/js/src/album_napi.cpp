@@ -456,8 +456,8 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
-    size_t res = 0;
-    char buffer[PATH_MAX];
+    size_t copied_len = 0;
+    char buffer[PATH_MAX] = {0};
     AlbumNapi* obj = nullptr;
     napi_value thisVar = nullptr;
     napi_valuetype valueType = napi_undefined;
@@ -466,17 +466,24 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
-    if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
-        || valueType != napi_string) {
+    status = napi_typeof(env, argv[PARAM0], &valueType);
+    if (thisVar == nullptr || status != napi_ok || valueType != napi_string) {
         NAPI_ERR_LOG("Invalid arguments type! type: %{public}d", valueType);
         return jsResult;
     }
 
-    napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
+    status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &copied_len);
+    if (status != napi_ok || copied_len > PATH_MAX - 1) {
+        NAPI_ERR_LOG("Failed to get string value from JS parameter");
+        return jsResult;
+    }
+    buffer[PATH_MAX - 1] = '\0';
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
+    if (status == napi_ok && obj != nullptr && obj->albumAssetPtr != nullptr) {
         obj->albumAssetPtr->SetAlbumPath(std::string(buffer));
+    } else {
+        NAPI_ERR_LOG("Failed to unwrap AlbumNapi object or albumAssetPtr is nullptr");
     }
 
     return jsResult;
