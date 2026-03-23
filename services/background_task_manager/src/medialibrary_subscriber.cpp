@@ -536,6 +536,11 @@ bool MedialibrarySubscriber::IsCriticalTypeStatusOn()
     return checkCriticalTypeStatus_;
 }
 
+bool MedialibrarySubscriber::IsCharging()
+{
+    return subscriber_ != nullptr ? subscriber_->isCharging_ : false;
+}
+
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
     const AAFwk::Want &want = eventData.GetWant();

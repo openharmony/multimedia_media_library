@@ -337,16 +337,14 @@ void CloudSyncNotifyHandler::HandleContentSizeIsZero(const std::list<Uri> &uris)
 int32_t CloudSyncNotifyHandler::QueryFilePathFromFileId(const std::string &id, std::string &filePath)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "QueryFilePathFromFileId failed. rdbStore is null");
-    const string sqlQuery = "SELECT * From " + PhotoColumn::PHOTOS_TABLE +
-                            " WHERE " + PhotoColumn::MEDIA_ID + " = " + id;
-    auto resultSet = rdbStore->QuerySql(sqlQuery);
-    CHECK_AND_RETURN_RET_LOG(
-        resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        E_DB_FAIL, "Query not matched data fails");
-
-    filePath = get<std::string>(
-        ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, ResultSetDataType::TYPE_STRING));
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "rdbStore is null");
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, id);
+    const std::vector<std::string> columns = {PhotoColumn::MEDIA_FILE_PATH};
+    auto resultSet = rdbStore->QueryByStep(predicates, columns);
+    bool isValid = resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK;
+    CHECK_AND_RETURN_RET_LOG(isValid, E_DB_FAIL, "Query not matched data fails, id: %{public}s", id.c_str());
+    filePath = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
     return E_OK;
 }
 

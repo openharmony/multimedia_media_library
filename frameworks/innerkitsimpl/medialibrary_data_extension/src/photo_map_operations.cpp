@@ -701,12 +701,13 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
 
 int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
-    vector<string> uriWhereArgs = predicates.GetWhereArgs();
+    std::vector<std::string> uriWhereArgs = predicates.GetWhereArgs();
     int32_t deleteRow = 0;
     CHECK_AND_RETURN_RET_LOG(!uriWhereArgs.empty(), deleteRow, "Remove photo assets failed: args is empty");
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
-    vector<string> idWhereArgs = predicates.GetWhereArgs();
-    string strAlbumId = idWhereArgs[0];
+    std::vector<std::string> idWhereArgs = predicates.GetWhereArgs();
+    CHECK_AND_RETURN_RET_LOG(!idWhereArgs.empty(), E_OK, "Remove photo assets failed: id args is empty");
+    std::string strAlbumId = idWhereArgs[0];
     int32_t albumId = atoi(strAlbumId.c_str());
     CHECK_AND_WARN_LOG(albumId > 0, "Invalid album Id: %{public}s", strAlbumId.c_str());
     idWhereArgs.erase(idWhereArgs.begin());
