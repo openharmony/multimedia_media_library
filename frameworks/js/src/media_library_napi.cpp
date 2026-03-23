@@ -3126,7 +3126,6 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
                 NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
                 free(msg->data_);
                 delete msg;
-                delete work;
                 return;
             }
         }
