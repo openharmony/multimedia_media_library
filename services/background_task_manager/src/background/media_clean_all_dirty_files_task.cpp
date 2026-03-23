@@ -106,8 +106,7 @@ static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::strin
 
 bool MediaCleanAllDirtyFilesTask::Accept()
 {
-    return MedialibrarySubscriber::IsCurrentStatusOn() &&
-        MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableInOnlyWifiCondition();
+    return MedialibrarySubscriber::IsCurrentStatusOn();
 }
 
 void MediaCleanAllDirtyFilesTask::Execute()
