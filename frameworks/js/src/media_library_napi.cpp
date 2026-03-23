@@ -11159,15 +11159,8 @@ static bool PrepareStartActiveAnalysisCallback(MediaLibraryAsyncContext *context
     return false;
 }
 
-static void JSStartActiveAnalysisExecute(napi_env env, void *data)
+static StartActiveAnalysisReqBody BuildStartActiveAnalysisReqBody(MediaLibraryAsyncContext *context)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSStartActiveAnalysisExecute");
-
-    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    CHECK_NULL_PTR_RETURN_VOID(context->activeAnalysisCallbackHolder.get(), "Active analysis callback holder is null");
-
     StartActiveAnalysisReqBody reqBody;
     reqBody.analysisTypes = context->activeAnalysisTypes;
     reqBody.fileIds = context->activeAnalysisFileIds;
@@ -11175,6 +11168,58 @@ static void JSStartActiveAnalysisExecute(napi_env env, void *data)
     NAPI_INFO_LOG("Start active analysis execute, typeSize: %{public}zu, fileIdSize: %{public}zu, paramSize:"
         " %{public}zu, holder: %{public}p", reqBody.analysisTypes.size(), reqBody.fileIds.size(),
         reqBody.param.size(), context->activeAnalysisCallbackHolder.get());
+    return reqBody;
+}
+
+static bool HandleStartActiveAnalysisResponse(MediaLibraryAsyncContext *context, uint64_t callbackRegistryId,
+    int32_t ret, const StartActiveAnalysisRespBody &respBody)
+{
+    if (ret != E_OK) {
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        if (ret == E_INVALID_ARGUMENTS) {
+            context->error = JS_E_PARAM_INVALID;
+            return false;
+        }
+        context->retVal = ret;
+        if (ret < 0) {
+            context->SaveError(ret);
+        }
+        return false;
+    }
+
+    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
+    if (context->retVal != E_OK) {
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        return false;
+    }
+    if (respBody.saRemote == nullptr) {
+        NAPI_ERR_LOG("Active analysis saRemote is nullptr");
+        context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        return false;
+    }
+    NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemote: %{public}p",
+        respBody.saRemote.GetRefPtr());
+    if (context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
+        return true;
+    }
+    NAPI_ERR_LOG("Failed to bind active analysis saRemote death recipient");
+    context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+    ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+    return false;
+}
+
+static void JSStartActiveAnalysisExecute(napi_env env, void *data)
+{
+    (void)env;
+    MediaLibraryTracer tracer;
+    tracer.Start("JSStartActiveAnalysisExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->activeAnalysisCallbackHolder.get(), "Active analysis callback holder is null");
+
+    StartActiveAnalysisReqBody reqBody = BuildStartActiveAnalysisReqBody(context);
     uint64_t callbackRegistryId = 0;
     if (!PrepareStartActiveAnalysisCallback(context, reqBody, callbackRegistryId)) {
         return;
@@ -11185,38 +11230,7 @@ static void JSStartActiveAnalysisExecute(napi_env env, void *data)
         static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS), reqBody, respBody);
     NAPI_INFO_LOG("Active analysis IPC returned, ret: %{public}d, resp.result: %{public}d, saRemote: %{public}p",
         ret, respBody.result, respBody.saRemote.GetRefPtr());
-    if (ret != E_OK) {
-        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
-        if (ret == E_INVALID_ARGUMENTS) {
-            context->error = JS_E_PARAM_INVALID;
-            return;
-        }
-        context->retVal = ret;
-        if (ret < 0) {
-            context->SaveError(ret);
-        }
-        return;
-    }
-
-    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
-    if (context->retVal != E_OK) {
-        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
-        return;
-    }
-    if (respBody.saRemote == nullptr) {
-        NAPI_ERR_LOG("Active analysis saRemote is nullptr");
-        context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
-        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
-        return;
-    }
-    NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemote: %{public}p",
-        respBody.saRemote.GetRefPtr());
-    if (!context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
-        NAPI_ERR_LOG("Failed to bind active analysis saRemote death recipient");
-        context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
-        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
-        return;
-    }
+    (void)HandleStartActiveAnalysisResponse(context, callbackRegistryId, ret, respBody);
 }
 
 static void JSStopActiveAnalysisExecute(napi_env env, void *data)
