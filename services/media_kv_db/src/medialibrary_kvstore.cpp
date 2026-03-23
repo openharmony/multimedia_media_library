@@ -123,8 +123,8 @@ int32_t MediaLibraryKvStore::GetCount(const std::string& key, int32_t& count)
         count = 0;
     } else {
         count = output->GetCount();
+        status = kvStorePtr_->CloseResultSet(output);
     }
-    status = kvStorePtr_->CloseResultSet(output);
     return static_cast<int32_t>(status);
 }
 
@@ -178,6 +178,7 @@ int32_t FillBatchValues(std::vector<std::string> &batchKeys, std::vector<std::ve
         // This may happen if all images in this group is not generated.
         MEDIA_ERR_LOG("ResultSet is empty.");
         GenEmptyValues(batchKeys, values);
+        kvStorePtr->CloseResultSet(resultSet);
         return static_cast<int32_t>(status);
     }
     auto begin = batchKeys.crbegin();
@@ -192,6 +193,7 @@ int32_t FillBatchValues(std::vector<std::string> &batchKeys, std::vector<std::ve
         Entry entry;
         status = resultSet->GetEntry(entry);
         if (status != Status::SUCCESS) {
+            kvStorePtr->CloseResultSet(resultSet);
             MEDIA_ERR_LOG("GetEntry error occur, status: %{public}d", status);
             return static_cast<int32_t>(status);
         }
@@ -215,8 +217,7 @@ int32_t FillBatchValues(std::vector<std::string> &batchKeys, std::vector<std::ve
             ++begin;
         }
     }
-    status = kvStorePtr->CloseResultSet(resultSet);
-    return static_cast<int32_t>(status);
+    return static_cast<int32_t>(kvStorePtr->CloseResultSet(resultSet));
 }
 
 int32_t MediaLibraryKvStore::BatchQuery(
@@ -391,6 +392,7 @@ int32_t MediaLibraryKvStore::PutAllValueToNewKvStore(std::shared_ptr<MediaLibrar
         Entry entry;
         status = resultSet->GetEntry(entry);
         if (status != Status::SUCCESS) {
+            status = kvStorePtr_->CloseResultSet(resultSet);
             MEDIA_ERR_LOG("GetEntry error occur, status: %{public}d", status);
             return static_cast<int32_t>(status);
         }

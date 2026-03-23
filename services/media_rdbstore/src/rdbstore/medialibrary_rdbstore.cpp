@@ -2322,7 +2322,10 @@ void UpdateAPI10Table(RdbStore &store)
     }
 
     // set scan error
-    MediaScannerManager::GetInstance()->ErrorRecord();
+    auto scannerManager = MediaScannerManager::GetInstance();
+    if (scannerManager != nullptr) {
+        scannerManager->ErrorRecord();
+    }
 }
 
 static void AddLocationTables(RdbStore &store)

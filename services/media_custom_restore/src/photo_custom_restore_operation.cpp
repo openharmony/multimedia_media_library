@@ -864,8 +864,10 @@ int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTa
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
     const string querySql = "SELECT " + MediaColumn::MEDIA_ID + "," + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " FROM " +
-                            PhotoColumn::PHOTOS_TABLE + " WHERE data ='" + fileInfo.filePath + "';";
-    auto resultSet = rdbStore->QuerySql(querySql);
+                            PhotoColumn::PHOTOS_TABLE + " WHERE data = ?;";
+    std::vector<std::string> sqlArgs;
+    sqlArgs.push_back(fileInfo.filePath);
+    auto resultSet = rdbStore->QuerySql(querySql, sqlArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "execute select unique number failed.");
 
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
