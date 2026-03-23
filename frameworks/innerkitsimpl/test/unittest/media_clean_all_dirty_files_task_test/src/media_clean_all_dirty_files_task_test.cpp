@@ -536,10 +536,12 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_HandleSingleRecord_01, TestSize
     auto task = std::make_shared<MediaCleanAllDirtyFilesTask>();
     DirtyFileInfo dirtyFileInfo;
     dirtyFileInfo.fileId = 1;
-    dirtyFileInfo.path = "/storage/cloud/files/photo/1/test.jpg";
+    dirtyFileInfo.path = "/storage/cloud/files/photo/16/test.jpg";
     dirtyFileInfo.pending = 0;
     dirtyFileInfo.addTime = MediaFileUtils::UTCTimeMilliSeconds();
     dirtyFileInfo.mediaType = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+    std::string originLocalFolder = "/storage/media/local/files/Photo/16";
+    MediaFileUtils::CreateDirectory(originLocalFolder);
     MediaFileUtils::CreateFile(dirtyFileInfo.path);
     std::string content = "test content";
     MediaFileUtils::WriteStrToFile(dirtyFileInfo.path, content);
@@ -701,6 +703,8 @@ HWTEST_F(MediaCleanAllDirtyFilesTaskTest, Mcadft_DealThumbsEffectAssetNotExist_0
     MediaFileUtils::WriteStrToFile(thumbFile, content);
     std::string originFolder = "/storage/cloud/files/Photo/" + std::to_string(curBucketNum);
     MediaFileUtils::CreateDirectory(originFolder);
+    std::string originLocalFolder = "/storage/media/local/files/Photo/" + std::to_string(curBucketNum);
+    MediaFileUtils::CreateDirectory(originLocalFolder);
     bool result = task->DealThumbsEffectAssetNotExist(curBucketNum, folderName);
     EXPECT_EQ(result, true);
     std::string originFile = originFolder + "/" + folderName;
