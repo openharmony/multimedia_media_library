@@ -273,7 +273,7 @@ int32_t NotificationMerging::ProcessNotifyDownloadProgressInfo(Notification::Dow
     parcel->WriteInt32(percent);
     parcel->WriteInt32(autoPauseReason);
     uintptr_t buf = parcel->GetData();
-    CHECK_AND_RETURN_RET_LOG(parcel->GetDataSize() < MAX_PARCEL_SIZE, E_ERR,
+    CHECK_AND_RETURN_RET_LOG(parcel->GetDataSize() < MAX_PARCEL_SIZE && parcel->GetDataSize() > 0, E_ERR,
         "The size of the parcel exceeds the limit.");
     auto *uBuf = new (std::nothrow) uint8_t[parcel->GetDataSize()];
     CHECK_AND_RETURN_RET_LOG(uBuf != nullptr, E_ERR, "parcel GetDataSize is null");
