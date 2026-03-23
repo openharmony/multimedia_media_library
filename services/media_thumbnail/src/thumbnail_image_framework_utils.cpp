@@ -160,7 +160,9 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyYuvPixelmapWithSurfa
     CHECK_AND_RETURN_RET_LOG(copyPixelMap != nullptr, nullptr, "Create pixelMap failed");
 
     void* nativeBuffer = dstSurfaceBuffer.GetRefPtr();
+    CHECK_AND_RETURN_RET_LOG(nativeBuffer != nullptr, nullptr, "nativeBuffer is nullptr");
     RefBase *ref = reinterpret_cast<RefBase *>(nativeBuffer);
+    CHECK_AND_RETURN_RET_LOG(ref != nullptr, nullptr, "ref is nullptr");
     ref->IncStrongRef(ref);
     copyPixelMap->SetHdrType(pixelMap->GetHdrType());
     copyPixelMap->InnerSetColorSpace(pixelMap->InnerGetGrColorSpace());

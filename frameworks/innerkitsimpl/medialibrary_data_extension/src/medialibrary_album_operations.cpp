@@ -2045,6 +2045,7 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     std::set<string> hiddenSet = GetHiddenUri(whereArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    CHECK_AND_RETURN_RET_LOG(whereArgs.size() >= THAN_AGR_SIZE, E_ERR, "invalid whereArgs");
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);

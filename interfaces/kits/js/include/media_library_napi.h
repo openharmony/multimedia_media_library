@@ -173,6 +173,7 @@ private:
 
     static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
         napi_value& result);
+    void HandleMessageData(UvChangeMsg *msg, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {

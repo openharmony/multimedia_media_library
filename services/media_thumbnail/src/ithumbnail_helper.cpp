@@ -847,6 +847,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
     ThumbnailUtils::GenTargetPixelmap(data, size);
     auto pixelMap = data.source.GetPixelMap();
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "pixelMap is nullptr");
 #ifdef IMAGE_COLORSPACE_FLAG
     if (pixelMap->ApplyColorSpace(ColorManager::ColorSpaceName::DISPLAY_P3) != E_OK) {
         MEDIA_ERR_LOG("ApplyColorSpace to p3 failed");

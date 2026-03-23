@@ -712,11 +712,13 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
             static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
+            asyncContext.release();
         } else {
             napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
+        asyncContext.release();
         NAPI_ERR_LOG("JSGetNextObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetNextObject obj == nullptr");
     }
@@ -898,6 +900,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
+    CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "Async objectPtr is null");
 
     switch (context->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE:
