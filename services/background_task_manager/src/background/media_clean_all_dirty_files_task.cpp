@@ -27,7 +27,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
-#include "medialibrary_related_system_state_manager.h"
 #include <nlohmann/json.hpp>
 #include "preferences.h"
 #include "preferences_helper.h"
@@ -106,8 +105,7 @@ static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::strin
 
 bool MediaCleanAllDirtyFilesTask::Accept()
 {
-    return MedialibrarySubscriber::IsCurrentStatusOn() &&
-        MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableInOnlyWifiCondition();
+    return MedialibrarySubscriber::IsCurrentStatusOn();
 }
 
 void MediaCleanAllDirtyFilesTask::Execute()
