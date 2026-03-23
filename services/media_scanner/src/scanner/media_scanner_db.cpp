@@ -18,6 +18,7 @@
 
 #include "media_error_column.h"
 #include "media_file_utils.h"
+#include "media_string_utils.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -907,9 +908,14 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 
     string tableName;
     string uri = InsertMetadata(metadata, tableName);
-    id = stoi(MediaFileUtils::GetIdFromUri(uri));
-
-    return id;
+    if (MediaStringUtils::ConvertToInt(MediaFileUtils::GetIdFromUri(uri), id)) {
+        if (id <= 0) {
+            MEDIA_ERR_LOG("invalid uri %{private}s", MediaFileUtils::DesensitizeUri(uri).c_str());
+            return E_ERR;
+        }
+        return id;
+    }
+    return E_ERR;
 }
 
 int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
@@ -918,9 +924,14 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
 
     string tableName;
     string uri = UpdateMetadata(metadata, tableName);
-    id = stoi(MediaFileUtils::GetIdFromUri(uri));
-
-    return id;
+    if (MediaStringUtils::ConvertToInt(MediaFileUtils::GetIdFromUri(uri), id)) {
+        if (id <= 0) {
+            MEDIA_ERR_LOG("invalid uri %{private}s", MediaFileUtils::DesensitizeUri(uri).c_str());
+            return E_ERR;
+        }
+        return id;
+    }
+    return E_ERR;
 }
 
 void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)

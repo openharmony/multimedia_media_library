@@ -7281,6 +7281,10 @@ static void CreateThumbnailHandler(napi_env env,
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_create_threadsafe_function fail");
         ReleaseThumbnailTask(requestId);
+        if (threadSafeFunc != nullptr) {
+            napi_release_threadsafe_function(threadSafeFunc, napi_tsfn_release);
+            threadSafeFunc = nullptr;
+        }
         asyncContext->SaveError(JS_INNER_FAIL);
         return;
     }
