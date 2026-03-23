@@ -75,6 +75,7 @@ public:
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static bool IsCriticalTypeStatusOn();
+    EXPORT static bool IsCharging();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
     static const std::vector<std::string> events_;
