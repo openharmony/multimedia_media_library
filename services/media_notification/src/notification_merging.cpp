@@ -40,6 +40,8 @@ namespace OHOS {
 namespace Media {
 namespace Notification {
 
+static const uint32_t MAX_PARCEL_SIZE = 200 * 1024;
+
 NotificationMerging::NotificationMerging() {}
 
 NotificationMerging::~NotificationMerging() {}
@@ -273,10 +275,19 @@ int32_t NotificationMerging::ProcessNotifyDownloadProgressInfo(Notification::Dow
     parcel->WriteInt32(percent);
     parcel->WriteInt32(autoPauseReason);
     uintptr_t buf = parcel->GetData();
+    CHECK_AND_RETURN_RET_LOG(parcel->GetDataSize() < MAX_PARCEL_SIZE && parcel->GetDataSize() > 0, E_ERR,
+        "The size of the parcel exceeds the limit.");
     auto *uBuf = new (std::nothrow) uint8_t[parcel->GetDataSize()];
     CHECK_AND_RETURN_RET_LOG(uBuf != nullptr, E_ERR, "parcel GetDataSize is null");
     int32_t ret = memcpy_s(uBuf, parcel->GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel->GetDataSize());
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "memcpy failed");
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Memcpy failed, err = %{public}d", ret);
+        if (uBuf != nullptr) {
+            delete[] uBuf;
+            uBuf = nullptr;
+        }
+        return ret;
+    }
     std::shared_ptr<AAFwk::ChangeInfo> serverChangeInfo = std::make_shared<AAFwk::ChangeInfo>();
     serverChangeInfo->data_ = uBuf;
     serverChangeInfo->size_ = parcel->GetDataSize();
