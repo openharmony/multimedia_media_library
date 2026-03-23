@@ -27,7 +27,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
-#include "medialibrary_related_system_state_manager.h"
 #include <nlohmann/json.hpp>
 #include "preferences.h"
 #include "preferences_helper.h"
