@@ -306,7 +306,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
         return jsResult;
     }
 
-    status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &copied_len);
+    status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX - 1, &copied_len);
     if (status != napi_ok || copied_len > PATH_MAX - 1) {
         NAPI_ERR_LOG("Failed to get string value from JS parameter");
         return jsResult;
