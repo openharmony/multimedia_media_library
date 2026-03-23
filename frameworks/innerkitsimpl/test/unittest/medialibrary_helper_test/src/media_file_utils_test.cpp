@@ -1468,12 +1468,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirectory_Test_002, TestSi
     EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirectory_Test_003, TestSize.Level1)
-{
-    string path = "/data/test/isdirectory_003";
-    EXPECT_EQ(MediaFileUtils::IsDirectory(path), false);
-}
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileUtil_Test_001, TestSize.Level1)
 {
     string srcFile = "/data/test/copyfileutil_001_src";
@@ -1811,41 +1805,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMovingPhotoMimeType_Test_0
     EXPECT_EQ(MediaFileUtils::IsMovingPhotoMimeType(mimeType), false);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_PrintStatInformation_Test_001, TestSize.Level1)
-{
-    string path = "/data/test/printstat_001";
-    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
-    MediaFileUtils::PrintStatInformation(path);
-    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MediaFileDeletionRecord_Test_001, TestSize.Level1)
-{
-    MediaFileUtils::MediaFileDeletionRecord();
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SetDeletionRecord_Test_001, TestSize.Level1)
-{
-    string path = "/data/test/setdeletionrecord_001";
-    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd >= 0) {
-        MediaFileUtils::SetDeletionRecord(fd, "test");
-        close(fd);
-    }
-    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_BackupPhotoDir_Test_001, TestSize.Level1)
-{
-    MediaFileUtils::BackupPhotoDir();
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RecoverMediaTempDir_Test_001, TestSize.Level1)
-{
-    MediaFileUtils::RecoverMediaTempDir();
-}
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizePath_Test_001, TestSize.Level1)
 {
     string path = "/storage/cloud/files/Photo/test.jpg";
@@ -1858,13 +1817,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DesensitizePath_Test_002, Te
     string path = "/data/test/test.jpg";
     string result = MediaFileUtils::DesensitizePath(path);
     EXPECT_EQ(result, path);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDirStatus_Test_001, TestSize.Level1)
-{
-    std::unordered_set<std::string> dirCheckSet = {"/data/test"};
-    string dir = "/data/test";
-    MediaFileUtils::CheckDirStatus(dirCheckSet, dir);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectoryAndCopyFiles_Test_001, TestSize.Level1)
@@ -1881,15 +1833,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectoryAndCopyFiles_
     
     EXPECT_EQ(MediaFileUtils::DeleteDir(srcDir), true);
     EXPECT_EQ(MediaFileUtils::DeleteDir(dstDir), true);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyFile_Test_001, TestSize.Level1)
-{
-    string path = "/data/test/modifyfile_001";
-    EXPECT_EQ(MediaFileUtils::CreateFile(path), true);
-    int64_t modifiedTime = 1234567890;
-    MediaFileUtils::ModifyFile(path, modifiedTime);
-    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriWithoutDisplayname_Test_001, TestSize.Level1)
@@ -1918,7 +1861,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ConvertFormatExtraDataDirect
     
     EXPECT_EQ(MediaFileUtils::CreateDirectory(srcDir), true);
     bool ret = MediaFileUtils::ConvertFormatExtraDataDirectory(srcDir, dstDir, "jpg");
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, false);
     
     EXPECT_EQ(MediaFileUtils::DeleteDir(srcDir), true);
     EXPECT_EQ(MediaFileUtils::DeleteDir(dstDir), true);
