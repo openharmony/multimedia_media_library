@@ -2966,9 +2966,8 @@ int RefreshPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int ret = GetSystemRefreshAlbums(rdbStore, systeAlbums);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get system album id from refresh album");
     ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get analysis album id from refresh album");
     DeleteAllAlbumId(rdbStore);
-
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get analysis album id from refresh album");
     bool cond = (systeAlbums.empty() && analysisAlbums.empty());
     CHECK_AND_RETURN_RET_INFO_LOG(!cond, E_EMPTY_ALBUM_ID, "all album are empty");
 
