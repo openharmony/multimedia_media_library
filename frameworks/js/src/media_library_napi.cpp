@@ -18,11 +18,13 @@
 
 #include "media_library_napi.h"
 
+#include <new>
 #include <sys/sendfile.h>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
+#include "active_analysis_napi_callback.h"
 #include "album_order_napi.h"
 #include "confirm_callback.h"
 #include "default_album_name_callback.h"
@@ -95,10 +97,13 @@
 #include "media_old_albums_column.h"
 #include "get_cloned_album_uris_vo.h"
 #include "acquire_debug_database_vo.h"
+#include "compatible_info_vo.h"
 #include "release_debug_database_vo.h"
 #include "query_media_data_status_vo.h"
+#include "check_single_photo_permission_vo.h"
+#include "start_active_analysis_vo.h"
+#include "stop_active_analysis_vo.h"
 #include "userfilemgr_uri.h"
-#include "compatible_info_vo.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -111,9 +116,9 @@
 #include "get_albumid_by_lpath_vo.h"
 #include "report_event.h"
 #include "media_audio_column.h"
+#include "media_library_error_code.h"
 #include "media_upgrade.h"
 #include "media_string_utils.h"
-#include "check_single_photo_permission_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -125,6 +130,7 @@ namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 const string URI_SEPARATOR = "file:media";
+const string URI_SEPARATOR_PERMISSION = "file:media:permission";
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -227,10 +233,14 @@ const std::string CONFIRM_BOX_IMAGE_FULLY_DISPLAYED = "isImageFullyDisplayed";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 const std::string REQUEST_PHOTO_URIS_READPERMISSIONEX = "requestPhotoUrisReadPermissionEx";
+const std::string ACTIVE_ANALYSIS_CONFIG_TYPE = "type";
+const std::string ACTIVE_ANALYSIS_CONFIG_URIS = "uris";
+const std::string ACTIVE_ANALYSIS_CONFIG_PARAM = "param";
 
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
 const std::string LANGUAGE_ZH_TR = "zh-Hant";
+
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -467,6 +477,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithAlbum", CreateAssetsForAppWithAlbum),
             DECLARE_NAPI_FUNCTION("batchGetPhotoAssetParams", PhotoAccessHelperGetAssetMemberBatch),
             DECLARE_NAPI_FUNCTION("startAssetAnalysis", PhotoAccessStartAssetAnalysis),
+            DECLARE_NAPI_FUNCTION("startAssetAnalysisAsync", PhotoAccessStartActiveAnalysis),
+            DECLARE_NAPI_FUNCTION("stopAssetAnalysis", PhotoAccessStopActiveAnalysis),
             DECLARE_NAPI_FUNCTION("query", PhotoAccessQuery),
             DECLARE_NAPI_FUNCTION("on", PhotoAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("off", PhotoAccessUnregisterCallback),
@@ -8033,6 +8045,93 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
     return result;
 }
 
+static napi_value ParseActiveAnalysisConfig(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, arg, &valueType), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "config invalid");
+
+    napi_value typeValue =
+        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_TYPE.c_str());
+    CHECK_COND_WITH_MESSAGE(env, typeValue != nullptr, "type invalid");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32Array(env, typeValue, context.activeAnalysisTypes),
+        JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_MESSAGE(env, !context.activeAnalysisTypes.empty(), "type invalid");
+
+    napi_value urisValue =
+        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_URIS.c_str());
+    CHECK_COND_WITH_MESSAGE(env, urisValue != nullptr, "uris invalid");
+    std::vector<std::string> uris;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, urisValue, uris), JS_ERR_PARAMETER_INVALID);
+    context.uris = uris;
+    context.activeAnalysisFileIds.clear();
+    context.activeAnalysisFileIds.reserve(uris.size());
+    for (const auto &uri : uris) {
+        std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(uri);
+        CHECK_COND_WITH_ERR_MESSAGE(env, !fileId.empty(), JS_E_PARAM_INVALID,
+            "Failed to check uri format, not a photo uri!");
+        context.activeAnalysisFileIds.push_back(fileId);
+    }
+
+    if (MediaLibraryNapiUtils::IsExistsByPropertyName(env, arg, ACTIVE_ANALYSIS_CONFIG_PARAM.c_str())) {
+        napi_value paramValue =
+            MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_PARAM.c_str());
+        CHECK_COND_WITH_MESSAGE(env, paramValue != nullptr, "param invalid");
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, paramValue, context.activeAnalysisParam),
+            JS_ERR_PARAMETER_INVALID);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsStartActiveAnalysis(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_TWO;
+    napi_value thisVar = nullptr;
+    context->argc = maxArgs;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_cb_info(env, info, &context->argc, &(context->argv[ARGS_ZERO]), &thisVar,
+        nullptr) == napi_ok, "Failed to get cb info");
+    CHECK_COND_WITH_MESSAGE(env, context->argc >= minArgs && context->argc <= maxArgs, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&context->objectInfo)) == napi_ok,
+        "Failed to unwrap thisVar");
+    CHECK_COND_WITH_MESSAGE(env, context->objectInfo != nullptr, "Failed to get object info");
+    CHECK_NULLPTR_RET(ParseActiveAnalysisConfig(env, context->argv[ARGS_ZERO], *context));
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(env, context->argv[ARGS_ONE]),
+        "callback invalid");
+    CHECK_COND_WITH_MESSAGE(env,
+        ActiveAnalysisJsCallbackHolder::Create(env, context->argv[ARGS_ONE], context->activeAnalysisCallbackHolder)
+            == napi_ok,
+        "Failed to create active analysis callback");
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsStopActiveAnalysis(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    napi_value thisVar = nullptr;
+    context->argc = maxArgs;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_cb_info(env, info, &context->argc, &(context->argv[ARGS_ZERO]), &thisVar,
+        nullptr) == napi_ok, "Failed to get cb info");
+    CHECK_COND_WITH_MESSAGE(env, context->argc >= minArgs && context->argc <= maxArgs, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&context->objectInfo)) == napi_ok,
+        "Failed to unwrap thisVar");
+    CHECK_COND_WITH_MESSAGE(env, context->objectInfo != nullptr, "Failed to get object info");
+    CHECK_NULLPTR_RET(ParseActiveAnalysisConfig(env, context->argv[ARGS_ZERO], *context));
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -8899,6 +8998,9 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
         { "ANALYSIS_HIGHLIGHT", AnalysisType::ANALYSIS_HIGHLIGHT },
         { "ANALYSIS_SEARCH_INDEX", AnalysisType::ANALYSIS_SEARCH_INDEX },
+        { "ANALYSIS_SELECTED", AnalysisType::ANALYSIS_SELECTED },
+        { "ANALYSIS_DUPLICATE_SIMILARITY", AnalysisType::ANALYSIS_DUPLICATE_SIMILARITY },
+        { "ANALYSIS_VIDEO_AESTHETICS", AnalysisType::ANALYSIS_VIDEO_AESTHETICS },
         { "ANALYSIS_PET_FACE", AnalysisType::ANALYSIS_PET_FACE },
         { "ANALYSIS_PET_TAG", AnalysisType::ANALYSIS_PET_TAG },
     };
@@ -10971,6 +11073,220 @@ napi_value MediaLibraryNapi::PhotoAccessStartAssetAnalysis(napi_env env, napi_ca
         JSStartAssetAnalysisExecute, JSStartAssetAnalysisCallback);
 }
 
+static void JSActiveAnalysisCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSActiveAnalysisCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (status == napi_ok && context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->retVal, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    NAPI_INFO_LOG("JSActiveAnalysisCompleteCallback finish, status: %{public}d, error: %{public}d, retVal: %{public}d",
+        static_cast<int32_t>(status), context->error, context->retVal);
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSStopActiveAnalysisCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSStopActiveAnalysisCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Stop active analysis async work failed, status: %{public}d", static_cast<int32_t>(status));
+    } else if (context->error != ERR_DEFAULT) {
+        NAPI_ERR_LOG("Stop active analysis failed, error: %{public}d", context->error);
+    } else if (context->retVal != E_OK) {
+        NAPI_ERR_LOG("Stop active analysis returned error code: %{public}d", context->retVal);
+    }
+
+    if (context->work != nullptr) {
+        napi_delete_async_work(env, context->work);
+    }
+    delete context;
+}
+
+static void ReleaseStartActiveAnalysisCallback(MediaLibraryAsyncContext *context, uint64_t callbackRegistryId)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    ActiveAnalysisJsCallbackRegistry::Unregister(callbackRegistryId);
+    CHECK_NULL_PTR_RETURN_VOID(context->activeAnalysisCallbackHolder.get(), "Active analysis callback holder is null");
+    context->activeAnalysisCallbackHolder->Release();
+}
+
+static bool PrepareStartActiveAnalysisCallback(MediaLibraryAsyncContext *context, StartActiveAnalysisReqBody &reqBody,
+    uint64_t &callbackRegistryId)
+{
+    sptr<ActiveAnalysisJsCallbackStub> callbackStub =
+        sptr<ActiveAnalysisJsCallbackStub>(new (std::nothrow) ActiveAnalysisJsCallbackStub(
+            context->activeAnalysisCallbackHolder));
+    if (callbackStub == nullptr) {
+        NAPI_ERR_LOG("Failed to create active analysis callback stub");
+        context->activeAnalysisCallbackHolder->Release();
+        context->SaveError(JS_E_INNER_FAIL);
+        return false;
+    }
+    reqBody.callbackRemote = callbackStub->AsObject();
+    NAPI_INFO_LOG("Prepared active analysis callback remote, callbackStub: %{public}p, callbackRemote: %{public}p",
+        callbackStub.GetRefPtr(), reqBody.callbackRemote.GetRefPtr());
+    callbackRegistryId = ActiveAnalysisJsCallbackRegistry::Register(
+        context->activeAnalysisCallbackHolder, callbackStub, reqBody.callbackRemote);
+    if (callbackRegistryId != 0) {
+        return true;
+    }
+    NAPI_ERR_LOG("Failed to register active analysis callback lifecycle record");
+    context->activeAnalysisCallbackHolder->Release();
+    context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+    return false;
+}
+
+static void JSStartActiveAnalysisExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSStartActiveAnalysisExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->activeAnalysisCallbackHolder.get(), "Active analysis callback holder is null");
+
+    StartActiveAnalysisReqBody reqBody;
+    reqBody.analysisTypes = context->activeAnalysisTypes;
+    reqBody.fileIds = context->activeAnalysisFileIds;
+    reqBody.param = context->activeAnalysisParam;
+    NAPI_INFO_LOG("Start active analysis execute, typeSize: %{public}zu, fileIdSize: %{public}zu, paramSize:"
+        " %{public}zu, holder: %{public}p", reqBody.analysisTypes.size(), reqBody.fileIds.size(),
+        reqBody.param.size(), context->activeAnalysisCallbackHolder.get());
+    uint64_t callbackRegistryId = 0;
+    if (!PrepareStartActiveAnalysisCallback(context, reqBody, callbackRegistryId)) {
+        return;
+    }
+
+    StartActiveAnalysisRespBody respBody;
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS), reqBody, respBody);
+    NAPI_INFO_LOG("Active analysis IPC returned, ret: %{public}d, resp.result: %{public}d, saRemote: %{public}p",
+        ret, respBody.result, respBody.saRemote.GetRefPtr());
+    if (ret != E_OK) {
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        if (ret == E_INVALID_ARGUMENTS) {
+            context->error = JS_E_PARAM_INVALID;
+            return;
+        }
+        context->retVal = ret;
+        if (ret < 0) {
+            context->SaveError(ret);
+        }
+        return;
+    }
+
+    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
+    if (context->retVal != E_OK) {
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        return;
+    }
+    if (respBody.saRemote == nullptr) {
+        NAPI_ERR_LOG("Active analysis saRemote is nullptr");
+        context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        return;
+    }
+    NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemote: %{public}p",
+        respBody.saRemote.GetRefPtr());
+    if (!context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
+        NAPI_ERR_LOG("Failed to bind active analysis saRemote death recipient");
+        context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+        ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
+        return;
+    }
+}
+
+static void JSStopActiveAnalysisExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSStopActiveAnalysisExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    StopActiveAnalysisReqBody reqBody;
+    reqBody.analysisTypes = context->activeAnalysisTypes;
+    reqBody.fileIds = context->activeAnalysisFileIds;
+    reqBody.param = context->activeAnalysisParam;
+
+    StopActiveAnalysisRespBody respBody;
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS), reqBody, respBody);
+    if (ret != E_OK) {
+        if (ret == E_INVALID_ARGUMENTS) {
+            context->error = JS_E_PARAM_INVALID;
+            return;
+        }
+        context->SaveError(ret);
+        return;
+    }
+    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessStartActiveAnalysis(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessStartActiveAnalysis");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsStartActiveAnalysis(env, info, asyncContext) != nullptr,
+        "Failed to parse js args");
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessStartActiveAnalysis",
+        JSStartActiveAnalysisExecute, JSActiveAnalysisCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessStopActiveAnalysis(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessStopActiveAnalysis");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsStopActiveAnalysis(env, info, asyncContext) != nullptr,
+        "Failed to parse js args");
+
+    SetUserIdFromObjectInfo(asyncContext);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
+
+    napi_value resource = nullptr;
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "PhotoAccessStopActiveAnalysis", asyncContext);
+    CHECK_ARGS(env, napi_create_async_work(env, nullptr, resource, JSStopActiveAnalysisExecute,
+        JSStopActiveAnalysisCompleteCallback, static_cast<void *>(asyncContext.get()), &asyncContext->work),
+        JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated), JS_INNER_FAIL);
+    asyncContext.release();
+    return result;
+}
+
 static void PhotoAccessQueryExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -11377,7 +11693,6 @@ int32_t MediaLibraryNapi::AddSingleClientObserver(napi_env env, napi_ref ref,
     if (uriIter == uriMap.end()) {
         return HandleNewUriRegistration(env, ref, observer, uriType, fileIdOrAlbumId);
     }
-
     CheckSinglePhotoPermissionReqBody reqBody;
     reqBody.registerType = static_cast<int32_t>(uriType);
     reqBody.fileId = fileIdOrAlbumId;

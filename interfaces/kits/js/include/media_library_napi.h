@@ -82,6 +82,7 @@ struct AnalysisProperty {
 };
 
 struct MediaLibraryAsyncContext;
+class ActiveAnalysisJsCallbackHolder;
 
 class MediaOnNotifyObserver;
 class ChangeListenerNapi {
@@ -374,6 +375,8 @@ private:
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetAssetMemberBatch(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartActiveAnalysis(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStopActiveAnalysis(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
@@ -648,6 +651,10 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string strParam;
     bool boolResult = false;
     bool supportedHighResolution = false;
+    std::vector<int32_t> activeAnalysisTypes;
+    std::vector<std::string> activeAnalysisFileIds;
+    std::string activeAnalysisParam;
+    std::shared_ptr<ActiveAnalysisJsCallbackHolder> activeAnalysisCallbackHolder;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
