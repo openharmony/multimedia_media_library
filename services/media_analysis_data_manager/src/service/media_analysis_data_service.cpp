@@ -18,6 +18,7 @@
 #include "media_analysis_data_service.h"
  
 #include "analysis_album_accurate_refresh.h"
+#include "active_analysis_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "rdb_utils.h"
@@ -224,6 +225,26 @@ int32_t MediaAnalysisDataService::StartAssetAnalysis(const StartAssetAnalysisDto
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
+}
+
+int32_t MediaAnalysisDataService::StartActiveAnalysis(const StartActiveAnalysisDto &dto,
+    StartActiveAnalysisRespBody &respBody)
+{
+    int32_t resultCode = E_OK;
+    sptr<IRemoteObject> saRemote;
+    int32_t ret = ActiveAnalysisManager::GetInstance().SubmitTask(dto, resultCode, saRemote);
+    respBody.result = resultCode;
+    respBody.saRemote = saRemote;
+    return ret;
+}
+
+int32_t MediaAnalysisDataService::StopActiveAnalysis(const StopActiveAnalysisDto &dto,
+    StopActiveAnalysisRespBody &respBody)
+{
+    int32_t resultCode = E_OK;
+    int32_t ret = ActiveAnalysisManager::GetInstance().CancelTask(dto, resultCode);
+    respBody.result = resultCode;
+    return ret;
 }
 
 int32_t MediaAnalysisDataService::SetOrderPosition(ChangeRequestSetOrderPositionDto &setOrderPositionDto)

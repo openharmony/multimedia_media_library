@@ -37,6 +37,8 @@ public:
         START_FOREGROUND_INDEX_FULL = 43,
         ALBUM_UPDATE_INDEX_TASK = 44,
         UPDATE_MEDIA_INDEX_FOR_CLOUD = 45,
+        START_ACTIVE_ANALYSIS = 46,
+        STOP_ACTIVE_ANALYSIS = 47,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
