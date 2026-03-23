@@ -406,6 +406,10 @@ static void SetAlbumCoverUri(SendablePhotoAccessHelperAsyncContext *context, uni
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
+        if (context->networkId.find("..") != string::npos) {
+            NAPI_ERR_LOG("Invalid networkId in SetAlbumCoverUri: %{private)s", context->networkId.c_str());
+            return;
+        }
         queryUri = CONST_MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + CONST_MEDIALIBRARY_DATA_URI_IDENTIFIER;
         NAPI_DEBUG_LOG("querycoverUri is = %{private}s", queryUri.c_str());
     }

@@ -80,6 +80,10 @@ string PhotoFileUtils::GetThumbDir(const string &photoPath, int32_t userId)
     if (!MediaPathUtils::CheckPhotoPath(photoPath)) {
         return "";
     }
+    if (photoPath.find("..") != string::npos) {
+        MEDIA_ERR_LOG("Invalid photoPath with path traversal: %{private}s", photoPath.c_str());
+        return "";
+    }
     return MediaPathUtils::AppendUserId(
         ROOT_MEDIA_DIR, userId) + ".thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length());
 }
