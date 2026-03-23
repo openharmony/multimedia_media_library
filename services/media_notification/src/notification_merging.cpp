@@ -40,6 +40,8 @@ namespace OHOS {
 namespace Media {
 namespace Notification {
 
+static const uint32_t MAX_PARCEL_SIZE = 200 * 1024;
+
 NotificationMerging::NotificationMerging() {}
 
 NotificationMerging::~NotificationMerging() {}
