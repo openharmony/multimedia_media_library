@@ -679,11 +679,17 @@ static void HandlePixelCallback(const RequestSharedPtr &request)
         result[PARAM0] = nullptr;
     }
     if (request->GetStatus() == ThumbnailStatus::THUMB_FAST) {
-        result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env,
-            shared_ptr<PixelMap>(request->GetFastPixelMap()));
+        if (request->GetFastPixelMap() != nullptr) {
+            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, shared_ptr<PixelMap>(request->GetFastPixelMap()));
+        }
     } else {
-        result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env,
-            shared_ptr<PixelMap>(request->GetPixelMap()));
+        if (request->GetPixelMap() != nullptr) {
+            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, shared_ptr<PixelMap>(request->GetPixelMap()));
+        }
+    }
+
+    if (result[PARAM1] == nullptr) {
+        NAPI_ERR_LOG("result[PARAM1] is nullptr");
     }
 
     status = napi_call_function(env, nullptr, jsCallback, ARGS_TWO, result, &retVal);

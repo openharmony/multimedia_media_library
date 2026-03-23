@@ -5156,6 +5156,7 @@ napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_ca
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->analysisType),
         JS_ERR_PARAMETER_INVALID);
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectInfo, result, "asyncContext->objectInfo is nullptr");
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
