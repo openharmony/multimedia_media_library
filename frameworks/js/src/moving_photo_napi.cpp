@@ -525,7 +525,8 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
         context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         return ArrayBufferToTranscode(env, context, fd);
     }
-    MovingPhotoNapi::SubRequestContent(fd, context);
+    UniqueFd uniqueFd(fd);
+    MovingPhotoNapi::SubRequestContent(uniqueFd.Get(), context);
     return E_OK;
 }
 
@@ -933,15 +934,14 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
 
 void BufferTranscodeRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
-    UniqueFd uniqueFd(fd);
-    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+    off_t fileLen = lseek(fd, 0, SEEK_END);
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
         context->SaveError(E_HAS_FS_ERROR);
         return;
     }
 
-    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+    off_t ret = lseek(fd, 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
         context->SaveError(E_HAS_FS_ERROR);
@@ -956,7 +956,7 @@ void BufferTranscodeRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
             context->error = JS_INNER_FAIL;
         return;
     }
-    size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
+    size_t readBytes = static_cast<size_t>(read(fd, context->arrayBufferData, fileSize));
     if (readBytes != fileSize) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileSize, errno);
