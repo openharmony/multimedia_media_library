@@ -1920,7 +1920,11 @@ napi_value MediaLibraryNapiUtils::GetNextRowAlbumObject(napi_env env,
     resultSet->GetAllColumnNames(columnNames);
 
     napi_value result = nullptr;
-    napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to create object in GetNextRowAlbumObject");
+        return nullptr;
+    }
 
     napi_value value = nullptr;
     int32_t index = -1;
