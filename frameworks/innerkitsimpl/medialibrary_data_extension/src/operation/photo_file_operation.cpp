@@ -438,7 +438,7 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
 
     std::string realSrcFolder;
     if (!PathToRealPath(srcFolder, realSrcFolder)) {
-        MEDIA_ERR_LOG("Media_Operation: Incalid path! src: %{public}s", srcFolder.c_str());
+        MEDIA_ERR_LOG("Media_Operation: Invalid path! src: %{public}s", srcFolder.c_str());
         return E_INVALID_PATH;
     }
 

@@ -453,7 +453,6 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
             resultSet->Close();
             return NativeRdb::E_ERROR;
         }
-        
         std::string timeId;
         CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::GenerateKvStoreKey(to_string(fileId),
             to_string(dateTakenTime), timeId),
