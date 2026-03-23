@@ -1118,6 +1118,7 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     tracer.Start("JSPhotoAlbumRemoveAssetsCompleteCallback");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
