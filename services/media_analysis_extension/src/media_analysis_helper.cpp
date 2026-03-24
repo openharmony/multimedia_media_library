@@ -101,6 +101,11 @@ bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo, c
     MessageParcel data;
     MediaAnalysisProxy mediaAnalysisProxy(nullptr);
 
+    if (geoInfo.empty()) {
+        MEDIA_ERR_LOG("geoInfo is empty");
+        return false;
+    }
+
     if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
         MEDIA_ERR_LOG("Parse Geographic Information Write InterfaceToken failed");
         return false;
