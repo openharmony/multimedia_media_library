@@ -277,86 +277,6 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_004 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 3, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 3;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_005, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_005 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 5, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 5;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_006, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_006 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 6, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 6;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_007, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_007 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 8, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 8;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_008, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_008 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::CLOUD),
         .height = 0, .width = 0, .orientation = 0, .exifRotate = 0, .lcdSize = ""});
     EXPECT_GT(fileId1, 0);
@@ -372,9 +292,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_FALSE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_009, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_005, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_009 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_005 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
@@ -392,9 +312,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_FALSE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_010, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_006, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_010 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_006 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
@@ -412,9 +332,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_FALSE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_011, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_007, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_011 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_007 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
@@ -432,9 +352,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_TRUE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_012, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_008, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_012 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_008 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
@@ -452,129 +372,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_TRUE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_013, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_009, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_013 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1920, .orientation = 0, .exifRotate = 0, .lcdSize = "1920:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1920;
-    photoInfo.exifRotate = 0;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1920:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_014, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_014 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 3840, .width = 2160, .orientation = 0, .exifRotate = 0, .lcdSize = "2160:3840"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 3840;
-    photoInfo.width = 2160;
-    photoInfo.exifRotate = 0;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "2160:3840";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_015, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_015 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 2160, .width = 3840, .orientation = 0, .exifRotate = 0, .lcdSize = "3840:2160"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 2160;
-    photoInfo.width = 3840;
-    photoInfo.exifRotate = 0;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "3840:2160";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_016, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_016 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 2, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 2;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_017, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_017 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 4, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 4;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_018, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_018 start");
-    ClearTables();
-    int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
-        .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
-        .height = 1920, .width = 1080, .orientation = 0, .exifRotate = 7, .lcdSize = "1080:1920"});
-    EXPECT_GT(fileId1, 0);
-    CheckPhotoInfo photoInfo;
-    photoInfo.fileId = static_cast<int32_t>(fileId1);
-    photoInfo.height = 1920;
-    photoInfo.width = 1080;
-    photoInfo.exifRotate = 7;
-    photoInfo.orientation = 0;
-    photoInfo.lcdSize = "1080:1920";
-    photoInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
-    bool result = HeightWidthCorrectOperation::UpdatePhotoHeightWidth(photoInfo);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_019, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_019 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_009 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
@@ -592,9 +392,9 @@ HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhot
     EXPECT_FALSE(result);
 }
 
-HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_020, TestSize.Level1)
+HWTEST_F(HeightWidthCorrectOperationTest, HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_010, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_020 start");
+    MEDIA_INFO_LOG("HeightWidthCorrectOperation_UpdatePhotoHeightWidth_Test_010 start");
     ClearTables();
     int64_t fileId1 = InsertPhoto({.mediaType = MEDIA_TYPE_IMAGE,
         .position = static_cast<int32_t>(PhotoPositionType::LOCAL),
