@@ -32,6 +32,13 @@ const std::string ROOT_MEDIA_DIR = "/storage/cloud/files";
 const std::string URI_PREFIX_INNER = "file://media/";
 const std::string PHOTO_URI_PREFIX_INNER = "file://media/Photo/";
 const std::string MULTI_USER_URI_FLAG = "user";
+const std::string GARBLE = "*";
+const std::string SPLIT_PATH = "/";
+const std::string DOT = ".";
+constexpr uint32_t GARBLE_SMALL = 3;
+constexpr uint32_t GARBLE_LARGE = 8;
+constexpr uint32_t GARBLE_LAST_TWO = 2;
+constexpr uint32_t GARBLE_LAST_ONE = 1;
 
 void MediaUriUtils::AppendKeyValue(std::string &uri, const std::string &key, std::string value)
 {
@@ -184,5 +191,64 @@ bool MediaUriUtils::CheckUri(const std::string &uri)
     }
     std::string uriprex = "file://media";
     return uri.substr(0, uriprex.size()) == uriprex;
+}
+
+static std::string GetTitleFromDisplayName(const std::string &displayName)
+{
+    std::string title;
+    if (!displayName.empty()) {
+        std::string::size_type pos = displayName.find_last_of('.');
+        if (pos == std::string::npos) {
+            return "";
+        }
+        title = displayName.substr(0, pos);
+    }
+    return title;
+}
+
+std::string MediaUriUtils::GetSafeDiaplayName(const std::string &displayName)
+{
+    if (displayName == "") {
+        return displayName;
+    }
+    std::string extension;
+    size_t splitIndex = displayName.find_last_of(DOT);
+    if (splitIndex == std::string::npos) {
+        extension = "";
+    } else {
+        extension = displayName.substr(splitIndex);
+    }
+    std::string title = GetTitleFromDisplayName(displayName);
+    if (title == "") {
+        return title;
+    }
+    uint32_t length = title.size();
+    std::string safeDisplayName;
+    if (length <= GARBLE_SMALL) {
+        safeDisplayName = GARBLE + title.substr(length - GARBLE_LAST_ONE) + extension;
+    } else if (length > GARBLE_LARGE) {
+        safeDisplayName = GARBLE + title.substr(GARBLE_LARGE) + extension;
+    } else {
+        safeDisplayName = GARBLE + title.substr(length - GARBLE_LAST_TWO) + extension;
+    }
+    return safeDisplayName;
+}
+
+std::string MediaUriUtils::GetSafeUri(const std::string &uri)
+{
+    std::string safeUri = uri;
+    if (uri == "") {
+        return safeUri;
+    }
+    size_t splitIndex = safeUri.find_last_of(SPLIT_PATH);
+    std::string displayName;
+    if (splitIndex == std::string::npos) {
+        return safeUri;
+    } else {
+        displayName = safeUri.substr(splitIndex + 1);
+    }
+    std::string safeDisplayName = GetSafeDiaplayName(displayName);
+    safeUri = safeUri.substr(0, splitIndex) + "/" + safeDisplayName;
+    return safeUri;
 }
 } // namespace OHOS::Media
