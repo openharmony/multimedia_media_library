@@ -686,6 +686,7 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileAndRecordNotExistPhotos(int32_t 
             AddMovingPhotoFileToTableWithFixedName(curBucketNum, fileName);
             MEDIA_INFO_LOG("DirtyMediaHandler File Insert MovingPhotos Bk:%{public}d, File: %{public}s",
                 curBucketNum, fileName.c_str());
+            AddToFilesCacheSet(path);
             return true;
         } else {
             MEDIA_ERR_LOG("DirtyMediaHandler Invalid Moving Photo Path: %{public}s",
@@ -695,6 +696,7 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileAndRecordNotExistPhotos(int32_t 
     }
     // 静图
     AddFileToTableWithFixedName(curBucketNum, fileName);
+    AddToFilesCacheSet(path);
     MEDIA_INFO_LOG("DirtyMediaHandler File Insert FileAndRecordNotExist Bk:%{public}d, Path: %{public}s",
         curBucketNum, MediaFileUtils::DesensitizePath(path).c_str());
     return true;
@@ -718,6 +720,7 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
             AddFileToTableWithFixedName(curBucketNum, fileName);
             MEDIA_INFO_LOG("DirtyMediaHandler File Insert Video FileAndRecordNotExist Bk:%{public}d, Path: %{public}s",
                 curBucketNum, MediaFileUtils::DesensitizePath(path).c_str());
+            AddToFilesCacheSet(path);
             return true;
         }
         MEDIA_DEBUG_LOG("DirtyMediaHandler File Skip Video Bk:%{public}d, File: %{public}s", curBucketNum,
