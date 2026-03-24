@@ -326,9 +326,9 @@ napi_status ActiveAnalysisJsCallbackHolder::Create(
     CHECK_STATUS_RET(napi_create_threadsafe_function(env, callback, nullptr, workName, 0, 1, nullptr, nullptr,
         nullptr, CallJsActiveAnalysisCallback, &threadSafeFunc), "Failed to create active analysis tsfn");
     ThreadSafeFunctionGuard threadSafeFuncGuard(reinterpret_cast<ThreadSafeFunctionHandle *>(threadSafeFunc));
-    try {
-        holder = std::make_shared<ActiveAnalysisJsCallbackHolder>(threadSafeFunc);
-    } catch (const std::bad_alloc &) {
+    holder = std::shared_ptr<ActiveAnalysisJsCallbackHolder>(
+        new (std::nothrow) ActiveAnalysisJsCallbackHolder(threadSafeFunc));
+    if (holder == nullptr) {
         NAPI_ERR_LOG("Failed to allocate active analysis callback holder");
         return napi_generic_failure;
     }
