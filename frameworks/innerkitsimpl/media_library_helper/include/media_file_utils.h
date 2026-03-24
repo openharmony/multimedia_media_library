@@ -32,6 +32,7 @@ namespace OHOS::Media {
 EXPORT const std::string MOVING_PHOTO_URI_SPLIT = ";";
 EXPORT const uint8_t MOVING_PHOTO_IMAGE_POS = 0;
 EXPORT const uint8_t MOVING_PHOTO_VIDEO_POS = 1;
+EXPORT const uint8_t MOVING_PHOTO_URIS_SIZE = 2;
 EXPORT const std::string MEDIA_FILEMODE_READONLY = "r";
 EXPORT const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 EXPORT const std::string MEDIA_FILEMODE_READWRITE = "rw";

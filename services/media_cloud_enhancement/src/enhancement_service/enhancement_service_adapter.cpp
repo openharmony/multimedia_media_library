@@ -91,6 +91,8 @@ BundleDeleteRawData bundleDeleteRawData = nullptr;
 shared_ptr<DynamicLoader> EnhancementServiceAdapter::dynamicLoader_
     = make_shared<DynamicLoader>();
 
+constexpr uint32_t MAX_BUFFER_SIZE = 100 * 1024 * 1024;
+
 void EnhancementServiceAdapter::ClientFuncInit()
 {
     createMCEClientFunc = (CreateMCEClient)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
@@ -430,6 +432,41 @@ int32_t EnhancementServiceAdapter::GetInt(MediaEnhanceBundleHandle* bundle, cons
     return bundleHandleGetIntFunc(bundle, key, strlen(key));
 }
 
+static int32_t ProcessVideoBuffer(Raw_Data* rawDataVec, uint32_t size, uint8_t* copyData,
+    CloudEnhancementThreadTask& task)
+{
+    if (size > 1) {
+        MEDIA_INFO_LOG("Processing video buffer");
+        uint8_t *videoAddr = rawDataVec[1].buffer;
+        uint32_t videoBytes = rawDataVec[1].size;
+        if (videoBytes <= 0 || videoBytes > MAX_BUFFER_SIZE) {
+            MEDIA_ERR_LOG("Invalid video buffer size: %{public}u, valid range: (0-%{public}u]",
+                          videoBytes, MAX_BUFFER_SIZE);
+            delete[] copyData;
+            copyData = nullptr;
+            task.addr = nullptr;
+            return E_ERR;
+        }
+        uint8_t *copyVideoData = new uint8_t[videoBytes];
+        ret = memcpy_s(copyVideoData, videoBytes, videoAddr, videoBytes);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("copy video buffer failed");
+            delete[] copyData;
+            copyData = nullptr;
+            task.addr = nullptr;
+            delete[] copyVideoData;
+            copyVideoData = nullptr;
+            return E_ERR;
+        }
+        task.videoAddr = copyVideoData;
+        task.videoBytes = videoBytes;
+    } else {
+        task.videoAddr = nullptr;
+        task.videoBytes = 0;
+    }
+    return E_OK;
+}
+
 int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHandle* bundle,
     CloudEnhancementThreadTask& task)
 {
@@ -448,6 +485,11 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
     }
     uint8_t *addr = rawDataVec[0].buffer;
     uint32_t bytes = rawDataVec[0].size;
+    if (bytes <= 0 || bytes > MAX_BUFFER_SIZE) {
+        MEDIA_ERR_LOG("Invalid buffer size: %{public}u, valid range: (0-%{public}u]",
+                      bytes, MAX_BUFFER_SIZE);
+        return E_ERR;
+    }
     uint8_t *copyData = new uint8_t[bytes];
     int32_t ret = memcpy_s(copyData, bytes, addr, bytes);
     if (ret != E_OK) {
@@ -458,26 +500,9 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
     }
     task.addr = copyData;
     task.bytes = bytes;
-    if (size > 1) {
-        MEDIA_INFO_LOG("Processing video buffer");
-        uint8_t *videoAddr = rawDataVec[1].buffer;
-        uint32_t videoBytes = rawDataVec[1].size;
-        uint8_t *copyVideoData = new uint8_t[videoBytes];
-        ret = memcpy_s(copyVideoData, videoBytes, videoAddr, videoBytes);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("copy video buffer failed");
-            delete[] copyData;
-            copyData = nullptr;
-            task.addr = nullptr;
-            delete[] copyVideoData;
-            copyVideoData = nullptr;
-            return E_ERR;
-        }
-        task.videoAddr = copyVideoData;
-        task.videoBytes = videoBytes;
-    } else {
-        task.videoAddr = nullptr;
-        task.videoBytes = 0;
+    ret = ProcessVideoBuffer(rawDataVec, size, copyData, task);
+    if (ret != E_OK) {
+        return ret;
     }
     DeleteRawData(rawDataVec, size);
     return E_OK;
