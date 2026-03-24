@@ -391,6 +391,7 @@ int32_t MediaAssetsDeleteService::CreateLocalTrashedPhotosPo(const PhotosPo &pho
     this->ResetFileSourceType(targetPhotoInfo);  // Set file_source_type to MEDIA (default).
     this->ResetSouthDeviceType(targetPhotoInfo);  // Reset south_device_type to default: SOUTH_DEVICE_NULL(0).
     this->ResetUniqueId(targetPhotoInfo);
+    this->ResetTransCode(targetPhotoInfo);
     return E_OK;
 }
 
@@ -425,6 +426,7 @@ int32_t MediaAssetsDeleteService::CreateCloudTrashedPhotosPo(const PhotosPo &pho
     CHECK_AND_EXECUTE(this->isCloudPullData_, this->SetMdirty(targetPhotoInfo));
     this->ResetFileSourceType(targetPhotoInfo);  // Set file_source_type to MEDIA (default).
     this->ResetUniqueId(targetPhotoInfo);
+    this->ResetTransCode(targetPhotoInfo);
     return E_OK;
 }
 
@@ -979,6 +981,21 @@ int32_t MediaAssetsDeleteService::GetDentryFileInfo(
 int32_t MediaAssetsDeleteService::ResetUniqueId(PhotosPo &photoInfo)
 {
     photoInfo.uniqueId.emplace("-1");
+    return E_OK;
+}
+
+int32_t MediaAssetsDeleteService::ResetTransCode(PhotosPo &photoInfo)
+{
+    // 如果 photoInfo.attributes 哈希表包含以下 Key值，则删除该 key-value
+    if (photoInfo.attributes.find(PhotoColumn::PHOTO_TRANSCODE_TIME) != photoInfo.attributes.end()) {
+        photoInfo.attributes.erase(PhotoColumn::PHOTO_TRANSCODE_TIME);
+    }
+    if (photoInfo.attributes.find(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != photoInfo.attributes.end()) {
+        photoInfo.attributes.erase(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE);
+    }
+    if (photoInfo.attributes.find(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE) != photoInfo.attributes.end()) {
+        photoInfo.attributes.erase(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+    }
     return E_OK;
 }
 }  // namespace OHOS::Media::Common

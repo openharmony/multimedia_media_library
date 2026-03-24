@@ -42,6 +42,7 @@
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 // LCOV_EXCL_START
 void NotifyDateTakenChanged(const CloudMediaPullDataDto &pullData)
 {
@@ -391,8 +392,9 @@ void CloudMediaPhotosDao::GetUpdateRecordConditionForRecycleUpdate(const std::st
 
 void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values, bool mtimeChanged)
 {
-    if (MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heic") {
+    if ((MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heif" &&
+        MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heic") ||
+        pullData.propertiesHeight * pullData.propertiesWidth < HIGH_PIXEL_SIZE) {
         MEDIA_DEBUG_LOG("cloudId: %{public}s Display name is not heif", pullData.cloudId.c_str());
         return;
     }
