@@ -80,9 +80,7 @@ public:
         const sptr<ActiveAnalysisJsCallbackStub> &callbackStub, const sptr<IRemoteObject> &callbackRemote)
     {
         if (holder == nullptr || callbackStub == nullptr || callbackRemote == nullptr) {
-            NAPI_WARN_LOG("Skip register active analysis callback registry, holder: %{public}p,"
-                " callbackStub: %{public}p, callbackRemote: %{public}p", holder.get(),
-                callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
+            NAPI_WARN_LOG("Skip register active analysis callback registry, invalid callback objects");
             return 0;
         }
 
@@ -109,9 +107,6 @@ public:
         }
 
         holder->SetRegistryId(registryId);
-        NAPI_INFO_LOG("Register active analysis callback registry, registryId: %{public}" PRIu64
-            ", holder: %{public}p, callbackStub: %{public}p, callbackRemote: %{public}p",
-            registryId, holder.get(), callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
         cv_.notify_one();
         return registryId;
     }
@@ -125,10 +120,7 @@ public:
         std::thread finishedWatcher;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            auto erased = records_.erase(registryId);
-            NAPI_INFO_LOG("Unregister active analysis callback registry, registryId: %{public}" PRIu64
-                ", erased: %{public}d, remain: %{public}zu", registryId, static_cast<int32_t>(erased),
-                records_.size());
+            (void)records_.erase(registryId);
             TakeFinishedWatcherLocked(finishedWatcher);
         }
         cv_.notify_one();
@@ -162,7 +154,6 @@ private:
 
     void StartWatcherLocked()
     {
-        NAPI_INFO_LOG("Start active analysis callback watchdog thread");
         watcherThread_ = std::thread([this]() { RunWatcherUntilIdle(); });
         watcherState_ = WatcherState::RUNNING;
     }
@@ -200,7 +191,6 @@ private:
         while (watcherState_ != WatcherState::SHUTDOWN) {
             if (records_.empty()) {
                 watcherState_ = WatcherState::IDLE;
-                NAPI_INFO_LOG("Active analysis callback watchdog thread exit because registry is empty");
                 return;
             }
 
@@ -217,7 +207,6 @@ private:
                 return watcherState_ == WatcherState::SHUTDOWN || records_.empty();
             });
         }
-        NAPI_INFO_LOG("Active analysis callback watchdog thread exit by shutdown");
     }
 
     std::chrono::steady_clock::time_point CollectExpiredLocked(std::vector<TimeoutRecord> &timeoutRecords)
@@ -275,7 +264,6 @@ static void CallJsActiveAnalysisCallback(napi_env env, napi_value jsCallback, vo
     napi_value callbackArg = nullptr;
     napi_value resultValue = nullptr;
     napi_value result = nullptr;
-    NAPI_INFO_LOG("CallJsActiveAnalysisCallback enter, result: %{public}d", callbackData->result);
     napi_status status = napi_create_object(env, &callbackArg);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Failed to create active analysis callback object, status: %{public}d",
@@ -300,7 +288,6 @@ static void CallJsActiveAnalysisCallback(napi_env env, napi_value jsCallback, vo
             static_cast<int32_t>(status));
         return;
     }
-    NAPI_INFO_LOG("CallJsActiveAnalysisCallback finish, result: %{public}d", callbackData->result);
 }
 } // namespace
 
@@ -314,10 +301,8 @@ void ActiveAnalysisSaDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &rem
     (void)remote;
     auto holder = holder_.lock();
     if (holder == nullptr) {
-        NAPI_WARN_LOG("Active analysis SA died but callback holder already released");
         return;
     }
-    NAPI_WARN_LOG("Active analysis SA death recipient notified");
     holder->HandleSaDied();
 }
 
@@ -348,21 +333,15 @@ napi_status ActiveAnalysisJsCallbackHolder::Create(
         return napi_generic_failure;
     }
     (void)threadSafeFuncGuard.release();
-    NAPI_INFO_LOG("Created active analysis callback holder, holder: %{public}p, tsfn: %{public}p",
-        holder.get(), threadSafeFunc);
     return napi_ok;
 }
 
-int32_t ActiveAnalysisJsCallbackHolder::PrepareNotifyResult(const char *source, int32_t result,
+int32_t ActiveAnalysisJsCallbackHolder::PrepareNotifyResult(const char *source,
     napi_threadsafe_function &threadSafeFunc, uint64_t &registryId)
 {
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (released_ || resultReceived_) {
-            NAPI_WARN_LOG("Skip active analysis callback notify, released: %{public}d, resultReceived: %{public}d,"
-                " resultPostedToJs: %{public}d, raw result: %{public}d, source: %{public}s,"
-                " registryId: %{public}" PRIu64, released_, resultReceived_, resultPostedToJs_, result,
-                source, registryId_.load());
             return E_OK;
         }
         resultReceived_ = true;
@@ -389,7 +368,7 @@ int32_t ActiveAnalysisJsCallbackHolder::NotifyResult(int32_t result, const char 
 {
     napi_threadsafe_function threadSafeFunc = nullptr;
     uint64_t registryId = 0;
-    int32_t prepareRet = PrepareNotifyResult(source, result, threadSafeFunc, registryId);
+    int32_t prepareRet = PrepareNotifyResult(source, threadSafeFunc, registryId);
     if (prepareRet != E_OK && threadSafeFunc == nullptr) {
         Release();
         CleanupRegistry();
@@ -399,8 +378,6 @@ int32_t ActiveAnalysisJsCallbackHolder::NotifyResult(int32_t result, const char 
         return E_OK;
     }
     int32_t normalizedResult = NormalizeActiveAnalysisErrorCode(result);
-    NAPI_INFO_LOG("Notify active analysis callback, raw result: %{public}d, normalized result: %{public}d,"
-        " source: %{public}s, registryId: %{public}" PRIu64, result, normalizedResult, source, registryId);
     auto *callbackData = new (std::nothrow) ActiveAnalysisJsCallbackData();
     if (callbackData == nullptr) {
         NAPI_ERR_LOG("Failed to allocate active analysis callback data, source: %{public}s,"
@@ -421,8 +398,6 @@ int32_t ActiveAnalysisJsCallbackHolder::NotifyResult(int32_t result, const char 
         return MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
     }
     MarkResultPostedToJs();
-    NAPI_INFO_LOG("Active analysis callback posted to JS successfully, normalized result: %{public}d",
-        normalizedResult);
     Release();
     CleanupRegistry();
     return E_OK;
@@ -433,12 +408,9 @@ void ActiveAnalysisJsCallbackHolder::HandleSaDied()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (released_) {
-            NAPI_INFO_LOG("Skip active analysis SA died handling because holder already released");
             return;
         }
         if (resultReceived_) {
-            NAPI_INFO_LOG("Skip active analysis SA died fallback because callback result path already started,"
-                " resultPostedToJs: %{public}d", resultPostedToJs_);
             return;
         }
     }
@@ -451,21 +423,18 @@ bool ActiveAnalysisJsCallbackHolder::BindSaRemote(const sptr<IRemoteObject> &saR
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (released_ || saRemote == nullptr) {
-        NAPI_WARN_LOG("Skip binding active analysis SA remote, released: %{public}d, saRemote: %{public}p",
-            released_, saRemote.GetRefPtr());
+        NAPI_WARN_LOG("Skip binding active analysis SA remote, released: %{public}d, remoteValid: %{public}d",
+            released_, saRemote != nullptr);
         return false;
     }
     saRemote_ = saRemote;
     saDeathRecipient_ = sptr<IRemoteObject::DeathRecipient>(new ActiveAnalysisSaDeathRecipient(weak_from_this()));
-    NAPI_INFO_LOG("Bind active analysis SA remote, holder: %{public}p, saRemote: %{public}p",
-        this, saRemote_.GetRefPtr());
     if (!saRemote_->AddDeathRecipient(saDeathRecipient_)) {
         NAPI_WARN_LOG("Failed to add active analysis SA death recipient");
         saDeathRecipient_ = nullptr;
         saRemote_ = nullptr;
         return false;
     }
-    NAPI_INFO_LOG("Added active analysis SA death recipient successfully");
     return true;
 }
 
@@ -477,12 +446,8 @@ void ActiveAnalysisJsCallbackHolder::Release()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (released_) {
-            NAPI_INFO_LOG("Active analysis callback holder already released");
             return;
         }
-        NAPI_INFO_LOG("Release active analysis callback holder, holder: %{public}p, resultReceived: %{public}d,"
-            " resultPostedToJs: %{public}d, hasSaRemote: %{public}d", this, resultReceived_, resultPostedToJs_,
-            saRemote_ != nullptr);
         released_ = true;
         saRemote = saRemote_;
         saDeathRecipient = saDeathRecipient_;
@@ -510,14 +475,12 @@ void ActiveAnalysisJsCallbackHolder::CleanupRegistry()
     if (registryId == 0) {
         return;
     }
-    NAPI_INFO_LOG("Cleanup active analysis callback registry, registryId: %{public}" PRIu64, registryId);
     ActiveAnalysisJsCallbackRegistry::Unregister(registryId);
 }
 
 ActiveAnalysisJsCallbackStub::ActiveAnalysisJsCallbackStub(std::shared_ptr<ActiveAnalysisJsCallbackHolder> holder)
     : holder_(std::move(holder))
 {
-    NAPI_INFO_LOG("Created active analysis callback stub, holder: %{public}p", holder_.get());
 }
 
 int32_t ActiveAnalysisJsCallbackStub::OnAnalysisFinished(const ActiveAnalysisCallbackResult &result)
@@ -526,7 +489,6 @@ int32_t ActiveAnalysisJsCallbackStub::OnAnalysisFinished(const ActiveAnalysisCal
         NAPI_WARN_LOG("Active analysis callback stub holder is null, result: %{public}d", result.result);
         return E_OK;
     }
-    NAPI_INFO_LOG("Active analysis callback stub received result from service, result: %{public}d", result.result);
     return holder_->NotifyResult(result.result, "service_callback");
 }
 

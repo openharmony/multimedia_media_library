@@ -53,8 +53,7 @@ public:
     void SetRegistryId(uint64_t registryId);
 
 private:
-    int32_t PrepareNotifyResult(const char *source, int32_t result, napi_threadsafe_function &threadSafeFunc,
-        uint64_t &registryId);
+    int32_t PrepareNotifyResult(const char *source, napi_threadsafe_function &threadSafeFunc, uint64_t &registryId);
     void MarkResultPostedToJs();
     void CleanupRegistry();
 
