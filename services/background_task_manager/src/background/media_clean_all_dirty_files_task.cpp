@@ -1055,7 +1055,7 @@ bool MediaCleanAllDirtyFilesTask::DealEffectMovingPhotoNotExistInEditFolder(int3
     }
     if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
         MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
-        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder movingphtoto Cp To Org: %{public}s",
+        MEDIA_ERR_LOG("DirtyMediaHandler DealEffectMovingPhotoNotExistInEditFolder MovingPhoto Cp To Org: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
