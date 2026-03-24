@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cinttypes>
+#include <cstdint>
 #include <condition_variable>
 #include <new>
 #include <thread>
@@ -36,7 +37,9 @@ namespace OHOS::Media {
 namespace {
 const std::string ACTIVE_ANALYSIS_RESULT_FIELD = "result";
 constexpr size_t MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS = 512;
-constexpr auto ACTIVE_ANALYSIS_CALLBACK_TIMEOUT = std::chrono::seconds(600);
+constexpr int64_t ACTIVE_ANALYSIS_CALLBACK_TIMEOUT_MINUTES = 10;
+constexpr auto ACTIVE_ANALYSIS_CALLBACK_TIMEOUT =
+    std::chrono::minutes(ACTIVE_ANALYSIS_CALLBACK_TIMEOUT_MINUTES);
 using ThreadSafeFunctionHandle = std::remove_pointer_t<napi_threadsafe_function>;
 
 struct ActiveAnalysisRegistryRecord {
@@ -45,12 +48,6 @@ struct ActiveAnalysisRegistryRecord {
     sptr<IRemoteObject> callbackRemote;
     std::chrono::steady_clock::time_point deadline;
 };
-
-std::mutex g_activeAnalysisRegistryMutex;
-std::condition_variable g_activeAnalysisRegistryCv;
-std::unordered_map<uint64_t, ActiveAnalysisRegistryRecord> g_activeAnalysisRegistry;
-uint64_t g_activeAnalysisRegistryId = 1;
-bool g_activeAnalysisRegistryWatchdogRunning = false;
 
 struct ActiveAnalysisJsCallbackData {
     int32_t result = 0;
@@ -69,52 +66,200 @@ struct ThreadSafeFunctionReleaser {
 
 using ThreadSafeFunctionGuard = std::unique_ptr<ThreadSafeFunctionHandle, ThreadSafeFunctionReleaser>;
 
-static void ActiveAnalysisRegistryTimeoutLoop()
-{
-    std::unique_lock<std::mutex> lock(g_activeAnalysisRegistryMutex);
-    for (;;) {
-        if (g_activeAnalysisRegistry.empty()) {
-            g_activeAnalysisRegistryWatchdogRunning = false;
-            NAPI_INFO_LOG("Active analysis callback watchdog thread exit because registry is empty");
+class ActiveAnalysisCallbackRegistryImpl final {
+public:
+    using TimeoutRecord = std::pair<uint64_t, std::shared_ptr<ActiveAnalysisJsCallbackHolder>>;
+
+    static ActiveAnalysisCallbackRegistryImpl &GetInstance()
+    {
+        static ActiveAnalysisCallbackRegistryImpl instance;
+        return instance;
+    }
+
+    uint64_t Register(const std::shared_ptr<ActiveAnalysisJsCallbackHolder> &holder,
+        const sptr<ActiveAnalysisJsCallbackStub> &callbackStub, const sptr<IRemoteObject> &callbackRemote)
+    {
+        if (holder == nullptr || callbackStub == nullptr || callbackRemote == nullptr) {
+            NAPI_WARN_LOG("Skip register active analysis callback registry, holder: %{public}p,"
+                " callbackStub: %{public}p, callbackRemote: %{public}p", holder.get(),
+                callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
+            return 0;
+        }
+
+        std::thread finishedWatcher;
+        uint64_t registryId = 0;
+        size_t registrySize = 0;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (watcherState_ == WatcherState::SHUTDOWN) {
+                NAPI_ERR_LOG("Active analysis callback registry is shutting down");
+                return 0;
+            }
+            TakeFinishedWatcherLocked(finishedWatcher);
+            if (records_.size() >= MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS) {
+                registrySize = records_.size();
+            } else {
+                registryId = RegisterLocked(holder, callbackStub, callbackRemote);
+            }
+        }
+        JoinWatcher(finishedWatcher);
+        if (registryId == 0) {
+            NAPI_ERR_LOG("Active analysis callback registry is full, size: %{public}zu", registrySize);
+            return 0;
+        }
+
+        holder->SetRegistryId(registryId);
+        NAPI_INFO_LOG("Register active analysis callback registry, registryId: %{public}" PRIu64
+            ", holder: %{public}p, callbackStub: %{public}p, callbackRemote: %{public}p",
+            registryId, holder.get(), callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
+        cv_.notify_one();
+        return registryId;
+    }
+
+    void Unregister(uint64_t registryId)
+    {
+        if (registryId == 0) {
             return;
         }
-        auto now = std::chrono::steady_clock::now();
+
+        std::thread finishedWatcher;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            auto erased = records_.erase(registryId);
+            NAPI_INFO_LOG("Unregister active analysis callback registry, registryId: %{public}" PRIu64
+                ", erased: %{public}d, remain: %{public}zu", registryId, static_cast<int32_t>(erased),
+                records_.size());
+            TakeFinishedWatcherLocked(finishedWatcher);
+        }
+        cv_.notify_one();
+        JoinWatcher(finishedWatcher);
+    }
+
+private:
+    ActiveAnalysisCallbackRegistryImpl() = default;
+
+    ~ActiveAnalysisCallbackRegistryImpl()
+    {
+        Shutdown();
+    }
+
+    ActiveAnalysisCallbackRegistryImpl(const ActiveAnalysisCallbackRegistryImpl &) = delete;
+    ActiveAnalysisCallbackRegistryImpl &operator=(const ActiveAnalysisCallbackRegistryImpl &) = delete;
+
+    void Shutdown()
+    {
+        std::thread watcherThread;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            watcherState_ = WatcherState::SHUTDOWN;
+            watcherThread = std::move(watcherThread_);
+        }
+        cv_.notify_all();
+        if (watcherThread.joinable()) {
+            watcherThread.join();
+        }
+    }
+
+    void StartWatcherLocked()
+    {
+        NAPI_INFO_LOG("Start active analysis callback watchdog thread");
+        watcherThread_ = std::thread([this]() { RunWatcherUntilIdle(); });
+        watcherState_ = WatcherState::RUNNING;
+    }
+
+    void TakeFinishedWatcherLocked(std::thread &finishedWatcher)
+    {
+        if (watcherState_ != WatcherState::IDLE || !watcherThread_.joinable()) {
+            return;
+        }
+        finishedWatcher = std::move(watcherThread_);
+    }
+
+    uint64_t RegisterLocked(const std::shared_ptr<ActiveAnalysisJsCallbackHolder> &holder,
+        const sptr<ActiveAnalysisJsCallbackStub> &callbackStub, const sptr<IRemoteObject> &callbackRemote)
+    {
+        uint64_t registryId = nextRegistryId_++;
+        records_.emplace(registryId, ActiveAnalysisRegistryRecord {
+            holder, callbackStub, callbackRemote, std::chrono::steady_clock::now() + ACTIVE_ANALYSIS_CALLBACK_TIMEOUT});
+        if (watcherState_ == WatcherState::IDLE) {
+            StartWatcherLocked();
+        }
+        return registryId;
+    }
+
+    static void JoinWatcher(std::thread &watcherThread)
+    {
+        if (watcherThread.joinable()) {
+            watcherThread.join();
+        }
+    }
+
+    void RunWatcherUntilIdle()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        while (watcherState_ != WatcherState::SHUTDOWN) {
+            if (records_.empty()) {
+                watcherState_ = WatcherState::IDLE;
+                NAPI_INFO_LOG("Active analysis callback watchdog thread exit because registry is empty");
+                return;
+            }
+
+            std::vector<TimeoutRecord> timeoutRecords;
+            auto nextDeadline = CollectExpiredLocked(timeoutRecords);
+            if (!timeoutRecords.empty()) {
+                lock.unlock();
+                NotifyExpired(timeoutRecords);
+                lock.lock();
+                continue;
+            }
+
+            cv_.wait_until(lock, nextDeadline, [this]() {
+                return watcherState_ == WatcherState::SHUTDOWN || records_.empty();
+            });
+        }
+        NAPI_INFO_LOG("Active analysis callback watchdog thread exit by shutdown");
+    }
+
+    std::chrono::steady_clock::time_point CollectExpiredLocked(std::vector<TimeoutRecord> &timeoutRecords)
+    {
+        const auto now = std::chrono::steady_clock::now();
         auto nextDeadline = now + ACTIVE_ANALYSIS_CALLBACK_TIMEOUT;
-        std::vector<std::pair<uint64_t, std::shared_ptr<ActiveAnalysisJsCallbackHolder>>> timeoutRecords;
-        for (auto it = g_activeAnalysisRegistry.begin(); it != g_activeAnalysisRegistry.end();) {
+        for (auto it = records_.begin(); it != records_.end();) {
             if (it->second.deadline <= now) {
                 timeoutRecords.emplace_back(it->first, it->second.holder);
-                it = g_activeAnalysisRegistry.erase(it);
+                it = records_.erase(it);
                 continue;
             }
             nextDeadline = std::min(nextDeadline, it->second.deadline);
             ++it;
         }
-        if (!timeoutRecords.empty()) {
-            lock.unlock();
-            for (const auto &[registryId, holder] : timeoutRecords) {
-                if (holder == nullptr) {
-                    continue;
-                }
-                NAPI_WARN_LOG("Active analysis callback timeout reached before any result, registryId: %{public}" PRIu64,
-                    registryId);
-                (void)holder->NotifyResult(MEDIA_LIBRARY_ACTIVE_ANALYSIS_OTHER_ERROR, "watchdog_timeout");
-            }
-            lock.lock();
-            continue;
-        }
-        g_activeAnalysisRegistryCv.wait_until(lock, nextDeadline);
+        return nextDeadline;
     }
-}
 
-static void StartActiveAnalysisRegistryTimeoutThreadIfNeededLocked(bool &startThread)
-{
-    if (g_activeAnalysisRegistryWatchdogRunning) {
-        return;
+    static void NotifyExpired(const std::vector<TimeoutRecord> &timeoutRecords)
+    {
+        for (const auto &[registryId, holder] : timeoutRecords) {
+            if (holder == nullptr) {
+                continue;
+            }
+            NAPI_WARN_LOG("Active analysis callback timeout reached before any result, registryId: %{public}" PRIu64,
+                registryId);
+            (void)holder->NotifyResult(MEDIA_LIBRARY_ACTIVE_ANALYSIS_OTHER_ERROR, "watchdog_timeout");
+        }
     }
-    g_activeAnalysisRegistryWatchdogRunning = true;
-    startThread = true;
-}
+
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::unordered_map<uint64_t, ActiveAnalysisRegistryRecord> records_;
+    uint64_t nextRegistryId_ = 1;
+    std::thread watcherThread_;
+    enum class WatcherState : uint8_t {
+        IDLE = 0,
+        RUNNING,
+        SHUTDOWN,
+    };
+    WatcherState watcherState_ = WatcherState::IDLE;
+};
 
 static void CallJsActiveAnalysisCallback(napi_env env, napi_value jsCallback, void *context, void *data)
 {
@@ -196,8 +341,12 @@ napi_status ActiveAnalysisJsCallbackHolder::Create(
     CHECK_STATUS_RET(napi_create_threadsafe_function(env, callback, nullptr, workName, 0, 1, nullptr, nullptr,
         nullptr, CallJsActiveAnalysisCallback, &threadSafeFunc), "Failed to create active analysis tsfn");
     ThreadSafeFunctionGuard threadSafeFuncGuard(reinterpret_cast<ThreadSafeFunctionHandle *>(threadSafeFunc));
-    holder = std::make_shared<ActiveAnalysisJsCallbackHolder>(threadSafeFunc);
-    CHECK_COND_RET(holder != nullptr, napi_generic_failure, "Failed to allocate active analysis callback holder");
+    try {
+        holder = std::make_shared<ActiveAnalysisJsCallbackHolder>(threadSafeFunc);
+    } catch (const std::bad_alloc &) {
+        NAPI_ERR_LOG("Failed to allocate active analysis callback holder");
+        return napi_generic_failure;
+    }
     (void)threadSafeFuncGuard.release();
     NAPI_INFO_LOG("Created active analysis callback holder, holder: %{public}p, tsfn: %{public}p",
         holder.get(), threadSafeFunc);
@@ -384,50 +533,11 @@ int32_t ActiveAnalysisJsCallbackStub::OnAnalysisFinished(const ActiveAnalysisCal
 uint64_t ActiveAnalysisJsCallbackRegistry::Register(const std::shared_ptr<ActiveAnalysisJsCallbackHolder> &holder,
     const sptr<ActiveAnalysisJsCallbackStub> &callbackStub, const sptr<IRemoteObject> &callbackRemote)
 {
-    if (holder == nullptr || callbackStub == nullptr || callbackRemote == nullptr) {
-        NAPI_WARN_LOG("Skip register active analysis callback registry, holder: %{public}p, callbackStub: %{public}p,"
-            " callbackRemote: %{public}p", holder.get(), callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
-        return 0;
-    }
-
-    bool startThread = false;
-    uint64_t registryId = 0;
-    {
-        std::lock_guard<std::mutex> lock(g_activeAnalysisRegistryMutex);
-        if (g_activeAnalysisRegistry.size() >= MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS) {
-            NAPI_ERR_LOG("Active analysis callback registry is full, size: %{public}zu",
-                g_activeAnalysisRegistry.size());
-            return 0;
-        }
-        registryId = g_activeAnalysisRegistryId++;
-        g_activeAnalysisRegistry.emplace(registryId, ActiveAnalysisRegistryRecord {
-            holder, callbackStub, callbackRemote, std::chrono::steady_clock::now() + ACTIVE_ANALYSIS_CALLBACK_TIMEOUT});
-        StartActiveAnalysisRegistryTimeoutThreadIfNeededLocked(startThread);
-    }
-    holder->SetRegistryId(registryId);
-    NAPI_INFO_LOG("Register active analysis callback registry, registryId: %{public}" PRIu64
-        ", holder: %{public}p, callbackStub: %{public}p, callbackRemote: %{public}p", registryId, holder.get(),
-        callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
-    if (startThread) {
-        NAPI_INFO_LOG("Start active analysis callback watchdog thread");
-        std::thread(ActiveAnalysisRegistryTimeoutLoop).detach();
-    } else {
-        g_activeAnalysisRegistryCv.notify_one();
-    }
-    return registryId;
+    return ActiveAnalysisCallbackRegistryImpl::GetInstance().Register(holder, callbackStub, callbackRemote);
 }
 
 void ActiveAnalysisJsCallbackRegistry::Unregister(uint64_t registryId)
 {
-    if (registryId == 0) {
-        return;
-    }
-
-    std::lock_guard<std::mutex> lock(g_activeAnalysisRegistryMutex);
-    auto erased = g_activeAnalysisRegistry.erase(registryId);
-    NAPI_INFO_LOG("Unregister active analysis callback registry, registryId: %{public}" PRIu64
-        ", erased: %{public}d, remain: %{public}zu", registryId, static_cast<int32_t>(erased),
-        g_activeAnalysisRegistry.size());
-    g_activeAnalysisRegistryCv.notify_one();
+    ActiveAnalysisCallbackRegistryImpl::GetInstance().Unregister(registryId);
 }
 } // namespace OHOS::Media

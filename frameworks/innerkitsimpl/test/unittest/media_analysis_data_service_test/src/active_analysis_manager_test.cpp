@@ -34,7 +34,7 @@ using namespace OHOS::Media::AnalysisData;
 namespace {
 constexpr int32_t FIRST_VALID_ANALYSIS_TYPE = static_cast<int32_t>(ANALYSIS_TYPE_START) + 1;
 constexpr int32_t LAST_VALID_ANALYSIS_TYPE = static_cast<int32_t>(ANALYSIS_TYPE_END) - 1;
-constexpr size_t MAX_ACTIVE_ANALYSIS_FILE_ID_COUNT = 500;
+constexpr size_t MAX_ACTIVE_ANALYSIS_FILE_ID_COUNT = 100;
 constexpr size_t MAX_ACTIVE_ANALYSIS_PARAM_LENGTH = 500;
 
 class FakeRemoteObject final : public IRemoteObject {
