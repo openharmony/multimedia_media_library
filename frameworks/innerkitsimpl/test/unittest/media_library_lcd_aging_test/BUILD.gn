@@ -21,15 +21,17 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_lcd_aging_test") {
-  module_out_path = "media_library/media_library_lcd_aging"
+  module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "./include",
+    "../medialibrary_unittest_utils/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/include",
     "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
     "./src/media_library_lcd_aging_test.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_utils.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_dao.cpp",
   ]
@@ -41,6 +43,7 @@ ohos_unittest("media_library_lcd_aging_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
