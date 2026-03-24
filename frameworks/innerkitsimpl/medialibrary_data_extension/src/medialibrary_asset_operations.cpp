@@ -106,6 +106,9 @@ struct DeletedFilesParams {
 const static vector<string> PHOTO_COLUMN_VECTOR = {
     MediaColumn::MEDIA_NAME,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+    PhotoColumn::PHOTO_WIDTH,
+    PhotoColumn::PHOTO_HEIGHT,
+    MediaColumn::MEDIA_MIME_TYPE,
 };
 
 const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
