@@ -169,6 +169,8 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_COUNT), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_SIZE), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_CINEMATIC_VIDEO), 200},

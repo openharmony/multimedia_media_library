@@ -168,7 +168,8 @@
               "header": {
                 "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/analysis_data_kits/include",
                 "header_files": [
-                  "analysis_data_manager.h"
+                  "analysis_data_manager.h",
+                  "active_analysis/active_analysis_callback.h"
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/analysis_data_kits:analysis_data_kits"

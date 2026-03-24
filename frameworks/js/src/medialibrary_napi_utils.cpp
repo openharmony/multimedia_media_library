@@ -46,6 +46,7 @@
 #include "vision_ocr_column.h"
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
+#include "media_library_error_code.h"
 #include "photo_album_napi.h"
 #include "parameters.h"
 #include "js_interface_helper.h"
@@ -66,6 +67,13 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_SUCCESS = 0;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_TASK_ABNORMAL = 3;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_GET_FILE_ID_FAIL = 4;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_DESCRIPTOR_NOT_MATCHED = 5;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_TASK_CODE_ERROR = 6;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_TASK_RUNNING_CONFLICT = 7;
+constexpr int32_t ACTIVE_ANALYSIS_SERVICE_TASK_TIMEOUT = 99;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -1952,6 +1960,36 @@ string MediaLibraryNapiUtils::GetFileIdFromUriString(const string& uri)
     }
     return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(),
         endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
+}
+
+int32_t MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(int32_t code)
+{
+    switch (code) {
+        case ACTIVE_ANALYSIS_SERVICE_SUCCESS:
+            return E_OK;
+        case ACTIVE_ANALYSIS_SERVICE_TASK_CODE_ERROR:
+            return MEDIA_LIBRARY_INVALID_PARAMETER_ERROR;
+        case ACTIVE_ANALYSIS_SERVICE_TASK_RUNNING_CONFLICT:
+            return MEDIA_LIBRARY_ACTIVE_ANALYSIS_ALREADY_RUNNING_ERROR;
+        case E_PERMISSION_DENIED:
+        case E_CHECK_SYSTEMAPP_FAIL:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_HIGH_TEMPERATURE_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_LOW_BATTERY_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_LOW_STORAGE_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_POWER_SAVE_MODE_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_SWITCH_DISABLED_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_ALREADY_RUNNING_ERROR:
+        case MEDIA_LIBRARY_ACTIVE_ANALYSIS_OTHER_ERROR:
+        case MEDIA_LIBRARY_INVALID_PARAMETER_ERROR:
+        case MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR:
+            return code;
+        case ACTIVE_ANALYSIS_SERVICE_TASK_ABNORMAL:
+        case ACTIVE_ANALYSIS_SERVICE_GET_FILE_ID_FAIL:
+        case ACTIVE_ANALYSIS_SERVICE_DESCRIPTOR_NOT_MATCHED:
+        case ACTIVE_ANALYSIS_SERVICE_TASK_TIMEOUT:
+        default:
+            return MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+    }
 }
 
 string MediaLibraryNapiUtils::GetAlbumIdFromUriString(const string& uri)

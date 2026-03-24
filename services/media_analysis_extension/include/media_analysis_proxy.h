@@ -33,6 +33,7 @@ class MediaAnalysisProxy : public IRemoteProxy<IMediaAnalysisService> {
 public:
     explicit MediaAnalysisProxy(const sptr<IRemoteObject> &impl);
     ~MediaAnalysisProxy();
+    static sptr<IRemoteObject> GetRemoteObject(int32_t code);
     bool static SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
 
 private:
