@@ -18,12 +18,14 @@
 
 #include "media_library_napi.h"
 
-#include <new>
 #include <sys/sendfile.h>
+
+#include <new>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
+#include "active_analysis_error_utils.h"
 #include "active_analysis_napi_callback.h"
 #include "album_order_napi.h"
 #include "confirm_callback.h"
@@ -9000,6 +9002,10 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_SEARCH_INDEX", AnalysisType::ANALYSIS_SEARCH_INDEX },
         { "ANALYSIS_SELECTED", AnalysisType::ANALYSIS_SELECTED },
         { "ANALYSIS_DUPLICATE_SIMILARITY", AnalysisType::ANALYSIS_DUPLICATE_SIMILARITY },
+        { "ANALYSIS_NEGATIVE_EMOTION", AnalysisType::ANALYSIS_NEGATIVE_EMOTION },
+        { "ANALYSIS_FACE_AESTHETICS", AnalysisType::ANALYSIS_FACE_AESTHETICS },
+        { "ANALYSIS_MAGIC_EMOJI", AnalysisType::ANALYSIS_MAGIC_EMOJI },
+        { "ANALYSIS_AI_EDIT", AnalysisType::ANALYSIS_AI_EDIT },
         { "ANALYSIS_VIDEO_AESTHETICS", AnalysisType::ANALYSIS_VIDEO_AESTHETICS },
         { "ANALYSIS_PET_FACE", AnalysisType::ANALYSIS_PET_FACE },
         { "ANALYSIS_PET_TAG", AnalysisType::ANALYSIS_PET_TAG },
@@ -10950,7 +10956,7 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     }
 
     context->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_ASSET_ANALYSIS);
     StartAssetAnalysisReqBody reqBody;
     StartAssetAnalysisRespBody respBody;
     std::vector<std::string> fileIds;
@@ -11187,7 +11193,7 @@ static bool HandleStartActiveAnalysisResponse(MediaLibraryAsyncContext *context,
         return false;
     }
 
-    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
+    context->retVal = NormalizeActiveAnalysisErrorCode(respBody.result);
     if (context->retVal != E_OK) {
         ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
         return false;
@@ -11227,7 +11233,7 @@ static void JSStartActiveAnalysisExecute(napi_env env, void *data)
 
     StartActiveAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS), reqBody, respBody);
+        static_cast<uint32_t>(MediaLibraryBusinessCode::START_ACTIVE_ANALYSIS), reqBody, respBody);
     NAPI_INFO_LOG("Active analysis IPC returned, ret: %{public}d, resp.result: %{public}d, saRemote: %{public}p",
         ret, respBody.result, respBody.saRemote.GetRefPtr());
     (void)HandleStartActiveAnalysisResponse(context, callbackRegistryId, ret, respBody);
@@ -11248,7 +11254,7 @@ static void JSStopActiveAnalysisExecute(napi_env env, void *data)
 
     StopActiveAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS), reqBody, respBody);
+        static_cast<uint32_t>(MediaLibraryBusinessCode::STOP_ACTIVE_ANALYSIS), reqBody, respBody);
     if (ret != E_OK) {
         if (ret == E_INVALID_ARGUMENTS) {
             context->error = JS_E_PARAM_INVALID;
@@ -11257,7 +11263,7 @@ static void JSStopActiveAnalysisExecute(napi_env env, void *data)
         context->SaveError(ret);
         return;
     }
-    context->retVal = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(respBody.result);
+    context->retVal = NormalizeActiveAnalysisErrorCode(respBody.result);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessStartActiveAnalysis(napi_env env, napi_callback_info info)

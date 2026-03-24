@@ -122,7 +122,7 @@ int32_t MediaAnalysisDataControllerService::GetIndexConstructProgress(MessagePar
  
 int32_t MediaAnalysisDataControllerService::StartAssetAnalysis(MessageParcel &data, MessageParcel &reply)
 {
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_ASSET_ANALYSIS);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
     StartAssetAnalysisReqBody reqBody;
@@ -141,14 +141,14 @@ int32_t MediaAnalysisDataControllerService::StartAssetAnalysis(MessageParcel &da
 
 int32_t MediaAnalysisDataControllerService::StartActiveAnalysis(MessageParcel &data, MessageParcel &reply)
 {
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_ACTIVE_ANALYSIS);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
     StartActiveAnalysisReqBody reqBody;
     StartActiveAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("StartActiveAnalysis read request error");
+        MEDIA_ERR_LOG("StartActiveAnalysis read request error, ret=%{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
@@ -163,14 +163,14 @@ int32_t MediaAnalysisDataControllerService::StartActiveAnalysis(MessageParcel &d
 
 int32_t MediaAnalysisDataControllerService::StopActiveAnalysis(MessageParcel &data, MessageParcel &reply)
 {
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::STOP_ACTIVE_ANALYSIS);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);
     StopActiveAnalysisReqBody reqBody;
     StopActiveAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("StopActiveAnalysis read request error");
+        MEDIA_ERR_LOG("StopActiveAnalysis read request error, ret=%{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 

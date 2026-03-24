@@ -17,32 +17,104 @@
 
 #include "active_analysis_napi_callback.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cinttypes>
+#include <condition_variable>
 #include <new>
+#include <thread>
+#include <type_traits>
 #include <unordered_map>
+#include <vector>
 
+#include "active_analysis_error_utils.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_napi_utils.h"
 #include "media_library_error_code.h"
+#include "medialibrary_napi_utils.h"
 
 namespace OHOS::Media {
 namespace {
 const std::string ACTIVE_ANALYSIS_RESULT_FIELD = "result";
 constexpr size_t MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS = 512;
+constexpr auto ACTIVE_ANALYSIS_CALLBACK_TIMEOUT = std::chrono::seconds(600);
+using ThreadSafeFunctionHandle = std::remove_pointer_t<napi_threadsafe_function>;
 
 struct ActiveAnalysisRegistryRecord {
     std::shared_ptr<ActiveAnalysisJsCallbackHolder> holder;
     sptr<ActiveAnalysisJsCallbackStub> callbackStub;
     sptr<IRemoteObject> callbackRemote;
+    std::chrono::steady_clock::time_point deadline;
 };
 
 std::mutex g_activeAnalysisRegistryMutex;
+std::condition_variable g_activeAnalysisRegistryCv;
 std::unordered_map<uint64_t, ActiveAnalysisRegistryRecord> g_activeAnalysisRegistry;
 uint64_t g_activeAnalysisRegistryId = 1;
+bool g_activeAnalysisRegistryWatchdogRunning = false;
 
 struct ActiveAnalysisJsCallbackData {
     int32_t result = 0;
 };
+
+struct ThreadSafeFunctionReleaser {
+    void operator()(ThreadSafeFunctionHandle *threadSafeFunc) const
+    {
+        if (threadSafeFunc == nullptr) {
+            return;
+        }
+        napi_release_threadsafe_function(
+            reinterpret_cast<napi_threadsafe_function>(threadSafeFunc), napi_tsfn_release);
+    }
+};
+
+using ThreadSafeFunctionGuard = std::unique_ptr<ThreadSafeFunctionHandle, ThreadSafeFunctionReleaser>;
+
+static void ActiveAnalysisRegistryTimeoutLoop()
+{
+    std::unique_lock<std::mutex> lock(g_activeAnalysisRegistryMutex);
+    for (;;) {
+        if (g_activeAnalysisRegistry.empty()) {
+            g_activeAnalysisRegistryWatchdogRunning = false;
+            NAPI_INFO_LOG("Active analysis callback watchdog thread exit because registry is empty");
+            return;
+        }
+        auto now = std::chrono::steady_clock::now();
+        auto nextDeadline = now + ACTIVE_ANALYSIS_CALLBACK_TIMEOUT;
+        std::vector<std::pair<uint64_t, std::shared_ptr<ActiveAnalysisJsCallbackHolder>>> timeoutRecords;
+        for (auto it = g_activeAnalysisRegistry.begin(); it != g_activeAnalysisRegistry.end();) {
+            if (it->second.deadline <= now) {
+                timeoutRecords.emplace_back(it->first, it->second.holder);
+                it = g_activeAnalysisRegistry.erase(it);
+                continue;
+            }
+            nextDeadline = std::min(nextDeadline, it->second.deadline);
+            ++it;
+        }
+        if (!timeoutRecords.empty()) {
+            lock.unlock();
+            for (const auto &[registryId, holder] : timeoutRecords) {
+                if (holder == nullptr) {
+                    continue;
+                }
+                NAPI_WARN_LOG("Active analysis callback timeout reached before any result, registryId: %{public}" PRIu64,
+                    registryId);
+                (void)holder->NotifyResult(MEDIA_LIBRARY_ACTIVE_ANALYSIS_OTHER_ERROR, "watchdog_timeout");
+            }
+            lock.lock();
+            continue;
+        }
+        g_activeAnalysisRegistryCv.wait_until(lock, nextDeadline);
+    }
+}
+
+static void StartActiveAnalysisRegistryTimeoutThreadIfNeededLocked(bool &startThread)
+{
+    if (g_activeAnalysisRegistryWatchdogRunning) {
+        return;
+    }
+    g_activeAnalysisRegistryWatchdogRunning = true;
+    startThread = true;
+}
 
 static void CallJsActiveAnalysisCallback(napi_env env, napi_value jsCallback, void *context, void *data)
 {
@@ -123,8 +195,10 @@ napi_status ActiveAnalysisJsCallbackHolder::Create(
         "Failed to create active analysis callback work name");
     CHECK_STATUS_RET(napi_create_threadsafe_function(env, callback, nullptr, workName, 0, 1, nullptr, nullptr,
         nullptr, CallJsActiveAnalysisCallback, &threadSafeFunc), "Failed to create active analysis tsfn");
+    ThreadSafeFunctionGuard threadSafeFuncGuard(reinterpret_cast<ThreadSafeFunctionHandle *>(threadSafeFunc));
     holder = std::make_shared<ActiveAnalysisJsCallbackHolder>(threadSafeFunc);
     CHECK_COND_RET(holder != nullptr, napi_generic_failure, "Failed to allocate active analysis callback holder");
+    (void)threadSafeFuncGuard.release();
     NAPI_INFO_LOG("Created active analysis callback holder, holder: %{public}p, tsfn: %{public}p",
         holder.get(), threadSafeFunc);
     return napi_ok;
@@ -175,7 +249,7 @@ int32_t ActiveAnalysisJsCallbackHolder::NotifyResult(int32_t result, const char 
     if (threadSafeFunc == nullptr) {
         return E_OK;
     }
-    int32_t normalizedResult = MediaLibraryNapiUtils::NormalizeActiveAnalysisErrorCode(result);
+    int32_t normalizedResult = NormalizeActiveAnalysisErrorCode(result);
     NAPI_INFO_LOG("Notify active analysis callback, raw result: %{public}d, normalized result: %{public}d,"
         " source: %{public}s, registryId: %{public}" PRIu64, result, normalizedResult, source, registryId);
     auto *callbackData = new (std::nothrow) ActiveAnalysisJsCallbackData();
@@ -248,23 +322,31 @@ bool ActiveAnalysisJsCallbackHolder::BindSaRemote(const sptr<IRemoteObject> &saR
 
 void ActiveAnalysisJsCallbackHolder::Release()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (released_) {
-        NAPI_INFO_LOG("Active analysis callback holder already released");
-        return;
-    }
-    NAPI_INFO_LOG("Release active analysis callback holder, holder: %{public}p, resultReceived: %{public}d,"
-        " resultPostedToJs: %{public}d, hasSaRemote: %{public}d", this, resultReceived_, resultPostedToJs_,
-        saRemote_ != nullptr);
-    released_ = true;
-    if (saRemote_ != nullptr && saDeathRecipient_ != nullptr) {
-        saRemote_->RemoveDeathRecipient(saDeathRecipient_);
-    }
-    saDeathRecipient_ = nullptr;
-    saRemote_ = nullptr;
-    if (threadSafeFunc_ != nullptr) {
-        napi_release_threadsafe_function(threadSafeFunc_, napi_tsfn_release);
+    sptr<IRemoteObject> saRemote;
+    sptr<IRemoteObject::DeathRecipient> saDeathRecipient;
+    napi_threadsafe_function threadSafeFunc = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (released_) {
+            NAPI_INFO_LOG("Active analysis callback holder already released");
+            return;
+        }
+        NAPI_INFO_LOG("Release active analysis callback holder, holder: %{public}p, resultReceived: %{public}d,"
+            " resultPostedToJs: %{public}d, hasSaRemote: %{public}d", this, resultReceived_, resultPostedToJs_,
+            saRemote_ != nullptr);
+        released_ = true;
+        saRemote = saRemote_;
+        saDeathRecipient = saDeathRecipient_;
+        threadSafeFunc = threadSafeFunc_;
+        saDeathRecipient_ = nullptr;
+        saRemote_ = nullptr;
         threadSafeFunc_ = nullptr;
+    }
+    if (saRemote != nullptr && saDeathRecipient != nullptr) {
+        saRemote->RemoveDeathRecipient(saDeathRecipient);
+    }
+    if (threadSafeFunc != nullptr) {
+        napi_release_threadsafe_function(threadSafeFunc, napi_tsfn_release);
     }
 }
 
@@ -308,18 +390,30 @@ uint64_t ActiveAnalysisJsCallbackRegistry::Register(const std::shared_ptr<Active
         return 0;
     }
 
-    std::lock_guard<std::mutex> lock(g_activeAnalysisRegistryMutex);
-    if (g_activeAnalysisRegistry.size() >= MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS) {
-        NAPI_ERR_LOG("Active analysis callback registry is full, size: %{public}zu",
-            g_activeAnalysisRegistry.size());
-        return 0;
+    bool startThread = false;
+    uint64_t registryId = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_activeAnalysisRegistryMutex);
+        if (g_activeAnalysisRegistry.size() >= MAX_ACTIVE_ANALYSIS_CALLBACK_RECORDS) {
+            NAPI_ERR_LOG("Active analysis callback registry is full, size: %{public}zu",
+                g_activeAnalysisRegistry.size());
+            return 0;
+        }
+        registryId = g_activeAnalysisRegistryId++;
+        g_activeAnalysisRegistry.emplace(registryId, ActiveAnalysisRegistryRecord {
+            holder, callbackStub, callbackRemote, std::chrono::steady_clock::now() + ACTIVE_ANALYSIS_CALLBACK_TIMEOUT});
+        StartActiveAnalysisRegistryTimeoutThreadIfNeededLocked(startThread);
     }
-    uint64_t registryId = g_activeAnalysisRegistryId++;
-    g_activeAnalysisRegistry.emplace(registryId, ActiveAnalysisRegistryRecord {holder, callbackStub, callbackRemote});
     holder->SetRegistryId(registryId);
     NAPI_INFO_LOG("Register active analysis callback registry, registryId: %{public}" PRIu64
         ", holder: %{public}p, callbackStub: %{public}p, callbackRemote: %{public}p", registryId, holder.get(),
         callbackStub.GetRefPtr(), callbackRemote.GetRefPtr());
+    if (startThread) {
+        NAPI_INFO_LOG("Start active analysis callback watchdog thread");
+        std::thread(ActiveAnalysisRegistryTimeoutLoop).detach();
+    } else {
+        g_activeAnalysisRegistryCv.notify_one();
+    }
     return registryId;
 }
 
@@ -334,5 +428,6 @@ void ActiveAnalysisJsCallbackRegistry::Unregister(uint64_t registryId)
     NAPI_INFO_LOG("Unregister active analysis callback registry, registryId: %{public}" PRIu64
         ", erased: %{public}d, remain: %{public}zu", registryId, static_cast<int32_t>(erased),
         g_activeAnalysisRegistry.size());
+    g_activeAnalysisRegistryCv.notify_one();
 }
 } // namespace OHOS::Media

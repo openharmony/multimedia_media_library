@@ -41,6 +41,7 @@ ohos_unittest("media_analysis_data_service_test") {
   ]
 
   sources = [
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/service/active_analysis_manager.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/service/media_analysis_data_service.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_analysis_album_operations.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dto/change_request_set_order_position_dto.cpp",
@@ -49,9 +50,11 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_dismiss_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_merge_album_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_place_before_dto.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/start_active_analysis_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/start_asset_analysis_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_asset_analysis_data_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_index_construct_progress_vo.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/stop_active_analysis_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_set_order_position_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_order_position_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_set_relationship_vo.cpp",
@@ -65,6 +68,7 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/active_analysis_manager_test.cpp",
     "./src/media_analysis_data_service_test.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_album_dao.cpp",
