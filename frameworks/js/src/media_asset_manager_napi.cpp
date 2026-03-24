@@ -1866,8 +1866,8 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
-    bool isHighQaulity = false;
-    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()), isHighQaulity);
+    bool isHighQuality = false;
+    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()), isHighQuality);
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;
@@ -1877,7 +1877,7 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     isPicture = true;
     NAPI_ERR_LOG("picture is not null");
 
-    photoQuality = isHighQaulity ? MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS
+    photoQuality = isHighQuality ? MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS
                                  : MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     napi_value tempPictureNapi;
     PictureNapi::CreatePictureNapi(env, &tempPictureNapi);

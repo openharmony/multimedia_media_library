@@ -904,6 +904,7 @@ static void Check200mPicture(MediaLibraryCommand &cmd)
         MEDIA_DEBUG_LOG("no need Check200mPicture");
     }
     auto pictureManagerThread = PictureManagerThread::GetInstance();
+    CHECK_AND_RETURN_LOG(pictureManagerThread != nullptr, "pictureManagerThread is null");
     string imageId = pictureManagerThread->GetLast200mImageId();
     if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
         pictureManagerThread->DeleteDataWithImageId(imageId, LOW_QUALITY_PICTURE);

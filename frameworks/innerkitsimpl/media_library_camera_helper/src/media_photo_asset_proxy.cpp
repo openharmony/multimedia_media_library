@@ -510,7 +510,7 @@ int32_t PhotoAssetProxy::GetVideoFd(VideoType videoType)
     Uri openVideoUri(videoUri);
     int32_t fd = dataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READWRITE);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} GetVideoFd enter, video path: %{public}s, fd: %{public}d",
-        MLOG_TAG, __FUNCTION__, __LINE__, videoUri.c_str(), fd);
+        MLOG_TAG, __FUNCTION__, __LINE__, MediaUriUtils::GetSafeUri(videoUri).c_str(), fd);
     return fd;
 }
 
