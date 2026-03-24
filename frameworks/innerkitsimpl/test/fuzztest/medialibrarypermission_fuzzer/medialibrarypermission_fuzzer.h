@@ -103,7 +103,7 @@ const std::vector<MediaLibraryBusinessCode> BUSINESS_CODE_LIST = {
     MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA,
     MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA,
     MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS,
-    MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS,
+    MediaLibraryBusinessCode::START_ASSET_ANALYSIS,
     MediaLibraryBusinessCode::PAH_REQUEST_CONTENT,
     MediaLibraryBusinessCode::QUERY_PHOTO_STATUS,
     MediaLibraryBusinessCode::LOG_MOVING_PHOTO,

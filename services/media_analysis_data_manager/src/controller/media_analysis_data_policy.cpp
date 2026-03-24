@@ -38,9 +38,9 @@ namespace OHOS::Media::AnalysisData {
 static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> mediaAnalysisDataPermissionPolicy = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSET_ANALYSIS_DATA), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_INDEX_CONSTRUCT_PROGRESS), {{SYSTEMAPI_PERM, READ_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::START_ASSET_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::START_ACTIVE_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::STOP_ACTIVE_ANALYSIS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
         {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION), { {SYSTEMAPI_PERM, READ_PERM} }},
