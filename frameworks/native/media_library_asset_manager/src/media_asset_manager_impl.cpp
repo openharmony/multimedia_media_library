@@ -49,6 +49,7 @@
 #include "medialibrary_business_code.h"
 #include "user_inner_ipc_client.h"
 #include "query_photo_vo.h"
+#include "media_string_utils.h"
 
 using namespace OHOS::Security::AccessToken;
 namespace OHOS {
@@ -450,7 +451,13 @@ std::string MediaAssetManagerImpl::NativeRequestImage(const char* photoUri,
     asyncContext->destUri = std::string(destUri);
     asyncContext->requestUri = std::string(photoUri);
     asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
-    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->requestUri));
+    int fileId = 0;
+    bool result = MediaStringUtils::ConvertToInt(MediaFileUtils::GetIdFromUri(asyncContext->requestUri), fileId);
+    if (!result) {
+        MEDIA_ERR_LOG("invalid fileId %{public}s", MediaFileUtils::GetIdFromUri(asyncContext->requestUri).c_str());
+        return ERROR_REQUEST_ID;
+    }
+    asyncContext->fileId = fileId;
     asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
     asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
     asyncContext->returnDataType = ReturnDataType::TYPE_TARGET_FILE;
@@ -491,7 +498,13 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     asyncContext->destUri = std::string(destUri);
     asyncContext->requestUri = std::string(videoUri);
     asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
-    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->requestUri));
+    int fileId = 0;
+    bool result = MediaStringUtils::ConvertToInt(MediaFileUtils::GetIdFromUri(asyncContext->requestUri), fileId);
+    if (!result) {
+        MEDIA_ERR_LOG("invalid fileId %{public}s", MediaFileUtils::GetIdFromUri(asyncContext->requestUri).c_str());
+        return ERROR_REQUEST_ID;
+    }
+    asyncContext->fileId = fileId;
     asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
     asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
     asyncContext->returnDataType = ReturnDataType::TYPE_TARGET_FILE;
@@ -544,7 +557,7 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     }
     if (sDataShareHelper_ == nullptr) {
         CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ == nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
             "sDataShareHelper_ is null");
     }
 

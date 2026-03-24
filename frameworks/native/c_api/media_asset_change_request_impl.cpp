@@ -169,6 +169,14 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::AddResourceWithBuffer(MediaL
     if (dataBuffer_ != nullptr) {
         delete[] dataBuffer_;
     }
+
+    constexpr uint32_t MAX_BUFFER_SIZE = 1024 * 1024 * 1024; // 1GB
+    if (length > MAX_BUFFER_SIZE) {
+        MEDIA_ERR_LOG("buffer length %{public}u exceeds maximum allowed size %{public}u",
+            length, MAX_BUFFER_SIZE);
+        return MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+    }
+
     dataBuffer_ = new uint8_t[length + 1];
     CHECK_AND_RETURN_RET_LOG(dataBuffer_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
         "create dataBuffer_ failed!");
@@ -553,6 +561,10 @@ bool MediaAssetChangeRequestImpl::WriteCacheByArrayBuffer(const OHOS::UniqueFd& 
     size_t length = isMovingPhotoVideo ? movingPhotoVideoBufferSize_ : dataBufferSize_;
     void* dataBuffer = isMovingPhotoVideo ? movingPhotoVideoDataBuffer_ : dataBuffer_;
     while (offset < length) {
+        if (dataBuffer ==nullptr) {
+            MEDIA_ERR_LOG("dataBuffer is nullptr.");
+            return false;
+        }
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
         CHECK_AND_RETURN_RET_LOG(written >= 0, false,
             "Failed to write data buffer to cache file, return %{public}d", static_cast<int>(written));
