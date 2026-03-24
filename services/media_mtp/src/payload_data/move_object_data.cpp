@@ -38,6 +38,7 @@ int MoveObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("MoveObjectData::parser paramCount=%{public}u, needCount=%{public}u",
@@ -46,9 +47,12 @@ int MoveObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->storageID = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->parent = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+        MTP_ERROR_PACKET_INCORRECT, "MoveObjectData::parser get handle failed");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->storageID),
+        MTP_ERROR_PACKET_INCORRECT, "MoveObjectData::parser get storageID failed");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->parent),
+        MTP_ERROR_PACKET_INCORRECT, "MoveObjectData::parser get parent failed");
     return MTP_SUCCESS;
 }
 

@@ -57,6 +57,7 @@ static constexpr uint8_t THUMBNAIL_MID               = 90;
 constexpr int32_t SHORT_SIDE_THRESHOLD               = 350;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD       = 1050;
 constexpr int32_t ASPECT_RATIO_THRESHOLD             = 3;
+constexpr uint32_t FETCH_ADD_ONE                     = 1;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
 static std::shared_mutex g_mutex;
@@ -107,7 +108,7 @@ void MtpMediaLibrary::Clear()
 
 uint32_t MtpMediaLibrary::GetId()
 {
-    return id_++;
+    return id_.fetch_add(FETCH_ADD_ONE);
 }
 
 static bool ContainsInvalidName(const std::string &str)
@@ -187,15 +188,16 @@ int32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR,
         "MtpMediaLibrary::ScanDirNoDepth root[%{public}s] is not exists", root.c_str());
     std::error_code ec;
-    for (const auto& entry : sf::directory_iterator(root, ec)) {
-        if (ec.value() != MTP_SUCCESS) {
-            continue;
-        }
+    auto it = sf::directory_iterator(root, ec);
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, E_ERR, "directory_iterator failed");
+    for (const auto& entry : it) {
+        auto realPath = sf::weakly_canonical(entry.path(), ec);
+        CHECK_AND_CONTINUE_ERR_LOG(realPath.string().find(root) == 0, "realPath is not in root path");
         // show not recycle dir
-        if (sf::is_directory(entry.path(), ec) && IsHiddenDirectory(entry.path().string())) {
+        if (sf::is_directory(realPath, ec) && IsHiddenDirectory(realPath)) {
             continue;
         }
-        uint32_t id = AddPathToMap(entry.path().string());
+        uint32_t id = AddPathToMap(realPath.string());
         out->push_back(id);
     }
     return MTP_SUCCESS;
@@ -380,7 +382,6 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
     CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, path) == MTP_SUCCESS,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR),
             "MtpMediaLibrary::GetHandles parent[%{public}d] not found", parentId);
-    MEDIA_DEBUG_LOG("MtpMediaLibrary::GetHandles path[%{public}s]", path.c_str());
     int32_t errCode;
     {
         WriteLock lock(g_mutex);
@@ -473,7 +474,7 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
     }
 
     outFd = open(realPath.c_str(), mode);
-    MEDIA_INFO_LOG("MTP:file %{public}s fd %{public}d", realPath.c_str(), outFd);
+    MEDIA_INFO_LOG("MTP:file fd %{public}d", outFd);
     CHECK_AND_RETURN_RET(outFd <= 0, MtpErrorUtils::SolveGetFdError(E_SUCCESS));
     return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
 }
@@ -1263,14 +1264,19 @@ void MtpMediaLibrary::GetExternalStorages()
     CHECK_AND_RETURN_LOG(access(SD_DOC.c_str(), R_OK) == 0, "access failed [%{public}s]", SD_DOC.c_str());
     std::error_code ec;
     CHECK_AND_RETURN_LOG(sf::exists(SD_DOC, ec) && sf::is_directory(SD_DOC, ec), "SD_DOC is not exists");
-    for (const auto& entry : sf::directory_iterator(SD_DOC, ec)) {
-        if (!sf::is_directory(entry.path(), ec)) {
-            continue;
-        }
-        MEDIA_INFO_LOG("Mtp GetExternalStorages path[%{public}s]", entry.path().c_str());
+
+    auto it = sf::directory_iterator(SD_DOC, ec);
+    CHECK_AND_RETURN_LOG(ec.value() == MTP_SUCCESS, "directory_iterator failed");
+
+    for (const auto& entry : it) {
+        auto realPath = sf::weakly_canonical(entry.path(), ec);
+        CHECK_AND_CONTINUE_ERR_LOG(realPath.string().find(SD_DOC) == 0, "realPath is not in root path");
+
+        CHECK_AND_CONTINUE(sf::is_directory(realPath, ec));
+        MEDIA_INFO_LOG("Mtp GetExternalStorages path[%{private}s]", realPath.c_str());
 
         uint32_t storageId;
-        AddExternalStorage(entry.path().filename().string(), storageId);
+        AddExternalStorage(realPath.filename().string(), storageId);
     }
 }
 

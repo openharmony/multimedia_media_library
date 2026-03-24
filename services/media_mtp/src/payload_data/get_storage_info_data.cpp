@@ -37,11 +37,13 @@ int GetStorageInfoData::Parser(const std::vector<uint8_t>& buffer, int32_t readS
     if (context_ == nullptr) {
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     if ((readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE < 1) { // param num < 1
         return MTP_ERROR_PACKET_INCORRECT;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->storageInfoID = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->storageInfoID),
+        MTP_ERROR_PACKET_INCORRECT, "GetStorageInfoData::parser get storageInfoID failed");
     return MTP_SUCCESS;
 }
 

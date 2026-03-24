@@ -698,7 +698,8 @@ std::shared_ptr<UInt16List> MtpPacketTool::GetAUInt16(const std::vector<uint8_t>
 {
     std::shared_ptr<UInt16List> result = std::make_shared<UInt16List>();
 
-    uint32_t count = GetUInt32(buffer, offset);
+    uint32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(GetUInt32(buffer, offset, count), result, "GetAUInt16 get count failed");
     uint16_t value = 0;
     for (uint32_t i = 0; i < count; i++) {
         if (!GetUInt16(buffer, offset, value)) {
@@ -715,7 +716,8 @@ std::shared_ptr<UInt32List> MtpPacketTool::GetAUInt32(const std::vector<uint8_t>
 {
     std::shared_ptr<UInt32List> result = std::make_shared<UInt32List>();
 
-    uint32_t count = GetUInt32(buffer, offset);
+    uint32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(GetUInt32(buffer, offset, count), result, "GetAUInt32 get count failed");
     uint32_t value = 0;
     for (uint32_t i = 0; i < count; i++) {
         if (!GetUInt32(buffer, offset, value)) {
@@ -730,21 +732,11 @@ std::shared_ptr<UInt32List> MtpPacketTool::GetAUInt32(const std::vector<uint8_t>
 
 std::string MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset)
 {
-    if (buffer.empty()) {
-        return std::string();
+    std::string ret;
+    if (GetString(buffer, offset, ret)) {
+        return ret;
     }
-    uint8_t count = GetUInt8(buffer, offset);
-    if (count < 1) {
-        return std::string();
-    }
-    std::vector<char16_t> tmpbuf(count);
-    uint16_t ch = 0;
-    for (int i = 0; i < count; i++) {
-        ch = GetUInt16(buffer, offset);
-        tmpbuf[i] = ch;
-    }
-    std::string String = Utf16ToUtf8(std::u16string(tmpbuf.data()));
-    return String;
+    return std::string();
 }
 
 bool MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str)
@@ -953,6 +945,7 @@ void MtpPacketTool::DumpPacket(const std::vector<uint8_t> &outBuffer)
         MEDIA_DEBUG_LOG("MtpPacketTool::CanDump return false");
         return;
     }
+    CHECK_AND_RETURN_LOG(outBuffer.size() >= OFFSET_6, "MtpPacketTool::DumpPacket, size incorrect");
     int offset = 0;
     uint32_t containerLength = MtpPacketTool::GetUInt32(outBuffer[offset], outBuffer[offset + OFFSET_1],
         outBuffer[offset + OFFSET_2], outBuffer[offset + OFFSET_3]);

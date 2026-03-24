@@ -33,6 +33,7 @@
 namespace OHOS {
 namespace Media {
 namespace {
+    static std::mutex mutex_;
     std::atomic<bool> isMtpServiceRunning = false;
     const std::string KEY_CUST = "const.cust.custPath";
     const std::string CUST_DEFAULT = "phone";
@@ -86,6 +87,10 @@ void MediaMtpManager::Init()
         }
         MEDIA_INFO_LOG("MediaMtpManager Init success end");
     }).detach();
+}
+
+void MediaMtpManager::Stop()
+{
     MediaMtpManager::GetInstance().RemoveMtpParamListener();
 }
 
@@ -103,6 +108,7 @@ void MediaMtpManager::RemoveMtpParamListener()
 
 void MediaMtpManager::OnMtpParamDisableChanged(const char *key, const char *value, void *context)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     bool cond = (key == nullptr || value == nullptr);
     CHECK_AND_RETURN_LOG(!cond, "OnMtpParamDisableChanged return invalid value");
     MEDIA_INFO_LOG("OnMTPParamDisable, key = %{public}s, value = %{public}s", key, value);

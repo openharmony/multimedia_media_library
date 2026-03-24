@@ -229,6 +229,7 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MtpErrorUtils::SolveGetHandlesError(E_SUCCESS), "have no handles");
     GetHandlesProcessResultSet(resultSet, outHandles);
+    resultSet->Close();
     return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
 }
 
@@ -301,6 +302,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
         string ownerAlbumId = GetStringVal(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         ownerAlbumIds.push_back(ownerAlbumId);
     }
+    resultSet->Close();
     int32_t errCode = GetAlbumCloud();
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, nullptr, "fail to GetAlbumCloud");
     errCode = GetAlbumCloudDisplay(ownerAlbumIds);
@@ -409,6 +411,7 @@ vector<string> MtpMedialibraryManager::GetBurstKeyFromPhotosInfo()
         string bustKey = GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet);
         bustKeys.push_back(bustKey);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
     return bustKeys;
 }
 
@@ -475,12 +478,14 @@ int32_t MtpMedialibraryManager::GetHandles(const shared_ptr<MtpOperationContext>
             int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             outHandles->push_back(id);
         } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+        resultSet->Close();
         return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
     }
     resultSet = GetPhotosInfo(context, true);
     FileCountInfo fileCountInfo;
     errCode = HaveMovingPhotesHandle(resultSet, outHandles, context->parent, fileCountInfo);
     CountPhotosNumber(context, fileCountInfo);
+    resultSet->Close();
     return MtpErrorUtils::SolveGetHandlesError(errCode);
 }
 
@@ -500,6 +505,7 @@ int32_t MtpMedialibraryManager::GetAllHandles(
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         out->push_back(id);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
 
     DataShare::DataSharePredicates predicates;
     predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
@@ -534,6 +540,7 @@ int32_t MtpMedialibraryManager::GetAllHandles(
             out->push_back(videoId);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
     return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
 }
 
@@ -556,7 +563,9 @@ int32_t MtpMedialibraryManager::GetObjectInfo(const shared_ptr<MtpOperationConte
         MtpErrorUtils::SolveGetObjectInfoError(E_NO_SUCH_FILE), "fail to get object set");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MtpErrorUtils::SolveGetObjectInfoError(E_NO_SUCH_FILE), "have no handles");
-    return SetObject(resultSet, context, outObjectInfo);
+    auto ret = SetObject(resultSet, context, outObjectInfo);
+    resultSet->Close();
+    return ret;
 }
 
 uint32_t MtpMedialibraryManager::GetSizeFromOfft(const off_t &size)
@@ -1369,16 +1378,19 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
     }
     shared_ptr<FileAsset> fileAsset;
     errCode = GetAssetById(HandleConvertToAdded(context->handle), fileAsset);
+    CondCloseFd(errCode != E_SUCCESS, fd);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS,
         MtpErrorUtils::SolveCloseFdError(errCode), "fail to GetAssetById");
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(CONST_MEDIA_DATA_DB_URI, MEDIALIBRARY_DATA_URI + "/" + CONST_PTP_OPERATION + "/" +
         CONST_MEDIA_FILEOPRN_CLOSEASSET +
         "/" + to_string(HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET));
+    CondCloseFd(fileAsset == nullptr, fd);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "fileAsset is nullptr");
     MEDIA_INFO_LOG("CloseFd %{public}s, FilePath  %{public}s", fileAsset->GetUri().c_str(),
         fileAsset->GetFilePath().c_str());
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + CONST_PTP_OPERATION + "/" + CONST_MEDIA_FILEOPRN_CLOSEASSET);
+    CondCloseFd(dataShareHelper_ == nullptr, fd);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     if (close(fd) == MTP_SUCCESS) {

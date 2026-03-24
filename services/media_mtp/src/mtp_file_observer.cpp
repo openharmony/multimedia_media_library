@@ -179,7 +179,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
             }
         }
         positionEvent++;
-        ret -= static_cast<int>(sizeof(struct inotify_event));
+        ret -= static_cast<int>(sizeof(struct inotify_event) + event->len);
     }
     return true;
 }

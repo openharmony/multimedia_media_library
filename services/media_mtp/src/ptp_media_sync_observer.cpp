@@ -47,6 +47,7 @@ const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string INVALID_FILE_ID = "-1";
 constexpr uint64_t DELAY_FOR_MOVING_MS = 5000;
 constexpr uint64_t DELAY_FOR_BURST_MS = 12000;
+constexpr uint32_t MAX_PARCEL_SIZE = 200 * 1024;
 // LCOV_EXCL_START
 bool startsWith(const std::string& str, const std::string& prefix)
 {
@@ -151,6 +152,7 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
     do {
         burstKey.push_back(GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
 
     CHECK_AND_RETURN_RET_LOG(!burstKey.empty(), handlesResult,
         "Mtp GetHandlesFromPhotosInfoBurstKeys burstKey is empty");
@@ -175,6 +177,7 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
         }
         handlesResult.push_back(atoi(file_id.c_str()));
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
     return handlesResult;
 }
 
@@ -201,6 +204,7 @@ vector<string> MediaSyncObserver::GetAllDeleteHandles()
         string file_id = GetStringVal(PhotoColumn::MEDIA_ID, resultSet);
         handlesResult.push_back(file_id);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
     return handlesResult;
 }
 
@@ -281,6 +285,7 @@ void MediaSyncObserver::AddBurstPhotoHandle(string burstKey)
         uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
         SendEventPackets(actualHandle, MTP_EVENT_OBJECT_ADDED_CODE);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
     needAddMemberBurstKeys_.erase(burstKey);
 }
 
@@ -343,6 +348,7 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
         SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     }
+    resultSet->Close();
 }
 
 void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
@@ -388,6 +394,7 @@ void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
         SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     }
+    resultSet->Close();
 }
 
 int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
@@ -405,6 +412,7 @@ int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         ERR_NUM, "Mtp GetAddEditAlbumHandle have no row");
     int32_t album_id = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+    resultSet->Close();
     return album_id;
 }
 
@@ -506,6 +514,7 @@ void MediaSyncObserver::GetAlbumIdList(std::set<int32_t> &albumIds)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         albumIds.insert(GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
     }
+    resultSet->Close();
 }
 
 void MediaSyncObserver::GetOwnerAlbumIdList(std::set<int32_t> &albumIds)
@@ -525,6 +534,7 @@ void MediaSyncObserver::GetOwnerAlbumIdList(std::set<int32_t> &albumIds)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         albumIds.insert(GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet));
     }
+    resultSet->Close();
 }
 
 void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<int32_t> &albumIds)
@@ -581,8 +591,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
 
 bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<string> &fileIds)
 {
-    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0 ||
-        changeInfo.size_ > std::numeric_limits<uint32_t>::max()) {
+    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0 || changeInfo.size_ > MAX_PARCEL_SIZE) {
         MEDIA_DEBUG_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
         return false;
     }
@@ -658,6 +667,7 @@ void MediaSyncObserver::HandleMovePhotoEvent(const ChangeInfo &changeInfo)
             SendEventPackets(fileId + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
 }
 
 void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
@@ -707,8 +717,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         ChangeInfo changeInfoCopy = changeInfo;
-        if (changeInfo.data_ != nullptr && changeInfo.size_ > 0 &&
-            changeInfo.size_ <= std::numeric_limits<uint32_t>::max()) {
+        if (changeInfo.data_ != nullptr && changeInfo.size_ > 0 && changeInfo.size_ <= MAX_PARCEL_SIZE) {
             changeInfoCopy.data_ = malloc(changeInfo.size_);
             CHECK_AND_RETURN_LOG(changeInfoCopy.data_ != nullptr, "changeInfoCopy.data_ is nullptr.");
             if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),

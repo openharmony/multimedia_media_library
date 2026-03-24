@@ -22,6 +22,7 @@ namespace Media {
 class MediaMtpManager {
 public:
     EXPORT void Init();
+    EXPORT void Stop();
     EXPORT static MediaMtpManager &GetInstance();
     void RegisterMtpParamListener();
     void RemoveMtpParamListener();

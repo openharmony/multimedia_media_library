@@ -39,6 +39,7 @@ int SetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_FAIL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
     if (!context_->indata) {
         int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
@@ -47,8 +48,11 @@ int SetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
                 parameterCount, PARSER_PARAM_SUM);
             return MTP_INVALID_PARAMETER_CODE;
         }
-        context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-        context_->property = MtpPacketTool::GetUInt32(buffer, offset);
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+            MTP_ERROR_PACKET_INCORRECT, "SetObjectPropValueData::parser get handle failed");
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->property),
+            MTP_ERROR_PACKET_INCORRECT, "SetObjectPropValueData::parser get property failed");
+
         auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(context_->property);
         if (properType == MTP_TYPE_UNDEFINED_CODE) {
             MEDIA_ERR_LOG("SetObjectPropValueData::parser unsupported type");

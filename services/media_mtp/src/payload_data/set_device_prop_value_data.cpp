@@ -43,6 +43,7 @@ int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("SetDevicePropValueData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -51,7 +52,8 @@ int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
     if (!context_->indata) {
-        context_->property = MtpPacketTool::GetUInt32(buffer, offset);
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->property),
+            MTP_ERROR_PACKET_INCORRECT, "SetDevicePropValueData::parser get property failed");
     } else {
         PaserPropValue(buffer, offset, context_->property);
     }
@@ -76,12 +78,15 @@ uint32_t SetDevicePropValueData::CalculateSize()
 
 void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t propertyCode)
 {
-    string value = MtpPacketTool::GetString(buffer, offset);
-
     switch (propertyCode) {
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
-            if (!MtpOperationUtils::SetPropertyInner("const.product.name", value)) {
-                MEDIA_ERR_LOG("PaserPropValue SetPropertyInner fail");
+            {
+                std::string value("");
+                CHECK_AND_RETURN_LOG(MtpPacketTool::GetString(buffer, offset, value),
+                    "SetDevicePropValueData::PaserPropValue get value failed");
+                if (!MtpOperationUtils::SetPropertyInner("const.product.name", value)) {
+                    MEDIA_ERR_LOG("PaserPropValue SetPropertyInner fail");
+                }
             }
             break;
         case MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE:
