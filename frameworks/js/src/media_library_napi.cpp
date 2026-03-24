@@ -238,7 +238,6 @@ const std::string REQUEST_PHOTO_URIS_READPERMISSIONEX = "requestPhotoUrisReadPer
 const std::string ACTIVE_ANALYSIS_CONFIG_TYPE = "type";
 const std::string ACTIVE_ANALYSIS_CONFIG_URIS = "uris";
 const std::string ACTIVE_ANALYSIS_CONFIG_PARAM = "param";
-
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
 const std::string LANGUAGE_ZH_TR = "zh-Hant";
@@ -8049,6 +8048,9 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
 
 static napi_value ParseActiveAnalysisConfig(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
+    constexpr size_t MAX_ACTIVE_ANALYSIS_URI_COUNT = 100;
+    constexpr size_t MAX_ACTIVE_ANALYSIS_PARAM_LENGTH = 500;
+
     napi_valuetype valueType = napi_undefined;
     CHECK_ARGS(env, napi_typeof(env, arg, &valueType), JS_ERR_PARAMETER_INVALID);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "config invalid");
@@ -8065,6 +8067,7 @@ static napi_value ParseActiveAnalysisConfig(napi_env env, napi_value arg, MediaL
     CHECK_COND_WITH_MESSAGE(env, urisValue != nullptr, "uris invalid");
     std::vector<std::string> uris;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, urisValue, uris), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_MESSAGE(env, uris.size() <= MAX_ACTIVE_ANALYSIS_URI_COUNT, "uris invalid");
     context.uris = uris;
     context.activeAnalysisFileIds.clear();
     context.activeAnalysisFileIds.reserve(uris.size());
@@ -8081,6 +8084,8 @@ static napi_value ParseActiveAnalysisConfig(napi_env env, napi_value arg, MediaL
         CHECK_COND_WITH_MESSAGE(env, paramValue != nullptr, "param invalid");
         CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, paramValue, context.activeAnalysisParam),
             JS_ERR_PARAMETER_INVALID);
+        CHECK_COND_WITH_MESSAGE(env, context.activeAnalysisParam.size() <= MAX_ACTIVE_ANALYSIS_PARAM_LENGTH,
+            "param invalid");
     }
 
     napi_value result = nullptr;

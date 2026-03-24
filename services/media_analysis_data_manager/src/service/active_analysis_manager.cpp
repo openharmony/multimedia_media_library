@@ -33,7 +33,7 @@ constexpr int32_t SUPPORTED_ACTIVE_ANALYSIS_TYPE_BEGIN = static_cast<int32_t>(AN
 constexpr int32_t SUPPORTED_ACTIVE_ANALYSIS_TYPE_END = static_cast<int32_t>(ANALYSIS_TYPE_END);
 constexpr size_t SUPPORTED_ACTIVE_ANALYSIS_TYPE_COUNT = static_cast<size_t>(
     SUPPORTED_ACTIVE_ANALYSIS_TYPE_END - SUPPORTED_ACTIVE_ANALYSIS_TYPE_BEGIN - 1);
-constexpr size_t MAX_ACTIVE_ANALYSIS_FILE_ID_COUNT = 500;
+constexpr size_t MAX_ACTIVE_ANALYSIS_FILE_ID_COUNT = 100;
 constexpr size_t MAX_ACTIVE_ANALYSIS_PARAM_LENGTH = 500;
 
 bool IsPositiveNumericString(const std::string &value)
