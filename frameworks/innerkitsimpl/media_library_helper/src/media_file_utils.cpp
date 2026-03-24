@@ -2369,6 +2369,7 @@ int32_t MediaFileUtils::MoveDirectory(const std::string &srcDir, const std::stri
         std::string srcFilePath = entry.path();
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        CHECK_AND_CONTINUE_DEBUG_LOG(srcFilePath.find("transcode.jpg") == std::string::npos, "skip transcode.jpg");
         if (entry.is_directory()) {
             CHECK_AND_RETURN_RET_LOG(CreateDirectory(dstFilePath),
                 E_FAIL,
