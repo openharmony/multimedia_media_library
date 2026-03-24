@@ -612,8 +612,10 @@ export struct PhotoPickerComponent {
     }
     this.pickerController.isPhotoBrowserShowCallback = () => {
       if (isEnter) {
+        this.pickerController.isPhotoBrowserShow = true;
         return true;
       } esle {
+        this.pickerController.isPhotoBrowserShow = false;
         return false;
       }
     }
@@ -665,9 +667,9 @@ export struct PhotoPickerComponent {
         return undefined;
     }
     if (isMovingPhotoBadgeShown === true) {
-        isMovingPhotoBadgeShownValid = true;
+        this.pickerController.isMovingPhotoBadgeShownValid = true;
     } else {
-        isMovingPhotoBadgeShownValid = false;
+        this.pickerController.isMovingPhotoBadgeShownValid = false;
     }
     return isMovingPhotoBadgeShown;
   }
@@ -901,7 +903,8 @@ export class PickerController {
   saveCallbackMap: Map<number, Object> = new Map<number, Object>();
   createCallbackMap: Map<number, Object> = new Map<number, Object>();
   saveCallbackPromises: Map<number, Object> = new Map<number, Object>();
-
+  isPhotoBrowserShow: boolean = false;
+  isMovingPhotoBadgeShownValid: boolean = false;
   setData(type: DataType, data: Object) {
     if (data === undefined) {
       return;
@@ -972,9 +975,9 @@ export class PickerController {
       if (e !== MovingPhotoBadgeStateType.ADD_DATA && e !== MovingPhotoBadgeStateType.DELETE_DATA) {
           throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
       }
-      console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(isPhotoBrowserShow) +
-        ', this.isMovingPhotoBadgeShownValid=' + isMovingPhotoBadgeShownValid);
-      if (!isPhotoBrowserShow || isMovingPhotoBadgeShownValid) {
+      console.info('SET_MOVINGPHOTO_STATE, this.isPhotoBrowserShow : ' + JSON.stringify(this.isPhotoBrowserShow) +
+        ', this.isMovingPhotoBadgeShownValid=' + this.isMovingPhotoBadgeShownValid);
+      if (!this.isPhotoBrowserShow || this.isMovingPhotoBadgeShownValid) {
           throw new BusinessError(ILLEGAL_SCENARIO_CALL_ERROR_MESSAGE, ILLEGAL_SCENARIO_CALL_ERROR_CODE);
       }
       if (e !== undefined) {
