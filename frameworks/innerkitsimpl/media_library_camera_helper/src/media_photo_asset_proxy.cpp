@@ -31,7 +31,6 @@
 #include "mimetype_utils.h"
 #include "user_inner_ipc_client.h"
 #include "userfilemgr_uri.h"
-#include "dfx_utils.h"
 
 using namespace std;
 
@@ -511,7 +510,7 @@ int32_t PhotoAssetProxy::GetVideoFd(VideoType videoType)
     Uri openVideoUri(videoUri);
     int32_t fd = dataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READWRITE);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} GetVideoFd enter, video path: %{public}s, fd: %{public}d",
-        MLOG_TAG, __FUNCTION__, __LINE__, DfxUtils::GetSafeUri(videoUri).c_str(), fd);
+        MLOG_TAG, __FUNCTION__, __LINE__, MediaUriUtils::GetSafeUri(videoUri).c_str(), fd);
     return fd;
 }
 
