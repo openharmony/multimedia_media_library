@@ -75,6 +75,7 @@ int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, int3
         return MTP_SESSION_NOT_OPEN_CODE;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -83,7 +84,10 @@ int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, int3
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    context_->format = MtpPacketTool::GetUInt32(buffer, offset);
+    uint32_t format = 0;
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, format),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropsSupportedData::parser get format failed");
+    context_->format = static_cast<uint16_t>(format);
     return MTP_SUCCESS;
 }
 

@@ -319,6 +319,9 @@ void MediaDataShareExtAbility::OnStop()
     Media::HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
     MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+#ifdef MEDIALIBRARY_MTP_ENABLE
+    MediaMtpManager::GetInstance().Stop();
+#endif
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }

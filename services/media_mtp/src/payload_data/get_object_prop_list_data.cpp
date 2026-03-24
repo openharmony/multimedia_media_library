@@ -38,6 +38,7 @@ int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, int32_t re
         return MTP_FAIL;
     }
 
+    CHECK_AND_RETURN_RET_LOG(readSize > MTP_CONTAINER_HEADER_SIZE, MTP_ERROR_PACKET_INCORRECT, "readsize error");
     int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropListData::parser paramCount=%{public}u, needCount=%{public}d",
@@ -47,11 +48,18 @@ int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, int32_t re
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
 
-    context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->format = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->property = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->groupCode = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->depth = MtpPacketTool::GetUInt32(buffer, offset);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->handle),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropListData::parser get handle failed");
+    uint32_t format = 0;
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, format),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropListData::parser get format failed");
+    context_->format = static_cast<uint16_t>(format);
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->property),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropListData::parser get property failed");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->groupCode),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropListData::parser get groupCode failed");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt32(buffer, offset, context_->depth),
+        MTP_ERROR_PACKET_INCORRECT, "GetObjectPropListData::parser get depth failed");
     return MTP_SUCCESS;
 }
 
