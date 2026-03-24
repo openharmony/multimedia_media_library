@@ -1096,7 +1096,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchMovingPhotos(int32_t cur
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEditedEffectMovingPhotoNotExistInEditFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 0);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     } else { // 原图存在 效果图不存在的 原图搬迁至效果图位置
         MEDIA_INFO_LOG("DirtyMediaHandler Edit Move To Movingphoto Effect Folder:%{public}s",
@@ -1122,7 +1122,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchNormalPhotos(int32_t cur
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEditedEffectFileNotExistInEditFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 0);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     } else { // 原图存在 效果图不存在的 编辑数据不存在 原图搬迁至效果图位置
         MEDIA_INFO_LOG("DirtyMediaHandler Edit Move To Effect Folder:%{public}s",
