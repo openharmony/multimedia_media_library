@@ -24,12 +24,15 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class JsInterfaceHelper {
 public:
-    static std::string PredicateToStringSafe(const std::shared_ptr<DataShare::DataShareAbsPredicates>& predicate);
-    static std::string GetSafeUri(const std::string& uri);
-    static std::string GetSafeDisplayName(const std::string& displayName);
-    static std::string MaskString(const std::string& str);
+    EXPORT static std::string PredicateToStringSafe(
+        const std::shared_ptr<DataShare::DataShareAbsPredicates>& predicate);
+    EXPORT static std::string GetSafeUri(const std::string& uri);
+    EXPORT static std::string GetSafeDisplayName(const std::string& displayName);
+    EXPORT static std::string MaskString(const std::string& str);
+    EXPORT static bool PredicatesHasOrderClause(const DataShare::DataShareAbsPredicates& predicate);
 };
 } // namespace Media
 } // namespace OHOS

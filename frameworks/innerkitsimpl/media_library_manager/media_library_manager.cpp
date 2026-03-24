@@ -62,6 +62,7 @@
 #include "change_request_move_assets_vo.h"
 #include "album_get_assets_vo.h"
 #include "image_source.h"
+#include "js_interface_helper.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -1512,7 +1513,9 @@ FetchResult<FileAsset> MediaLibraryManager::GetAssets(const PhotoAlbum &album,
     CHECK_AND_RETURN_RET_LOG(AddDefaultAssetColumnsForInner(fetchColumnsForChange, PhotoColumn::IsPhotoColumn),
         fileAsset, "AddDefaultAssetColumnsForInner invalid");
     if (album.GetHiddenOnly() || album.GetPhotoAlbumSubType() == PhotoAlbumSubType::HIDDEN) {
-        predicateForChange.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+        if (!JsInterfaceHelper::PredicatesHasOrderClause(predicateForChange)) {
+            predicateForChange.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        }
     }
     if (album.GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
         album.GetPhotoAlbumSubType() != PhotoAlbumSubType::GROUP_PHOTO && !IsFeaturedSinglePortraitAlbum(album)) {

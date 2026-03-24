@@ -41,6 +41,7 @@
 #include "get_face_id_vo.h"
 #include "shooting_mode_column.h"
 #include "get_fussion_assets_vo.h"
+#include "js_interface_helper.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -1255,7 +1256,9 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         }
         context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
-        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+        if (!JsInterfaceHelper::PredicatesHasOrderClause(context->predicates)) {
+            context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        }
     }
 
     napi_value result = nullptr;

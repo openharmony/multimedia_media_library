@@ -21,6 +21,7 @@
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 #include "album_operation_uri.h"
+#include "js_interface_helper.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -161,7 +162,9 @@ void PhotoAlbumImpl::ParseArgsGetPhotoAssets(COptions options, DataSharePredicat
             return;
         }
         // sort by hidden time desc if is hidden asset
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+        if (!JsInterfaceHelper::PredicatesHasOrderClause(predicates)) {
+            predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        }
     }
 }
 
