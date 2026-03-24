@@ -960,7 +960,10 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectFileNotExistInEditFolder(int32
         AddFileToTableWithFixedName(curBucketNum, fileName);
         int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
         MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
-    } else {
+        MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
+    } else if (cpSucc) {
+        int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
+        MEDIA_INFO_LOG("DirtyMediaHandler No Record ApplyEditEffectToFile Ret: %{public}d", ret);
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
@@ -989,7 +992,9 @@ bool MediaCleanAllDirtyFilesTask::DealEffectFileNotExistInEditFolder(int32_t cur
         MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str(), cpSucc);
     if (cpSucc && !ExistPhotoPathInDB(dirtyFilePathInfo.effectFolderFile)) {
         AddFileToTableWithFixedName(curBucketNum, fileName);
-    } else {
+        // ReScan file, size may change
+        MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
+    } else if (cpSucc) {
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
@@ -1030,6 +1035,7 @@ bool MediaCleanAllDirtyFilesTask::DealEditedEffectMovingPhotoNotExistInEditFolde
         AddMovingPhotoFileToTableWithFixedName(curBucketNum, fileName);
         int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
         MEDIA_INFO_LOG("DirtyMediaHandler ApplyEditEffectToFile Ret: %{public}d", ret);
+        MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     } else {
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
@@ -1049,7 +1055,7 @@ bool MediaCleanAllDirtyFilesTask::DealEffectMovingPhotoNotExistInEditFolder(int3
     }
     if (MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile) ||
         MediaFileUtils::IsFileExists(dirtyFilePathInfo.localEffectFile)) { // 再查一次 避免误操作
-        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder Cp To Org: %{public}s",
+        MEDIA_ERR_LOG("DirtyMediaHandler DealEditedEffectFileNotExistInEditFolder movingphtoto Cp To Org: %{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.localEffectFile).c_str());
         return true;
     }
@@ -1115,7 +1121,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchNormalPhotos(int32_t cur
             MediaFileUtils::DesensitizePath(folderName).c_str());
         UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 0);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
-    } else { // 原图存在 效果图不存在的 原图搬迁至效果图位置
+    } else { // 原图存在 效果图不存在的 编辑数据不存在 原图搬迁至效果图位置
         MEDIA_INFO_LOG("DirtyMediaHandler Edit Move To Effect Folder:%{public}s",
             MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
         bool finish = DealEffectFileNotExistInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
