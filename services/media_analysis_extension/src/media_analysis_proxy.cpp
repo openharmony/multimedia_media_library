@@ -33,14 +33,14 @@ MediaAnalysisProxy::~MediaAnalysisProxy()
     MEDIA_INFO_LOG("destroy MediaAnalysisProxy instance");
 }
 
-bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
+sptr<IRemoteObject> MediaAnalysisProxy::GetRemoteObject(int32_t code)
 {
     auto saMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saMgr == nullptr) {
         MEDIA_ERR_LOG("Get samgr failed, samgr is nullptr, code: %{public}d", code);
-        return false;
+        return nullptr;
     }
-    int32_t minTimeout = 4;
+    constexpr int32_t minTimeout = 4;
     sptr<IRemoteObject> remoteObject;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -55,11 +55,25 @@ bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, Mess
                 MEDIA_ERR_LOG(
                     "Failed to send transact %{public}d due to remote object is null, SA will be unloaded", code);
                 saMgr->UnloadSystemAbility(SAID);
-                return false;
+                return nullptr;
             }
         }
     }
+    return remoteObject;
+}
 
+bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    auto saMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saMgr == nullptr) {
+        MEDIA_ERR_LOG("Get samgr failed, samgr is nullptr, code: %{public}d", code);
+        return false;
+    }
+    auto remoteObject = GetRemoteObject(code);
+    if (remoteObject == nullptr) {
+        MEDIA_ERR_LOG("Failed to get remote object, code: %{public}d", code);
+        return false;
+    }
     int32_t result = remoteObject->SendRequest(code, data, reply, option);
     if (result != NO_ERROR) {
         MEDIA_ERR_LOG("receive error transact result: %{public}d, code: %{public}d, SA will be unloaded", result, code);

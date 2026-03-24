@@ -21,8 +21,12 @@
 #include "medialibrary_business_code.h"
 #include "dfx_timer.h"
 #include "media_log.h"
+#include "start_active_analysis_dto.h"
+#include "start_active_analysis_vo.h"
 #include "start_asset_analysis_dto.h"
 #include "start_asset_analysis_vo.h"
+#include "stop_active_analysis_dto.h"
+#include "stop_active_analysis_vo.h"
 #include "get_asset_analysis_data_vo.h"
 #include "get_asset_analysis_data_dto.h"
 #include "get_index_construct_progress_vo.h"
@@ -132,6 +136,49 @@ int32_t MediaAnalysisDataControllerService::StartAssetAnalysis(MessageParcel &da
     dto.uri = reqBody.uri;
     dto.predicates = reqBody.predicates;
     ret = MediaAnalysisDataService::GetInstance().StartAssetAnalysis(dto, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::StartActiveAnalysis(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    StartActiveAnalysisReqBody reqBody;
+    StartActiveAnalysisRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("StartActiveAnalysis read request error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    StartActiveAnalysisDto dto;
+    dto.analysisTypes = reqBody.analysisTypes;
+    dto.fileIds = reqBody.fileIds;
+    dto.param = reqBody.param;
+    dto.callbackRemote = reqBody.callbackRemote;
+    ret = MediaAnalysisDataService::GetInstance().StartActiveAnalysis(dto, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::StopActiveAnalysis(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    StopActiveAnalysisReqBody reqBody;
+    StopActiveAnalysisRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("StopActiveAnalysis read request error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    StopActiveAnalysisDto dto;
+    dto.analysisTypes = reqBody.analysisTypes;
+    dto.fileIds = reqBody.fileIds;
+    dto.param = reqBody.param;
+    ret = MediaAnalysisDataService::GetInstance().StopActiveAnalysis(dto, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 

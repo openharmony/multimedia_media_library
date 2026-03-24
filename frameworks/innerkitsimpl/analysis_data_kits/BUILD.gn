@@ -19,6 +19,8 @@ config("analysis_data_kits_config") {
   include_dirs = [
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/analysis_data_kits/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/analysis_data_kits/include/vo",
   ]
 }
  
@@ -29,7 +31,9 @@ ohos_shared_library("analysis_data_kits") {
     "./analysis_data_manager.cpp",
     "./vo/get_asset_analysis_data_vo.cpp",
     "./vo/get_index_construct_progress_vo.cpp",
+    "./vo/start_active_analysis_vo.cpp",
     "./vo/start_asset_analysis_vo.cpp",
+    "./vo/stop_active_analysis_vo.cpp",
     "./vo/change_request_set_order_position_vo.cpp",
     "./vo/get_order_position_vo.cpp",
     "./vo/change_request_set_relationship_vo.cpp",

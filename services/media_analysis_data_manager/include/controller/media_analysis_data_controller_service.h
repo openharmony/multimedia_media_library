@@ -36,6 +36,8 @@ public:
     EXPORT int32_t GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t StartAssetAnalysis(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t StartActiveAnalysis(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t StopActiveAnalysis(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetOrderPosition(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetOrderPosition(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetRelationship(MessageParcel &data, MessageParcel &reply);
@@ -69,6 +71,14 @@ private:
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS),
             &MediaAnalysisDataControllerService::StartAssetAnalysis
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS),
+            &MediaAnalysisDataControllerService::StartActiveAnalysis
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS),
+            &MediaAnalysisDataControllerService::StopActiveAnalysis
         },
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
