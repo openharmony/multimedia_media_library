@@ -573,7 +573,11 @@ void DfxManager::HandleTwoDayMissions()
         auto *taskData = new (nothrow) StatisticData(dfxReporter_);
         CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for Handle Two Day Missions!");
         auto twoDayTask = make_shared<DfxTask>(HandleCheckTwoDayTask, taskData);
-        CHECK_AND_RETURN_LOG(twoDayTask != nullptr, "Failed to create dfx task.");
+        if (twoDayTask == nullptr) {
+            MEDIA_ERR_LOG("Failed to create dfx task.");
+            taskData->release();
+            return;
+        }
         dfxWorker_->AddTask(twoDayTask);
         int64_t time = MediaFileUtils::UTCTimeSeconds();
         prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);

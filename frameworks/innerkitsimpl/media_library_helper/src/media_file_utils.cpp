@@ -717,7 +717,7 @@ static bool DecodeEncodeSaveAsset(int32_t srcFd, int32_t dstFd, const std::strin
 bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::string &dstFile,
     const std::string &extension, int32_t width, int32_t height)
 {
-    MEDIA_DEBUG_LOG("ConvertFormatCopy srcFile: %{public}s, dstFile: %{public}s, extension: %{public}s",
+    MEDIA_DEBUG_LOG("ConvertFormatCopy srcFile: %{private}s, dstFile: %{private}s, extension: %{private}s",
         srcFile.c_str(), dstFile.c_str(), extension.c_str());
     CHECK_AND_RETURN_RET_LOG(srcFile.size() < PATH_MAX, false,
         "File path too long %{public}d", static_cast<int>(srcFile.size()));
