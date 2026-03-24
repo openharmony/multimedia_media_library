@@ -541,4 +541,16 @@
             <option name="shell" value="rm -rf /data/local/tmp/assets_share_resources"/>
         </cleaner>
     </target>
+    <target name="media_library_lcd_aging_test">
+        <preparer>
+            <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /data/CreateImageThumbnailTest_001.jpg" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /data/local/tmp" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /storage/media/local/files/Photo/1" src="res"/>
+        </preparer>
+        <cleaner>
+            <option name="shell" value="rm -rf /data/test/*"/>
+            <option name="shell" value="rm -rf /data/test/.*"/>
+            <option name="shell" value="rm -rf /storage/media/local/files/Photo/*"/>
+        </cleaner>
+    </target>
 </configuration>
