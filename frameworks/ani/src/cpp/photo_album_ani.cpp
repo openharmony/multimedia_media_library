@@ -40,6 +40,7 @@
 #include "interop_js/arkts_interop_js_api.h"
 #include "transfer_utils.h"
 #include "ani_transfer_lib_manager.h"
+#include "js_interface_helper.h"
 
 namespace OHOS::Media {
 using CreatePhotoAlbumNapiFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
@@ -409,7 +410,9 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
         }
         context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
-        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+        if (!JsInterfaceHelper::PredicatesHasOrderClause(context->predicates)) {
+            context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        }
     }
     return ANI_OK;
 }

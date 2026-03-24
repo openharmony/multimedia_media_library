@@ -209,5 +209,17 @@ string JsInterfaceHelper::PredicateToStringSafe(const shared_ptr<DataShare::Data
     return toPrint;
 }
 
+bool JsInterfaceHelper::PredicatesHasOrderClause(const DataShare::DataShareAbsPredicates& predicate)
+{
+    auto &items = predicate.GetOperationList();
+    for (size_t i = 0; i < items.size(); i++) {
+        if (items[i].operation == DataShare::OperationType::ORDER_BY_ASC ||
+            items[i].operation == DataShare::OperationType::ORDER_BY_DESC) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace Media
 } // namespace OHOS
