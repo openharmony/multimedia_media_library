@@ -272,6 +272,10 @@ bool MediaLibraryAppUriPermissionOperations::GetIntFromValuesBucket(
 int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<NativeRdb::ResultSet> &resultSetDB,
     int &permissionTypeParam, std::shared_ptr<TransactionOperations> trans)
 {
+    if (resultSetDB == nullptr) {
+        MEDIA_ERR_LOG("resultSetDB is null in UpdatePermissionType");
+        return ERROR;
+    }
     int32_t permissionTypeDB =
         MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::PERMISSION_TYPE);
     if (!CanOverride(permissionTypeParam, permissionTypeDB)) {

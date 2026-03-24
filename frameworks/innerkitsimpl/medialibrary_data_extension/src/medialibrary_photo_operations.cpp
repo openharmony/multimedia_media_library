@@ -1895,6 +1895,10 @@ int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand
     std::string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
     std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     std::string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
+    if (filePath.find("..") != string::npos) {
+        MEDIA_ERR_LOG("Invalid file path with path traversal: %{private}s", filePath.c_str());
+        return E_INVALID_VALUES;
+    }
     int32_t fileIdNum = static_cast<int32_t>(std::strtoul(fileId.c_str(), nullptr, 10));
     VideoInfo videoInfo = {fileIdNum, VideoCount::SINGLE, filePath, "", ""};
     MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, videoInfo);

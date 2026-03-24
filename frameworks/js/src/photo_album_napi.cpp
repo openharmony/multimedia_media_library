@@ -1488,6 +1488,10 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_ERR_PARAMETER_INVALID);
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "PhotoAlbum instance is null");
+        return nullptr;
+    }
     if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
         return nullptr;
