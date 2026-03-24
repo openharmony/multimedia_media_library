@@ -85,6 +85,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/photo_album_operation/photo_album_upload_status_operation_test.cpp",
     "./src/picture_data_operations_test.cpp",
     "./src/picture_manager_thread_test.cpp",
+    "./src/photo_album_operation/photo_album_update_date_modified_operation_test.cpp",
   ]
 
   if (media_library_facard_enable) {

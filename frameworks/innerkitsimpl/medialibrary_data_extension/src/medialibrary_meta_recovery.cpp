@@ -158,6 +158,10 @@ static void SetValuesFromFileAsset(const FileAsset &fileAsset, NativeRdb::Values
 
 static void SetValuesFromPhotoAlbum(shared_ptr<PhotoAlbum> &photoAlbumPtr, NativeRdb::ValuesBucket &values)
 {
+    if (photoAlbumPtr == nullptr) {
+        MEDIA_ERR_LOG("photoAlbumPtr is null in SetValuesFromPhotoAlbum");
+        return;
+    }
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, photoAlbumPtr->GetPhotoAlbumType());
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbumPtr->GetPhotoAlbumSubType());
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, photoAlbumPtr->GetAlbumName());
