@@ -5231,7 +5231,7 @@ static void PhotoAccessStartAssetAnalysisExecute(ani_env *env, std::unique_ptr<M
         return;
     }
     asyncContext->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_ASSET_ANALYSIS);
     StartAssetAnalysisReqBody reqBody;
     StartAssetAnalysisRespBody rspBody;
     std::vector<std::string> fileIds;
