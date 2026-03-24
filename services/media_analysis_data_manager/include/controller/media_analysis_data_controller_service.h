@@ -69,15 +69,15 @@ private:
             &MediaAnalysisDataControllerService::GetIndexConstructProgress
         },
         {
-            static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS),
+            static_cast<uint32_t>(MediaLibraryBusinessCode::START_ASSET_ANALYSIS),
             &MediaAnalysisDataControllerService::StartAssetAnalysis
         },
         {
-            static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ACTIVE_ANALYSIS),
+            static_cast<uint32_t>(MediaLibraryBusinessCode::START_ACTIVE_ANALYSIS),
             &MediaAnalysisDataControllerService::StartActiveAnalysis
         },
         {
-            static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_STOP_ACTIVE_ANALYSIS),
+            static_cast<uint32_t>(MediaLibraryBusinessCode::STOP_ACTIVE_ANALYSIS),
             &MediaAnalysisDataControllerService::StopActiveAnalysis
         },
         {

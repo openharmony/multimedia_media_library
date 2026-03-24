@@ -561,7 +561,6 @@ public:
     static std::string TransferUri(const std::string &oldUri);
     static std::string GetFileIdFromUriString(const std::string& uri);
     static std::string GetAlbumIdFromUriString(const std::string& uri);
-    static int32_t NormalizeActiveAnalysisErrorCode(int32_t code);
     static napi_value GetSharedPhotoAssets(const napi_env& env, std::shared_ptr<NativeRdb::ResultSet> result,
         int32_t size, bool isSingleResult = false);
     static napi_value GetSharedAlbumAssets(const napi_env& env, std::shared_ptr<NativeRdb::ResultSet> result,
