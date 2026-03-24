@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <securec.h>
+#include <filesystem>
 
 #include "moving_photo_impl.h"
 #include "media_file_utils.h"
@@ -27,6 +28,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "userfile_client.h"
+#include "dfx_utils.h"
 
 using namespace OHOS::Media;
 using UniqueFd = OHOS::UniqueFd;
@@ -199,11 +201,24 @@ int32_t MovingPhotoImpl::OpenReadOnlyFile(const std::string& uri, bool isReadIma
         std::vector<std::string> uris;
         if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
             MEDIA_ERR_LOG("Failed to open read only file, split moving photo failed");
-            return -1;
+            return E_ERR;
+        }
+        if (uris.size() < MOVING_PHOTO_URIS_SIZE) {
+            MEDIA_ERR_LOG("Failed to check uris size, size = %{public}d", uris.size());
+            return E_ERR;
         }
         curUri = uris[isReadImage ? MOVING_PHOTO_IMAGE_POS : MOVING_PHOTO_VIDEO_POS];
     }
     return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri) : OpenReadOnlyVideo(curUri, isMediaLibUri);
+}
+
+static std::string NormalizePath(const std::string& path)
+{
+    std::error_code errorCode;
+    std::filesystem::path canonicalPath = std::filesystem::canonical(path, errorCode);
+    CHECK_AND_RETURN_RET_LOG(!errorCode, "", "Failed to canonicalize path: %{public}s, message: %{public}s",
+        DfxUtils::GetSafePath(path).c_str(), errorCode.message().c_str());
+    return canonicalPath.string();
 }
 
 int32_t MovingPhotoImpl::OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri)
@@ -214,7 +229,9 @@ int32_t MovingPhotoImpl::OpenReadOnlyImage(const std::string& imageUri, bool isM
     }
     OHOS::AppFileService::ModuleFileUri::FileUri fileUri(imageUri);
     std::string realPath = fileUri.GetRealPath();
-    int32_t fd = open(realPath.c_str(), O_RDONLY);
+    std::string normalizedRealPath = NormalizePath(realPath);
+    CHECK_AND_RETURN_RET_LOG(!normalizedRealPath.empty(), E_ERR, "Failed to normalize path");
+    int32_t fd = open(normalizedRealPath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_ERR, "Failed to open read only image file");
 
     return fd;
