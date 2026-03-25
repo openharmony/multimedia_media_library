@@ -47,7 +47,7 @@ void DurationParser::UpdateDuration(const string &path)
 {
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(videoPath);
-    if (duration < 0) {
+    if (duration <= 0) {
         MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
         duration = INVALID_DURATION;
     }
