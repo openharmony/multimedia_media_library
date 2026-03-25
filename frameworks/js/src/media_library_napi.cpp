@@ -11157,8 +11157,8 @@ static bool PrepareStartActiveAnalysisCallback(MediaLibraryAsyncContext *context
         return false;
     }
     reqBody.callbackRemote = callbackStub->AsObject();
-    NAPI_INFO_LOG("Prepared active analysis callback remote, callbackStub: %{public}p, callbackRemote: %{public}p",
-        callbackStub.GetRefPtr(), reqBody.callbackRemote.GetRefPtr());
+    NAPI_INFO_LOG("Prepared active analysis callback remote, callbackStubValid: %{public}d, "
+        "callbackRemoteValid: %{public}d", callbackStub != nullptr, reqBody.callbackRemote != nullptr);
     callbackRegistryId = ActiveAnalysisJsCallbackRegistry::Register(
         context->activeAnalysisCallbackHolder, callbackStub, reqBody.callbackRemote);
     if (callbackRegistryId != 0) {
@@ -11177,8 +11177,8 @@ static StartActiveAnalysisReqBody BuildStartActiveAnalysisReqBody(MediaLibraryAs
     reqBody.fileIds = context->activeAnalysisFileIds;
     reqBody.param = context->activeAnalysisParam;
     NAPI_INFO_LOG("Start active analysis execute, typeSize: %{public}zu, fileIdSize: %{public}zu, paramSize:"
-        " %{public}zu, holder: %{public}p", reqBody.analysisTypes.size(), reqBody.fileIds.size(),
-        reqBody.param.size(), context->activeAnalysisCallbackHolder.get());
+        " %{public}zu, holderValid: %{public}d", reqBody.analysisTypes.size(), reqBody.fileIds.size(),
+        reqBody.param.size(), context->activeAnalysisCallbackHolder != nullptr);
     return reqBody;
 }
 
@@ -11209,8 +11209,8 @@ static bool HandleStartActiveAnalysisResponse(MediaLibraryAsyncContext *context,
         ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
         return false;
     }
-    NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemote: %{public}p",
-        respBody.saRemote.GetRefPtr());
+    NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemoteValid: %{public}d",
+        respBody.saRemote != nullptr);
     if (context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
         return true;
     }
@@ -11239,8 +11239,8 @@ static void JSStartActiveAnalysisExecute(napi_env env, void *data)
     StartActiveAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::START_ACTIVE_ANALYSIS), reqBody, respBody);
-    NAPI_INFO_LOG("Active analysis IPC returned, ret: %{public}d, resp.result: %{public}d, saRemote: %{public}p",
-        ret, respBody.result, respBody.saRemote.GetRefPtr());
+    NAPI_INFO_LOG("Active analysis IPC returned, ret: %{public}d, resp.result: %{public}d, "
+        "saRemoteValid: %{public}d", ret, respBody.result, respBody.saRemote != nullptr);
     (void)HandleStartActiveAnalysisResponse(context, callbackRegistryId, ret, respBody);
 }
 
