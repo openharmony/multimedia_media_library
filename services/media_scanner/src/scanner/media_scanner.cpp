@@ -336,7 +336,6 @@ int32_t MediaScannerObj::Commit()
         if (!isSkipAlbumUpdate_) {
             assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
                 NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
-            UpdateAndNotifyShootingModeAlbumOfAsset(data_);
         }
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER
             && data_->GetFileSourceType() != static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
@@ -351,7 +350,6 @@ int32_t MediaScannerObj::Commit()
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_, assetRefresh);
         assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
             NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
-        UpdateAndNotifyShootingModeAlbumOfAsset(data_);
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT
             && data_->GetFileSourceType() != static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);

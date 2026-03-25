@@ -58,6 +58,13 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_test, TestSize.Level1)
     EXPECT_EQ(safePrivateString.find(privateString) == std::string::npos, true);
 }
 
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_empty_test, TestSize.Level1)
+{
+    string emptyString = "";
+    string maskedString = JsInterfaceHelper::MaskString(emptyString);
+    EXPECT_EQ(maskedString.empty(), true);
+}
+
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_PredicatesHasOrderClause_empty_test, TestSize.Level1)
 {
     auto predicates = make_shared<DataShare::DataSharePredicates>();
