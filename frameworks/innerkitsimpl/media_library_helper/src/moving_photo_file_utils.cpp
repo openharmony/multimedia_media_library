@@ -1127,12 +1127,6 @@ int32_t MovingPhotoFileUtils::GetMovingPhotoVideoDuration(const string &path)
         return E_ERR;
     }
 
-    string extension = MediaFileUtils::GetExtensionFromPath(absFilePath);
-    if (!MediaFileUtils::CheckMovingPhotoVideoExtension(extension)) {
-        MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
-        return E_ERR;
-    }
-
     UniqueFd uniqueFd(open(absFilePath.c_str(), O_RDONLY));
     return GetMovingPhotoVideoDuration(uniqueFd);
 }
@@ -1173,6 +1167,23 @@ int32_t MovingPhotoFileUtils::GetMovingPhotoVideoDuration(const UniqueFd &unique
 
 bool MovingPhotoFileUtils::CheckMovingPhotoVideo(const string &path)
 {
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path, path: %{private}s", path.c_str());
+        return false;
+    }
+
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to check path for %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    string extension = MediaFileUtils::GetExtensionFromPath(absFilePath);
+    if (!MediaFileUtils::CheckMovingPhotoVideoExtension(extension)) {
+        MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
+        return false;
+    }
+
     int32_t duration = GetMovingPhotoVideoDuration(path);
     if (!CheckMovingPhotoVideoDuration(duration)) {
         MEDIA_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);

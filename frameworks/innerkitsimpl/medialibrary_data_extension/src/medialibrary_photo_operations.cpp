@@ -105,6 +105,7 @@ constexpr int32_t XT_EFFECT_VIDEO = 2;
 constexpr int64_t FIXED_PADDING_BYTES = 1024;
 constexpr int32_t HIGH_PIXEL_SIDE = 12 * 1024;
 constexpr int32_t PHONE_8G_CPU_NUMS = 8;
+constexpr int32_t INVALID_DURATION = -1;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
@@ -3541,6 +3542,30 @@ void MediaLibraryPhotoOperations::ProcessEditedEffectMode(MediaLibraryCommand& c
     updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
 }
 
+static void HandleMovingPhotoDuration(const string &imagePath)
+{
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+    int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(videoPath);
+    if (duration <= 0) {
+        MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
+        duration = INVALID_DURATION;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore when updating duration");
+
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_FILE_PATH, imagePath);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::MEDIA_DURATION, duration);
+    updateCmd.SetValueBucket(updateValues);
+
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    CHECK_AND_RETURN_LOG((errCode == NativeRdb::E_OK && updateRows > 0),
+        "Update duration failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
+}
+
 int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset, bool& isNeedScan)
 {
@@ -3569,6 +3594,9 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     if (!isSourceImageExist || !isSourceVideoExist) {
         MEDIA_INFO_LOG("isSourceImageExist=%{public}d, isSourceVideoExist=%{public}d",
             isSourceImageExist, isSourceVideoExist);
+        if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT)) {
+            HandleMovingPhotoDuration(imagePath);
+        }
         isNeedScan = false;
         return E_OK;
     }

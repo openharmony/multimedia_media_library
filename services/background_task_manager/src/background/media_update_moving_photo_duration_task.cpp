@@ -57,6 +57,8 @@ std::shared_ptr<NativeRdb::ResultSet> MediaUpdateMovingPhotoDurationTask::QueryI
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     predicates.EqualTo(PhotoColumn::MEDIA_DURATION, 0);
+    predicates.NotEqualTo(PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
     predicates.Or();
@@ -93,7 +95,7 @@ bool MediaUpdateMovingPhotoDurationTask::ProcessDuration(const std::vector<Updat
     for (const auto& file : updateFilesList) {
         std::string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(file.path);
         int32_t duration = MovingPhotoFileUtils::GetMovingPhotoVideoDuration(videoPath);
-        if (duration < 0) {
+        if (duration <= 0) {
             MEDIA_ERR_LOG("Get duration failed or invalid duration of moving photo video: %{public}d ms", duration);
             duration = INVALID_DURATION;
         }
