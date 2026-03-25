@@ -34,7 +34,7 @@ bool ParserTaskQueueBase::AddTask(const std::string &path, const std::string &fi
 {
     std::lock_guard<std::mutex> lock(mtx_);
     
-    int32_t maxTaskNum = GetMaxTaskNum();
+    size_t maxTaskNum = GetMaxTaskNum();
     if (tasks_.size() >= maxTaskNum) {
         MEDIA_INFO_LOG("The max queue length has been reached, ignore current task: %{public}s",
             DfxUtils::GetSafePath(path).c_str());
