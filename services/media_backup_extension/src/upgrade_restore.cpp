@@ -368,7 +368,7 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t startGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t endGroupPhoto = startGroupPhoto;
-    if (hasDeletedExistingAlbumData_) {
+    if (isNeedCloneGroupAlbum_) {
         CloneGroupPhotoAlbum cloneGroupPhotoAlbum(sceneCode_, taskId_, mediaLibraryRdb_, galleryRdb_);
         cloneGroupPhotoAlbum.RestoreGroupPhotoAlbum(photoInfoMap_);
         endGroupPhoto = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1724,10 +1724,12 @@ void UpgradeRestore::RestoreAnalysisAlbum()
         (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537)))";
 
     int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT, params);
+    if (totalPortraitAlbumNumber <= 0) {
+        isNeedCloneGroupAlbum_ = false;
+    }
     if (totalPortraitAlbumNumber > 0 && sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
         CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
-        hasDeletedExistingAlbumData_ = true;
     }
 
     RestoreFromGalleryPortraitAlbum();
