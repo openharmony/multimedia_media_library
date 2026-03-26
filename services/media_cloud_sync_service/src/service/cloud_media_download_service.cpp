@@ -501,7 +501,8 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
         string realPath = LakeFileUtils::GetAssetRealPath(logVideoPath);
         string absVideoPath;
         if (!PathToRealPath(realPath, absVideoPath)) {
-            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            MEDIA_ERR_LOG(
+                "file is not real path, file path: %{public}s", MediaFileUtils::DesensitizePath(realPath).c_str());
             continue;
         }
         videoModeData->SetFilePath(realPath);

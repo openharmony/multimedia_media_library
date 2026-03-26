@@ -797,7 +797,8 @@ int32_t MetadataExtractor::BuildMetaData(
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
     std::string realFilePath;
     if (!PathToRealPath(filePath, realFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return E_AVMETADATA;
     }
     int32_t fd = open(realFilePath.c_str(), O_RDONLY);

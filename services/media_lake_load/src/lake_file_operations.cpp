@@ -337,7 +337,9 @@ std::vector<MoveAssetsToLakeUpdateData> LakeFileOperations::GetInnerLakeAssets(
         innerLakeAsset.title = title;
         innerLakeAsset.displayName = displayName;
         innerLakeAsset.storagePath = storagePath;
-        MEDIA_INFO_LOG("dbinfo %{private}s, %{private}s", displayName.c_str(), storagePath.c_str());
+        MEDIA_INFO_LOG("dbinfo %{public}s, %{public}s",
+            MediaFileUtils::DesensitizeName(displayName).c_str(),
+            MediaFileUtils::DesensitizePath(storagePath).c_str());
         innerLakeAssets.emplace_back(innerLakeAsset);
     }
     resultSet->Close();

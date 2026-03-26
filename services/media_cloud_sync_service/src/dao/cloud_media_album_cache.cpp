@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "cloud_media_sync_utils.h"
 
@@ -88,7 +89,8 @@ int32_t CloudMediaAlbumCache::QueryAlbumBylPath(const std::string &lPath, std::o
     if (isFound) {
         albumInfo = *it;
     }
-    MEDIA_INFO_LOG("QueryAlbumBylPath, lPath: %{public}s, isFound: %{public}d", lPath.c_str(), isFound);
+    MEDIA_INFO_LOG("QueryAlbumBylPath, lPath: %{public}s, isFound: %{public}d",
+        MediaFileUtils::DesensitizePath(lPath).c_str(), isFound);
     return E_OK;
 }
 

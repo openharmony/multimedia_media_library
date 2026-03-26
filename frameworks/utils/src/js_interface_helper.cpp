@@ -43,29 +43,6 @@ string JsInterfaceHelper::MaskString(const string& str)
     return maskedString;
 }
 
-string JsInterfaceHelper::GetSafeDisplayName(const string& displayName)
-{
-    if (displayName == "") {
-        return displayName;
-    }
-    string extension;
-    size_t splitIndex = displayName.find_last_of(".");
-    if (splitIndex == string::npos) {
-        extension = "";
-    } else {
-        extension = displayName.substr(splitIndex);
-    }
-    string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
-    if (title.empty()) {
-        return displayName;
-    }
-
-    string safeTitle = MaskString(title);
-    string safeDisplayName = safeTitle + extension;
-
-    return safeDisplayName;
-}
-
 string JsInterfaceHelper::GetSafeUri(const string& uri)
 {
     string safeUri = uri;
@@ -79,7 +56,7 @@ string JsInterfaceHelper::GetSafeUri(const string& uri)
     } else {
         displayName = safeUri.substr(splitIndex + 1);
     }
-    string safeDisplayName = GetSafeDisplayName(displayName);
+    string safeDisplayName = MediaFileUtils::DesensitizeName(displayName);
     safeUri = safeUri.substr(0, splitIndex) + "/" + safeDisplayName;
     return safeUri;
 }
@@ -99,7 +76,7 @@ static string VectorToString(const vector<T>& vector, bool needsRedact, bool isU
             } else if (isUri) {
                 out += '"' + JsInterfaceHelper::GetSafeUri(vector[i]) + '"';
             } else if (isDisplayName) {
-                out += '"' + JsInterfaceHelper::GetSafeDisplayName(vector[i]) + '"';
+                out += '"' + MediaFileUtils::DesensitizeName(vector[i]) + '"';
             } else {
                 out += '"' + JsInterfaceHelper::MaskString(vector[i]) + '"';
             }
@@ -149,7 +126,7 @@ static string SingleValueTypeToString(const DataShare::SingleValue::Type& single
             } else if (isUri) {
                 return '"' + JsInterfaceHelper::GetSafeUri(value) + '"';
             } else if (isDisplayName) {
-                return '"' + JsInterfaceHelper::GetSafeDisplayName(value) + '"';
+                return '"' + MediaFileUtils::DesensitizeName(value) + '"';
             } else {
                 return '"' + JsInterfaceHelper::MaskString(value) + '"';
             }

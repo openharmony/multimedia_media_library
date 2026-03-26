@@ -194,7 +194,8 @@ std::string LakeFileUtils::FindTitlePrefix(InnerFileInfo &fileInfo)
     std::string displayName = fileInfo.displayName;
     auto pos = displayName.find(TITLE_KEY_WORDS_OF_BURST);
     if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("Media_Restore: cannot find _BURST. Object: %{public}s", fileInfo.displayName.c_str());
+        MEDIA_ERR_LOG("Media_Restore: cannot find _BURST. Object: %{public}s",
+            MediaFileUtils::DesensitizeName(fileInfo.displayName).c_str());
         return "";
     }
     return displayName.substr(0, std::min<int32_t>(pos, DISPLAY_NAME_PREFIX_LENGTH) + 1);
@@ -327,15 +328,16 @@ bool LakeFileUtils::CoverLakeFile(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_INFO_LOG("File path is %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return errCode;
     }
     if (absFilePath.empty()) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
-                      DfxUtils::GetSafePath(filePath).c_str(), errno);
+            MediaFileUtils::DesensitizePath(filePath).c_str(), errno);
         return errCode;
     }
 

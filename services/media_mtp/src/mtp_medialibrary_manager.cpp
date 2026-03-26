@@ -687,7 +687,7 @@ int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &con
     std::string realPath;
     CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourcePath, realPath),
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get realPath");
-    MEDIA_DEBUG_LOG("mtp Getfd realPath %{public}s", realPath.c_str());
+    MEDIA_DEBUG_LOG("mtp Getfd realPath %{public}s", MediaFileUtils::DesensitizePath(realPath).c_str());
     std::error_code ec;
     int openMode = (mode.compare(MEDIA_FILEMODE_READWRITE) == 0) ? O_RDWR : O_RDONLY;
     outFd = open(realPath.c_str(), openMode);
@@ -1110,7 +1110,8 @@ int32_t MtpMedialibraryManager::GetMovingPhotoVideoPath(const std::string &dataP
     }
     displayName.resize(indexPos);
     displayName += MOVING_PHOTO_SUFFIX;
-    MEDIA_DEBUG_LOG("MTP CopyObjectMovingPhotoFix moving displayName:%{private}s", displayName.c_str());
+    MEDIA_DEBUG_LOG("MTP CopyObjectMovingPhotoFix moving displayName:%{public}s",
+        MediaFileUtils::DesensitizeName(displayName).c_str());
     return MTP_SUCCESS;
 }
 

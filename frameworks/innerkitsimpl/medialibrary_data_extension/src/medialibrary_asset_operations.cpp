@@ -1445,8 +1445,9 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     }
     if (containsTitle && containsDisplayName &&
         (MediaFileUtils::GetTitleFromDisplayName(newDisplayName) != newTitle)) {
-        MEDIA_ERR_LOG("new displayName [%{private}s] and new title [%{private}s] is not same",
-            newDisplayName.c_str(), newTitle.c_str());
+        MEDIA_ERR_LOG("new displayName [%{public}s] and new title [%{public}s] is not same",
+            MediaFileUtils::DesensitizeName(newDisplayName).c_str(),
+            MediaFileUtils::DesensitizeName(newTitle).c_str());
         return E_INVALID_DISPLAY_NAME;
     }
     if (!containsTitle) {
@@ -2280,8 +2281,9 @@ std::string MediaLibraryAssetOperations::CreateExtUriForV10Asset(FileAsset &file
     const std::string &displayName = fileAsset.GetDisplayName();
     auto mediaType = fileAsset.GetMediaType();
     if (filePath.empty() || displayName.empty() || mediaType < 0) {
-        MEDIA_ERR_LOG("param invalid, filePath %{private}s or displayName %{private}s invalid failed.",
-            filePath.c_str(), displayName.c_str());
+        MEDIA_ERR_LOG("param invalid, filePath %{public}s or displayName %{public}s invalid failed.",
+            MediaFileUtils::DesensitizePath(filePath).c_str(),
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         return "";
     }
 
@@ -2724,9 +2726,11 @@ void MediaLibraryAssetOperations::TaskDataFileProcess(const std::vector<std::str
     for (size_t i = 0; i < paths.size(); i++) {
         string filePath = paths[i];
         string fileId = i < ids.size() ? ids[i] : "";
-        MEDIA_INFO_LOG("Delete file id: %{public}s, path: %{private}s", fileId.c_str(), filePath.c_str());
+        MEDIA_INFO_LOG("Delete file id: %{public}s, path: %{public}s", fileId.c_str(),
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
-            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{public}s", errno,
+                MediaFileUtils::DesensitizePath(filePath).c_str());
         }
 
 #ifdef META_RECOVERY_SUPPORT
@@ -3362,9 +3366,9 @@ static int32_t DeletePhotoPermanentlyFromVector(vector<shared_ptr<FileAsset>> &f
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     for (auto& fileAssetPtr : fileAssetVector) {
-        MEDIA_DEBUG_LOG("Delete photo display name %{public}s", fileAssetPtr->GetDisplayName().c_str());
-        CHECK_AND_RETURN_RET_LOG(fileAssetPtr != nullptr, E_HAS_DB_ERROR,
-            "Photo Asset is nullptr");
+        MEDIA_DEBUG_LOG("Delete photo display name %{public}s",
+            MediaFileUtils::DesensitizeName(fileAssetPtr->GetDisplayName()).c_str());
+        CHECK_AND_RETURN_RET_LOG(fileAssetPtr != nullptr, E_HAS_DB_ERROR, "Photo Asset is nullptr");
         MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAssetPtr, assetRefresh);
     }
     return E_OK;
