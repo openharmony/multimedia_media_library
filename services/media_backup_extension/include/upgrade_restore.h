@@ -182,7 +182,7 @@ protected:
     RestoreConfigInfo restoreConfig_;
     RestorePhotosAlbumHidden restorePhotosAlbumHidden_;
     bool isNeedCloneIsMe_ = false;
-    bool hasDeletedExistingAlbumData_ = false;
+    bool isNeedCloneGroupAlbum_ = true;
     std::unordered_set<std::string> processGlobalHashes_;
     ffrt::mutex processHashesMutex_;
     std::unordered_map<std::string, std::string> portraitAlbumRelationship_;
