@@ -35,7 +35,8 @@ std::string PhotoDisplayNameOperation::FindDislayName(
     const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo)
 {
     if (photoAssetInfo.displayName.empty() || rdbStore == nullptr) {
-        MEDIA_ERR_LOG("displayName is empty. Object: %{public}s", photoAssetInfo.ToString().c_str());
+        MEDIA_ERR_LOG("displayName is empty. Object: %{public}s",
+            MediaFileUtils::DesensitizeName(photoAssetInfo.displayName).c_str());
         return photoAssetInfo.displayName;
     }
     DisplayNameInfo displayNameInfo(photoAssetInfo);
@@ -51,7 +52,7 @@ std::string PhotoDisplayNameOperation::FindDislayName(
     }
     if (photoAssetInfo.displayName != displayName) {
         MEDIA_INFO_LOG("displayName changed from %{public}s to %{public}s",
-            photoAssetInfo.ToString().c_str(),
+            MediaFileUtils::DesensitizeName(photoAssetInfo.displayName).c_str(),
             MediaFileUtils::DesensitizeName(displayName).c_str());
     }
     return displayName;
@@ -73,7 +74,7 @@ bool PhotoDisplayNameOperation::IsDisplayNameExists(
         int32_t albumIdInDb = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         if (albumIdInDb == ownerAlbumId) {
             MEDIA_DEBUG_LOG("the same displayName: %{public}s, ownerAlbumId: %{public}d",
-                displayName.c_str(), ownerAlbumId);
+                MediaFileUtils::DesensitizeName(displayName).c_str(), ownerAlbumId);
             resultSet->Close();
             return true;
         }

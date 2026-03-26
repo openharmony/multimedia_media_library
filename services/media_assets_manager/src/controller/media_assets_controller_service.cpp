@@ -2135,7 +2135,7 @@ int32_t MediaAssetsControllerService::CheckUriPermissionInner(MessageParcel &dat
 
 int32_t MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter GrantPhotoUriPermission");
+    MEDIA_INFO_LOG("enter CancelPhotoUriPermission");
     uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
     DfxTimer dfxTimer(operationCode, timeout, true);

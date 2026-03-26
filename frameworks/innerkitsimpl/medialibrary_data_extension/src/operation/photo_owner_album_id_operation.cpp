@@ -420,7 +420,7 @@ int32_t PhotoOwnerAlbumIdOperation::CheckAndUpdateAlbumName(std::string &albumNa
         } else {
             albumName = val;
             isUnique = true;
-            MEDIA_INFO_LOG("albumName is %{private}s", albumName.c_str());
+            MEDIA_INFO_LOG("albumName is %{public}s", MediaFileUtils::DesensitizeName(albumName).c_str());
         }
     }
     return E_OK;

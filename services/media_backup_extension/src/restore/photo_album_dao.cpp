@@ -178,8 +178,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), albumRowData);
     MEDIA_INFO_LOG("Media_Restore: add the PhotoAlbum info by lPath into cache."
                    " lPath=%{public}s, lPath in cache=%{public}s",
-        lPath.c_str(),
-        StringUtils::ToLower(albumRowData.lPath).c_str());
+        MediaFileUtils::DesensitizePath(lPath).c_str(),
+        MediaFileUtils::DesensitizePath(StringUtils::ToLower(albumRowData.lPath)).c_str());
     return albumRowData;
 }
 
@@ -465,7 +465,7 @@ int32_t PhotoAlbumDao::UpdateUploadStatus(const std::string &lPath, const int32_
     int32_t ret =
         BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_UPDATE_UPLOAD_STATUS, bindArgs);
     MEDIA_INFO_LOG("UpdateUploadStatus lPath: %{public}s, uploadStatus: %{public}d, ret: %{public}d",
-        lPath.c_str(),
+        MediaFileUtils::DesensitizePath(lPath).c_str(),
         uploadStatus,
         ret);
     return ret;

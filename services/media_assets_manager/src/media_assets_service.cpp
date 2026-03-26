@@ -1408,7 +1408,7 @@ int32_t MediaAssetsService::GetMovingPhotoDateModified(const string &fileId, Get
 
 int32_t MediaAssetsService::CloseAsset(const CloseAssetReqBody &req)
 {
-    MEDIA_INFO_LOG("enter CloseAsset, req.uri=%{public}s", req.uri.c_str());
+    MEDIA_INFO_LOG("enter CloseAsset, req.uri=%{public}s", MediaFileUtils::DesensitizeUri(req.uri).c_str());
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(CONST_MEDIA_DATA_DB_URI, req.uri);
     MediaLibraryCommand cmd(valuesBucket);
