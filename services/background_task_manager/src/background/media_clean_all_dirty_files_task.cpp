@@ -1519,4 +1519,4 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
     }
 }
 // LCOV_EXCL_STOP
-}  // namespace OHOS::Media::Background
+} // namespace OHOS::Media::Background
