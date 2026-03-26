@@ -42,7 +42,6 @@
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
-static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 // LCOV_EXCL_START
 void NotifyDateTakenChanged(const CloudMediaPullDataDto &pullData)
 {
