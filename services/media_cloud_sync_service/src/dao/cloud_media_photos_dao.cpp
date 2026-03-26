@@ -392,13 +392,6 @@ void CloudMediaPhotosDao::GetUpdateRecordConditionForRecycleUpdate(const std::st
 
 void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values, bool mtimeChanged)
 {
-    if ((MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heic") ||
-        pullData.propertiesHeight * pullData.propertiesWidth < HIGH_PIXEL_SIZE) {
-        MEDIA_DEBUG_LOG("cloudId: %{public}s Display name is not heif", pullData.cloudId.c_str());
-        return;
-    }
-
     if (mtimeChanged) {
         CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
         values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
