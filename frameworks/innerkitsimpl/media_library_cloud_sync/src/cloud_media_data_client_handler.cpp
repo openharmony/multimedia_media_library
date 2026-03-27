@@ -258,25 +258,24 @@ int32_t CloudMediaDataClientHandler::GetDownloadAsset(
 int32_t CloudMediaDataClientHandler::GetDownloadLakeAsset(
     const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec)
 {
-    MEDIA_INFO_LOG("GetDownloadLakeAsset, uris: %{public}zu", uris.size());
-    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadAsset: uris is empty");
+    MEDIA_INFO_LOG("GetDownloadLakeAsset [DEPRECATED], uris: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadLakeAsset [DEPRECATED]: uris is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_ASSET);
     GetDownloadAssetReqBody reqBody;
     reqBody.pathList = uris;
-    // parcel data.
     GetDownloadAssetRespBody respBody;
     int32_t ret =
         IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to GetDownloadAsset, ret: %{public}d", ret);
+        MEDIA_ERR_LOG("Failed to GetDownloadLakeAsset [DEPRECATED], ret: %{public}d", ret);
         return ret;
     }
     for (const auto &photosVo : respBody.photos) {
         CloudDlFileMeta cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToLakeCloudMetaData(photosVo);
-        MEDIA_INFO_LOG("GetDownloadAsset MetaData: %{public}s", cloudMetaData.ToString().c_str());
+        MEDIA_INFO_LOG("GetDownloadLakeAsset [DEPRECATED] MetaData: %{public}s", cloudMetaData.ToString().c_str());
         cloudMetaDataVec.push_back(cloudMetaData);
     }
-    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadAsset end");
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadLakeAsset [DEPRECATED] end");
     return E_OK;
 }
 
