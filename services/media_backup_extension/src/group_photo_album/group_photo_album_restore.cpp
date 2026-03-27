@@ -41,6 +41,8 @@ const int32_t PAGE_SIZE = 200;
 const int64_t THRESHOLD_DATA_SIZE = 30000;
 const int64_t THRESHOLD_DATA_TIME = 600000;
 const int64_t DEFAULT_FAULT_TIME = 0;
+const int32_t RENAME_OPERATION_GROUP = 2;
+const int32_t MERGETAG_REMOVE_ALBUM = -3;
 
 const int64_t BASIC_NUMBER = 10000;
 const int64_t SUPPORT_NUMBER = 9999;
@@ -143,7 +145,7 @@ std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> CloneGroupPhotoAlbum::GetGroup
     MEDIA_INFO_LOG("Start GetGroupPhotoAlbumInfo.");
     count = 0;
     std::string querySql = "SELECT _id, " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
-        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
+        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION + ", " + GALLERY_IS_HIDDEN +
         " FROM merge_tag WHERE group_tag LIKE '%|%' AND _id > " + std::to_string(offset) + " LIMIT "+
         std::to_string(PAGE_SIZE);
     std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> result;
@@ -161,7 +163,8 @@ std::vector<CloneGroupPhotoAlbum::GroupAlbumInfo> CloneGroupPhotoAlbum::GetGroup
         info.groupTagVec = tagVector;
         info.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
         info.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
-        info.renameOperation = (!info.tagName.empty() ? RENAME_OPERATION_RENAMED : 0);
+        info.renameOperation = (!info.tagName.empty() ? RENAME_OPERATION_GROUP : 0);
+        info.isHidden = GetInt32Val(GALLERY_IS_HIDDEN, resultSet);
         result.emplace_back(info);
     }
     resultSet->Close();
@@ -361,6 +364,7 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
             valuesBucket.PutInt(COUNT, info.fileIdCount);
             valuesBucket.PutInt(USER_DISPLAY_LEVEL, info.userDisplayLevel);
             valuesBucket.PutInt(RENAME_OPERATION, info.renameOperation);
+            CHECK_AND_EXECUTE(info.isHidden != MERGETAG_REMOVE_ALBUM, valuesBucket.PutInt(IS_REMOVED, 1));
             values.emplace_back(valuesBucket);
         }
         InsertAnalysisAlbumTable(result, values);
