@@ -673,6 +673,7 @@ static std::unique_ptr<Picture> DecodeAsset(int32_t fd, int32_t width, int32_t h
     DecodingOptionsForPicture decodeOptions;
     if (width > 0 && height > 0) {
     }
+    decodeOptions.desiredPixelFormat = PixelFormat::NV21;
     std::unique_ptr<Picture> picturePtr = imageSource->CreatePicture(decodeOptions, err);
     CHECK_AND_RETURN_RET_LOG(picturePtr != nullptr, nullptr, "CreatePicture failed, err: %{public}u", err);
     return picturePtr;
