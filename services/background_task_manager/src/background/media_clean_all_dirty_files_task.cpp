@@ -78,7 +78,7 @@ constexpr int64_t THREE_DAY_MS = 72 * 60 * 60 * 1000;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.hmos.photos";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
-const std::string SPECIAL_EDIT_EDIT_DATA = "";
+const std::string SPECIAL_EDIT_EDIT_DATA = "{}";
 const std::string SPECIAL_EDIT_APP_ID = "com.hmos.photos";
 
 static bool Starts_With(const std::string& str, const std::string& prefix)
