@@ -40,6 +40,7 @@ struct GroupAlbumInfo {
     std::string tagName;
     int32_t userDisplayLevel {1};
     int32_t fileIdCount{0};
+    int32_t isHidden{0};
 };
 
 public:
