@@ -53,6 +53,7 @@ const std::string GALLERY_MEDIA_HASH = GALLERY_TABLE_MEDIA + "." + GALLERY_HASH;
 const std::string GALLERY_FACE_HASH = GALLERY_TABLE_FACE + "." + GALLERY_HASH;
 const std::string GALLERY_MERGE_FACE_FACE_ID = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_FACE_ID;
 const std::string GALLERY_FACE_FACE_ID = GALLERY_TABLE_FACE + "." + GALLERY_FACE_ID;
+const std::string GALLERY_IS_HIDDEN = "merge_tag.is_hidden";
 const std::string E_VERSION = "-1";
 const std::string TAG_ID_PREFIX = "ser_";
 const std::string TAG_ID_UNPROCESSED = "-1";
