@@ -18,6 +18,7 @@
 #include "active_analysis_manager.h"
 
 #include <algorithm>
+#include <thread>
 
 #include "media_analysis_proxy.h"
 #include "media_library_error_code.h"
@@ -57,6 +58,47 @@ bool IsValidParam(const std::string &param)
 {
     return param.size() <= MAX_ACTIVE_ANALYSIS_PARAM_LENGTH;
 }
+
+struct ActiveAnalysisRequestView {
+    const std::vector<int32_t> &analysisTypes;
+    const std::vector<std::string> &fileIds;
+    const std::string &param;
+};
+
+bool WriteActiveAnalysisCommonRequest(MessageParcel &data, MediaAnalysisProxy &proxy,
+    const ActiveAnalysisRequestView &request, const char *operation)
+{
+    CHECK_AND_RETURN_RET_LOG(data.WriteInterfaceToken(proxy.GetDescriptor()), false,
+        "Failed to write %{public}s active analysis interface token", operation);
+    CHECK_AND_RETURN_RET_LOG(data.WriteInt32Vector(request.analysisTypes), false,
+        "Failed to write %{public}s active analysis types, size: %{public}zu", operation,
+        request.analysisTypes.size());
+    CHECK_AND_RETURN_RET_LOG(data.WriteStringVector(request.fileIds), false,
+        "Failed to write %{public}s active analysis fileIds, size: %{public}zu", operation,
+        request.fileIds.size());
+    CHECK_AND_RETURN_RET_LOG(data.WriteString(request.param), false,
+        "Failed to write %{public}s active analysis param, size: %{public}zu", operation, request.param.size());
+    return true;
+}
+
+void SendStopActiveAnalysisAsync(
+    std::vector<int32_t> analysisTypes, std::vector<std::string> fileIds, std::string param)
+{
+    std::thread([analysisTypes = std::move(analysisTypes), fileIds = std::move(fileIds), param = std::move(param)]() {
+        MessageParcel data;
+        MessageParcel reply;
+        MessageOption option(MessageOption::TF_ASYNC);
+        MediaAnalysisProxy proxy(nullptr);
+        const ActiveAnalysisRequestView request {analysisTypes, fileIds, param};
+        if (!WriteActiveAnalysisCommonRequest(data, proxy, request, "stop")) {
+            return;
+        }
+        bool sendRet = MediaAnalysisProxy::SendTransactCmd(
+            static_cast<int32_t>(IMediaAnalysisService::ActivateServiceType::STOP_ACTIVE_ANALYSIS),
+            data, reply, option);
+        CHECK_AND_PRINT_LOG(sendRet, "Failed to send stop active analysis transact");
+    }).detach();
+}
 } // namespace
 
 class MediaAnalysisRemoteInvoker final : public ActiveAnalysisRemoteInvoker {
@@ -76,14 +118,10 @@ public:
         MessageParcel reply;
         MessageOption option(MessageOption::TF_ASYNC);
         MediaAnalysisProxy proxy(nullptr);
-        CHECK_AND_RETURN_RET_LOG(data.WriteInterfaceToken(proxy.GetDescriptor()), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write start active analysis interface token");
-        CHECK_AND_RETURN_RET_LOG(data.WriteInt32Vector(dto.analysisTypes), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write start active analysis types, size: %{public}zu", dto.analysisTypes.size());
-        CHECK_AND_RETURN_RET_LOG(data.WriteStringVector(dto.fileIds), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write start active analysis fileIds, size: %{public}zu", dto.fileIds.size());
-        CHECK_AND_RETURN_RET_LOG(data.WriteString(dto.param), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write start active analysis param, size: %{public}zu", dto.param.size());
+        const ActiveAnalysisRequestView request {dto.analysisTypes, dto.fileIds, dto.param};
+        CHECK_AND_RETURN_RET_LOG(
+            WriteActiveAnalysisCommonRequest(data, proxy, request, "start"),
+            MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to build start active analysis request");
         CHECK_AND_RETURN_RET_LOG(data.WriteRemoteObject(dto.callbackRemote), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
             "Failed to write start active analysis callback remote");
         bool sendRet = MediaAnalysisProxy::SendTransactCmd(
@@ -96,23 +134,7 @@ public:
 
     int32_t StopActiveAnalysis(const StopActiveAnalysisDto &dto) const override
     {
-        MessageParcel data;
-        MessageParcel reply;
-        MessageOption option(MessageOption::TF_ASYNC);
-        MediaAnalysisProxy proxy(nullptr);
-        CHECK_AND_RETURN_RET_LOG(data.WriteInterfaceToken(proxy.GetDescriptor()), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write stop active analysis interface token");
-        CHECK_AND_RETURN_RET_LOG(data.WriteInt32Vector(dto.analysisTypes), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write stop active analysis types, size: %{public}zu", dto.analysisTypes.size());
-        CHECK_AND_RETURN_RET_LOG(data.WriteStringVector(dto.fileIds), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write stop active analysis fileIds, size: %{public}zu", dto.fileIds.size());
-        CHECK_AND_RETURN_RET_LOG(data.WriteString(dto.param), MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to write stop active analysis param, size: %{public}zu", dto.param.size());
-        bool sendRet = MediaAnalysisProxy::SendTransactCmd(
-            static_cast<int32_t>(IMediaAnalysisService::ActivateServiceType::STOP_ACTIVE_ANALYSIS),
-            data, reply, option);
-        CHECK_AND_RETURN_RET_LOG(sendRet, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
-            "Failed to send stop active analysis transact");
+        SendStopActiveAnalysisAsync(dto.analysisTypes, dto.fileIds, dto.param);
         return E_OK;
     }
 };
