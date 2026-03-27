@@ -552,6 +552,9 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     return E_OK;
 }
 
+/**
+ * @param lakeInfos: unordered_map, key=cloudId, value=lakeInfo.
+ */
 int32_t CloudMediaDownloadService::OnDownloadLakeAsset(
     const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
     std::vector<MediaOperateResultDto> &result)
