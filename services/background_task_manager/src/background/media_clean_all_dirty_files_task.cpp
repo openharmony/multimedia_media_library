@@ -78,7 +78,7 @@ constexpr int64_t THREE_DAY_MS = 72 * 60 * 60 * 1000;
 constexpr int32_t CACHE_BATCH_SIZE = 30;
 const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "com.hmos.photos";
 const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
-const std::string SPECIAL_EDIT_EDIT_DATA = "";
+const std::string SPECIAL_EDIT_EDIT_DATA = "{}";
 const std::string SPECIAL_EDIT_APP_ID = "com.hmos.photos";
 
 static bool Starts_With(const std::string& str, const std::string& prefix)
@@ -760,6 +760,8 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t cu
             "Failed To Create editdata File %{private}s", MediaFileUtils::DesensitizePath(editDataFile).c_str());
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataFile, editDataContent), E_HAS_FS_ERROR,
             "Failed to write editdata:%{private}s", editDataFile.c_str());
+        std::string dataPath = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + fileName;
+        UpdateEditTimeByPath(dataPath, MediaFileUtils::UTCTimeSeconds(), 1);
     }
     return true;
 }
@@ -781,7 +783,8 @@ bool MediaCleanAllDirtyFilesTask::ProcessOriginFolderBatch(int32_t curBucketNum,
     std::string editOriginFile = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) + SLASH_STR + fileName +
         SLASH_STR + SOURCE_FILE_PREFIX_NAME + DOT_STR + extension;
     if (MediaFileUtils::IsFileExists(editOriginFile)) { // 编辑图存在
-        DealOriginFileExistEditDataNotExist(curBucketNum, fileName); // 原图存在 编辑原图存在 编辑数据不存在 填充空的编辑数据
+        // 原图存在 编辑原图存在 编辑数据不存在 填充空的编辑数据 更新数据库
+        DealOriginFileExistEditDataNotExist(curBucketNum, fileName);
     }
     return true;
 }
@@ -1516,4 +1519,4 @@ void MediaCleanAllDirtyFilesTask::HandleMediaAllDirtyFiles()
     }
 }
 // LCOV_EXCL_STOP
-}  // namespace OHOS::Media::Background
+} // namespace OHOS::Media::Background
