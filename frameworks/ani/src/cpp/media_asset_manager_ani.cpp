@@ -849,7 +849,7 @@ int32_t MediaAssetManagerAni::GetFdFromSandBoxUri(const std::string &sandBoxUri)
         return E_ERR;
     }
     string absDestPath;
-    if (!PathToRealPath(destPath, absDestPath) || destPath.find("..") != std::string::npos) {
+    if (destPath.find("..") != std::string::npos || !PathToRealPath(destPath, absDestPath)) {
         ANI_DEBUG_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
         return E_ERR;
     }
