@@ -107,42 +107,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Mdirty, TestSize.Lev
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t mdirty = 2;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
-    EXPECT_EQ(ret, 0);
-    EXPECT_GT(records.size(), 0);
-    std::vector<MDKRecord> targets;
-    JsonFileReader reader("/data/test/cloudsync/photo_handler_get_meta_modified_record_result.json");
-    reader.ConvertToMDKRecordVector(targets);
-    EXPECT_EQ(targets.size(), 1);
-    MDKRecordUtils utils;
-    std::vector<std::string> checkFields = {"favorite", "recycled", "thumb_size", "lcd_size", "cover_position", "size",
-        "editDataCamera", "sourceFileName", "sourcePath", "data", "original_asset_cloud_id",
-        "cloud_id", "front_camera", "shooting_mode_tag", "shooting_mode", "date_day", "date_month", "date_year",
-        "burst_key", "virtual_path", "relative_path", "title", "mimeType", "description", "source", "hashId", "type",
-        "fileName", "rotate", "width", "height", "fix_version", "owner_album_id" "strong_association",
-        "supported_watermark_type", "moving_photo_effect_mode", "original_subtype", "dynamic_range_type",
-        "burst_cover_level", "subtype", "hidden", "duration", "media_type", "fileType"};
-    for (auto &record : records) {
-        for (auto &target : targets) {
-            if (record.GetRecordId() == target.GetRecordId()) {
-                EXPECT_TRUE(utils.Equals(record, target, checkFields, MDKRecordUtils::RecordType::PHOTO));
-            }
-        }
-    }
-}
-
-HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Sdirty, TestSize.Level1)
-{
-    std::string tableName = "Photos";
-    int32_t cloudType = 0;
-    int32_t userId = 100;
-    std::shared_ptr<CloudMediaDataHandler> dataHandler =
-        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
-    std::vector<MDKRecord> records;
-    int32_t size = 100;
-    int32_t sdirty = 6;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, sdirty);
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
     std::vector<MDKRecord> targets;
@@ -188,8 +153,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Update_Favorite, Tes
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t mdirty = 2;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 
@@ -210,7 +174,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Update_Favorite, Tes
     records = {};
     changeNum = dao.UpdatePhotoFavorite(cloudIds, 0);
     EXPECT_EQ(changeNum, cloudIds.size());
-    ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 
@@ -247,8 +211,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Update_Hidden, TestS
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t mdirty = 2;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 
@@ -268,7 +231,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Update_Hidden, TestS
     records = {};
     changeNum = dao.UpdatePhotoHidden(cloudIds, 0);
     EXPECT_EQ(changeNum, cloudIds.size());
-    ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 
@@ -306,8 +269,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_Update_PhotoName, Te
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t mdirty = 2;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 
@@ -343,8 +305,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetMetaModifiedRecords_To_Trash, TestSize.L
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t mdirty = 2;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 

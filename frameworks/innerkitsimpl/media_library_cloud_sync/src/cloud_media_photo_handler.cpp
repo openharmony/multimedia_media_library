@@ -266,11 +266,10 @@ int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     return E_OK;
 }
 
-int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType)
+int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     reqBody.size = size;
-    reqBody.dirtyType = dirtyType;
     CloudMdkRecordPhotosRespBody respBody;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_GET_META_MODIFIED_RECORDS);
     int32_t ret =
