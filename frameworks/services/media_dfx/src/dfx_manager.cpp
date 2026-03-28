@@ -575,7 +575,7 @@ void DfxManager::HandleTwoDayMissions()
         auto twoDayTask = make_shared<DfxTask>(HandleCheckTwoDayTask, taskData);
         if (twoDayTask == nullptr) {
             MEDIA_ERR_LOG("Failed to create dfx task.");
-            taskData->release();
+            delete taskData;
             return;
         }
         dfxWorker_->AddTask(twoDayTask);
