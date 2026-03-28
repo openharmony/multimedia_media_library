@@ -162,7 +162,7 @@ int32_t CloudMediaDataClient::GetDownloadLakeAsset(
     const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec)
 {
     if (this->dataHandler_ == nullptr) {
-        MEDIA_ERR_LOG("GetDownloadLakeAsset [DEPRECATED]: No data handler found!");
+        MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
     return this->dataHandler_->GetDownloadLakeAsset(uris, cloudMetaDataVec);
