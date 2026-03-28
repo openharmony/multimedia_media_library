@@ -1118,6 +1118,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
     config.parameters.recommendationOptions = option.recommendationOptions;
+    config.parameters.assetCompatibleCapability = option.assetCompatibleCapability;
     config.parameters.preselectedUris = option.preselectedUris;
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
     config.parameters.singleSelectionMode = option.singleSelectionMode;
@@ -1385,6 +1386,9 @@ function PhotoViewPicker() {
 function RecommendationOptions() {
 }
 
+function AssetCompatibleCapability() {
+}
+
 function autoPlayScene() {
   this.sceneType = -1;
   this.playMode = -1;
@@ -1484,6 +1488,7 @@ export default {
   PhotoViewPicker: PhotoViewPicker,
   RecommendationType: RecommendationType,
   RecommendationOptions: RecommendationOptions,
+  AssetCompatibleCapability: AssetCompatibleCapability,
   ResourceType: photoAccessHelper.ResourceType,
   MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
   MediaAssetChangeRequest: MediaAssetChangeRequest,
