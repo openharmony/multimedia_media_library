@@ -2466,7 +2466,7 @@ static void ApplyAssetChangeRequestExecute(std::unique_ptr<MediaAssetChangeReque
     MediaLibraryTracer tracer;
     tracer.Start("ApplyAssetChangeRequestExecute");
     if (context == nullptr) {
-        NAPI_ERR_LOG("Failed to check becuase context is nullptr");
+        ANI_ERR_LOG("Failed to check becuase context is nullptr");
         return;
     }
     if (context->objectInfo == nullptr || context->objectInfo->GetFileAssetInstance() == nullptr) {
