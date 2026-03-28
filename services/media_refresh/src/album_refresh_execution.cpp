@@ -320,7 +320,7 @@ int32_t AlbumRefreshExecution::SetForceSelectCoverValues(ValuesBucket &values, c
     return ret;
 }
 
-static void GetUpdateValuesAndNotifyType(const AccurateRefresh::AlbumChangeInfo &initAlbumInfo,
+void AlbumRefreshExecution::GetUpdateValuesAndNotifyType(const AccurateRefresh::AlbumChangeInfo &initAlbumInfo,
     AccurateRefresh::AlbumChangeInfo &albumInfo, ValuesBucket &values, NotifyType &type)
 {
     values = albumInfo.GetUpdateValues(initAlbumInfo, type);
