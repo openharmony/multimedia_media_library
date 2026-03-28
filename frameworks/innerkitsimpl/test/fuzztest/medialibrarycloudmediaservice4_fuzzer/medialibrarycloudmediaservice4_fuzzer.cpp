@@ -189,7 +189,9 @@ static void CloudMediaDownloadServiceFuzzer()
         return;
     }
     string cloudId = "default-album-2";
-    vector<string> cloudIds = { cloudId };
+    std::unordered_map<std::string, AdditionFileInfo> lakeInfos = {
+        {"id1", AdditionFileInfo()},
+    };
     int32_t type = provider->ConsumeIntegral<int32_t>() & 0x7fffffff;
     vector<MediaOperateResultDto> result;
     std::unordered_map<string, int32_t> downloadThumbnailMap = {

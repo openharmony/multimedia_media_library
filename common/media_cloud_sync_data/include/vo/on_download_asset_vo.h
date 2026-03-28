@@ -28,7 +28,7 @@ namespace OHOS::Media::CloudSync {
 class EXPORT OnDownloadAssetReqBody : public IPC::IMediaParcelable {
 public:
     std::vector<std::string> cloudIds;
-    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
+    std::unordered_map<std::string, AdditionFileInfo> downloadedFileInfos;
 
 public:  // functions of Parcelable.
     virtual ~OnDownloadAssetReqBody() = default;

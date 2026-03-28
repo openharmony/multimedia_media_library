@@ -344,7 +344,7 @@ int32_t CloudMediaDataClient::GetFullSyncDownloadInfo(std::map<std::string, int6
 }
 
 int32_t CloudMediaDataClient::OnDownloadAsset(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
     std::vector<MediaOperateResult> &result)
 {
     if (this->dataHandler_ == nullptr) {
@@ -352,6 +352,6 @@ int32_t CloudMediaDataClient::OnDownloadAsset(
         return E_IPC_INVAL_ARG;
     }
     CLOUD_DATA_CLIENT_WRITE_LOCK;
-    return this->dataHandler_->OnDownloadAsset(lakeInfos, result);
+    return this->dataHandler_->OnDownloadAsset(downloadedFileInfos, result);
 }
 }  // namespace OHOS::Media::CloudSync

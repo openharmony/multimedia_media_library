@@ -64,7 +64,7 @@ public:
     int32_t GetDownloadThmsByUri(
         const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) override;
     int32_t OnDownloadAsset(
-        const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+        const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
         std::vector<MediaOperateResult> &result) override;
     int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) override;
     int32_t OnDownloadLakeAsset(

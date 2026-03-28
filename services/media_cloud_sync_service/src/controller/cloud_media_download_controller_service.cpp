@@ -212,7 +212,7 @@ int32_t CloudMediaDownloadControllerService::OnDownloadAsset(MessageParcel &data
     }
     MEDIA_INFO_LOG("OnDownloadAsset (unified) reqBody: %{public}s", reqBody.ToString().c_str());
     std::vector<MediaOperateResultDto> resultDtos;
-    ret = this->service_.OnDownloadAsset(reqBody.lakeInfos, resultDtos);
+    ret = this->service_.OnDownloadAsset(reqBody.downloadedFileInfos, resultDtos);
     MediaOperateResultRespBody respBody;
     respBody.result = this->processor_.GetMediaOperateResult(resultDtos);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);

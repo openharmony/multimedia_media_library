@@ -28,14 +28,16 @@ bool OnDownloadAssetReqBody::Unmarshalling(MessageParcel &parcel)
 {
     CHECK_AND_RETURN_RET_LOG(
         IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
-    CHECK_AND_RETURN_RET_LOG(AdditionFileInfo::Unmarshalling(this->lakeInfos, parcel), false, "lakeInfos");
+    CHECK_AND_RETURN_RET_LOG(
+        AdditionFileInfo::Unmarshalling(this->downloadedFileInfos, parcel), false, "downloadedFileInfos");
     return true;
 }
 
 bool OnDownloadAssetReqBody::Marshalling(MessageParcel &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
-    CHECK_AND_RETURN_RET_LOG(AdditionFileInfo::Marshalling(this->lakeInfos, parcel), false, "lakeInfos");
+    CHECK_AND_RETURN_RET_LOG(
+        AdditionFileInfo::Marshalling(this->downloadedFileInfos, parcel), false, "downloadedFileInfos");
     return true;
 }
 

@@ -31,7 +31,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC001_Marshalling_Unmarshalling_Empty_Success, T
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
     original.cloudIds.clear();
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -50,7 +50,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC002_Marshalling_Unmarshalling_SingleCloudId_Su
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
     original.cloudIds.push_back("cloud_id_001");
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -72,7 +72,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC003_Marshalling_Unmarshalling_MultipleCloudIds
     original.cloudIds.push_back("cloud_id_001");
     original.cloudIds.push_back("cloud_id_002");
     original.cloudIds.push_back("cloud_id_003");
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -101,7 +101,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC004_Marshalling_Unmarshalling_WithLakeInfo_Suc
     lakeInfo.storagePath = "/storage/test/path";
     lakeInfo.title = "test_title";
     lakeInfo.displayName = "test_display_name";
-    original.lakeInfos["cloud_id_001"] = lakeInfo;
+    original.downloadedFileInfos["cloud_id_001"] = lakeInfo;
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -129,7 +129,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC005_Marshalling_Unmarshalling_MultipleLakeInfo
     lakeInfo1.storagePath = "/storage/test/path1";
     lakeInfo1.title = "test_title1";
     lakeInfo1.displayName = "test_display_name1";
-    original.lakeInfos["cloud_id_001"] = lakeInfo1;
+    original.downloadedFileInfos["cloud_id_001"] = lakeInfo1;
 
     AdditionFileInfo lakeInfo2;
     lakeInfo2.isUpdate = false;
@@ -137,7 +137,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC005_Marshalling_Unmarshalling_MultipleLakeInfo
     lakeInfo2.storagePath = "/storage/test/path2";
     lakeInfo2.title = "test_title2";
     lakeInfo2.displayName = "test_display_name2";
-    original.lakeInfos["cloud_id_002"] = lakeInfo2;
+    original.downloadedFileInfos["cloud_id_002"] = lakeInfo2;
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -158,7 +158,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC006_Marshalling_Unmarshalling_SpecialStrings_S
     original.cloudIds.push_back("");
     original.cloudIds.push_back("cloud_id_with_中文");
     original.cloudIds.push_back("cloud_id_with_special!@#$%^&*()");
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -182,7 +182,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC010_Marshalling_Unmarshalling_LargeVector_Succ
     for (int i = 0; i < 100; i++) {
         original.cloudIds.push_back("cloud_id_" + std::to_string(i));
     }
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -205,7 +205,7 @@ HWTEST_F(OnDownloadAssetVoTest, TC011_Marshalling_Unmarshalling_LongString_Succe
     OnDownloadAssetReqBody original;
     std::string longCloudId(1000, 'A');
     original.cloudIds.push_back(longCloudId);
-    original.lakeInfos.clear();
+    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
