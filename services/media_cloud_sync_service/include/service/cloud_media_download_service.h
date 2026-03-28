@@ -52,11 +52,10 @@ public:
     int32_t OnDownloadThms(const std::unordered_map<std::string, int32_t> &downloadThumbnailMap,
         std::vector<MediaOperateResultDto> &result, const int32_t sceneCode = 0);
     std::vector<PhotosDto> GetDownloadAsset(const std::vector<int32_t> &fileIds);
-    int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result);
-    int32_t OnDownloadLakeAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
-        std::vector<MediaOperateResultDto> &result);
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize);
     int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo);
+    int32_t OnDownloadAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+        std::vector<MediaOperateResultDto> &result);
 
 private:
     bool IsCloudInsertTaskPriorityHigh();

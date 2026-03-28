@@ -283,34 +283,6 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateTransCodeInfo_Test_001, TestSize.Level
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaDownloadDaoTest, QueryDownloadLakeAssetByCloudIds_Test_001, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
-    std::vector<PhotosPo> result;
-    
-    int32_t ret = downloadDao.QueryDownloadLakeAssetByCloudIds(lakeInfos, result);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, QueryDownloadLakeAssetByCloudIds_Test_002, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
-    AdditionFileInfo info;
-    info.isUpdate = true;
-    info.fileSourceType = 1;
-    info.storagePath = "/storage/lake/path.jpg";
-    info.title = "title";
-    info.displayName = "display.jpg";
-    lakeInfos["cloud_id_1"] = info;
-    
-    std::vector<PhotosPo> result;
-    
-    int32_t ret = downloadDao.QueryDownloadLakeAssetByCloudIds(lakeInfos, result);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAsset_Test_001, TestSize.Level1)
 {
     CloudMediaDownloadDao downloadDao;
