@@ -41,7 +41,6 @@ private:
     int32_t OnDownloadThms(MessageParcel &data, MessageParcel &reply);
     int32_t GetDownloadAsset(MessageParcel &data, MessageParcel &reply);
     int32_t OnDownloadAsset(MessageParcel &data, MessageParcel &reply);
-    int32_t OnDownloadLakeAsset(MessageParcel &data, MessageParcel &reply);
     int32_t CleanAttachment(MessageParcel &data, MessageParcel &reply);
     int32_t GetFullSyncDownloadInfo(MessageParcel &data, MessageParcel &reply);
 
@@ -60,8 +59,6 @@ private:
             &CloudMediaDownloadControllerService::GetDownloadAsset},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET),
             &CloudMediaDownloadControllerService::OnDownloadAsset},
-        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_LAKE_ASSET),
-            &CloudMediaDownloadControllerService::OnDownloadLakeAsset},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_CLEAN_ATTACHMENT),
             &CloudMediaDownloadControllerService::CleanAttachment},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_FULL_SYNC_DOWNLOAD_INFO),

@@ -218,32 +218,6 @@ int32_t CloudMediaDownloadDao::QueryDownloadAssetByCloudIds(
     return E_OK;
 }
 
-void GetCloudIds(const std::unordered_map<std::string, AdditionFileInfo>& lakeInfos,
-    std::vector<std::string> &cloudIds)
-{
-    cloudIds.reserve(lakeInfos.size());
-    for (const auto& lakeInfo : lakeInfos) {
-        cloudIds.push_back(lakeInfo.first);
-    }
-}
-
-int32_t CloudMediaDownloadDao::QueryDownloadLakeAssetByCloudIds(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos, std::vector<PhotosPo> &result)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    std::vector<std::string> cloudIds;
-    GetCloudIds(lakeInfos, cloudIds);
-    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
-    predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
-    auto resultSet = rdbStore->Query(predicates, this->COLUMNS_DOWNLOAD_ASSET_QUERY_BY_FILE_ID);
-    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(result);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to query, ret: %{public}d", ret);
-    MEDIA_INFO_LOG("QueryDownloadLakeAssetByCloudIds, rowCount: %{public}d", static_cast<int32_t>(result.size()));
-    return E_OK;
-}
-
 int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const OnDownloadAssetData &assetData,
     const CloudMediaScanService::ScanResult& scanResult)
 {

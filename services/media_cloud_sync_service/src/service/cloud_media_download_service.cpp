@@ -518,74 +518,6 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
     }
 }
 
-int32_t CloudMediaDownloadService::OnDownloadAsset(
-    const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result)
-{
-    // get downloadAssetDataVec
-    std::vector<PhotosPo> photosPoVec;
-    int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryDownloadAssetByCloudIds failed, ret:%{public}d", ret);
-    // Requirement: If any asset is not in the database, return error. Caller should check the result.
-    CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == cloudIds.size(),
-        E_CLOUDSYNC_INVAL_ARG,
-        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
-        cloudIds.size(),
-        photosPoVec.size());
-    // Update
-    UpdateVideoMode(photosPoVec);
-    OnDownloadAssetData assetData;
-    for (const auto &photosPo : photosPoVec) {
-        assetData = this->GetOnDownloadAssetData(photosPo);
-        MEDIA_DEBUG_LOG(
-            "OnDownloadAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
-        HandlePhoto(photosPo, assetData);
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-        UpdateBatchDownloadTask(photosPo);
-#endif
-        // record result
-        MediaOperateResultDto mediaResult;
-        mediaResult.cloudId = photosPo.cloudId.value_or("");
-        mediaResult.errorCode = assetData.err;
-        mediaResult.errorMsg = assetData.errorMsg;
-        result.emplace_back(mediaResult);
-    }
-    return E_OK;
-}
-
-/**
- * @param lakeInfos: unordered_map, key=cloudId, value=lakeInfo.
- */
-int32_t CloudMediaDownloadService::OnDownloadLakeAsset(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
-    std::vector<MediaOperateResultDto> &result)
-{
-    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadLakeAsset, %{public}zu", lakeInfos.size());
-    // get downloadAssetDataVec
-    std::vector<PhotosPo> photosPoVec;
-    int32_t ret = this->dao_.QueryDownloadLakeAssetByCloudIds(lakeInfos, photosPoVec);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryDownloadLakeAssetByCloudIds failed, ret:%{public}d", ret);
-    CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == lakeInfos.size(),
-        E_CLOUDSYNC_INVAL_ARG,
-        "QueryDownloadLakeAssetByCloudIds failed, cloudIds size:%{public}u, photosPoVec size:%{public}u",
-        lakeInfos.size(),
-        photosPoVec.size());
-    // Update
-    OnDownloadAssetData assetData;
-    for (const auto &photosPo : photosPoVec) {
-        assetData = this->GetOnDownloadLakeAssetData(photosPo, lakeInfos);
-        MEDIA_DEBUG_LOG(
-            "OnDownloadLakeAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
-        HandlePhoto(photosPo, assetData);
-        // record result
-        MediaOperateResultDto mediaResult;
-        mediaResult.cloudId = photosPo.cloudId.value_or("");
-        mediaResult.errorCode = assetData.err;
-        mediaResult.errorMsg = assetData.errorMsg;
-        result.emplace_back(mediaResult);
-    }
-    return E_OK;
-}
-
 void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
 {
     int32_t ret = SliceAsset(assetData, photo);
@@ -812,6 +744,45 @@ int32_t CloudMediaDownloadService::GetFullSyncDownloadInfo(std::map<std::string,
         flagsInfo[DOWNLOAD_LCD] = lcdNumber;
     }
     return ret;
+}
+
+/**
+ * @param lakeInfos: unordered_map, key=cloudId, value=lakeInfo.
+ */
+int32_t CloudMediaDownloadService::OnDownloadAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    std::vector<MediaOperateResultDto> &result)
+{
+    MEDIA_INFO_LOG("OnDownloadAsset (unified), size: %{public}zu", lakeInfos.size());
+    std::vector<PhotosPo> photosPoVec;
+    std::vector<std::string> cloudIds;
+    for (const auto& lakeInfo : lakeInfos) {
+        cloudIds.push_back(lakeInfo.first);
+    }
+    int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryDownloadAssetByCloudIds failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == lakeInfos.size(),
+        E_CLOUDSYNC_INVAL_ARG,
+        "QueryDownloadAssetByCloudIds failed, lakeInfos size:%{public}zu, photosPoVec size:%{public}zu",
+        lakeInfos.size(),
+        photosPoVec.size());
+    UpdateVideoMode(photosPoVec);
+    OnDownloadAssetData assetData;
+    for (const auto &photosPo : photosPoVec) {
+        assetData = this->GetOnDownloadLakeAssetData(photosPo, lakeInfos);
+        MEDIA_DEBUG_LOG(
+            "OnDownloadAsset (unified) %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
+        HandlePhoto(photosPo, assetData);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+        UpdateBatchDownloadTask(photosPo);
+#endif
+        MediaOperateResultDto mediaResult;
+        mediaResult.cloudId = photosPo.cloudId.value_or("");
+        mediaResult.errorCode = assetData.err;
+        mediaResult.errorMsg = assetData.errorMsg;
+        result.emplace_back(mediaResult);
+    }
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP

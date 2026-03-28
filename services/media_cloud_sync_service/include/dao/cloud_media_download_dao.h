@@ -49,8 +49,6 @@ public:
     int32_t UpdateTransCodeInfo(const std::string &path);
     int32_t UpdateDownloadLakeAsset(const OnDownloadAssetData &assetData,
         const CloudMediaScanService::ScanResult& scanResult);
-    int32_t QueryDownloadLakeAssetByCloudIds(
-        const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos, std::vector<PhotosPo> &result);
     int32_t CleanAttachmentByCloudId(const std::vector<std::string> &cloudIdList);
 
 private:
