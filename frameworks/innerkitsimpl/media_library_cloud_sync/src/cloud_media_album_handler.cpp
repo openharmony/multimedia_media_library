@@ -193,7 +193,7 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     return E_OK;
 }
 
-int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType)
+int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
 {
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     reqBody.size = size;

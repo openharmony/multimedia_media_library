@@ -108,13 +108,13 @@ int32_t CloudMediaDataHandler::GetCreatedRecords(std::vector<MDKRecord> &records
     return this->dataHandler_->GetCreatedRecords(records, size);
 }
 
-int32_t CloudMediaDataHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType)
+int32_t CloudMediaDataHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
 {
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
-    return this->dataHandler_->GetMetaModifiedRecords(records, size, dirtyType);
+    return this->dataHandler_->GetMetaModifiedRecords(records, size);
 }
 
 int32_t CloudMediaDataHandler::GetFileModifiedRecords(std::vector<MDKRecord> &records, int32_t size)

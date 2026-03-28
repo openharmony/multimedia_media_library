@@ -122,7 +122,6 @@ public:  // basic functions
 class EXPORT CloudMdkRecordPhotosReqBody : public IPC::IMediaParcelable {
 public:
     int32_t size;
-    int32_t dirtyType;
 
 public:  // functions of Parcelable.
     virtual ~CloudMdkRecordPhotosReqBody() = default;
