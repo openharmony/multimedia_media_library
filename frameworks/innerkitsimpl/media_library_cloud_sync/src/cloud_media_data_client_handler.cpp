@@ -609,11 +609,11 @@ int32_t CloudMediaDataClientHandler::OnDownloadAsset(
 {
     MEDIA_INFO_LOG("OnDownloadAsset (deprecated), cloudIds: %{public}zu", cloudIds.size());
     CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "OnDownloadAsset: cloudIds is empty");
-    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
+    std::unordered_map<std::string, AdditionFileInfo> downloadedFileInfos;
     for (const auto &cloudId : cloudIds) {
-        lakeInfos[cloudId] = AdditionFileInfo();
+        downloadedFileInfos[cloudId] = AdditionFileInfo();
     }
-    return OnDownloadAsset(lakeInfos, result);
+    return OnDownloadAsset(downloadedFileInfos, result);
 }
 
 int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
@@ -626,14 +626,14 @@ int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
 }
 
 int32_t CloudMediaDataClientHandler::OnDownloadAsset(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
     std::vector<MediaOperateResult> &result)
 {
-    MEDIA_INFO_LOG("OnDownloadAsset (unified), lakeInfos: %{public}zu", lakeInfos.size());
-    CHECK_AND_RETURN_RET_LOG(!lakeInfos.empty(), E_OK, "OnDownloadAsset: lakeInfos is empty");
+    MEDIA_INFO_LOG("OnDownloadAsset (unified), downloadedFileInfos: %{public}zu", downloadedFileInfos.size());
+    CHECK_AND_RETURN_RET_LOG(!downloadedFileInfos.empty(), E_OK, "OnDownloadAsset: downloadedFileInfos is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET);
     OnDownloadAssetReqBody reqBody;
-    reqBody.lakeInfos = lakeInfos;
+    reqBody.downloadedFileInfos = downloadedFileInfos;
     MediaOperateResultRespBody respBody;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
                     .Post(operationCode, reqBody, respBody);

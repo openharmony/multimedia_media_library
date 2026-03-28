@@ -54,7 +54,7 @@ public:
     std::vector<PhotosDto> GetDownloadAsset(const std::vector<int32_t> &fileIds);
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize);
     int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo);
-    int32_t OnDownloadAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    int32_t OnDownloadAsset(const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
         std::vector<MediaOperateResultDto> &result);
 
 private:
