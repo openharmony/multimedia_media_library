@@ -528,8 +528,6 @@ void ChangeListenerAni::ExecuteThreadWork(ani_vm *etsVm, ChangeListenerAni::JsOn
     CHECK_IF_EQUAL(wrapper != nullptr, "wrapper is null");
     CHECK_IF_EQUAL(etsVm != nullptr, "etsVm is null");
     if (wrapper->msg_ == nullptr) {
-        delete wrapper->msg_->data_;
-        delete wrapper->msg_;
         delete wrapper;
         ANI_ERR_LOG("msg is null");
         return;
