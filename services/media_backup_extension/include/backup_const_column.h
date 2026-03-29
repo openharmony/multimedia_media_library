@@ -251,6 +251,17 @@ const std::string PET_FACE_COL_DATE_MODIFIED = "date_modified";
 // tab_analysis_video_total TBL COL_NAME
 const std::string ANALYSIS_VIDEO_TOTAL_TABLE = "tab_analysis_video_total";
 
+// tab_analysis_watermark TBL COL_NAME
+#define ANALYSIS_WATERMARK_TABLE          "tab_analysis_watermark"
+#define WATERMARK_COL_FILE_ID             "file_id"
+#define WATERMARK_COL_STATUS              "status"
+#define WATERMARK_COL_TYPE                "type"
+#define WATERMARK_COL_VALID_REGION_X      "valid_region_x"
+#define WATERMARK_COL_VALID_REGION_Y      "valid_region_y"
+#define WATERMARK_COL_VALID_REGION_WIDTH  "valid_region_width"
+#define WATERMARK_COL_VALID_REGION_HEIGHT "valid_region_height"
+#define WATERMARK_COL_ALGO_VERSION        "algo_version"
+
 // Relationship
 enum RelationshipIndex {
     INDEX_ME = 0,

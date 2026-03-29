@@ -2394,6 +2394,7 @@ void CloneRestore::RestoreAnalysisData()
     PopulateAnalysisAlbumIdMap();
     PopulateSystemAlbumIdMap();
     RestoreTabOldAlbumsData();
+    RestoreWatermarkData();
 }
 
 void CloneRestore::RestoreAssetMapData()
@@ -2424,6 +2425,12 @@ void CloneRestore::RestoreTabOldAlbumsData()
 {
     TabOldAlbumsClone tabOldAlbumsClone(mediaRdb_, mediaLibraryRdb_, tableAlbumIdMap_);
     tabOldAlbumsClone.CloneAlbums(CLONE_ALBUMS);
+}
+
+void CloneRestore::RestoreWatermarkData()
+{
+    WaterMarkClone waterMarkClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    waterMarkClone.Clone();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)

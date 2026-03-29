@@ -1906,6 +1906,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_ANALYSIS_PET_FACE,
     CREATE_TAB_ANALYSIS_PET_TAG,
+    CREATE_TAB_ANALYSIS_WATERMARK,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
@@ -2565,6 +2566,16 @@ static void AddHeadAndPoseTables(RdbStore &store)
     };
     MEDIA_INFO_LOG("start add head and pose tables");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void AddWatermarkTable(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add tab_analysis_watermark table");
+    const vector<string> sqls = {
+        CREATE_TAB_ANALYSIS_WATERMARK,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add tab_analysis_watermark table");
 }
 
 static void AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
@@ -5951,6 +5962,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true)) {
         // 此处升级回退，未合入主干
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
+    }
+
+    if (oldVersion < VERSION_ADD_WATERMARK_TABLE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_WATERMARK_TABLE, true)) {
+        AddWatermarkTable(store, VERSION_ADD_WATERMARK_TABLE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_WATERMARK_TABLE, true);
     }
 }
 

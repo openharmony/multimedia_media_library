@@ -56,6 +56,7 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_mock_tocken.h"
 #include "media_upgrade.h"
+#include "analysis_data_watermark_dao.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -115,6 +116,7 @@ static std::vector<std::string> createTableSqlLists = {
     CREATE_BUNDLE_PREMISSION_TABLE,
     PhotoAlbumColumns::CREATE_TABLE,
     CREATE_GEO_KNOWLEDGE_TABLE,
+    CREATE_TAB_ANALYSIS_WATERMARK,
 };
 
 static std::vector<std::string> testTables = {
@@ -140,6 +142,7 @@ static std::vector<std::string> testTables = {
     CONST_MEDIALIBRARY_TABLE,
     CONST_BUNDLE_PERMISSION_TABLE,
     PhotoAlbumColumns::TABLE,
+    CONST_VISION_WATERMARK_TABLE,
 };
 
 void CleanVisionDataPart1(DataShare::DataSharePredicates &predicates)
@@ -211,6 +214,15 @@ void ClearVideoAestheticsData()
     Uri videoAesUri(URI_VIDEO_AESTHETICS);
     MediaLibraryCommand videoAesCmd(videoAesUri);
     MediaLibraryDataManager::GetInstance()->Delete(videoAesCmd, predicates);
+}
+
+void ClearAnalysisWaterMarkData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri watermarkUri(CONST_URI_WATERMARK);
+    MediaLibraryCommand watermarkCmd(watermarkUri);
+    int32_t deleteRet = MediaLibraryDataManager::GetInstance()->Delete(watermarkCmd, predicates);
+    EXPECT_GE(deleteRet, 0) << "Failed to clear watermark data, deleteRet" << deleteRet;
 }
 
 void ClearVideoFaceData()
@@ -303,6 +315,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearVideoAestheticsData();
     ClearPetFaceData();
     ClearPetTagData();
+    ClearAnalysisWaterMarkData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -313,6 +326,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     ClearVideoAestheticsData();
     ClearPetFaceData();
     ClearPetTagData();
+    ClearAnalysisWaterMarkData();
     if (mockToken != nullptr) {
         delete mockToken;
         mockToken = nullptr;
@@ -334,6 +348,7 @@ void MediaLibraryVisionTest::SetUp(void)
     ClearVideoAestheticsData();
     ClearPetFaceData();
     ClearPetTagData();
+    ClearAnalysisWaterMarkData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -4148,6 +4163,120 @@ HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_005, TestS
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_005::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_UNCLUSTERED_STATE);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertWatermark_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertWatermark_Test_001::Start");
+    Uri watermarkUri(CONST_URI_WATERMARK);
+    MediaLibraryCommand cmd(watermarkUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket.Put(CONST_WATERMARK_TYPE, 1);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_X, 0.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_Y, 0.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 1.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 0.85);
+    valuesBucket.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertWatermark_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertWatermark_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertWatermark_Test_002::Start");
+    Uri watermarkUri(CONST_URI_WATERMARK);
+    MediaLibraryCommand cmd(watermarkUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket.Put(CONST_WATERMARK_TYPE, 0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_X, 0.1);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_Y, 0.1);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 0.8);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 0.8);
+    valuesBucket.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket2.Put(CONST_WATERMARK_TYPE, 1);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_X, 0.1);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_Y, 0.1);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 0.8);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 0.8);
+    valuesBucket2.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertWatermark_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateWatermark_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdateWatermark_Test_001::Start");
+    Uri watermarkUri(CONST_URI_WATERMARK);
+    MediaLibraryCommand cmd(watermarkUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket.Put(CONST_WATERMARK_TYPE, 0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_X, 0.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_Y, 0.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 1.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 1.0);
+    valuesBucket.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto insertRet = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(insertRet, 0);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(CONST_WATERMARK_TYPE, 1);
+    updateValues.Put(CONST_WATERMARK_ALGO_VERSION, "2.0");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdateWatermark_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteWatermark_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeleteWatermark_Test_001::Start");
+    Uri watermarkUri(CONST_URI_WATERMARK);
+    MediaLibraryCommand cmd(watermarkUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket.Put(CONST_WATERMARK_TYPE, 1);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_X, 0.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_Y, 0.15);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 1.0);
+    valuesBucket.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 0.85);
+    valuesBucket.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto insertRet1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(insertRet1, 0);
+
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 5);
+    valuesBucket2.Put(CONST_WATERMARK_STATUS, 1);
+    valuesBucket2.Put(CONST_WATERMARK_TYPE, 0);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_X, 0.0);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_Y, 0.0);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_WIDTH, 1.0);
+    valuesBucket2.Put(CONST_WATERMARK_VALID_REGION_HEIGHT, 1.0);
+    valuesBucket2.Put(CONST_WATERMARK_ALGO_VERSION, "1.0");
+    auto insertRet2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(insertRet2, 0);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.GreaterThan(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeleteWatermark_Test_001::retVal = %{public}d. End", retVal);
 }
 } // namespace Media
 } // namespace OHOS
