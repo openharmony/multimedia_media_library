@@ -5536,6 +5536,8 @@ static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status s
 {
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    std::unique_ptr<char, decltype(&free)> editDataGuard(context->editDataBuffer, free);
+    context->editDataBuffer = nullptr;
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -5544,7 +5546,7 @@ static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status s
 
     if (context->error == ERR_DEFAULT) {
         string editDataStr;
-        GetEditDataString(context->editDataBuffer, editDataStr);
+        GetEditDataString(editDataGuard.get(), editDataStr);
         CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, editDataStr.c_str(),
             NAPI_AUTO_LENGTH, &jsContext->data), JS_INNER_FAIL);
         jsContext->status = true;
@@ -5555,9 +5557,6 @@ static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status s
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
-    }
-    if (context->editDataBuffer != nullptr) {
-        free(context->editDataBuffer);
     }
     delete context;
 }

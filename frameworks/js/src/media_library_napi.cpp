@@ -6529,7 +6529,10 @@ static void GetPhotoIndexAsyncCallbackComplete(napi_env env, napi_status status,
 
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    if (napi_get_undefined(env, &jsContext->data) != napi_ok) {
+        delete context;
+        return;
+    }
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
