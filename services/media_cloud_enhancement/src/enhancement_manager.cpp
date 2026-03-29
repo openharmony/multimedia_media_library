@@ -45,6 +45,7 @@
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_related_system_state_manager.h"
 #include "net_conn_client.h"
+#include "media_string_utils.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -504,13 +505,13 @@ bool EnhancementManager::RevertEditUpdateInternal(int32_t fileId)
     return true;
 }
 
-bool EnhancementManager::RecoverTrashUpdateInternal(const vector<string> &fildIds)
+bool EnhancementManager::RecoverTrashUpdateInternal(const vector<string> &fileIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("EnhancementManager::RecoverTrashUpdateInternal");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
-    updatePredicates.In(MediaColumn::MEDIA_ID, fildIds);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
     updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::TRASH));
     ValuesBucket rdbValues;
@@ -534,12 +535,18 @@ int32_t EnhancementManager::HandleEnhancementUpdateOperation(MediaLibraryCommand
         case OperationType::ENHANCEMENT_ADD: {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
             string hasCloudWatermark = cmd.GetQuerySetParam(CONST_MEDIA_OPERN_KEYWORD);
-            int triggerMode = std::atoi(cmd.GetQuerySetParam(CONST_MEDIA_TRIGGER_MODE_KEYWORD).c_str());
-            MEDIA_INFO_LOG("the triggerMode is %{public}d", triggerMode);
+            string triggerMode = cmd.GetQuerySetParam(CONST_MEDIA_TRIGGER_MODE_KEYWORD);
+            int triggerModeInt = 0;
+            bool result = MediaStringUtils::ConvertToInt(triggerMode, triggerModeInt);
+            if (!result) {
+                MEDIA_ERR_LOG("invalid triggerMode %{public}s", triggerMode.c_str());
+                return E_ERR;
+            }
+            MEDIA_INFO_LOG("the triggerMode is %{public}d", triggerModeInt);
             if (hasCloudWatermark.compare(to_string(YES)) == 0) {
-                return HandleAddOperation(cmd, true, triggerMode);
+                return HandleAddOperation(cmd, true, triggerModeInt);
             } else {
-                return HandleAddOperation(cmd, false, triggerMode);
+                return HandleAddOperation(cmd, false, triggerModeInt);
             }
 #else
             return E_ERR;

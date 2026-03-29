@@ -256,8 +256,7 @@ static void CloudMediadPhotoServiceFuzzer()
     int32_t recordsSize = provider->ConsumeIntegral<uint32_t>() & 0xf;
     vector<PhotosPo> photosPo;
     cloudMediaPhotosService->GetCreatedRecords(recordsSize, photosPo);
-    int32_t dirtyType = static_cast<int32_t>(FuzzDirtyType());
-    cloudMediaPhotosService->GetMetaModifiedRecords(recordsSize, photosPo, dirtyType);
+    cloudMediaPhotosService->GetMetaModifiedRecords(recordsSize, photosPo);
     cloudMediaPhotosService->GetFileModifiedRecords(recordsSize, photosPo);
     cloudMediaPhotosService->GetCopyRecords(recordsSize, photosPo);
     cloudMediaPhotosService->GetRetryRecords(cloudIds);

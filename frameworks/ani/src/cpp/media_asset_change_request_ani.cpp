@@ -1872,6 +1872,11 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAniContext &context,
     size_t offset = 0;
     size_t length = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoSize() : changeRequest->GetDataBufferSize();
     void* dataBuffer = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoBuffer() : changeRequest->GetDataBuffer();
+    if (dataBuffer == nullptr || length == 0) {
+        ANI_ERR_LOG("dataBuffer is nullptr or length is 0");
+        context.SaveError(E_ERR);
+        return false;
+    }
     while (offset < length) {
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
         if (written < 0) {
@@ -2460,9 +2465,11 @@ static void ApplyAssetChangeRequestExecute(std::unique_ptr<MediaAssetChangeReque
 {
     MediaLibraryTracer tracer;
     tracer.Start("ApplyAssetChangeRequestExecute");
-
-    if (context == nullptr || context->objectInfo == nullptr ||
-        context->objectInfo->GetFileAssetInstance() == nullptr) {
+    if (context == nullptr) {
+        ANI_ERR_LOG("Failed to check becuase context is nullptr");
+        return;
+    }
+    if (context->objectInfo == nullptr || context->objectInfo->GetFileAssetInstance() == nullptr) {
         context->SaveError(E_FAIL);
         ANI_ERR_LOG("Failed to check async context of MediaAssetChangeRequest object");
         return;

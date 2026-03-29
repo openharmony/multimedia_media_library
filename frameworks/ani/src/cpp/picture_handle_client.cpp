@@ -132,13 +132,12 @@ int32_t ParseMainPicture(const uint8_t* addr, uint32_t& offset, uint32_t dataSiz
         return E_ERR;
     }
     offset += dataSize;
-
+    // parcel析构函数中会free掉parcelData，成功调用ParseFrom后不可进行free(parcelData)
     if (!parcel.ParseFrom(reinterpret_cast<uintptr_t>(parcelData), dataSize)) {
         ANI_ERR_LOG("parcelData parse failed!");
         free(parcelData);
         return E_ERR;
     }
-    free(parcelData);
     return E_OK;
 }
 
@@ -171,6 +170,12 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         ANI_DEBUG_LOG("Picture not exists");
         munmap(addr, msgLen);
         return E_NO_SUCH_FILE;
+    }
+
+    if (readOffset + dataSize > msgLen) {
+        ANI_ERR_LOG("Data size overflow");
+        munmap(addr, msgLen);
+        return E_ERR;
     }
 
     MessageParcel pictureParcel;
