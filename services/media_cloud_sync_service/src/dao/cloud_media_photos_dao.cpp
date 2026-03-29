@@ -1057,15 +1057,14 @@ int32_t CloudMediaPhotosDao::GetCreatedRecords(int32_t size, std::vector<PhotosP
  * @param size 查询的条数；注：查询出的集合数据应等于预期查询的数量（非最后一页）
  * @return 查询的结果；E_DB_FAIL 数据库操作失败，E_OK 成功
  */
-int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(
-    int32_t size, std::vector<PhotosPo> &cloudRecordPoList, int32_t dirtyType)
+int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &cloudRecordPoList)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "GetMetaModifiedRecords Failed to get rdbStore.");
     /* build predicates */
     std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
     MEDIA_INFO_LOG("GetMetaModifiedRecords cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
-    std::vector<NativeRdb::ValueObject> bindArgs = {dirtyType, size};
+    std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
@@ -1085,9 +1084,8 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(
         CHECK_AND_PRINT_LOG(ret == E_OK, "AddRemoveAlbumCloudId failed. ret: %{public}d", ret);
         MEDIA_DEBUG_LOG("Media_Trace: GetMetaModifiedRecords Record: %{public}s", record.ToString().c_str());
         cloudRecordPoList.emplace_back(move(record));
-        MEDIA_INFO_LOG("GetMetaModifiedRecords dirtyType: %{public}d, size: %{public}d,"
+        MEDIA_INFO_LOG("GetMetaModifiedRecords size: %{public}d,"
                         "rowCount: %{public}zu, resultCount: %{public}zu",
-            dirtyType,
             size,
             tempList.size(),
             cloudRecordPoList.size());
