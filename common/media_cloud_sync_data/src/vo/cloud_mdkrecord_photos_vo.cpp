@@ -282,14 +282,12 @@ std::string CloudMdkRecordPhotosVo::ToString() const
 bool CloudMdkRecordPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->size), false, "size");
-    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->dirtyType), false, "dirtyType");
     return true;
 }
 
 bool CloudMdkRecordPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->size), false, "size");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->dirtyType), false, "dirtyType");
     return true;
 }
 
@@ -298,7 +296,6 @@ std::string CloudMdkRecordPhotosReqBody::ToString() const
     std::stringstream ss;
     ss << "{";
     ss << "\"size\": " << this->size << ",";
-    ss << "\"dirtyType\": " << this->dirtyType << ",";
     ss << "}";
     return ss.str();
 }
