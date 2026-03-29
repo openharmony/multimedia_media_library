@@ -206,7 +206,7 @@ static void CloudMediaDownloadServiceFuzzer()
     InsertQueryAsset();
     cloudMediaDownloadService->GetDownloadAsset(fileIds);
     cloudMediaDownloadService->GetDownloadThmsByUri(fileIds, type);
-    cloudMediaDownloadService->OnDownloadAsset(cloudIds, result);
+    cloudMediaDownloadService->OnDownloadAsset(lakeInfos, result);
     cloudMediaDownloadService->GetDownloadThms(queryDto, photosDtos);
     cloudMediaDownloadService->OnDownloadThms(downloadThumbnailMap, result);
     cloudMediaDownloadService->GetDownloadThmNum(type, totalNum);

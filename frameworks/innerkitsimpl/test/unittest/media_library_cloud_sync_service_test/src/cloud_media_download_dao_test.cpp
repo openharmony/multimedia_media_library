@@ -332,22 +332,6 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAsset_Test_003, TestSize.Level
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAsset_Test_004, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = false;
-    assetData.path = "/storage/test.jpg";
-    assetData.needScanHdrMode = true;
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = true;
-    scanResult.hdrMode = 2;
-    
-    int32_t ret = downloadDao.UpdateDownloadAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAsset_Test_005, TestSize.Level1)
 {
     CloudMediaDownloadDao downloadDao;
@@ -438,52 +422,7 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAssetExifRotateFix_Test_003, T
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_001, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = false;
-    assetData.path = "/storage/test.jpg";
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = false;
-    
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_002, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = true;
-    assetData.path = "/storage/test.jpg";
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = false;
-    
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_003, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = false;
-    assetData.path = "/storage/test.jpg";
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = true;
-    scanResult.height = 1920;
-    scanResult.width = 1080;
-    scanResult.orientation = 0;
-    
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_004, TestSize.Level1)
+HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadAsset_Test_004, TestSize.Level1)
 {
     CloudMediaDownloadDao downloadDao;
     OnDownloadAssetData assetData;
@@ -501,40 +440,7 @@ HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_004, TestSize.L
     CloudMediaScanService::ScanResult scanResult;
     scanResult.scanSuccess = false;
     
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
+    int32_t ret = downloadDao.UpdateDownloadAsset(assetData, scanResult);
     EXPECT_EQ(ret, E_OK);
 }
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_005, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = false;
-    assetData.path = "/storage/test.jpg";
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = true;
-    scanResult.height = 0;
-    scanResult.width = 0;
-    
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaDownloadDaoTest, UpdateDownloadLakeAsset_Test_006, TestSize.Level1)
-{
-    CloudMediaDownloadDao downloadDao;
-    OnDownloadAssetData assetData;
-    assetData.fixFileType = false;
-    assetData.path = "/storage/test.jpg";
-    
-    CloudMediaScanService::ScanResult scanResult;
-    scanResult.scanSuccess = true;
-    scanResult.height = -1;
-    scanResult.width = -1;
-    
-    int32_t ret = downloadDao.UpdateDownloadLakeAsset(assetData, scanResult);
-    EXPECT_EQ(ret, E_OK);
-}
-
 }  // namespace OHOS::Media::CloudSync

@@ -40,6 +40,7 @@ public:
     AdditionFileInfo lakeInfo;
     bool needScanHdrMode{false};
     bool needParseDuration{false};
+    std::string cloudId;
 
 public:  // basic functions
     std::string ToString() const;

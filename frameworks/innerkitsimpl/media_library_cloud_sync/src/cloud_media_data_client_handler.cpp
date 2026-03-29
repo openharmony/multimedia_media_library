@@ -636,7 +636,7 @@ int32_t CloudMediaDataClientHandler::OnDownloadAsset(
     reqBody.downloadedFileInfos = downloadedFileInfos;
     MediaOperateResultRespBody respBody;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
-                    .Post(operationCode, reqBody, respBody);
+                .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
     result.clear();
     for (const auto resultVo : respBody.result) {
         MEDIA_INFO_LOG("OnDownloadAsset (unified), mediaResult: %{public}s", resultVo.ToString().c_str());
