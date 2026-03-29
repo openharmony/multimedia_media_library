@@ -41,13 +41,11 @@ public:
     int32_t UpdateDownloadThmAndLcd(const std::vector<std::string> &cloudIds);
     int32_t GetFileIdFromCloudId(const std::vector<std::string> &cloudIds, std::vector<std::string> &fileIds);
     int32_t QueryDownloadAssetByCloudIds(const std::vector<std::string> &cloudIds, std::vector<PhotosPo> &result);
-    int32_t UpdateDownloadAsset(const OnDownloadAssetData &assetData,
-        const CloudMediaScanService::ScanResult& scanResult);
     int32_t UpdateDownloadAssetExifRotateFix(
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
         const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail);
     int32_t UpdateTransCodeInfo(const std::string &path);
-    int32_t UpdateDownloadLakeAsset(const OnDownloadAssetData &assetData,
+    int32_t UpdateDownloadAsset(const OnDownloadAssetData &assetData,
         const CloudMediaScanService::ScanResult& scanResult);
     int32_t CleanAttachmentByCloudId(const std::vector<std::string> &cloudIdList);
 
@@ -59,6 +57,7 @@ private:
     void FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult,
         bool isNeedUpdate);
     void FillScanedHeightWidth(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult);
+    int32_t HandleAdditionalFileInfo(const OnDownloadAssetData &assetData, NativeRdb::ValuesBucket &values);
 
 private:
     const std::vector<std::string> DOWNLOAD_THUMBNAIL_COLUMNS = {
