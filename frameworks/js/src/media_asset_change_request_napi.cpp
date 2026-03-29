@@ -91,18 +91,29 @@ const std::string TYPE_PHOTOS = "1";
 
 int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
+    if (mem == nullptr || mem->GetBase() == nullptr) {
+        NAPI_ERR_LOG("mem or mem->GetBase() is nullptr");
+        return SOURCE_ERROR_IO;
+    }
+
     if (readPos_ >= size_) {
         NAPI_ERR_LOG("Failed to check read position");
         return SOURCE_ERROR_EOF;
     }
 
-    if (readPos_ + static_cast<int64_t>(length) > size_) {
+    uint64_t newPos = static_cast<uint64_t>(readPos_) + static_cast<uint64_t>(length);
+    if (newPos > static_cast<uint64_t>(size_)) {
         NAPI_ERR_LOG("Source buffer overflow, readPos_=%{public}" PRId64 ", length=%{public}u, size_=%{public}" PRId64,
             readPos_, length, size_);
         return SOURCE_ERROR_EOF;
     }
 
-    if (memcpy_s(mem->GetBase(), mem->GetSize(), (char*)buffer_ + readPos_, length) != E_OK) {
+    if (static_cast<size_t>(mem->GetSize()) < length) {
+        NAPI_ERR_LOG("mem buffer size %{public}zu is less than required %{public}u", mem->GetSize(), length);
+        return SOURCE_ERROR_IO;
+    }
+
+    if (memcpy_s(mem->GetBase(), mem->GetSize(), static_cast<const char*>(buffer_) + readPos_, length) != E_OK) {
         NAPI_ERR_LOG("Failed to copy buffer to mem");
         return SOURCE_ERROR_IO;
     }

@@ -494,6 +494,7 @@ void ChangeListenerAni::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
     if (wrapper == nullptr) {
         ANI_ERR_LOG("JsOnChangeCallbackWrapper allocation failed");
+        free(msg->data_);
         delete msg;
         return;
     }
@@ -558,6 +559,7 @@ void ChangeListenerAni::ExecuteThreadWork(ani_vm *etsVm, ChangeListenerAni::JsOn
         }
     } while (0);
 
+    delete wrapper->msg_->data_;
     delete wrapper->msg_;
     delete wrapper;
 }

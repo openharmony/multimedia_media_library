@@ -85,7 +85,9 @@ void MediaCallTranscode::CallTranscodeRelease(const std::string& requestId)
     if (it == transCoderMap_.end()) {
         return;
     }
-    it->second->Release();
+    if (it->second != nullptr) {
+        it->second->Release();
+    }
     transCoderMap_.erase(it);
 }
 
