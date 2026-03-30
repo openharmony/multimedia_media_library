@@ -28,6 +28,7 @@
 #include "clone_restore_pet_album.h"
 #include "clone_restore_portrait_album.h"
 #include "clone_restore_selection.h"
+#include "clone_restore_dup_sim.h"
 #include "clone_restore_highlight.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_group_photo.h"
@@ -2340,6 +2341,8 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisPortrait();
     RestoreAnalysisPet();
     RestoreGroupPhoto();
+    RestoreAnalysisDupSim();
+    // selection clone is dependent on dup_sim clone
     RestoreAnalysisSelection();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     RestoreAnalysisData();
@@ -2411,7 +2414,7 @@ void CloneRestore::RestoreSearchIndexData()
 
 void CloneRestore::RestoreBeautyScoreData()
 {
-    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxBeautyFileId_);
+    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxBeautyFileId_, &scoreMaskMap_);
     beautyScoreClone.CloneBeautyScoreInfo();
 }
 
@@ -3139,7 +3142,7 @@ void CloneRestore::ReportInvalidLocalFiles()
 void CloneRestore::RestoreAnalysisClassify()
 {
     CloneRestoreClassify cloneRestoreClassify;
-    cloneRestoreClassify.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
+    cloneRestoreClassify.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, &scoreMaskMap_);
     cloneRestoreClassify.Restore(photoInfoMap_);
 }
 
@@ -3147,7 +3150,8 @@ void CloneRestore::RestoreAnalysisPortrait()
 {
     CloneRestorePortrait portraitAlbumClone;
     bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
-    portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
+    portraitAlbumClone.Init(
+        sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied, &scoreMaskMap_);
     portraitAlbumClone.Preprocess();
     portraitAlbumClone.Restore();
 }
@@ -3173,8 +3177,8 @@ void CloneRestore::RestoreGroupPhoto()
     MEDIA_INFO_LOG("start RestoreGroupPhoto");
     CloneRestoreGroupPhoto cloneRestoreGroupPhoto;
     bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
-    cloneRestoreGroupPhoto.Init(sceneCode_, taskId_, restoreInfo_,
-        mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
+    cloneRestoreGroupPhoto.Init(
+        sceneCode_, taskId_, restoreInfo_, mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
     cloneRestoreGroupPhoto.Restore(photoInfoMap_);
     MEDIA_INFO_LOG("end RestoreGroupPhoto");
 }
@@ -3186,6 +3190,15 @@ void CloneRestore::RestoreAnalysisSelection()
     selectionRestore.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
     selectionRestore.Preprocess();
     selectionRestore.Restore();
+}
+
+void CloneRestore::RestoreAnalysisDupSim()
+{
+    CloneRestoreDupSim dupSimRestore;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
+    dupSimRestore.Init(
+        sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied, &scoreMaskMap_);
+    dupSimRestore.Restore();
 }
 
 void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)

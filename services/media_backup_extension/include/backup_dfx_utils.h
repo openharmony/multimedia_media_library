@@ -24,7 +24,6 @@ class BackupDfxUtils {
 public:
     static void PostPortraitStat(uint32_t albumCount, uint64_t photoCount, uint64_t faceCount, uint64_t totalTimeCost);
     static void PostPetStat(uint32_t albumCount, uint64_t photoCount, uint64_t petCount, uint64_t totalTimeCost);
-    static void PostSelectionStat(uint32_t selectionCount, uint64_t atomEventCount, uint64_t totalTimeCost);
 };
 } // namespace Media
 } // namespace OHOS
