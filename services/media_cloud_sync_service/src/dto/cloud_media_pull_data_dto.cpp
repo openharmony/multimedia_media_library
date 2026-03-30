@@ -76,7 +76,7 @@ void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss) const
        << "\"attributesFileId\": " << attributesFileId << ","
        << "\"attributesEditedTimeMs\": " << attributesEditedTimeMs << ","
        << "\"attributesFixVersion\": " << attributesFixVersion << ","
-       << "\"attributesEditDataCamera\": \"" << attributesEditDataCamera << "\","
+       << "\"attributesEditDataCamera\": \"" << attributesEditDataCamera.empty() << "\","
        << "\"deferredEffectsStatus\": " << deferredEffectsStatus << ","
        << "\"fileSourceType\": " << attributesFileSourceType << ","
        << "\"storagePath\": " << attributesStoragePath << ",";

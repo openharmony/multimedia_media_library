@@ -171,7 +171,8 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+            MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{public}s",
+                MediaFileUtils::DesensitizeName(displayName).c_str());
             return errCode;
         }
 
@@ -404,7 +405,8 @@ void MediaLibraryAudioOperations::MoveToMusic()
         if (!MediaFileUtils::ModifyAsset(localPath, MUSIC_DIR + displayName)) {
             num++;
         } else {
-            MEDIA_ERR_LOG("move %{private}s to music fail!", displayName.c_str());
+            MEDIA_ERR_LOG("move %{public}s to music fail!",
+                MediaFileUtils::DesensitizeName(displayName).c_str());
         }
     }
     MEDIA_INFO_LOG("%{public}d audios move to music success", num);

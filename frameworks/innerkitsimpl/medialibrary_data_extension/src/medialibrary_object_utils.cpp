@@ -730,10 +730,10 @@ static int32_t OpenAsset(const string &filePath, const string &mode, const strin
 
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Failed to get real path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return E_ERR;
     }
-    MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    MEDIA_DEBUG_LOG("File absFilePath is %{public}s", MediaFileUtils::DesensitizePath(absFilePath).c_str());
     MEDIA_DEBUG_LOG("object util type:%{public}d", type);
 
     return MediaPrivacyManager(absFilePath, mode, fileId, type).Open();
@@ -755,8 +755,9 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     string realPath;
     int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uri, to_string(uid), realPath);
     if (ret != E_OK || !AppFileService::SandboxHelper::CheckValidPath(realPath)) {
-        MEDIA_ERR_LOG("file not exist, uri=%{private}s, realPath=%{private}s",
-                      uri.c_str(), realPath.c_str());
+        MEDIA_ERR_LOG("file not exist, uri=%{public}s, realPath=%{public}s",
+            MediaFileUtils::DesensitizeUri(uri).c_str(),
+            MediaFileUtils::DesensitizePath(realPath).c_str());
         return E_INVALID_URI;
     }
     return MediaFileUtils::OpenFile(realPath, mode);
@@ -1728,7 +1729,8 @@ int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, c
         return E_SUCCESS;
     }
     if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
-        MEDIA_ERR_LOG("Check File DisplayName failed, displayName: %{private}s", displayName.c_str());
+        MEDIA_ERR_LOG("Check File DisplayName failed, displayName: %{public}s",
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         return E_FILE_NAME_INVALID;
     }
     DirAsset rootDirAsset;

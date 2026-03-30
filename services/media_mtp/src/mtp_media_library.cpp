@@ -770,7 +770,8 @@ int32_t MtpMediaLibrary::GetRealPath(const std::string &path, std::string &outPa
         outPath = path;
         return MTP_SUCCESS;
     }
-    MEDIA_ERR_LOG("MtpMediaLibrary::GetRealPath path[%{public}s] error", path.c_str());
+    MEDIA_ERR_LOG("MtpMediaLibrary::GetRealPath path[%{public}s] error",
+        MediaFileUtils::DesensitizePath(path).c_str());
     return E_ERR;
 }
 

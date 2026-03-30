@@ -288,7 +288,7 @@ void FolderScanner::UpdateAndNotifyAlbumInfos(bool isNeedUpdateSystemAlbum)
         CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
         for (auto fileUri : fileUris) {
             watch->Notify(fileUri, NotifyType::NOTIFY_ADD);
-            MEDIA_INFO_LOG("send add notify: %{public}s", fileUri.c_str());
+            MEDIA_INFO_LOG("send add notify: %{public}s", MediaFileUtils::DesensitizeUri(fileUri).c_str());
         }
         notifyFileUris_.clear();
     }

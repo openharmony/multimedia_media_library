@@ -17,6 +17,7 @@
 
 #include "media_log.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "photo_album_column.h"
 #include "shooting_mode_column.h"
 

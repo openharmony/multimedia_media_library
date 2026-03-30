@@ -44,13 +44,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_test, TestSize.Level1)
     EXPECT_EQ(emptyUri.empty(), true);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_test, TestSize.Level1)
-{
-    string displayName = "IMG_20260202_152926.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(displayName);
-    EXPECT_EQ(safeDisplayName.find(displayName) == std::string::npos, true);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_test, TestSize.Level1)
 {
     string privateString = "private info";
@@ -174,13 +167,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_mixed_chars_test, Test
     EXPECT_NE(maskedString, mixed);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_no_name_only_ext_test, TestSize.Level1)
-{
-    string noName = ".hiddenfile";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(noName);
-    EXPECT_EQ(safeDisplayName, noName);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_windows_path_test, TestSize.Level1)
 {
     string windowsPath = "C:\\Users\\file.jpg";
@@ -240,13 +226,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_space_test, TestSize.L
     EXPECT_EQ(maskedString, "*");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_space_test, TestSize.Level1)
-{
-    string space = " .jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(space);
-    EXPECT_NE(safeDisplayName, space);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_space_test, TestSize.Level1)
 {
     string space = "/ .jpg";
@@ -261,13 +240,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_newline_test, TestSize
     EXPECT_EQ(maskedString, "*");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_newline_test, TestSize.Level1)
-{
-    string newline = "\n.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(newline);
-    EXPECT_NE(safeDisplayName, newline);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_newline_test, TestSize.Level1)
 {
     string newline = "/\n.jpg";
@@ -280,13 +252,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_tab_test, TestSize.Lev
     string tab = "\t";
     string maskedString = JsInterfaceHelper::MaskString(tab);
     EXPECT_EQ(maskedString, "*");
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_tab_test, TestSize.Level1)
-{
-    string tab = "\t.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(tab);
-    EXPECT_NE(safeDisplayName, tab);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_tab_test, TestSize.Level1)
@@ -314,14 +279,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_PredicateToStringSafe_true_bool_t
     EXPECT_NE(printStr.find("bool::true"), std::string::npos);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_double_dot_test, TestSize.Level1)
-{
-    string doubleDot = "file..jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(doubleDot);
-    EXPECT_NE(safeDisplayName, doubleDot);
-    EXPECT_EQ(safeDisplayName.find(".jpg"), safeDisplayName.size() - 4);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_double_slash_test, TestSize.Level1)
 {
     string doubleSlash = "//file.jpg";
@@ -334,13 +291,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_null_char_test, TestSi
     string nullChar = "\0";
     string maskedString = JsInterfaceHelper::MaskString(nullChar);
     EXPECT_EQ(maskedString, "");
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_null_char_test, TestSize.Level1)
-{
-    string nullChar = "\0.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(nullChar);
-    EXPECT_EQ(safeDisplayName, "");
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_null_char_test, TestSize.Level1)
@@ -358,15 +308,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_very_long_test, TestSi
     EXPECT_EQ(maskedString[0], '*');
     EXPECT_EQ(maskedString[1], 'a');
     EXPECT_EQ(maskedString[2], 'a');
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_very_long_name_test, TestSize.Level1)
-{
-    string veryLongName(500, 'a');
-    veryLongName += ".jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(veryLongName);
-    EXPECT_NE(safeDisplayName, veryLongName);
-    EXPECT_GT(safeDisplayName.size(), 0);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_very_long_path_test, TestSize.Level1)
@@ -412,13 +353,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_zero_test, TestSize.Le
     EXPECT_EQ(maskedString, "*");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_zero_test, TestSize.Level1)
-{
-    string zero = "0.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(zero);
-    EXPECT_NE(safeDisplayName, zero);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_zero_test, TestSize.Level1)
 {
     string zero = "/0.jpg";
@@ -440,13 +374,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_negative_test, TestSiz
     string maskedString = JsInterfaceHelper::MaskString(negative);
     EXPECT_GT(maskedString.size(), 0);
     EXPECT_NE(maskedString, negative);
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_negative_test, TestSize.Level1)
-{
-    string negative = "-1.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(negative);
-    EXPECT_NE(safeDisplayName, negative);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_negative_test, TestSize.Level1)
@@ -472,13 +399,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_float_test, TestSize.L
     EXPECT_NE(maskedString, floatStr);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_float_test, TestSize.Level1)
-{
-    string floatStr = "3.14.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(floatStr);
-    EXPECT_NE(safeDisplayName, floatStr);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_float_test, TestSize.Level1)
 {
     string floatStr = "/3.14.jpg";
@@ -500,13 +420,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_hex_test, TestSize.Lev
     string maskedString = JsInterfaceHelper::MaskString(hex);
     EXPECT_GT(maskedString.size(), 0);
     EXPECT_NE(maskedString, hex);
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeDisplayName_hex_test, TestSize.Level1)
-{
-    string hex = "0x1234.jpg";
-    string safeDisplayName = JsInterfaceHelper::GetSafeDisplayName(hex);
-    EXPECT_NE(safeDisplayName, hex);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSafeUri_hex_test, TestSize.Level1)

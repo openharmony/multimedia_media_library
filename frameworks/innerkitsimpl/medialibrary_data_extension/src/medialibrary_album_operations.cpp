@@ -682,7 +682,8 @@ int CreatePhotoAlbum(const string &albumName)
 {
     int32_t err = MediaFileUtils::CheckAlbumName(albumName);
     if (err < 0) {
-        MEDIA_ERR_LOG("Check album name failed, album name: %{private}s", albumName.c_str());
+        MEDIA_ERR_LOG("Check album name failed, album name: %{public}s",
+            MediaFileUtils::DesensitizeName(albumName).c_str());
         return err;
     }
 
@@ -726,7 +727,8 @@ int32_t MediaLibraryAlbumOperations::CreatePortraitAlbum(const string &albumName
 {
     int32_t err = MediaFileUtils::CheckAlbumName(albumName);
     if (err < 0) {
-        MEDIA_ERR_LOG("Check album name failed, album name: %{private}s", albumName.c_str());
+        MEDIA_ERR_LOG("Check album name failed, album name: %{public}s",
+            MediaFileUtils::DesensitizeName(albumName).c_str());
         return err;
     }
 
@@ -1718,7 +1720,7 @@ int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(const SetCoverUriAlbu
     string cloudId;
     bool isManunalCloudCover = IsManunalCloudCover(fileId, cloudId);
     MEDIA_INFO_LOG("albumId:%{public}d, coverUri:%{public}s, isManunalCloudCover:%{public}d",
-        albumInfo.albumId, coverUri.c_str(), isManunalCloudCover);
+        albumInfo.albumId, MediaFileUtils::DesensitizeUri(coverUri).c_str(), isManunalCloudCover);
     if (isManunalCloudCover) {
         values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_CLOUD_COVER);
         values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + "," + cloudId);
@@ -1917,7 +1919,8 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     const string userAlbumMark = "/Users/";
     CHECK_AND_EXECUTE(lPath.find(userAlbumMark) == string::npos, isUserAlbum = true);
 
-    MEDIA_INFO_LOG("new album need to build, lpath is %{public}s", lPath.c_str());
+    MEDIA_INFO_LOG("new album need to build, lpath is %{public}s",
+        MediaFileUtils::DesensitizePath(lPath).c_str());
     string albumName;
     string bundleName = "";
     auto albumType = PhotoAlbumType::SOURCE;

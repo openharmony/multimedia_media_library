@@ -1898,7 +1898,8 @@ int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand
     std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     std::string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
     if (filePath.find("..") != string::npos) {
-        MEDIA_ERR_LOG("Invalid file path with path traversal: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Invalid file path with path traversal: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return E_INVALID_VALUES;
     }
     int32_t fileIdNum = static_cast<int32_t>(std::strtoul(fileId.c_str(), nullptr, 10));
@@ -3122,8 +3123,8 @@ int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, cons
     std::string modifyDisplayName;
     GetModityExtensionPath(filePath, modifyFilePath, photoExtInfo.extension);
     GetModityExtensionPath(displayName, modifyDisplayName, photoExtInfo.extension);
-    MEDIA_DEBUG_LOG("modifyFilePath:%{public}s", modifyFilePath.c_str());
-    MEDIA_DEBUG_LOG("modifyDisplayName:%{public}s", modifyDisplayName.c_str());
+    MEDIA_DEBUG_LOG("modifyFilePath:%{public}s", MediaFileUtils::DesensitizePath(modifyFilePath).c_str());
+    MEDIA_DEBUG_LOG("modifyDisplayName:%{public}s", MediaFileUtils::DesensitizeName(modifyDisplayName).c_str());
     bool cond = ((modifyFilePath == filePath) && (modifyDisplayName == displayName));
     CHECK_AND_RETURN_RET(!cond, E_OK);
     updateValues.PutString(MediaColumn::MEDIA_FILE_PATH, modifyFilePath);
@@ -5267,7 +5268,8 @@ static int32_t ProcessFile(const string& filePath, const string fileName,
     struct stat fileStat;
 
     if (stat(filePath.c_str(), &fileStat) == -1) {
-        MEDIA_ERR_LOG("stat failed. File path: %{public}s, err: %{public}s", filePath.c_str(), strerror(errno));
+        MEDIA_ERR_LOG("stat failed. File path: %{public}s, err: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str(), strerror(errno));
         return E_FAIL;
     }
 

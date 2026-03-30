@@ -88,7 +88,7 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
     /* try get file size on xxxjpg/THM_EX/THM.jpg */
     std::string thumbnailPath = GetThumbPath(path, thumbExSuffix);
     struct stat fileStat;
-    MEDIA_DEBUG_LOG("GetFileSize stat %{public}s", thumbnailPath.c_str());
+    MEDIA_DEBUG_LOG("GetFileSize stat %{public}s", MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
     int32_t err = stat(thumbnailPath.c_str(), &fileStat);
     int32_t ret = E_OK;
     if (err < 0) {
@@ -98,7 +98,8 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
             err,
             "get thumb size failed errno : " + std::to_string(errno) + ", path " +
                 ReportUtils::GetAnonyString(thumbnailPath)});
-        MEDIA_INFO_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
+        MEDIA_INFO_LOG("get thumb size failed errno :%{public}d, %{public}s", errno,
+            MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
     } else {
         fileSize = fileStat.st_size;
         ret = this->CheckFileSize(thumbSuffix, fileSize);
@@ -116,14 +117,15 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
             err,
             "get thumb size failed errno : " + std::to_string(errno) + ", path " +
                 ReportUtils::GetAnonyString(thumbnailPath)});
-        MEDIA_ERR_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
+        MEDIA_ERR_LOG("get thumb size failed errno :%{public}d, %{public}s", errno,
+            MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
         return ((thumbSuffix == THUMB_SUFFIX) ? E_THM_SOURCE_BASIC : E_LCD_SOURCE_BASIC) + errNum;
     }
     fileSize = fileStat.st_size;
     ret = this->CheckFileSize(thumbSuffix, fileSize);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckFileSize err, %{public}d", ret);
     MEDIA_DEBUG_LOG("GetFileSize stat end thumbnailPath: %{public}s, err: %{public}d, size: %{public}" PRId64,
-        thumbnailPath.c_str(),
+        MediaFileUtils::DesensitizePath(thumbnailPath).c_str(),
         err,
         fileSize);
     return E_OK;
@@ -543,7 +545,8 @@ int32_t CloudFileDataConvert::HandleThumbnail(
                 UtilCloud::FaultType::FILE,
                 F_OK,
                 "thumbnailPath " + ReportUtils::GetAnonyString(thumbnailPath) + " doesn't exist"});
-            MEDIA_ERR_LOG("ReportFailure: thumnail doesn't exist %{public}s", thumbnailPath.c_str());
+            MEDIA_ERR_LOG("ReportFailure: thumnail doesn't exist %{public}s",
+                MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
             return E_THM_SOURCE_BASIC + ENOENT;
         }
         thumbnailUploadPath = thumbnailPath;
