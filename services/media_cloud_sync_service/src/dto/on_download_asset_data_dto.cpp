@@ -36,8 +36,20 @@ std::string OnDownloadAssetData::ToString() const
        << "\"fileUri\": " << fileUri << ","
        << "\"needParseCover\": " << needParseCover << ","
        << "\"needScanSubtype\": " << needScanSubtype << ","
-       << "\"needScanShootingMode\": " << needScanShootingMode;
+       << "\"needScanShootingMode\": " << needScanShootingMode << ","
+       << "\"fileInfo\": " << fileInfo.ToString() << ","
+       << "\"editedFileInfo\": " << editedFileInfo.ToString();
     ss << "\"}";
+    return ss.str();
+}
+
+std::string AssetFileNode::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"filePath\": \"" << MediaFileUtils::DesensitizePath(filePath) << "\","
+       << "\"liveVideoPath\": \"" << MediaFileUtils::DesensitizePath(liveVideoPath) << "\"";
+    ss << "}";
     return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync

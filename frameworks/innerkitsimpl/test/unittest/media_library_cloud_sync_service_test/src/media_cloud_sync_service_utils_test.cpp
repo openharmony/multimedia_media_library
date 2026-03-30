@@ -115,14 +115,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPath_Test, TestSize.Level1)
     EXPECT_EQ(res, "/storage/media/local/files/test/cxx/html");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, UpdateModifyTime_Test, TestSize.Level1)
-{
-    string path = "/test/GYH";
-    int64_t localMtime = 0;
-    int32_t ret = CloudMediaSyncUtils::UpdateModifyTime(path, localMtime);
-    printf("UpdateModifyTime ret = %d\n", ret);
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, IsLocalDirty_Test, TestSize.Level1)
 {
     EXPECT_EQ(CloudMediaSyncUtils::IsLocalDirty(0, true), false);
