@@ -76,6 +76,7 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_map_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/foreground_analysis_meta.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_vision_dao.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_watermark_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_video_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_search_operations.cpp",
   ]

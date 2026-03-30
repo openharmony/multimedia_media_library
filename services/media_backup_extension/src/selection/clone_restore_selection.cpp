@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,15 +23,24 @@
 #include "upgrade_restore_task_report.h"
 #include "clone_restore_analysis_total.h"
 #include "media_column.h"
+#include "vision_column.h"
 #include "medialibrary_type_const.h"
 #include "backup_const_column.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 const std::string SELECTION_TABLE = "tab_analysis_selection";
 const std::string ATOM_EVENT_TABLE = "tab_analysis_atom_event";
-const std::string TOTAL_TABLE = "tab_analysis_total";
+
+// 超时控制配置
+const int64_t THRESHOLD_DATA_SIZE = 30000;   // 3万条数据阈值
+const int64_t THRESHOLD_DATA_TIME = 600000;  // 10分钟 (不超过3万条时的基线)
+const int64_t DEFAULT_FAULT_TIME = 0;
+const int64_t BASIC_NUMBER = 10000;                      // 1万条
+const int64_t SUPPORT_NUMBER = 9999;                     // 余量
+const int64_t SINGLE_OVER_THRESHOLD_DATA_TIME = 216000;  // 216秒 (每1万条数据)
 
 void CloneRestoreSelection::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
@@ -95,8 +104,9 @@ void CloneRestoreSelection::ClearTotalTableSelectionFields()
                              PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
                              std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " AND " +
                              MediaColumn::MEDIA_TIME_PENDING + " = 0" + " AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0";
-    std::string updateSql = "UPDATE " + TOTAL_TABLE + " SET selection = 0 WHERE file_id IN (SELECT file_id FROM " +
-                            PhotoColumn::PHOTOS_TABLE + " WHERE " + photoQueryWhereClause + ")";
+    std::string updateSql = "UPDATE " + VISION_TOTAL_TABLE +
+                            " SET selection = 0 WHERE file_id IN (SELECT file_id FROM " + PhotoColumn::PHOTOS_TABLE +
+                            " WHERE " + photoQueryWhereClause + ")";
     int32_t totalRet = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
     MEDIA_INFO_LOG("Update TableAnalysisTotal selection, ret: %{public}d", totalRet);
 
@@ -149,16 +159,30 @@ void CloneRestoreSelection::AppendExtraWhereClause(std::string &whereClause)
     whereClause += selectionQueryWhereClause;
 }
 
+int64_t CloneRestoreSelection::GetShouldEndTime()
+{
+    CHECK_AND_RETURN_RET_LOG(!taskId_.empty() && MediaLibraryDataManagerUtils::IsNumber(taskId_),
+        DEFAULT_FAULT_TIME,
+        "taskId: %{public}s invalid",
+        taskId_.c_str());
+    int64_t backupStartTime = std::stoll(taskId_) * 1000;
+    int64_t dataSize = static_cast<int64_t>(photoInfoMap_.size());
+    MEDIA_INFO_LOG("dataSize: %{public}" PRId64 ", backupStartTime: %{public}" PRId64, dataSize, backupStartTime);
+    CHECK_AND_RETURN_RET(dataSize > THRESHOLD_DATA_SIZE, backupStartTime + THRESHOLD_DATA_TIME);
+    return backupStartTime + (dataSize + SUPPORT_NUMBER) / BASIC_NUMBER * SINGLE_OVER_THRESHOLD_DATA_TIME;
+}
+
 void CloneRestoreSelection::Restore()
 {
     MEDIA_INFO_LOG("Start Restore");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t shouldEndTime = GetShouldEndTime();
+    CHECK_AND_RETURN_LOG(start <= shouldEndTime, "over shouldEndTime, skip Restore");
 
     CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
     RestoreSelectionData();
     RestoreAtomEventData();
     RestoreAnalysisTotalSelectionStatus();
-    ReportSelectionCloneStat(sceneCode_);
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migrateSelectionTotalTimeCost_ += end - start;
@@ -185,37 +209,61 @@ void CloneRestoreSelection::RestoreSelectionData()
 {
     MEDIA_INFO_LOG("RestoreSelectionData");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t shouldEndTime = GetShouldEndTime();
 
     if (totalSelectionNumber_ == 0) {
         MEDIA_INFO_LOG("No selection data to restore");
         return;
     }
     MEDIA_INFO_LOG("RestoreSelectionData: total records to restore = %{public}d", totalSelectionNumber_);
-    for (int32_t offset = 0; offset < totalSelectionNumber_; offset += QUERY_COUNT) {
+
+    int32_t lastFileId = 0;
+    int32_t batchCount = 0;
+    while (true) {
+        int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+        CHECK_AND_RETURN_LOG(currentTime <= shouldEndTime,
+            "over shouldEndTime, batch count: %{public}d, RestoreSelectionData cost: %{public}lld",
+            batchCount,
+            (long long)(currentTime - start));
+
         int64_t batchQueryStart = MediaFileUtils::UTCTimeMilliSeconds();
-        std::vector<SelectionInfo> selectionInfos = QuerySelectionTbl(offset);
+        std::vector<SelectionInfo> selectionInfos = QuerySelectionTbl(lastFileId);
         if (selectionInfos.empty()) {
-            MEDIA_INFO_LOG("RestoreSelectionData: no more records at offset = %{public}d", offset);
+            MEDIA_INFO_LOG("RestoreSelectionData: no more records at batch = %{public}d", batchCount);
             break;
         }
         int64_t batchInsertStart = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG(
-            "RestoreSelectionData: batch query cost = %{public}lld ms",
-            (long long)(batchInsertStart - batchQueryStart));
+
         BatchInsertSelectionData(selectionInfos);
         int64_t batchEnd = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG(
-            "RestoreSelectionData: batch offset = %{public}d, inserted = %{public}zu, cost = %{public}lld ms",
-            offset,
+        MEDIA_INFO_LOG("RestoreSelectionData: batch count = %{public}d, inserted = %{public}zu, batch query cost = "
+                       "%{public}lld ms, batch insert cost = %{public}lld ms",
+            batchCount,
             selectionInfos.size(),
+            (long long)(batchInsertStart - batchQueryStart),
             (long long)(batchEnd - batchInsertStart));
+
+        // 更新游标为最后一条记录的file_id
+        if (selectionInfos.back().fileId.has_value()) {
+            lastFileId = selectionInfos.back().fileId.value();
+        }
+        batchCount++;
+
+        // 如果返回的记录数少于QUERY_COUNT，说明已经查询完所有数据
+        if (selectionInfos.size() < static_cast<size_t>(QUERY_COUNT)) {
+            MEDIA_INFO_LOG("RestoreSelectionData: reached end of data at batch = %{public}d", batchCount);
+            break;
+        }
     }
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("RestoreSelectionData total cost %{public}lld", (long long)(end - start));
+    MEDIA_INFO_LOG(
+        "RestoreSelectionData completed, migrateSelectionNum %{public}llu records, Total time: %{public}lld ms",
+        (unsigned long long)migrateSelectionNumber_.load(),
+        (long long)(end - start));
 }
 
-std::vector<SelectionInfo> CloneRestoreSelection::QuerySelectionTbl(int32_t offset)
+std::vector<SelectionInfo> CloneRestoreSelection::QuerySelectionTbl(int32_t lastFileId)
 {
     std::vector<SelectionInfo> result;
     result.reserve(QUERY_COUNT);
@@ -226,8 +274,13 @@ std::vector<SelectionInfo> CloneRestoreSelection::QuerySelectionTbl(int32_t offs
     AppendExtraWhereClause(whereClause);
     if (!whereClause.empty()) {
         querySql += " WHERE " + whereClause;
+        if (lastFileId > 0) {
+            querySql += " AND file_id > " + std::to_string(lastFileId);
+        }
+    } else if (lastFileId > 0) {
+        querySql += " WHERE file_id > " + std::to_string(lastFileId);
     }
-    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    querySql += " ORDER BY file_id LIMIT " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
 
@@ -286,43 +339,70 @@ void CloneRestoreSelection::RestoreAtomEventData()
 {
     MEDIA_INFO_LOG("RestoreAtomEventData");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t shouldEndTime = GetShouldEndTime();
 
     if (totalAtomEventNumber_ == 0) {
         MEDIA_INFO_LOG("No atom event data to restore");
         return;
     }
     MEDIA_INFO_LOG("RestoreAtomEventData: total records to restore = %{public}d", totalAtomEventNumber_);
-    for (int32_t offset = 0; offset < totalAtomEventNumber_; offset += QUERY_COUNT) {
+
+    int32_t lastEventId = 0;
+    int32_t batchCount = 0;
+    while (true) {
+        int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+        CHECK_AND_RETURN_LOG(currentTime <= shouldEndTime,
+            "over shouldEndTime, batch count: %{public}d, RestoreAtomEventData cost: %{public}lld",
+            batchCount,
+            (long long)(currentTime - start));
+
         int64_t batchQueryStart = MediaFileUtils::UTCTimeMilliSeconds();
-        std::vector<AtomEventInfo> atomEventInfos = QueryAtomEventTbl(offset);
+        std::vector<AtomEventInfo> atomEventInfos = QueryAtomEventTbl(lastEventId);
         if (atomEventInfos.empty()) {
-            MEDIA_INFO_LOG("RestoreAtomEventData: no more records at offset = %{public}d", offset);
+            MEDIA_INFO_LOG("RestoreAtomEventData: no more records at batch = %{public}d", batchCount);
             break;
         }
         int64_t batchInsertStart = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG(
-            "RestoreAtomEventData: batch query cost = %{public}lld ms",
-            (long long)(batchInsertStart - batchQueryStart));
         BatchInsertAtomEventData(atomEventInfos);
         int64_t batchEnd = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG(
-            "RestoreAtomEventData: batch offset = %{public}d, inserted = %{public}zu, cost = %{public}lld ms",
-            offset,
+        MEDIA_INFO_LOG("RestoreAtomEventData: batch count = %{public}d, inserted = %{public}zu, batch query cost = "
+                       "%{public}lld ms, batch insert cost = %{public}lld ms",
+            batchCount,
             atomEventInfos.size(),
+            (long long)(batchInsertStart - batchQueryStart),
             (long long)(batchEnd - batchInsertStart));
+
+        // 更新游标为最后一条记录的event_id
+        if (atomEventInfos.back().eventId.has_value()) {
+            lastEventId = atomEventInfos.back().eventId.value();
+        }
+        batchCount++;
+
+        // 如果返回的记录数少于QUERY_COUNT，说明已经查询完所有数据
+        if (atomEventInfos.size() < static_cast<size_t>(QUERY_COUNT)) {
+            MEDIA_INFO_LOG("RestoreAtomEventData: reached end of data at batch = %{public}d", batchCount);
+            break;
+        }
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("RestoreAtomEventData total cost = %{public}lld ms", (long long)(end - start));
+    MEDIA_INFO_LOG(
+        "RestoreAtomEventData completed, migrateAtomEventNum %{public}llu records, Total time: %{public}lld ms",
+        (unsigned long long)migrateAtomEventNumber_.load(),
+        (long long)(end - start));
 }
 
-std::vector<AtomEventInfo> CloneRestoreSelection::QueryAtomEventTbl(int32_t offset)
+std::vector<AtomEventInfo> CloneRestoreSelection::QueryAtomEventTbl(int32_t lastEventId)
 {
     std::vector<AtomEventInfo> result;
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT event_id, min_date, max_date, count, date_day, date_month, "
                            "event_type, event_score, event_version, event_status "
                            " FROM " +
-                           ATOM_EVENT_TABLE + " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+                           ATOM_EVENT_TABLE;
+    if (lastEventId > 0) {
+        querySql += " WHERE event_id > " + std::to_string(lastEventId);
+    }
+    querySql += " ORDER BY event_id LIMIT " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
@@ -349,7 +429,6 @@ void CloneRestoreSelection::BatchInsertAtomEventData(const std::vector<AtomEvent
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!atomEventInfos.empty(), "atomEventInfos are empty");
-    MEDIA_INFO_LOG("BatchInsertAtomEventData: total records = %{public}zu", atomEventInfos.size());
 
     std::vector<NativeRdb::ValuesBucket> valuesBuckets;
     for (const auto &info : atomEventInfos) {
@@ -358,8 +437,6 @@ void CloneRestoreSelection::BatchInsertAtomEventData(const std::vector<AtomEvent
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(ATOM_EVENT_TABLE, valuesBuckets, rowNum);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert atom event data");
-
-    MEDIA_INFO_LOG("BatchInsertAtomEventData success: inserted %{public}lld records", (long long)rowNum);
     migrateAtomEventNumber_ += static_cast<uint64_t>(rowNum);
 }
 
@@ -391,18 +468,5 @@ int32_t CloneRestoreSelection::BatchInsertWithRetry(
         UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
     }
     return ret;
-}
-
-void CloneRestoreSelection::ReportSelectionCloneStat(int32_t sceneCode)
-{
-    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scenecode %{public}d", sceneCode);
-    MEDIA_INFO_LOG("SelectionStat: selection %{public}lld, atomEvent %{public}lld, cost %{public}lld",
-        (long long)migrateSelectionNumber_,
-        (long long)migrateAtomEventNumber_,
-        (long long)migrateSelectionTotalTimeCost_);
-
-    BackupDfxUtils::PostSelectionStat(static_cast<uint32_t>(migrateSelectionNumber_),
-        static_cast<uint64_t>(migrateAtomEventNumber_),
-        migrateSelectionTotalTimeCost_);
 }
 }  // namespace OHOS::Media

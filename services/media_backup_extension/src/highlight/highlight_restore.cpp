@@ -421,7 +421,9 @@ void HighlightRestore::UpdateAlbumInfoCoverUris(const HighlightPhotoInfo &highli
         info.coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
             std::to_string(highlightPhoto.photoInfo.fileIdNew),
             MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
-        MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", info.albumName.c_str(), info.coverUri.c_str());
+        MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.",
+            MediaFileUtils::DesensitizeName(info.albumName).c_str(),
+            MediaFileUtils::DesensitizeUri(info.coverUri).c_str());
     }
 }
 

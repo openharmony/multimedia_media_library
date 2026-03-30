@@ -240,6 +240,18 @@ const std::string CREATE_TAB_ANALYSIS_POSE = "CREATE TABLE IF NOT EXISTS " + VIS
     SCALE_HEIGHT + " REAL DEFAULT 0, " +
     ANALYSIS_VERSION + " TEXT)";
 
+#define CREATE_TAB_ANALYSIS_WATERMARK \
+    "CREATE TABLE IF NOT EXISTS tab_analysis_watermark (" \
+    "file_id INTEGER PRIMARY KEY, " \
+    "status INTEGER, " \
+    "type INTEGER, " \
+    "valid_region_x REAL, " \
+    "valid_region_y REAL, " \
+    "valid_region_width REAL, " \
+    "valid_region_height REAL, " \
+    "algo_version TEXT" \
+    ")"
+
 const std::string CREATE_TAB_ANALYSIS_TOTAL = "CREATE TABLE IF NOT EXISTS " + VISION_TOTAL_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +

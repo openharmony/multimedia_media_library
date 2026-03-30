@@ -398,7 +398,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
         if (fileInfos[i].filePath.length() >= MAX_FILE_PATH_LENGTH) {
-            MEDIA_WARN_LOG("abnormal filePath: %{private}s", fileInfos[i].filePath.c_str());
+            MEDIA_WARN_LOG("abnormal filePath: %{public}s",
+                MediaFileUtils::DesensitizePath(fileInfos[i].filePath).c_str());
         }
         NativeRdb::ValuesBucket value;
         CHECK_AND_CONTINUE(PrepareInsertValue(sceneCode, fileInfos[i], sourceType, value));
@@ -1391,7 +1392,7 @@ static bool IsTranscodeFile(const std::string &filePath)
         displayName = filePath.substr(pos + 1);
     }
     if (displayName == "transcode.jpg" && filePath.find(".editData") != std::string::npos) {
-        MEDIA_INFO_LOG("displayname %{private}s, success", displayName.c_str());
+        MEDIA_INFO_LOG("displayname %{public}s, success", MediaFileUtils::DesensitizeName(displayName).c_str());
         return true;
     }
     return false;

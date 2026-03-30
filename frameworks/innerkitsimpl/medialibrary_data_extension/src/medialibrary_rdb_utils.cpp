@@ -833,7 +833,8 @@ static int32_t SetAlbumCounts(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
 static bool IsManualCover(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t albumId, string &uri)
 {
-    MEDIA_DEBUG_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId, uri.c_str());
+    MEDIA_DEBUG_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId,
+        MediaFileUtils::DesensitizeUri(uri).c_str());
 
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     string updateCondition = PhotoAlbumColumns::ALBUM_ID + "=" + to_string(albumId);
@@ -846,7 +847,9 @@ static bool IsManualCover(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32
         int32_t coverUriSource = GetIntValFromColumn(resultSet, PhotoAlbumColumns::COVER_URI_SOURCE);
         if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER)) {
             uri = GetStringValFromColumn(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
-            MEDIA_INFO_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId, uri.c_str());
+            MEDIA_INFO_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s",
+                albumId,
+                MediaFileUtils::DesensitizeUri(uri).c_str());
             return true;
         }
     }

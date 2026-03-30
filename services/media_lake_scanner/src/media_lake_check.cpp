@@ -328,7 +328,7 @@ bool CheckAndIfNeedDeletePhotoAlbum(int32_t& deletePhotoNum, std::function<bool(
             MediaLakeMonitorRdbUtils::DeleteDirByLakePath(lakeRealPath, rdbStore, &perDelNum);
             deletePhotoNum += perDelNum;
         } else {
-            MEDIA_DEBUG_LOG("photo album in lake, lPath: %{private}s", path.c_str());
+            MEDIA_DEBUG_LOG("photo album in lake, lPath: %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
         }
     }
     MEDIA_INFO_LOG("CheckAndIfNeedDeletePhotoAlbum exit");

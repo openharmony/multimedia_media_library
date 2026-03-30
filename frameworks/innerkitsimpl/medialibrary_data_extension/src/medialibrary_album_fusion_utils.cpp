@@ -1528,7 +1528,7 @@ static void QuerySourceAlbumLPath(const std::shared_ptr<MediaLibraryRdbStore> up
     if (lPath.empty()) {
         lPath = "/Pictures/" + album_name;
     }
-    MEDIA_ERR_LOG("Album lPath is %{public}s", lPath.c_str());
+    MEDIA_ERR_LOG("Album lPath is %{public}s", MediaFileUtils::DesensitizePath(lPath).c_str());
 }
 
 void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
@@ -1963,7 +1963,8 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
                 QuerySourceAlbumLPath(upgradeStore, lpath, bundle_name, album_name);
             } else {
                 lpath = "/Pictures/Users/" + album_name;
-                MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!", lpath.c_str());
+                MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!",
+                    MediaFileUtils::DesensitizePath(lpath).c_str());
             }
         }
 

@@ -50,6 +50,7 @@
 #include "userfile_manager_types.h"
 #include "lcd_aging_dao.h"
 #include "lcd_aging_utils.h"
+#include "media_file_utils.h"
 
 // LCOV_EXCL_START
 namespace OHOS::Media::CloudSync {
@@ -314,6 +315,7 @@ OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(const Phot
     assetData.needScanSubtype = (photosPo.subtype.value_or(0) == 0);
     assetData.needScanHdrMode = photosPo.hdrMode.value_or(0) == 0 || photosPo.editTime.value_or(0) > 0 ||
         photosPo.movingPhotoEffectMode.value_or(0) > 0;
+    this->FindRealLocalPath(assetData.fileInfo.filePath, assetData);
     assetData.needParseDuration = isInvalidDuration &&
         photosPo.subtype.value_or(0) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
     assetData.lakeInfo = downloadedFileInfos.at(photosPo.cloudId.value_or(""));
@@ -331,19 +333,10 @@ void CloudMediaDownloadService::UnlinkAsset(OnDownloadAssetData &assetData)
     MEDIA_WARN_LOG("unlink %{public}s failed", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
 }
 
-void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetData)
+static bool IsLakeFile(const OnDownloadAssetData &assetData)
 {
-    int32_t ret = access(assetData.localPath.c_str(), F_OK);  // 0 mean file exist.
-    CHECK_AND_RETURN_LOG(
-        ret == E_OK, "file not exist %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
-    int32_t err = CloudMediaSyncUtils::UpdateModifyTime(assetData.localPath, assetData.dateModified);
-    CHECK_AND_RETURN_INFO_LOG(err != E_OK,
-        "UpdateModifyTime %{public}s succeeded",
-        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
-    assetData.err = err;
-    assetData.errorMsg = "Update ModifyTime failed";
-    MEDIA_WARN_LOG("DownloadAsset UpdateModifyTime %{public}s failed",
-        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    return assetData.lakeInfo.fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE) ||
+           !assetData.lakeInfo.storagePath.empty();
 }
 
 int32_t CloudMediaDownloadService::SliceAssetFile(const std::string &originalFile, const std::string &path,
@@ -380,9 +373,9 @@ int32_t CloudMediaDownloadService::SliceAssetFile(const std::string &originalFil
     return E_OK;
 }
 
-int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo)
+int32_t CloudMediaDownloadService::SliceAsset(OnDownloadAssetData &assetData, const PhotosPo &photo)
 {
-    if (assetData.needSliceRaw) {
+    if (assetData.needSliceRaw) { // the original files.
         std::string rawFilePath = MediaEditUtils::GetEditDataSourcePath(assetData.path);
         bool isLivePhoto = MovingPhotoFileUtils::IsLivePhoto(rawFilePath);
         if (isLivePhoto) {
@@ -392,13 +385,15 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             CHECK_AND_PRINT_LOG(ret == E_OK,
                 "SliceRawFile Failed. rawFilePath: %{public}s, sourceImage: %{public}s, sourceVideo: %{public}s",
                 rawFilePath.c_str(), sourceImage.c_str(), sourceVideo.c_str());
+            CHECK_AND_EXECUTE(ret != E_OK, assetData.editedFileInfo = AssetFileNode(sourceImage, sourceVideo));
         } else {
             MEDIA_WARN_LOG("OnDownloadAsset need slice raw, but file is not live photo");
         }
     }
     int ret = E_OK;
-    if (assetData.needSliceContent) {
+    if (assetData.needSliceContent) { // the latest files.
         bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photo);
+        // pattern: /storage/cloud/files/Photo/${bucketId}/${fileName}.${suffix}
         std::string videoPath = CloudMediaSyncUtils::GetMovingPhotoVideoPath(assetData.path);
         std::string extraDir = CloudMediaSyncUtils::GetMovingPhotoExtraDataDir(assetData.path);
         std::string extraDataPath = isGraffiti ? "" : CloudMediaSyncUtils::GetMovingPhotoExtraDataPath(assetData.path);
@@ -415,6 +410,7 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             MEDIA_DEBUG_LOG("duration is invalid, parse duration from file");
             DurationParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
+        CHECK_AND_EXECUTE(ret != E_OK, assetData.fileInfo = AssetFileNode(assetData.localPath, videoPath));
     }
     // for cloud enhancement composite photo
     CloudMediaSyncUtils::SyncDealWithCompositePhoto(assetData.path, photo.fileId.value_or(0));
@@ -476,7 +472,8 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
         string realPath = LakeFileUtils::GetAssetRealPath(logVideoPath);
         string absVideoPath;
         if (!PathToRealPath(realPath, absVideoPath)) {
-            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            MEDIA_ERR_LOG(
+                "file is not real path, file path: %{public}s", MediaFileUtils::DesensitizePath(realPath).c_str());
             continue;
         }
         videoModeData->SetFilePath(realPath);
@@ -518,10 +515,8 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         assetData.err = ret;
         this->UnlinkAsset(assetData);
         return;
-    } else if (assetData.dateModified > 0 && (assetData.needSliceContent || assetData.needSliceRaw)) {
-        this->ResetAssetModifyTime(assetData);
     }
-
+    this->ResetAssetModifyTime(assetData);
     ret = FixDownloadAssetExifRotate(photo, scanResult);
     if (ret != E_OK) {
         MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
@@ -601,6 +596,44 @@ int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(
         std::to_string(photo.dateTaken.value_or(0)));
     photoRefresh->Notify();
     return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId));
+}
+
+void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetData)
+{
+    int32_t err = this->ResetAssetModifyTime(assetData.fileInfo, assetData.dateModified);
+    CHECK_AND_RETURN_INFO_LOG(err != E_OK,
+        "ResetAssetModifyTime succeed, fileInfo: %{public}s, dateModified: %{public}s",
+        assetData.fileInfo.ToString().c_str(),
+        std::to_string(assetData.dateModified).c_str());
+    assetData.err = err;
+    assetData.errorMsg = "Update ModifyTime failed";
+    MEDIA_ERR_LOG("ResetAssetModifyTime failed, fileInfo: %{public}s, dateModified: %{public}s",
+        assetData.fileInfo.ToString().c_str(),
+        std::to_string(assetData.dateModified).c_str());
+}
+
+int32_t CloudMediaDownloadService::FindRealLocalPath(std::string &realPath, const OnDownloadAssetData &assetData)
+{
+    bool isValid = !assetData.localPath.empty();
+    CHECK_AND_RETURN_RET(isValid, E_DATA);
+    // pattern: /storage/media/local/files/Photo/${bucketId}/${fileName}.${suffix}
+    realPath = assetData.localPath;
+    bool isLakeFile = IsLakeFile(assetData);
+    CHECK_AND_RETURN_RET(isLakeFile, E_OK);
+    isValid = !assetData.lakeInfo.storagePath.empty();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_DATA, "lake file storage path is empty");
+    realPath = assetData.lakeInfo.storagePath;
+    return E_OK;
+}
+
+int32_t CloudMediaDownloadService::ResetAssetModifyTime(const AssetFileNode &fileNode, int64_t localMtimeInMsec)
+{
+    bool isValid = !fileNode.filePath.empty();
+    CHECK_AND_RETURN_RET(isValid, E_DATA);
+    int32_t ret = MediaFileUtils::UpdateModifyTimeInMsec(fileNode.filePath, localMtimeInMsec);
+    bool isContinue = ret == E_OK && !fileNode.liveVideoPath.empty();
+    CHECK_AND_RETURN_RET(isContinue, ret);
+    return MediaFileUtils::UpdateModifyTimeInMsec(fileNode.liveVideoPath, localMtimeInMsec);
 }
 
 int32_t CloudMediaDownloadService::CheckRegenerateThumbnail(const ORM::PhotosPo &photo, const int32_t exifRotate)

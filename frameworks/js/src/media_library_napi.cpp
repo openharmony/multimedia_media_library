@@ -235,11 +235,11 @@ const std::string CONFIRM_BOX_IMAGE_FULLY_DISPLAYED = "isImageFullyDisplayed";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 const std::string REQUEST_PHOTO_URIS_READPERMISSIONEX = "requestPhotoUrisReadPermissionEx";
-const std::string ACTIVE_ANALYSIS_CONFIG_TYPE = "type";
+const std::string ACTIVE_ANALYSIS_CONFIG_TYPES = "types";
 const std::string ACTIVE_ANALYSIS_CONFIG_URIS = "uris";
-const std::string ACTIVE_ANALYSIS_CONFIG_PARAM = "param";
+const std::string ACTIVE_ANALYSIS_CONFIG_EXTRA_INFOS = "extraInfos";
 constexpr size_t MAX_ACTIVE_ANALYSIS_URI_COUNT = 100;
-constexpr size_t MAX_ACTIVE_ANALYSIS_PARAM_LENGTH = 500;
+constexpr size_t MAX_ACTIVE_ANALYSIS_EXTRA_INFOS_LENGTH = 500;
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
 const std::string LANGUAGE_ZH_TR = "zh-Hant";
@@ -8067,12 +8067,12 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
 
 static napi_value ParseActiveAnalysisTypes(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
-    napi_value typeValue =
-        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_TYPE.c_str());
-    CHECK_COND_WITH_ERR_MESSAGE(env, typeValue != nullptr, JS_E_PARAM_INVALID, "type invalid");
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32Array(env, typeValue, context.activeAnalysisTypes),
+    napi_value typesValue =
+        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_TYPES.c_str());
+    CHECK_COND_WITH_ERR_MESSAGE(env, typesValue != nullptr, JS_E_PARAM_INVALID, "types invalid");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32Array(env, typesValue, context.activeAnalysisTypes),
         JS_ERR_PARAMETER_INVALID);
-    CHECK_COND_WITH_ERR_MESSAGE(env, !context.activeAnalysisTypes.empty(), JS_E_PARAM_INVALID, "type invalid");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !context.activeAnalysisTypes.empty(), JS_E_PARAM_INVALID, "types invalid");
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -8105,21 +8105,24 @@ static napi_value ParseActiveAnalysisUris(napi_env env, napi_value arg, MediaLib
     return result;
 }
 
-static napi_value ParseActiveAnalysisParam(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+static napi_value ParseActiveAnalysisExtraInfos(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
-    if (!MediaLibraryNapiUtils::IsExistsByPropertyName(env, arg, ACTIVE_ANALYSIS_CONFIG_PARAM.c_str())) {
+    if (!MediaLibraryNapiUtils::IsExistsByPropertyName(env, arg, ACTIVE_ANALYSIS_CONFIG_EXTRA_INFOS.c_str())) {
         napi_value result = nullptr;
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
     }
 
-    napi_value paramValue =
-        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_PARAM.c_str());
-    CHECK_COND_WITH_ERR_MESSAGE(env, paramValue != nullptr, JS_E_PARAM_INVALID, "param invalid");
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, paramValue, context.activeAnalysisParam),
+    napi_value extraInfosValue =
+        MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, ACTIVE_ANALYSIS_CONFIG_EXTRA_INFOS.c_str());
+    CHECK_COND_WITH_ERR_MESSAGE(env, extraInfosValue != nullptr, JS_E_PARAM_INVALID, "extraInfos invalid");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, extraInfosValue, context.activeAnalysisParam),
         JS_ERR_PARAMETER_INVALID);
-    CHECK_COND_WITH_ERR_MESSAGE(env, context.activeAnalysisParam.size() <= MAX_ACTIVE_ANALYSIS_PARAM_LENGTH,
-        JS_E_PARAM_INVALID, "param invalid");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !context.activeAnalysisParam.empty(), JS_E_PARAM_INVALID,
+        "extraInfos invalid");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        context.activeAnalysisParam.size() <= MAX_ACTIVE_ANALYSIS_EXTRA_INFOS_LENGTH,
+        JS_E_PARAM_INVALID, "extraInfos invalid");
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -8133,7 +8136,7 @@ static napi_value ParseActiveAnalysisConfig(napi_env env, napi_value arg, MediaL
     CHECK_COND_WITH_ERR_MESSAGE(env, valueType == napi_object, JS_E_PARAM_INVALID, "config invalid");
     CHECK_NULLPTR_RET(ParseActiveAnalysisTypes(env, arg, context));
     CHECK_NULLPTR_RET(ParseActiveAnalysisUris(env, arg, context));
-    CHECK_NULLPTR_RET(ParseActiveAnalysisParam(env, arg, context));
+    CHECK_NULLPTR_RET(ParseActiveAnalysisExtraInfos(env, arg, context));
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

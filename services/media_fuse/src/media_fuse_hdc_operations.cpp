@@ -123,7 +123,7 @@ int32_t MediaFuseHdcOperations::GetPathFromDisplayname(
         filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
     }
     resultSet->Close();
-    MEDIA_INFO_LOG("get filePath from db, filePath = %{private}s", filePath.c_str());
+    MEDIA_INFO_LOG("get filePath from db, filePath = %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     return E_SUCCESS;
 }
 
@@ -443,7 +443,8 @@ int32_t MediaFuseHdcOperations::GetFileIdFromPath(const std::string &filePath, s
 int32_t MediaFuseHdcOperations::UpdatePhotoRdb(const std::string &displayName, const std::string &filePath)
 {
     if (displayName.find('/') != std::string::npos) {
-        MEDIA_ERR_LOG("Invalid displayName: contains '/'. displayName = %{private}s", displayName.c_str());
+        MEDIA_ERR_LOG("Invalid displayName: contains '/'. displayName = %{public}s",
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         return E_ERR;
     }
     std::string title;
@@ -600,7 +601,7 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
     std::string albumName = inputPath.substr(1);
     int32_t albumId;
     if (GetAlbumIdFromAlbumName(albumName, albumId) != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get album ID for: %{private}s", albumName.c_str());
+        MEDIA_ERR_LOG("Failed to get album ID for: %{public}s", MediaFileUtils::DesensitizeName(albumName).c_str());
         return E_ERR;
     }
     auto resultSet = QueryAlbumPhotos(albumId);
@@ -618,12 +619,12 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
         std::string filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
         std::string localPath;
         if (ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
-            MEDIA_ERR_LOG("Failed to convert to local path: %{private}s", filePath.c_str());
+            MEDIA_ERR_LOG(
+                "Failed to convert to local path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
             continue;
         }
-        std::set<std::string> fileNames;
+        std::set<std::string> fileNames{displayName};
         std::string videoPath = "";
-        fileNames.insert(displayName);
         if (IsMovingPhoto(subtype, effectMode)) {
             videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(localPath);
             std::string videoName = JpgToMp4(displayName);

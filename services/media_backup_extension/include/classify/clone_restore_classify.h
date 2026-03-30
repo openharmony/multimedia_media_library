@@ -26,7 +26,8 @@ namespace OHOS::Media {
 class CloneRestoreClassify {
 public:
     void Init(int32_t sceneCode, const std::string &taskId,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        std::unordered_map<int32_t, int32_t>* scoreMaskMap = nullptr);
     void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
     template<typename T>
@@ -57,6 +58,8 @@ private:
         std::optional<std::string> analysisVersion;
         std::optional<std::string> captionResult;
         std::optional<std::string> captionVersion;
+        std::optional<int32_t> significanceScore;
+        std::optional<std::string> significanceScoreVersion;
     };
     struct ClassifyVideoCloneInfo {
         std::optional<int32_t> id;
@@ -137,6 +140,8 @@ private:
     std::atomic<int32_t> failInsertVideoLabelCnt_{0};
     std::atomic<int32_t> duplicateLabelCnt_{0};
     std::atomic<int32_t> duplicateVideoLabelCnt_{0};
+    std::unordered_map<int32_t, int32_t>* externalScoreMaskMap_{nullptr};
+    void UpdateScoreMask(int32_t fileId, int32_t mask);
     std::atomic<int64_t> restoreTimeCost_{0};
     std::atomic<int64_t> restoreLabelTimeCost_{0};
     std::atomic<int64_t> restoreVideoLabelTimeCost_{0};
