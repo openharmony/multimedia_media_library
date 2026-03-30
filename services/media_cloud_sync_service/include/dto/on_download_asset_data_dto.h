@@ -23,13 +23,29 @@
 #include "cloud_lake_info.h"
 
 namespace OHOS::Media::CloudSync {
+class EXPORT AssetFileNode {
+public:
+    AssetFileNode() = default;
+    AssetFileNode(const std::string &filePath, const std::string &liveVideoPath)
+        : filePath(filePath), liveVideoPath(liveVideoPath)
+    {}
+
+public:  // fields
+    std::string filePath;
+    std::string liveVideoPath;
+
+public:  // basic functions
+    std::string ToString() const;
+};
 class EXPORT OnDownloadAssetData {
 public:
     bool fixFileType;
     bool needSliceContent;
     bool needSliceRaw;
+    // Photos.data, pattern: /storage/cloud/files/Photo/${bucketId}/${fileName}.${suffix}
     std::string path;
     int64_t dateModified;
+    // pattern: /storage/media/local/files/Photo/${bucketId}/${fileName}.${suffix}
     std::string localPath;
     int32_t err;
     std::string errorMsg;
@@ -40,6 +56,8 @@ public:
     AdditionFileInfo lakeInfo;
     bool needScanHdrMode{false};
     bool needParseDuration{false};
+    AssetFileNode fileInfo;
+    AssetFileNode editedFileInfo;
 
 public:  // basic functions
     std::string ToString() const;
