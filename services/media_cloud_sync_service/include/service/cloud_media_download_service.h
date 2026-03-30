@@ -71,7 +71,7 @@ private:
     void ResetAssetModifyTime(OnDownloadAssetData &assetData);
     int32_t SliceAssetFile(const std::string &originalFile, const std::string &path,
         const std::string &videoPath, const std::string &extraDataPath);
-    int32_t SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo);
+    int32_t SliceAsset(OnDownloadAssetData &assetData, const PhotosPo &photo);
     void HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
     void NotifyDownloadLcdOrThm(const std::vector<std::string> &cloudIds, const std::string &notifyUri);
     int32_t FixDownloadAssetExifRotate(const ORM::PhotosPo &photo, const CloudMediaScanService::ScanResult &scanResult);
@@ -79,6 +79,8 @@ private:
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     void UpdateBatchDownloadTask(const ORM::PhotosPo &photo);
 #endif
+    int32_t FindRealLocalPath(std::string &realPath, const OnDownloadAssetData &assetData);
+    int32_t ResetAssetModifyTime(const AssetFileNode &fileNode, int64_t localMtimeInMsec);
     void CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo);
     int32_t FindAttachments(const std::vector<PhotosPo> &photoInfos, std::vector<PhotoAttachmentDto> &attachmentList);
     int32_t CleanAttachments(std::vector<PhotoAttachmentDto> &attachmentList, int64_t &attachmentSize);
