@@ -697,6 +697,10 @@ struct ImageFaceTbl {
     std::optional<double> jointBeautyBounderWidth;
     std::optional<double> jointBeautyBounderHeight;
     std::optional<std::string> groupVersion;
+    std::optional<std::string> emotion;
+    std::optional<int32_t> completeness;
+    std::optional<int32_t> faceScore;
+    std::optional<std::string> faceScoreVersion;
 };
 
 struct AnalysisPhotoMapTbl {

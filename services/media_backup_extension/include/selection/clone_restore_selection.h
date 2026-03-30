@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -113,15 +113,15 @@ private:
     void RestoreSelectionData();
     void RestoreAtomEventData();
     void AppendExtraWhereClause(std::string &whereClause);
-    std::vector<SelectionInfo> QuerySelectionTbl(int32_t offset);
+    std::vector<SelectionInfo> QuerySelectionTbl(int32_t lastFileId);
     void BatchInsertSelectionData(const std::vector<SelectionInfo> &selectionInfos);
     NativeRdb::ValuesBucket CreateValuesBucketFromSelectionInfo(const SelectionInfo &info);
-    std::vector<AtomEventInfo> QueryAtomEventTbl(int32_t offset);
+    std::vector<AtomEventInfo> QueryAtomEventTbl(int32_t lastEventId);
     void BatchInsertAtomEventData(const std::vector<AtomEventInfo> &atomEventInfos);
     NativeRdb::ValuesBucket CreateValuesBucketFromAtomEventInfo(const AtomEventInfo &info);
     int32_t BatchInsertWithRetry(
         const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
-    void ReportSelectionCloneStat(int32_t sceneCode);
+    int64_t GetShouldEndTime();
 
 private:
     int32_t sceneCode_;

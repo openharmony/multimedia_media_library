@@ -237,6 +237,8 @@ private:
     int64_t CorrectTimestamp(int64_t originalTime);
     void UpdatePackageNameForSamePhotos(vector<FileInfo> &fileInfos);
     void RestoreAnalysisSelection();
+    void RestoreAnalysisDupSim();
+    void UpdateTotalScore();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -321,6 +323,7 @@ private:
     CloneRestoreConfigInfo srcCloneRestoreConfigInfo_;
     DstDeviceBackupInfo dstDeviceBackupInfo_;
     RestorePhotosAlbumHidden restorePhotosAlbumHidden_;
+    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
 
 private:
     const std::string SQL_QUERY_CLASSIFY_ALBUM_EXIST = " \
