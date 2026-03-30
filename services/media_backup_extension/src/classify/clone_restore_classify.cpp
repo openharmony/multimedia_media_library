@@ -28,6 +28,9 @@
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 
+const int32_t BIT1 = 1 << 1;  // 图像意义分
+const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+
 const string ID = "id";
 const string FILE_ID = "file_id";
 const string CATEGORY_ID = "category_id";
@@ -40,6 +43,8 @@ const string SALIENCY_SUB_PROB = "saliency_sub_prob";
 const string ANALYSIS_VERSION = "analysis_version";
 const string CAPTION_RESULT = "caption_result";
 const string CAPTION_VERSION = "caption_version";
+const string SIGNIFICANCE_SCORE = "significance_score";
+const string SIGNIFICANCE_SCORE_VERSION = "significance_score_version";
 
 const string CONFIDENCE_PROBABILITY = "confidence_probability";
 const string SUB_CATEGORY = "sub_category";
@@ -75,6 +80,8 @@ const unordered_map<string, unordered_set<string>> COMPARED_COLUMNS_MAP = {
             "analysis_version",
             "caption_result",
             "caption_version",
+            "significance_score",
+            "significance_score_version",
         }
     },
     { "tab_analysis_video_label",
@@ -107,13 +114,15 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 }
 
 void CloneRestoreClassify::Init(int32_t sceneCode, const std::string &taskId,
-    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+    std::unordered_map<int32_t, int32_t>* scoreMaskMap)
 {
     sceneCode_ = sceneCode;
     taskId_ = taskId;
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
     analysisType_ = "label";
+    externalScoreMaskMap_ = scoreMaskMap;
 }
 
 void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
@@ -403,6 +412,17 @@ void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &
 
     std::unordered_set<std::string> intersection = GetCommonColumns(ANALYSIS_LABEL_TABLE);
     size_t offset = 0;
+
+    // 记录 scoreMask 的 bit1
+    MEDIA_INFO_LOG("record bit1 of mask");
+    auto recordScoreMask = [&](size_t batchSize) {
+        for (size_t index = 0; index < batchSize; index++) {
+            if (classifyInfos[index + offset].fileIdNew.has_value()) {
+                UpdateScoreMask(classifyInfos[index + offset].fileIdNew.value(), BIT1 | BIT20);
+            }
+        }
+    };
+
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < classifyInfos.size(); index++) {
@@ -422,6 +442,9 @@ void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &
             UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsFailed();
             failInsertLabelCnt_ += failNums;
+        } else {
+            // 插入成功后，记录 BIT1（图像意义分）
+            recordScoreMask(values.size());
         }
         offset += PAGE_SIZE;
         successInsertLabelCnt_ += rowNum;
@@ -476,6 +499,9 @@ void CloneRestoreClassify::GetClassifyInfo(ClassifyCloneInfo &info,
     info.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_VERSION);
     info.captionResult = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, CAPTION_RESULT);
     info.captionVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, CAPTION_VERSION);
+    info.significanceScore = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, SIGNIFICANCE_SCORE);
+    info.significanceScoreVersion =
+        BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SIGNIFICANCE_SCORE_VERSION);
 }
 
 void CloneRestoreClassify::GetMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyCloneInfo info,
@@ -492,6 +518,8 @@ void CloneRestoreClassify::GetMapInsertValue(NativeRdb::ValuesBucket &value, Cla
     PutIfInIntersection(value, ANALYSIS_VERSION, info.analysisVersion, intersection);
     PutIfInIntersection(value, CAPTION_RESULT, info.captionResult, intersection);
     PutIfInIntersection(value, CAPTION_VERSION, info.captionVersion, intersection);
+    PutIfInIntersection(value, SIGNIFICANCE_SCORE, info.significanceScore, intersection);
+    PutIfInIntersection(value, SIGNIFICANCE_SCORE_VERSION, info.significanceScoreVersion, intersection);
 }
 
 void CloneRestoreClassify::GetClassifyVideoInfo(ClassifyVideoCloneInfo &info,
@@ -731,5 +759,13 @@ void CloneRestoreClassify::CheckLabelToAnalysisVideoTotalTable()
         checkLabel_sql sql = %{public}s", checkLabel_sql.c_str());
     int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, checkLabel_sql);
     CHECK_AND_PRINT_INFO_LOG(ret == NativeRdb::E_OK, "check video total failed");
+}
+
+void CloneRestoreClassify::UpdateScoreMask(int32_t fileId, int32_t mask)
+{
+    if (externalScoreMaskMap_ == nullptr) {
+        return;
+    }
+    (*externalScoreMaskMap_)[fileId] |= mask;
 }
 }
