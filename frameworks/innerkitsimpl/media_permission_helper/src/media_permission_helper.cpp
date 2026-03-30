@@ -91,15 +91,22 @@ static sptr<IRemoteObject> InitToken()
 
 void MediaPermissionHelper::InitMediaPermissionHelper()
 {
-    int32_t activeUser =  GetCurrentAccountId();
-    MEDIA_INFO_LOG("InitMediaPermissionHelper, activeUserId is %{public}d, userId is %{public}d", activeUser, userId_);
+    std::lock_guard<std::mutex> lock(mutex_);
+    int32_t activeUser = GetCurrentAccountId();
+    MEDIA_INFO_LOG("InitMediaPermissionHelper, activeUserId is %{public}d, userId_ is %{public}d", activeUser, userId_);
     if (dataShareHelper_ == nullptr || activeUser != userId_) {
         auto token = InitToken();
         if (token == nullptr) {
-            MEDIA_ERR_LOG("fail to get token.");
+            MEDIA_ERR_LOG("fail to get token, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
             return;
         }
-        dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        Uri uri = Uri(MEDIALIBRARY_DATA_URI);
+        std::string multiUri = MediaUriUtils::GetMultiUri(uri, activeUser).ToString();
+        dataShareHelper_ = DataShare::DataShareHelper::Creator(token, multiUri);
+        if (dataShareHelper_ == nullptr) {
+            MEDIA_ERR_LOG(
+                "dataShareHelper Creator failed, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
+        }
         userId_ = activeUser;
     }
 }
