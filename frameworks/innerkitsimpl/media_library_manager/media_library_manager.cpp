@@ -1209,7 +1209,8 @@ int32_t MediaLibraryManager::CreateAlbum(const std::string &albumName)
     MEDIA_DEBUG_LOG("CreateAlbum Start.");
     CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_FAIL, "dataShareHelper is nullptr");
     if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
-        MEDIA_ERR_LOG("CreateAlbum albumName is invalid, albumName: %{public}s", albumName.c_str());
+        MEDIA_ERR_LOG("CreateAlbum albumName is invalid, albumName: %{public}s",
+            MediaFileUtils::DesensitizeName(albumName).c_str());
         return E_FAIL;
     }
 

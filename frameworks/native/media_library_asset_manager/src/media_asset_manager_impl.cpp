@@ -934,12 +934,14 @@ int32_t MediaAssetManagerImpl::GetFdFromSandBoxUri(const std::string &sandBoxUri
     AppFileService::ModuleFileUri::FileUri destUri(sandBoxUri);
     string destPath = destUri.GetRealPath();
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
-        MEDIA_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
+        MEDIA_ERR_LOG("Create empty dest file in sandbox failed, path:%{public}s",
+            MediaFileUtils::DesensitizePath(destPath).c_str());
         return E_FILE_OPER_FAIL;
     }
     string absDestPath;
     if (!PathToRealPath(destPath, absDestPath)) {
-        MEDIA_ERR_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
+        MEDIA_ERR_LOG("PathToRealPath failed, path:%{public}s",
+            MediaFileUtils::DesensitizePath(destPath).c_str());
         return E_FILE_OPER_FAIL;
     }
     return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);

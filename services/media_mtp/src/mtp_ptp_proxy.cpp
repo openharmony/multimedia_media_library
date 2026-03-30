@@ -16,6 +16,7 @@
 
 #include "mtp_ptp_proxy.h"
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_ptp_const.h"
@@ -446,7 +447,7 @@ int32_t MtpPtpProxy::GetPathByHandle(uint32_t handle, std::string &path, std::st
     if (position != std::string::npos) {
         realPath = path.substr(0, position + 1) + real + path.substr(position);
     }
-    MEDIA_DEBUG_LOG("GetPathByHandle new %{private}s", realPath.c_str());
+    MEDIA_DEBUG_LOG("GetPathByHandle new %{public}s", MediaFileUtils::DesensitizePath(realPath).c_str());
     return MTP_SUCCESS;
 }
 

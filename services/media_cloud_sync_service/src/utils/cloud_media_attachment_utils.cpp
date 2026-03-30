@@ -59,8 +59,8 @@ bool CloudMediaAttachmentUtils::AddRawIntoContent(const DownloadAssetData &downl
     size_t editFileSize = 0;
     CloudMediaFileUtils::GetFileSizeV2(downLoadPath, editFileSize);
     rawDto.size = static_cast<int64_t>(editFileSize);
-    MEDIA_INFO_LOG("rawDto.path %{public}s", editFilePath.c_str());
-    MEDIA_INFO_LOG("rawDto.fileName %{public}s", editFileName.c_str());
+    MEDIA_INFO_LOG("rawDto.path %{public}s", MediaFileUtils::DesensitizePath(editFilePath).c_str());
+    MEDIA_INFO_LOG("rawDto.fileName %{public}s", MediaFileUtils::DesensitizeName(editFileName).c_str());
     photosDto.attachment.insert(std::make_pair(rawFileKey, rawDto));
     isAdded = true;
     MEDIA_INFO_LOG("success add raw");
@@ -74,9 +74,10 @@ bool CloudMediaAttachmentUtils::AddEditDataIntoContent(const DownloadAssetData &
     std::string rawFilePath = MediaEditUtils::GetEditDataSourcePath(path);
     std::string editDataPath = MediaEditUtils::GetEditDataPath(path);
     std::string editDataCameraPath = MediaEditUtils::GetEditDataCameraPath(path);
-    MEDIA_INFO_LOG("download rawFilePath %{public}s", rawFilePath.c_str());
-    MEDIA_INFO_LOG("download editDataPath %{public}s", editDataPath.c_str());
-    MEDIA_INFO_LOG("download editDataCameraPath %{public}s", editDataCameraPath.c_str());
+    MEDIA_INFO_LOG("download rawFilePath %{public}s, editDataPath %{public}s, editDataCameraPath %{public}s",
+        MediaFileUtils::DesensitizePath(rawFilePath).c_str(),
+        MediaFileUtils::DesensitizePath(editDataPath).c_str(),
+        MediaFileUtils::DesensitizePath(editDataCameraPath).c_str());
     bool isValid = MediaEditUtils::HasEditData(downloadData.editTime) && access(editDataPath.c_str(), F_OK) != 0;
     if (!isValid) {
         return isAdded;
@@ -92,8 +93,8 @@ bool CloudMediaAttachmentUtils::AddEditDataIntoContent(const DownloadAssetData &
     size_t editFileSize = 0;
     CloudMediaFileUtils::GetFileSizeV2(downLoadPath, editFileSize);
     editDto.size = static_cast<int64_t>(editFileSize);
-    MEDIA_INFO_LOG("editDto.path %{public}s", editFilePath.c_str());
-    MEDIA_INFO_LOG("editDto.fileName %{public}s", editFileName.c_str());
+    MEDIA_INFO_LOG("editDto.path %{public}s", MediaFileUtils::DesensitizePath(editFilePath).c_str());
+    MEDIA_INFO_LOG("editDto.fileName %{public}s", MediaFileUtils::DesensitizeName(editFileName).c_str());
     photosDto.attachment.insert(std::make_pair(editFileKey, editDto));
     isAdded = true;
     MEDIA_INFO_LOG("success add edit");
@@ -109,8 +110,8 @@ int32_t CloudMediaAttachmentUtils::GetContent(
     CHECK_AND_RETURN_RET_LOG(CloudMediaFileUtils::GetParentPathAndFilename(downloadData.path, filePath, fileName),
         E_ERR,
         "failed to GetParentPathAndFilename");
-    MEDIA_INFO_LOG("filePath %{public}s", filePath.c_str());
-    MEDIA_INFO_LOG("fileName %{public}s", fileName.c_str());
+    MEDIA_INFO_LOG("filePath %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+    MEDIA_INFO_LOG("fileName %{public}s", MediaFileUtils::DesensitizeName(fileName).c_str());
     CloudFileDataDto contentDto;
     contentDto.path = filePath;
     contentDto.fileName = fileName;
@@ -152,8 +153,8 @@ int32_t CloudMediaAttachmentUtils::GetThumbnail(
     CloudMediaFileUtils::GetFileSizeV2(thumbLocalPath, thumbFileSize);
     thmDto.size = static_cast<int64_t>(thumbFileSize);
     std::string thumFileKey = "thumbnail";
-    MEDIA_INFO_LOG("thmDto.path %{public}s", thmDto.path.c_str());
-    MEDIA_INFO_LOG("thmDto.fileName %{public}s", thmDto.fileName.c_str());
+    MEDIA_INFO_LOG("thmDto.path %{public}s", MediaFileUtils::DesensitizePath(thmDto.path).c_str());
+    MEDIA_INFO_LOG("thmDto.fileName %{public}s", MediaFileUtils::DesensitizeName(thmDto.fileName).c_str());
     photosDto.attachment.insert(std::make_pair(thumFileKey, thmDto));
     return E_OK;
 }
@@ -173,8 +174,8 @@ int32_t CloudMediaAttachmentUtils::GetLcdThumbnail(
     CloudMediaFileUtils::GetFileSizeV2(lcdLocalPath, lcdFileSize);
     lcdDto.size = static_cast<int64_t>(lcdFileSize);
     std::string lcdFileKey = "lcd";
-    MEDIA_DEBUG_LOG("lcdDto.path %{public}s", lcdDto.path.c_str());
-    MEDIA_DEBUG_LOG("lcdDto.fileName %{public}s", lcdDto.fileName.c_str());
+    MEDIA_DEBUG_LOG("lcdDto.path %{public}s", MediaFileUtils::DesensitizePath(lcdDto.path).c_str());
+    MEDIA_DEBUG_LOG("lcdDto.fileName %{public}s", MediaFileUtils::DesensitizeName(lcdDto.fileName).c_str());
     photosDto.attachment.insert(std::make_pair(lcdFileKey, lcdDto));
     return E_OK;
 }

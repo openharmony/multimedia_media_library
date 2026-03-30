@@ -673,7 +673,8 @@ static int32_t GetFileMtime(const string &filePath, time_t &mtime)
 {
     struct stat statInfo {};
     if (stat(filePath.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Get file mtime failed, path = %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return E_ERR;
     }
     mtime = statInfo.st_mtime;

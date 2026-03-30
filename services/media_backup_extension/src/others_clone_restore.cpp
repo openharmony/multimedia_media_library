@@ -683,7 +683,8 @@ void OthersCloneRestore::UpdateFileGPS(FileInfo &fileInfo)
         } else {
             it = audioDbMap_.find(fileInfo.displayName);
             if (it != audioDbMap_.end()) {
-                MEDIA_WARN_LOG("find video in audio info map %{public}s", fileInfo.displayName.c_str());
+                MEDIA_WARN_LOG("find video in audio info map %{public}s",
+                    MediaFileUtils::DesensitizeName(fileInfo.displayName).c_str());
                 infoPtr = it->second;
             } else {
                 return;
@@ -746,7 +747,8 @@ CloneDbInfo* OthersCloneRestore::FindPhotoDbInfo(const std::string &key, const s
     }
 
     if (it != audioDbMap_.end()) {
-        MEDIA_WARN_LOG("find video in audio info map %{public}s", displayName.c_str());
+        MEDIA_WARN_LOG("find video in audio info map %{public}s",
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         it->second->fileExists = true;
         return it->second;
     }
@@ -762,7 +764,8 @@ CloneDbInfo* OthersCloneRestore::FindDbInfoByFileType(const FileInfo &fileInfo, 
                fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
         return FindPhotoDbInfo(key, fileInfo.displayName);
     } else {
-        MEDIA_WARN_LOG("Not supported file %{public}s", fileInfo.displayName.c_str());
+        MEDIA_WARN_LOG("Not supported file %{public}s",
+            MediaFileUtils::DesensitizeName(fileInfo.displayName).c_str());
         return nullptr;
     }
 }
@@ -854,7 +857,8 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
     for (offset; offset < totalNumber; offset++) {
         FileInfo info = photoInfos_[offset];
         if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {
-            MEDIA_WARN_LOG("photo info error : %{public}s", info.displayName.c_str());
+            MEDIA_WARN_LOG("photo info error : %{public}s",
+                MediaFileUtils::DesensitizeName(info.displayName).c_str());
             continue;
         }
         if (sceneCode_ == I_PHONE_CLONE_RESTORE && info.otherSubtype == I_PHONE_DYNAMIC_VIDEO_TYPE) {

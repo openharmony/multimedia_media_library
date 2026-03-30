@@ -454,9 +454,11 @@ bool AlbumChangeData::IsAlbumInfoChange()
     MEDIA_DEBUG_LOG("albumSubTypeOld: %{public}d, albumSubTypeNew: %{public}d",
         infoBeforeChange_.albumSubType_, infoAfterChange_.albumSubType_);
     MEDIA_DEBUG_LOG("albumNameOld: %{public}s, albumNameNew: %{public}s",
-        infoBeforeChange_.albumName_.c_str(), infoAfterChange_.albumName_.c_str());
+        MediaFileUtils::DesensitizeName(infoBeforeChange_.albumName_).c_str(),
+        MediaFileUtils::DesensitizeName(infoAfterChange_.albumName_).c_str());
     MEDIA_DEBUG_LOG("albumUriOld: %{public}s, albumUriNew: %{public}s",
-        infoBeforeChange_.albumUri_.c_str(), infoAfterChange_.albumUri_.c_str());
+        MediaFileUtils::DesensitizeUri(infoBeforeChange_.albumUri_).c_str(),
+        MediaFileUtils::DesensitizeUri(infoAfterChange_.albumUri_).c_str());
     MEDIA_DEBUG_LOG("countOld: %{public}d, countNew: %{public}d",
         infoBeforeChange_.count_, infoAfterChange_.count_);
     MEDIA_DEBUG_LOG("coverUriOld: %{public}s, coverUriNew: %{public}s",

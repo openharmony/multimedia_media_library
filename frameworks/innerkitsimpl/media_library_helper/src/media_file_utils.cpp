@@ -614,15 +614,16 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
-    MEDIA_DEBUG_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return errCode;
     }
     if (absFilePath.empty()) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
-                      filePath.c_str(), errno);
+            MediaFileUtils::DesensitizePath(filePath).c_str(), errno);
         return errCode;
     }
 
@@ -775,7 +776,7 @@ static bool IsTranscodeFile(const std::string &filePath)
         displayName = filePath.substr(pos + 1);
     }
     if (displayName == "transcode.jpg" && filePath.find(".editData") != std::string::npos) {
-        MEDIA_INFO_LOG("displayname %{private}s, success", displayName.c_str());
+        MEDIA_INFO_LOG("displayname %{public}s, success", MediaFileUtils::DesensitizeName(displayName).c_str());
         return true;
     }
     return false;
@@ -918,25 +919,26 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
     }
 
     if (!IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not get FilePath %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return false;
     }
 
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
         return false;
     }
     ofstream file(absFilePath);
     if (!file.is_open()) {
-        MEDIA_ERR_LOG("Can not open FilePath %{private}s", absFilePath.c_str());
+        MEDIA_ERR_LOG("Can not open FilePath %{public}s", MediaFileUtils::DesensitizePath(absFilePath).c_str());
         return false;
     }
 
     file << str;
     file.close();
     if (!file.good()) {
-        MEDIA_ERR_LOG("Can not write FilePath %{private}s", absFilePath.c_str());
+        MEDIA_ERR_LOG("Can not write FilePath %{public}s", MediaFileUtils::DesensitizePath(absFilePath).c_str());
         return false;
     }
     return true;
@@ -949,19 +951,20 @@ bool MediaFileUtils::ReadStrFromFile(const std::string &filePath, std::string &f
         return false;
     }
     if (!IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not get FilePath %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return false;
     }
 
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", filePath.c_str(), errno);
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{public}s, errno=%{public}d",
+            MediaFileUtils::DesensitizePath(filePath).c_str(), errno);
         return false;
     }
 
     ifstream file(absFilePath);
     if (!file.is_open()) {
-        MEDIA_ERR_LOG("Can not open FilePath %{private}s", absFilePath.c_str());
+        MEDIA_ERR_LOG("Can not open FilePath %{public}s", MediaFileUtils::DesensitizePath(absFilePath).c_str());
         return false;
     }
     char ch;
@@ -1107,7 +1110,8 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     }
     static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
-        MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
+        MEDIA_ERR_LOG("Failed to check displayName regex: %{public}s",
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         return -EINVAL;
     }
     return E_OK;
@@ -1544,7 +1548,7 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
     }
 
     if (IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("the file exists path: %{public}s", filePath.c_str());
+        MEDIA_ERR_LOG("the file exists path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return E_FILE_EXIST;
     }
 
@@ -2150,7 +2154,7 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
         return false;
     }
     if (statbuf.st_size < 0) {
-        MEDIA_WARN_LOG("File size is negative, path: %{public}s", filePath.c_str());
+        MEDIA_WARN_LOG("File size is negative, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         size = 0;
         return false;
     }

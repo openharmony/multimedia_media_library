@@ -307,8 +307,14 @@ void MediaScannerObj::FillAssetInfoWatch()
         if (isNetworkSufficient) {
             auto criticalLabelTaskQueue = TTLPriorityQueue::GetInstance();
             CHECK_AND_RETURN_LOG(criticalLabelTaskQueue != nullptr, "criticalLabelTaskQueue is nullptr");
-            criticalLabelTaskQueue->AddElement(params);
-            MEDIA_DEBUG_LOG("realtime addElement, displayName: %{public}s", params.display_name.c_str());
+            auto ret = criticalLabelTaskQueue->AddElement(params);
+            if (ret) {
+                MEDIA_DEBUG_LOG("realtime addElement, added to queue with displayName: %{public}s",
+                    MediaFileUtils::DesensitizeName(params.display_name).c_str());
+            } else {
+                MEDIA_DEBUG_LOG("realtime addElement, skipped adding queue, displayName: %{public}s",
+                    MediaFileUtils::DesensitizeName(params.display_name).c_str());
+            }
         }
     }
 #endif

@@ -16,6 +16,7 @@
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
 
 #include "watch_system_handler.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_event_db_operations.h"
 #include "media_operation_log_column.h"
@@ -43,7 +44,7 @@ void WatchSystemHandler::ParsePushInfo(const std::string &msg, std::string &disp
     const auto &results = jsonData["results"][0]; // 0. index of
     isValid = results.contains("name") && results["name"].is_string();
     CHECK_AND_EXECUTE(!isValid, displayName = results["name"].get<std::string>());
-    MEDIA_INFO_LOG("display_name %{public}s", displayName.c_str());
+    MEDIA_INFO_LOG("display_name %{public}s", MediaFileUtils::DesensitizeName(displayName).c_str());
     isValid = results.contains("securityResult") && results["securityResult"].is_string();
     CHECK_AND_EXECUTE(!isValid, securityResult = results["securityResult"].get<std::string>());
     MEDIA_INFO_LOG("securityResult :  %{public}s", securityResult.c_str());
