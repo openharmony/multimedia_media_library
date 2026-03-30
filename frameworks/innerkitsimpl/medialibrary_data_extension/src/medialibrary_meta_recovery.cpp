@@ -670,7 +670,7 @@ bool MediaLibraryMetaRecovery::WriteJsonFile(const std::string &filePath, const 
 
     std::ofstream outFile(filePath, std::ofstream::out | std::ofstream::trunc);
     if (!outFile.is_open()) {
-        MEDIA_ERR_LOG("open filePath: %{private}s failed", filePath.c_str());
+        MEDIA_ERR_LOG("open filePath: %{public}s failed", MediaFileUtils::DesensitizePath(filePath).c_str());
         return false;
     }
     std::string jsonString = j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
@@ -683,7 +683,7 @@ bool MediaLibraryMetaRecovery::ReadJsonFile(const std::string &filePath, nlohman
 {
     std::ifstream inFile(filePath);
     if (!inFile.is_open()) {
-        MEDIA_ERR_LOG("open filePath: %{private}s failed", filePath.c_str());
+        MEDIA_ERR_LOG("open filePath: %{public}s failed", MediaFileUtils::DesensitizePath(filePath).c_str());
         return false;
     }
     std::string buffer = std::string((istreambuf_iterator<char>(inFile)), istreambuf_iterator<char>());

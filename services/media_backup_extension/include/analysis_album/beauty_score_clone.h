@@ -60,16 +60,19 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
         const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
         const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap,
-        const int64_t maxBeautyFileId);
+        const int64_t maxBeautyFileId,
+        std::unordered_map<int32_t, int32_t>* scoreMaskMap = nullptr);
 
     bool CloneBeautyScoreInfo();
 
     int64_t GetMigratedScoreCount() const { return migrateScoreNum_; }
     int64_t GetMigratedFileCount() const { return migrateScoreFileNumber_; }
     int64_t GetTotalTimeCost() const { return migrateScoreTotalTimeCost_; }
+    const std::unordered_map<int32_t, int32_t>& GetScoreMaskMap() const { return scoreMaskMap_; }
+    void UpdateScoreMask(int32_t fileId, int32_t mask);
 
 private:
-    bool CloneBeautyScoreInBatches(const std::vector<int32_t>& oldFileIds,
+    std::unordered_set<int32_t> CloneBeautyScoreInBatches(const std::vector<int32_t>& oldFileIds,
         const std::vector<std::string>& commonColumns);
     std::vector<BeautyScoreTbl> QueryBeautyScoreTbl(const std::string &fileIdClause,
         const std::vector<std::string> &commonColumns);
@@ -77,7 +80,7 @@ private:
         BeautyScoreTbl& beautyScoreTbl);
     std::vector<BeautyScoreTbl> ProcessBeautyScoreTbls(
         const std::vector<BeautyScoreTbl>& beautyScoreTbls);
-    void BatchInsertBeautyScores(const std::vector<BeautyScoreTbl>& beautyScoreTbls);
+    std::unordered_set<int32_t> BatchInsertBeautyScores(const std::vector<BeautyScoreTbl>& beautyScoreTbls);
     NativeRdb::ValuesBucket CreateValuesBucketFromBeautyScoreTbl(
         const BeautyScoreTbl& beautyScoreTbl);
     int32_t BatchInsertWithRetry(const std::string &tableName,
@@ -133,6 +136,8 @@ private:
     int64_t migrateScoreNum_ = 0;
     int64_t migrateScoreFileNumber_ = 0;
     int64_t migrateScoreTotalTimeCost_ = 0;
+    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
+    std::unordered_map<int32_t, int32_t>* externalScoreMaskMap_ = nullptr;
 };
 
 template<typename T, typename U>

@@ -156,7 +156,10 @@ const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y = "joint_beauty_bounder_
 const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH = "joint_beauty_bounder_width";
 const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT = "joint_beauty_bounder_height";
 const std::string IMAGE_FACE_COL_GROUP_VERSION = "group_version";
-
+const std::string IMAGE_FACE_COL_EMOTION = "emotion";
+const std::string IMAGE_FACE_COL_COMPLETENESS = "completeness";
+const std::string IMAGE_FACE_COL_FACE_SCORE = "face_score";
+const std::string IMAGE_FACE_COL_FACE_SCORE_VERSION = "face_score_version";
 
 // video_face_tbl COL_NAME
 const std::string ANALYSIS_VIDEO_FACE_TABLE = "tab_analysis_video_face";
@@ -250,6 +253,17 @@ const std::string PET_FACE_COL_DATE_MODIFIED = "date_modified";
 
 // tab_analysis_video_total TBL COL_NAME
 const std::string ANALYSIS_VIDEO_TOTAL_TABLE = "tab_analysis_video_total";
+
+// tab_analysis_watermark TBL COL_NAME
+#define ANALYSIS_WATERMARK_TABLE          "tab_analysis_watermark"
+#define WATERMARK_COL_FILE_ID             "file_id"
+#define WATERMARK_COL_STATUS              "status"
+#define WATERMARK_COL_TYPE                "type"
+#define WATERMARK_COL_VALID_REGION_X      "valid_region_x"
+#define WATERMARK_COL_VALID_REGION_Y      "valid_region_y"
+#define WATERMARK_COL_VALID_REGION_WIDTH  "valid_region_width"
+#define WATERMARK_COL_VALID_REGION_HEIGHT "valid_region_height"
+#define WATERMARK_COL_ALGO_VERSION        "algo_version"
 
 // Relationship
 enum RelationshipIndex {

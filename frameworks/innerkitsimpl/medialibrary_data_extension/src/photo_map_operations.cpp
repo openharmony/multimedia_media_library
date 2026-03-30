@@ -454,7 +454,7 @@ static bool HavePortraitCover(const shared_ptr<MediaLibraryRdbStore>& rdbStore, 
     CHECK_AND_RETURN_RET(resultSet != nullptr, false);
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string coverUri = GetStringVal(COVER_URI, resultSet);
-        MEDIA_INFO_LOG("Get coverUri Success : %{public}s", coverUri.c_str());
+        MEDIA_INFO_LOG("Get coverUri Success : %{public}s", MediaFileUtils::DesensitizeUri(coverUri).c_str());
         CHECK_AND_RETURN_RET_LOG(!coverUri.empty(), false, "Get coverUri is empty");
         return true;
     }

@@ -220,7 +220,8 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
         std::string fileUri = MediaFileUri::GetPhotoUri(fileId, path, displayName);
         if (fileUri.empty()) {
             MEDIA_ERR_LOG("Failed to get fileUri, fileId: %{public}s, filePath: %{public}s, displayName: %{public}s.",
-                fileId.c_str(), MediaFileUtils::DesensitizePath(path).c_str(), displayName.c_str());
+                fileId.c_str(), MediaFileUtils::DesensitizePath(path).c_str(),
+                MediaFileUtils::DesensitizeName(displayName).c_str());
             continue;
         }
         int64_t fileSize = GetInt64Val(PhotoColumn::MEDIA_SIZE, resultSetForDownload);

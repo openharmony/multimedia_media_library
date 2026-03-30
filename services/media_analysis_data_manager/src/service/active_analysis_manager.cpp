@@ -87,7 +87,7 @@ void SendStopActiveAnalysisAsync(
     std::thread([analysisTypes = std::move(analysisTypes), fileIds = std::move(fileIds), param = std::move(param)]() {
         MessageParcel data;
         MessageParcel reply;
-        MessageOption option(MessageOption::TF_ASYNC);
+        MessageOption option(MessageOption::TF_SYNC);
         MediaAnalysisProxy proxy(nullptr);
         const ActiveAnalysisRequestView request {analysisTypes, fileIds, param};
         if (!WriteActiveAnalysisCommonRequest(data, proxy, request, "stop")) {

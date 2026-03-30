@@ -310,7 +310,8 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
     if (!fileInfo.lPath.empty()) {
         lPath = fileInfo.lPath;
     } else {
-        MEDIA_ERR_LOG("Media_Restore: fileInfo.lPath is empty. Use default lPath: %{public}s", lPath.c_str());
+        MEDIA_ERR_LOG("Media_Restore: fileInfo.lPath is empty. Use default lPath: %{public}s",
+            MediaFileUtils::DesensitizePath(lPath).c_str());
     }
     return this->SOURCE_PATH_PREFIX + lPath + "/" + fileInfo.displayName;
 }

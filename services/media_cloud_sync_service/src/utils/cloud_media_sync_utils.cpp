@@ -457,20 +457,6 @@ bool CloudMediaSyncUtils::IsLivePhoto(const PhotosPo &photosPo)
     return MovingPhotoFileUtils::IsLivePhoto(localPath);
 }
 
-int32_t CloudMediaSyncUtils::UpdateModifyTime(const std::string &localPath, int64_t localMtime)
-{
-    struct timeval times[2];
-    times[0].tv_sec = static_cast<time_t>(localMtime / MILLISECOND_TO_SECOND);
-    times[0].tv_usec = static_cast<suseconds_t>((localMtime % MILLISECOND_TO_SECOND) * MILLISECOND_TO_SECOND);
-    times[1] = times[0];
-    if (utimes(localPath.c_str(), times) < 0) {
-        MEDIA_ERR_LOG(
-            "utime failed %{public}d, lPath: %{public}s", errno, MediaFileUtils::DesensitizePath(localPath).c_str());
-        return errno;
-    }
-    return E_OK;
-}
-
 bool CloudMediaSyncUtils::IsUserAlbumPath(const std::string &lpath)
 {
     std::string prefix = "/pictures/users/";

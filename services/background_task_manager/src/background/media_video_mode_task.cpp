@@ -112,7 +112,8 @@ void MediaVideoModeTask::UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &
         string realPath = LakeFileUtils::GetAssetRealPath(filePath);
         string absVideoPath;
         if (!PathToRealPath(realPath, absVideoPath)) {
-            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", realPath.c_str());
+            MEDIA_ERR_LOG(
+                "file is not real path, file path: %{public}s", MediaFileUtils::DesensitizePath(realPath).c_str());
             continue;
         }
         videoModeData->SetFilePath(realPath);

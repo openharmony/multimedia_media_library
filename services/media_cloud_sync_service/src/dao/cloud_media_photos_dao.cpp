@@ -562,7 +562,7 @@ int32_t CloudMediaPhotosDao::GetSourceAlbumForMerge(const CloudMediaPullDataDto 
         MEDIA_INFO_LOG("FixData:ishidden");
         std::string lPath = CloudMediaSyncUtils::GetLpath(pullData);
         std::transform(lPath.begin(), lPath.end(), lPath.begin(), ::tolower);
-        MEDIA_INFO_LOG("FixData:GetLpath %{public}s", lPath.c_str());
+        MEDIA_INFO_LOG("FixData:GetLpath %{public}s", MediaFileUtils::DesensitizePath(lPath).c_str());
         std::pair<int32_t, std::string> val;
         if (lpathToIdMap.Find(lPath, val)) {
             MEDIA_INFO_LOG("FixData: findlpath %{public}s", (val.second).c_str());
@@ -612,7 +612,8 @@ int32_t CloudMediaPhotosDao::FixAlbumIdToBeOtherAlbumId(int32_t &albumId)
     if (lpathToIdMap.Find(lPath, val)) {
         albumId = val.first;
     }
-    MEDIA_INFO_LOG("FixAlbumId Lpath %{public}s, albumId %{public}d", lPath.c_str(), albumId);
+    MEDIA_INFO_LOG("FixAlbumId Lpath %{public}s, albumId %{public}d",
+        MediaFileUtils::DesensitizePath(lPath).c_str(), albumId);
     return E_OK;
 }
 
@@ -628,7 +629,8 @@ void CloudMediaPhotosDao::GetSourceAlbumFromPath(const CloudMediaPullDataDto &pu
         }
         albumId = val.first;
     }
-    MEDIA_INFO_LOG("GetSourceAlbumFromPath Lpath %{public}s, albumId %{public}d", lPath.c_str(), albumId);
+    MEDIA_INFO_LOG("GetSourceAlbumFromPath Lpath %{public}s, albumId %{public}d",
+        MediaFileUtils::DesensitizePath(lPath).c_str(), albumId);
 }
 
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::GetAllSysAlbumsQuery(
@@ -865,7 +867,8 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaPhotosDao::BatchQueryLocal(
     std::vector<std::string> displayNames;
     for (auto &data : datas) {
         std::string displayName = data.basicFileName;
-        MEDIA_DEBUG_LOG("BatchQueryLocal displayName: %{public}s.", displayName.c_str());
+        MEDIA_DEBUG_LOG("BatchQueryLocal displayName: %{public}s.",
+            MediaFileUtils::DesensitizeName(displayName).c_str());
         if (displayName.empty()) {
             continue;
         }
@@ -942,8 +945,8 @@ bool CloudMediaPhotosDao::JudgeConflict(
             return true;
         } else {
             MEDIA_INFO_LOG("JudgeConflict sourcePath not equal local lPath: %{public}s, cloud lPath: %{public}s",
-                localKeyData.lPath.c_str(),
-                cloudKeyData.lPath.c_str());
+                MediaFileUtils::DesensitizePath(localKeyData.lPath).c_str(),
+                MediaFileUtils::DesensitizePath(cloudKeyData.lPath).c_str());
             return false;
         }
     } else {

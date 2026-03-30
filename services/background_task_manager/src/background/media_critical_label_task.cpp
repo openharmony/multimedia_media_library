@@ -101,7 +101,10 @@ void MediaCriticalLabelTask::SendToAnlyze(AsyncTaskData *data)
     for (const auto &photo : notifyData->batchInfo) {
         std::string uri = ConstructPhotoUri(photo.filePath, photo.displayName, photo.fileId);
         MEDIA_INFO_LOG("file_id: %{public}d, display_name: %{public}s, type: %{public}d, uri: %{public}s",
-            photo.fileId, photo.displayName.c_str(), photo.mediaType, uri.c_str());
+            photo.fileId,
+            MediaFileUtils::DesensitizeName(photo.displayName).c_str(),
+            photo.mediaType,
+            MediaFileUtils::DesensitizeUri(uri).c_str());
         // Sepreate this part make for unit test work in phone
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     if (OHOS::system::GetParameter(CONST_MEDIA_SECURE_ALBUM, "") == "true") {
@@ -114,8 +117,14 @@ void MediaCriticalLabelTask::SendToAnlyze(AsyncTaskData *data)
         params.added_time = photo.addedTime;
         auto criticalLabelTaskQueue = TTLPriorityQueue::GetInstance();
         CHECK_AND_RETURN_LOG(criticalLabelTaskQueue != nullptr, "criticalLabelTaskQueue is nullptr");
-        criticalLabelTaskQueue->AddElement(params);
-        MEDIA_DEBUG_LOG("non-realtime addElement, displayName: %{public}s", params.display_name.c_str());
+        auto ret = criticalLabelTaskQueue->AddElement(params);
+        if (ret) {
+            MEDIA_DEBUG_LOG("non-realtime addElement, added to queue with displayName: %{public}s",
+                MediaFileUtils::DesensitizeName(params.display_name).c_str());
+        } else {
+            MEDIA_DEBUG_LOG("non-realtime addElement skipped adding queue, displayName: %{public}s",
+                MediaFileUtils::DesensitizeName(params.display_name).c_str());
+        }
     }
 #endif
     }
