@@ -33,22 +33,28 @@
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
+// Score mask bits
+const int32_t BIT0 = 1 << 0;  // 美学基础分
+const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+
 BeautyScoreClone::BeautyScoreClone(
     const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
     const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
     const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap,
-    const int64_t maxBeautyFileId
-    )
+    const int64_t maxBeautyFileId,
+    std::unordered_map<int32_t, int32_t>* scoreMaskMap)
     : sourceRdb_(sourceRdb),
       destRdb_(destRdb),
       photoInfoMap_(photoInfoMap),
-      maxBeautyFileId_(maxBeautyFileId)
+      maxBeautyFileId_(maxBeautyFileId),
+      externalScoreMaskMap_(scoreMaskMap)
 {
 }
 
-bool BeautyScoreClone::CloneBeautyScoreInBatches(const std::vector<int32_t>& oldFileIds,
+std::unordered_set<int32_t> BeautyScoreClone::CloneBeautyScoreInBatches(const std::vector<int32_t>& oldFileIds,
     const std::vector<std::string>& commonColumns)
 {
+    std::unordered_set<int32_t> allInsertedFileIds;
     for (size_t i = 0; i < oldFileIds.size(); i += SQL_BATCH_SIZE) {
         auto batch_begin = oldFileIds.begin() + i;
         auto batch_end = ((i + SQL_BATCH_SIZE < oldFileIds.size()) ?
@@ -67,9 +73,10 @@ bool BeautyScoreClone::CloneBeautyScoreInBatches(const std::vector<int32_t>& old
         }
 
         std::vector<BeautyScoreTbl> processBeautyScores = ProcessBeautyScoreTbls(beautyScoreTbls);
-        BatchInsertBeautyScores(processBeautyScores);
+        std::unordered_set<int32_t> insertedFileIds = BatchInsertBeautyScores(processBeautyScores);
+        allInsertedFileIds.insert(insertedFileIds.begin(), insertedFileIds.end());
     }
-    return true;
+    return allInsertedFileIds;
 }
 
 bool BeautyScoreClone::CloneBeautyScoreInfo()
@@ -98,12 +105,18 @@ bool BeautyScoreClone::CloneBeautyScoreInfo()
     CHECK_AND_RETURN_RET_LOG(!commonColumns.empty(),
         false, "No common columns found for aesthetics score table after exclusion.");
 
-    CloneBeautyScoreInBatches(oldFileIds, commonColumns);
+    std::unordered_set<int32_t> insertedFileIds = CloneBeautyScoreInBatches(oldFileIds, commonColumns);
 
     UpdateTotalTblBeautyScoreStatus(destRdb_, newFileIds);
     UpdateAnalysisTotalTblBeautyScore(destRdb_, sourceRdb_, newFileIds, oldFileIds);
     UpdateTotalTblBeautyScoreAllStatus(destRdb_, newFileIds);
     UpdateAnalysisTotalTblBeautyScoreAll(destRdb_, sourceRdb_, newFileIds, oldFileIds);
+
+    // 记录需要刷新的分数类型的 mask 值（只记录实际克隆的）
+    MEDIA_INFO_LOG("record bit0 of mask");
+    for (int32_t fileId : insertedFileIds) {
+        UpdateScoreMask(fileId, BIT0 | BIT20);  // 美学基础分
+    }
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migrateScoreTotalTimeCost_ += end - start;
@@ -204,7 +217,8 @@ std::vector<BeautyScoreTbl> BeautyScoreClone::ProcessBeautyScoreTbls(
     return beautyScoreNewTbls;
 }
 
-void BeautyScoreClone::BatchInsertBeautyScores(const std::vector<BeautyScoreTbl>& beautyScoreTbls)
+std::unordered_set<int32_t> BeautyScoreClone::BatchInsertBeautyScores(
+    const std::vector<BeautyScoreTbl> &beautyScoreTbls)
 {
     std::vector<NativeRdb::ValuesBucket> valuesBucketsToInsert;
     std::unordered_set<int32_t> fileIdsNewlyInserted;
@@ -227,15 +241,16 @@ void BeautyScoreClone::BatchInsertBeautyScores(const std::vector<BeautyScoreTbl>
 
     if (valuesBucketsToInsert.empty()) {
         MEDIA_ERR_LOG("No new aesthetics score entries to insert after filtering by maxBeautyFileId_.");
-        return;
+        return fileIdsNewlyInserted;
     }
 
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(VISION_AESTHETICS_TABLE, valuesBucketsToInsert, rowNum);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert aesthetics scores");
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, fileIdsNewlyInserted, "Failed to batch insert aesthetics scores");
 
     migrateScoreNum_ += rowNum;
     migrateScoreFileNumber_ += static_cast<int64_t>(fileIdsNewlyInserted.size());
+    return fileIdsNewlyInserted;
 }
 
 NativeRdb::ValuesBucket BeautyScoreClone::CreateValuesBucketFromBeautyScoreTbl(
@@ -471,5 +486,14 @@ void BeautyScoreClone::UpdateAnalysisTotalTblBeautyScoreAll(std::shared_ptr<Nati
     const std::vector<int32_t>& fileIdOld)
 {
     UpdateAnalysisTotalTblForScoreColumn(newRdbStore, oldRdbStore, fileIdOld, "aesthetics_score_all");
+}
+
+void BeautyScoreClone::UpdateScoreMask(int32_t fileId, int32_t mask)
+{
+    if (externalScoreMaskMap_ != nullptr) {
+        (*externalScoreMaskMap_)[fileId] |= mask;
+    } else {
+        scoreMaskMap_[fileId] |= mask;
+    }
 }
 } // namespace OHOS::Media
