@@ -57,6 +57,8 @@ const std::string SINGLE_DIR_NAME = "A";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 const std::string RESTORE_FLAG = "multimedia.medialibrary.restoreFlag";
 const std::string BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
+const std::string MEDIA_ANALYSIS_FORCE_CLEAR_DIRTY_DATA_FLAG =
+    "persist.multimedia.media_analysis_service.force_clear_dirty_data";
 // 同步服务模块使用: 时间戳|0，时间戳表征任务正在清理中，0表示无清理任务
 const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
 const std::string THM_SAVE_WITHOUT_ROTATE_PATH = "/THM_EX";
@@ -234,6 +236,7 @@ void BaseRestore::StartRestore(const std::string &backupRestoreDir, const std::s
     HandleRestData();
     StopParameterForRestore();
     StopParameterForClone();
+    SetMediaAnalysisClearDirtyDataParameter();
 }
 
 int32_t BaseRestore::Init(void)
@@ -1793,6 +1796,13 @@ void BaseRestore::StopParameterForBackup()
     MEDIA_INFO_LOG("StopParameterForBackup set 0");
     bool retFlag = system::SetParameter(BACKUP_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter backupFlag, retFlag:%{public}d", retFlag);
+}
+
+void BaseRestore::SetMediaAnalysisClearDirtyDataParameter()
+{
+    MEDIA_INFO_LOG("SetMediaAnalysisClearDirtyDataParameter set 1");
+    bool retFlag = system::SetParameter(MEDIA_ANALYSIS_FORCE_CLEAR_DIRTY_DATA_FLAG, "1");
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter clear dirty data, retFlag:%{public}d", retFlag);
 }
 
 void BaseRestore::SetParameterForRestore()

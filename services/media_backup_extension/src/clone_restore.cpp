@@ -588,6 +588,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     HandleRestData();
     StopParameterForRestore();
     StopParameterForClone();
+    SetMediaAnalysisClearDirtyDataParameter();
     CloseAllKvStore();
     MEDIA_INFO_LOG("End clone restore");
 }
