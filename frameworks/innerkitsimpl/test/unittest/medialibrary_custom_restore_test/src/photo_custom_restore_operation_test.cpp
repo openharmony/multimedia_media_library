@@ -620,6 +620,7 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Te
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test End");
 }
+
 HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test Start");
