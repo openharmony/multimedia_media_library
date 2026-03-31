@@ -1796,7 +1796,7 @@ static int32_t RemediateErrorSourceAlbumSubType(const std::shared_ptr<MediaLibra
     }
     const std::string REMEDIATE_ERROR_SOURCE_ALBUM_SUBTYPE =
         "UPDATE " + PhotoAlbumColumns::TABLE + " SET album_subtype = 2049 "
-        "WHERE album_type = 2048 and album_subtype <> 2049";
+        "WHERE album_type = 2048 AND ( album_subtype NOT IN ( 2049, 2050 ) OR album_subtype IS NULL )";
     int32_t err = upgradeStore->ExecuteSql(REMEDIATE_ERROR_SOURCE_ALBUM_SUBTYPE);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
