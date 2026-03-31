@@ -41,6 +41,7 @@ public:
     EXPORT bool IsWifiConnected();
     EXPORT bool IsNetAvailableWithUnlimitCondition();
     EXPORT bool IsNetAvailableInOnlyWifiCondition();
+    EXPORT bool IsWifiNetConnectedAtRealTime();
 
     int32_t Init();
     MedialibraryRelatedSystemStateManager();
