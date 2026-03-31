@@ -18,6 +18,8 @@
 
 #include "datashare_helper.h"
 #include "media_app_uri_sensitive_column.h"
+#include <mutex>
+
 // LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
@@ -135,8 +137,9 @@ public:
     EXPORT int32_t GetAssetCompressVersion();
 private:
 
-    int32_t userId_;
+    int32_t userId_{-1};
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
+    std::mutex mutex_;
     bool ForceReconnect();
 };
 } // namespace Media

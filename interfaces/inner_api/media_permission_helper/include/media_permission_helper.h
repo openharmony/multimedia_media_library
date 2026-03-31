@@ -19,6 +19,7 @@
 #include "datashare_helper.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
@@ -137,8 +138,9 @@ public:
     // LCOV_EXCL_STOP
 
 private:
-    int32_t userId_;
+    int32_t userId_{-1};
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
+    std::mutex mutex_;
     int32_t GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, std::vector<bool> &result);
     bool ForceReconnect();
