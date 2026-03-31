@@ -739,15 +739,10 @@ export struct PhotoPickerComponent {
     return MimeTypeFilterObj;
   }
 
-  private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
-    let filterType: string;
+  private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string | undefined {
+    let filterType: string | undefined = undefined;
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
-    if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
-    } else {
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
