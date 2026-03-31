@@ -11333,6 +11333,7 @@ static void HandleStopActiveAnalysisResponse(
             context->error = JS_E_PARAM_INVALID;
             return;
         }
+        context->retVal = ret;
         context->SaveError(ret);
         return;
     }
