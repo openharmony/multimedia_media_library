@@ -97,6 +97,7 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/restore/asset_map_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/video_face_clone.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/watermark_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/restore/tab_old_albums_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/restore/photos_data_handler.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/backup_dfx_utils.cpp",
