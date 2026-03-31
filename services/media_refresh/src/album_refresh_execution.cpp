@@ -35,6 +35,7 @@
 #include "medialibrary_tracer.h"
 #include "dfx_refresh_manager.h"
 #include "dfx_refresh_hander.h"
+#include "media_values_bucket_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -319,6 +320,30 @@ int32_t AlbumRefreshExecution::SetForceSelectCoverValues(ValuesBucket &values, c
     return ret;
 }
 
+void AlbumRefreshExecution::GetUpdateValuesAndNotifyType(const AccurateRefresh::AlbumChangeInfo &initAlbumInfo,
+    AccurateRefresh::AlbumChangeInfo &albumInfo, ValuesBucket &values, NotifyType &type)
+{
+    values = albumInfo.GetUpdateValues(initAlbumInfo, type);
+    int countValue = 0;
+    int hiddenCountValue = 0;
+    MediaValuesBucketUtils::GetInt(values, PhotoAlbumColumns::ALBUM_COUNT, countValue);
+    MediaValuesBucketUtils::GetInt(values, PhotoAlbumColumns::HIDDEN_COUNT, hiddenCountValue);
+    if (countValue < 0 || hiddenCountValue < 0) {
+        MEDIA_WARN_LOG("Something went wrong. Caculated count: %{public}d, hiddenCount: %{public}d."
+            " Start scanning entire album %{public}d", countValue, hiddenCountValue, initAlbumInfo.albumId_);
+        values.Clear();
+        AlbumRefreshExecution::GetUpdateValues(values, initAlbumInfo, true, type);
+        AlbumRefreshExecution::GetUpdateValues(values, initAlbumInfo, false, type);
+    } else {
+        if (albumInfo.needForceSelectCover) {
+            SetForceSelectCoverValues(values, initAlbumInfo, false);
+        }
+        if (albumInfo.needForceSelectHiddenCover) {
+            SetForceSelectCoverValues(values, initAlbumInfo, true);
+        }
+    }
+}
+
 int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType)
 {
     ACCURATE_INFO("AccurateUpdateAlbums notifyAlbumType[0x%{public}x]", notifyAlbumType);
@@ -337,13 +362,8 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
 
         auto &initAlbumInfo = initIter->second;
         OHOS::Media::NotifyType type = OHOS::Media::NotifyType::NOTIFY_INVALID;
-        ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo, type);
-        if (albumInfo.needForceSelectCover) {
-            SetForceSelectCoverValues(values, initAlbumInfo, false);
-        }
-        if (albumInfo.needForceSelectHiddenCover) {
-            SetForceSelectCoverValues(values, initAlbumInfo, true);
-        }
+        ValuesBucket values {};
+        GetUpdateValuesAndNotifyType(initAlbumInfo, albumInfo, values, type);
         CheckUpdateValues(albumInfo, iter.second.first, values);
         if (values.IsEmpty()) {
             MEDIA_ERR_LOG("no need update.");

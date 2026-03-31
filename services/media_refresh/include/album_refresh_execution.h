@@ -78,6 +78,8 @@ private:
     // 从Photos表中获取相册信息
     int32_t GetUpdateValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden,
         OHOS::Media::NotifyType &type);
+    void GetUpdateValuesAndNotifyType(const AccurateRefresh::AlbumChangeInfo &initAlbumInfo,
+        AccurateRefresh::AlbumChangeInfo &albumInfo, NativeRdb::ValuesBucket &values, NotifyType &type);
     // 获取选择封面后的ValueBuckets
     int32_t SetForceSelectCoverValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo,
         bool isHidden);
