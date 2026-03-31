@@ -482,6 +482,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
                     isEditSupported: !1,
                     recommendationOptions: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.recommendationOptions,
+                    assetCompatibleCapability: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.assetCompatibleCapability,
                     preselectedUri: null === (l = this.pickerOptions) || void 0 === l ? void 0 : l.preselectedUris,
                     isFromPickerView: !0,
                     isNeedActionBar: !1,
