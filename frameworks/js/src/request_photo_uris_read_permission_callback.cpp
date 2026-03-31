@@ -190,6 +190,9 @@ void RequestPhotoUrisReadPermissionCallback::SendMessageBack(const std::vector<s
     NAPI_INFO_LOG("SendMessageBack enter.");
     CloseModalUIExtension();
 
+    NapiScopeHandler scopeHandler(this->env_);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is invalid");
+
     napi_value undefined = nullptr;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_INNER_FAIL);
 
@@ -229,6 +232,9 @@ void RequestPhotoUrisReadPermissionCallback::SendMessageBackEx(
     NAPI_INFO_LOG("SendMessageBack enter.");
     CloseModalUIExtension();
  
+    NapiScopeHandler scopeHandler(this->env_);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is invalid");
+
     napi_value undefined = nullptr;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_INNER_FAIL);
  

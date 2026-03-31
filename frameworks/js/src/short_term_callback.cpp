@@ -99,6 +99,9 @@ void ShortTermCallback::SendMessageBack(const string &desFileUri)
 {
     CloseModalUIExtension();
 
+    NapiScopeHandler scopeHandler(this->env_);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is nullptr");
+
     napi_value undefined;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_INNER_FAIL);
 
