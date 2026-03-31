@@ -58,6 +58,13 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_empty_test, TestSize.L
     EXPECT_EQ(maskedString.empty(), true);
 }
 
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_MaskString_single_char_test, TestSize.Level1)
+{
+    string singleChar = "a";
+    string maskedString = JsInterfaceHelper::MaskString(singleChar);
+    EXPECT_EQ(maskedString, "*");
+}
+
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_PredicatesHasOrderClause_empty_test, TestSize.Level1)
 {
     auto predicates = make_shared<DataShare::DataSharePredicates>();
