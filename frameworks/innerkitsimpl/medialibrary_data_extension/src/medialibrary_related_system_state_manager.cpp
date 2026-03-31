@@ -120,6 +120,24 @@ bool MedialibraryRelatedSystemStateManager::IsCellularNetConnectedAtRealTime()
     return isCellularNetConnected;
 }
 
+bool MedialibraryRelatedSystemStateManager::IsWifiNetConnectedAtRealTime()
+{
+    bool isWifiNetConnected = false;
+    NetManagerStandard::NetHandle handle;
+    NetManagerStandard::NetAllCapabilities netAllCap;
+    int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, isWifiNetConnected, "GetDefaultNet failed, err:%{public}d", ret);
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, isWifiNetConnected, "GetNetCapabilities failed, err:%{public}d",
+        ret);
+    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
+    if (types.count(NetManagerStandard::BEARER_WIFI)) {
+        isWifiNetConnected = true;
+        MEDIA_DEBUG_LOG("init wifi status success: %{public}d", isWifiNetConnected);
+    }
+    return isWifiNetConnected;
+}
+
 bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
 {
     bool isNetValidated = false;
@@ -155,14 +173,16 @@ bool MedialibraryRelatedSystemStateManager::IsNetValidatedAtRealTime()
 // wifi和 无限流量场景组合 wifi连接+未使用蜂窝+网络连通 受无限流量开关控制 不偷跑流量
 bool MedialibraryRelatedSystemStateManager::IsNetAvailableWithUnlimitCondition()
 {
-    return IsNetValidatedAtRealTime() && ((IsWifiConnected() && !IsCellularNetConnected()) ||
+    return IsNetValidatedAtRealTime() &&
+        ((IsWifiConnected() && (!IsCellularNetConnected() || IsWifiNetConnectedAtRealTime())) ||
         (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
 }
 
 // 仅wifi下可用
 bool MedialibraryRelatedSystemStateManager::IsNetAvailableInOnlyWifiCondition()
 {
-    return IsNetValidatedAtRealTime() && (IsWifiConnected() && !IsCellularNetConnected());
+    return IsNetValidatedAtRealTime() &&
+        (IsWifiConnected() && (!IsCellularNetConnected() || IsWifiNetConnectedAtRealTime()));
 }
 // LCOV_EXCL_STOP
 } // namespace Media
