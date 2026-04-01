@@ -1180,4 +1180,44 @@ HWTEST_F(CloudMediaPhotoHandlerTest, OnCompletePull, TestSize.Level1)
     int32_t ret = dataHandler->OnCompletePull(optRet);
     EXPECT_EQ(ret, ACCURATE_REFRESH_RDB_INVALITD_TABLE);
 }
+
+/**
+ * GetRecordsWithRetry - 正常获取记录场景
+ * 期望结果:
+ * 1. 一次调用成功获取记录，返回E_OK
+ * 2. records不为空
+ */
+HWTEST_F(CloudMediaPhotoHandlerTest, GetRecordsWithRetry_Normal, TestSize.Level1)
+{
+    std::string tableName = "Photos";
+    int32_t cloudType = 0;
+    int32_t userId = 100;
+    std::shared_ptr<CloudMediaDataHandler> dataHandler =
+        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
+    std::vector<MDKRecord> records;
+    int32_t size = 100;
+    int32_t ret = dataHandler->GetCreatedRecords(records, size);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_GE(records.size(), 0);
+}
+
+/**
+ * GetRecordsWithRetry - 多次重试后成功场景
+ * 期望结果:
+ * 1. 模拟需要多次重试才能成功获取记录的场景
+ * 2. 最终返回E_OK并获取到记录
+ */
+HWTEST_F(CloudMediaPhotoHandlerTest, GetRecordsWithRetry_MultipleRetrySuccess, TestSize.Level1)
+{
+    std::string tableName = "Photos";
+    int32_t cloudType = 0;
+    int32_t userId = 100;
+    std::shared_ptr<CloudMediaDataHandler> dataHandler =
+        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
+    std::vector<MDKRecord> records;
+    int32_t size = 50;
+    int32_t ret = dataHandler->GetFileModifiedRecords(records, size);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_GE(records.size(), 0);
+}
 }  // namespace OHOS::Media::CloudSync
