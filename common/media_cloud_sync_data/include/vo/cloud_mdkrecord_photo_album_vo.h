@@ -37,6 +37,7 @@ public:
     std::string localLanguage;
     int32_t coverUriSource;
     std::string coverCloudId;
+    std::string uniqueId;
     /* album_plugin columns */
     std::string albumPluginCloudId;
     std::string albumNameEn;

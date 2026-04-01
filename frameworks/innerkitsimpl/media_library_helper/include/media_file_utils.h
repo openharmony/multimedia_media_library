@@ -61,6 +61,8 @@ constexpr int64_t SEC_TO_MSEC = 1e3;
 constexpr int64_t MSEC_TO_NSEC = 1e6;
 constexpr int64_t TIMESTAMP_CONVERSION_FACTOR = 1e3;
 
+constexpr int32_t UUID_STR_LEN = 37;
+
 enum EXPORT TrashType {
     NOT_TRASHED = 0,
     TRASHED_ASSET,
@@ -233,6 +235,7 @@ public:
     EXPORT static void GetFolderListUnderPath(const std::filesystem::path &path, std::vector<std::string> &folders);
     EXPORT static void GetAllFileNameListUnderPath(const std::filesystem::path &path,
         std::vector<std::string> &fileNames);
+    EXPORT static std::string GenerateUUID();
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

@@ -235,6 +235,9 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[KEY_EDITED_TIME_MS] = MDKRecordField(upLoadRecord.dateModified);
     map[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = MDKRecordField(upLoadRecord.fileSourceType);
     map[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(upLoadRecord.storagePath);
+    map[PhotoColumn::UNIQUE_ID] = MDKRecordField(upLoadRecord.uniqueId);
+    map[MediaColumn::MEDIA_PACKAGE_NAME] = MDKRecordField(upLoadRecord.packageName);
+    map[PhotoColumn::PHOTO_RISK_STATUS] = MDKRecordField(upLoadRecord.photoRiskStatus);
     HandleAttributesHashMap(map, upLoadRecord);
     int32_t ret = HandleThumbSize(map, upLoadRecord);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbSize err: %{public}d", ret);
@@ -1011,6 +1014,9 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.strongAssociation = data.GetStrongAssociation().value_or(0);
     onFetchPhotoVo.fileSourceType = data.GetFileSourceType().value_or(0);
     onFetchPhotoVo.storagePath = data.GetStoragePath().value_or("");
+    onFetchPhotoVo.uniqueId = data.GetUniqueId().value_or("");
+    onFetchPhotoVo.packageName = data.GetPackageName().value_or("");
+    onFetchPhotoVo.photoRiskStatus = data.GetPhotoRiskStatus().value_or(0);
 }
 
 void CloudFileDataConvert::ConvertSourceAlbumIds(const MDKRecord &mdkRecord, OnFetchPhotosVo &onFetchPhotoVo)

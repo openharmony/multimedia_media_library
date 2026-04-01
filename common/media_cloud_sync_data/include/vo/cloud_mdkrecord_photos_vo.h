@@ -82,6 +82,9 @@ public:
     bool isNew;
     int32_t fileSourceType;
     std::string storagePath;
+    std::string uniqueId;
+    std::string packageName;
+    int32_t photoRiskStatus;
 
     // Photo Album
     std::string albumCloudId;

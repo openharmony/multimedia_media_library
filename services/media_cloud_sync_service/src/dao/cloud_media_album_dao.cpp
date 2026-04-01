@@ -334,6 +334,7 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(const PhotoAlbumDto &record, c
     values.PutString(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, record.localLanguage);
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, record.uniqueId);
     if (record.coverUriSource == CoverUriSource::MANUAL_CLOUD_COVER &&
         IsNeedPullCoverByDateModified(record.lPath, record.coverCloudId)) {
         string coverUri;
@@ -587,6 +588,7 @@ int32_t CloudMediaAlbumDao::MergeAlbumOnConflict(PhotoAlbumDto &record,
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, record.uniqueId);
 
     std::string albumType = std::to_string(record.albumType);
     if (albumType == std::to_string(static_cast<int32_t>(AlbumType::SOURCE))) {
@@ -725,6 +727,7 @@ int32_t CloudMediaAlbumDao::InsertAlbums(const PhotoAlbumDto &record,
             values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
         }
     }
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, record.uniqueId);
     values.PutInt(
         PhotoAlbumColumns::UPLOAD_STATUS, PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath(record.lPath));
     ret = UpdateAlbumOrderInfo(record, values);
@@ -733,9 +736,7 @@ int32_t CloudMediaAlbumDao::InsertAlbums(const PhotoAlbumDto &record,
     int64_t rowId;
     ret = albumRefreshHandle->Insert(rowId, PhotoAlbumColumns::TABLE, values);
     MEDIA_INFO_LOG("InsertAlbum completed, ret: %{public}d, rowId: %{public}" PRId64 ", record: %{public}s",
-        ret,
-        rowId,
-        record.ToString().c_str());
+        ret, rowId, record.ToString().c_str());
     return ret;
 }
 
@@ -1078,6 +1079,37 @@ int32_t CloudMediaAlbumDao::ReportAbnormalLocalRecords()
             fileId, dirty, timePending, lcdVisitTime, thumbnailReady);
     }
     return E_OK;
+}
+
+void CloudMediaAlbumDao::HandleIncomingUniqueId(PhotoAlbumDto &album)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_WARN_LOG("Failed to get rdbStore.");
+        return;
+    }
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, album.albumName);
+    vector<string> queryColums = {
+        PhotoColumn::UNIQUE_ID,
+    };
+    auto resultSet = rdbStore->Query(predicates, queryColums);
+    if (resultSet != nullptr) {
+        int rowCount = 0;
+        if ((resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) || (rowCount == 0)) {
+            if (album.uniqueId.empty()) {
+                album.uniqueId = MediaFileUtils::GenerateUUID();
+            }
+        } else if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            std::string uniqueId = GetStringVal(PhotoAlbumColumns::UNIQUE_ID, resultSet);
+            if ((uniqueId.empty()) && album.uniqueId.empty()) {
+                album.uniqueId = MediaFileUtils::GenerateUUID();
+            } else if (!uniqueId.empty()) {
+                album.uniqueId = uniqueId;
+            }
+        }
+        resultSet->Close();
+    }
 }
 
 std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::QueryWhiteList()

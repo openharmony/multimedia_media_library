@@ -474,6 +474,9 @@ private:
         PhotoColumn::PHOTO_DIRTY,
         PhotoColumn::PHOTO_POSITION,
         PhotoColumn::PHOTO_CLOUD_VERSION,
+        PhotoColumn::UNIQUE_ID,
+        MediaColumn::MEDIA_PACKAGE_NAME,
+        PhotoColumn::PHOTO_RISK_STATUS,
     };
 };
 }  // namespace OHOS::Media::TestUtils

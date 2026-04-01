@@ -5956,6 +5956,18 @@ static void AddHighlightGrowingTime(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns end");
 }
 
+void AddUniqueIdColumnsToAlbums(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::UNIQUE_ID + " TEXT DEFAULT NULL",
+    };
+ 
+    MEDIA_INFO_LOG("add PhotoAlbum unique_id columns starts");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("add PhotoAlbum unique_id columns ends");
+}
+
 static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
@@ -5968,6 +5980,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_WATERMARK_TABLE, true)) {
         AddWatermarkTable(store, VERSION_ADD_WATERMARK_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_WATERMARK_TABLE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, true)) {
+        AddUniqueIdColumnsToAlbums(store, VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, true);
     }
 }
 
@@ -5997,14 +6015,8 @@ static void UpgradeExtensionPart15(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_OPERATION_LOG, true);
     }
 
-    if (oldVersion < VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true)) {
-        AddUniqueIdColumns(store, VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, true);
-    }
-
     if (oldVersion < VERSION_CREATE_TAB_COMPATIBLE_INFO &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
+	    !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_COMPATIBLE_INFO, true)) {
         CreateTabComPatibleInfo(store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_COMPATIBLE_INFO, true);
     }

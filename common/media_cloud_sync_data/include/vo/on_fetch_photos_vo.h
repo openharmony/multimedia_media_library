@@ -91,6 +91,8 @@ public:
     // lake
     int32_t fileSourceType;
     std::string storagePath;
+    std::string uniqueId;
+    std::string packageName;
     std::map<std::string, std::string> stringfields;
     std::map<std::string, int64_t> int64fields;
     // Safe Album: risk status for children's watch

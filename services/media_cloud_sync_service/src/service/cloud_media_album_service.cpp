@@ -79,6 +79,7 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
     for (auto &album : albumDtoList) {
         ret = this->albumDao_.HandleLPathAndAlbumType(album);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, FileManagement::E_STOP, "OnFetchRecords HandleLPathAndAlbumType Error");
+        this->albumDao_.HandleIncomingUniqueId(album);
         if (IsDoubleScreenshot(album.lPath, album.cloudId)) {
             MEDIA_DEBUG_LOG("OnFetchRecords IsDoubleScreenshot");
             ConvertToSingleScreenshots(album, lpathRecords);

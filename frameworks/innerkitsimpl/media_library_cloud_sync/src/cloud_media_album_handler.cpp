@@ -100,6 +100,10 @@ static void InitAlbumReqData(MDKRecordAlbumData &albumData, OnFetchRecordsAlbumR
     if (albumsCoverCloudId.has_value()) {
         data.coverCloudId = albumsCoverCloudId.value();
     }
+    auto albumsUniqueId = albumData.GetUniqueId();
+    if (albumsUniqueId.has_value()) {
+        data.uniqueId = albumsUniqueId.value();
+    }
 }
 
 /**
