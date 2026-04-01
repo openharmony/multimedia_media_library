@@ -536,7 +536,7 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
         dto.mediaType = mediaType;
         dto.modifiedTime = insertData.attributesEditedTimeMs;
         // new data 不更新 originalCloudId (无)
-        CloudMediaSyncUtils::FillPhotosDto(dto, insertData);
+        CloudMediaSyncUtils::FillPhotosDto(dto, insertData, insertFiles.back());
         MEDIA_DEBUG_LOG("CreateEntry NewData: %{public}s", dto.ToString().c_str());
         newData.emplace_back(dto);
     }

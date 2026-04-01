@@ -497,6 +497,7 @@ int32_t CloudMediaPhotosDao::ConflictDataMerge(const CloudMediaPullDataDto &pull
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SDIRTY));
     }
     string whereClause = PhotoColumn::MEDIA_FILE_PATH + " = ? AND position = 1";
+    HandleIncomingCloudConflict(pullData, values);
     int32_t ret = this->UpdateProxy(
         updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, {filePath}, photoRefresh);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "ConflictDataMerge failed, ret: %{public}d, filePath: %{public}s",
@@ -534,9 +535,58 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
     values.PutString(PhotoColumn::PHOTO_CLOUD_ID, pullData.cloudId);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    HandleIncomingCloudConflict(pullData, values);
     HandleShootingMode(pullData.cloudId, values, recordAnalysisAlbumMaps);
     insertFiles.push_back(values);
     return E_OK;
+}
+
+void CloudMediaPhotosDao::HandleIncomingCloudConflict(const CloudMediaPullDataDto &pullData,
+    NativeRdb::ValuesBucket &values)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_WARN_LOG("Failed to get rdbStore.");
+        return;
+    }
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_NAME, pullData.basicDisplayName);
+    vector<string> queryColums = {
+        PhotoColumn::UNIQUE_ID, PhotoColumn::PHOTO_RISK_STATUS, MediaColumn::MEDIA_PACKAGE_NAME
+    };
+    auto resultSet = rdbStore->Query(predicates, queryColums);
+    if (resultSet != nullptr) {
+        int rowCount = 0;
+        if ((resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) || (rowCount == 0)) {
+            if (pullData.attributesUniqueId.empty() || pullData.attributesUniqueId == "-1") {
+                values.Delete(PhotoColumn::UNIQUE_ID);
+                values.PutString(PhotoColumn::UNIQUE_ID, MediaFileUtils::GenerateUUID());
+            }
+        } else if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            std::string uniqueId = GetStringVal(PhotoColumn::UNIQUE_ID, resultSet);
+            int32_t riskStatus = GetInt32Val(PhotoColumn::PHOTO_RISK_STATUS, resultSet);
+            std::string packageName = GetStringVal(MediaColumn::MEDIA_PACKAGE_NAME, resultSet);
+            if ((uniqueId.empty() || uniqueId == "-1") &&
+                (pullData.attributesUniqueId.empty() || pullData.attributesUniqueId == "-1")) {
+                values.Delete(PhotoColumn::UNIQUE_ID);
+                values.PutString(PhotoColumn::UNIQUE_ID, MediaFileUtils::GenerateUUID());
+            } else if (!(uniqueId.empty() || uniqueId == "-1")) {
+                values.Delete(PhotoColumn::UNIQUE_ID);
+                values.PutString(PhotoColumn::UNIQUE_ID, uniqueId);
+            }
+
+            if (riskStatus >= 1) { // If local analyzed prevail local value
+                values.Delete(PhotoColumn::PHOTO_RISK_STATUS);
+                values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, riskStatus);
+            }
+
+            if (!packageName.empty()) {
+                values.Delete(PhotoColumn::MEDIA_PACKAGE_NAME);
+                values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
+            }
+        }
+        resultSet->Close();
+    }
 }
 
 int32_t CloudMediaPhotosDao::GetSourceAlbumForMerge(const CloudMediaPullDataDto &pullData,
@@ -1038,7 +1088,12 @@ int32_t CloudMediaPhotosDao::GetCreatedRecords(int32_t size, std::vector<PhotosP
         std::to_string(notSupport)
     };
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, params);
+    std::string execSql;
+    #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS_SECURE, params);
+    #else
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, params);
+    #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
@@ -1068,7 +1123,12 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<Ph
     std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
     MEDIA_INFO_LOG("GetMetaModifiedRecords cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
+    std::string execSql;
+    #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
+    #else
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
+    #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     // Notify caller if no data is returned, it means all data has been processed.
@@ -1110,7 +1170,12 @@ int32_t CloudMediaPhotosDao::GetFileModifiedRecords(int32_t size, std::vector<Ph
     std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
     MEDIA_INFO_LOG("GetFileModifiedRecords cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {cloudIdNotIn});
+    std::string execSql;
+    #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
+    #else
+        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {cloudIdNotIn});
+    #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");

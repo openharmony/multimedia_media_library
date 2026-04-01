@@ -36,6 +36,9 @@ bool PhotosVo::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->orientation), false, "orientation");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->packageName), false, "packageName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->hidden), false, "hidden");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->dateTrashed), false, "dateTrashed");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->attributesMediaType), false, "attributesMediaType");
@@ -57,6 +60,9 @@ bool PhotosVo::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->orientation), false, "orientation");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->packageName), false, "packageName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->hidden), false, "hidden");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->dateTrashed), false, "dateTrashed");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->attributesMediaType), false, "attributesMediaType");
@@ -117,6 +123,9 @@ std::string PhotosVo::ToString() const
        << "\"type\": " << this->type << ", "
        << "\"fileSourceType\": " << this->fileSourceType << ", "
        << "\"storagePath\": " << this->storagePath << ", "
+       << "\"uniqueId\": " << this->uniqueId << ", "
+       << "\"packageName\": " << this->packageName << ", "
+       << "\"photoRiskStatus\": " << this->photoRiskStatus << ", "
        << "\"hidden\": " << this->hidden << ", "
        << "\"dateTrashed\": " << this->dateTrashed << ", "
        << "\"attachment\": {" << this->ToString(this->attachment) << "}"

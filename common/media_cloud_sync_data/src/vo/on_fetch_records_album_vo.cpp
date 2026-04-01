@@ -40,6 +40,7 @@ bool OnFetchRecordsAlbumReqBody::AlbumReqData::Unmarshalling(MessageParcel &parc
     CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDelete), false, "isDelete");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->coverUriSource), false, "coverUriSource");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->coverCloudId), false, "coverCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->uniqueId), false, "uniqueId");
     return true;
 }
 bool OnFetchRecordsAlbumReqBody::AlbumReqData::Marshalling(MessageParcel &parcel) const
@@ -59,6 +60,7 @@ bool OnFetchRecordsAlbumReqBody::AlbumReqData::Marshalling(MessageParcel &parcel
     CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDelete), false, "isDelete");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->coverUriSource), false, "coverUriSource");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->coverCloudId), false, "coverCloudId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->uniqueId), false, "uniqueId");
     return true;
 }
 
@@ -78,6 +80,7 @@ std::string OnFetchRecordsAlbumReqBody::AlbumReqData::ToString() const
        << "\"albumDateModified\": \"" << albumDateModified << "\","
        << "\"isDelete\": \"" << isDelete << "\","
        << "\"coverUriSource\": \"" << coverUriSource << "\","
+       << "\"uniqueId\": \"" << uniqueId << "\","
        << "\"coverCloudId\": \"" << coverCloudId << "\","
        << "}";
     return ss.str();

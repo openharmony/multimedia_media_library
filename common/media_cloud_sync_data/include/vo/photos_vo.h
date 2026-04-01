@@ -40,6 +40,9 @@ public:
     std::map<std::string, CloudFileDataVo> attachment;
     int32_t fileSourceType;
     std::string storagePath;
+    std::string uniqueId;
+    std::string packageName;
+    int32_t photoRiskStatus;
     int32_t hidden;
     int64_t dateTrashed;
     int32_t attributesMediaType;

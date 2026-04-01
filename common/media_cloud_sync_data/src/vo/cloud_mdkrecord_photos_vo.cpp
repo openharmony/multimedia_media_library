@@ -88,6 +88,9 @@ bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(MessageParcel &parcel) co
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(recordId), false, "recordId");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(packageName), false, "packageName");
+    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshalling(stringfields, parcel), false, "stringfields");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Marshalling(int64fields, parcel), false, "int64fields");
     return true;
@@ -156,6 +159,9 @@ bool CloudMdkRecordPhotosVo::ReadAttributesInfo(MessageParcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(recordId), false, "recordId");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(fileSourceType), false, "fileSourceType");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(storagePath), false, "storagePath");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(uniqueId), false, "uniqueId");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(packageName), false, "packageName");
+    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(photoRiskStatus), false, "photoRiskStatus");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(stringfields, parcel), false, "stringfields");
     CHECK_AND_RETURN_RET_LOG(ITypesUtil::Unmarshalling(int64fields, parcel), false, "int64fields");
     return true;
@@ -249,7 +255,10 @@ void CloudMdkRecordPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"width\": " << width << ","
        << "\"deviceName\": \"" << deviceName << "\","
        << "\"userComment\": \"" << userComment << "\","
-       << "\"mimeType\": " << mimeType << ",";
+       << "\"mimeType\": " << mimeType << ","
+       << "\"uniqueId\": " << uniqueId << ","
+       << "\"packageName\": " << packageName << ","
+       << "\"photoRiskStatus\": " << photoRiskStatus << ",";
 }
 
 void CloudMdkRecordPhotosVo::GetRemoveAlbumInfo(std::stringstream &ss) const

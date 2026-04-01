@@ -302,10 +302,11 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test, TestSize.Level1)
     std::string path = "test";
     CloudSync::PhotosDto photosDto;
     CloudSync::CloudMediaPullDataDto data;
+    NativeRdb::ValuesBucket values;
 
     auto ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, path, orientation, exifRotate, thumbState);
     EXPECT_EQ(ret, E_OK);
-    ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, data);
+    ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, data, values);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -606,6 +607,27 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensateBasicSubtype_Test, TestSize.L
         ret = CloudSyncConvert::CompensateBasicSubtype(data, values);
         EXPECT_EQ(ret, E_OK);
     }
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensateData_Test_001, TestSize.Level1)
+{
+    ValuesBucket values;
+    CloudMediaPullDataDto data;
+    data.attributesUniqueId = "test_inner_unique_id";
+    data.attributesPackageName = "test_inner_package_name";
+    CloudSyncConvert::CompensateUniqueId(data, values);
+    CloudSyncConvert::CompensatePackageName(data, values);
+    std::string uniqueId1;
+    ValueObject valueObject1;
+    values.GetObject(PhotoColumn::UNIQUE_ID, valueObject1);
+    valueObject1.GetString(uniqueId1);
+    EXPECT_EQ(uniqueId1, "test_inner_unique_id");
+
+    std::string packageName1;
+    ValueObject valueObject2;
+    values.GetObject(MediaColumn::MEDIA_PACKAGE_NAME, valueObject2);
+    valueObject2.GetString(packageName1);
+    EXPECT_EQ(packageName1, "test_inner_package_name");
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CloudMediaSyncServiceUtilsSafeVector_Test, TestSize.Level1)
@@ -2129,5 +2151,27 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, ToStringWithComma_SixValues, TestSize.L
     std::vector<std::string> fileIds = {"a", "b", "c", "d", "e", "f"};
     std::string result = CloudMediaDaoUtils::ToStringWithComma(fileIds);
     EXPECT_EQ(result, "a,b,c,d,e,f");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test_002, TestSize.Level1)
+{
+    int32_t thumbState = 0;
+    int32_t orientation = 0;
+    int32_t exifRotate = 0;
+    std::string path = "test";
+    CloudSync::PhotosDto photosDto;
+    CloudSync::CloudMediaPullDataDto data;
+    NativeRdb::ValuesBucket values;
+    values.PutString(PhotoColumn::UNIQUE_ID, "test_unique_id_inner");
+    values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, "test_package_name_inner");
+    values.PutInt(PhotoColumn::PHOTO_RISK_STATUS, 1);
+
+    auto ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, path, orientation, exifRotate, thumbState);
+    EXPECT_EQ(ret, E_OK);
+    ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, data, values);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(photosDto.uniqueId, "test_unique_id_inner");
+    EXPECT_EQ(photosDto.packageName, "test_package_name_inner");
+    EXPECT_EQ(photosDto.photoRiskStatus, 1);
 }
 }

@@ -27,6 +27,7 @@ std::string PhotoAlbumDto::ToString() const
        << "\"albumId\": \"" << this->albumId << "\", "
        << "\"albumType\": " << this->albumType << ", "
        << "\"albumSubType\": " << this->albumSubType << ","
+       << "\"albumName\": \"" << this->albumName << "\","
        << "\"lPath\": \"" << this->lPath << "\","
        << "\"bundleName\": \"" << this->bundleName << "\","
        << "\"priority\": " << this->priority << ","
@@ -39,6 +40,7 @@ std::string PhotoAlbumDto::ToString() const
        << "\"isSuccess\": " << std::to_string(this->isSuccess) << ","
        << "\"coverUriSource\": " << std::to_string(this->coverUriSource) << ","
        << "\"coverCloudId\": " << this->coverCloudId << ","
+       << "\"uniqueId\": " << this->uniqueId << ","
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
        << "\"errorDetails\": [";

@@ -589,6 +589,24 @@ int32_t CloudSyncConvert::CompensateBasicBurstCoverLevel(
     return E_OK;
 }
 
+int32_t CloudSyncConvert::CompensateUniqueId(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    std::string uniqueId = data.attributesUniqueId;
+    CHECK_AND_RETURN_RET_WARN_LOG(!uniqueId.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::unique_id.");
+    values.PutString(PhotoColumn::UNIQUE_ID, uniqueId);
+    return E_OK;
+}
+
+int32_t CloudSyncConvert::CompensatePackageName(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    std::string packageName = data.attributesPackageName;
+    CHECK_AND_RETURN_RET_WARN_LOG(!packageName.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes:package_name.");
+    values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
+    return E_OK;
+}
+
 int32_t CloudSyncConvert::TryCompensateValue(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     CHECK_AND_RETURN_RET_WARN_LOG(data.hasProperties, E_OK, "Data cannot find properties");
@@ -631,6 +649,8 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CompensateAttMovingPhotoEffectMode(data, values);
     CompensateAttSupportedWatermarkType(data, values);
     CompensateAttStrongAssociation(data, values);
+    CompensateUniqueId(data, values);
+    CompensatePackageName(data, values);
     // Safe Album: risk status for children's watch
     CompensateAttRiskStatus(data, values);
     CompensateAttIsCritical(data, values);

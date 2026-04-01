@@ -136,6 +136,7 @@ ohos_shared_library("media_library") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "icu:shared_icuuc",

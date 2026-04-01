@@ -956,4 +956,39 @@ HWTEST_F(CloudMediaPhotoHandlerOnFetchRecordsTest, OnDentryFileInsert_merge, Tes
     }
     EXPECT_EQ(checkCount, records.size());
 }
+
+HWTEST_F(CloudMediaPhotoHandlerOnFetchRecordsTest, OnFetchRecords_002, TestSize.Level1)
+{
+    std::string tableName = "Photos";
+    int32_t cloudType = 0;
+    int32_t userId = 100;
+    std::shared_ptr<CloudMediaDataHandler> dataHandler =
+        std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
+    std::vector<CloudMetaData> newDatas;
+    std::vector<CloudMetaData> FdirtyDatas;
+    std::vector<std::string> failedRecords;
+    std::vector<int32_t> stats{0, 0, 0, 0, 0};
+
+    JsonFileReader jsonReader("/data/test/cloudsync/photo_on_fetch_records_new_data_test.json");
+    std::vector<MDKRecord> records;
+    jsonReader.ConvertToMDKRecordVector(records);
+    int32_t ret = dataHandler->OnFetchRecords(records, newDatas, FdirtyDatas, failedRecords, stats);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(stats[StatsIndex::META_MODIFY_RECORDS_COUNT], 0);
+    std::vector<std::string> checkCloudDataList = {"unique_id", "package_name", "photo_risk_status"};
+    int32_t checkCount = 0;
+    std::vector<CloudMetaData> targetList;
+    CloudDataUtils utils;
+    jsonReader.ConvertToCloudMetaDataVector(targetList);
+    EXPECT_GT(targetList.size(), 0);
+    for (auto FdirtyData : FdirtyDatas) {
+        for (auto target : targetList) {
+            if (FdirtyData.cloudId == target.cloudId) {
+                utils.CloudMetaDataEquals(FdirtyData, target, checkCloudDataList);
+                checkCount++;
+            }
+        }
+    }
+    EXPECT_EQ(checkCount, FdirtyDatas.size());
+}
 }  // namespace OHOS::Media::CloudSync
