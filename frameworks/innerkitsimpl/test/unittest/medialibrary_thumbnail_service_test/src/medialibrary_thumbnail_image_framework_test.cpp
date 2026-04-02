@@ -1161,100 +1161,19 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_005, 
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_006, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_006: Test with exifRotate value 1");
+    MEDIA_INFO_LOG("FlipAndRotatePictureTest_006 start");
     
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 1;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
+    int32_t minExifRotate = 1;
+    int32_t maxExifRotate = 8;
+    for (int32_t exifRotate = minExifRotate; exifRotate <= maxExifRotate; ++exifRotate) {
+        MEDIA_INFO_LOG("FlipAndRotatePictureTest start: exifRotate value %{public}d", exifRotate);
+        auto picture = CreateTestPicture();
+        auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+        EXPECT_EQ(ret, true);
+        MEDIA_INFO_LOG("FlipAndRotatePictureTest end: exifRotate:%{public}d, result:%{public}d", exifRotate, ret);
+    }
     
     MEDIA_INFO_LOG("FlipAndRotatePictureTest_006 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_007, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_007: Test with exifRotate value 3");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 3;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_007 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_008, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_008: Test with exifRotate value 4");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 4;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_008 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_009, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_009: Test with exifRotate value 5");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 5;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_009 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_010, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_010: Test with exifRotate value 6");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 6;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_010 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_011, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_011: Test with exifRotate value 7");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 7;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_011 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePictureTest_012, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_012: Test with exifRotate value 8");
-    
-    auto picture = CreateTestPicture();
-    int32_t exifRotate = 8;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePictureTest_012 end");
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_005, TestSize.Level0)
@@ -1273,100 +1192,19 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_005,
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_006, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_006: Test with exifRotate value 1");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 1;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_006 start");
+
+    int32_t minExifRotate = 1;
+    int32_t maxExifRotate = 8;
+    for (int32_t exifRotate = minExifRotate; exifRotate <= maxExifRotate; ++exifRotate) {
+        MEDIA_INFO_LOG("FlipAndRotatePixelMapTest start: exifRotate value %{public}d", exifRotate);
+        auto pixelMap = CreateTestPixelMap();
+        auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+        EXPECT_EQ(ret, true);
+        MEDIA_INFO_LOG("FlipAndRotatePixelMapTest end: exifRotate:%{public}d, result:%{public}d", exifRotate, ret);
+    }
     
     MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_006 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_007, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_007: Test with exifRotate value 3");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 3;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_007 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_008, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_008: Test with exifRotate value 4");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 4;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_008 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_009, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_009: Test with exifRotate value 5");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 5;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_009 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_010, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_010: Test with exifRotate value 6");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 6;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_010 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_011, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_011: Test with exifRotate value 7");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 7;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_011 end");
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMapTest_012, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_012: Test with exifRotate value 8");
-    
-    auto pixelMap = CreateTestPixelMap();
-    int32_t exifRotate = 8;
-    
-    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
-    
-    EXPECT_EQ(ret, true);
-    
-    MEDIA_INFO_LOG("FlipAndRotatePixelMapTest_012 end");
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePictureTest_004, TestSize.Level0)
