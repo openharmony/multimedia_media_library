@@ -1709,6 +1709,33 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadRe
     }
 }
 
+bool BackgroundCloudBatchSelectedFileProcessor::TriggerNetLimitCheck()
+{
+    int32_t num = QueryBatchSelectedResourceFilesNum();
+    if (num == 0) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload no task to stop");
+        return false;
+    }
+    
+    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT;
+    MEDIA_INFO_LOG("BatchSelectFileDownload TriggerNetLimitCheck: stop downloading");
+    AutoStopAction(autoPauseReason);
+    return true;
+}
+
+void BackgroundCloudBatchSelectedFileProcessor::TriggerSwitchCellCheck()
+{
+    if (CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
+        BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
+    } else {
+        if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
+            MEDIA_INFO_LOG("BatchSelectFileDownload COMMON_EVENT_WIFI_CONN_STATE Change");
+            BackgroundCloudBatchSelectedFileProcessor::TriggerNetLimitCheck();
+            // BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
+        }
+    }
+}
+
 // 自动恢复使用
 void BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor()
 {
@@ -1742,6 +1769,12 @@ void BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor()
         if (BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadResourcesTask() &&
             !BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) { // 有任务 无timer在运行 启动
             MEDIA_INFO_LOG("LaunchBatchDownloadProcessor condition satisfy Start Timer");
+            // 新增：检查是否有自动暂停的任务，如果有则发送自动恢复通知
+            if ((BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadInAutoPauseTask() ||
+                BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadInAutoPauseTaskWithException()) &&
+                BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) {
+                AutoResumeAction();
+            }
             SetBatchDownloadProcessRunningStatus(true);
             BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer();
         }
