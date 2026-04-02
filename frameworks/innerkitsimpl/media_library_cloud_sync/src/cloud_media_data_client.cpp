@@ -342,4 +342,16 @@ int32_t CloudMediaDataClient::GetFullSyncDownloadInfo(std::map<std::string, int6
     }
     return this->dataHandler_->GetFullSyncDownloadInfo(flagsInfo);
 }
+
+int32_t CloudMediaDataClient::OnDownloadAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
+    std::vector<MediaOperateResult> &result)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    CLOUD_DATA_CLIENT_WRITE_LOCK;
+    return this->dataHandler_->OnDownloadAsset(downloadedFileInfos, result);
+}
 }  // namespace OHOS::Media::CloudSync

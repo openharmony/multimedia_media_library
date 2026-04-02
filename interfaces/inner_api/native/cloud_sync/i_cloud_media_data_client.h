@@ -63,6 +63,9 @@ public:
     virtual int32_t GetDownloadThmsByUri(
         const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) = 0;
     virtual int32_t OnDownloadAsset(
+        const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
+        std::vector<MediaOperateResult> &result) = 0;
+    virtual int32_t OnDownloadAsset(
         const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) = 0;
     virtual int32_t OnDownloadLakeAsset(
         const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,

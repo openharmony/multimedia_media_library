@@ -258,25 +258,24 @@ int32_t CloudMediaDataClientHandler::GetDownloadAsset(
 int32_t CloudMediaDataClientHandler::GetDownloadLakeAsset(
     const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec)
 {
-    MEDIA_INFO_LOG("GetDownloadLakeAsset, uris: %{public}zu", uris.size());
-    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadAsset: uris is empty");
+    MEDIA_INFO_LOG("GetDownloadLakeAsset [DEPRECATED], uris: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadLakeAsset [DEPRECATED]: uris is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_ASSET);
     GetDownloadAssetReqBody reqBody;
     reqBody.pathList = uris;
-    // parcel data.
     GetDownloadAssetRespBody respBody;
     int32_t ret =
         IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to GetDownloadAsset, ret: %{public}d", ret);
+        MEDIA_ERR_LOG("Failed to GetDownloadLakeAsset [DEPRECATED], ret: %{public}d", ret);
         return ret;
     }
     for (const auto &photosVo : respBody.photos) {
         CloudDlFileMeta cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToLakeCloudMetaData(photosVo);
-        MEDIA_INFO_LOG("GetDownloadAsset MetaData: %{public}s", cloudMetaData.ToString().c_str());
+        MEDIA_INFO_LOG("GetDownloadLakeAsset [DEPRECATED] MetaData: %{public}s", cloudMetaData.ToString().c_str());
         cloudMetaDataVec.push_back(cloudMetaData);
     }
-    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadAsset end");
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadLakeAsset [DEPRECATED] end");
     return E_OK;
 }
 
@@ -301,62 +300,6 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
         CloudMetaData cloudMetaData = CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(photosVo);
         MEDIA_DEBUG_LOG("MetaData: %{public}s", cloudMetaData.ToString().c_str());
         metaData.push_back(cloudMetaData);
-    }
-    return ret;
-}
-
-int32_t CloudMediaDataClientHandler::OnDownloadAsset(
-    const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result)
-{
-    MEDIA_INFO_LOG("OnDownloadAsset, cloudIds: %{public}zu", cloudIds.size());
-    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "OnDownloadAsset: cloudIds is empty");
-    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET);
-    OnDownloadAssetReqBody reqBody;
-    reqBody.cloudIds = cloudIds;
-    MediaOperateResultRespBody respBody;
-    int32_t ret =
-        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
-            .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
-    result.clear();
-    for (const auto &resultVo : respBody.result) {
-        MEDIA_INFO_LOG(
-            "CloudMediaDataClientHandler::OnDownloadAsset, mediaResult: %{public}s", resultVo.ToString().c_str());
-        MediaOperateResult mediaResult;
-        mediaResult.cloudId = resultVo.cloudId;
-        mediaResult.errorCode = resultVo.errorCode;
-        mediaResult.errorMsg = resultVo.errorMsg;
-        result.emplace_back(mediaResult);
-    }
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to OnDownloadAsset, ret: %{public}d", ret);
-    }
-    return ret;
-}
-
-int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
-    std::vector<MediaOperateResult> &result)
-{
-    MEDIA_INFO_LOG("OnDownloadLakeAsset, cloudIds: %{public}zu", lakeInfos.size());
-    CHECK_AND_RETURN_RET_LOG(!lakeInfos.empty(), E_OK, "OnDownloadAsset: lakeInfos is empty");
-    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_LAKE_ASSET);
-    OnDownloadAssetReqBody reqBody;
-    reqBody.lakeInfos = lakeInfos;
-    MediaOperateResultRespBody respBody;
-    int32_t ret =
-        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
-    result.clear();
-    for (const auto &resultVo : respBody.result) {
-        MEDIA_INFO_LOG(
-            "CloudMediaDataClientHandler::OnDownloadLakeAsset, mediaResult: %{public}s", resultVo.ToString().c_str());
-        MediaOperateResult mediaResult;
-        mediaResult.cloudId = resultVo.cloudId;
-        mediaResult.errorCode = resultVo.errorCode;
-        mediaResult.errorMsg = resultVo.errorMsg;
-        result.emplace_back(mediaResult);
-    }
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to OnDownloadLakeAsset, ret: %{public}d", ret);
     }
     return ret;
 }
@@ -658,6 +601,52 @@ int32_t CloudMediaDataClientHandler::GetFullSyncDownloadInfo(std::map<std::strin
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GetFullSyncDownloadInfo, ret: %{public}d", ret);
     MEDIA_INFO_LOG("GetFullSyncDownloadInfo: %{public}s", respBody.ToString().c_str());
     flagsInfo = respBody.flagsInfo;
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::OnDownloadAsset(
+    const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result)
+{
+    MEDIA_INFO_LOG("OnDownloadAsset (deprecated), cloudIds: %{public}zu", cloudIds.size());
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "OnDownloadAsset: cloudIds is empty");
+    std::unordered_map<std::string, AdditionFileInfo> downloadedFileInfos;
+    for (const auto &cloudId : cloudIds) {
+        downloadedFileInfos[cloudId] = AdditionFileInfo();
+    }
+    return OnDownloadAsset(downloadedFileInfos, result);
+}
+
+int32_t CloudMediaDataClientHandler::OnDownloadLakeAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
+    std::vector<MediaOperateResult> &result)
+{
+    MEDIA_INFO_LOG("OnDownloadLakeAsset (deprecated), cloudIds: %{public}zu", lakeInfos.size());
+    CHECK_AND_RETURN_RET_LOG(!lakeInfos.empty(), E_OK, "OnDownloadLakeAsset: lakeInfos is empty");
+    return OnDownloadAsset(lakeInfos, result);
+}
+
+int32_t CloudMediaDataClientHandler::OnDownloadAsset(
+    const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
+    std::vector<MediaOperateResult> &result)
+{
+    MEDIA_INFO_LOG("OnDownloadAsset (unified), downloadedFileInfos: %{public}zu", downloadedFileInfos.size());
+    CHECK_AND_RETURN_RET_LOG(!downloadedFileInfos.empty(), E_OK, "OnDownloadAsset: downloadedFileInfos is empty");
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET);
+    OnDownloadAssetReqBody reqBody;
+    reqBody.downloadedFileInfos = downloadedFileInfos;
+    MediaOperateResultRespBody respBody;
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
+                .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
+    result.clear();
+    for (const auto resultVo : respBody.result) {
+        MEDIA_INFO_LOG("OnDownloadAsset (unified), mediaResult: %{public}s", resultVo.ToString().c_str());
+        MediaOperateResult mediaResult;
+        mediaResult.cloudId = resultVo.cloudId;
+        mediaResult.errorCode = resultVo.errorCode;
+        mediaResult.errorMsg = resultVo.errorMsg;
+        result.emplace_back(mediaResult);
+    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to OnDownloadAsset (unified), ret: %{public}d", ret);
     return ret;
 }
 // LCOV_EXCL_STOP

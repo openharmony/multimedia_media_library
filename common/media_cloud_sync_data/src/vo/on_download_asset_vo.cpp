@@ -27,15 +27,14 @@ namespace OHOS::Media::CloudSync {
 bool OnDownloadAssetReqBody::Unmarshalling(MessageParcel &parcel)
 {
     CHECK_AND_RETURN_RET_LOG(
-        IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
-    CHECK_AND_RETURN_RET_LOG(AdditionFileInfo::Unmarshalling(this->lakeInfos, parcel), false, "lakeInfos");
+        AdditionFileInfo::Unmarshalling(this->downloadedFileInfos, parcel), false, "downloadedFileInfos");
     return true;
 }
 
 bool OnDownloadAssetReqBody::Marshalling(MessageParcel &parcel) const
 {
-    CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::Marshalling<std::string>(this->cloudIds, parcel), false, "cloudIds");
-    CHECK_AND_RETURN_RET_LOG(AdditionFileInfo::Marshalling(this->lakeInfos, parcel), false, "lakeInfos");
+    CHECK_AND_RETURN_RET_LOG(
+        AdditionFileInfo::Marshalling(this->downloadedFileInfos, parcel), false, "downloadedFileInfos");
     return true;
 }
 
@@ -43,11 +42,14 @@ std::string OnDownloadAssetReqBody::ToString() const
 {
     std::stringstream ss;
     ss << "[";
-    for (uint32_t i = 0; i < cloudIds.size(); ++i) {
-        ss << "\"" << this->cloudIds[i] << "\"";
-        if (i != cloudIds.size() - 1) {
-            ss << ",";
-        }
+    for (const auto &entry : this->downloadedFileInfos) {
+        ss << "{cloudId: " << entry.first
+           << ", isUpdate: " << entry.second.isUpdate
+           << ", fileSourceType: " << entry.second.fileSourceType
+           << ", storagePath: " << entry.second.storagePath
+           << ", title: " << entry.second.title
+           << ", displayName: " << entry.second.displayName
+           << "}, ";
     }
     ss << "]";
     return ss.str();
