@@ -5423,7 +5423,8 @@ void InitTestDatabases(std::shared_ptr<NativeRdb::RdbStore> &mediaLibraryRdb,
 {
     ExecuteSqls(galleryRdb, { "DROP TABLE IF EXISTS merge_tag;" });
     std::string gallerySql = string("CREATE TABLE IF NOT EXISTS merge_tag ") +
-    "(_id INTEGER, tag_id TEXT, group_tag TEXT, tag_name TEXT, user_operation INTEGER, rename_operation TEXT);";
+    "(_id INTEGER, tag_id TEXT, group_tag TEXT, tag_name TEXT, user_operation INTEGER, rename_operation TEXT,"
+        "is_hidden INTEGER);";
     ExecuteSqls(galleryRdb, { gallerySql });
 
     std::vector<std::string> mediaSqls = {
@@ -5444,18 +5445,18 @@ void PrepareTestData(std::shared_ptr<NativeRdb::RdbStore> &mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> &galleryRdb)
 {
         std::vector<std::string> mergeTagInserts = {
-            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation) VALUES "
-            "(1, 'tag_zhangsan|tag_lisi', 'tag_zhangsan|tag_lisi', '张三和李四的合影', 0, '0')",
+            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation, is_hidden) "
+            "VALUES (1, 'tag_zhangsan|tag_lisi', 'tag_zhangsan|tag_lisi', '张三和李四的合影', 0, '0', 0)",
 
-            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation) VALUES "
-            "(3, 'tag_zhangsan|tag_lisi|tag_wangwu', 'tag_zhangsan|tag_lisi|tag_wangwu', '家庭合影', 0, '1')",
+            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation, is_hidden) "
+            "VALUES (3, 'tag_zhangsan|tag_lisi|tag_wangwu', 'tag_zhangsan|tag_lisi|tag_wangwu', '家庭合影', 0, '1', 0)",
 
-            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation) VALUES "
-            "(4, 'tag_zhangsan', 'tag_zhangsan', '张三', 0, '0')",
-            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation) VALUES "
-            "(5, 'tag_lisi', 'tag_lisi', '李四', 0, '0')",
-            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation) VALUES "
-            "(6, 'tag_wangwu', 'tag_wangwu', '王五', 0, '0')"
+            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation, is_hidden) "
+            "VALUES (4, 'tag_zhangsan', 'tag_zhangsan', '张三', 0, '0', 0)",
+            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation, is_hidden) "
+            "VALUES (5, 'tag_lisi', 'tag_lisi', '李四', 0, '0', 0)",
+            "INSERT INTO merge_tag (_id, tag_id, group_tag, tag_name, user_operation, rename_operation, is_hidden) "
+            "VALUES (6, 'tag_wangwu', 'tag_wangwu', '王五', 0, '0', 0)"
         };
 
         std::vector<std::string> faceTagInserts = {
