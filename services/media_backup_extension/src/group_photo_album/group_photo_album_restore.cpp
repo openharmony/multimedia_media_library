@@ -303,8 +303,8 @@ int64_t CloneGroupPhotoAlbum::GetShouldEndTime(const std::unordered_map<int32_t,
         DEFAULT_FAULT_TIME, "taskId: %{public}s invalid", taskId_.c_str());
     int64_t backupStartTime = std::stoll(taskId_) * 1000;
     int64_t dataSize = static_cast<int64_t>(photoInfoMap.size());
-    MEDIA_INFO_LOG("dataSize: %{public}" PRId64 ", backupStartTime: %{public}" PRId64,
-        dataSize, backupStartTime);
+    MEDIA_INFO_LOG("dataSize: %{public}" PRId64 ", backupStartTime: %{public}s",
+        dataSize, std::to_string(backupStartTime).c_str());
     CHECK_AND_RETURN_RET(dataSize > THRESHOLD_DATA_SIZE, backupStartTime + THRESHOLD_DATA_TIME);
     return backupStartTime + (dataSize + SUPPORT_NUMBER) / BASIC_NUMBER * SINGLE_OVER_THRESHOLD_DATA_TIME;
 }
@@ -344,8 +344,8 @@ void CloneGroupPhotoAlbum::RestoreGroupPhotoAlbum(const std::unordered_map<int32
         CHECK_AND_EXECUTE(partOne <= shouldEndTime || !firstBatch, exitCode_ = BEGIN_EXIT_CODE);
         CHECK_AND_EXECUTE(partOne <= shouldEndTime || firstBatch, exitCode_ = MIDDLE_EXIT_CODE);
         CHECK_AND_BREAK_INFO_LOG(partOne <= shouldEndTime,
-            "current time: %{public}" PRId64 ", over shouldEndTime: %{public}" PRId64
-            ", RestoreGroupPhotoAlbum cost: %{public}" PRId64, partOne, shouldEndTime, (partOne - start));
+            "current time: %{public}s, over shouldEndTime: %{public}s, RestoreGroupPhotoAlbum cost: %{public}" PRId64,
+            std::to_string(partOne).c_str(), std::to_string(shouldEndTime).c_str(), (partOne - start));
         result = GetGroupPhotoAlbumInfo(offset, retSize);
         offset = groupAlbumMaxId_;
         count += result.size();
