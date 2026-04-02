@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_HANDLER_H
 #define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_HANDLER_H
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -74,6 +75,15 @@ private:
     void DeleteTempLivePhotoFile(std::string &livePhotoCachePath);
     int32_t OnFetchRecordsInner(const OnFetchRecordsReqBody &reqBody, OnFetchRecordsRespBody &respBody);
     int32_t OnDentryFileInsertInner(const OnDentryFileReqBody &reqBody, OnDentryFileRespBody &respBody);
+    int32_t GetCreatedRecordsInternal(
+        std::vector<MDKRecord> &records, int32_t size, std::vector<int32_t> &failFileIds);
+    int32_t GetFileModifiedRecordsInternal(
+        std::vector<MDKRecord> &records, int32_t size, std::vector<int32_t> &failFileIds);
+    int32_t GetRecordsWithRetry(
+        const std::string &funcName,
+        std::function<int32_t(std::vector<MDKRecord> &, std::vector<int32_t> &)> getRecordsFunc,
+        std::vector<MDKRecord> &records, int32_t size);
+
 private:
     CloudMediaDataClientHandlerProcessor processor_;
     std::string traceId_;

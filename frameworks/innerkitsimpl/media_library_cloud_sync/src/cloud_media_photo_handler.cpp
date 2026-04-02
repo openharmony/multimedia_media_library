@@ -17,6 +17,7 @@
 #include "cloud_media_photo_handler.h"
 
 #include <string>
+#include <algorithm>
 
 #include "cloud_file_data_convert.h"
 #include "cloud_media_operation_code.h"
@@ -227,7 +228,8 @@ int32_t CloudMediaPhotoHandler::GetCheckRecords(
     return E_OK;
 }
 
-int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &records, int32_t size)
+int32_t CloudMediaPhotoHandler::GetCreatedRecordsInternal(
+    std::vector<MDKRecord> &records, int32_t size, std::vector<int32_t> &failFileIds)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     reqBody.size = size;
@@ -251,6 +253,7 @@ int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &record
             MEDIA_ERR_LOG("GetCreatedRecords ReportFailure, ret: %{public}d, photosVo: %{public}s",
                 ret,
                 record.ToString().c_str());
+            failFileIds.emplace_back(record.fileId);
             this->ReportFailure(
                 ReportFailureReqBody()
                     .SetApiCode(static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_CREATED_RECORDS))
@@ -310,7 +313,8 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
     return E_OK;
 }
 
-int32_t CloudMediaPhotoHandler::GetFileModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
+int32_t CloudMediaPhotoHandler::GetFileModifiedRecordsInternal(
+    std::vector<MDKRecord> &records, int32_t size, std::vector<int32_t> &failFileIds)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     reqBody.size = size;
@@ -337,6 +341,7 @@ int32_t CloudMediaPhotoHandler::GetFileModifiedRecords(std::vector<MDKRecord> &r
             MEDIA_ERR_LOG("GetFileModifiedRecords ReportFailure, ret: %{public}d, photosVo: %{public}s",
                 ret,
                 record.ToString().c_str());
+            failFileIds.emplace_back(record.fileId);
             this->ReportFailure(
                 ReportFailureReqBody()
                     .SetApiCode(static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_FILE_MODIFIED_RECORDS))
@@ -638,5 +643,68 @@ void CloudMediaPhotoHandler::SetCloudSpaceFull(bool isCloudSpaceFull)
 bool CloudMediaPhotoHandler::IsCloudSpaceFull()
 {
     return false;
+}
+
+int32_t CloudMediaPhotoHandler::GetRecordsWithRetry(
+    const std::string &funcName,
+    std::function<int32_t(std::vector<MDKRecord> &, std::vector<int32_t> &)> getRecordsFunc,
+    std::vector<MDKRecord> &records,
+    int32_t size)
+{
+    std::set<int32_t> failFileIdTotal;
+    std::vector<int32_t> failFileIdsSingleCall;
+    const int32_t MAX_QUERY_RETRY_TIMES = 2;
+    int32_t ret = E_OK;
+    bool isNeedRetry = true;
+    bool isDeadLoop = false;
+    for (int32_t retryTimes = 0; retryTimes < MAX_QUERY_RETRY_TIMES; retryTimes++) {
+        failFileIdsSingleCall.clear();
+        records.clear();
+        ret = getRecordsFunc(records, failFileIdsSingleCall);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK,
+                                 ret,
+                                 "%{public}s failed, ret: %{public}d, retryTimes: %{public}d",
+                                 funcName.c_str(),
+                                 ret,
+                                 retryTimes);
+        isNeedRetry = records.empty() && !failFileIdsSingleCall.empty();
+        CHECK_AND_RETURN_RET(isNeedRetry, E_OK);
+        isDeadLoop = std::any_of(failFileIdsSingleCall.begin(), failFileIdsSingleCall.end(), [&](int x) {
+            return failFileIdTotal.find(x) != failFileIdTotal.end();
+        });
+        CHECK_AND_RETURN_RET_LOG(
+            !isDeadLoop,
+            E_OK,
+            "%{public}s failed with same fileIds, break to avoid dead loop. "
+            "retryTimes: %{public}d, failFileIdsSingleCall: %{public}zu, failFileIdTotal: %{public}zu",
+            funcName.c_str(),
+            retryTimes,
+            failFileIdsSingleCall.size(),
+            failFileIdTotal.size());
+        failFileIdTotal.insert(failFileIdsSingleCall.begin(), failFileIdsSingleCall.end());
+        MEDIA_WARN_LOG("%{public}s fail query. "
+                       "retryTimes: %{public}d, failFileIdsSingleCall: %{public}zu, failFileIdTotal: %{public}zu",
+                       funcName.c_str(),
+                       retryTimes,
+                       failFileIdsSingleCall.size(),
+                       failFileIdTotal.size());
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &records, int32_t size)
+{
+    auto getFunc = [this, size](std::vector<MDKRecord> &recs, std::vector<int32_t> &failIds) {
+        return this->GetCreatedRecordsInternal(recs, size, failIds);
+    };
+    return GetRecordsWithRetry("GetCreatedRecords", getFunc, records, size);
+}
+
+int32_t CloudMediaPhotoHandler::GetFileModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
+{
+    auto getFunc = [this, size](std::vector<MDKRecord> &recs, std::vector<int32_t> &failIds) {
+        return this->GetFileModifiedRecordsInternal(recs, size, failIds);
+    };
+    return GetRecordsWithRetry("GetFileModifiedRecords", getFunc, records, size);
 }
 }  // namespace OHOS::Media::CloudSync
