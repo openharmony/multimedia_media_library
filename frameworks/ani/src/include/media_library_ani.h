@@ -216,6 +216,8 @@ public:
         ani_string displayName, ani_object options);
     static ani_object CreateAssetComponent([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_enum_item photoTypeAni, ani_string extension, ani_object options);
+    static ani_object CreatePhotoAsset(ani_env *env, ani_object object,
+        ani_enum_item photoType, ani_string extension, ani_string title);
     static ani_object GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static ani_object GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
