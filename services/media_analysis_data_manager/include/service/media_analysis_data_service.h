@@ -38,6 +38,8 @@
 #include "change_request_dismiss_assets_dto.h"
 #include "change_request_merge_album_dto.h"
 #include "change_request_place_before_dto.h"
+#include "change_request_set_default_cover_uri_dto.h"
+#include "create_analysis_album_dto.h"
  
 namespace OHOS::Media::AnalysisData {
 class MediaAnalysisDataService {
@@ -67,6 +69,8 @@ public:
     int32_t MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto);
     int32_t PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto);
     int32_t ChangeRequestDismiss(int32_t albumId);
+    int32_t ChangeRequestSetDefaultCoverUri(const ChangeRequestSetDefaultCoverUriDto& dto);
+    int32_t CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody);
 
 private:
     MediaAnalysisDataService() = default;

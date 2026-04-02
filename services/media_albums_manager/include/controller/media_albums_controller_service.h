@@ -30,7 +30,6 @@ public:
     EXPORT int32_t CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
-    int32_t ChangeRequestSetDefaultCoverUri(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AddAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RemoveAssets(MessageParcel &data, MessageParcel &reply);
@@ -56,7 +55,6 @@ public:
     EXPORT int32_t ChangeRequestSetUploadStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAlbumIdByLpathOrBundleName(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SmartMoveAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT int32_t CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAlbumsControllerService() = default;

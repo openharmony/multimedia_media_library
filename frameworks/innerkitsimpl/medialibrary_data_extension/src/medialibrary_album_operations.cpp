@@ -80,7 +80,6 @@ constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
 constexpr int32_t ALBUM_SETNAME_OK = 1;
 constexpr int32_t HIGHLIGHT_DELETED = -3;
-constexpr int32_t IS_COVER_SATISFIED_DEFAULT_COVER = 1;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 constexpr int32_t ALBUM_RENAMED = 2;
@@ -90,9 +89,6 @@ constexpr int32_t STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT = 5;
 constexpr int32_t STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT = 1;
 constexpr int32_t ANALYSIS_STATUS_TO_REFRESH = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT = -2;
-constexpr int32_t DISPLAY_LEVEL_NUMBER = 1;
-constexpr int32_t LOCAL_NUMBER = 1;
-constexpr int32_t RENAME_OPERATION_NUMBER = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL = 2;
 constexpr int32_t ANALYSISED_DISPLAY_LEVEL_HIDDEN = -1;
 constexpr int32_t ANALYSISED_DISPLAY_LEVEL_SECOND_PAGE = -2;
@@ -411,20 +407,6 @@ void MediaLibraryAlbumOperations::PrepareSourceAlbum(const string &albumName, co
     values.PutInt(PhotoAlbumColumns::ALBUM_HIDDEN, 1); // source album is by default hidden when created
 }
 
-static void PrepareSmartAlbum(const string &albumName, ValuesBucket &values)
-{
-    int64_t timestamp = MediaFileUtils::UTCTimeNanoSeconds();  // 统一时间戳
-    string current_time = MINUS_5_SOMETHING + to_string(timestamp);
-    values.PutString(ALBUM_NAME, albumName);
-    values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
-    values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
-    values.PutString(TAG_ID, current_time);
-    values.PutString(GROUP_TAG, current_time);
-    values.PutInt(USER_DISPLAY_LEVEL, DISPLAY_LEVEL_NUMBER);
-    values.PutInt(IS_LOCAL, LOCAL_NUMBER); // local album is 1.
-    values.PutInt(RENAME_OPERATION, RENAME_OPERATION_NUMBER);
-}
-
 inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
 {
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
@@ -721,49 +703,6 @@ int CreatePhotoAlbum(const string &albumName)
     albumRefresh.CloseDfxReport();
     // no existing record available, create a new one
     return DoCreatePhotoAlbum(albumName, "", albumValues);
-}
-
-int32_t MediaLibraryAlbumOperations::CreatePortraitAlbum(const string &albumName)
-{
-    int32_t err = MediaFileUtils::CheckAlbumName(albumName);
-    if (err < 0) {
-        MEDIA_ERR_LOG("Check album name failed, album name: %{public}s",
-            MediaFileUtils::DesensitizeName(albumName).c_str());
-        return err;
-    }
-
-    ValuesBucket albumValues;
-    PrepareSmartAlbum(albumName, albumValues);
-
-    // Build insert sql
-    string insertsql;
-    string valuesql;
-    vector<ValueObject> bindArgs;
-    insertsql.append("INSERT").append(" INTO ").append("AnalysisAlbum").append(" ");
-
-    map<string, ValueObject> valuesMap;
-    albumValues.GetAll(valuesMap);
-    insertsql.append("(");
-    for (auto iter = valuesMap.begin(); iter != valuesMap.end(); iter++) {
-        insertsql.append(((iter == valuesMap.begin()) ? "" : ", "));
-        insertsql.append(iter->first);
-        bindArgs.push_back(iter->second);
-        valuesql.append(((iter == valuesMap.begin()) ? "?" : ", ?"));
-    }
-    insertsql.append(") VALUES (").append(valuesql).append(")");
-    MEDIA_DEBUG_LOG("CreatePortraitAlbum InsertSql: %{private}s", insertsql.c_str());
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "CreatePortraitAlbum failed. rdbStore is null");
-    int32_t rowId = rdbStore->ExecuteForLastInsertedRowId(insertsql, bindArgs);
-    CHECK_AND_RETURN_RET_LOG(rowId > 0, rowId, "insert fail");
-    MEDIA_INFO_LOG("Create photo album success, id: %{public}d, albumName: %{public}s",
-        rowId, DfxUtils::GetSafeAlbumNameWhenChinese(albumName).c_str());
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
-        std::to_string(rowId)), NotifyType::NOTIFY_ADD);
-    return rowId;
 }
 
 int CreatePhotoAlbum(MediaLibraryCommand &cmd)
@@ -3740,84 +3679,6 @@ int32_t MediaLibraryAlbumOperations::SetCoverUri(const ValuesBucket &values, con
         NotifyPortraitAlbum(changeAlbumIds);
     }
     return err;
-}
-
-bool CheckIsCoverSatisfied(const string &albumId, shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(ALBUM_ID, albumId);
-    vector<string> columns = { IS_COVER_SATISFIED };
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, false, "uniStore is nullptr!");
-    auto resultSet = uniStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, false, "resultSet is empty");
-    int32_t satisFied = GetInt32Val(IS_COVER_SATISFIED, resultSet);
-    return satisFied == 0 || satisFied == 1;
-}
-
-bool IsAssetInAlbum(const string &albumId, const string &coverUri,
-    shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
-    RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
-    predicates.EqualTo(MAP_ALBUM, albumId);
-    predicates.And()->EqualTo(MAP_ASSET, fileId);
-    vector<string> columns = { MAP_ALBUM };
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, false, "uniStore is nullptr!");
-    auto resultSet = uniStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is empty");
-    return resultSet->GoToFirstRow() == NativeRdb::E_OK;
-}
-
-int32_t QueryGroupTags(const string &albumId, vector<string> &groupTags,
-    shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    RdbPredicates queryPredicates(ANALYSIS_ALBUM_TABLE);
-    queryPredicates.EqualTo(ALBUM_ID, albumId);
-    vector<string> columns = { GROUP_TAG };
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_ERR, "uniStore is nullptr!");
-    auto resultSet = uniStore->Query(queryPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is empty");
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        groupTags.push_back(GetStringVal(GROUP_TAG, resultSet));
-    }
-    return E_OK;
-}
-
-int32_t UpdateForPortraitCoverUri(const string &albumId, const string &coverUri,
-    shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    vector<string> groupTags;
-    CHECK_AND_RETURN_RET_LOG(QueryGroupTags(albumId, groupTags, uniStore) == E_OK,
-        E_ERR, "QueryTagIds fail");
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.In(GROUP_TAG, groupTags);
-    ValuesBucket values;
-    values.PutInt(IS_COVER_SATISFIED, IS_COVER_SATISFIED_DEFAULT_COVER);
-    values.PutString(COVER_URI, coverUri);
-    int32_t changedRows = -1;
-    int32_t result = uniStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(result == E_OK, E_ERR, "update default cover uri fail");
-    return result;
-}
-
-int32_t MediaLibraryAlbumOperations::SetDefaultCoverUri(const string &albumId,
-    const string &coverUri)
-{
-    MEDIA_INFO_LOG("SetAnalysisAlbumCoverUri start ");
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_ERR, "uniStore is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(CheckIsCoverSatisfied(albumId, uniStore),
-        E_INVALID_VALUES, "only no setting or default setting can be changed");
-    CHECK_AND_RETURN_RET_LOG(IsAssetInAlbum(albumId, coverUri, uniStore),
-        E_INVALID_VALUES, "coverUri is not found in this album");
-    CHECK_AND_RETURN_RET_LOG(UpdateForPortraitCoverUri(albumId, coverUri, uniStore) == E_OK,
-        E_ERR, "updateForPortraitCoverUri fail");
-    vector<int32_t> changeAlbumIds = { 0 };
-    CHECK_AND_RETURN_RET_LOG(MediaStringUtils::ConvertToInt(albumId.c_str(), changeAlbumIds[0]),
-        E_ERR, "convertToInt fail");
-    NotifyPortraitAlbum(changeAlbumIds);
-    return E_OK;
 }
 
 static bool GetArgsSetUserAlbumName(const ValuesBucket& values,

@@ -48,6 +48,8 @@
 #include "change_request_set_display_level_vo.h"
 #include "change_request_dismiss_assets_vo.h"
 #include "change_request_dismiss_vo.h"
+#include "medialibrary_data_manager_utils.h"
+#include "change_request_set_default_cover_uri_vo.h"
  
 namespace OHOS::Media::AnalysisData {
 using namespace std;
@@ -561,5 +563,56 @@ int32_t MediaAnalysisDataControllerService::ChangeRequestDismiss(MessageParcel &
 
     ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::ChangeRequestSetDefaultCoverUri(MessageParcel &data,
+    MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("ChangeRequestSetDefaultCoverUri start");
+    ChangeRequestSetDefaultCoverUriReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetDefaultCoverUri Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) &&
+        !reqBody.coverUri.empty() && !reqBody.albumId.empty() &&
+        MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    ChangeRequestSetDefaultCoverUriDto dto;
+    dto.albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    dto.coverUri = reqBody.coverUri;
+    dto.albumId = reqBody.albumId;
+    ret = MediaAnalysisDataService::GetInstance().ChangeRequestSetDefaultCoverUri(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CreateAnalysisAlbum start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    CreateAnalysisAlbumReqBody reqBody;
+    CreateAnalysisAlbumRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateAnalysisAlbum Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    CHECK_AND_RETURN_RET_LOG(reqBody.subType == static_cast<int32_t>(PORTRAIT), E_INNER_FAIL, "subtype failed");
+    CreateAnalysisAlbumDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAnalysisDataService::GetInstance().CreateAnalysisAlbum(dto, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateAnalysisAlbum Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media::AnalysisData

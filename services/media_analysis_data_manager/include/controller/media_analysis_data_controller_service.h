@@ -54,6 +54,8 @@ public:
     EXPORT int32_t MergeAlbum(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t PlaceBefore(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetDefaultCoverUri(MessageParcel &data, MessageParcel &reply);
+    int32_t CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply);
 
 private:
     int32_t GetPermissionPolicy(
@@ -143,6 +145,14 @@ private:
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS),
             &MediaAnalysisDataControllerService::ChangeRequestDismiss
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DEFAULT_COVER_URI),
+            &MediaAnalysisDataControllerService::ChangeRequestSetDefaultCoverUri
+ 	    },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM),
+            &MediaAnalysisDataControllerService::CreateAnalysisAlbum
         },
     };
 };
