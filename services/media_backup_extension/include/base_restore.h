@@ -144,6 +144,7 @@ protected:
         int32_t &videoFileMoveCount, int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone();
+    void SetMediaAnalysisClearDirtyDataParameter();
     virtual void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void UpdateLcdVisibleColumn(const FileInfo &fileInfo);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
