@@ -17,6 +17,7 @@
 
 #include <mutex>
 #include <string>
+#include <inttypes.h>
 
 #include "parameters.h"
 #include "medialibrary_errno.h"
@@ -81,10 +82,10 @@ void SetSmartDataRetainTime()
     int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
     auto success = SetSmartDataSystemParameter(SMART_DATA_RETAIN_TIME, currentTime);
     if (!success) {
-        MEDIA_ERR_LOG("SetSmartDataRetainTime failed. time: %{public}lld", currentTime);
+        MEDIA_ERR_LOG("SetSmartDataRetainTime failed. time: %{public}" PRId64, currentTime);
         return;
     }
-    MEDIA_INFO_LOG("SetSmartDataRetainTime successful. time: %{public}lld", currentTime);
+    MEDIA_INFO_LOG("SetSmartDataRetainTime successful. time: %{public}" PRId64, currentTime);
 }
 
 int64_t GetSmartDataRetainTime()
