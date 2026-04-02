@@ -2441,6 +2441,7 @@ export namespace photoAccessHelper {
       callback: AsyncCallback<string | undefined>): void;
     createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void;
     createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string>;
+    createPhotoAsset(photoType: PhotoType, extension: string, title?: string): Promise<string>;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions,
        callback: AsyncCallback<FetchResult<Album> | undefined>): void;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, callback: AsyncCallback<FetchResult<Album> | undefined>): void;
@@ -2884,6 +2885,32 @@ export namespace photoAccessHelper {
           let result: string | MediaLibraryAniError;
           try {
             result = this.createAssetComponentInner(photoType, extension, options);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string);
+            }
+          }
+        });
+      });
+    }
+
+    createPhotoAsset(photoType: PhotoType, extension: string, title?: string): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string | MediaLibraryAniError => {
+          let result: string | MediaLibraryAniError;
+          try {
+            result = this.createPhotoAssetInner(photoType, extension, title);
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
@@ -3784,6 +3811,7 @@ export namespace photoAccessHelper {
     native getBurstAssetsInner(burstKey: string, options: FetchOptions): FetchResult<PhotoAsset>;
     native createAssetSystemInner(displayName: string, options?: PhotoCreateOptions): PhotoAsset;
     native createAssetComponentInner(photoType: PhotoType, extension: string, options?: CreateOptions): string;
+    native createPhotoAssetInner(photoType: PhotoType, extension: string, title?: string): string;
     native getAlbumsInner(type: AlbumType, subtype: AlbumSubtype, options?: FetchOptions): FetchResult<Album>;
     native getHiddenAlbumsInner(mode: HiddenPhotosDisplayMode, options?: FetchOptions): FetchResult<Album>;
     native getSharedPhotoAssets(options: FetchOptions): Array<SharedPhotoAsset>;
@@ -4010,11 +4038,14 @@ export namespace photoAccessHelper {
     QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD = 2
   }
 
-  export interface MediaChangeRequest {}
+  export interface MediaChangeRequest {
+    readonly comment: string;
+  }
 
   export type AssetType = PhotoAsset | string;
 
   export class MediaAssetChangeRequest implements MediaChangeRequest {
+    readonly comment: string = "";
     private nativeHandle: long = 0;
 
     constructor(asset: PhotoAsset) {
@@ -4218,6 +4249,7 @@ export namespace photoAccessHelper {
   }
 
   export class MediaAssetsChangeRequest implements MediaChangeRequest {
+    readonly comment: string = "";
     private nativeHandle: long = 0;
 
     constructor(assets: Array<PhotoAsset>) {
@@ -4241,6 +4273,7 @@ export namespace photoAccessHelper {
   }
 
   export class MediaAlbumChangeRequest implements MediaChangeRequest {
+    readonly comment: string = "";
     private nativeHandle: long = 0;
 
     constructor(album: Album) {
