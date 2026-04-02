@@ -23,6 +23,7 @@
 #include "cloud_mdkrecord_photos_vo.h"
 #include "photos_po.h"
 #include "cloud_media_define.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace testing::ext;
@@ -166,7 +167,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_NoPlaceholders, TestSize.Level1)
 {
     std::string sql = "SELECT name, score FROM Stu WHERE age >= 18 AND age <= 45;";
     std::vector<std::string> bindArgs;
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, sql);
 }
 
@@ -174,7 +175,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_SinglePlaceholder, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE age >= {0};";
     std::vector<std::string> bindArgs = {"18"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE age >= 18;");
 }
 
@@ -182,7 +183,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_MultiplePlaceholders, TestSize.Level
 {
     std::string sql = "SELECT name, score FROM Stu WHERE age >= {0} AND age <= {1};";
     std::vector<std::string> bindArgs = {"18", "45"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name, score FROM Stu WHERE age >= 18 AND age <= 45;");
 }
 
@@ -190,7 +191,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_RepeatedPlaceholder, TestSize.Level1
 {
     std::string sql = "SELECT name FROM Stu WHERE age = {0} OR score = {0};";
     std::vector<std::string> bindArgs = {"100"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE age = 100 OR score = 100;");
 }
 
@@ -198,7 +199,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_MultipleRepeatedPlaceholders, TestSi
 {
     std::string sql = "SELECT name FROM Stu WHERE age = {0} OR age = {1} OR score = {0} OR score = {1};";
     std::vector<std::string> bindArgs = {"18", "45"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE age = 18 OR age = 45 OR score = 18 OR score = 45;");
 }
 
@@ -206,7 +207,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_EmptyPlaceholderValue, TestSize.Leve
 {
     std::string sql = "SELECT name FROM Stu WHERE name = {0};";
     std::vector<std::string> bindArgs = {""};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE name = ;");
 }
 
@@ -214,7 +215,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_StringWithSpecialChars, TestSize.Lev
 {
     std::string sql = "SELECT name FROM Stu WHERE name = {0};";
     std::vector<std::string> bindArgs = {"John's Test"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE name = John's Test;");
 }
 
@@ -222,7 +223,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_LargePlaceholderIndex, TestSize.Leve
 {
     std::string sql = "SELECT name FROM Stu WHERE id = {9};{0}";
     std::vector<std::string> bindArgs = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE id = j;a");
 }
 
@@ -230,7 +231,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_NoBindArgs, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE age >= {0} AND age <= {1};";
     std::vector<std::string> bindArgs;
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, sql);
 }
 
@@ -238,7 +239,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_MoreBindArgsThanPlaceholders, TestSi
 {
     std::string sql = "SELECT name FROM Stu WHERE age = {0};";
     std::vector<std::string> bindArgs = {"18", "45", "90"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE age = 18;");
 }
 
@@ -540,139 +541,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, VectorToString_LongSeparator, TestSize.Level1)
     EXPECT_EQ(result, "[1SEPARATOR2SEPARATOR3]");
 }
 
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_InvalidPath, TestSize.Level1)
-{
-    std::string path = "/invalid/path";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_EmptyPath, TestSize.Level1)
-{
-    std::string path = "";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_ValidPath, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test/path";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files/test/path");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_DifferentUserId, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test/path";
-    int32_t userId = 200;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/200/hmdfs/account/files/test/path");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPathPathWithNoSubPath, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_ComplexPath, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/Photo/2025/03/06/test.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files/Photo/2025/03/06/test.jpg");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_ZeroUserId, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test";
-    int32_t userId = 0;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/0/hmdfs/account/files/test");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_NegativeUserId, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test";
-    int32_t userId = -1;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/-1/hmdfs/account/files/test");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_NonLakeFile, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test/path";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/data/service/el2/100/hmdfs/account/files/test/path");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_LakeFile, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "/storage/lake/test/path";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_EmptyData, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_EmptyStoragePath, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_DifferentFileSourceType, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 1;
-    photosVo.data = "/storage/cloud/files/test/path";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/data/service/el2/100/hmdfs/account/files/test/path");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_LakeFileWithDifferentUserId, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "/storage/lake/test/path";
-    std::string localPath;
-    int32_t userId = 200;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_NoValue, TestSize.Level1)
 {
     CloudMediaPullDataDto pullData;
@@ -874,7 +742,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_VeryLongPlaceholderValue, TestSize.L
     std::string sql = "SELECT name FROM Stu WHERE name = {0};";
     std::string longString(1000, 'c');
     std::vector<std::string> bindArgs = {longString};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result.length(), sql.length() - 3 + longString.length());
 }
 
@@ -895,28 +763,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, VectorToString_ManyElements, TestSize.Level1)
     }
     std::string result = CloudMediaDaoUtils::VectorToString(vec);
     EXPECT_GT(result.length(), 0);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_PathWithTrailingSlash, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test/path/";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files/test/path/");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_AllFieldsSet, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test/path";
-    photosVo.storagePath = "/storage/lake/test";
-    photosVo.title = "test_title";
-    photosVo.mediaType = 1;
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_AllFieldsSet, TestSize.Level1)
@@ -970,19 +816,8 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_UnicodePlaceholderValue, TestSize.Le
 {
     std::string sql = "SELECT name FROM Stu WHERE name = {0};";
     std::vector<std::string> bindArgs = {"测试"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE name = 测试;");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_UnicodePath, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/测试/path";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_UnicodePath, TestSize.Level1)
@@ -1005,28 +840,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathWithAnco_UnicodePath, TestSize.Leve
     pathInfo.storagePath = "/storage/lake/测试";
     std::string localPath;
     int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_MaxUserId, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test/path";
-    std::string localPath;
-    int32_t userId = INT_MAX;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_MinUserId, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test/path";
-    std::string localPath;
-    int32_t userId = INT_MIN;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
     EXPECT_EQ(result, E_OK);
 }
 
@@ -1086,19 +899,8 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_SingleQuoteInPlaceholderValue, TestS
 {
     std::string sql = "SELECT name FROM Stu WHERE name = {0};";
     std::vector<std::string> bindArgs = {"test'quote"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE name = test'quote;");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_WithSlashInPath, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test//path";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_WithSlashInPath, TestSize.Level1)
@@ -1161,25 +963,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, VectorToString_LargeVector, TestSize.Level1)
     EXPECT_GT(result.length(), 0);
 }
 
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_PathWithSpaces, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test path/file name";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files/test path/file name");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithSpaces, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test path/file name";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithSpaces, TestSize.Level1)
 {
     CloudMediaPullDataDto pullData;
@@ -1223,7 +1006,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithSpaces, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test path/file name"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test path/file name;");
 }
 
@@ -1241,18 +1024,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, ToInt32_ScientificNotation, TestSize.Level1)
     std::string str = "1e10";
     int32_t result = CloudMediaDaoUtils::ToInt32(str);
     EXPECT_EQ(result, 0);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_VeryLongPath, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    std::string longPath(1000, 'a');
-    photosVo.data = "/storage/cloud/files/" + longPath;
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_VeryLongPath, TestSize.Level1)
@@ -1277,25 +1048,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathWithAnco_VeryLongPath, TestSize.Lev
     pathInfo.storagePath = "/storage/lake/test";
     std::string localPath;
     int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLowerPath_PathWithDot, TestSize.Level1)
-{
-    std::string path = "/storage/cloud/files/test.path/file.name";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "/data/service/el2/100/hmdfs/account/files/test.path/file.name");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithDot, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test.path/file.name";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
     EXPECT_EQ(result, E_OK);
 }
 
@@ -1342,7 +1094,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithDot, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test.path/file.name"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test.path/file.name;");
 }
 
@@ -1360,17 +1112,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, ToInt32_Hexadecimal, TestSize.Level1)
     std::string str = "0x1A";
     int32_t result = CloudMediaDaoUtils::ToInt32(str);
     EXPECT_EQ(result, 0);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithUnderscore, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test_path/file_name";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithUnderscore, TestSize.Level1)
@@ -1416,19 +1157,8 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithUnderscore, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test_path/file_name"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test_path/file_name;");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithDash, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test-path/file-name";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithDash, TestSize.Level1)
@@ -1474,7 +1204,7 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithDash, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test-path/file-name"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test-path/file-name;");
 }
 
@@ -1491,17 +1221,6 @@ HWTEST_F(CloudMediaDaoUtilsTest, ToInt32_Octal, TestSize.Level1)
     std::string str = "0123";
     int32_t result = CloudMediaDaoUtils::ToInt32(str);
     EXPECT_EQ(result, 123);
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithParentheses, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test(path)/file(name)";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithParentheses, TestSize.Level1)
@@ -1547,19 +1266,8 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithParentheses, TestSize.Level1
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test(path)/file(name)"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test(path)/file(name);");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithBrackets, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test[path]/file[name]";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithBrackets, TestSize.Level1)
@@ -1605,19 +1313,8 @@ HWTEST_F(CloudMediaDaoUtilsTest, FillParams_PathWithBrackets, TestSize.Level1)
 {
     std::string sql = "SELECT name FROM Stu WHERE path = {0};";
     std::vector<std::string> bindArgs = {"/test[path]/file[name]"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name FROM Stu WHERE path = /test[path]/file[name];");
-}
-
-HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPhotosVo_PathWithBraces, TestSize.Level1)
-{
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 0;
-    photosVo.data = "/storage/cloud/files/test{path}/file{name}";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaDaoUtilsTest, GetLocalPathByPullData_PathWithBraces, TestSize.Level1)
@@ -1650,4 +1347,4 @@ HWTEST_F(CloudMediaDaoUtilsTest, ToStringWithCommaAndQuote_PathWithBraces, TestS
     std::string result = CloudMediaDaoUtils::ToStringWithCommaAndQuote(values);
     EXPECT_EQ(result, "'/test{path}/file{name}'");
 }
-}
+}  // namespace OHOS::Media::CloudSync

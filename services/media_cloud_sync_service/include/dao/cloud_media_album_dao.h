@@ -30,7 +30,6 @@
 #include "result_set.h"
 #include "medialibrary_db_const.h"
 #include "cloud_media_sync_const.h"
-#include "cloud_media_file_utils.h"
 #include "photo_album_dto.h"
 #include "medialibrary_rdbstore.h"
 #include "safe_vector.h"

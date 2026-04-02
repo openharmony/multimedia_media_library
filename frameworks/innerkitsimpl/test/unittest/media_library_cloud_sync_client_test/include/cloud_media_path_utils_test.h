@@ -13,24 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_CLIENT_UTILS_H
-#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_CLIENT_UTILS_H
+#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PATH_UTILS_TEST_H
+#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PATH_UTILS_TEST_H
 
-#include <map>
-#include <vector>
+#include "gtest/gtest.h"
 
-#include "cloud_mdkrecord_photos_vo.h"
+#include <string>
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaClientUtils {
-public:
-    static std::string GetLocalPath(const std::string &path);
-    static std::string FindLocalPathFromCloudPath(const std::string &path, int32_t userId);
-    static std::string GetVideoCachePath(const std::string &filePath);
-    static void InvalidVideoCache(const std::string &localPath);
 
-private:
-    static std::string AppendUserId(const std::string &path, int32_t userId);
+class CloudMediaPathUtilsTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 }  // namespace OHOS::Media::CloudSync
-#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_CLIENT_UTILS_H
+#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PATH_UTILS_TEST_H

@@ -36,16 +36,12 @@ struct PathInfo {
 public:
     static std::string ToStringWithCommaAndQuote(const std::vector<std::string> &values);
     static std::string ToStringWithComma(const std::vector<std::string> &fileIds);
-    static std::string FillParams(const std::string &sql, const std::vector<std::string> &bindArgs);
     static std::vector<std::string> GetNumbers(const std::vector<std::string> &albumIds);
     static std::vector<std::string> GetStringVector(const std::vector<int32_t> &intVals);
     static int32_t ToInt32(const std::string &str);
     static std::string VectorToString(const std::vector<uint64_t> &vec, const std::string &sep = ", ");
     static int32_t QueryCount(const std::string &sql, const std::string &columnName, int32_t &count);
     static int32_t ExecuteSql(const std::string &sql);
-    static std::string GetLowerPath(const std::string &path, int32_t userId);
-    static int32_t GetLocalPathByPhotosVo(const CloudMdkRecordPhotosVo &photosVo, std::string &localPath,
-        int32_t userId);
     static int32_t GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath);
     static int32_t GetLocalPathWithAnco(PathInfo pathInfo, std::string &localPath);
 };

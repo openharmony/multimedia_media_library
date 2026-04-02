@@ -39,6 +39,7 @@
 #include "photo_owner_album_id_operation.h"
 #include "lake_file_utils.h"
 #include "photo_album_upload_status_operation.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -1090,9 +1091,9 @@ int32_t CloudMediaPhotosDao::GetCreatedRecords(int32_t size, std::vector<PhotosP
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql;
     #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS_SECURE, params);
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS_SECURE, params);
     #else
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, params);
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_CREATE_RECORDS, params);
     #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
@@ -1125,9 +1126,9 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<Ph
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql;
     #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
     #else
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
     #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
@@ -1172,9 +1173,9 @@ int32_t CloudMediaPhotosDao::GetFileModifiedRecords(int32_t size, std::vector<Ph
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql;
     #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS_SECURE, {cloudIdNotIn});
     #else
-        execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {cloudIdNotIn});
+        execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {cloudIdNotIn});
     #endif
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
@@ -1242,7 +1243,7 @@ int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> 
     std::string fileIdNotIn = CloudMediaDaoUtils::ToStringWithComma(this->photoCopyFailSet_.ToVector());
     MEDIA_DEBUG_LOG("GetCopyRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_COPY_RECORDS, {fileIdNotIn});
+    std::string execSql = MediaStringUtils::FillParams(this->SQL_PHOTOS_GET_COPY_RECORDS, {fileIdNotIn});
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
@@ -1546,16 +1547,14 @@ int32_t CloudMediaPhotosDao::ClearCloudInfo(
 int32_t CloudMediaPhotosDao::DeleteFileNotExistPhoto(
     std::string &path, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("enter DeleteFileNotExistPhoto %{public}s", path.c_str());
-    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "DeleteFileNotExistPhoto get store failed.");
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "get store failed.");
     int32_t deletedRows = 0;
     std::string whereClause = PhotoColumn::MEDIA_FILE_PATH + " = ?";
     int32_t ret = photoRefresh->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, {path});
-    if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK || deletedRows <= 0) {
-        MEDIA_INFO_LOG("DeleteFileNotExistPhoto failed ret: %{public}d", ret);
-        return E_RDB;
-    }
-    MEDIA_INFO_LOG("DeleteFileNotExistPhoto deletedRows: %{public}d, ret: %{public}d", deletedRows, ret);
+    MEDIA_INFO_LOG("deletedRows: %{public}d, ret: %{public}d, path: %{public}s",
+                   deletedRows,
+                   ret,
+                   MediaFileUtils::DesensitizePath(path).c_str());
     return ret;
 }
 
@@ -1896,52 +1895,6 @@ int32_t CloudMediaPhotosDao::RepushDuplicatedPhoto(const PhotosDto &photo)
     MEDIA_INFO_LOG("RepushDuplicatedPhoto,"
         "ret: %{public}d, changeRows: %{public}d, fileId: %{public}s",
         ret, changeRows, std::to_string(photo.fileId).c_str());
-    return ret;
-}
-
-int32_t CloudMediaPhotosDao::RenewSameCloudResource(const PhotosDto &photo)
-{
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
-        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    CHECK_AND_RETURN_RET_LOG(
-        photoRefresh != nullptr, E_RDB_STORE_NULL, "Photos RenewSameCloudResource Failed to get photoRefresh.");
-    NativeRdb::ValuesBucket values;
-    values.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
-    values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
-    values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
-    std::string whereClause = PhotoColumn::PHOTO_CLOUD_ID + " = ?";
-    std::vector<std::string> whereArgs = {photo.cloudId};
-    int32_t changeRows = -1;
-    int32_t ret = photoRefresh->Update(changeRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-    MEDIA_INFO_LOG("RenewSameCloudResource,"
-        "ret: %{public}d, changeRows: %{public}d, cloudId: %{public}s",
-        ret, changeRows, photo.cloudId.c_str());
-    CHECK_AND_RETURN_RET(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret);
-    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
-        NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
-    photoRefresh->Notify();
-    return ret;
-}
-
-int32_t CloudMediaPhotosDao::DeleteLocalFileNotExistRecord(const PhotosDto &photo)
-{
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
-        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    CHECK_AND_RETURN_RET_LOG(
-        photoRefresh != nullptr, E_RDB_STORE_NULL, "Photos DeleteLocalFileNotExistRecord Failed to get photoRefresh.");
-    int32_t deletedRows = -1;
-    std::string whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
-    std::vector<std::string> whereArgs = {photo.path};
-    int32_t ret = photoRefresh->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
-    MEDIA_INFO_LOG("DeleteLocalFileNotExistRecord,"
-        "ret: %{public}d, deletedRows: %{public}d, path: %{public}s",
-        ret, deletedRows, MediaFileUtils::DesensitizePath(photo.path).c_str());
-    CHECK_AND_RETURN_RET(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret);
-    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
-        NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
-    photoRefresh->Notify();
     return ret;
 }
 
