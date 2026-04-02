@@ -251,10 +251,8 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
     std::unique_ptr<AuxiliaryPicture> uptr = AuxiliaryPicture::Create(pixelMap,
         auxiliaryPictureInfo.auxiliaryPictureType, auxiliaryPictureInfo.size);
     CHECK_COND_RET(uptr != nullptr, false, "uptr is nullptr");
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture;
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(uptr);
     CHECK_COND_RET(auxiliaryPicture != nullptr, false, "auxiliaryPicture is nullptr");
-    auxiliaryPicture.reset(uptr.get());
-    (void)uptr.release();
 
     auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 

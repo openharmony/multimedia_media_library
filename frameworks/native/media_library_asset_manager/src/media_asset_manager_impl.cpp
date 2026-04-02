@@ -123,6 +123,7 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
     inProcessUriMap.erase(uriLocal);
 
     if (multiStagesObserverMap.find(uriLocal) != multiStagesObserverMap.end()) {
+        CHECK_AND_RETURN_LOG(sDataShareHelper_ != nullptr, "Get sDataShareHelper_ failed");
         sDataShareHelper_->UnregisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }

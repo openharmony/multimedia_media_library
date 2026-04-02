@@ -110,6 +110,7 @@ const int32_t MAX_LEN_LIMIT = 9999;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
+const size_t MAX_PARCEL_SIZE = 200 * 1024;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -390,6 +391,11 @@ void ChangeListenerAni::OnChange(MediaChangeListener &listener, const ani_ref cb
             return;
         }
         if (msg->changeInfo_.size_ > 0) {
+            if (msg->changeInfo_.size_ > MAX_PARCEL_SIZE) {
+                ANI_ERR_LOG("The size of the parcel exceeds the limit.");
+                delete msg;
+                return;
+            }
             msg->data_ = reinterpret_cast<uint8_t *>(malloc(msg->changeInfo_.size_));
             if (msg->data_ == nullptr) {
                 ANI_ERR_LOG("new msg->data failed");
