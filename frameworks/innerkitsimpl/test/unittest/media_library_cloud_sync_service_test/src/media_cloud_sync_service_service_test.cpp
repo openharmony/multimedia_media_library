@@ -42,6 +42,7 @@
 #undef private
 #include "cloud_file_error.h"
 #include "lcd_aging_utils.h"
+#include "cloud_lake_info.h"
 
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -862,9 +863,14 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadAsset_T
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_OnDownloadAsset_Test_001, TestSize.Level1)
 {
     CloudMediaDownloadService service;
-    std::vector<std::string> fileIds = {"id1", "id2", "id3", "id4"};
+    std::unordered_map<std::string, AdditionFileInfo> lakeInfos = {
+        {"id1", AdditionFileInfo()},
+        {"id2", AdditionFileInfo()},
+        {"id3", AdditionFileInfo()},
+        {"id4", AdditionFileInfo()}
+    };
     std::vector<MediaOperateResultDto> result;
-    int32_t ret = service.OnDownloadAsset(fileIds, result);
+    int32_t ret = service.OnDownloadAsset(lakeInfos, result);
     EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
     EXPECT_EQ(result.size(), 0);
 }
@@ -872,9 +878,9 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_OnDownloadAsset_Te
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_OnDownloadAsset_Test_002, TestSize.Level1)
 {
     CloudMediaDownloadService service;
-    std::vector<std::string> fileIds;
+    std::unordered_map<std::string, AdditionFileInfo> lakeInfos;
     std::vector<MediaOperateResultDto> result;
-    int32_t ret = service.OnDownloadAsset(fileIds, result);
+    int32_t ret = service.OnDownloadAsset(lakeInfos, result);
     EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(result.size(), 0);
 }
@@ -896,9 +902,9 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_OnDownloadAsset_Te
     InsertTable(g_rdbStore, PhotoColumn::PHOTOS_TABLE, values1);
 
     CloudMediaDownloadService service;
-    std::vector<std::string> fileIds = {"cloud_id1"};
+    std::unordered_map<std::string, AdditionFileInfo> lakeInfos = {{"cloud_id1", AdditionFileInfo()}};
     std::vector<MediaOperateResultDto> result;
-    int32_t ret = service.OnDownloadAsset(fileIds, result);
+    int32_t ret = service.OnDownloadAsset(lakeInfos, result);
     EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(result.size(), 1);
 

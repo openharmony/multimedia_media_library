@@ -218,70 +218,6 @@ int32_t CloudMediaDownloadDao::QueryDownloadAssetByCloudIds(
     return E_OK;
 }
 
-void GetCloudIds(const std::unordered_map<std::string, AdditionFileInfo>& lakeInfos,
-    std::vector<std::string> &cloudIds)
-{
-    cloudIds.reserve(lakeInfos.size());
-    for (const auto& lakeInfo : lakeInfos) {
-        cloudIds.push_back(lakeInfo.first);
-    }
-}
-
-int32_t CloudMediaDownloadDao::QueryDownloadLakeAssetByCloudIds(
-    const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos, std::vector<PhotosPo> &result)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    std::vector<std::string> cloudIds;
-    GetCloudIds(lakeInfos, cloudIds);
-    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
-    predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
-    auto resultSet = rdbStore->Query(predicates, this->COLUMNS_DOWNLOAD_ASSET_QUERY_BY_FILE_ID);
-    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(result);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to query, ret: %{public}d", ret);
-    MEDIA_INFO_LOG("QueryDownloadLakeAssetByCloudIds, rowCount: %{public}d", static_cast<int32_t>(result.size()));
-    return E_OK;
-}
-
-int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const OnDownloadAssetData &assetData,
-    const CloudMediaScanService::ScanResult& scanResult)
-{
-    MEDIA_INFO_LOG("enter UpdateDownloadAsset %{public}d, %{public}s",
-        assetData.fixFileType, assetData.path.c_str());
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
-        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateDownloadAsset Failed to get rdbStore.");
-    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, assetData.path);
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-    if (assetData.fixFileType) {
-        MEDIA_INFO_LOG("UpdateDownloadAsset file is not real moving photo, need fix subtype");
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    }
-    // 如果是湖内文件，需要增加file_source_type和storage_path的更新
-    if (scanResult.scanSuccess) {
-        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, scanResult.shootingMode);
-        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
-        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, scanResult.frontCamera);
-    }
-    this->FillHdrModeInfo(values, scanResult, assetData.needScanHdrMode);
-    this->FillScanedSubtypeInfo(values, scanResult, assetData.needScanSubtype);
-    this->FillScanedHeightWidth(values, scanResult);
-    int32_t changedRows = -1;
-    int32_t ret = photoRefresh->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
-        E_ERR,
-        "UpdateDownloadAsset Failed to Update, ret: %{public}d.",
-        ret);
-    CHECK_AND_PRINT_LOG(changedRows > 0, "UpdateDownloadAsset changedRows: %{public}d.", changedRows);
-    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
-        NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
-    photoRefresh->Notify();
-    return ret;
-}
-
 int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
     const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail)
@@ -352,24 +288,19 @@ void CloudMediaDownloadDao::FillScanedSubtypeInfo(NativeRdb::ValuesBucket &value
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
-int32_t CloudMediaDownloadDao::UpdateDownloadLakeAsset(const OnDownloadAssetData &assetData,
+int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const OnDownloadAssetData &assetData,
     const CloudMediaScanService::ScanResult& scanResult)
 {
-    MEDIA_INFO_LOG("enter UpdateDownloadLakeLakeAsset %{public}d, %{public}s",
-        assetData.fixFileType, assetData.path.c_str());
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
         std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateDownloadAsset Failed to get rdbStore.");
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, assetData.path);
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-    values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, assetData.lakeInfo.fileSourceType);
     if (assetData.fixFileType) {
-        MEDIA_INFO_LOG("UpdateDownloadAsset file is not real moving photo, need fix subtype");
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
-    // 如果是湖内文件，需要增加file_source_type和storage_path的更新
     if (scanResult.scanSuccess) {
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, scanResult.shootingMode);
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
@@ -377,19 +308,15 @@ int32_t CloudMediaDownloadDao::UpdateDownloadLakeAsset(const OnDownloadAssetData
     }
     
     this->FillScanedHeightWidth(values, scanResult);
-    if (assetData.lakeInfo) {
-        values.PutString(PhotoColumn::PHOTO_STORAGE_PATH, assetData.lakeInfo.storagePath);
-        values.PutString(MediaColumn::MEDIA_TITLE, assetData.lakeInfo.title);
-        values.PutString(MediaColumn::MEDIA_NAME, assetData.lakeInfo.displayName);
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
-    }
+    this->HandleAdditionalFileInfo(assetData, values);
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
         E_ERR,
         "UpdateDownloadAsset Failed to Update, ret: %{public}d.",
         ret);
-    CHECK_AND_PRINT_LOG(changedRows > 0, "UpdateDownloadAsset changedRows: %{public}d.", changedRows);
+    MEDIA_INFO_LOG("UpdateDownloadAsset, ret: %{public}d, changedRows: %{public}d, cloudId: %{public}s",
+        ret, changedRows, assetData.cloudId.c_str());
     photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
         NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
     photoRefresh->Notify();
@@ -407,5 +334,23 @@ void CloudMediaDownloadDao::FillScanedHeightWidth(
     values.Put(PhotoColumn::PHOTO_ORIENTATION, scanResult.orientation);
     double aspectRatio = MediaFileUtils::CalculateAspectRatio(scanResult.height, scanResult.width);
     values.Put(PhotoColumn::PHOTO_ASPECT_RATIO, aspectRatio);
+}
+
+int32_t CloudMediaDownloadDao::HandleAdditionalFileInfo(
+    const OnDownloadAssetData &assetData, NativeRdb::ValuesBucket &values)
+{
+    if (assetData.lakeInfo.fileSourceType != 0) {
+        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, assetData.lakeInfo.fileSourceType);
+    }
+    if (!assetData.lakeInfo.storagePath.empty()) {
+        values.PutString(PhotoColumn::PHOTO_STORAGE_PATH, assetData.lakeInfo.storagePath);
+    }
+    if (!assetData.lakeInfo.title.empty()) {
+        values.PutString(MediaColumn::MEDIA_TITLE, assetData.lakeInfo.title);
+    }
+    if (!assetData.lakeInfo.displayName.empty()) {
+        values.PutString(MediaColumn::MEDIA_NAME, assetData.lakeInfo.displayName);
+    }
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

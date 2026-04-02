@@ -52,11 +52,10 @@ public:
     int32_t OnDownloadThms(const std::unordered_map<std::string, int32_t> &downloadThumbnailMap,
         std::vector<MediaOperateResultDto> &result, const int32_t sceneCode = 0);
     std::vector<PhotosDto> GetDownloadAsset(const std::vector<int32_t> &fileIds);
-    int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result);
-    int32_t OnDownloadLakeAsset(const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,
-        std::vector<MediaOperateResultDto> &result);
     int32_t CleanAttachment(const std::vector<std::string> &cloudIdList, int64_t &attachmentSize);
     int32_t GetFullSyncDownloadInfo(std::map<std::string, int64_t> &flagsInfo);
+    int32_t OnDownloadAsset(const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
+        std::vector<MediaOperateResultDto> &result);
 
 private:
     bool IsCloudInsertTaskPriorityHigh();
@@ -64,8 +63,7 @@ private:
     int32_t OnDownloadThm(const std::vector<std::string> &thmVector, std::vector<MediaOperateResultDto> &result);
     int32_t OnDownloadLcd(const std::vector<std::string> &lcdVector, std::vector<MediaOperateResultDto> &result);
     int32_t OnDownloadThmAndLcd(const std::vector<std::string> &bothVector, std::vector<MediaOperateResultDto> &result);
-    OnDownloadAssetData GetOnDownloadAssetData(const PhotosPo &photosPo);
-    OnDownloadAssetData GetOnDownloadLakeAssetData(const PhotosPo &photosPo,
+    OnDownloadAssetData GetOnDownloadAssetData(const PhotosPo &photosPo,
         const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos);
     void UnlinkAsset(OnDownloadAssetData &assetData);
     void ResetAssetModifyTime(OnDownloadAssetData &assetData);

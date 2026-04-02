@@ -55,10 +55,17 @@ public:
     // 下载
     int32_t GetDownloadAsset(
         const std::vector<std::string> &uris, std::vector<CloudMetaData> &cloudMetaDataVec) override;
+    // DEPRECATED: 此函数已废弃，请使用 GetDownloadAsset 替代
+    // 废弃原因: GetDownloadAsset 已增强支持湖内外文件，此函数功能已合并
+    // 计划删除时间: 待所有调用方迁移到 GetDownloadAsset 后删除
+    // 注意: CloudDlFileMeta 继承自 CloudMetaData，可直接使用 GetDownloadAsset
     int32_t GetDownloadLakeAsset(
         const std::vector<std::string> &uris, std::vector<CloudDlFileMeta> &cloudMetaDataVec) override;
     int32_t GetDownloadThmsByUri(
         const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) override;
+    int32_t OnDownloadAsset(
+        const std::unordered_map<std::string, AdditionFileInfo> &downloadedFileInfos,
+        std::vector<MediaOperateResult> &result) override;
     int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) override;
     int32_t OnDownloadLakeAsset(
         const std::unordered_map<std::string, AdditionFileInfo> &lakeInfos,

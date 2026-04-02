@@ -58,6 +58,7 @@ public:
     bool needParseDuration{false};
     AssetFileNode fileInfo;
     AssetFileNode editedFileInfo;
+    std::string cloudId;
 
 public:  // basic functions
     std::string ToString() const;

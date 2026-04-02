@@ -23,27 +23,7 @@ namespace OHOS::Media::CloudSync {
 
 class EXPORT CloudDlFileMeta : public CloudMetaData {
 public:
-    int32_t hidden {0};      // 判断湖内外
-    int64_t dateTrashed {0}; // 判断湖内外
-
-public:
     virtual ~CloudDlFileMeta() = default;
-
-    std::string ToString() const override
-    {
-        std::stringstream ss;
-        std::string baseStr = CloudMetaData::ToString();
-        if (!baseStr.empty() && baseStr.back() == '}') {
-            baseStr.pop_back();
-        }
-
-        ss << baseStr
-           << ",\"hidden\": " << hidden
-           << ",\"dateTrashed\": " << dateTrashed
-           << "}";
-
-        return ss.str();
-    }
 };
 } // namespace OHOS::Media::CloudSync
 
