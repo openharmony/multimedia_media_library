@@ -150,6 +150,7 @@ void HiAudit::CleanOldAuditFile()
     uint32_t zipFileSize = 0;
     std::string oldestAuditFile;
     DIR* dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
+    CHECK_AND_RETURN_LOG(dir != nullptr, "failed open dir, errno: %{public}d.", errno);
     while (true) {
         struct dirent* ptr = readdir(dir);
         if (ptr == nullptr) {
