@@ -57,7 +57,7 @@ public:
             threads.emplace_back(threadPoolName_ + std::to_string(threadIndex_++),
                 [poolInfo = poolInfo_]() { LoopForEver(poolInfo); });
         }
-        MEDIA_INFO_LOG("ThreadPool(%{public}s) construct(enter), mix(%{public}u)/max(%{public}u).",
+        MEDIA_INFO_LOG("ThreadPool(%{public}s) construct(enter), mix(%{public}zu)/max(%{public}zu).",
             threadPoolName_.c_str(), minThreads_, maxThreads_);
     }
 
@@ -159,7 +159,7 @@ protected:
                 poolInfo_->tasks.emplace(std::move(func));
                 auto taskNum = poolInfo_->tasks.size();
                 auto threadNum = poolInfo_->threads.size();
-                MEDIA_INFO_LOG("ThreadPool(%{public}s) tasks: %{public}zu, size: %{public}zu, max threads: %{public}u",
+                MEDIA_INFO_LOG("ThreadPool(%{public}s) tasks: %{public}zu, size: %{public}zu, max threads: %{public}zu",
                     threadPoolName_.c_str(), taskNum, threadNum, maxThreads_);
                 if (taskNum > threadNum && threadNum < maxThreads_) {
                     AddThreadUnlock(threadIndex_++);
