@@ -19,6 +19,8 @@
 
 #include <sstream>
 
+#include "media_file_utils.h"
+
 namespace OHOS::Media::CloudSync {
 void PhotosDto::GetAttachment(std::stringstream &ss) const
 {
@@ -35,8 +37,8 @@ void PhotosDto::GetAttachment(std::stringstream &ss) const
 void PhotosDto::GetBasicInfo(std::stringstream &ss) const
 {
     ss << "\"cloudId\": \"" << this->cloudId << "\", "
-       << "\"data\": \"" << this->data << "\", "
-       << "\"path\": \"" << this->path << "\", "
+       << "\"data\": \"" << MediaFileUtils::DesensitizePath(this->data) << "\", "
+       << "\"path\": \"" << MediaFileUtils::DesensitizePath(this->path) << "\", "
        << "\"size\": " << this->size << ", "
        << "\"dateModified\": " << this->dateModified << ", "
        << "\"dirty\": " << this->dirty << ", "
@@ -67,7 +69,7 @@ void PhotosDto::GetAttributesInfo(std::stringstream &ss) const
        << "\"rotation\": " << this->rotation << ", "
        << "\"version\": " << this->version << ", "
        << "\"fileSourceType\": " << this->fileSourceType << ", "
-       << "\"storagePath\": " << this->storagePath << ", "
+       << "\"storagePath\": \"" << MediaFileUtils::DesensitizePath(this->storagePath) << "\", "
        << "\"errorType\": " << this->errorType << ", ";
 }
 

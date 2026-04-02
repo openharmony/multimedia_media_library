@@ -47,6 +47,7 @@ using namespace std;
 namespace OHOS::Media::CloudSync {
 static const string HMDFS_PATH_PREFIX = "/mnt/hmdfs/100";
 static const string PHOTOS_PATH = "com.huawei.hmos.photos";
+const int32_t FILE_SOURCE_TYPE_MEDIA = 0;
 int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
     const int32_t exifRotate, const int32_t &thumbState)
@@ -513,5 +514,14 @@ void CloudMediaSyncUtils::SyncDealWithCompositePhoto(const std::string &assetDat
             "fail to clear normal photo, fileId: %{public}d", photoId);
     }
 #endif
+}
+
+std::string CloudMediaSyncUtils::FindStoragePath(
+    const std::string &cloudPath, const std::string &storagePath, const int32_t fileSourceType)
+{
+    if (fileSourceType == FILE_SOURCE_TYPE_MEDIA) {
+        return CloudMediaSyncUtils::GetLocalPath(cloudPath);
+    }
+    return storagePath;
 }
 }  // namespace OHOS::Media::CloudSync
