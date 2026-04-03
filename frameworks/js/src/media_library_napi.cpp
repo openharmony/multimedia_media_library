@@ -11307,10 +11307,25 @@ static bool HandleStartActiveAnalysisResponse(MediaLibraryAsyncContext *context,
     }
     NAPI_INFO_LOG("Bind active analysis saRemote after successful start, saRemoteValid: %{public}d",
         respBody.saRemote != nullptr);
-    if (context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
-        return true;
+    switch (context->activeAnalysisCallbackHolder->BindSaRemote(respBody.saRemote)) {
+        case ActiveAnalysisSaBindResult::BOUND:
+            return true;
+        case ActiveAnalysisSaBindResult::ALREADY_COMPLETED:
+            NAPI_WARN_LOG("Skip treating active analysis start as failure because result arrived before SA binding");
+            return true;
+        case ActiveAnalysisSaBindResult::INVALID_REMOTE:
+            NAPI_ERR_LOG("Active analysis saRemote is invalid during bind");
+            break;
+        case ActiveAnalysisSaBindResult::ADD_DEATH_RECIPIENT_FAILED:
+            NAPI_ERR_LOG("Failed to bind active analysis saRemote death recipient");
+            break;
+        case ActiveAnalysisSaBindResult::HOLDER_RELEASED:
+            NAPI_ERR_LOG("Active analysis callback holder released before SA binding completed");
+            break;
+        default:
+            NAPI_ERR_LOG("Unknown active analysis SA bind result");
+            break;
     }
-    NAPI_ERR_LOG("Failed to bind active analysis saRemote death recipient");
     context->retVal = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
     ReleaseStartActiveAnalysisCallback(context, callbackRegistryId);
     return false;
