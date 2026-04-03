@@ -220,10 +220,6 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 MedialibrarySubscriber::~MedialibrarySubscriber()
 {
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
-    if (cloudHelper_ != nullptr && CloudMediaAssetUnlimitObserver_ != nullptr) {
-        cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), CloudMediaAssetUnlimitObserver_);
-        cloudHelper_ = nullptr;
-    }
     if (defaultNetObserver_ != nullptr) {
         NetConnClient::GetInstance().UnregisterNetConnCallback(defaultNetObserver_);
         defaultNetObserver_ = nullptr;
