@@ -102,11 +102,20 @@ int32_t CheckDataOverflow(uint32_t readOffset, uint32_t pictureSize, uint32_t ms
         munmap(addr, msgLen);
         return E_NO_SUCH_FILE;
     }
+ 
+    if (readOffset >= msgLen) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen ");
+        munmap(addr, msgLen);
+        return E_ERR;
+    }
+ 
+    // 检查pictureSize是否会超出缓冲区范围
     if (pictureSize > (msgLen - readOffset)) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture pictureSize invalid: %{public}u", pictureSize);
         munmap(addr, msgLen);
         return E_ERR;
     }
+ 
     return E_OK;
 }
 

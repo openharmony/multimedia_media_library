@@ -1299,7 +1299,7 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     int columnIndexQuality = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
     if (columnIndexQuality < 0) {
-        MEDIA_ERR_LOG("Failed to get photoQuailty");
+        MEDIA_ERR_LOG("Failed to get photoQuality");
         return E_ERR;
     }
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
