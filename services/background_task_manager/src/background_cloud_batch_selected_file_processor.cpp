@@ -1120,7 +1120,7 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::QueryBatchSelectedFilesNumInA
         + DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " IN ("
         + std::to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE))
         + ") AND " + DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON +  " != " +
-		to_string(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
+        to_string(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     // SELECT COUNT(*) FROM download_resources_task_records WHERE download_status IN (5)
     std::shared_ptr<NativeRdb::ResultSet> resultSet = uniStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "Failed to query batch selected files!");
@@ -1143,7 +1143,7 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::QueryBatchSelectedFilesNumInA
         + DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " IN ("
         + std::to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE))
         + ") AND " + DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON +  " = " +
-		to_string(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
+        to_string(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     if (!MedialibraryRelatedSystemStateManager::GetInstance()->IsNetAvailableInOnlyWifiCondition()) {
         sql = sql + " AND " + DownloadResourcesColumn::MEDIA_NETWORK_POLICY + " = "
         + std::to_string(static_cast<int32_t>(BatchDownloadNetWorkPolicyType::TYPE_CELLNET));
