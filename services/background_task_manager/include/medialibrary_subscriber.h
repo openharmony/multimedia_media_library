@@ -154,12 +154,10 @@ private:
     bool CheckOnRestoreAndTryResetFlag();
     void UpdateGlobalStatusForBgTask();
     bool IsBackgroundTaskAllowed();
-
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);
 #endif
     int32_t RegisterDefaultNetObserver();
-
 };
 }  // namespace Media
 }  // namespace OHOS
