@@ -1606,6 +1606,8 @@ void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std:
  	        totalFailCount_)
         .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()))
         .ReportUpgradeEnh(std::to_string(errorCode_), GetUpgradeEnhance());
+    MediaAnalysisHelper::StartUpdateSearchIndexForClone(
+        IMediaAnalysisService::ActivateServiceType::UPDATE_SEARCH_INDEX_FOR_CLONE);
 }
 
 std::string BaseRestore::GetRestoreExInfo()
