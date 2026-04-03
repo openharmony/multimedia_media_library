@@ -28,12 +28,12 @@ class PhotoBurstOperation {
 public:
     PhotoBurstOperation &SetTargetPhotoInfo(const PhotoAssetInfo &photoAssetInfo);
     std::string FindBurstKey(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    static std::string GenerateUuid();
 
 private:
     std::string FindBurstKey(
         const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo);
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
-    std::string GenerateUuid();
     std::string FindBurstGroupName(const std::string &displayName);
     std::string QueryBurstKeyFromDB(
         const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo);
