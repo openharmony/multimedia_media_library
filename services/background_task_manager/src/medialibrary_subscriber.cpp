@@ -89,7 +89,7 @@
 #include "power_mode_info.h"
 
 using namespace OHOS::AAFwk;
-
+using namespace OHOS::NetManagerStandard;
 namespace OHOS {
 namespace Media {
 // LCOV_EXCL_START
@@ -219,6 +219,16 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 
 MedialibrarySubscriber::~MedialibrarySubscriber()
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    if (cloudHelper_ != nullptr && CloudMediaAssetUnlimitObserver_ != nullptr) {
+        cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), CloudMediaAssetUnlimitObserver_);
+        cloudHelper_ = nullptr;
+    }
+    if (defaultNetObserver_ != nullptr) {
+        NetConnClient::GetInstance().UnregisterNetConnCallback(defaultNetObserver_);
+        defaultNetObserver_ = nullptr;
+    }
+#endif
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -242,11 +252,32 @@ bool MedialibrarySubscriber::Subscribe(void)
         subscriber_ = nullptr;
         return false;
     });
+
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    MEDIA_INFO_LOG("DefaultNetConnectObserver RegisterDefaultNetObserver");
+    int32_t retReg = subscriber_->RegisterDefaultNetObserver();
+    CHECK_AND_RETURN_RET_LOG(retReg == E_OK, E_ERR, "failed to RegisterDefaultNetObserver");
+#endif
     return ret;
+}
+
+int32_t MedialibrarySubscriber::RegisterDefaultNetObserver()
+{
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    if (defaultNetObserver_ == nullptr) { // 补注册
+        defaultNetObserver_ = new (std::nothrow) DefaultNetConnectObserver();
+        CHECK_AND_RETURN_RET_LOG(defaultNetObserver_ != nullptr, E_ERR, "Failed to get netObserver.");
+        int32_t ret = NetConnClient::GetInstance().RegisterNetConnCallback(defaultNetObserver_);
+        CHECK_AND_RETURN_RET_LOG(ret == NETMANAGER_SUCCESS, E_ERR, "Failed to register netObserver.");
+        MEDIA_INFO_LOG("DefaultNetConnectObserver register");
+    }
+#endif
+    return E_OK;
 }
 
 void MedialibrarySubscriber::SubscribeAsync()
 {
+    MEDIA_INFO_LOG("DefaultNetConnectObserver SubscribeAsync");
     std::lock_guard<std::mutex> lockSubscribeAsyncTask(subscribeAsyncTaskLock_);
     CHECK_AND_RETURN_INFO_LOG(!subscribeAsyncTask_.valid(), "There is already a task to do it");
     subscribeAsyncTask_ = std::async(std::launch::async, [&] {
@@ -420,7 +451,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     }
 
     newStatus = newStatus && isBackgroundTaskAllowed_;
-
     if (currentStatus_ == newStatus) {
         return;
     }
@@ -543,6 +573,13 @@ bool MedialibrarySubscriber::IsCharging()
 
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    if (defaultNetObserver_ == nullptr && subscriber_!= nullptr) { // 补注册
+        MEDIA_INFO_LOG("DefaultNetConnectObserver RegisterDefaultNetObserver OnReceiveEvent");
+        int32_t retReg = subscriber_->RegisterDefaultNetObserver();
+        CHECK_AND_RETURN_LOG(retReg == E_OK, "failed to RegisterDefaultNetObserver");
+    }
+#endif
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
@@ -572,6 +609,16 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     } else if (MediaLakeCloneEventManager::IsRestoreEvent(want)) {
         MediaLakeCloneEventManager::GetInstance().HandleRestoreEvent(want);
     }
+    OnReceiveEventSubAction(action);
+    if (action == CLOUD_UPDATE_EVENT && want.GetStringParam(CLOUD_EVENT_INFO_TYPE) == CLOUD_EVENT_INFO_TYPE_VALUE) {
+        PermissionWhitelistUtils::OnReceiveEvent();
+    }
+    OnReceiveEventSub(eventData);
+    // !! Do not add code here !!
+}
+
+void MedialibrarySubscriber::OnReceiveEventSubAction(const std::string &action)
+{
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
         isScreenOff_ && isCharging_ && IsBetaVersion() && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         UploadDB();
@@ -582,11 +629,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
-    if (action == CLOUD_UPDATE_EVENT && want.GetStringParam(CLOUD_EVENT_INFO_TYPE) == CLOUD_EVENT_INFO_TYPE_VALUE) {
-        PermissionWhitelistUtils::OnReceiveEvent();
-    }
-    OnReceiveEventSub(eventData);
-    // !! Do not add code here !!
 }
 
 void MedialibrarySubscriber::OnReceiveEventSub(const EventFwk::CommonEventData &eventData)
