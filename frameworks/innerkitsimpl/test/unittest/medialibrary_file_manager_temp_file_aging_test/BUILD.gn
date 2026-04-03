@@ -42,6 +42,7 @@ ohos_unittest("medialibrary_file_manager_temp_file_aging_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
   ]
 
   sources = [
@@ -80,6 +81,7 @@ ohos_unittest("medialibrary_file_manager_temp_file_aging_test") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "player_framework:media_client",
