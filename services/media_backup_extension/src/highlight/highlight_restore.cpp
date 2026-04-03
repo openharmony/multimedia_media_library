@@ -433,7 +433,8 @@ void HighlightRestore::UpdateAlbumCovers(const std::unordered_map<int32_t, Photo
             std::to_string(photoInfo.fileIdNew),
             MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
         MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.",
-            albumInfo.albumName.c_str(), albumInfo.coverUri.c_str());
+            MediaFileUtils::DesensitizeName(albumInfo.albumName).c_str(),
+            MediaFileUtils::DesensitizeName(albumInfo.coverUri).c_str());
     }
 }
 
