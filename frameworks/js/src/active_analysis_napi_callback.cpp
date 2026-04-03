@@ -419,13 +419,21 @@ void ActiveAnalysisJsCallbackHolder::HandleSaDied()
     (void)NotifyResult(MEDIA_LIBRARY_ACTIVE_ANALYSIS_OTHER_ERROR, "sa_died");
 }
 
-bool ActiveAnalysisJsCallbackHolder::BindSaRemote(const sptr<IRemoteObject> &saRemote)
+ActiveAnalysisSaBindResult ActiveAnalysisJsCallbackHolder::BindSaRemote(const sptr<IRemoteObject> &saRemote)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (released_ || saRemote == nullptr) {
-        NAPI_WARN_LOG("Skip binding active analysis SA remote, released: %{public}d, remoteValid: %{public}d",
-            released_, saRemote != nullptr);
-        return false;
+    if (saRemote == nullptr) {
+        NAPI_WARN_LOG("Skip binding active analysis SA remote, released: %{public}d, remoteValid: 0",
+            released_);
+        return ActiveAnalysisSaBindResult::INVALID_REMOTE;
+    }
+    if (released_ && resultPostedToJs_) {
+        NAPI_WARN_LOG("Skip binding active analysis SA remote because result was already posted to JS");
+        return ActiveAnalysisSaBindResult::ALREADY_COMPLETED;
+    }
+    if (released_) {
+        NAPI_WARN_LOG("Skip binding active analysis SA remote because callback holder was already released");
+        return ActiveAnalysisSaBindResult::HOLDER_RELEASED;
     }
     saRemote_ = saRemote;
     saDeathRecipient_ = sptr<IRemoteObject::DeathRecipient>(new ActiveAnalysisSaDeathRecipient(weak_from_this()));
@@ -433,9 +441,9 @@ bool ActiveAnalysisJsCallbackHolder::BindSaRemote(const sptr<IRemoteObject> &saR
         NAPI_WARN_LOG("Failed to add active analysis SA death recipient");
         saDeathRecipient_ = nullptr;
         saRemote_ = nullptr;
-        return false;
+        return ActiveAnalysisSaBindResult::ADD_DEATH_RECIPIENT_FAILED;
     }
-    return true;
+    return ActiveAnalysisSaBindResult::BOUND;
 }
 
 void ActiveAnalysisJsCallbackHolder::Release()
