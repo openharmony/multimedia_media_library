@@ -79,6 +79,9 @@ public:
     EXPORT static bool IsCharging();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    OHOS::sptr<OHOS::Media::DefaultNetConnectObserver> defaultNetObserver_;
+#endif
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
