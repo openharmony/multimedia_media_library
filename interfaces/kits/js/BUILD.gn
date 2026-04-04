@@ -411,7 +411,9 @@ ohos_shared_library("medialibrary_nutils") {
     "hiappevent:hiappevent_innerapi",
   ]
 
-  defines = []
+  defines = [
+    "IMAGE_COLORSPACE_FLAG",
+  ]
   if (media_library_feature_cloud_enhancement) {
     defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
   }

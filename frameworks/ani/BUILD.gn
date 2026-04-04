@@ -250,7 +250,9 @@ ohos_shared_library("medialibrary_ani_utils") {
 
   public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
-  defines = []
+  defines = [
+    "IMAGE_COLORSPACE_FLAG",
+  ]
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   if (!media_library_link_opt) {

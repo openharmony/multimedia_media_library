@@ -35,6 +35,7 @@
 #include "userfilemgr_uri.h"
 #include "userfile_client.h"
 #include <fstream>
+#include "color_space.h"
 
 namespace OHOS {
 namespace Media {
@@ -199,6 +200,16 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     } else {
         pixelMap = std::make_unique<PixelMap>();
     }
+#ifdef IMAGE_COLORSPACE_FLAG
+    int32_t colorSpaceManager = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPixelMap colorSpaceManager:%{public}d", colorSpaceManager);
+    if (colorSpaceManager != -1) {
+        OHOS::ColorManager::ColorSpaceName colorSpaceName =
+            static_cast<OHOS::ColorManager::ColorSpaceName>(colorSpaceManager);
+        OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
+        pixelMap->InnerSetColorSpace(grColorSpace);
+    }
+#endif
     pixelMap->SetImageInfo(imageInfo);
     pixelMap->SetImageYUVInfo(yuvInfo);
 
