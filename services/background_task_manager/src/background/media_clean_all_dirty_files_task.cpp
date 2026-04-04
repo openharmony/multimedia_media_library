@@ -1231,7 +1231,7 @@ int32_t MediaCleanAllDirtyFilesTask::GetFileIdByPathsFromDB(std::vector<std::str
 }
 
 int32_t MediaCleanAllDirtyFilesTask::UpdateNoneEditTimeByPath(std::string &path, int64_t editTime,
-    int32_t editDataEsxist)
+    int32_t editDataExist)
 {
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_ERR, "UpdateNoneEditTimeByPath Empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -1255,7 +1255,7 @@ int32_t MediaCleanAllDirtyFilesTask::UpdateNoneEditTimeByPath(std::string &path,
     if (editTimeDefault <= 0) { // 数据库edit_time有值则不变
         value.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime);
     }
-    value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataEsxist);
+    value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataExist);
     predicatesUpdate.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, value, predicatesUpdate);
@@ -1263,7 +1263,7 @@ int32_t MediaCleanAllDirtyFilesTask::UpdateNoneEditTimeByPath(std::string &path,
     return ret;
 }
 
-int32_t MediaCleanAllDirtyFilesTask::UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataEsxist)
+int32_t MediaCleanAllDirtyFilesTask::UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataExist)
 {
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_ERR, "UpdateEditTimeByPath Empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -1274,8 +1274,8 @@ int32_t MediaCleanAllDirtyFilesTask::UpdateEditTimeByPath(std::string &path, int
     if (editTime >= 0) {
         value.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime);
     }
-    if (editDataEsxist >= 0) {
-        value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataEsxist);
+    if (editDataExist >= 0) {
+        value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataExist);
     }
     predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
     int32_t changedRows = -1;
