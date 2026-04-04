@@ -128,7 +128,7 @@ private:
     bool IsLegalMediaAsset(const std::string &fileName);
     bool IsIllegalEditFolderFile(int32_t curBucketNum, const std::string &folderName);
     bool IsIllegalThumbFolderFile(int32_t curBucketNum, const std::string &folderName);
-    int32_t UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataEsxist);
+    int32_t UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataExist);
     int32_t QueryPhotoAddTimeByPath(const std::string &path, int64_t &addTime);
     bool DealThumbsEffectAssetNotExist(int32_t curBucketNum, const std::string &folderName);
     bool DealOriginFileAndRecordNotExistPhotos(int32_t curBucketNum, const std::string &fileName);
@@ -145,7 +145,7 @@ private:
     bool ExistCloudAssetPathInDB(const std::string &path);
     bool ExistEditFlagInDBByPath(const std::string &path);
     int32_t UpdateNoneEditTimeByPath(std::string &path, int64_t editTime,
-        int32_t editDataEsxist);
+        int32_t editDataExist);
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
     std::mutex taskRunningMutex_;
