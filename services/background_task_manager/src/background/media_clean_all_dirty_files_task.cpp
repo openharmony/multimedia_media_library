@@ -61,6 +61,7 @@ const std::string LCD_FILE_NAME = "LCD.jpg";
 const std::string THM_ASTC_FILE_NAME = "THM_ASTC.astc";
 
 const std::string EDITDATA_FILE_NAME = "editdata";
+const std::string EDITDATA_CAMERA_FILE_NAME = "editdata_camera";
 const std::string EXTRADATA_FILE_NAME = "extraData";
 const std::string SOURCE_FILE_PREFIX_NAME = "source";
 const std::string SOURCE_FILE_VIDEO_NAME = "source.mp4";
@@ -737,6 +738,28 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
     return true;
 }
 
+bool MediaCleanAllDirtyFilesTask::ExistEditFlagInDBByPath(const std::string &path)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "ExistEditFlagInDBByPath Failed to Get RdbStore.");
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
+    predicates.Limit(1);
+    auto resultSet = rdbStore->Query(predicates, {PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_EDIT_DATA_EXIST});
+    int64_t editTime = 0;
+    int32_t editDataExist = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "ExistEditFlagInDBByPath Rs Is Null");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        editTime = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
+        editDataExist = GetInt32Val(PhotoColumn::PHOTO_EDIT_DATA_EXIST, resultSet);
+    }
+    resultSet->Close();
+    if (editTime != 0 || editDataExist != 0) { // 有一个不为零 就需要补
+        return true;
+    }
+    return false;
+}
+
 bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t curBucketNum, const std::string &fileName)
 {
     std::string editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) +
@@ -744,10 +767,13 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t cu
     std::string extension = MediaPathUtils::GetExtension(fileName);
     std::string editOriginFile = editBucketFolder + SLASH_STR + SOURCE_FILE_PREFIX_NAME + DOT_STR + extension;
     std::string editDataFile = editBucketFolder + SLASH_STR + EDITDATA_FILE_NAME;
+    std::string editDataCameraFile = editBucketFolder + SLASH_STR + EDITDATA_CAMERA_FILE_NAME;
     bool isOriginFileExist = MediaFileUtils::IsFileExists(editOriginFile);
     bool isEditdataFileExist = MediaFileUtils::IsFileExists(editDataFile);
+    bool isEditdataCameraFileExist = MediaFileUtils::IsFileExists(editDataCameraFile);
     // 原图存在 编辑效果图存在 编辑数据不存在 填充空的编辑数据
-    if (isOriginFileExist && !isEditdataFileExist) {
+    if (isOriginFileExist && !(isEditdataFileExist || isEditdataCameraFileExist) &&
+        ExistEditFlagInDBByPath(editOriginFile)) {
         MEDIA_INFO_LOG("DirtyMediaHandler File Create Editdata OriginFileExistEditDataNotExist EditData: %{public}s",
             editDataFile.c_str());
         nlohmann::json editDataJson;
@@ -858,7 +884,9 @@ int32_t MediaCleanAllDirtyFilesTask::QueryPhotoAddTimeByPath(const std::string &
 
 bool MediaCleanAllDirtyFilesTask::ProcessThumbsFolderBatch(int32_t curBucketNum, const std::string &folderName)
 {
-    IsIllegalThumbFolderFile(curBucketNum, folderName); // 文件名合法性校验 Report point
+    CHECK_AND_RETURN_RET_ERR_LOG(!IsIllegalThumbFolderFile(curBucketNum, folderName), true
+        "DirtyMediaHandler Skip Illegal File While ProcessThumbsFolderBatch %{public}s",
+        MediaFileUtils::DesensitizePath(folderName).c_str()); // 文件名合法性校验 Report point
     std::string originBucketFolderFile = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) +
         SLASH_STR + folderName; // 原图
     std::string thumbsBucketFolderName = ROOT_MEDIA_THUMBS_DIR + std::to_string(curBucketNum) +
@@ -1175,7 +1203,7 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, 
     }
     for (const auto& fileName : fileNameVec) {
         if (!Starts_With(fileName, EDITDATA_FILE_NAME) && !Starts_With(fileName, EXTRADATA_FILE_NAME) &&
-            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME)) {
+            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME) && !Starts_With(fileName, EDITDATA_CAMERA_FILE_NAME)) {
             MEDIA_ERR_LOG("IsLegalEditFolderFile Folder: %{public}s, Name: %{public}s",
                 MediaFileUtils::DesensitizePath(editBucketFolder).c_str(),
                 fileName.c_str());
@@ -1255,8 +1283,9 @@ bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBuc
 
 bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, const std::string &folderName)
 {
-    // 可优化 清理除固定名称文件之外的文件
-    IsIllegalEditFolderFile(curBucketNum, folderName);
+    CHECK_AND_RETURN_RET_ERR_LOG(!IsIllegalEditFolderFile(curBucketNum, folderName), true
+        "DirtyMediaHandler Skip Illegal File While ProcessEditFolderBatch %{public}s",
+        MediaFileUtils::DesensitizePath(folderName).c_str()); // 可优化 清理除固定名称文件之外的文件
     DirtyFilePathInfo dirtyFilePathInfo = BuildDirtyFilePathInfo(curBucketNum, folderName);
     MEDIA_DEBUG_LOG("ProcessEditFolderBatch FileName:%{public}s", MediaFileUtils::DesensitizePath(folderName).c_str());
     if (DealWithZeroSizeFile(dirtyFilePathInfo.editOriginFile)) {
