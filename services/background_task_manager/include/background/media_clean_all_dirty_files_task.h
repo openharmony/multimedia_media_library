@@ -142,6 +142,7 @@ private:
     bool ProcessMovingPhotosInEditFolder(int32_t curBucketNum, const std::string &folderName,
         DirtyFilePathInfo &dirtyFilePathInfo);
     bool ExistCloudAssetPathInDB(const std::string &path);
+    bool ExistEditFlagInDBByPath(const std::string &path);
 
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
