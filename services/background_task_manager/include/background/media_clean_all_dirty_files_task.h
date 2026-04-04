@@ -46,6 +46,7 @@ struct DirtyFilePathInfo {
     // 目录 /storage/media/100/local/files/.editData/Photo/16/xx.jpg
     std::string editBucketFolder; // 编辑文件目录名 包含editdata extraData source.jpg~heic source.mp4
     std::string editDataFile; // 编辑文件目录下editdata
+    std::string editDataCameraFile; // 编辑文件目录下editdataCamera
     std::string editOriginFile; // 编辑文件目录下source.jpg
     std::string editOriginMovingPhotoVideo; // 编辑文件目录下source.mp4
     std::string localEffectFile;
@@ -143,7 +144,8 @@ private:
         DirtyFilePathInfo &dirtyFilePathInfo);
     bool ExistCloudAssetPathInDB(const std::string &path);
     bool ExistEditFlagInDBByPath(const std::string &path);
-
+    int32_t UpdateNoneEditTimeByPath(std::string &path, int64_t editTime,
+        int32_t editDataEsxist);
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
     std::mutex taskRunningMutex_;
