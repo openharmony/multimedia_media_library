@@ -322,7 +322,7 @@ int32_t MediaCleanAllDirtyFilesTask::UpdatePendingInfoByPath(int32_t fileId, int
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
-        "UpdateDBProgressInfoForFileId Failed to get rdbStore.");
+        "UpdatePendingInfoByPath Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     NativeRdb::ValuesBucket value;
     value.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, modifyTime);
@@ -787,7 +787,7 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t cu
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataFile, editDataContent), E_HAS_FS_ERROR,
             "Failed to write editdata:%{private}s", editDataFile.c_str());
         std::string dataPath = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) + SLASH_STR + fileName;
-        UpdateEditTimeByPath(dataPath, MediaFileUtils::UTCTimeSeconds(), 1);
+        UpdateNoneEditTimeByPath(dataPath, MediaFileUtils::UTCTimeSeconds(), 1);
     }
     return true;
 }
@@ -884,7 +884,7 @@ int32_t MediaCleanAllDirtyFilesTask::QueryPhotoAddTimeByPath(const std::string &
 
 bool MediaCleanAllDirtyFilesTask::ProcessThumbsFolderBatch(int32_t curBucketNum, const std::string &folderName)
 {
-    CHECK_AND_RETURN_RET_ERR_LOG(!IsIllegalThumbFolderFile(curBucketNum, folderName), true,
+    CHECK_AND_RETURN_RET_INFO_LOG(!IsIllegalThumbFolderFile(curBucketNum, folderName), true,
         "DirtyMediaHandler Skip Illegal File While ProcessThumbsFolderBatch %{public}s",
         MediaFileUtils::DesensitizePath(folderName).c_str()); // 文件名合法性校验 Report point
     std::string originBucketFolderFile = ROOT_MEDIA_ORG_DIR + std::to_string(curBucketNum) +
@@ -1283,7 +1283,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBuc
 
 bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, const std::string &folderName)
 {
-    CHECK_AND_RETURN_RET_ERR_LOG(!IsIllegalEditFolderFile(curBucketNum, folderName), true,
+    CHECK_AND_RETURN_RET_INFO_LOG(!IsIllegalEditFolderFile(curBucketNum, folderName), true,
         "DirtyMediaHandler Skip Illegal File While ProcessEditFolderBatch %{public}s",
         MediaFileUtils::DesensitizePath(folderName).c_str()); // 可优化 清理除固定名称文件之外的文件
     DirtyFilePathInfo dirtyFilePathInfo = BuildDirtyFilePathInfo(curBucketNum, folderName);
