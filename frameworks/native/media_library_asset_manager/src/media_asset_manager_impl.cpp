@@ -947,13 +947,6 @@ int32_t MediaAssetManagerImpl::GetFdFromSandBoxUri(const std::string &sandBoxUri
     return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
 }
 
-static bool HasReadPermission()
-{
-    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
-    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_IMAGEVIDEO);
-    return result == PermissionState::PERMISSION_GRANTED;
-}
-
 // LCOV_EXCL_START
 MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAsset* mediaAsset,
     NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
@@ -962,7 +955,6 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeQuickRequestImage(OH_MediaAs
     MEDIA_INFO_LOG("MediaAssetManagerImpl::NativeQuickRequestImage Called");
     CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr && mediaAsset->mediaAsset_ != nullptr,
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "mediaAsset or mediaAsset_ is null");
-    CHECK_AND_RETURN_RET_LOG(HasReadPermission(), MEDIA_LIBRARY_PERMISSION_DENIED, "permission denied.");
     std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
     MediaLibraryTracer tracer;
     tracer.Start("NativeQuickRequestImage");
