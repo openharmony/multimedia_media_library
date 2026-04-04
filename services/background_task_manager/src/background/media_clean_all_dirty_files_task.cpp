@@ -767,13 +767,10 @@ bool MediaCleanAllDirtyFilesTask::DealOriginFileExistEditDataNotExist(int32_t cu
     std::string extension = MediaPathUtils::GetExtension(fileName);
     std::string editOriginFile = editBucketFolder + SLASH_STR + SOURCE_FILE_PREFIX_NAME + DOT_STR + extension;
     std::string editDataFile = editBucketFolder + SLASH_STR + EDITDATA_FILE_NAME;
-    std::string editDataCameraFile = editBucketFolder + SLASH_STR + EDITDATA_CAMERA_FILE_NAME;
     bool isOriginFileExist = MediaFileUtils::IsFileExists(editOriginFile);
     bool isEditdataFileExist = MediaFileUtils::IsFileExists(editDataFile);
-    bool isEditdataCameraFileExist = MediaFileUtils::IsFileExists(editDataCameraFile);
     // 原图存在 编辑效果图存在 编辑数据不存在 填充空的编辑数据
-    if (isOriginFileExist && !(isEditdataFileExist || isEditdataCameraFileExist) &&
-        ExistEditFlagInDBByPath(editOriginFile)) {
+    if (isOriginFileExist && !isEditdataFileExist && ExistEditFlagInDBByPath(editOriginFile)) {
         MEDIA_INFO_LOG("DirtyMediaHandler File Create Editdata OriginFileExistEditDataNotExist EditData: %{public}s",
             editDataFile.c_str());
         nlohmann::json editDataJson;
@@ -1126,8 +1123,8 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchMovingPhotos(int32_t cur
         bool finish = DealEditedEffectMovingPhotoNotExistInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEditedEffectMovingPhotoNotExistInEditFolder %{public}s",
-            MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
+            MediaFileUtils::DesensitizePath(folderName).c_str()); // 数据库edit_time有值则不变，无值则刷新为当前时间
+        UpdateNoneEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     } else { // 原图存在 效果图不存在的 原图搬迁至效果图位置
         MEDIA_INFO_LOG("DirtyMediaHandler Edit Move To Movingphoto Effect Folder:%{public}s",
@@ -1136,7 +1133,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchMovingPhotos(int32_t cur
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEffectMovingPhotoNotExistInEditFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 0);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     }
     return true;
@@ -1152,8 +1149,8 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchNormalPhotos(int32_t cur
         bool finish = DealEditedEffectFileNotExistInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEditedEffectFileNotExistInEditFolder %{public}s",
-            MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
+            MediaFileUtils::DesensitizePath(folderName).c_str()); // 数据库edit_time有值则不变
+        UpdateNoneEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 1);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     } else { // 原图存在 效果图不存在的 编辑数据不存在 原图搬迁至效果图位置
         MEDIA_INFO_LOG("DirtyMediaHandler Edit Move To Effect Folder:%{public}s",
@@ -1162,7 +1159,7 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatchNormalPhotos(int32_t cur
         CHECK_AND_RETURN_RET_LOG(finish, false,
             "Failed To Create DealEffectFileNotExistInEditFolder %{public}s",
             MediaFileUtils::DesensitizePath(folderName).c_str());
-        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, MediaFileUtils::UTCTimeSeconds(), 0);
+        UpdateEditTimeByPath(dirtyFilePathInfo.effectFolderFile, 0L, 0);
         AddToFilesCacheSet(dirtyFilePathInfo.effectFolderFile);
     }
     return true;
@@ -1181,6 +1178,7 @@ DirtyFilePathInfo MediaCleanAllDirtyFilesTask::BuildDirtyFilePathInfo(int32_t cu
     dirtyFilePathInfo.editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) +
         SLASH_STR + folderName; // 编辑文件目录名 包含editdata extraData source.jpg~heic source.mp4
     dirtyFilePathInfo.editDataFile = dirtyFilePathInfo.editBucketFolder + SLASH_STR + EDITDATA_FILE_NAME;
+    dirtyFilePathInfo.editDataCameraFile = dirtyFilePathInfo.editBucketFolder + SLASH_STR + EDITDATA_CAMERA_FILE_NAME;
     dirtyFilePathInfo.editOriginFile = dirtyFilePathInfo.editBucketFolder + SLASH_STR + SOURCE_FILE_PREFIX_NAME +
         DOT_STR + dirtyFilePathInfo.extension;
     dirtyFilePathInfo.editOriginMovingPhotoVideo = dirtyFilePathInfo.editBucketFolder + SLASH_STR +
@@ -1232,16 +1230,53 @@ int32_t MediaCleanAllDirtyFilesTask::GetFileIdByPathsFromDB(std::vector<std::str
     return E_OK;
 }
 
+int32_t MediaCleanAllDirtyFilesTask::UpdateNoneEditTimeByPath(std::string &path, int64_t editTime,
+    int32_t editDataEsxist)
+{
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_ERR, "UpdateNoneEditTimeByPath Empty");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
+        "UpdateNoneEditTimeByPath Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
+    predicates.Limit(1);
+    auto resultSet = rdbStore->Query(predicates, {PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_EDIT_DATA_EXIST});
+    int64_t editTimeDefault = 0;
+    int32_t editDataExistDefault = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "ExistEditFlagInDBByPath Rs Is Null");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        editTimeDefault = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
+        editDataExistDefault = GetInt32Val(PhotoColumn::PHOTO_EDIT_DATA_EXIST, resultSet);
+    }
+    resultSet->Close();
+
+    NativeRdb::AbsRdbPredicates predicatesUpdate(PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::ValuesBucket value;
+    if (editTimeDefault <= 0) { // 数据库edit_time有值则不变
+        value.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime);
+    }
+    value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataEsxist);
+    predicatesUpdate.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, value, predicatesUpdate);
+    MEDIA_INFO_LOG("UpdateNoneEditTimeByPath Ret: %{public}d, ChangedRows %{public}d", ret, changedRows);
+    return ret;
+}
+
 int32_t MediaCleanAllDirtyFilesTask::UpdateEditTimeByPath(std::string &path, int64_t editTime, int32_t editDataEsxist)
 {
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_ERR, "UpdateEditTimeByPath Empty");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
-        "UpdateDBProgressInfoForFileId Failed to get rdbStore.");
+        "UpdateEditTimeByPath Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     NativeRdb::ValuesBucket value;
-    value.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime);
-    value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataEsxist);
+    if (editTime >= 0) {
+        value.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime);
+    }
+    if (editDataEsxist >= 0) {
+        value.PutInt(PhotoColumn::PHOTO_EDIT_DATA_EXIST, editDataEsxist);
+    }
     predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, value, predicates);
