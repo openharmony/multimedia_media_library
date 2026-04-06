@@ -87,41 +87,8 @@ public:
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
     EXPORT static void SetOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetOldVersion();
-    EXPORT static void CreateBurstIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store,
-        int32_t version);
-    EXPORT static void AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store,
-        int32_t version);
-    EXPORT static void UpdateBurstDirty(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateReadyOnThumbnailUpgrade(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateDateTakenToMillionSecond(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddIndexForFileIdAsync(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateDateTakenIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateDateTakenAndDetalTime(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void ClearAudios(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateIndexForCover(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateLocationKnowledgeIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddAlbumSubtypeAndNameIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateThumbnailVisibleAndIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddPhotoWhiteBlocksIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddUpgradeIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateIndexHiddenTime(const std::shared_ptr<MediaLibraryRdbStore> store, int32_t version);
-    EXPORT static void UpdateIndexDateAdded(const std::shared_ptr<MediaLibraryRdbStore> store, int32_t version);
-    EXPORT static void AddVideoFaceTagIdIndex(const std::shared_ptr<MediaLibraryRdbStore> store, int32_t version);
-    EXPORT static void AddPetTagIdIndex(const std::shared_ptr<MediaLibraryRdbStore> store, int32_t version);
-    EXPORT static void DropPhotoStatusForSearchIndex(
-        const std::shared_ptr<MediaLibraryRdbStore> store, int32_t version);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static int32_t InsertInternal(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &row);
@@ -167,16 +134,15 @@ public:
     static void WalCheckPoint();
     EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
-    EXPORT static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryMovingPhotoVideoReady(
         const NativeRdb::AbsRdbPredicates &predicaties);
     EXPORT static int32_t UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::string &photoId, const std::string &photoPath);
     EXPORT static void AddDefaultInsertPhotoValues(NativeRdb::ValuesBucket& values);
     EXPORT static int32_t PrepareShootingModeAlbum(NativeRdb::RdbStore &store);
+    EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
 
 private:
-    EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     EXPORT static const std::string RegexReplaceFunc(const std::vector<std::string> &args);

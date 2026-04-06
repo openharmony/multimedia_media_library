@@ -39,7 +39,9 @@ public:
 
     EXPORT static int32_t UpdatePhotosDateAndIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
-    EXPORT static int32_t UpdatePhotosDateIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    static int32_t UpdatePhotosDateAndIdx(NativeRdb::RdbStore &rdbStore);
+
+    EXPORT static int32_t UpdatePhotosDateIdx(NativeRdb::RdbStore &rdbStore);
 
     EXPORT static int32_t UpdatePhotosDate(NativeRdb::RdbStore &rdbStore);
 
@@ -48,7 +50,7 @@ public:
     EXPORT static void UpdatePhotoDateAddedDateInfo();
 
 private:
-    static int32_t UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    static int32_t UpdatePhotosDateUpgrade(NativeRdb::RdbStore &rdbStore);
 
     static std::vector<DateAnomalyPhoto> QueryDateAnomalyPhotos(const int32_t startFileId);
 
