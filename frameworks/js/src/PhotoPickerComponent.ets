@@ -714,8 +714,8 @@ export struct PhotoPickerComponent {
     return MimeTypeFilterObj;
   }
 
-  private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string | undefined {
-    let filterType: string | undefined = undefined;
+  private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
+    let filterType: string;
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     }
