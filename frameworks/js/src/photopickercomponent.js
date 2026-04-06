@@ -842,6 +842,8 @@ export class PhotoPickerComponent extends ViewPU {
         let o = undefined;
         if (PHOTO_VIEW_MIME_TYPE_MAP.has(e)) {
             o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
+        } else { 
+            o = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*'); 
         }
         console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
         return o;
