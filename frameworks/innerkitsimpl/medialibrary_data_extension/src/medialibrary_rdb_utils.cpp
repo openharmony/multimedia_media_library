@@ -3494,6 +3494,25 @@ static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformPermission(const share
     return store->Query(rdbPredicate, columns);
 }
 
+static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformPermission(RdbStore &store)
+{
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    vector<string> permissionTypes;
+    permissionTypes.emplace_back(to_string(PERSIST_READ_IMAGEVIDEO));
+    permissionTypes.emplace_back(to_string(PERSIST_READWRITE_IMAGEVIDEO));
+    rdbPredicate.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    rdbPredicate.BeginWrap();
+    rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, "");
+    rdbPredicate.Or();
+    rdbPredicate.IsNull(AppUriPermissionColumn::TARGET_TOKENID);
+    rdbPredicate.EndWrap();
+    vector<string> columns{
+        AppUriPermissionColumn::APP_ID
+    };
+    rdbPredicate.GroupBy(columns);
+    return store.Query(rdbPredicate, columns);
+}
+
 static std::map<std::string, int64_t> QueryTokenIdMap(const shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     std::map<std::string, int64_t> appIdTokenIdMap;
@@ -3539,7 +3558,42 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
         tokenIdMap.size(), successCount);
 }
 
-static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformOwnerAppid(const shared_ptr<MediaLibraryRdbStore> &store)
+void MediaLibraryRdbUtils::TransformAppId2TokenId(RdbStore &store)
+{
+    MEDIA_INFO_LOG("TransformAppId2TokenId start!");
+    auto resultSet = QueryNeedTransformPermission(store);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "TransformAppId2TokenId failed");
+
+    std::map<std::string, int64_t> tokenIdMap = QueryTokenIdMap(resultSet);
+    resultSet->Close();
+    if (tokenIdMap.size() == 0) {
+        MEDIA_WARN_LOG("TransformAppId2TokenId tokenIdMap empty");
+        return;
+    }
+    int32_t successCount = 0;
+    for (auto &pair : tokenIdMap) {
+        NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+        vector<string> permissionTypes;
+        permissionTypes.emplace_back(to_string(PERSIST_READ_IMAGEVIDEO));
+        permissionTypes.emplace_back(to_string(PERSIST_READWRITE_IMAGEVIDEO));
+        rdbPredicate.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+        rdbPredicate.EqualTo(AppUriPermissionColumn::APP_ID, pair.first);
+        rdbPredicate.BeginWrap();
+        rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, "");
+        rdbPredicate.Or();
+        rdbPredicate.IsNull(AppUriPermissionColumn::TARGET_TOKENID);
+        rdbPredicate.EndWrap();
+        ValuesBucket refreshValues;
+        refreshValues.PutLong(AppUriPermissionColumn::TARGET_TOKENID, pair.second);
+        refreshValues.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, pair.second);
+        int changeRows = 0;
+        CHECK_AND_EXECUTE(store.Update(changeRows, refreshValues, rdbPredicate) != E_OK, successCount++);
+    }
+    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}lu, successcount:%{public}d",
+        tokenIdMap.size(), successCount);
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformOwnerAppid(RdbStore &store)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.IsNotNull(MediaColumn::MEDIA_OWNER_APPID);
@@ -3547,10 +3601,10 @@ static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformOwnerAppid(const share
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_OWNER_APPID,
     };
-    return store->Query(rdbPredicate, columns);
+    return store.Query(rdbPredicate, columns);
 }
 
-void MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(const shared_ptr<MediaLibraryRdbStore> &store)
+void MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(RdbStore &store)
 {
     MEDIA_INFO_LOG("TransformOwnerAppId2TokenId start!");
     auto resultSet = QueryNeedTransformOwnerAppid(store);
@@ -3591,7 +3645,7 @@ void MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(const shared_ptr<MediaLi
     resultSet->Close();
     if (values.size() > 0) {
         int64_t rowId = 0;
-        int32_t ret = store->BatchInsert(rowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, values);
+        int32_t ret = store.BatchInsert(rowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, values);
         MEDIA_INFO_LOG("TransformOwnerAppId2TokenId end, rowId : %{public}ld", static_cast<long>(rowId));
     }
 }

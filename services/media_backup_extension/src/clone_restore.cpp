@@ -61,6 +61,9 @@
 #include "media_audio_column.h"
 #include "media_upgrade.h"
 #include "media_values_bucket_utils.h"
+#include "media_file_utils.h"
+#include "media_library_upgrade_manager.h"
+#include "fast_restore_init_operation.h"
 
 using namespace std;
 namespace OHOS {
@@ -543,6 +546,67 @@ CloneRestore::CloneRestore()
     MEDIA_INFO_LOG("Set ffrt_disable_worker_escape");
 }
 
+void CloneRestore::TestInitDb(std::shared_ptr<NativeRdb::RdbStore>& store)
+{
+    auto context = AbilityRuntime::Context::GetApplicationContext();
+    CHECK_AND_RETURN_LOG(context != nullptr, "Failed to get context");
+    int32_t err = BackupDatabaseUtils::InitDb(store, CONST_MEDIA_DATA_ABILITY_DB_NAME,
+        "/data/storage/el2/database/rdb/media_library.db", CONST_BUNDLE_NAME, true, context->GetArea());
+    CHECK_AND_RETURN_LOG(store != nullptr, "Init remote medialibrary rdb fail, err = %{public}d", err);
+}
+
+void CloneRestore::RenameToFakeDelete(std::string dbPath)
+{
+    std::vector<std::string> suffixes = {"", "-compare", "-dwr", "-shm", "-wal"};
+    for (const auto& suffix : suffixes) {
+        std::string primaryFile = dbPath + suffix;
+        std::string tmpFile = primaryFile + "_tmp";
+        MEDIA_INFO_LOG("#test try to rename db: %{public}s", primaryFile.c_str());
+        bool tmpFileExists = MediaFileUtils::IsFileExists(tmpFile);
+        if (tmpFileExists) {
+            if (rename(tmpFile.c_str(), primaryFile.c_str()) != 0) {
+                MEDIA_ERR_LOG("#test Failed to rename file: %{public}s", tmpFile.c_str());
+                // SetErrorCode(RestoreError::INIT_FAILED);
+                // return;
+            } else {
+                MEDIA_INFO_LOG("#test Success to rename file: %{public}s", tmpFile.c_str());
+            }
+        } else {
+            MEDIA_INFO_LOG("#test file NOT EXIST: %{public}s", tmpFile.c_str());
+        }
+    }
+}
+
+void CloneRestore::RenamePath()
+{
+    vector<string> paths = {
+        "/storage/media/local/files/Photo/",
+        "/storage/media/local/files/Camera/",
+        "/storage/media/local/files/Pictures/",
+        "/storage/media/local/files/Videos/",
+        "/storage/media/local/files/.editData/",
+        "/storage/media/local/files/Audio/",
+        "/storage/media/local/files/Audios/",
+        "/storage/media/local/files/.thumbs/",
+        // "/storage/media/local/files/.backup/backup/media_temp_kvdb/",
+        "/storage/media/local/files/highlight/",
+        // "/data/storage/el2/base/preferences/"
+    };
+    string prefix = "/storage/media/local/files/.backup/restore/";
+    for (auto path : paths) {
+        if (rename((prefix + path).c_str(), path.c_str()) != 0) {
+            MEDIA_ERR_LOG("#test Failed to rename file: %{public}s, errno: %{public}d", path.c_str(), errno);
+        }
+    }
+}
+
+void MoveDb()
+{
+    vector<string> paths = {
+
+    };
+}
+
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     if (WaitSouthDeviceExitTimeout()) {
@@ -571,22 +635,69 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         return;
     }
     garbagePath_ = backupRestoreDir_ + "/storage/media/local/files";
-    int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
-    MEDIA_INFO_LOG("the isAccountValid_ is %{public}d,"
-        " the isSrcDstSwitchStatusMatch_ is %{public}d",
-        isAccountValid_, isSrcDstSwitchStatusMatch_);
-    if (errorCode == E_OK) {
-        RestoreGallery();
-        RestoreMusic();
-        UpdateDatabase();
-        MEDIA_INFO_LOG("Deleting RdbStore, path: %{public}s.", dbPath_.c_str());
-        (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
-    } else {
-        SetErrorCode(RestoreError::INIT_FAILED);
-        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, errorCode);
-        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+
+    int64_t startTime = MediaTimeUtils::UTCTimeMilliSeconds();
+
+    // 拷贝旧机db到临时文件
+    if (!MediaFileUtils::IsFileExists("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/")) {
+        MediaFileUtils::CreateDirectory("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/");
     }
-    HandleRestData();
+    if (!MediaFileUtils::IsFileExists("/data/storage/el2/database/rdb/")) {
+        MediaFileUtils::CreateDirectory("/data/storage/el2/database/rdb/");
+    }
+    bool ret = MediaFileUtils::CopyFileUtil("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/media_library.db",
+        "/data/storage/el2/database/rdb/media_library.db_tmp");
+    ret = MediaFileUtils::CopyFileUtil("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/media_library.db-compare",
+        "/data/storage/el2/database/rdb/media_library.db-compare_tmp");
+    ret = MediaFileUtils::CopyFileUtil("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/media_library.db-dwr",
+        "/data/storage/el2/database/rdb/media_library.db-dwr_tmp");
+    ret = MediaFileUtils::CopyFileUtil("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/media_library.db-shm",
+        "/data/storage/el2/database/rdb/media_library.db-shm_tmp");
+    ret = MediaFileUtils::CopyFileUtil("/storage/media/local/files/.backup/restore/data/storage/el2/database/rdb/media_library.db-wal",
+        "/data/storage/el2/database/rdb/media_library.db-wal_tmp");
+    if (!ret) {
+        MEDIA_ERR_LOG("#test copy db failed, ret:%{public}d, errno:%{public}d", ret, errno);
+    }
+    int64_t endTime1 = MediaTimeUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("#test copy db:cost time: %{public}" PRId64 "ms", endTime1 - startTime);
+
+    // rename新机db到临时目录
+    
+
+    // rename旧机db临时目录到新机db路径
+    RenameToFakeDelete("/data/storage/el2/database/rdb/media_library.db");
+    int64_t endTime2 = MediaTimeUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("#test rename time:cost time: %{public}" PRId64 "ms", endTime2 - endTime1);
+
+    // 新机db开库&升级
+    std::shared_ptr<NativeRdb::RdbStore> store = nullptr;
+    FastRestoreInitOperation::InitRdbStore(store, "/data/storage/el2/database/rdb/media_library.db");
+    int64_t endTime4 = MediaTimeUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("#test upgrade time:cost time: %{public}" PRId64 "ms", endTime4 - endTime2);
+
+    // 关库
+    store = nullptr;
+
+    // rename文件
+    RenamePath();
+    int64_t endTime5 = MediaTimeUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("#test rename files time:cost time: %{public}" PRId64 "ms", endTime5 - endTime4);
+    // int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
+    // MEDIA_INFO_LOG("the isAccountValid_ is %{public}d,"
+    //     " the isSrcDstSwitchStatusMatch_ is %{public}d",
+    //     isAccountValid_, isSrcDstSwitchStatusMatch_);
+    // if (errorCode == E_OK) {
+    //     RestoreGallery();
+    //     RestoreMusic();
+    //     UpdateDatabase();
+    //     MEDIA_INFO_LOG("Deleting RdbStore, path: %{public}s.", dbPath_.c_str());
+    //     (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
+    // } else {
+    //     SetErrorCode(RestoreError::INIT_FAILED);
+    //     ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, errorCode);
+    //     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+    // }
+    // HandleRestData();
     StopParameterForRestore();
     StopParameterForClone();
     SetMediaAnalysisClearDirtyDataParameter();
