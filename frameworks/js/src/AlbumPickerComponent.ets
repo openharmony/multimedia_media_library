@@ -26,11 +26,13 @@ export struct AlbumPickerComponent {
   @Watch('onChanged') albumPickerController?: AlbumPickerController; 
   private proxy: UIExtensionProxy | undefined;
   dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
+  @State revokeIndex = 0;
   build() {
     Row() {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
+            errorRevokeIndex: this.revokeIndex,
             'ability.want.params.uiExtensionTargetType':'photoPicker',
             targetPage: 'albumPage',
             themeColorMode: this.albumPickerOptions?.themeColorMode,
@@ -48,9 +50,21 @@ export struct AlbumPickerComponent {
           this.handleOnReceive(wantParam);
         }).onError(() => {
           console.info('AlbumPickerComponent onError');
+          console.info('AlbumPickerComponent revokeIndex: ' + this.revokeIndex); 
+          if (error.code === 100014) { 
+            console.log('PhotoPickerComponent is set isPickerKilled = true');
+            this.isPickerKilled = true; 
+          }
         });
       }
       .width('100%')
+      .onVisibleAreaChange([0.0, 1.0], (isExpanding, currentRatio) => {
+        if (this.isPickerKilled && currentRatio >= 0 && isExpanding) {
+            console.log(`photopickercomponent isRevoke revokeIndex = ${this.revokeIndex}`);
+            this.revokeIndex++;
+            this.isPickerKilled = false;
+        }
+      })
     }
     .height('100%')
   }
