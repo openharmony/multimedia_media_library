@@ -68,6 +68,7 @@
 #include "download_resources_table_event_handler.h"
 #include "media_app_uri_sensitive_column.h"
 #include "medialibrary_upgrade_utils.h"
+#include "media_library_upgrade_manager.h"
 #include "media_config_info_column.h"
 #include "download_resources_column.h"
 #include "tab_cloned_old_photos_table_event_handler.h"
@@ -77,6 +78,10 @@
 #include "media_values_bucket_utils.h"
 #include "media_operation_log_column.h"
 #include "media_compatible_info_column.h"
+#include "media_library_upgrade_macros.h"
+#include "medialibrary_audio_operations.h"
+#include "photo_day_month_year_operation.h"
+#include "medialibrary_rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -119,8 +124,6 @@ const std::string VIDEO_EXTENSION_VALUES = DIR_ALL_VIDEO_CONTAINER_TYPE;
 const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
-
-const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xml";
 
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
@@ -327,29 +330,20 @@ static int32_t ExecSqlsWithDfx(const vector<string> &sqls, RdbStore &store, int3
     return NativeRdb::E_OK;
 }
 
-void MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
-{
-    MEDIA_INFO_LOG("Drop photo status for search index start");
-    const vector<string> sqls = {
-        "DROP INDEX IF EXISTS idx_photo_status_for_search_index",
-    };
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
-    MEDIA_INFO_LOG("Drop photo status for search index end");
-}
-
-void MediaLibraryRdbStore::AddPetTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+static int32_t AddPetFaceIndex(RdbStore& store)
 {
     const vector<string> executeSqlStrs = {
-        CREATE_PET_INDEX,
-        CREATE_PET_TAG_ID_INDEX,
-        UPDATE_PET_TOTAL_VALUE,
-    };
-    MEDIA_INFO_LOG("add pet face index start");
-    ExecSqlsWithDfx(executeSqlStrs, *store->GetRaw().get(), version);
+         CREATE_PET_INDEX,
+         CREATE_PET_TAG_ID_INDEX,
+     };
+     MEDIA_INFO_LOG("add pet face index start");
+    int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_ADD_PET_TABLES);
     MEDIA_INFO_LOG("add pet face index end");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_PET_TABLES, "Vision", AddPetFaceIndex);
 
-void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStore> store)
+static int32_t CreateBurstIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoUpgrade::DROP_SCHPT_DAY_INDEX,
@@ -365,9 +359,460 @@ void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStor
         PhotoUpgrade::CREATE_PHOTO_BURSTKEY_INDEX
     };
     MEDIA_INFO_LOG("start create idx_burstkey");
-    ExecSqls(sqls, *store->GetRaw().get());
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end create idx_burstkey");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_CREATE_BURSTKEY_INDEX, "Photos", CreateBurstIndex);
+
+static int32_t UpdateBurstDirty(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ",
+    };
+    MEDIA_INFO_LOG("start UpdateBurstDirty");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end UpdateBurstDirty");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_BURST_DIRTY, "Photos", UpdateBurstDirty);
+
+static int32_t UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
+    };
+    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPGRADE_THUMBNAIL, "Photos", UpdateReadyOnThumbnailUpgrade);
+
+static int32_t UpdateDateTakenToMillionSecond(RdbStore &store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    int32_t ret = ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
+    return ret;
+}
+
+static int32_t UpdateDateTakenIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoUpgrade::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoUpgrade::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoUpgrade::INDEX_SCTHP_ADDTIME,
+        PhotoUpgrade::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("update index for datetaken change start");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for datetaken change end");
+    return ret;
+}
+
+static int32_t AddDetailTime(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
+    int32_t ret = UpdateDateTakenToMillionSecond(store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("UpdateDateTakenToMillionSecond failed");
+    }
+    ret = UpdateDateTakenIndex(store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("UpdateDateTakenIndex failed");
+    }
+    ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+    MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_DETAIL_TIME, "Photos", AddDetailTime);
+
+static int32_t ClearAudios(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DELETE From Audios",
+    };
+    MEDIA_INFO_LOG("clear audios start");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("clear audios end");
+    return ret;
+}
+
+static int32_t MoveAudios(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start VERSION_MOVE_AUDIOS");
+    MediaLibraryAudioOperations::MoveToMusic();
+    int32_t ret = ClearAudios(store);
+    MEDIA_INFO_LOG("End VERSION_MOVE_AUDIOS");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_MOVE_AUDIOS, "OtherTable", MoveAudios);
+
+static int32_t UpdateIndexForCover(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("update index for photo album cover start");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for photo album cover end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_INDEX_FOR_COVER, "Photos", UpdateIndexForCover);
+
+static int32_t UpdateThumbnailVisibleAndIdx(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
+    const vector<string> sqls = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET thumbnail_visible = "
+        " CASE "
+            " WHEN thumbnail_ready > 0 THEN 1 "
+            " ELSE 0 "
+        " END ",
+        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
+        PhotoUpgrade::INDEX_SCHPT_READY,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_THUMBNAIL_VISIBLE, "Photos", UpdateThumbnailVisibleAndIdx);
+
+static int32_t UpdateDateTakenAndDetailTime(RdbStore &store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenAndDetailTime start");
+    string updateDateTakenSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
+            " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
+            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_MODIFIED +
+            "/1000, 'unixepoch', 'localtime')" + " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
+    string updateDetailTimeSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DETAIL_TIME +
+            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_TAKEN + "/1000, 'unixepoch', 'localtime')" +
+            " WHERE " + PhotoColumn::PHOTO_DETAIL_TIME + " IS NULL";
+    const vector<string> updateSql = {
+        updateDateTakenSql,
+        updateDetailTimeSql,
+    };
+    int32_t ret = ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenAndDetailTime end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME, "Photos", UpdateDateTakenAndDetailTime);
+
+static int32_t AddReadyCountIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add ready count index");
+    const vector<string> sqls = {
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add ready count index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_READY_COUNT_INDEX, "Photos", AddReadyCountIndex);
+
+static int32_t RevertFixDateAddedIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start revert fix date added index");
+    const vector<string> sqls = {
+        PhotoUpgrade::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoUpgrade::INDEX_SCTHP_ADDTIME,
+        PhotoUpgrade::DROP_INDEX_SCHPT_ADDTIME_ALBUM,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end revert fix date added index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_REVERT_FIX_DATE_ADDED_INDEX, "Photos", RevertFixDateAddedIndex);
+
+static int32_t UpdateLcdStatusNotUploaded(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start FixPictureLcdSize");
+    const vector<string> sqls = {
+        PhotoUpgrade::UPDATE_LCD_STATUS_NOT_UPLOADED,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("finish CheckLcdSizeAndUpdateStatus");
+    ThumbnailService::GetInstance()->CheckLcdSizeAndUpdateStatus();
+    MEDIA_INFO_LOG("end FixPictureLcdSize");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_PICTURE_LCD_SIZE, "Photos", UpdateLcdStatusNotUploaded);
+
+static int32_t AddAlbumIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add album index");
+    const vector<string> sqls = {
+        PhotoUpgrade::INDEX_SCHPT_ALBUM_GENERAL,
+        PhotoUpgrade::INDEX_SCHPT_ALBUM,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add album index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_ALBUM_INDEX, "Album", AddAlbumIndex);
+
+static int32_t AddPhotoDateAddedIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AddPhotoDateAddedIndex");
+    const vector<string> sqls = {
+        PhotoUpgrade::INDEX_SCTHP_PHOTO_DATEADDED,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_DATEADD_INDEX, "Photos", AddPhotoDateAddedIndex);
+
+static int32_t RefreshPermissionAppid(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start RefreshPermissionAppid");
+    MediaLibraryRdbUtils::TransformAppId2TokenId(store);
+    MEDIA_INFO_LOG("end RefreshPermissionAppid");
+    return NativeRdb::E_OK;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_REFRESH_PERMISSION_APPID, "Photos", RefreshPermissionAppid);
+
+static int32_t AddCloudEnhancementAlbumIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX, "Photos", AddCloudEnhancementAlbumIndex);
+
+static int32_t UpdatePhotosDateAndIdx(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start UpdatePhotosDateAndIdx");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(store);
+    MEDIA_INFO_LOG("end UpdatePhotosDateAndIdx");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_PHOTOS_DATE_AND_IDX, "Photos", UpdatePhotosDateAndIdx);
+
+static int32_t UpdatePhotosDateIdx(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start UpdatePhotosDateIdx");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(store);
+    MEDIA_INFO_LOG("end UpdatePhotosDateIdx");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_PHOTOS_DATE_IDX, "Photos", UpdatePhotosDateIdx);
+
+static int32_t UpdateMediaTypeAndThumbnailReadyIdx(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
+        PhotoUpgrade::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("start update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX,
+    "Photos", UpdateMediaTypeAndThumbnailReadyIdx);
+
+static int32_t UpdatePhotoQualityCloned(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start UpdatePhotoQualityCloned");
+    const vector<string> sqls = {
+        PhotoUpgrade::UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end UpdatePhotoQualityCloned");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_PHOTO_QUALITY_CLONED, "Photos", UpdatePhotoQualityCloned);
+
+static int32_t AnalyzePhotos(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AnalyzePhotos");
+    MediaLibraryRdbUtils::AnalyzePhotosData();
+    MEDIA_INFO_LOG("end AnalyzePhotos");
+    return NativeRdb::E_OK;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ANALYZE_PHOTOS, "Photos", AnalyzePhotos);
+
+static int32_t AddIndexForPhotoSortInAlbum(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
+    };
+    MEDIA_INFO_LOG("Start add index for photo sort in album");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
+    MEDIA_INFO_LOG("End add index for photo sort in album");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, "Photos", AddIndexForPhotoSortInAlbum);
+
+static int32_t AddIndexForCloudAndPitaya(RdbStore &store)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_HIDDEN_TIME_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_DAY_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_GENERAL_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
+    };
+    MEDIA_INFO_LOG("Start add index for Cloud Enhancement and Pitaya");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
+    MEDIA_INFO_LOG("End add index for Cloud Enhancement and Pitaya");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, "Photos", AddIndexForCloudAndPitaya);
+
+static int32_t UpdateIndexHiddenTime(RdbStore &store)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+    };
+    MEDIA_INFO_LOG("start update idx_schpt_hidden_time");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+    MEDIA_INFO_LOG("end update idx_schpt_hidden_time");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, "Photos", UpdateIndexHiddenTime);
+
+static int32_t UpdateIndexDateAdded(RdbStore &store)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_PHOTO_DATEADDED_INDEX,
+        PhotoUpgrade::INDEX_SCTHP_PHOTO_DATEADDED,
+    };
+    MEDIA_INFO_LOG("start update idx_schpt_date_added");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
+    MEDIA_INFO_LOG("end update idx_schpt_date_added");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, "Photos", UpdateIndexDateAdded);
+
+static int32_t AddIndexForPhotoSort(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AddPhotoSortIndex");
+    const vector<string> sqls = {
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End AddPhotoSortIndex");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_INDEX_FOR_PHOTO_SORT, "Photos", AddIndexForPhotoSort);
+
+static int32_t AddGroupTagIndex(RdbStore& store)
+{
+    MEDIA_INFO_LOG("start to add group tag index");
+
+    int32_t ret = store.ExecuteSql(CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddGroupTagIndex failed: execute sql failed");
+    MEDIA_INFO_LOG("end add group tag index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_GROUP_TAG_INDEX, "Photos", AddGroupTagIndex);
+
+static int32_t AddImageFaceTagIdIndex(RdbStore& store)
+{
+    int32_t ret = store.ExecuteSql(CREATE_IMAGE_FACE_TAG_ID_INDEX);
+    MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
+    return ret;
+}
+
+static int32_t FixDbUpgradeFromApi18(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start FixDbUpgradeFromApi18");
+    int32_t ret = AddGroupTagIndex(store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("AddGroupTagIndex failed");
+    }
+    ret = AddImageFaceTagIdIndex(store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("AddImageFaceTagIdIndex failed");
+    }
+    ret = AddIndexForPhotoSort(store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("AddIndexForPhotoSort failed");
+    }
+    MEDIA_INFO_LOG("end FixDbUpgradeFromApi18");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_DB_UPGRADE_FROM_API18, "Photos", FixDbUpgradeFromApi18);
+
+static int32_t AddPhotoQueryThumbnailWhiteBlocksIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AddPhotoWhiteBlocksIndex");
+    const vector<string> sqls = {
+        PhotoUpgrade::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end AddPhotoWhiteBlocksIndex");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX,
+    "Photos", AddPhotoQueryThumbnailWhiteBlocksIndex);
+
+static int32_t TransferOwnerappidToTokenid(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start TransferOwnerappidToTokenid");
+    MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(store);
+    MEDIA_INFO_LOG("end TransferOwnerappidToTokenid");
+    return NativeRdb::E_OK;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_TRANSFER_OWNERAPPID_TO_TOKENID, "OtherTable", TransferOwnerappidToTokenid);
+
+static int32_t DropPhotoStatusForSearchIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Drop photo status for search index start");
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS idx_photo_status_for_search_index",
+    };
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
+    MEDIA_INFO_LOG("Drop photo status for search index end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, "Photos", DropPhotoStatusForSearchIndex);
+
 void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -386,88 +831,17 @@ void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore
     MEDIA_INFO_LOG("end create idx again");
 }
 
-void MediaLibraryRdbStore::UpdateIndexHiddenTime(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
-{
-    const vector<string> sqls = {
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_HIDDEN_TIME_INDEX,
-    };
-    MEDIA_INFO_LOG("start update idx_schpt_hidden_time");
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
-    MEDIA_INFO_LOG("end update idx_schpt_hidden_time");
-}
-
-void MediaLibraryRdbStore::UpdateIndexDateAdded(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
-{
-    const vector<string> sqls = {
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_PHOTO_DATEADDED_INDEX,
-        PhotoUpgrade::INDEX_SCTHP_PHOTO_DATEADDED
-    };
-    MEDIA_INFO_LOG("start update idx_schpt_date_added_new");
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
-    MEDIA_INFO_LOG("end update idx_schpt_date_added_new");
-}
-
-void MediaLibraryRdbStore::AddVideoFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+static int32_t AddVideoFaceTagIdIndex(RdbStore& store)
 {
     const vector<string> sqls = {
         CREATE_VIDEO_FACE_TAG_ID_INDEX,
     };
     MEDIA_INFO_LOG("start add video_face_tag_id_index");
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX);
     MEDIA_INFO_LOG("end add video_face_tag_id_index");
+    return ret;
 }
-
-void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
-        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
-        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ",
-    };
-    MEDIA_INFO_LOG("start UpdateBurstDirty");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end UpdateBurstDirty");
-}
-
-void MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        PhotoUpgrade::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
-    };
-    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
-}
-
-void MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
-            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
-    };
-    ExecSqls(updateSql, *store->GetRaw().get());
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
-}
-
-void MediaLibraryRdbStore::UpdateDateTakenIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoUpgrade::DROP_PHOTO_FAVORITE_INDEX,
-        PhotoUpgrade::DROP_INDEX_SCTHP_ADDTIME,
-        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
-        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_FAVORITE_INDEX,
-        PhotoUpgrade::INDEX_SCTHP_ADDTIME,
-        PhotoUpgrade::INDEX_SCHPT_READY,
-    };
-    MEDIA_INFO_LOG("update index for datetaken change start");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("update index for datetaken change end");
-}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX, "Photos", AddVideoFaceTagIdIndex);
 
 // 更新单条编辑数据大小
 int32_t MediaLibraryRdbStore::UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -487,159 +861,31 @@ int32_t MediaLibraryRdbStore::UpdateEditDataSize(std::shared_ptr<MediaLibraryRdb
     return E_OK;
 }
 
-void MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenAndDetalTime start");
-    string updateDateTakenSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
-            " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
-            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_MODIFIED +
-            "/1000, 'unixepoch', 'localtime')" + " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
-    string updateDetalTimeSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DETAIL_TIME +
-            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_TAKEN + "/1000, 'unixepoch', 'localtime')" +
-            " WHERE " + PhotoColumn::PHOTO_DETAIL_TIME + " IS NULL";
-    const vector<string> updateSql = {
-        updateDateTakenSql,
-        updateDetalTimeSql,
-    };
-    ExecSqls(updateSql, *store->GetRaw().get());
-    MEDIA_INFO_LOG("UpdateDateTakenAndDetalTime end");
-}
-
-void MediaLibraryRdbStore::ClearAudios(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        "DELETE From Audios",
-    };
-    MEDIA_INFO_LOG("clear audios start");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("clear audios end");
-}
-
-void MediaLibraryRdbStore::UpdateIndexForCover(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-    };
-    MEDIA_INFO_LOG("update index for photo album cover start");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("update index for photo album cover end");
-}
-
-void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        PhotoUpgrade::UPDATE_LCD_STATUS_NOT_UPLOADED,
-    };
-    MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
-
-    MEDIA_INFO_LOG("start CheckLcdSizeAndUpdateStatus");
-    ThumbnailService::GetInstance()->CheckLcdSizeAndUpdateStatus();
-    MEDIA_INFO_LOG("finish CheckLcdSizeAndUpdateStatus");
-}
-
-void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start add ready count index");
-    const vector<string> sqls = {
-        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end add ready count index");
-}
-
-void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start revert fix date added index");
-    const vector<string> sqls = {
-        PhotoUpgrade::DROP_INDEX_SCTHP_ADDTIME,
-        PhotoUpgrade::INDEX_SCTHP_ADDTIME,
-        PhotoUpgrade::DROP_INDEX_SCHPT_ADDTIME_ALBUM,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end revert fix date added index");
-}
-
-void MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    const vector<string> sqls = {
-        PhotoUpgrade::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
-    };
-    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
-}
-
-void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start add album index");
-    const vector<string> sqls = {
-        PhotoUpgrade::INDEX_SCHPT_ALBUM_GENERAL,
-        PhotoUpgrade::INDEX_SCHPT_ALBUM,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end add album index");
-}
-
-void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibraryRdbStore> store)
+static int32_t UpdateLocationKnowledgeIdx(RdbStore& store)
 {
     MEDIA_INFO_LOG("start update location knowledge index");
     const vector<string> sqls = {
         DROP_KNOWLEDGE_INDEX,
         CREATE_NEW_KNOWLEDGE_INDEX
     };
-    ExecSqls(sqls, *store->GetRaw().get());
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update location knowledge index");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX, "Photos", UpdateLocationKnowledgeIdx);
 
-void MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(const shared_ptr<MediaLibraryRdbStore> store)
+static int32_t AddAlbumSubtypeAndNameIdx(RdbStore& store)
 {
     MEDIA_INFO_LOG("start to add album subtype and name index");
     const vector<string> sqls = {
         CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
         CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX
     };
-    ExecSqls(sqls, *store->GetRaw().get());
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add album subtype and name index");
+    return ret;
 }
-
-void MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start to update thumbnailvisible and index");
-    const vector<string> sqls = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
-        " SET thumbnail_visible = "
-        " CASE "
-            " WHEN thumbnail_ready > 0 THEN 1 "
-            " ELSE 0 "
-        " END ",
-        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
-        PhotoUpgrade::INDEX_SCHPT_READY,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end update thumbnailvisible and index");
-}
-
-void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
-{
-    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
-    CHECK_AND_RETURN_LOG(!cond, "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-
-    const vector<string> sqls = {
-        PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-        PhotoUpgrade::DROP_INDEX_SCHPT_READY,
-        PhotoUpgrade::INDEX_SCHPT_READY,
-    };
-
-    MEDIA_INFO_LOG("start update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
-    ExecSqls(sqls, *rdbStore->GetRaw().get());
-    MEDIA_INFO_LOG("end update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
-}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX, "Vision", AddAlbumSubtypeAndNameIdx);
 
 int32_t MediaLibraryRdbStore::Init()
 {
@@ -666,40 +912,7 @@ int32_t MediaLibraryRdbStore::Init()
     return E_OK;
 }
 
-void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start AddPhotoDateAddedIndex");
-    const vector<string> sqls = {
-        PhotoUpgrade::INDEX_SCTHP_PHOTO_DATEADDED,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
-}
-
-void MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start AddPhotoWhiteBlocksIndex");
-    const vector<string> sqls = {
-        PhotoUpgrade::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end AddPhotoWhiteBlocksIndex");
-}
-
-void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start AddPhotoSortIndex");
-    const vector<string> sqls = {
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("End AddPhotoSortIndex");
-}
-
-void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
+static int32_t UpdateLocationDefaultNull(RdbStore& store)
 {
     MEDIA_INFO_LOG("start Update LatitudeAndLongitude Default Null");
     const vector<string> sqls = {
@@ -707,37 +920,22 @@ void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shar
         PhotoUpgrade::INDEX_LONGITUDE,
         PhotoUpgrade::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL,
     };
-    ExecSqls(sqls, *store->GetRaw().get());
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end  Update LatitudeAndLongitude Default Null");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL,
+    "Photos", UpdateLocationDefaultNull);
 
-void MediaLibraryRdbStore::UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start UpdatePhotoQualityCloned");
-    const vector<string> sqls = {
-        PhotoUpgrade::UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end UpdatePhotoQualityCloned");
-}
-
-void MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store)
+static int32_t UpdateMdirtyTriggerForTdirty(RdbStore& store)
 {
     MEDIA_INFO_LOG("start UpdateMdirtyTriggerForTdirty");
     const string dropMdirtyCreateTrigger = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
-    int32_t ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(dropMdirtyCreateTrigger); });
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("drop photos_mdirty_trigger fail, ret = %{public}d", ret);
-        UpdateFail(__FILE__, __LINE__);
-    }
-
-    ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER); });
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("add photos_mdirty_trigger fail, ret = %{public}d", ret);
-        UpdateFail(__FILE__, __LINE__);
-    }
+    int32_t ret = ExecSqls({dropMdirtyCreateTrigger, PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER}, store);
     MEDIA_INFO_LOG("end UpdateMdirtyTriggerForTdirty");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY, "Photos", UpdateMdirtyTriggerForTdirty);
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
@@ -1488,17 +1686,6 @@ int32_t MediaLibraryDataCallBack::InsertDirValues(const DirValuesBucket &dirValu
     return insertResult;
 }
 
-static void UpdateAlbumPlugin(RdbStore &store, int32_t version)
-{
-    MEDIA_INFO_LOG("Start updating album plugin");
-    const vector<string> sqls = {
-        "DROP TABLE IF EXISTS album_plugin;"
-    };
-    ExecSqlsWithDfx(sqls, store, version);
-    AlbumPluginTableEventHandler().OnCreate(store);
-    MEDIA_INFO_LOG("End updating album plugin");
-}
-
 int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
 {
     SmartAlbumValuesBucket trashAlbum = {
@@ -1577,7 +1764,7 @@ int32_t MediaLibraryRdbStore::PrepareShootingModeAlbum(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static int32_t Prepare3DGSModeAlbum(RdbStore &store, int32_t version)
+static int32_t Prepare3DGSModeAlbum(RdbStore &store)
 {
     vector<string> existingAlbumNames;
     if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
@@ -1591,13 +1778,14 @@ static int32_t Prepare3DGSModeAlbum(RdbStore &store, int32_t version)
     auto ret = InsertShootingModeAlbumValues(albumName, store);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Prepare shootingMode album failed");
-        RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_3DGS_MODE, 0, ret);
         return NativeRdb::E_ERROR;
     }
     return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_3DGS_MODE, "Album", Prepare3DGSModeAlbum);
 
-static int32_t PrepareOtherShootingModeAlbum(RdbStore &store, int32_t version)
+static int32_t PrepareOtherShootingModeAlbum(RdbStore &store)
 {
     vector<string> existingAlbumNames;
     if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
@@ -1613,12 +1801,13 @@ static int32_t PrepareOtherShootingModeAlbum(RdbStore &store, int32_t version)
         auto ret = InsertShootingModeAlbumValues(albumName, store);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Prepare shootingMode album failed");
-            RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
+            RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, i, ret);
             return NativeRdb::E_ERROR;
         }
     }
     return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, "Album", PrepareOtherShootingModeAlbum);
 
 int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, RdbStore &store)
 {
@@ -1956,13 +2145,13 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
     CREATE_ANALYSIS_ALBUM_ASET_MAP_TABLE,
     CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
-    CREATE_TAB_ASSET_ALBUM_OPERATION,
-    CREATE_OPERATION_ASSET_INSERT_TRIGGER,
-    CREATE_OPERATION_ASSET_DELETE_TRIGGER,
-    CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
-    CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
-    CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
-    CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    SQL_CREATE_TAB_ASSET_ALBUM_OPERATION,
+    SQL_CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+    SQL_CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+    SQL_CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+    SQL_CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+    SQL_CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+    SQL_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
     CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX,
     ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
     CREATE_ALBUM_ORDER_BACK_TABLE,
@@ -2080,7 +2269,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-void VersionAddCloud(RdbStore &store)
+int32_t VersionAddCloud(RdbStore &store)
 {
     const std::string alterCloudId = std::string("ALTER TABLE ") + CONST_MEDIALIBRARY_TABLE +
         " ADD COLUMN " + CONST_MEDIA_DATA_DB_CLOUD_ID +" TEXT";
@@ -2110,9 +2299,11 @@ void VersionAddCloud(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb position error %{private}d", result);
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD, "OtherTable", VersionAddCloud);
 
-static void AddPortraitInAnalysisAlbum(RdbStore &store)
+static int32_t AddPortraitInAnalysisAlbum(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         ADD_TAG_ID_COLUMN_FOR_ALBUM,
@@ -2125,10 +2316,11 @@ static void AddPortraitInAnalysisAlbum(RdbStore &store)
         CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
     };
     MEDIA_INFO_LOG("start add aesthetic composition tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PORTRAIT_IN_ALBUM, "Vision", AddPortraitInAnalysisAlbum);
 
-void AddMetaModifiedColumn(RdbStore &store)
+int32_t AddMetaModifiedColumn(RdbStore &store)
 {
     const std::string alterMetaModified =
         std::string("ALTER TABLE ") + CONST_MEDIALIBRARY_TABLE + " ADD COLUMN " +
@@ -2145,9 +2337,11 @@ void AddMetaModifiedColumn(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_META_MODIFED, "OtherTable", AddMetaModifiedColumn);
 
-void AddTableType(RdbStore &store)
+int32_t AddTableType(RdbStore &store)
 {
     const std::string alterTableName =
         std::string("ALTER TABLE ") + CONST_BUNDLE_PERMISSION_TABLE + " ADD COLUMN " + CONST_PERMISSION_TABLE_TYPE +
@@ -2157,9 +2351,11 @@ void AddTableType(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb table_name error %{private}d", result);
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_TABLE_TYPE, "OtherTable", AddTableType);
 
-void API10TableCreate(RdbStore &store)
+int32_t API10TableCreate(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoUpgrade::CREATE_PHOTO_TABLE,
@@ -2186,6 +2382,7 @@ void API10TableCreate(RdbStore &store)
         TriggerUpdateUserAlbumCount(),
     };
 
+    int32_t result = 0;
     for (size_t i = 0; i < executeSqlStrs.size(); i++) {
         auto result = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSqlStrs[i]); });
         if (result != NativeRdb::E_OK) {
@@ -2193,9 +2390,11 @@ void API10TableCreate(RdbStore &store)
             MEDIA_ERR_LOG("upgrade fail idx:%{public}zu", i);
         }
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_API10_TABLE, "Photos", API10TableCreate);
 
-void ModifySyncStatus(RdbStore &store)
+int32_t ModifySyncStatus(RdbStore &store)
 {
     const std::string dropSyncStatus = std::string("ALTER TABLE ") + CONST_MEDIALIBRARY_TABLE + " DROP column syncing";
     auto result = ExecSqlWithRetry([&]() { return store.ExecuteSql(dropSyncStatus); });
@@ -2211,9 +2410,11 @@ void ModifySyncStatus(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_MODIFY_SYNC_STATUS, "OtherTable", ModifySyncStatus);
 
-void ModifyDeleteTrigger(RdbStore &store)
+int32_t ModifyDeleteTrigger(RdbStore &store)
 {
     /* drop old delete trigger */
     const std::string dropDeleteTrigger = "DROP TRIGGER IF EXISTS photos_delete_trigger";
@@ -2228,9 +2429,11 @@ void ModifyDeleteTrigger(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("upgrade fail: create new delete trigger");
     }
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_MODIFY_DELETE_TRIGGER, "Photos", ModifyDeleteTrigger);
 
-void AddCloudVersion(RdbStore &store)
+int32_t AddCloudVersion(RdbStore &store)
 {
     const std::string addSyncStatus = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
         PhotoColumn::PHOTO_CLOUD_VERSION +" BIGINT DEFAULT 0";
@@ -2239,7 +2442,9 @@ void AddCloudVersion(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb cloudVersion error %{private}d", result);
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_VERSION, "Photos", AddCloudVersion);
 
 static string UpdateCloudPathSql(const string &table, const string &column)
 {
@@ -2258,7 +2463,7 @@ static string UpdateCloudPathSql(const string &table, const string &column)
         " WHERE " + column + " LIKE '" + LOCAL_PATH + "%';";
 }
 
-static void UpdateMdirtyTriggerForSdirty(RdbStore &store)
+static int32_t UpdateMdirtyTriggerForSdirty(RdbStore &store)
 {
     const string dropMdirtyCreateTrigger = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
     int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(dropMdirtyCreateTrigger); });
@@ -2272,7 +2477,9 @@ static void UpdateMdirtyTriggerForSdirty(RdbStore &store)
         MEDIA_ERR_LOG("add photos_mdirty_trigger fail, ret = %{public}d", ret);
         UpdateFail(__FILE__, __LINE__);
     }
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY, "Photos", UpdateMdirtyTriggerForSdirty);
 
 static int32_t UpdateCloudPath(RdbStore &store)
 {
@@ -2288,8 +2495,9 @@ static int32_t UpdateCloudPath(RdbStore &store)
     }
     return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_CLOUD_PATH, "OtherTable", UpdateCloudPath);
 
-void UpdateAPI10Table(RdbStore &store)
+int32_t UpdateAPI10Table(RdbStore &store)
 {
     ExecSqlWithRetry([&]() { return store.ExecuteSql("DROP INDEX IF EXISTS idx_sthp_dateadded"); });
     ExecSqlWithRetry([&]() { return store.ExecuteSql("DROP INDEX IF EXISTS photo_album_types"); });
@@ -2327,17 +2535,20 @@ void UpdateAPI10Table(RdbStore &store)
     if (scannerManager != nullptr) {
         scannerManager->ErrorRecord();
     }
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_API10_TABLE, "Photos", UpdateAPI10Table);
 
-static void AddLocationTables(RdbStore &store)
+static int32_t AddLocationTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_GEO_DICTIONARY_TABLE,
         CREATE_GEO_KNOWLEDGE_TABLE,
     };
     MEDIA_INFO_LOG("start init location db");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_LOCATION_TABLE, "Vision", AddLocationTables);
 
 static void UpdateLocationTables(RdbStore &store)
 {
@@ -2368,7 +2579,7 @@ static void AddAnalysisTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void AddFaceTables(RdbStore &store)
+static int32_t AddFaceTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_IMAGE_FACE,
@@ -2381,10 +2592,11 @@ static void AddFaceTables(RdbStore &store)
         CREATE_IMAGE_FACE_INDEX
     };
     MEDIA_INFO_LOG("start add face tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FACE_TABLE, "Vision", AddFaceTables);
 
-static void AddSaliencyTables(RdbStore &store)
+static int32_t AddSaliencyTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
@@ -2395,10 +2607,11 @@ static void AddSaliencyTables(RdbStore &store)
         UPDATE_SALIENCY_NOT_SUPPORT_VALUE
     };
     MEDIA_INFO_LOG("start add saliency tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SALIENCY_TABLE, "Vision", AddSaliencyTables);
 
-static void AddVideoLabelTable(RdbStore &store)
+static int32_t AddVideoLabelTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_VIDEO_LABEL,
@@ -2408,20 +2621,22 @@ static void AddVideoLabelTable(RdbStore &store)
         CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL,
     };
     MEDIA_INFO_LOG("start add video label tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_VIDEO_LABEL_TABEL, "Vision", AddVideoLabelTable);
 
-static void UpdateVideoLabelTable(RdbStore &store)
+static int32_t UpdateVideoLabelTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         "DROP TABLE IF EXISTS tab_analysis_video_label",
         CREATE_TAB_ANALYSIS_VIDEO_LABEL,
     };
     MEDIA_INFO_LOG("start update video label tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_VIDEO_LABEL_TABEL, "Vision", UpdateVideoLabelTable);
 
-static void AddSourceAlbumTrigger(RdbStore &store)
+static int32_t AddSourceAlbumTrigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
@@ -2434,10 +2649,11 @@ static void AddSourceAlbumTrigger(RdbStore &store)
         DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     };
     MEDIA_INFO_LOG("start add source album trigger");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SOURCE_ALBUM_TRIGGER, "Photos", AddSourceAlbumTrigger);
 
-static void RemoveSourceAlbumToAnalysis(RdbStore &store)
+static int32_t RemoveSourceAlbumToAnalysis(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
@@ -2452,10 +2668,11 @@ static void RemoveSourceAlbumToAnalysis(RdbStore &store)
         DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     };
     MEDIA_INFO_LOG("start add source album trigger");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS, "Photos", RemoveSourceAlbumToAnalysis);
 
-static void MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
+static int32_t MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
@@ -2473,10 +2690,12 @@ static void MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
         DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     };
     MEDIA_INFO_LOG("start move source album to photo album & add columns");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_MOVE_SOURCE_ALBUM_TO_PHOTO_ALBUM_AND_ADD_COLUMNS,
+    "Album", MoveSourceAlbumToPhotoAlbumAndAddColumns);
 
-static void ModifySourceAlbumTriggers(RdbStore &store)
+static int32_t ModifySourceAlbumTriggers(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
@@ -2492,12 +2711,15 @@ static void ModifySourceAlbumTriggers(RdbStore &store)
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
     };
     MEDIA_INFO_LOG("start modify source album triggers");
-    ExecSqls(executeSqlStrs, store);
+    int32_t ret = ExecSqls(executeSqlStrs, store);
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     MEDIA_INFO_LOG("end modify source album triggers");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS,
+    "Album", ModifySourceAlbumTriggers);
 
-static void AddAnalysisAlbum(RdbStore &store)
+static int32_t AddAnalysisAlbum(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;",
@@ -2506,10 +2728,11 @@ static void AddAnalysisAlbum(RdbStore &store)
         CREATE_ANALYSIS_ALBUM_MAP,
     };
     MEDIA_INFO_LOG("start init vision album");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_VISION_ALBUM, "Vision", AddAnalysisAlbum);
 
-static void AddAestheticCompositionTables(RdbStore &store)
+static int32_t AddAestheticCompositionTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_OBJECT,
@@ -2535,20 +2758,22 @@ static void AddAestheticCompositionTables(RdbStore &store)
         CREATE_COMPOSITION_INDEX,
     };
     MEDIA_INFO_LOG("start add aesthetic composition tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_AESTHETIC_COMPOSITION_TABLE, "Vision", AddAestheticCompositionTables);
 
-static void UpdateSpecForAddScreenshot(RdbStore &store)
+int32_t UpdateSpecForAddScreenshot(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_VISION_TRIGGER,
         CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC,
     };
     MEDIA_INFO_LOG("update media analysis service specifications for add screenshot");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SPEC_FOR_ADD_SCREENSHOT, "Vision", UpdateSpecForAddScreenshot);
 
-static void AddHeadAndPoseTables(RdbStore &store)
+static int32_t AddHeadAndPoseTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_HEAD,
@@ -2565,27 +2790,33 @@ static void AddHeadAndPoseTables(RdbStore &store)
         CREATE_POSE_INDEX,
     };
     MEDIA_INFO_LOG("start add head and pose tables");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HEAD_AND_POSE_TABLE, "Vision", AddHeadAndPoseTables);
 
-static void AddWatermarkTable(RdbStore &store, int32_t version)
+static int32_t AddWatermarkTable(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start add tab_analysis_watermark table");
     const vector<string> sqls = {
         CREATE_TAB_ANALYSIS_WATERMARK,
     };
-    ExecSqlsWithDfx(sqls, store, version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_WATERMARK_TABLE);
     MEDIA_INFO_LOG("End add tab_analysis_watermark table");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_WATERMARK_TABLE, "Vision", AddWatermarkTable);
 
-static void AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
+static int32_t AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
 {
     MEDIA_INFO_LOG("start add face occlusion and pose type column");
     MediaLibraryRdbStore::AddColumnIfNotExists(store, FACE_OCCLUSION, "INT", VISION_IMAGE_FACE_TABLE);
     MediaLibraryRdbStore::AddColumnIfNotExists(store, POSE_TYPE, "INT", VISION_POSE_TABLE);
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN,
+    "Gallery", AddFaceOcclusionAndPoseTypeColumn);
 
-static void AddSegmentationColumns(RdbStore &store)
+static int32_t AddSegmentationColumns(RdbStore &store)
 {
     const string addNameOnSegmentation = "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " +
         SEGMENTATION_NAME + " INT";
@@ -2593,10 +2824,12 @@ static void AddSegmentationColumns(RdbStore &store)
         PROB + " REAL";
 
     const vector<string> addSegmentationColumns = { addNameOnSegmentation, addProbOnSegmentation };
-    ExecSqls(addSegmentationColumns, store);
+    return ExecSqls(addSegmentationColumns, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SEGMENTATION_COLUMNS,
+    "Vision", AddSegmentationColumns);
 
-static void AddSearchTable(RdbStore &store)
+static int32_t AddSearchTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
@@ -2617,17 +2850,19 @@ static void AddSearchTable(RdbStore &store)
         CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("start init search db");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SEARCH_TABLE, "Vision", AddSearchTable);
 
-static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
+static int32_t UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     };
     MEDIA_INFO_LOG("start update insert photo update album");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME, "Album", UpdateInsertPhotoUpdateAlbumTrigger);
 
 bool MediaLibraryRdbStore::ResetSearchTables()
 {
@@ -2689,7 +2924,7 @@ bool MediaLibraryRdbStore::ResetAnalysisTables()
     return true;
 }
 
-static void AddPackageNameColumnOnTables(RdbStore &store)
+static int32_t AddPackageNameColumnOnTables(RdbStore &store)
 {
     static const string ADD_PACKAGE_NAME_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::MEDIA_PACKAGE_NAME + " TEXT";
@@ -2713,9 +2948,11 @@ static void AddPackageNameColumnOnTables(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update FILES");
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PACKAGE_NAME, "OtherTable", AddPackageNameColumnOnTables);
 
-void UpdateCloudAlbum(RdbStore &store)
+int32_t UpdateCloudAlbum(RdbStore &store)
 {
     /* album - add columns */
     const std::string addAlbumDirty = "ALTER TABLE " + PhotoAlbumColumns::TABLE +
@@ -2758,9 +2995,11 @@ void UpdateCloudAlbum(RdbStore &store)
         MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum columns", ret);
         UpdateFail(__FILE__, __LINE__);
     }
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_ALBUM, "Album", UpdateCloudAlbum);
 
-static void AddCameraShotKey(RdbStore &store)
+static int32_t AddCameraShotKey(RdbStore &store)
 {
     static const string ADD_CAMERA_SHOT_KEY_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::CAMERA_SHOT_KEY + " TEXT";
@@ -2774,19 +3013,22 @@ static void AddCameraShotKey(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to create CAMERA_SHOT_KEY index");
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CAMERA_SHOT_KEY, "Photos", AddCameraShotKey);
 
-void RemoveAlbumCountTrigger(RdbStore &store)
+int32_t RemoveAlbumCountTrigger(RdbStore &store)
 {
     const vector<string> removeAlbumCountTriggers = {
         BaseColumn::DropTrigger() + "update_user_album_count",
         BaseColumn::DropTrigger() + "photo_album_insert_asset",
         BaseColumn::DropTrigger() + "photo_album_delete_asset",
     };
-    ExecSqls(removeAlbumCountTriggers, store);
+    return ExecSqls(removeAlbumCountTriggers, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_REMOVE_ALBUM_COUNT_TRIGGER, "Album", RemoveAlbumCountTrigger);
 
-void AddExifAndUserComment(RdbStore &store)
+int32_t AddExifAndUserComment(RdbStore &store)
 {
     const string addUserCommentOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_USER_COMMENT + " TEXT";
@@ -2795,16 +3037,18 @@ void AddExifAndUserComment(RdbStore &store)
         " ADD COLUMN " + PhotoColumn::PHOTO_ALL_EXIF + " TEXT";
 
     const vector<string> addExifColumns = { addUserCommentOnPhotos, addAllExifOnPhotos };
-    ExecSqls(addExifColumns, store);
+    return ExecSqls(addExifColumns, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ALL_EXIF, "Photos", AddExifAndUserComment);
 
-void AddUpdateCloudSyncTrigger(RdbStore &store)
+int32_t AddUpdateCloudSyncTrigger(RdbStore &store)
 {
     const vector<string> addUpdateCloudSyncTrigger = { PhotoUpgrade::CREATE_PHOTOS_UPDATE_CLOUD_SYNC };
-    ExecSqls(addUpdateCloudSyncTrigger, store);
+    return ExecSqls(addUpdateCloudSyncTrigger, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER, "Photos", AddUpdateCloudSyncTrigger);
 
-void UpdateYearMonthDayData(RdbStore &store)
+int32_t UpdateYearMonthDayData(RdbStore &store)
 {
     MEDIA_DEBUG_LOG("UpdateYearMonthDayData start");
     const vector<string> updateSql = {
@@ -2829,11 +3073,11 @@ void UpdateYearMonthDayData(RdbStore &store)
         PhotoUpgrade::CREATE_DAY_INDEX,
         PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     };
-    ExecSqls(updateSql, store);
-    MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
+    return ExecSqls(updateSql, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_YEAR_MONTH_DAY, "Photos", UpdateYearMonthDayData);
 
-void FixIndexOrder(RdbStore &store)
+int32_t FixIndexOrder(RdbStore &store)
 {
     const vector<string> updateSql = {
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
@@ -2848,20 +3092,22 @@ void FixIndexOrder(RdbStore &store)
         PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
         PhotoUpgrade::CREATE_SCHPT_DAY_INDEX,
     };
-    ExecSqls(updateSql, store);
+    return ExecSqls(updateSql, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_FIX_INDEX_ORDER, "Photos", FixIndexOrder);
 
-void AddYearMonthDayColumn(RdbStore &store)
+int32_t AddYearMonthDayColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_YEAR + " TEXT",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_MONTH + " TEXT",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_DAY + " TEXT",
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_YEAR_MONTH_DAY, "Photos", AddYearMonthDayColumn);
 
-void AddCleanFlagAndThumbStatus(RdbStore &store)
+int32_t AddCleanFlagAndThumbStatus(RdbStore &store)
 {
     const vector<string> addSyncStatus = {
         "DROP INDEX IF EXISTS idx_shpt_date_added",
@@ -2876,34 +3122,39 @@ void AddCleanFlagAndThumbStatus(RdbStore &store)
     int32_t result = ExecSqls(addSyncStatus, store);
     CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK,
         "Upgrade rdb need clean and thumb status error %{private}d", result);
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS, "Photos", AddCleanFlagAndThumbStatus);
 
-void AddCloudIndex(RdbStore &store)
+int32_t AddCloudIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
         PhotoUpgrade::CREATE_CLOUD_ID_INDEX,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_ID_INDEX, "Photos", AddCloudIndex);
 
-void AddCompositeDisplayStatusColumn(RdbStore &store, int32_t version)
+int32_t AddCompositeDisplayStatusColumn(RdbStore &store)
 {
     const string addCompositeDisplayStatusOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0";
     const vector<string> addCompositeDisplayStatus = {addCompositeDisplayStatusOnPhotos};
-    ExecSqlsWithDfx(addCompositeDisplayStatus, store, version);
+    return ExecSqlsWithDfx(addCompositeDisplayStatus, store, VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS, "Photos", AddCompositeDisplayStatusColumn);
 
-static void AddPhotoEditTimeColumn(RdbStore &store)
+static int32_t AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_EDIT_TIME + " BIGINT DEFAULT 0";
     const vector<string> addEditTime = { addEditTimeOnPhotos };
-    ExecSqls(addEditTime, store);
+    return ExecSqls(addEditTime, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_EDIT_TIME, "Photos", AddPhotoEditTimeColumn);
 
-void AddShootingModeColumn(RdbStore &store)
+int32_t AddShootingModeColumn(RdbStore &store)
 {
     const std::string addShootringMode =
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
@@ -2911,9 +3162,11 @@ void AddShootingModeColumn(RdbStore &store)
     const vector<string> addShootingModeColumn = { addShootringMode };
     int32_t result = ExecSqls(addShootingModeColumn, store);
     CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb shooting_mode error %{private}d", result);
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SHOOTING_MODE, "Photos", AddShootingModeColumn);
 
-void AddShootingModeTagColumn(RdbStore &store)
+int32_t AddShootingModeTagColumn(RdbStore &store)
 {
     const std::string addShootringModeTag =
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
@@ -2924,19 +3177,22 @@ void AddShootingModeTagColumn(RdbStore &store)
         dropExpiredClearMapTrigger, TriggerDeletePhotoClearMap()};
     int32_t result = ExecSqls(addShootingModeTagColumn, store);
     CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb shooting_mode error %{private}d", result);
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SHOOTING_MODE_TAG, "Photos", AddShootingModeTagColumn);
 
-static void AddHiddenViewColumn(RdbStore &store)
+static int32_t AddHiddenViewColumn(RdbStore &store)
 {
     vector<string> upgradeSqls = {
         BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CONTAINS_HIDDEN),
         BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COUNT),
         BaseColumn::AlterTableAddTextColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COVER),
     };
-    ExecSqls(upgradeSqls, store);
+    return ExecSqls(upgradeSqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HIDDEN_VIEW_COLUMNS, "Album", AddHiddenViewColumn);
 
-static void ModifyMdirtyTriggers(RdbStore &store)
+static int32_t ModifyMdirtyTriggers(RdbStore &store)
 {
     /* drop old mdirty trigger */
     const vector<string> dropMdirtyTriggers = {
@@ -2959,9 +3215,10 @@ static void ModifyMdirtyTriggers(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("upgrade fail: create new mdirty trigger");
     }
+    return NativeRdb::E_OK;
 }
 
-static void AddLastVisitTimeColumn(RdbStore &store)
+static int32_t AddLastVisitTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " DROP time_visit ",
@@ -2973,19 +3230,29 @@ static void AddLastVisitTimeColumn(RdbStore &store)
     };
     int32_t result = ExecSqls(sqls, store);
     CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb last_visit_time error %{private}d", result);
+    return result;
 }
 
-void AddHiddenTimeColumn(RdbStore &store)
+static int32_t VersionAddLastVisitTime(RdbStore &store)
+{
+    int32_t ret = ModifyMdirtyTriggers(store);
+    ret = AddLastVisitTimeColumn(store);
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_LAST_VISIT_TIME, "Photos", VersionAddLastVisitTime);
+
+int32_t AddHiddenTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
             " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0",
         PhotoUpgrade::CREATE_HIDDEN_TIME_INDEX,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HIDDEN_TIME, "Photos", AddHiddenTimeColumn);
 
-void AddAlbumOrderColumn(RdbStore &store)
+int32_t AddAlbumOrderColumn(RdbStore &store)
 {
     const std::string addAlbumOrderColumn =
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
@@ -3012,18 +3279,22 @@ void AddAlbumOrderColumn(RdbStore &store)
         albumDeleteTrigger, albumInsertTrigger};
     int32_t result = ExecSqls(addAlbumOrder, store);
     CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb album order error %{private}d", result);
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ALBUM_ORDER, "Album", AddAlbumOrderColumn);
 
-static void AddFormMap(RdbStore &store)
+static int32_t AddFormMap(RdbStore &store)
 {
     int32_t result = ExecSqlWithRetry([&]() { return store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE); });
     if (result != NativeRdb::E_OK) {
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update PHOTOS");
     }
+    return result;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FORM_MAP, "OtherTable", AddFormMap);
 
-static void FixDocsPath(RdbStore &store)
+static int32_t FixDocsPath(RdbStore &store)
 {
     vector<string> sqls = {
         "UPDATE Files SET "
@@ -3038,10 +3309,11 @@ static void FixDocsPath(RdbStore &store)
         "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
     };
 
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_FIX_DOCS_PATH, "Photos", FixDocsPath);
 
-static void AddImageVideoCount(RdbStore &store)
+static int32_t AddImageVideoCount(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE +
@@ -3049,17 +3321,20 @@ static void AddImageVideoCount(RdbStore &store)
         "ALTER TABLE " + PhotoAlbumColumns::TABLE +
                 " ADD COLUMN " + PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " INT DEFAULT 0",
     };
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IMAGE_VIDEO_COUNT, "Album", AddImageVideoCount);
 
-static void AddSCHPTHiddenTimeIndex(RdbStore &store)
+static int32_t AddSCHPTHiddenTimeIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoUpgrade::CREATE_SCHPT_HIDDEN_TIME_INDEX,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SCHPT_HIDDEN_TIME_INDEX, "Photos", AddSCHPTHiddenTimeIndex);
 
-static void UpdateClassifyDirtyData(RdbStore &store)
+static int32_t UpdateClassifyDirtyData(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_TABLE_ANALYSISALBUM,
@@ -3078,10 +3353,11 @@ static void UpdateClassifyDirtyData(RdbStore &store)
         CREATE_IMAGE_FACE_INDEX
     };
     MEDIA_INFO_LOG("start clear dirty data");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_CLEAR_LABEL_DATA, "Photos", UpdateClassifyDirtyData);
 
-static void UpdateGeoTables(RdbStore &store)
+static int32_t UpdateGeoTables(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
@@ -3092,15 +3368,17 @@ static void UpdateGeoTables(RdbStore &store)
         CREATE_CITY_NAME_INDEX,
         CREATE_LOCATION_KEY_INDEX,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_GEO_TABLE, "Vision", UpdateGeoTables);
 
-static void UpdatePhotosMdirtyTrigger(RdbStore& store)
+static int32_t UpdatePhotosMdirtyTrigger(RdbStore& store)
 {
     string dropSql = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
     if (ExecSqlWithRetry([&]() { return store.ExecuteSql(dropSql); }) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to drop old photos_mdirty_trigger: %{private}s", dropSql.c_str());
         UpdateFail(__FILE__, __LINE__);
+        return NativeRdb::E_ERROR;
     }
 
     if (ExecSqlWithRetry([&]() { return store.ExecuteSql(PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER); }) !=
@@ -3108,10 +3386,17 @@ static void UpdatePhotosMdirtyTrigger(RdbStore& store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to upgrade new photos_mdirty_trigger, %{private}s",
             PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER.c_str());
+        return NativeRdb::E_ERROR;
     }
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_PHOTOS_MDIRTY_TRIGGER, "Photos", UpdatePhotosMdirtyTrigger);
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO,
+    "Photos", UpdatePhotosMdirtyTrigger);
+REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_OLD_PHOTOS,
+    "OtherTable", TabOldPhotosTableEventHandler().OnCreate);
 
-static void AddIndexForFileId(RdbStore& store)
+static int32_t AddIndexForFileId(RdbStore& store)
 {
     const vector<string> sqls = {
         CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
@@ -3119,10 +3404,11 @@ static void AddIndexForFileId(RdbStore& store)
         CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_INDEX_FOR_FILEID, "Photos", AddIndexForFileId);
 
-void MediaLibraryRdbStore::AddIndexForFileIdAsync(const shared_ptr<MediaLibraryRdbStore> store)
+int32_t AddIndexForFileIdAsync(RdbStore& store)
 {
     MEDIA_INFO_LOG("AddIndexForFileIdAsync start");
     const vector<string> updateSql = {
@@ -3130,64 +3416,23 @@ void MediaLibraryRdbStore::AddIndexForFileIdAsync(const shared_ptr<MediaLibraryR
         CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
         CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
     };
-    ExecSqls(updateSql, *store->GetRaw().get());
+    int32_t ret = ExecSqls(updateSql, store);
     MEDIA_INFO_LOG("AddIndexForFileIdAsync end");
+    return ret;
 }
 
-void MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store,
-    int32_t version)
-{
-    const std::vector<std::string> sqls = {
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
-    };
-    MEDIA_INFO_LOG("Start add index for photo sort in album");
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
-    MEDIA_INFO_LOG("End add index for photo sort in album");
-}
-
-void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store,
-    int32_t version)
-{
-    const vector<string> sqls = {
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_HIDDEN_TIME_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_DAY_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_GENERAL_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
-        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
-    };
-    MEDIA_INFO_LOG("Start add index for Cloud Enhancement and Pitaya");
-    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
-    MEDIA_INFO_LOG("End add index for Cloud Enhancement and Pitaya");
-}
-
-static void AddMetaRecovery(RdbStore& store)
+static int32_t AddMetaRecovery(RdbStore& store)
 {
     const vector<string> sqls = {"ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_METADATA_FLAGS + " INT DEFAULT 0",
         PhotoUpgrade::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
     };
     MEDIA_INFO_LOG("start AddMetaRecovery");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_METARECOVERY, "Photos", AddMetaRecovery);
 
-static void AddCloudEnhancementAlbum(RdbStore& store)
+static int32_t AddCloudEnhancementAlbum(RdbStore& store)
 {
     ValuesBucket values;
     int32_t err = E_FAIL;
@@ -3213,9 +3458,11 @@ static void AddCloudEnhancementAlbum(RdbStore& store)
     if (err != E_OK) {
         MEDIA_ERR_LOG("Add cloud enhancement album failed, err: %{public}d", err);
     }
+    return err;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM, "Album", AddCloudEnhancementAlbum);
 
-void AddHighlightTriggerColumn(RdbStore &store)
+static int32_t AddHighlightTriggerColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::HIGHLIGHT_TABLE + " ADD COLUMN " +
@@ -3224,46 +3471,52 @@ void AddHighlightTriggerColumn(RdbStore &store)
     MEDIA_INFO_LOG("start add highlight trigger column");
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add highlight trigger column");
+    return NativeRdb::E_OK;
 }
 
-void AddHighlightInsertAndUpdateTrigger(RdbStore &store)
+int32_t AddHighlightInsertAndUpdateTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoUpgrade::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
         PhotoUpgrade::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL
     };
     MEDIA_INFO_LOG("start add highlight insert and update trigger");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add highlight insert and update trigger");
+    return ret;
 }
 
-void AddHighlightIndex(RdbStore &store)
+static int32_t AddHighlightIndex(RdbStore &store)
 {
     const vector<string> addHighlightIndex = { PhotoUpgrade::INDEX_HIGHLIGHT_FILEID };
     MEDIA_INFO_LOG("start add highlight index");
-    ExecSqls(addHighlightIndex, store);
+    int32_t ret = ExecSqls(addHighlightIndex, store);
     MEDIA_INFO_LOG("end add highlight index");
+    return ret;
 }
 
-static void UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
+static int32_t UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
 {
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS update_search_status_trigger",
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     };
     MEDIA_INFO_LOG("start update search index for clean flag");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG,
+    "Photos", UpdateSearchIndexTriggerForCleanFlag);
 
-static void UpdateAlbumRefreshTable(RdbStore &store)
+static int32_t UpdateAlbumRefreshTable(RdbStore &store)
 {
     const vector<string> sqls = {
         CREATE_ALBUM_REFRESH_TABLE,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ALBUM_REFRESH, "Album", UpdateAlbumRefreshTable);
 
-static void AddCoverPlayVersionColumns(RdbStore& store)
+static int32_t AddCoverPlayVersionColumns(RdbStore& store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE +
@@ -3272,19 +3525,21 @@ static void AddCoverPlayVersionColumns(RdbStore& store)
             " ADD COLUMN " + PLAY_SERVICE_VERSION + " INT DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add cover play version columns");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_COVER_PLAY_SERVICE_VERSION, "Album", AddCoverPlayVersionColumns);
 
-static void AddMovingPhotoRelatedData(RdbStore &store)
+static int32_t AddMovingPhotoRelatedData(RdbStore &store)
 {
     const vector<string> sqls = {
         CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
     };
     MEDIA_INFO_LOG("start create video aesthetics score table");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_HIGHLIGHT_MOVING_PHOTO, "Album", AddMovingPhotoRelatedData);
 
-static void UpdateFavoriteIndex(RdbStore &store)
+static int32_t UpdateFavoriteIndex(RdbStore &store)
 {
     MEDIA_INFO_LOG("Upgrade rdb UpdateFavoriteIndex");
     const vector<string> sqls = {
@@ -3292,10 +3547,11 @@ static void UpdateFavoriteIndex(RdbStore &store)
         PhotoUpgrade::DROP_SCHPT_MEDIA_TYPE_INDEX,
         PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FAVORITE_INDEX, "Photos", UpdateFavoriteIndex);
 
-static void AddMissingUpdates(RdbStore &store)
+static int32_t AddMissingUpdates(RdbStore &store)
 {
     MEDIA_INFO_LOG("start add missing updates");
     vector<string> sqls;
@@ -3326,9 +3582,11 @@ static void AddMissingUpdates(RdbStore &store)
     MEDIA_INFO_LOG("start update photos mdirty trigger");
     UpdatePhotosMdirtyTrigger(store);
     MEDIA_INFO_LOG("end add missing updates");
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_MISSING_UPDATES, "Photos", AddMissingUpdates);
 
-void AddMultiStagesCaptureColumns(RdbStore &store)
+int32_t AddMultiStagesCaptureColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_ID + " TEXT",
@@ -3338,17 +3596,20 @@ void AddMultiStagesCaptureColumns(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DEFERRED_PROC_TYPE +
             " INT DEFAULT 0",
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_MULTISTAGES_CAPTURE, "Photos", AddMultiStagesCaptureColumns);
 
-static void CreateBackupInfoTable(RdbStore& store, int32_t version)
+static int32_t CreateBackupInfoTable(RdbStore& store)
 {
     MEDIA_INFO_LOG("create table ConfigInfo start");
-    ExecSqlsWithDfx({ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE}, store, version);
+    int32_t ret = ExecSqlsWithDfx({ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE}, store, VERSION_ADD_MEDIA_BACKUP_INFO);
     MEDIA_INFO_LOG("create table ConfigInfo end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_MEDIA_BACKUP_INFO, "OtherTable", CreateBackupInfoTable);
 
-void UpdateMillisecondDate(RdbStore &store)
+int32_t UpdateMillisecondDate(RdbStore &store)
 {
     MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
     const vector<string> updateSql = {
@@ -3366,36 +3627,41 @@ void UpdateMillisecondDate(RdbStore &store)
         MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
         MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
     };
-    ExecSqls(updateSql, store);
+    int32_t ret = ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_DATE_TO_MILLISECOND, "Photos", UpdateMillisecondDate);
 
-void AddHasAstcColumns(RdbStore &store)
+int32_t AddHasAstcColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HAS_ASTC + " INT DEFAULT 0 ",
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HAS_ASTC, "Photos", AddHasAstcColumns);
 
-void AddAddressDescriptionColumns(RdbStore &store)
+int32_t AddAddressDescriptionColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + CITY_NAME + " TEXT",
         "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + ADDRESS_DESCRIPTION + " TEXT",
     };
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ADDRESS_DESCRIPTION, "Photos", AddAddressDescriptionColumns);
 
-void AddIsLocalAlbum(RdbStore &store)
+int32_t AddIsLocalAlbum(RdbStore &store)
 {
     const vector<string> sqls = {
         ADD_IS_LOCAL_COLUMN_FOR_ALBUM,
         ADD_PHOTO_ALBUM_IS_LOCAL,
     };
     MEDIA_INFO_LOG("start add islocal column");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IS_LOCAL_ALBUM, "Vision", AddIsLocalAlbum);
 
 void AddSourceAndTargetTokenForUriPermission(RdbStore &store)
 {
@@ -3448,10 +3714,12 @@ void AddHighlightChangeFunction(RdbStore &store)
         "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_PIN_TIME + " BIGINT ",
     };
     MEDIA_INFO_LOG("start add highlight change function");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_HIGHLIGHT_CHANGE_FUNCTION, "Vision",
+    AddHighlightChangeFunction);
 
-static void AddHighlightViewedNotification(RdbStore &store, int32_t version)
+static int32_t AddHighlightViewedNotification(RdbStore &store)
 {
     MEDIA_INFO_LOG("start AddHighlightViewedNotification");
     const vector<string> sqls = {
@@ -3482,10 +3750,13 @@ void AddAestheticsScoreFileds(RdbStore &store)
         "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT NOT NULL DEFAULT 0 ",
     };
     MEDIA_INFO_LOG("start add aesthetics score fields");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add aesthetics score fields");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_AESTHETICS_SCORE_FIELDS, "Vision", AddAestheticsScoreFileds);
 
-static void AddAlbumsOrderKeysColumn(RdbStore &store)
+static int32_t AddAlbumsOrderKeysColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
@@ -3506,10 +3777,13 @@ static void AddAlbumsOrderKeysColumn(RdbStore &store)
             PhotoAlbumColumns::STYLE2_ORDER_STATUS + " INT NOT NULL DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add album order keys column start");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add album order keys column end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ALBUMS_ORDER_KEYS_COLUMNS, "Album", AddAlbumsOrderKeysColumn);
 
-void AddStoryTables(RdbStore &store)
+static int32_t AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
         CREATE_HIGHLIGHT_ALBUM_TABLE,
@@ -3597,10 +3871,11 @@ void UpdateHighlightTablePrimaryKey(RdbStore &store)
         CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     };
     MEDIA_INFO_LOG("update primary key of highlight db");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY, "Album", UpdateHighlightTablePrimaryKey);
 
-void AddBussinessRecordAlbum(RdbStore &store)
+static int32_t AddBussinessRecordAlbum(RdbStore &store)
 {
     string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE position <> 1 AND " +
         PhotoColumn::PHOTO_SHOOTING_MODE + " is not null AND " +
@@ -3831,7 +4106,7 @@ static void AddThumbnailReady(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddCheckFlag(RdbStore &store)
+static int32_t AddCheckFlag(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
@@ -3840,9 +4115,11 @@ static void AddCheckFlag(RdbStore &store)
             PhotoAlbumColumns::ALBUM_CHECK_FLAG + " INT DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add check_flag columns");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add check_flag columns");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CHECK_FLAG, "Photos", AddCheckFlag);
 
 static bool IsColumnExists(RdbStore &store, const std::string& tableName,
     const std::string& columnName)
@@ -3877,7 +4154,33 @@ static void CheckIfPhotoColumnExists(RdbStore &store, unordered_map<string, bool
     }
 }
 
-static void AddCloudEnhanceColumnsFix(RdbStore& store)
+static int32_t CreateTabFacardPhotos(RdbStore &store)
+{
+    TabFaCardPhotosTableEventHandler().OnCreate(store);
+    return NativeRdb::E_OK;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_FACARD_PHOTOS, "Photos", CreateTabFacardPhotos);
+
+static int32_t CreateTabFacardPhotosRetry(RdbStore &store)
+{
+    TabFaCardPhotosTableEventHandler().OnCreate(store);
+    return NativeRdb::E_OK;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY, "Photos", CreateTabFacardPhotosRetry);
+
+static int32_t AddAnalysisAlbumColumnsAndTables(RdbStore &store)
+{
+    AddPropertyImageFace(store);
+    AddNodeTagTables(store);
+    AddTotalAestheticsSelectedNegativeColumns(store);
+    AddNewColumnForAnalysisAlbum(store);
+    AddSimilarFaceTable(store);
+    AddSimilarityCheckingOperation(store);
+    return NativeRdb::E_OK;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ANALYSIS_ALBUM_COLUMNS_AND_TABLES, "Vision", AddAnalysisAlbumColumnsAndTables);
+
+static int32_t AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking cloud enhancement column");
     bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CE_AVAILABLE);
@@ -3886,9 +4189,10 @@ static void AddCloudEnhanceColumnsFix(RdbStore& store)
         AddCloudEnhancementColumns(store);
         MEDIA_INFO_LOG("Add Cloud Enhance Cols completed successfully");
     }
+    return NativeRdb::E_OK;
 }
 
-static void AddDynamicRangeColumnsFix(RdbStore& store)
+static int32_t AddDynamicRangeColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking dynamic_range_type column");
     bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
@@ -3897,9 +4201,10 @@ static void AddDynamicRangeColumnsFix(RdbStore& store)
         AddDynamicRangeType(store);
         MEDIA_INFO_LOG("Add Dynamic Range Cols completed successfully");
     }
+    return NativeRdb::E_OK;
 }
 
-static void AddThumbnailReadyColumnsFix(RdbStore& store)
+static int32_t AddThumbnailReadyColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking thumbnail_ready column");
     bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMBNAIL_READY);
@@ -3908,62 +4213,108 @@ static void AddThumbnailReadyColumnsFix(RdbStore& store)
         AddThumbnailReady(store);
         MEDIA_INFO_LOG("Add ThumbnailReady Column");
     }
+    return NativeRdb::E_OK;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_THUMBNAIL_READY_FIX, "Photos", AddThumbnailReadyColumnsFix);
 
-static void UpdateSourcePhotoAlbumTrigger(RdbStore &store)
+static int32_t UpdateSourcePhotoAlbumTrigger(RdbStore &store)
 {
     MEDIA_INFO_LOG("start update source photo album trigger");
     const vector<string> sqls = {
         DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
         CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
     };
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update source photo album trigger");
+    return ret;
 }
 
-static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
+static int32_t AddHighlightTriggerUpgradeWrapper(RdbStore &store)
+{
+    int32_t ret = AddHighlightTriggerColumn(store);
+    ret = AddHighlightInsertAndUpdateTrigger(store);
+    ret = AddHighlightIndex(store);
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HIGHLIGHT_TRIGGER, "Album", AddHighlightTriggerUpgradeWrapper);
+
+static int32_t AddDynamicRangeAndCloudEnhanceFixWrapper(RdbStore &store)
+{
+    int32_t ret = AddDynamicRangeColumnsFix(store);
+    ret = AddCloudEnhanceColumnsFix(store);
+    return NativeRdb::E_OK;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_HDR_AND_CLOUD_ENHANCEMENT_FIX, "Photos", AddDynamicRangeAndCloudEnhanceFixWrapper);
+
+static int32_t AddIsStylePhoto(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add is_style_photo column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::IS_STYLE_PHOTO + " INT NOT NULL DEFAULT 0"
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add is_style_photo column");
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IS_STYLE_PHOTO, "Photos", AddIsStylePhoto);
+
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER, "Album", UpdateSourcePhotoAlbumTrigger);
+REGISTER_SYNC_UPGRADE_TASK(VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED, "Album", UpdateSourcePhotoAlbumTrigger);
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN, "Album", UpdateSourcePhotoAlbumTrigger);
+
+static int32_t UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
 {
     MEDIA_INFO_LOG("start update search status trigger for owner album id");
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     };
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update search status trigger for owner album id");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID,
+    "Album", UpdateSearchStatusTriggerForOwnerAlbumId);
 
-static void UpdateSearchStatusTriggerForIsFavorite(RdbStore &store)
+static int32_t UpdateSearchStatusTriggerForIsFavorite(RdbStore &store)
 {
     MEDIA_INFO_LOG("start update search status trigger for is favorite");
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     };
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update search status trigger for is favorite");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_IS_FAVORITE,
+    "Photos", UpdateSearchStatusTriggerForIsFavorite);
 
-static void AddHighlightAnalysisProgress(RdbStore &store)
+static int32_t AddHighlightAnalysisProgress(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHT_ANALYSIS_PROGRESS + " TEXT"
     };
     MEDIA_INFO_LOG("start add highlight_analysis_progress column");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS, "Vision", AddHighlightAnalysisProgress);
 
-static void AddRefreshAlbumStatusColumn(RdbStore &store)
+static int32_t AddRefreshAlbumStatusColumn(RdbStore &store)
 {
     MEDIA_INFO_LOG("start add status column for refresh album table");
     const vector<string> sqls = {
         "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
             ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL"
     };
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add status column for refresh album table");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN, "Album", AddRefreshAlbumStatusColumn);
 
-static void UpdateCloudTrigger(RdbStore &store)
+static int32_t UpdateCloudTrigger(RdbStore &store)
 {
     MEDIA_INFO_LOG("start update cloud trigger");
     const vector<string> sqls = {
@@ -4265,7 +4616,7 @@ static void ReconstructMediaLibraryStorageFormatWithLock(AsyncTaskData *data)
     }
 }
 
-static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
+static int32_t AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
@@ -4287,10 +4638,10 @@ static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
 
     };
     MEDIA_INFO_LOG("Add owner_album_id column for Photos");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
 
-static void AddMergeInfoColumnForAlbum(RdbStore &store)
+static int32_t AddMergeInfoColumnForAlbum(RdbStore &store)
 {
     const vector<string> addMergeInfoSql = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
@@ -4304,7 +4655,7 @@ static void AddMergeInfoColumnForAlbum(RdbStore &store)
         CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
     };
     MEDIA_INFO_LOG("Add merge info for PhotoAlbum");
-    ExecSqls(addMergeInfoSql, store);
+    int32_t ret = ExecSqls(addMergeInfoSql, store);
     const std::string queryHiddenAlbumId =
         "SELECT album_id FROM PhotoAlbum WHERE album_name = '.hiddenAlbum'";
     auto resultSet = store.QuerySql(queryHiddenAlbumId);
@@ -4312,8 +4663,31 @@ static void AddMergeInfoColumnForAlbum(RdbStore &store)
         int32_t err = ExecSqlWithRetry([&]() { return store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET); });
         CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK,
             "Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
+        return err;
     }
+    return ret;
 }
+
+static int32_t AddOwnerAlbumIdUpgradeWrapper(RdbStore &store)
+{
+    int32_t ret = AddOwnerAlbumIdAndRefractorTrigger(store);
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
+    AlbumPluginTableEventHandler albumPluginTableEventHandler;
+    ret = albumPluginTableEventHandler.OnUpgrade(store, VERSION_ADD_OWNER_ALBUM_ID, VERSION_ADD_OWNER_ALBUM_ID);
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
+    ret = AddMergeInfoColumnForAlbum(store);
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: set album fuse upgrade status");
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
+    return NativeRdb::E_OK;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_OWNER_ALBUM_ID, "Album", AddOwnerAlbumIdUpgradeWrapper);
 
 int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store)
 {
@@ -4329,7 +4703,7 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(const std::sh
     return E_OK;
 }
 
-void AddHighlightMapTable(RdbStore &store)
+static int32_t AddHighlightMapTable(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
         CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -4342,7 +4716,7 @@ void AddHighlightMapTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void AddPetFaceTable(RdbStore &store, int32_t version)
+static int32_t AddPetTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_PET_FACE,
@@ -4350,9 +4724,11 @@ static void AddPetFaceTable(RdbStore &store, int32_t version)
         ADD_PET_STATUS_COLUMN,
     };
     MEDIA_INFO_LOG("add pet tables start");
-    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_ADD_PET_TABLES);
     MEDIA_INFO_LOG("add pet tables end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PET_TABLES, "Vision", AddPetTables);
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
@@ -4724,29 +5100,32 @@ static void AddAppUriPermissionInfo(RdbStore &store)
         TriggerDeleteAudioClearAppUriPermission(),
     };
     MEDIA_INFO_LOG("add uriPermission table info when upgrade phone");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_APP_URI_PERMISSION_INFO, "OtherTable", AddAppUriPermissionInfo);
 
-static void AddCoverPosition(RdbStore &store)
+static int32_t AddCoverPosition(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_COVER_POSITION +
             " BIGINT DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add cover_position column");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_COVER_POSITION, "Album", AddCoverPosition);
 
-static void AddSchptReadyIndex(RdbStore &store)
+static int32_t AddSchptReadyIndex(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoUpgrade::INDEX_SCHPT_READY,
     };
     MEDIA_INFO_LOG("Add schpt ready index");
-    ExecSqls(executeSqlStrs, store);
+    return ExecSqls(executeSqlStrs, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SCHPT_READY_INEDX, "Photos", AddSchptReadyIndex);
 
-static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
+static int32_t UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
@@ -4951,11 +5330,13 @@ static void AddAppLinkColumn(RdbStore &store, int32_t version)
             " TEXT",
     };
     MEDIA_INFO_LOG("add has_applink/applink column start");
-    ExecSqlsWithDfx(sqls, store, version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_APPLINK_VERSION);
     MEDIA_INFO_LOG("add has_applink/applink column end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_APPLINK_VERSION, "Photos", AddAppLinkColumn);
 
-static void AddVisitCountColumn(RdbStore &store)
+static int32_t AddVisitCountColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -4966,21 +5347,24 @@ static void AddVisitCountColumn(RdbStore &store)
             " ADD COLUMN " + PhotoColumn::PHOTO_LCD_VISIT_COUNT  + " INT NOT NULL DEFAULT 0"
     };
     MEDIA_INFO_LOG("add real_lcd_visit_time/visit_count/lcd_visit_count column start");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("add real_lcd_visit_time/visit_count/lcd_visit_count column end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_VISIT_COUNT, "Photos", AddVisitCountColumn);
 
-static void AddIsRecentShow(RdbStore &store)
+static int32_t AddIsRecentShow(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECENT_SHOW  +
             " INT NOT NULL DEFAULT 1",
     };
     MEDIA_INFO_LOG("add is_recent_show column start");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN, "Photos", AddIsRecentShow);
 
-static void AddFrontAnalysisColumn(RdbStore &store)
+static int32_t AddFrontAnalysisColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_LIMIT + " INT DEFAULT 0",
@@ -4990,10 +5374,11 @@ static void AddFrontAnalysisColumn(RdbStore &store)
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_COUNT + " INT DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add front analysis column start");
-    ExecSqls(sqls, store);
+    return ExecSqls(sqls, store);
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FOREGROUND_ANALYSIS, "Vision", AddFrontAnalysisColumn);
 
-static void AddDcAnalysisColumn(RdbStore &store)
+static int32_t AddDcAnalysisColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_INDEX_COUNT + " INT DEFAULT 0",
@@ -5394,9 +5779,11 @@ static void DealWithAlbumMapTrigger(RdbStore &store)
         SQL_DROP_DELETE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("DealWithAlbumMapTrigger start");
-    ExecSqls(exeSqls, store);
+    int32_t ret = ExecSqls(exeSqls, store);
     MEDIA_INFO_LOG("DealWithAlbumMapTrigger end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_CLOUD_MEDIA_UPGRADE, "Photos", DealWithAlbumMapTrigger);
 
 static void AddUriSensitiveColumns(RdbStore &store)
 {
@@ -5708,11 +6095,13 @@ static void AddImageFaceAndFaceTagAgeGender(RdbStore &store, int32_t version)
         "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + AGE + " DOUBLE",
         "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + GENDER + " INTEGER",
     };
-    ExecSqlsWithDfx(sqls, store, version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER);
     MEDIA_INFO_LOG("end to add age and gender for image face and face tag");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IMAGE_FACE_AND_FACE_TAG_AGE_GENDER, "Vision", AddImageFaceAndFaceTagAgeGender);
 
-static void AddNetSelectedDownloadColumns(RdbStore &store, int32_t version)
+static int32_t AddNetSelectedDownloadColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + DownloadResourcesColumn::TABLE + " ADD COLUMN " +
@@ -5871,11 +6260,14 @@ static void AddDateAddedYearMonthDay(RdbStore &store, int32_t version)
             PhotoColumn::PHOTO_DATE_ADDED_DAY + " TEXT ",
     };
     MEDIA_INFO_LOG("Add date_added year month day columns start");
-    ExecSqlsWithDfx(sqls, store, version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY);
     MEDIA_INFO_LOG("Add date_added year month day columns end");
+    return ret;
 }
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY,
+    "Photos", AddDateAddedYearMonthDay);
 
-static void AddPersonScoreAndHighlightFlush(RdbStore &store, int32_t version)
+static int32_t AddPersonScoreAndHighlightFlush(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_FLUSH + " INT NOT NULL DEFAULT 0 ",
