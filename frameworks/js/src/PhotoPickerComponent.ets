@@ -719,6 +719,9 @@ export struct PhotoPickerComponent {
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     }
+    else { 
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*'); 
+    }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
   }
