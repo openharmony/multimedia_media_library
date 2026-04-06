@@ -37,6 +37,8 @@ export class AlbumPickerComponent extends ViewPU {
         this.__albumPickerController = new SynchedPropertyNesedObjectPU(o.albumPickerController, this, 'albumPickerController');
         this.proxy = void 0;
         this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_UI_EXTENSION_ABILITY_DPI;
+        this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
+        this.isPickerKilled = false;
         this.setInitiallyProvidedValue(o);
         this.declareWatch('albumPickerController', this.onChanged);
     }
@@ -53,6 +55,9 @@ export class AlbumPickerComponent extends ViewPU {
             this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
             console.info(`dpiFollowStrategy = ${this.dpiFollowStrategy}`);
         }
+        if (e.revokeIndex !== undefined) { 
+            this.revokeIndex = e.revokeIndex; 
+        }
     }
 
     updateStateVars(e) {
@@ -61,6 +66,7 @@ export class AlbumPickerComponent extends ViewPU {
 
     purgeVariableDependenciesOnElmtId(e) {
         this.__albumPickerController.purgeDependencyOnElmtId(e);
+        this.__revokeIndex.purgeDependencyOnElmtId(e);
     }
 
     purgeVariableDependenciesOnElmtId(e) {
@@ -68,12 +74,25 @@ export class AlbumPickerComponent extends ViewPU {
 
     aboutToBeDeleted() {
         this.__albumPickerController.aboutToBeDeleted();
+        this.__revokeIndex.aboutToBeDeleted();
         SubscriberManager.Get().delete(this.id__());
         this.aboutToBeDeletedInternal();
     }
 
     get albumPickerController() {
         return this.__albumPickerController.get();
+    }
+
+    get revokeIndex() { 
+        if(this.__revokeIndex.get() === undefined) {
+            this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
+        }
+        return this.__revokeIndex.get(); 
+    } 
+ 
+ 
+    set revokeIndex(newValue) { 
+        return this.__revokeIndex.set(); 
     }
 
     initialRender() {
@@ -84,6 +103,13 @@ export class AlbumPickerComponent extends ViewPU {
         this.observeComponentCreation2(((e, o) => {
             Column.create();
             Column.width('100%');
+            Column.onVisibleAreaChange([0.0, 1.0], (isExpanding, currentRatio) => {
+                if (this.isPickerKilled && currentRatio >= 0 && isExpanding) {
+                    console.log(`photopickercomponent isRevoke revokeIndex = ${this.revokeIndex}`);
+                    this.revokeIndex++;
+                    this.isPickerKilled = false;
+                }
+            })
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var n;
@@ -91,6 +117,7 @@ export class AlbumPickerComponent extends ViewPU {
             var i;
             SecurityUIExtensionComponent.create({
                 parameters: {
+                    errorRevokeIndex: this.revokeIndex,
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     targetPage: 'albumPage',
                     themeColorMode: null === (n = this.albumPickerOptions) || void 0 === n ? void 0 : n.themeColorMode,
@@ -112,6 +139,11 @@ export class AlbumPickerComponent extends ViewPU {
             }));
             SecurityUIExtensionComponent.onError((() => {
                 console.info('AlbumPickerComponent onError');
+                console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex); 
+                if (error.code === 100014) { 
+                    console.log('PhotoPickerComponent is set isPickerKilled = true');
+                    this.isPickerKilled = true; 
+                }
             }));
         }), SecurityUIExtensionComponent);
         Column.pop();
