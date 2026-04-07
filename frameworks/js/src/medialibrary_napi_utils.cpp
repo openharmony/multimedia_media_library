@@ -67,6 +67,8 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
+static const int32_t MIN_REQUIRED_PARAMS_1 = 1;
+static const int32_t MIN_REQUIRED_PARAMS_2  = 2;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -1263,20 +1265,28 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
     for (auto& operationItem : operationList) {
         switch (operationItem.operation) {
             case OHOS::DataShare::OperationType::LIKE : {
-                std::string field = std::get<string>(operationItem.singleParams[0]);
-                std::string value = std::get<string>(operationItem.singleParams[1]);
-                if (field.compare("FeaturedSinglePortrait") == 0 && value.compare("true") == 0) {
+                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) break;
+                std::string* field = std::get_if<string>(&operationItem.singleParams[0]);
+                std::string* value = std::get_if<string>(&operationItem.singleParams[1]);
+                if (!field || !value) break;
+                if (field->compare("FeaturedSinglePortrait") == 0 && value->compare("true") == 0) {
                     isFeaturedSinglePortrait = true;
                 } else {
-                    featuredSinglePortraitPredicates.Like(field, value);
+                    featuredSinglePortraitPredicates.Like(*field, *value);
                 }
                 break;
             }
             case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
+                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_1) {
+                    break;
+                }
                 featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
                 break;
             }
             case OHOS::DataShare::OperationType::LIMIT : {
+                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) {
+                    break;
+                }
                 featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
                 break;
             }
