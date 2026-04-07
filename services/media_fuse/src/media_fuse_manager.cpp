@@ -404,8 +404,8 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     return ret;
 }
 
-static int32_t WrCheckPermission(const string &filePath, const string &mode,
-    const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord = true)
+int32_t MediafusePermCheckInfo::WrCheckPermission(const string &filePath, const string &mode,
+    const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord)
 {
     vector<string> perms;
     if (mode.find("r") != string::npos) {
@@ -418,7 +418,19 @@ static int32_t WrCheckPermission(const string &filePath, const string &mode,
         return PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms,
             uid, tokenCaller)? E_SUCCESS : E_PERMISSION_DENIED;
     }
-    return PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller)? E_SUCCESS : E_PERMISSION_DENIED;
+    OpenDataInfo openData;
+    openData.uri = openUri_;
+    openData.uid = uid;
+    openData.userId = uid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    return PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData) ?
+        E_SUCCESS : E_PERMISSION_DENIED;
+}
+ 
+void MediafusePermCheckInfo::SetOpenUri(const std::string &openUri)
+{
+    openUri_ = openUri;
 }
 
 static bool CheckPermissionType(const vector<int32_t> currentTypes, const set<int32_t> targetTypes)
@@ -479,13 +491,19 @@ bool MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller, bool isNeedR
     } else {
         rslt = false;
     }
+    OpenDataInfo openData;
+    openData.uri = openUri_;
+    openData.uid = uid_;
+    openData.userId = uid_ / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
     if (mode_.find("r") != string::npos && isNeedRecord) {
         PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, rslt,
-            PermissionUsedTypeValue::PICKER_TYPE, uid_);
+            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
     }
     if (mode_.find("w") != string::npos && isNeedRecord) {
         PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, rslt,
-            PermissionUsedTypeValue::PICKER_TYPE, uid_);
+            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
     }
     return rslt;
 }
@@ -623,7 +641,8 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
     return E_OK;
 }
 
-static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode)
+static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode,
+    const string &uri)
 {
     MEDIA_DEBUG_LOG("fuse open file");
     fuse_context *ctx = fuse_get_context();
@@ -640,6 +659,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     PermissionUtils::GetClientBundle(uid, bundleName);
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
     class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid);
+    info.SetOpenUri(uri);
     bool permGranted = info.CheckPermission(tokenCaller);
     if (!permGranted) {
         return E_ERR;
@@ -694,7 +714,7 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     GetPathFromFileId(target, fileId);
     MEDIA_DEBUG_LOG("MediaFuseManager::DoOpen AddVisitCount fileId[%{public}s]", fileId.c_str());
     MediaVisitCountManager::AddVisitCount(MediaVisitCountManager::VisitCountType::PHOTO_FS, fileId);
-    fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
+    fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag), path);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
         return E_ERR;
