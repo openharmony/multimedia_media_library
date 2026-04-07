@@ -35,6 +35,7 @@
 #include "data_secondary_directory_uri.h"
 #include "dfx_deprecated_perm_usage.h"
 #include "mediatool_uri.h"
+#include "ipc_skeleton.h"
 
 using namespace std;
 // LCOV_EXCL_START
@@ -393,7 +394,14 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
     if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
-        return PermissionUtils::CheckPhotoCallerPermission(perms)? E_SUCCESS : E_PERMISSION_DENIED;
+        int32_t callingUid = IPCSkeleton::GetCallingUid();
+        OpenDataInfo openData;
+        openData.uri = cmd.GetUri().ToString();
+        openData.uid = callingUid;
+        openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+        openData.type = "open";
+        openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+        return PermissionUtils::CheckPhotoCallerPermission(perms, openData)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
