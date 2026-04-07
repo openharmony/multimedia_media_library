@@ -1288,12 +1288,20 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     }
     int indexOfPhotoId = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
+    if (indexOfPhotoId < 0) {
+        MEDIA_ERR_LOG("Failed to get photoId");
+        return E_ERR;
+    }
     std::string photoId;
     resultSet->GetString(indexOfPhotoId, photoId);
     resp.photoId = photoId;
 
     int columnIndexQuality = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
+    if (columnIndexQuality < 0) {
+        MEDIA_ERR_LOG("Failed to get photoQuality");
+        return E_ERR;
+    }
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
     resp.photoQuality = currentPhotoQuality;

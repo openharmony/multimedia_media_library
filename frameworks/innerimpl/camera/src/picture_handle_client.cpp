@@ -96,6 +96,30 @@ void PictureHandlerClient::FinishRequestPicture(const int32_t &fileId)
     UserFileClient::Insert(finishRequestPictureUri, valuesBucket);
 }
 
+int32_t CheckDataOverflow(uint32_t readOffset, uint32_t pictureSize, uint32_t msgLen, void *addr)
+{
+    if (pictureSize == 0) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture picture is not exists");
+        munmap(addr, msgLen);
+        return E_NO_SUCH_FILE;
+    }
+ 
+    if (readOffset >= msgLen) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen ");
+        munmap(addr, msgLen);
+        return E_ERR;
+    }
+ 
+    // 检查pictureSize是否会超出缓冲区范围
+    if (pictureSize > (msgLen - readOffset)) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture pictureSize invalid: %{public}u", pictureSize);
+        munmap(addr, msgLen);
+        return E_ERR;
+    }
+ 
+    return E_OK;
+}
+
 int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &fileId,
     std::shared_ptr<Media::Picture> &picture, bool &isHighQuality)
 {
@@ -122,19 +146,23 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
 
     // 读取dataSize
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + readoffset);
-    readoffset += UINT32_LEN;
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture dataSize: %{public}d", dataSize);
-    if (dataSize == 0) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture picture is not exists");
-        munmap(addr, msgLen);
-        return E_NO_SUCH_FILE;
+    if (CheckDataOverflow(readoffset, dataSize, msgLen, addr) != E_OK) {
+        close(fd);
+        return E_ERR;
     }
+    readoffset += UINT32_LEN;
 
     // 读取auxiliaryPictureSize
     uint32_t auxiliaryPictureSize =  *reinterpret_cast<const uint32_t*>(addr + readoffset);
-    readoffset += UINT32_LEN;
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture auxiliaryPictureSize: %{public}d",
         auxiliaryPictureSize);
+    if (CheckDataOverflow(readoffset, auxiliaryPictureSize, msgLen, addr) != E_OK) {
+        close(fd);
+        return E_ERR;
+    }
+    readoffset += UINT32_LEN;
+
     uint8_t *pictureParcelData = static_cast<uint8_t *>(malloc(dataSize));
     if (pictureParcelData == nullptr) {
         munmap(addr, msgLen);
@@ -227,9 +255,9 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
     std::shared_ptr<PixelMap> pixelMap = ReadPixelMap(data);
     std::unique_ptr<AuxiliaryPicture> uptr = AuxiliaryPicture::Create(pixelMap,
         auxiliaryPictureInfo.auxiliaryPictureType, auxiliaryPictureInfo.size);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture;
-    auxiliaryPicture.reset(uptr.get());
-    uptr.release();
+    CHECK_AND_RETURN_RET_LOG(uptr != nullptr, false, "uptr is nullptr");
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(uptr);
+    CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, false, "auxiliaryPicture is nullptr");
 
     auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 

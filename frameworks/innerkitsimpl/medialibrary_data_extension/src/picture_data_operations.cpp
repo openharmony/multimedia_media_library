@@ -68,6 +68,7 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
     auto iter = pictureMap.begin();
     while (iter != pictureMap.end()) {
         time_t now = time(nullptr);
+        CHECK_AND_RETURN_LOG(iter->second != nullptr, "picture is nullptr");
         bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
         if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
             bool isTemp = false;
@@ -146,17 +147,19 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
     sptr<PicturePair>& picturePair,
     std::list<std::string>& pictureImageIdList)
 {
+    lock_guard<mutex>  lock(pictureMapMutex_);
     MEDIA_INFO_LOG("enter CleanHighQualityPictureDataInternal, %{public}zu, %{public}zu",
         lowQualityPictureMap_.size(), highQualityPictureMap_.size());
-    lock_guard<mutex>  lock(pictureMapMutex_);
     // 清理低质量图
     auto iterPicture = lowQualityPictureMap_.find(imageId);
-    if (iterPicture != lowQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
+    if (iterPicture != lowQualityPictureMap_.end() && (iterPicture->second) != nullptr &&
+        (iterPicture->second)->isCleanImmediately_) {
         lowQualityPictureMap_.erase(iterPicture);
     }
     // 存储高质量图
     iterPicture = highQualityPictureMap_.find(imageId);
-    if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
+    if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second) != nullptr &&
+        (iterPicture->second)->isCleanImmediately_) {
         highQualityPictureMap_.erase(iterPicture);
     }
     highQualityPictureMap_[imageId] = picturePair;
@@ -166,9 +169,10 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
         if ((int)(highQualityPictureMap_.size()) <= max_capibilty) {
             return;
         }
-        std::string imageId = *iter;
-        std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId);
-        if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
+        std::string imageId1 = *iter;
+        std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId1);
+        if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second) != nullptr &&
+            (iterPicture->second)->isCleanImmediately_) {
             bool isTemp = false;
             bool isEdited = false;
             int32_t fileId = (iterPicture->second)->fileId_;
@@ -244,6 +248,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPict
         case LOW_QUALITY_PICTURE:
             iter = lowQualityPictureMap_.find(imageId);
             if (iter != lowQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_RET_LOG(iter->second != nullptr, nullptr, "lowQualityPicture is nullptr");
                 (iter->second)->isCleanImmediately_ = isCleanImmediately;
                 picture = (iter->second)->picture_;
             }
@@ -251,6 +256,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPict
         case HIGH_QUALITY_PICTURE:
             iter = highQualityPictureMap_.find(imageId);
             if (iter != highQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_RET_LOG(iter->second != nullptr, nullptr, "highQualityPicture is nullptr");
                 (iter->second)->isCleanImmediately_ = isCleanImmediately;
                 picture = (iter->second)->picture_;
                 isTakeEffect = (iter->second)->isTakeEffect_;
@@ -323,6 +329,7 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
         iter = pictureMap.find(imageId);
     }
     if (iter != pictureMap.end()) {
+        CHECK_AND_RETURN_RET_LOG(iter->second != nullptr, false, "picture is nullptr");
         int32_t fileId = (iter->second)->fileId_;
         FileUtils::SavePicture(fileId, (iter->second)->picture_, false, isLowQualityPicture);
         MEDIA_INFO_LOG("SavePicture, photoId: %{public}s, isLowQualityPicture: %{public}d",
@@ -393,6 +400,7 @@ void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, Pi
         case LOW_QUALITY_PICTURE:
             iter = lowQualityPictureMap_.find(imageId);
             if (iter != lowQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_LOG(iter->second != nullptr, "lowQualityPicture is nullptr");
                 (iter->second)->picture_ = nullptr;
                 lowQualityPictureMap_.erase(iter);
             }
@@ -400,6 +408,7 @@ void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, Pi
         case HIGH_QUALITY_PICTURE:
             iter = highQualityPictureMap_.find(imageId);
             if (iter != highQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_LOG(iter->second != nullptr, "highQualityPicture is nullptr");
                 (iter->second)->picture_ = nullptr;
                 highQualityPictureMap_.erase(iter);
             }
@@ -420,12 +429,14 @@ void PictureDataOperations::FinishAccessingPicture(const std::string& imageId, P
         case LOW_QUALITY_PICTURE:
             iter = lowQualityPictureMap_.find(imageId);
             if (iter != lowQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_LOG(iter->second != nullptr, "lowQualityPicture is nullptr");
                 (iter->second)->isCleanImmediately_ = true;
             }
             break;
         case HIGH_QUALITY_PICTURE:
             iter = highQualityPictureMap_.find(imageId);
             if (iter != highQualityPictureMap_.end()) {
+                CHECK_AND_RETURN_LOG(iter->second != nullptr, "highQualityPicture is nullptr");
                 (iter->second)->isCleanImmediately_ = true;
             }
             break;

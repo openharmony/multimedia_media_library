@@ -1311,15 +1311,17 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         string uriString = uri.ToString();
         ANI_INFO_LOG("Onchange, before onDataPrepared, uri: %{public}s", uriString.c_str());
         std::string photoId = "";
-        if (uriString.find(HIGH_TEMPERATURE) == std::string::npos &&
-            MediaAssetManagerAni::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
-            MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
-            ANI_ERR_LOG("requested data not prepared");
-            continue;
-        }
         std::string uriHightemp = uriString;
         auto index = uriString.find(HIGH_TEMPERATURE);
-        uriString = uriString.substr(0, index);
+        if (index == std::string::npos) {
+            if (MediaAssetManagerAni::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
+                MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
+                ANI_ERR_LOG("requested data not prepared");
+                continue;
+            }
+        } else {
+            uriString = uriString.substr(0, index);
+        }
 
         std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
         if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
