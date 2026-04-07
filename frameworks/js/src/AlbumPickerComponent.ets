@@ -52,7 +52,7 @@ export struct AlbumPickerComponent {
           console.info('AlbumPickerComponent onError');
           console.info('AlbumPickerComponent revokeIndex: ' + this.revokeIndex); 
           if (error.code === 100014) { 
-            console.log('PhotoPickerComponent is set isPickerKilled = true');
+            console.log('AlbumPickerComponent is set isPickerKilled = true');
             this.isPickerKilled = true; 
           }
         });
@@ -60,7 +60,7 @@ export struct AlbumPickerComponent {
       .width('100%')
       .onVisibleAreaChange([0.0, 1.0], (isExpanding, currentRatio) => {
         if (this.isPickerKilled && currentRatio >= 0 && isExpanding) {
-            console.log(`photopickercomponent isRevoke revokeIndex = ${this.revokeIndex}`);
+            console.log(`AlbumPickerComponent isRevoke revokeIndex = ${this.revokeIndex}`);
             this.revokeIndex++;
             this.isPickerKilled = false;
         }

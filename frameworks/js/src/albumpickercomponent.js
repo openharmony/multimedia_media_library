@@ -105,7 +105,7 @@ export class AlbumPickerComponent extends ViewPU {
             Column.width('100%');
             Column.onVisibleAreaChange([0.0, 1.0], (isExpanding, currentRatio) => {
                 if (this.isPickerKilled && currentRatio >= 0 && isExpanding) {
-                    console.log(`photopickercomponent isRevoke revokeIndex = ${this.revokeIndex}`);
+                    console.log(`AlbumPickerComponent isRevoke revokeIndex = ${this.revokeIndex}`);
                     this.revokeIndex++;
                     this.isPickerKilled = false;
                 }
@@ -139,9 +139,9 @@ export class AlbumPickerComponent extends ViewPU {
             }));
             SecurityUIExtensionComponent.onError((() => {
                 console.info('AlbumPickerComponent onError');
-                console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex); 
+                console.info('AlbumPickerComponent revokeIndex: ' + this.revokeIndex); 
                 if (error.code === 100014) { 
-                    console.log('PhotoPickerComponent is set isPickerKilled = true');
+                    console.log('AlbumPickerComponent is set isPickerKilled = true');
                     this.isPickerKilled = true; 
                 }
             }));
