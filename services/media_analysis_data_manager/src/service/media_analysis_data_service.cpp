@@ -53,6 +53,7 @@
 #include "medialibrary_data_manager.h"
 #include "vision_photo_map_column.h"
 #include "medialibrary_analysis_album_operations.h"
+#include "medialibrary_analysis_default_cover_uri_operations.h"
 #include "medialibrary_client_errno.h"
 #include "result_set_utils.h"
 #include "media_analysis_progress_column.h"
@@ -599,5 +600,24 @@ int32_t MediaAnalysisDataService::ChangeRequestDismiss(int32_t albumId)
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     return MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(values, predicates);
+}
+
+int32_t MediaAnalysisDataService::ChangeRequestSetDefaultCoverUri(const ChangeRequestSetDefaultCoverUriDto& dto)
+{
+    const string albumId = dto.albumId;
+    const string coverUri = dto.coverUri;
+    CHECK_AND_RETURN_RET_LOG(!albumId.empty(), E_ERR, "albumId is empty illegal");
+    CHECK_AND_RETURN_RET_LOG(!coverUri.empty(), E_ERR, "coverUri is empty illegal");
+    return AnalysisSetDefaultCoverUriOperations::SetDefaultCoverUri(albumId, coverUri);
+}
+
+int32_t MediaAnalysisDataService::CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto,
+    CreateAnalysisAlbumRespBody &respBody)
+{
+    std::string albumName = dto.albumName;
+    auto rowId = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    CHECK_AND_RETURN_RET_LOG(rowId > 0, E_INNER_FAIL, "Failed to createportraitalbum");
+    respBody.albumId = rowId;
+    return E_OK;
 }
 } // namespace OHOS::Media::AnalysisData

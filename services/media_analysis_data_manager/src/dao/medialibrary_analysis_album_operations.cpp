@@ -30,6 +30,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "medialibrary_rdb_utils.h"
+#include "dfx_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -46,6 +47,9 @@ constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_REMOVED = 1;
 constexpr int32_t GROUP_ALBUM_RENAMED = 2;
 constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
+constexpr int32_t DISPLAY_LEVEL_NUMBER = 1;
+constexpr int32_t LOCAL_NUMBER = 1;
+constexpr int32_t RENAME_OPERATION_NUMBER = 1;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
@@ -55,6 +59,7 @@ const string GROUP_ALBUM_SYSTEM_NAME_ORDER_CLAUSE =
     " CASE WHEN album_name IS NULL OR album_name = '' THEN 2 ELSE 1 END ";
 const string TRUE_VALUE = "1";
 const string FALSE_VALUE = "0";
+const std::string MINUS_5_SOMETHING = "-5_";
 
 static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryUnistore> &store)
 {
@@ -909,6 +914,59 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(vector<string> 
     }
     albumRefresh.Notify();
     return E_OK;
+}
+static void PrepareSmartAlbum(const string &albumName, ValuesBucket &values)
+{
+    int64_t timestamp = MediaFileUtils::UTCTimeNanoSeconds();  // 统一时间戳
+    string current_time = MINUS_5_SOMETHING + to_string(timestamp);
+    values.PutString(ALBUM_NAME, albumName);
+    values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
+    values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    values.PutString(TAG_ID, current_time);
+    values.PutString(GROUP_TAG, current_time);
+    values.PutInt(USER_DISPLAY_LEVEL, DISPLAY_LEVEL_NUMBER);
+    values.PutInt(IS_LOCAL, LOCAL_NUMBER); // local album is 1.
+    values.PutInt(RENAME_OPERATION, RENAME_OPERATION_NUMBER);
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(const string &albumName)
+{
+    int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+    if (err < 0) {
+        MEDIA_ERR_LOG("Check album name failed, album name: %{private}s", albumName.c_str());
+        return err;
+    }
+
+    ValuesBucket albumValues;
+    PrepareSmartAlbum(albumName, albumValues);
+
+    // Build insert sql
+    string insertsql;
+    string valuesql;
+    vector<ValueObject> bindArgs;
+    insertsql.append("INSERT").append(" INTO ").append("AnalysisAlbum").append(" ");
+
+    map<string, ValueObject> valuesMap;
+    albumValues.GetAll(valuesMap);
+    insertsql.append("(");
+    for (auto iter = valuesMap.begin(); iter != valuesMap.end(); iter++) {
+        insertsql.append(((iter == valuesMap.begin()) ? "" : ", "));
+        insertsql.append(iter->first);
+        bindArgs.push_back(iter->second);
+        valuesql.append(((iter == valuesMap.begin()) ? "?" : ", ?"));
+    }
+    insertsql.append(") VALUES (").append(valuesql).append(")");
+    MEDIA_DEBUG_LOG("CreatePortraitAlbum InsertSql: %{private}s", insertsql.c_str());
+
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    int32_t rowId = albumRefresh.ExecuteForLastInsertedRowId(insertsql, bindArgs,
+        AccurateRefresh::RdbOperation::RDB_OPERATION_ADD_ANALYSIS);
+    CHECK_AND_RETURN_RET_LOG(rowId > 0, rowId, "insert fail");
+    albumRefresh.Init({rowId});
+    albumRefresh.Notify();
+    MEDIA_INFO_LOG("Create photo album success, id: %{public}d, albumName: %{public}s",
+        rowId, DfxUtils::GetSafeAlbumNameWhenChinese(albumName).c_str());
+    return rowId;
 }
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP
