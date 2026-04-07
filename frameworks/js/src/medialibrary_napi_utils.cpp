@@ -28,6 +28,7 @@
 #include "media_asset_manager_napi.h"
 #include "media_device_column.h"
 #include "media_file_uri.h"
+#include "media_log.h"
 #include "media_library_napi_def.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
@@ -1265,16 +1266,11 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
     for (auto& operationItem : operationList) {
         switch (operationItem.operation) {
             case OHOS::DataShare::OperationType::LIKE : {
-                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) {
-                    MEDIA_ERR_LOG("at least two parameters are required.");
-                    break;
-                }
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_2,
+                    "at least two parameters are required.");
                 std::string* field = std::get_if<string>(&operationItem.singleParams[0]);
                 std::string* value = std::get_if<string>(&operationItem.singleParams[1]);
-                if (!field || !value) {
-                    MEDIA_ERR_LOG("field or value is null.");
-                    break;
-                }
+                CHECK_AND_BREAK_ERR_LOG(field != nullptr && value != nullptr, "field or value is null.");
                 if (field->compare("FeaturedSinglePortrait") == 0 && value->compare("true") == 0) {
                     isFeaturedSinglePortrait = true;
                 } else {
@@ -1283,18 +1279,14 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
                 break;
             }
             case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
-                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_1) {
-                    MEDIA_ERR_LOG("at least one parameters are required.");
-                    break;
-                }
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_1,
+                    "at least one parameters are required.");
                 featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
                 break;
             }
             case OHOS::DataShare::OperationType::LIMIT : {
-                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) {
-                    MEDIA_ERR_LOG("at least two parameters are required.");
-                    break;
-                }
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_2,
+                    "at least two parameters are required.");
                 featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
                 break;
             }
