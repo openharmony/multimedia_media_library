@@ -109,10 +109,6 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::ChangeRequestResetCoverUri
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DEFAULT_COVER_URI),
-        &MediaAlbumsControllerService::ChangeRequestSetDefaultCoverUri
- 	},
-    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS),
         &MediaAlbumsControllerService::AddAssets
     },
@@ -231,10 +227,6 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS),
         &MediaAlbumsControllerService::SmartMoveAssets
-    },
-    {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM),
-        &MediaAlbumsControllerService::CreateAnalysisAlbum
     },
 };
 
@@ -367,33 +359,6 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &da
     dto.coverUri = reqBody.coverUri;
     dto.albumId = reqBody.albumId;
     ret = MediaAlbumsService::GetInstance().ChangeRequestSetCoverUri(dto);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-}
-
-int32_t MediaAlbumsControllerService::ChangeRequestSetDefaultCoverUri(MessageParcel &data,
-    MessageParcel &reply)
-{
-    MEDIA_INFO_LOG("ChangeRequestSetDefaultCoverUri start");
-    ChangeRequestSetCoverUriReqBody reqBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("ChangeRequestSetDefaultCoverUri Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
-    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
-    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) &&
-        !reqBody.coverUri.empty() && !reqBody.albumId.empty() &&
-        MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
-    if (!cond) {
-        MEDIA_ERR_LOG("params is invalid");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
-    ChangeRequestSetCoverUriDto dto;
-    dto.albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
-    dto.coverUri = reqBody.coverUri;
-    dto.albumId = reqBody.albumId;
-    ret = MediaAlbumsService::GetInstance().ChangeRequestSetDefaultCoverUri(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -1020,30 +985,6 @@ int32_t MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName(MessageParce
     ret = MediaAlbumsService::GetInstance().GetAlbumIdByLpathOrBundleName(dto, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetAlbumIdByLpathOrBundleName Read Request Error: %{public}d", ret);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-}
-
-int32_t MediaAlbumsControllerService::CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply)
-{
-    MEDIA_INFO_LOG("CreateAnalysisAlbum start");
-    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM);
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(operationCode, timeout, true);
-    CreateAnalysisAlbumReqBody reqBody;
-    CreateAnalysisAlbumRespBody respBody;
-    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CreateAnalysisAlbum Read Request Error: %{public}d", ret);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    CHECK_AND_RETURN_RET_LOG(reqBody.subType == static_cast<int32_t>(PORTRAIT), E_INNER_FAIL, "subtype failed");
-    CreateAnalysisAlbumDto dto;
-    dto.FromVo(reqBody);
-    ret = MediaAlbumsService::GetInstance().CreateAnalysisAlbum(dto, respBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CreateAnalysisAlbum Error: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);

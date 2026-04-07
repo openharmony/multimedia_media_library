@@ -31,6 +31,7 @@
 #include "delete_albums_vo.h"
 #include "change_request_set_album_name_vo.h"
 #include "change_request_set_cover_uri_vo.h"
+#include "change_request_set_default_cover_uri_vo.h"
 #include "change_request_dismiss_vo.h"
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
@@ -1407,7 +1408,7 @@ static bool SetDefaultCoverUriExecute(MediaAlbumChangeRequestContext& context)
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
-    ChangeRequestSetCoverUriReqBody reqBody;
+    ChangeRequestSetDefaultCoverUriReqBody reqBody;
     reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
     reqBody.coverUri = photoAlbum->GetCoverUri();
     reqBody.albumType = photoAlbum->GetPhotoAlbumType();

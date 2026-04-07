@@ -1170,5 +1170,52 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetCheckHighlightAttributeValue
     EXPECT_NE(ret, E_OK);
     MEDIA_INFO_LOG("end SetCheckHighlightAttributeValue_test_002");
 }
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, Maot_CreatePortraitAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_CreatePortraitAlbum_test_001::Start");
+    std::string albumName = "test_album_001";
+    int rowId = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    const string sql = "SELECT album_id FROM AnalysisAlbum WHERE album_id = ?";
+    const vector<NativeRdb::ValueObject> bindArgs { rowId };
+    auto rdbResultSet = g_rdbStore->QueryByStep(sql, bindArgs);
+    auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(rdbResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    int albumId = 0;
+    resultSet->GoToFirstRow();
+    resultSet->GetInt(0, albumId);
+    resultSet->Close();
+    EXPECT_EQ(rowId, albumId);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, Maot_CreatePortraitAlbum_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_CreatePortraitAlbum_test_002::Start");
+    std::string albumName = ".test_album_002";
+    int ret = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    EXPECT_LT(ret, E_OK);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_002 End");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, Maot_CreatePortraitAlbum_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_CreatePortraitAlbum_test_003::Start");
+    std::string albumName = "";
+    int ret = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    EXPECT_LT(ret, E_OK);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_003 End");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, Maot_CreatePortraitAlbum_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_CreatePortraitAlbum_test_004::Start");
+    std::string albumName = "test_album_004";
+    int ret = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    EXPECT_GT(ret, E_OK);
+    ret = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
+    EXPECT_GT(ret, E_OK);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_004 End");
+}
 } // namespace Media
 } // namespace OHOS
