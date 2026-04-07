@@ -1265,10 +1265,16 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
     for (auto& operationItem : operationList) {
         switch (operationItem.operation) {
             case OHOS::DataShare::OperationType::LIKE : {
-                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) break;
+                if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) {
+                    MEDIA_ERR_LOG("at least two parameters are required.");
+                    break;
+                }
                 std::string* field = std::get_if<string>(&operationItem.singleParams[0]);
                 std::string* value = std::get_if<string>(&operationItem.singleParams[1]);
-                if (!field || !value) break;
+                if (!field || !value) {
+                    MEDIA_ERR_LOG("field or value is null.");
+                    break;
+                }
                 if (field->compare("FeaturedSinglePortrait") == 0 && value->compare("true") == 0) {
                     isFeaturedSinglePortrait = true;
                 } else {
@@ -1278,6 +1284,7 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
             }
             case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
                 if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_1) {
+                    MEDIA_ERR_LOG("at least one parameters are required.");
                     break;
                 }
                 featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
@@ -1285,6 +1292,7 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
             }
             case OHOS::DataShare::OperationType::LIMIT : {
                 if (operationItem.singleParams.size() < MIN_REQUIRED_PARAMS_2) {
+                    MEDIA_ERR_LOG("at least two parameters are required.");
                     break;
                 }
                 featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
