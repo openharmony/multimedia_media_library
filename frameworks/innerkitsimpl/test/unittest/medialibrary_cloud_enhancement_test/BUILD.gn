@@ -48,6 +48,7 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
   ]
 
   include_dirs += include_scanner
@@ -106,6 +107,7 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
     "kv_store:distributeddata_inner",
     "libexif:libexif",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
     "os_account:os_account_innerkits",
     "player_framework:media_client",
     "preferences:native_preferences",

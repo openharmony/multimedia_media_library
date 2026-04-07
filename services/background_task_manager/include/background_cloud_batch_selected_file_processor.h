@@ -64,11 +64,7 @@ public:
     EXPORT static void NotifyRefreshProgressInfo();
     EXPORT static void TriggerAutoResumeBatchDownloadResourceCheck();
     EXPORT static void TriggerAutoStopBatchDownloadResourceCheck();
-
     EXPORT static void UpdateDBStatusInfoForSingleDownloadCompletely(int32_t fileId);
-
-    EXPORT static bool IsNetValidated();
-
     EXPORT static void HandleTimeoutCellTask();
     EXPORT static void LaunchNetWorkBatchDownloadProcessor();
     EXPORT static int32_t ResetReasonForAllWifiNetTask(std::vector<std::string> &fileIds,
@@ -80,6 +76,8 @@ public:
         std::vector<std::string> &fileIdList);
     EXPORT static bool StopProcessConditionCheckForWlanDisconnect();
     EXPORT static bool CanAutoRestoreNetPolicyTaskCondition();
+    EXPORT static void TriggerSwitchCellCheck();
+    EXPORT static bool TriggerNetLimitCheck();
 
     enum BatchDownloadStatus : int32_t {
         INIT = 0,

@@ -37,6 +37,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
     "${MEDIALIB_INNERIMPL_PATH}/notification/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
   ]
 
   sources = [
@@ -65,6 +66,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "netmanager_base:net_conn_manager_if",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
