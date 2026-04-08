@@ -21,6 +21,9 @@
 #include "rdb_store.h"
 #include "medialibrary_db_const.h"
 #include <memory>
+#include <map>
+#include <set>
+#include <string>
 
 namespace OHOS {
 namespace Media {
@@ -81,6 +84,16 @@ public:
      */
     void SetObserver(std::shared_ptr<IUpgradeObserver> observer);
 
+    /**
+     * @brief 判断第二个数据库的表结构是否为第一个数据库的子集（使用 ATTACH 语法）
+     * @param mainStore 主数据库 RdbStore
+     * @param attachDbPath 待检查的数据库文件路径
+     * @param attachAlias 附加数据库的别名（默认为 "subset_db"）
+     * @return true: attachDb 是 mainStore 的子集; false: 不是子集
+     */
+    static bool IsSchemaSubsetByAttach(NativeRdb::RdbStore& mainStore,
+        const std::string& attachDbPath, const std::string& attachAlias = "subset_db");
+
 private:
     UpgradeManager() = default;
     ~UpgradeManager() = default;
@@ -92,6 +105,40 @@ private:
      * @return 错误码
      */
     int32_t DoUpgrade(NativeRdb::RdbStore& store, bool isSync);
+
+    /**
+     * @brief 执行 ATTACH 操作
+     * @param store 数据库存储对象
+     * @param dbPath 待附加的数据库路径
+     * @param alias 别名
+     * @return 错误码
+     */
+    static int32_t AttachDatabase(NativeRdb::RdbStore& store,
+        const std::string& dbPath, const std::string& alias);
+
+    /**
+     * @brief 执行 DETACH 操作
+     * @param store 数据库存储对象
+     * @param alias 别名
+     * @return 错误码
+     */
+    static int32_t DetachDatabase(NativeRdb::RdbStore& store, const std::string& alias);
+
+    /**
+     * @brief 使用单个 SQL 查询检查附加数据库是否有主数据库中不存在的表
+     * @param store 数据库存储对象
+     * @param attachAlias 附加数据库别名
+     * @return 不存在的表数量（0 表示所有表都存在）
+     */
+    static int32_t CheckMissingTables(NativeRdb::RdbStore& store, const std::string& attachAlias);
+
+    /**
+     * @brief 使用单个 SQL 查询检查附加数据库表是否有主数据库中不存在的字段
+     * @param store 数据库存储对象
+     * @param attachAlias 附加数据库别名
+     * @return 缺少字段的数量（0 表示所有字段都存在）
+     */
+    static int32_t CheckMissingColumns(NativeRdb::RdbStore& store, const std::string& attachAlias);
 
     UpgradeExecutor executor_;
     std::shared_ptr<IUpgradeObserver> observer_;
