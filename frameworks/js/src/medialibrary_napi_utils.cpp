@@ -713,6 +713,37 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     return napi_ok;
 }
 
+template <>
+napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext,
+    const size_t minArgs, const size_t maxArgs)
+{
+    napi_value thisVar = nullptr;
+    asyncContext->argc = maxArgs;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+        nullptr), "Failed to get cb info");
+    CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
+        "Number of args is invalid");
+    if (minArgs > 0) {
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+    }
+    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo)),
+        "Failed to unwrap thisVar");
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
+    CHECK_STATUS_RET(napi_create_reference(env, thisVar, NAPI_INIT_REF_COUNT, &asyncContext->objectInfoRef),
+        "Failed to create objectInfo reference");
+    napi_status status = GetParamCallback(env, asyncContext);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to get callback param!");
+        if (asyncContext->objectInfoRef != nullptr) {
+            napi_delete_reference(env, asyncContext->objectInfoRef);
+            asyncContext->objectInfoRef = nullptr;
+        }
+        return status;
+    }
+    return napi_ok;
+}
+
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::ParseArgsTwoCallback(napi_env env, napi_callback_info info,
     AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
@@ -2662,10 +2693,6 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Med
 
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, bool &param);
-
-template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
-    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
-    const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
