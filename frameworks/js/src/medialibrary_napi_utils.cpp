@@ -69,7 +69,7 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
 static const int32_t MIN_REQUIRED_PARAMS_1 = 1;
-static const int32_t MIN_REQUIRED_PARAMS_2  = 2;
+static const int32_t MIN_REQUIRED_PARAMS_2 = 2;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
