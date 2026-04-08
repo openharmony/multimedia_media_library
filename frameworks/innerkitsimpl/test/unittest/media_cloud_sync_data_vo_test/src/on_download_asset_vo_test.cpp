@@ -30,7 +30,6 @@ HWTEST_F(OnDownloadAssetVoTest, TC001_Marshalling_Unmarshalling_Empty_Success, T
 {
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
-    original.cloudIds.clear();
     original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
@@ -42,58 +41,13 @@ HWTEST_F(OnDownloadAssetVoTest, TC001_Marshalling_Unmarshalling_Empty_Success, T
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 0);
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 0);
 }
 
-HWTEST_F(OnDownloadAssetVoTest, TC002_Marshalling_Unmarshalling_SingleCloudId_Success, TestSize.Level1)
+HWTEST_F(OnDownloadAssetVoTest, TC002_Marshalling_Unmarshalling_SingleFileInfo_Success, TestSize.Level1)
 {
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
-    original.cloudIds.push_back("cloud_id_001");
-    original.downloadedFileInfos.clear();
-
-    OHOS::MessageParcel parcel;
-    bool ret = original.Marshalling(parcel);
-    ASSERT_TRUE(ret);
-
-    parcel.RewindRead(0);
-    OnDownloadAssetReqBody restored;
-    ret = restored.Unmarshalling(parcel);
-    ASSERT_TRUE(ret);
-
-    EXPECT_EQ(restored.cloudIds.size(), 1);
-    EXPECT_EQ(restored.cloudIds[0], "cloud_id_001");
-}
-
-HWTEST_F(OnDownloadAssetVoTest, TC003_Marshalling_Unmarshalling_MultipleCloudIds_Success, TestSize.Level1)
-{
-    // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
-    OnDownloadAssetReqBody original;
-    original.cloudIds.push_back("cloud_id_001");
-    original.cloudIds.push_back("cloud_id_002");
-    original.cloudIds.push_back("cloud_id_003");
-    original.downloadedFileInfos.clear();
-
-    OHOS::MessageParcel parcel;
-    bool ret = original.Marshalling(parcel);
-    ASSERT_TRUE(ret);
-
-    parcel.RewindRead(0);
-    OnDownloadAssetReqBody restored;
-    ret = restored.Unmarshalling(parcel);
-    ASSERT_TRUE(ret);
-
-    EXPECT_EQ(restored.cloudIds.size(), 3);
-    EXPECT_EQ(restored.cloudIds[0], "cloud_id_001");
-    EXPECT_EQ(restored.cloudIds[1], "cloud_id_002");
-    EXPECT_EQ(restored.cloudIds[2], "cloud_id_003");
-}
-
-HWTEST_F(OnDownloadAssetVoTest, TC004_Marshalling_Unmarshalling_WithLakeInfo_Success, TestSize.Level1)
-{
-    // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
-    OnDownloadAssetReqBody original;
-    original.cloudIds.push_back("cloud_id_001");
 
     AdditionFileInfo lakeInfo;
     lakeInfo.isUpdate = true;
@@ -112,16 +66,84 @@ HWTEST_F(OnDownloadAssetVoTest, TC004_Marshalling_Unmarshalling_WithLakeInfo_Suc
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 1);
-    EXPECT_EQ(restored.cloudIds[0], "cloud_id_001");
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 1);
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_001"].storagePath, "/storage/test/path");
+}
+
+HWTEST_F(OnDownloadAssetVoTest, TC003_Marshalling_Unmarshalling_MultipleFileInfos_Success, TestSize.Level1)
+{
+    // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
+    OnDownloadAssetReqBody original;
+
+    AdditionFileInfo lakeInfo1;
+    lakeInfo1.isUpdate = true;
+    lakeInfo1.fileSourceType = 1;
+    lakeInfo1.storagePath = "/storage/test/path1";
+    lakeInfo1.title = "test_title1";
+    lakeInfo1.displayName = "test_display_name1";
+    original.downloadedFileInfos["cloud_id_001"] = lakeInfo1;
+
+    AdditionFileInfo lakeInfo2;
+    lakeInfo2.isUpdate = false;
+    lakeInfo2.fileSourceType = 2;
+    lakeInfo2.storagePath = "/storage/test/path2";
+    lakeInfo2.title = "test_title2";
+    lakeInfo2.displayName = "test_display_name2";
+    original.downloadedFileInfos["cloud_id_002"] = lakeInfo2;
+
+    AdditionFileInfo lakeInfo3;
+    lakeInfo3.isUpdate = true;
+    lakeInfo3.fileSourceType = 3;
+    lakeInfo3.storagePath = "/storage/test/path3";
+    lakeInfo3.title = "test_title3";
+    lakeInfo3.displayName = "test_display_name3";
+    original.downloadedFileInfos["cloud_id_003"] = lakeInfo3;
+
+    OHOS::MessageParcel parcel;
+    bool ret = original.Marshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    OnDownloadAssetReqBody restored;
+    ret = restored.Unmarshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 3);
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_001"].storagePath, "/storage/test/path1");
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_002"].storagePath, "/storage/test/path2");
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_003"].storagePath, "/storage/test/path3");
+}
+
+HWTEST_F(OnDownloadAssetVoTest, TC004_Marshalling_Unmarshalling_WithLakeInfo_Success, TestSize.Level1)
+{
+    // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
+    OnDownloadAssetReqBody original;
+
+    AdditionFileInfo lakeInfo;
+    lakeInfo.isUpdate = true;
+    lakeInfo.fileSourceType = 1;
+    lakeInfo.storagePath = "/storage/test/path";
+    lakeInfo.title = "test_title";
+    lakeInfo.displayName = "test_display_name";
+    original.downloadedFileInfos["cloud_id_001"] = lakeInfo;
+
+    OHOS::MessageParcel parcel;
+    bool ret = original.Marshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    parcel.RewindRead(0);
+    OnDownloadAssetReqBody restored;
+    ret = restored.Unmarshalling(parcel);
+    ASSERT_TRUE(ret);
+
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 1);
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_001"].storagePath, "/storage/test/path");
 }
 
 HWTEST_F(OnDownloadAssetVoTest, TC005_Marshalling_Unmarshalling_MultipleLakeInfos_Success, TestSize.Level1)
 {
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
-    original.cloudIds.push_back("cloud_id_001");
-    original.cloudIds.push_back("cloud_id_002");
 
     AdditionFileInfo lakeInfo1;
     lakeInfo1.isUpdate = true;
@@ -148,17 +170,39 @@ HWTEST_F(OnDownloadAssetVoTest, TC005_Marshalling_Unmarshalling_MultipleLakeInfo
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 2);
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 2);
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_001"].storagePath, "/storage/test/path1");
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_002"].storagePath, "/storage/test/path2");
 }
 
 HWTEST_F(OnDownloadAssetVoTest, TC006_Marshalling_Unmarshalling_SpecialStrings_Success, TestSize.Level1)
 {
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
-    original.cloudIds.push_back("");
-    original.cloudIds.push_back("cloud_id_with_中文");
-    original.cloudIds.push_back("cloud_id_with_special!@#$%^&*()");
-    original.downloadedFileInfos.clear();
+
+    AdditionFileInfo lakeInfo1;
+    lakeInfo1.isUpdate = true;
+    lakeInfo1.fileSourceType = 1;
+    lakeInfo1.storagePath = "";
+    lakeInfo1.title = "test_title";
+    lakeInfo1.displayName = "test_display_name";
+    original.downloadedFileInfos[""] = lakeInfo1;
+
+    AdditionFileInfo lakeInfo2;
+    lakeInfo2.isUpdate = false;
+    lakeInfo2.fileSourceType = 2;
+    lakeInfo2.storagePath = "/storage/test/path_中文";
+    lakeInfo2.title = "test_title";
+    lakeInfo2.displayName = "test_display_name";
+    original.downloadedFileInfos["cloud_id_with_中文"] = lakeInfo2;
+
+    AdditionFileInfo lakeInfo3;
+    lakeInfo3.isUpdate = true;
+    lakeInfo3.fileSourceType = 3;
+    lakeInfo3.storagePath = "/storage/test/path!@#$%^&*()";
+    lakeInfo3.title = "test_title";
+    lakeInfo3.displayName = "test_display_name";
+    original.downloadedFileInfos["cloud_id_with_special!@#$%^&*()"] = lakeInfo3;
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -169,10 +213,11 @@ HWTEST_F(OnDownloadAssetVoTest, TC006_Marshalling_Unmarshalling_SpecialStrings_S
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 3);
-    EXPECT_EQ(restored.cloudIds[0], "");
-    EXPECT_EQ(restored.cloudIds[1], "cloud_id_with_中文");
-    EXPECT_EQ(restored.cloudIds[2], "cloud_id_with_special!@#$%^&*()");
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 3);
+    EXPECT_EQ(restored.downloadedFileInfos[""].storagePath, "");
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_with_中文"].storagePath, "/storage/test/path_中文");
+    EXPECT_EQ(restored.downloadedFileInfos["cloud_id_with_special!@#$%^&*()"].storagePath,
+              "/storage/test/path!@#$%^&*()");
 }
 
 HWTEST_F(OnDownloadAssetVoTest, TC010_Marshalling_Unmarshalling_LargeVector_Success, TestSize.Level1)
@@ -180,9 +225,14 @@ HWTEST_F(OnDownloadAssetVoTest, TC010_Marshalling_Unmarshalling_LargeVector_Succ
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
     for (int i = 0; i < 100; i++) {
-        original.cloudIds.push_back("cloud_id_" + std::to_string(i));
+        AdditionFileInfo lakeInfo;
+        lakeInfo.isUpdate = (i % 2 == 0);
+        lakeInfo.fileSourceType = i;
+        lakeInfo.storagePath = "/storage/test/path_" + std::to_string(i);
+        lakeInfo.title = "test_title_" + std::to_string(i);
+        lakeInfo.displayName = "test_display_name_" + std::to_string(i);
+        original.downloadedFileInfos["cloud_id_" + std::to_string(i)] = lakeInfo;
     }
-    original.downloadedFileInfos.clear();
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -193,9 +243,11 @@ HWTEST_F(OnDownloadAssetVoTest, TC010_Marshalling_Unmarshalling_LargeVector_Succ
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 100);
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 100);
     for (int i = 0; i < 100; i++) {
-        EXPECT_EQ(restored.cloudIds[i], "cloud_id_" + std::to_string(i));
+        std::string cloudId = "cloud_id_" + std::to_string(i);
+        EXPECT_EQ(restored.downloadedFileInfos[cloudId].storagePath, "/storage/test/path_" + std::to_string(i));
+        EXPECT_EQ(restored.downloadedFileInfos[cloudId].title, "test_title_" + std::to_string(i));
     }
 }
 
@@ -204,8 +256,15 @@ HWTEST_F(OnDownloadAssetVoTest, TC011_Marshalling_Unmarshalling_LongString_Succe
     // 用例说明：测试序列化与反序列化；覆盖正常路径（触发条件：正常数据）；验证业务状态断言：反序列化后的数据与原始数据一致
     OnDownloadAssetReqBody original;
     std::string longCloudId(1000, 'A');
-    original.cloudIds.push_back(longCloudId);
-    original.downloadedFileInfos.clear();
+    std::string longStoragePath(1000, 'B');
+
+    AdditionFileInfo lakeInfo;
+    lakeInfo.isUpdate = true;
+    lakeInfo.fileSourceType = 1;
+    lakeInfo.storagePath = longStoragePath;
+    lakeInfo.title = "test_title";
+    lakeInfo.displayName = "test_display_name";
+    original.downloadedFileInfos[longCloudId] = lakeInfo;
 
     OHOS::MessageParcel parcel;
     bool ret = original.Marshalling(parcel);
@@ -216,8 +275,8 @@ HWTEST_F(OnDownloadAssetVoTest, TC011_Marshalling_Unmarshalling_LongString_Succe
     ret = restored.Unmarshalling(parcel);
     ASSERT_TRUE(ret);
 
-    EXPECT_EQ(restored.cloudIds.size(), 1);
-    EXPECT_EQ(restored.cloudIds[0], longCloudId);
+    EXPECT_EQ(restored.downloadedFileInfos.size(), 1);
+    EXPECT_EQ(restored.downloadedFileInfos[longCloudId].storagePath, longStoragePath);
 }
 
 }  // namespace OHOS::Media::CloudSync

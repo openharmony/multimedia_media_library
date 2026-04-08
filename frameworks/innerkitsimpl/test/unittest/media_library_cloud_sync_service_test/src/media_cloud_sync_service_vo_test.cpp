@@ -312,15 +312,6 @@ HWTEST_F(CloudMediaSyncServiceVoTest, OnDownloadThms_Test, TestSize.Level1)
     EXPECT_NE(reqBody->ToString(), "");
 }
 
-HWTEST_F(CloudMediaSyncServiceVoTest, OnDownloadAsset_Test, TestSize.Level1)
-{
-    auto reqBody = std::make_shared<OnDownloadAssetReqBody>();
-    EXPECT_NE(reqBody, nullptr);
-    reqBody->cloudIds.push_back("cloud_id_1");
-    reqBody->cloudIds.push_back("cloud_id_2");
-    EXPECT_NE(reqBody->ToString(), "");
-}
-
 HWTEST_F(CloudMediaSyncServiceVoTest, OnDentryFile_Test, TestSize.Level1)
 {
     auto reqBody = std::make_shared<OnDentryFileReqBody>();
