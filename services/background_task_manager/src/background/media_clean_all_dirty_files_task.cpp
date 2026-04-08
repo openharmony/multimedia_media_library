@@ -62,6 +62,7 @@ const std::string THM_ASTC_FILE_NAME = "THM_ASTC.astc";
 
 const std::string EDITDATA_FILE_NAME = "editdata";
 const std::string EDITDATA_CAMERA_FILE_NAME = "editdata_camera";
+const std::string EDITDATA_TRANSCODE_FILE_NAME = "transcode";
 const std::string EXTRADATA_FILE_NAME = "extraData";
 const std::string SOURCE_FILE_PREFIX_NAME = "source";
 const std::string SOURCE_FILE_VIDEO_NAME = "source.mp4";
@@ -293,10 +294,17 @@ bool MediaCleanAllDirtyFilesTask::OriginSourceExist(std::string &path)
 bool MediaCleanAllDirtyFilesTask::DealWithZeroSizeFile(std::string &path)
 {
     size_t size = 0;
-    if (MediaFileUtils::GetFileSize(path, size) && size == 0) {
-        MediaFileUtils::DeleteFileWithRetry(path);
-        MEDIA_WARN_LOG("DirtyMediaHandler DealWithZeroSizeFile File: %{public}s",
-            MediaFileUtils::DesensitizePath(path).c_str());
+    uint64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    uint64_t addTime = currentTime;
+    if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size == 0) {
+        uint64_t interval = currentTime - addTime;
+        if (interval > FOUR_WEEK) {
+            MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64,
+                interval);
+            MediaFileUtils::DeleteFileWithRetry(path);
+            MEDIA_WARN_LOG("DirtyMediaHandler DealWithZeroSizeFile File: %{public}s",
+                MediaFileUtils::DesensitizePath(path).c_str());
+        }
         return true;
     }
     return false;
@@ -1201,7 +1209,8 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, 
     }
     for (const auto& fileName : fileNameVec) {
         if (!Starts_With(fileName, EDITDATA_FILE_NAME) && !Starts_With(fileName, EXTRADATA_FILE_NAME) &&
-            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME) && !Starts_With(fileName, EDITDATA_CAMERA_FILE_NAME)) {
+            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME) && !Starts_With(fileName, EDITDATA_CAMERA_FILE_NAME)
+            && !Starts_With(fileName, EDITDATA_TRANSCODE_FILE_NAME)) {
             MEDIA_ERR_LOG("IsLegalEditFolderFile Folder: %{public}s, Name: %{public}s",
                 MediaFileUtils::DesensitizePath(editBucketFolder).c_str(),
                 fileName.c_str());
