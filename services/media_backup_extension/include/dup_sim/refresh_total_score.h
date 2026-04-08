@@ -29,7 +29,7 @@ public:
     void Init(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
         const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap,
-        const std::unordered_map<int32_t, int32_t> &scoreMaskMap,
+        const std::unordered_map<int32_t, uint32_t> &scoreMaskMap,
         int64_t shouldEndTime = 0);
     void Refresh();
 
@@ -41,7 +41,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
     std::unordered_map<int32_t, int32_t> cloneTotalScores_;
     int64_t shouldEndTime_;
 };

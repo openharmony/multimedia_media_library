@@ -29,11 +29,11 @@ const std::string AESTHETICS_SCORE_TABLE = "tab_analysis_aesthetics_score";
 const std::string AFFECTIVE_TABLE = "tab_analysis_affective";
 const std::string PROFILE_TABLE = "tab_analysis_profile";
 const std::string DEDUP_TABLE = "tab_analysis_dedup";
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 void RefreshTotalScore::Init(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap,
-    const std::unordered_map<int32_t, int32_t> &scoreMaskMap, int64_t shouldEndTime)
+    const std::unordered_map<int32_t, uint32_t> &scoreMaskMap, int64_t shouldEndTime)
 {
     MEDIA_INFO_LOG("RefreshTotalScore Init");
     this->mediaLibraryRdb_ = mediaLibraryRdb;
