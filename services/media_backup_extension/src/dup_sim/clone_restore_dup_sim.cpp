@@ -36,8 +36,8 @@ const std::string DEDUP_TABLE = "tab_analysis_dedup";
 const std::string AFFECTIVE_TABLE = "tab_analysis_affective";
 
 // Score mask bit definitions
-const int32_t BIT3 = 1 << 3;    // 情感分
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT3 = 1u << 3;    // 情感分
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 // 超时控制配置
 const int64_t THRESHOLD_DATA_SIZE = 30000;   // 3万条数据阈值
@@ -54,7 +54,7 @@ static void UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &g
 void CloneRestoreDupSim::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
     const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied,
-    std::unordered_map<int32_t, int32_t> *scoreMaskMap)
+    std::unordered_map<int32_t, uint32_t> *scoreMaskMap)
 {
     MEDIA_INFO_LOG("CloneRestoreDupSim Init");
     this->sceneCode_ = sceneCode;
@@ -79,7 +79,7 @@ int64_t CloneRestoreDupSim::GetShouldEndTime()
     return backupStartTime + (dataSize + SUPPORT_NUMBER) / BASIC_NUMBER * SINGLE_OVER_THRESHOLD_DATA_TIME;
 }
 
-void CloneRestoreDupSim::UpdateScoreMask(int32_t fileId, int32_t mask)
+void CloneRestoreDupSim::UpdateScoreMask(int32_t fileId, uint32_t mask)
 {
     if (externalScoreMaskMap_ != nullptr) {
         (*externalScoreMaskMap_)[fileId] |= mask;

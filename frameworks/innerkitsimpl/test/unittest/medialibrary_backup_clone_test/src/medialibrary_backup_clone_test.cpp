@@ -2025,7 +2025,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
 
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
     cloneRestoreClassify->Init(
         CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_, &scoreMaskMap);
@@ -3027,7 +3027,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_s
     int32_t newFileId = 60005;
     photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
 
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     BeautyScoreClone beautyScoreClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap, 0, &scoreMaskMap);
     bool cloneSuccess = beautyScoreClone.CloneBeautyScoreInfo();
     ASSERT_TRUE(cloneSuccess) << "BeautyScoreClone::CloneBeautyScoreInfo failed";
