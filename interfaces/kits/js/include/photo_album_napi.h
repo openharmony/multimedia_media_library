@@ -151,6 +151,7 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     napi_ref callbackRef;
 
     PhotoAlbumNapi *objectInfo;
+    napi_ref objectInfoRef;
     std::vector<FusionAssetsInfo> fusionAssetInfos;
 };
 } // namespace Media
