@@ -18,7 +18,6 @@
 #include "cloud_media_asset_retain_compare_dao.h"
 #include "media_log.h"
 #include "result_set_utils.h"
-#include "cloud_media_file_utils.h"
 #include "cloud_media_sync_utils.h"
 #include "cloud_media_asset_manager.h"
 #include "media_column.h"

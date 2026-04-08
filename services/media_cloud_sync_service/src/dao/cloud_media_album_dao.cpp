@@ -41,6 +41,7 @@
 #include "photo_album_upload_status_operation.h"
 #include "media_album_order_back.h"
 #include "hi_audit.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -916,7 +917,7 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
     };
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql =
-        CloudMediaDaoUtils::FillParams(this->SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM, params);
+        MediaStringUtils::FillParams(this->SQL_PHOTO_ALBUM_QUERY_CREATED_ALBUM, params);
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords(resultList);
     MEDIA_INFO_LOG("QueryCreatedAlbums, ret: %{public}d, resultList size: %{public}zu", ret, resultList.size());

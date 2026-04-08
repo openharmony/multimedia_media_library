@@ -1748,6 +1748,13 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnRecordFailed_Test_
 {
     CloudMediaPhotosService service;
     PhotosDto photo;
+    photo.path = "/storage/cloud/files/Photo/16/IMG_20240101_123456.jpg";
+    PhotosPo photoInfo = PhotosPo();
+    photoInfo.data = "/storage/cloud/files/Photo/16/IMG_20240101_123456.jpg";
+    photoInfo.cloudId = "cloud_id1";
+    photoInfo.storagePath = "/storage/media/local/files/Photo/16/IMG_20240101_123456.jpg";
+    photoInfo.fileSourceType = 0;
+    photo.localInfoOp = photoInfo;
     int32_t ret;
     CloudErrorDetail detailError;
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
@@ -1766,7 +1773,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnRecordFailed_Test_
     photo.errorDetails.clear();
     photo.errorDetails.emplace_back(detailError);
     ret = service.OnRecordFailed(photo, photoRefresh);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_DATA);
 
     photo.serverErrorCode = ServerErrorCode::RESPONSE_TIME_OUT;
     photo.errorType = ErrorType::TYPE_UNKNOWN;

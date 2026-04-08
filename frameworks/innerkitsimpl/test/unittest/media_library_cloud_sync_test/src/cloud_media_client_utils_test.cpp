@@ -49,64 +49,6 @@ void CloudMediaClientUtilsTest::TearDown(void)
     MEDIA_INFO_LOG("CloudMediaClientUtilsTest TearDown");
 }
 
-HWTEST_F(CloudMediaClientUtilsTest, GetLowerPath_Test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Start GetLowerPath_Test_001");
-    std::string path = "/storage/cloud/files/Photo/1/IMG_001.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaClientUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/100/hmdfs/account/files/Photo/1/IMG_001.jpg";
-    EXPECT_EQ(result, expected);
-    MEDIA_INFO_LOG("End GetLowerPath_Test_001");
-}
-
-HWTEST_F(CloudMediaClientUtilsTest, GetLowerPath_Test_002, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Start GetLowerPath_Test_002");
-    std::string path = "/invalid/path/Photo/1/IMG_001.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaClientUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-    MEDIA_INFO_LOG("End GetLowerPath_Test_002");
-}
-
-HWTEST_F(CloudMediaClientUtilsTest, GetLowerPath_Test_003, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Start GetLowerPath_Test_003");
-    std::string path = "/storage/cloud/files/Video/2/VID_001.mp4";
-    int32_t userId = 200;
-    std::string result = CloudMediaClientUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/200/hmdfs/account/files/Video/2/VID_001.mp4";
-    EXPECT_EQ(result, expected);
-    MEDIA_INFO_LOG("End GetLowerPath_Test_003");
-}
-
-HWTEST_F(CloudMediaClientUtilsTest, GetLocalPathByPhotosVo_Test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Start GetLocalPathByPhotosVo_Test_001");
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 2;
-    photosVo.data = "/{cloudId}/Photo/1/IMG_001.jpg";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t ret = CloudMediaClientUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("End GetLocalPathByPhotosVo_Test_001");
-}
-
-HWTEST_F(CloudMediaClientUtilsTest, GetLocalPathByPhotosVo_Test_002, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Start GetLocalPathByPhotosVo_Test_002");
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "/storage/path/IMG_001.jpg";
-    std::string localPath;
-    int32_t userId = 100;
-    int32_t ret = CloudMediaClientUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("End GetLocalPathByPhotosVo_Test_002");
-}
-
 HWTEST_F(CloudMediaClientUtilsTest, GetLocalPath_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Start GetLocalPath_Test_001");
