@@ -73,6 +73,18 @@ struct UriParams {
     string user;
 };
 
+static string JoinFormats(const vector<string> &formats)
+{
+    string result = "";
+    for (size_t i = 0; i < formats.size(); i++) {
+        result += formats[i];
+        if (i + 1 < formats.size()) {
+            result += ",";
+        }
+    }
+    return result;
+}
+
 static const unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20,
@@ -1847,6 +1859,36 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_MoveAssets_test_003, TestS
     EXPECT_EQ(ret, E_FAIL);
     EXPECT_EQ(targetAlbumAssetCount, targetAlbum->GetCount());
     MEDIA_INFO_LOG("MediaLibraryManager_MoveAssets_test_003 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetSupportedPhotoFormats_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_001 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    auto imageFormats = mediaLibraryManager->GetSupportedPhotoFormats(PHOTOTYPE_IMAGE);
+    MEDIA_INFO_LOG("image suffix list: %{public}s", JoinFormats(imageFormats).c_str());
+    EXPECT_GT(imageFormats.size(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_001 end");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetSupportedPhotoFormats_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_002 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    auto videoFormats = mediaLibraryManager->GetSupportedPhotoFormats(PHOTOTYPE_VIDEO);
+    MEDIA_INFO_LOG("video suffix list: %{public}s", JoinFormats(videoFormats).c_str());
+    EXPECT_GT(videoFormats.size(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_002 end");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetSupportedPhotoFormats_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_003 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    auto invalidFormats = mediaLibraryManager->GetSupportedPhotoFormats(static_cast<PhotoType>(MEDIA_TYPE_AUDIO));
+    MEDIA_INFO_LOG("invalid suffix list: %{public}s", JoinFormats(invalidFormats).c_str());
+    EXPECT_TRUE(invalidFormats.empty());
+    MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_003 end");
 }
 
 /**
