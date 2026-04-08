@@ -96,15 +96,15 @@ void RefreshTotalScore::CalculateCloneTotalScore()
         auto maskIt = scoreMaskMap_.find(newFileId);
         CHECK_AND_CONTINUE(maskIt != scoreMaskMap_.end());
 
-        int32_t mask = maskIt->second;
-        int32_t cloneScore = totalScore & mask;
+        uint32_t mask = maskIt->second;
+        uint32_t cloneScore = static_cast<uint32_t>(totalScore) & mask;
 
         // 对于标记位（如BIT20），如果mask中有，直接设置，不进行&运算
         if (mask & BIT20) {
             cloneScore |= BIT20;
         }
 
-        cloneTotalScores_[newFileId] = cloneScore;
+        cloneTotalScores_[newFileId] = static_cast<int32_t>(cloneScore);
     }
     totalResultSet->Close();
 
@@ -140,8 +140,8 @@ void RefreshTotalScore::MergeWithDestinationTotalScore()
         auto destIt = destTotalScores.find(newFileId);
         if (destIt != destTotalScores.end()) {
             // 合并克隆分数和目标库分数
-            int32_t mergedScore = cloneScore | destIt->second;
-            std::vector<NativeRdb::ValueObject> bindArgs = {mergedScore, newFileId};
+            uint32_t mergedScore = static_cast<uint32_t>(cloneScore) | static_cast<uint32_t>(destIt->second);
+            std::vector<NativeRdb::ValueObject> bindArgs = {static_cast<int32_t>(mergedScore), newFileId};
             mediaLibraryRdb_->ExecuteSql(updateSql, bindArgs);
         }
     }
