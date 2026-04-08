@@ -31,7 +31,7 @@ public:
     void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
         const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied,
-        std::unordered_map<int32_t, int32_t>* scoreMaskMap = nullptr);
+        std::unordered_map<int32_t, uint32_t>* scoreMaskMap = nullptr);
     void Preprocess();
     void Restore();
     void RestoreFromGalleryPortraitAlbum();
@@ -40,8 +40,8 @@ public:
     void UpdateAnalysisTotalTblNoFaceStatus();
     void UpdateAnalysisTotalTblStatus();
     int32_t RestoreMaps();
-    const std::unordered_map<int32_t, int32_t>& GetScoreMaskMap() const { return scoreMaskMap_; }
-    void UpdateScoreMask(int32_t fileId, int32_t mask);
+    const std::unordered_map<int32_t, uint32_t>& GetScoreMaskMap() const { return scoreMaskMap_; }
+    void UpdateScoreMask(int32_t fileId, uint32_t mask);
 
 protected:
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
@@ -105,8 +105,8 @@ private:
     int64_t mapSuccessCnt_{0};
     int64_t mapFailedCnt_{0};
     std::mutex counterMutex_;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
-    std::unordered_map<int32_t, int32_t>* externalScoreMaskMap_ = nullptr;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
+    std::unordered_map<int32_t, uint32_t>* externalScoreMaskMap_ = nullptr;
 };
 }
 #endif
