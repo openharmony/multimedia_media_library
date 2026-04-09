@@ -187,6 +187,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithMode)},
     ani_native_function {"createAssetsForAppWithAlbumInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithAlbum)},
+    ani_native_function {"createPhotoAssetInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::CreatePhotoAsset)},
     ani_native_function {"getDataAnalysisProgressInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperGetDataAnalysisProgress)},
     ani_native_function {"releaseInner", nullptr,
@@ -1573,6 +1575,8 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
     MediaLibraryTracer tracer;
     tracer.Start("GetAssets");
     ANI_DEBUG_LOG("GetAssetsInner start");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
 
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
@@ -1595,7 +1599,14 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
         ANI_ERR_LOG("UnwrapPredicate failed");
         return nullptr;
     }
-    std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(env, fetchColumnsVec, predicate);
+    int errCode = 0;
+    std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(env, fetchColumnsVec,
+        predicate, errCode);
+    ani_object errorObj {};
+    if (errCode != ERR_DEFAULT) {
+        asyncContext->error = errCode;
+        asyncContext->HandleError(env, errorObj);
+    }
     CHECK_COND_RET(fileAsset != nullptr, nullptr, "GetAssets failed");
     ani_object result = nullptr;
     if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniPtr(env, std::move(fileAsset), result)) {
@@ -3624,6 +3635,53 @@ static ani_status ParseArgsCreatePhotoAssetComponent(ani_env* env, ani_enum_item
     return ANI_OK;
 }
 
+static ani_status ParseArgsCreatePhotoAsset(ani_env* env, ani_enum_item photoTypeAni,
+    ani_string extension, ani_object titleObj, unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is nullptr");
+
+    // Parse photoType
+    int32_t mediaTypeInt;
+    if (MediaLibraryEnumAni::EnumGetValueInt32(env, photoTypeAni, mediaTypeInt) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get photoType");
+        return ANI_ERROR;
+    }
+    MediaType mediaType = static_cast<MediaType>(mediaTypeInt);
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid photoType");
+        return ANI_ERROR;
+    }
+
+    // Parse extension
+    std::string extensionStr;
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, extension, extensionStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get extension");
+        return ANI_ERROR;
+    }
+    CHECK_COND_WITH_RET_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extensionStr), ANI_ERROR,
+        "Failed to check extension");
+    asyncContext->valuesBucket.Put(CONST_ASSET_EXTENTION, extensionStr);
+
+    // Parse title if exists
+    ani_boolean isUndefined;
+    env->Reference_IsUndefined(titleObj, &isUndefined);
+    if (!isUndefined) {
+        std::string titleStr;
+        if (MediaLibraryAniUtils::GetParamStringPathMax(env, titleObj, titleStr) != ANI_OK) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get title");
+            return ANI_ERROR;
+        }
+        std::string totalSize = titleStr + "." + extensionStr;
+        CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckDisplayName(totalSize, true) == 0, ANI_ERROR,
+            "Display size is error");
+        asyncContext->valuesBucket.Put(MediaColumn::MEDIA_TITLE, titleStr);
+    }
+
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+    return ANI_OK;
+}
+
 static ani_object CreateAsset(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context, ani_object &error)
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
@@ -3743,6 +3801,86 @@ ani_object MediaLibraryAni::CreateAssetComponent([[maybe_unused]] ani_env *env, 
         ANI_OK == ParseArgsCreatePhotoAssetComponent(env, photoTypeAni, extension, options, asyncContext),
         nullptr, "Failed to parse args");
     PhotoAccessCreateAssetExecute(asyncContext);
+    return CreateAssetComplete(env, asyncContext);
+}
+
+static int32_t CallPhotoAccessCreateAsset(unique_ptr<MediaLibraryAsyncContext> &context, std::string &outUri)
+{
+    bool isValid = false;
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = context->valuesBucket.Get(CONST_MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    if (context->needSystemApp) {
+        reqBody.photoSubtype = context->valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+        string displayName = context->valuesBucket.Get(CONST_MEDIA_DATA_DB_NAME, isValid);
+        string cameraShotKey = context->valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
+        reqBody.displayName = displayName;
+        reqBody.cameraShotKey = cameraShotKey;
+    } else {
+        string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+        string extension = context->valuesBucket.Get(CONST_ASSET_EXTENTION, isValid);
+        reqBody.title = title;
+        reqBody.extension = extension;
+    }
+
+    CreateAssetRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode,
+        reqBody, respBody);
+    if (errCode != 0) {
+        ANI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+        return errCode;
+    }
+    outUri = respBody.outUri;
+    return respBody.fileId;
+}
+
+static void PhotoAccessCreatePhotoAssetExecute(unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCreateAssetExecute");
+
+    if (context == nullptr) {
+        ANI_ERR_LOG("PhotoAccessCreateAssetExecute: context is null");
+        return;
+    }
+
+    string outUri;
+    int index = -EINVAL;
+    if (context->businessCode != static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)) {
+        index = CallPhotoAccessCreateAsset(context, outUri);
+    } else {
+        context->error = JS_E_PARAM_INVALID;
+        return;
+    }
+    if (index >= 0) {
+        context->uri = outUri;
+    } else if (index == E_PERMISSION_DENIED) {
+        context->error = OHOS_PERMISSION_DENIED_CODE;
+    } else {
+        ANI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
+        context->error = JS_E_INNER_FAIL;
+    }
+}
+
+ani_object MediaLibraryAni::CreatePhotoAsset(ani_env *env, ani_object object,
+    ani_enum_item photoType, ani_string extension, ani_string title)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreatePhotoAsset");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    asyncContext->objectInfo = Unwrap(env, object);
+
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        ANI_OK == ParseArgsCreatePhotoAsset(env, photoType, extension, title, asyncContext),
+        nullptr, "Failed to parse args");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
+    SetUserIdFromObjectInfo(asyncContext);
+
+    PhotoAccessCreatePhotoAssetExecute(asyncContext);
     return CreateAssetComplete(env, asyncContext);
 }
 
