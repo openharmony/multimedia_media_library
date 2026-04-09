@@ -105,7 +105,8 @@ void CloneRestorePortrait::DeleteExistingCluseringInfo()
 static void ClearProfileFaceScore(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     MEDIA_INFO_LOG("Clear tab_analysis_profile face_score and face_score_version");
-    std::string clearProfileFaceScoreSql = "UPDATE tab_analysis_profile SET face_score = 0, face_score_version = ''";
+    std::string clearProfileFaceScoreSql =
+        "UPDATE tab_analysis_profile SET face_score = NULL, face_score_version = NULL";
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, clearProfileFaceScoreSql);
 }
 
