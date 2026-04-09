@@ -223,6 +223,7 @@ private:
                 (1 = {1} OR hidden = 0) AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
+                file_source_type != 1 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
         ) \
@@ -253,6 +254,7 @@ private:
                 (1 = {1} OR hidden = 0) AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
+                file_source_type != 1 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
         ) \
