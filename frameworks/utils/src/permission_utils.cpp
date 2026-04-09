@@ -49,12 +49,12 @@ std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
 
+vector<AddPermParamInfo> PermissionUtils::infos_ {};
+vector<OpenPermissionInfo> PermissionUtils::pendingOpenPermissionInfos_ {};
+
 bool g_isDelayTask;
 std::mutex addPhotoPermissionRecordLock_;
 std::thread delayTask_;
-std::vector<Security::AccessToken::AddPermParamInfo> infos_;
-
-std::vector<OpenPermissionInfo> pendingOpenPermissionInfos_;
 std::mutex pendingOpenDataInfosLock_;
 constexpr int URI_NUMBER_THRESHOLD = 50; // Max uri number for a single report of permission infos
 
@@ -278,7 +278,7 @@ bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
     return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);
 }
 
-void AddPermissionRecord(const AccessTokenID &token, const string &perm, const bool permGranted)
+void PermissionUtils::AddPermissionRecord(const AccessTokenID &token, const string &perm, const bool permGranted)
 {
     if (!ShouldAddPermissionRecord(token)) {
         return;
@@ -292,7 +292,7 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
     }
 }
 
-vector<AddPermParamInfo> GetPermissionRecord()
+vector<AddPermParamInfo> PermissionUtils::GetPermissionRecord()
 {
     lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
     vector<AddPermParamInfo> result = infos_;
@@ -300,7 +300,7 @@ vector<AddPermParamInfo> GetPermissionRecord()
     return result;
 }
 
-void AddPermissionRecord()
+void PermissionUtils::AddPermissionRecord()
 {
     vector<AddPermParamInfo> infos = GetPermissionRecord();
     for (const auto &info : infos) {
@@ -311,12 +311,13 @@ void AddPermissionRecord()
                 info.permissionName.c_str(), info.successCount, ret);
         }
         MEDIA_DEBUG_LOG("Info: token = %{private}d, perm = %{private}s, permGranted = %{private}d, \
-            !permGranted = %{private}d, type = %{public}d", info.tokenId, info.permissionName.c_str(),
-            info.successCount, info.failCount, info.type);
+            !permGranted = %{private}d, type = %{public}d, extra = %{private}s", info.tokenId,
+            info.permissionName.c_str(), info.successCount, info.failCount, info.type,
+            info.extra.c_str());
     }
 }
 
-void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
+void PermissionUtils::CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type)
 {
     lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
@@ -339,7 +340,7 @@ void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     }
 }
 
-static bool HandleEmptyOpenDataInfo(const AccessTokenID &token, const string &perm,
+bool PermissionUtils::HandleEmptyOpenDataInfo(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
 {
     if (openDataInfo.uri.empty()) {
@@ -358,7 +359,7 @@ static std::vector<AddPermParamInfo>::iterator FindMatchingPermissionInfo(
     });
 }
 
-static void AddToPendingOpenPermissionInfo(const AccessTokenID &token, const string &perm,
+void PermissionUtils::AddToPendingOpenPermissionInfo(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
 {
     lock_guard<mutex> lock(pendingOpenDataInfosLock_);
@@ -450,7 +451,7 @@ static bool UpdatePermissionInfoWithOpenData(AddPermParamInfo &info, const OpenD
     return false;
 }
 
-static void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
+void PermissionUtils::CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
 {
     if (HandleEmptyOpenDataInfo(token, perm, permGranted, type, openDataInfo)) {
@@ -485,7 +486,7 @@ static void CollectPermissionRecord(const AccessTokenID &token, const string &pe
     }
 }
 
-static void HandlePendingOpenDataInfos()
+void PermissionUtils::HandlePendingOpenDataInfos()
 {
     std::vector<OpenPermissionInfo> pendingInfosTmp {};
     {
@@ -499,7 +500,7 @@ static void HandlePendingOpenDataInfos()
     }
 }
 
-void DelayAddPermissionRecord()
+void PermissionUtils::DelayAddPermissionRecord()
 {
     string name("DelayAddPermissionRecord");
     pthread_setname_np(pthread_self(), name.c_str());

@@ -478,7 +478,7 @@ void MediaLibraryBundleManager::GetBundleNameByUID(const int32_t uid, string &bu
 }
 
 bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, const int &uid,
-    AccessTokenID &tokenCaller)
+    AccessTokenID &tokenCaller, OpenDataInfo info)
 {
     tokenCaller = 1;
     for (const auto &perm : perms) {

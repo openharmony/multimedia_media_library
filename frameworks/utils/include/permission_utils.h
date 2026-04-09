@@ -125,9 +125,11 @@ public:
     static bool SetEPolicy();
     static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
     static bool GetTokenCallerForUid(const int &uid, Security::AccessToken::AccessTokenID &tokenCaller);
-    static void DelayTaskInit();
 
 private:
+    static std::vector<Security::AccessToken::AddPermParamInfo> infos_;
+    static std::vector<OpenPermissionInfo> pendingOpenPermissionInfos_;
+
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
     COMPILE_HIDDEN static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     COMPILE_HIDDEN static std::mutex bundleMgrMutex_;
@@ -141,6 +143,22 @@ private:
     static std::mutex uninstallMutex_;
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
+    static void DelayTaskInit();
+    static std::vector<Security::AccessToken::AddPermParamInfo> GetPermissionRecord();
+    static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type);
+    static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type, const OpenDataInfo &openDataInfo);
+    static void DelayAddPermissionRecord();
+    static void AddToPendingOpenPermissionInfo(const Security::AccessToken::AccessTokenID &token,
+        const std::string &perm, const bool permGranted, const Security::AccessToken::PermissionUsedType type,
+        const OpenDataInfo &openDataInfo);
+    static void HandlePendingOpenDataInfos();
+    static bool HandleEmptyOpenDataInfo(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type, const OpenDataInfo &openDataInfo);
+    static void AddPermissionRecord();
+    static void AddPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted);
 };
 }  // namespace Media
 }  // namespace OHOS
