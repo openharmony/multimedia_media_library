@@ -55,6 +55,10 @@ ohos_unittest("medialibrary_backup_test") {
     "../medialibrary_unittest_utils/include",
   ]
 
+  include_common_utils_dirs = [ "${MEDIALIB_COMMON_PATH}/utils/include" ]
+
+  include_dirs += include_common_utils_dirs
+
   sources = [
     "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/event_handler/album_plugin_table_event_handler.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
@@ -87,7 +91,6 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_task_report.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/asset_map_clone.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/backup_adapters.cpp",
-    "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/dao_utils.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/db_upgrade_utils.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/gallery_db_upgrade.cpp",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_backup_extension/src/restore/gallery_media_dao.cpp",
@@ -125,7 +128,6 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/restore/highlight_restore_test.cpp",
     "./src/restore/media_library_db_upgrade_test.cpp",
     "./src/restore/backup_adapters_test.cpp",
-    "./src/restore/dao_utils_test.cpp",
     "./src/restore/photo_album_clone_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
     "./src/restore/photos_backup_test.cpp",

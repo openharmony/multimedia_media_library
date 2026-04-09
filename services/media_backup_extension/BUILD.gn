@@ -57,6 +57,10 @@ ohos_shared_library("mediabackup") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao/table",
   ]
 
+  include_common_utils_dirs = [ "${MEDIALIB_COMMON_PATH}/utils/include" ]
+
+  include_dirs += include_common_utils_dirs
+
   sources = [
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -113,7 +117,6 @@ ohos_shared_library("mediabackup") {
     "./src/report/upgrade_restore_task_report.cpp",
     "./src/restore/asset_map_clone.cpp",
     "./src/restore/backup_adapters.cpp",
-    "./src/restore/dao_utils.cpp",
     "./src/restore/db_upgrade_utils.cpp",
     "./src/restore/gallery_db_upgrade.cpp",
     "./src/restore/gallery_media_dao.cpp",
