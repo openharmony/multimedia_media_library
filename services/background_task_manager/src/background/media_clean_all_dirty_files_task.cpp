@@ -369,7 +369,7 @@ void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dir
 void MediaCleanAllDirtyFilesTask::HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
     // pending文件 充电息屏且保存超过72小时 扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
-    MEDIA_ERR_LOG("HandleBothExistStrategy path %{public}s",
+    MEDIA_INFO_LOG("HandleBothExistStrategy path %{public}s",
         MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
@@ -424,7 +424,7 @@ void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirt
 void MediaCleanAllDirtyFilesTask::HandleOriginExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
     // pending文件，充电息屏且保存超过72小时扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
-    MEDIA_ERR_LOG("HandleOriginExistStrategy path %{public}s",
+    MEDIA_INFO_LOG("HandleOriginExistStrategy path %{public}s",
         MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
