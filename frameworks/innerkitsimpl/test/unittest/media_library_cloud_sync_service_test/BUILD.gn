@@ -62,6 +62,7 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "./src/cloud_media_photos_rename_service_test.cpp",
     "./src/cloud_media_attachment_utils_test.cpp",
     "./src/cloud_media_download_dao_test.cpp",
+    "./src/cloud_media_file_info_service_test.cpp",
   ]
 
   deps = [
@@ -333,6 +334,8 @@ ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_CLOUD_SYNC_DATA}:media_cloud_sync_data",
   ]
+
+  cflags = [ "-fno-access-control" ]
 
   external_deps = [
     "ability_runtime:ability_connect_callback_stub",

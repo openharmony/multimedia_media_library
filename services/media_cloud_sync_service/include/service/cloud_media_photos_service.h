@@ -38,6 +38,7 @@
 #include "cloud_media_asset_retain_compare_dao.h"
 #include "cloud_media_photos_rename_service.h"
 #include "cloud_media_photos_album_hidden_service.h"
+#include "cloud_media_file_manager_service.h"
 // LCOV_EXCL_START
 
 namespace OHOS::Media::CloudSync {
@@ -96,7 +97,7 @@ private:
     int32_t GetCloudKeyData(const CloudMediaPullDataDto &pullData, KeyData &keyData);
     void GetMergeDataMap(
         const std::vector<CloudMediaPullDataDto> &pullDatas, std::map<std::string, KeyData> &mergeDataMap);
-    int32_t DoDataMerge(const CloudMediaPullDataDto &pullData, const KeyData &localKeyData, const KeyData &cloudKeyData,
+    int32_t DoDataMerge(CloudMediaPullDataDto &pullData, const KeyData &localKeyData, const KeyData &cloudKeyData,
         std::set<std::string> &refreshAlbums, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t OnRecordFailed(
         PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
@@ -111,7 +112,6 @@ private:
     void NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles,
         const std::set<std::string> &refreshAlbums = {});
     void Notify(const std::string &uri, NotifyType type);
-    void ConvertPullDataToPhotosDto(const CloudMediaPullDataDto &data, PhotosDto &dto);
     int32_t NotifyUploadErr(const int32_t errorCode, const std::string fileId);
     int32_t OnRecordFailedErrorDetails(
         PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
@@ -163,6 +163,7 @@ private:
     bool needRecoverSmartData_{false};
     CloudMediaPhotosRenameService photosRenameService_;
     CloudMediaPhotosAlbumHiddenService photosAlbumHiddenService_;
+    CloudMediaFileManagerService fileManagerService_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTOS_SERVICE_H

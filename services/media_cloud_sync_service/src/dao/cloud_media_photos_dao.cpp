@@ -392,13 +392,15 @@ void CloudMediaPhotosDao::GetUpdateRecordConditionForRecycleUpdate(const std::st
 
 void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values, bool mtimeChanged)
 {
+    CHECK_AND_RETURN_LOG(pullData.localPhotosPoOp.has_value(), "localPhotosPoOp has no value");
+    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    std::string cloudPath = photoInfo.data.value_or("");
     if (mtimeChanged) {
-        CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
+        CloudMediaSyncUtils::RemoveTransCodePath(cloudPath);
         values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
         values.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
         values.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
     }
-    return;
 }
 
 void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullDataDto &pullData, bool isLocal,
@@ -412,10 +414,15 @@ void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullData
     if (isLocal && mtimeChanged) {
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
-        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
         values.Put(PhotoColumn::LOCAL_ASSET_SIZE, 0);
     }
     this->FillThumbStatus(values, mtimeChanged);
+    // 纯云湖内资产的 file_source_type = MEDIA(0)
+    bool needResetFileType = pullData.attributesFileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE);
+    needResetFileType = needResetFileType && isLocal && mtimeChanged;
+    if (needResetFileType) {
+        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
+    }
 }
 
 int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,

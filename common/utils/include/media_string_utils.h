@@ -33,6 +33,7 @@ public:
     EXPORT static bool StartsWith(const std::string &str, const std::string &prefix);
     EXPORT static bool EndsWith(const std::string &str, const std::string &suffix);
     EXPORT static std::string FillParams(const std::string &content, const std::vector<std::string> &bindArgs);
+    EXPORT static std::string ToLower(const std::string &str);
 };
 } // namespace OHOS::Media
 

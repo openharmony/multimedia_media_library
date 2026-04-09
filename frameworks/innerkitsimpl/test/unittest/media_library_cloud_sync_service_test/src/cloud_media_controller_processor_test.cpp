@@ -21,6 +21,7 @@
 #include "cloud_media_data_controller_processor.h"
 #include "cloud_media_download_controller_processor.h"
 #include "cloud_media_photo_controller_processor.h"
+#include "medialibrary_db_const.h"
 
 using namespace testing::ext;
 
@@ -360,4 +361,5 @@ HWTEST_F(CloudMediaContorllerProcessorTest, PhotoControllerProcessor_GetReportFa
     ReportFailureDto reportFailureDto = processor.GetReportFailureDto(reqBody);
     EXPECT_EQ(reportFailureDto.fileId, reqBody.fileId);
 }
-}
+
+}  // namespace OHOS::Media::CloudSync

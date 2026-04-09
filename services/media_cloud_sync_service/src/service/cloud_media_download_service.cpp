@@ -529,7 +529,10 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         assetData.err = ret;
         return;
     }
-    CloudMediaSyncUtils::RemoveTransCodePath(assetData.localPath);
+    CHECK_AND_RETURN_LOG(assetData.localPhotosPoOp.has_value(), "localPhotosPoOp has no value");
+    PhotosPo photoInfo = assetData.localPhotosPoOp.value();
+    std::string cloudPath = photoInfo.data.value_or("");
+    CloudMediaSyncUtils::RemoveTransCodePath(cloudPath);
     ret = this->dao_.UpdateTransCodeInfo(assetData.path);
     if (ret != E_OK) {
         assetData.errorMsg = "[OnDownloadAsset] UpdateTransCodeInfo failed";

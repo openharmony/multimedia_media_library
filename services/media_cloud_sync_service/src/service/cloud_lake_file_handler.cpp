@@ -30,6 +30,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "cloud_media_sync_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -177,6 +178,11 @@ void CloudLakeFileHandler::HandleMetaChanged(int32_t fileId)
     if (errCode != E_OK) {
         return;
     }
+
+    // 只处理 /storage/media/local/files/Docs/HO_DATA_EXT_MISC/ 前缀的资产
+    const bool isLakeStoragePath = MediaStringUtils::StartsWith(lakeData.storagePath, LAKE_STORAGE_PATH_PREFIX);
+    CHECK_AND_RETURN_LOG(isLakeStoragePath, "HandleMetaChanged for lake asset skip. fileId: %{public}d", fileId);
+
     MEDIA_DEBUG_LOG("delete the %{public}d storage_path is %{public}s, trash is [%{public}" PRId64 "], hidden is %{public}d",
         lakeData.fileId, lakeData.storagePath.c_str(), lakeData.dateTrashed, lakeData.hidden);
 

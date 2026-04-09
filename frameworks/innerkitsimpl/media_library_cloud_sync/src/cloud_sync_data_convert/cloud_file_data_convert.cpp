@@ -913,8 +913,6 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
     record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
     record.sourceLivePhoto = MovingPhotoFileUtils::GetSourceLivePhotoCachePath(record.path, userId_);
     record.serverErrorCode = result.GetDKError().serverErrorCode;
-    record.fileSourceType = photosData.GetFileSourceType().value_or(0);
-    record.storagePath = photosData.GetStoragePath().value_or("");
     ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
