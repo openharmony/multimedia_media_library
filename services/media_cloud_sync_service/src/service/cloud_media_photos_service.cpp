@@ -163,36 +163,38 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
     std::vector<PhotosDto> &fdirtyData)
 {
     MEDIA_INFO_LOG("here ClearLocalData");
+    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), false, "localPhotosPoOp has no value");
     PhotosDto dto;
+    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    const std::string cloudPath = photoInfo.data.value_or("");
     dto.cloudId = pullData.cloudId;
-    if (!CloudMediaFileUtils::GetParentPathAndFilename(pullData.localPath, dto.path, dto.displayName)) {
-        MEDIA_WARN_LOG("Failed to get parent path and real filename.");
+    if (!CloudMediaFileUtils::GetParentPathAndFilename(cloudPath, dto.path, dto.displayName)) {
+        MEDIA_WARN_LOG("Failed to get parent path and real filename, data: %{public}s",
+            photoInfo.data.value_or("").c_str());
     }
     dto.size = pullData.basicSize;
-    dto.mediaType = pullData.localMediaType;
+    dto.mediaType = photoInfo.mediaType.value_or(1);
     dto.modifiedTime = pullData.modifiedTime;
-    dto.originalCloudId = pullData.localOriginalAssetCloudId;
-    dto.localPath = pullData.localPath;
+    dto.originalCloudId = photoInfo.originalAssetCloudId.value_or("");
+    dto.localPath = cloudPath;
     dto.attributesMediaType = pullData.attributesMediaType;
-    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), false, "localPhotosPoOp has no value");
-    PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
-    dto.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
-    dto.storagePath = localPhotosPo.storagePath.value_or("");
+    dto.fileSourceType = photoInfo.fileSourceType.value_or(0);
+    dto.storagePath = photoInfo.storagePath.value_or("");
     CloudMediaSyncUtils::FillPhotosDto(
-        dto, pullData.localPath, pullData.localOrientation, pullData.exifRotate, pullData.localThumbState);
+        dto, cloudPath, photoInfo.orientation.value_or(0), pullData.exifRotate,
+        photoInfo.thumbStatus.value_or(0));
     fdirtyData.emplace_back(dto);
-    bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
-    CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(photoInfo.position.value_or(-1));
+    CloudMediaSyncUtils::RemoveThmParentPath(cloudPath, PhotoColumn::FILES_CLOUD_DIR);
     if (isLocal) {
-        CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath);
-        CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
-        // for cloud enhancement composite photo
+        CloudMediaSyncUtils::RemoveMetaDataPath(cloudPath);
+        CloudMediaSyncUtils::RemoveEditDataPath(cloudPath);
         if (CloudMediaSyncUtils::IsCloudEnhancementSupported() &&
-            MediaEditUtils::IsEditDataSourceBackExists(pullData.localPath)) {
-            CloudMediaSyncUtils::BackUpEditDataSourcePath(pullData.localPath);
+            MediaEditUtils::IsEditDataSourceBackExists(cloudPath)) {
+            CloudMediaSyncUtils::BackUpEditDataSourcePath(cloudPath);
         }
-        CloudMediaSyncUtils::RemoveEditDataSourcePath(pullData.localPath);
-        CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
+        CloudMediaSyncUtils::RemoveEditDataSourcePath(cloudPath);
+        CloudMediaSyncUtils::RemoveMovingPhoto(photoInfo);
     }
     return E_OK;
 }
@@ -211,10 +213,12 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     if (ret != E_OK) {
         MEDIA_ERR_LOG("cloudId: %{public}s get mtime changed failed, ret: %{public}d.", cloudId.c_str(), ret);
     }
-    bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
-    // 元数据变更
+    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
+    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(photoInfo.position.value_or(-1));
     if (isLocal && mtimeChanged) {
-        if (CloudMediaFileUtils::LocalWriteOpen(pullData.localPath)) {
+        std::string fileStoragePath = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+        if (CloudMediaFileUtils::LocalWriteOpen(fileStoragePath)) {
             ret = this->photosDao_.SetRetry(cloudId);
             if (ret != E_OK) {
                 std::string errMsg = "update retry flag failed, ret = " + to_string(ret);
@@ -225,6 +229,8 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     }
     // Move to recycle bin or Move out of recycle bin.
     this->PullRecycleUpdate(pullData, photoRefresh);
+    // fix file info for pullData with the latest local data, in case PullRecycleUpdate modified the local data.
+    this->fileManagerService_.FixFileInfo(pullData);
     // UpdateRecordToDatabase更新成功，stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT]会增加
     int32_t updateCount = stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT];
     ret = this->photosDao_.UpdateRecordToDatabase(pullData, isLocal, mtimeChanged, refreshAlbums, stats, photoRefresh);
@@ -244,6 +250,7 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     } else {
         // 处理元数据变更
         CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
+        this->fileManagerService_.RelocateFile(pullData);
     }
     return E_OK;
 }
@@ -291,7 +298,7 @@ void CloudMediaPhotosService::GetMergeDataMap(
     }
 }
 
-int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullData, const KeyData &localKeyData,
+int32_t CloudMediaPhotosService::DoDataMerge(CloudMediaPullDataDto &pullData, const KeyData &localKeyData,
     const KeyData &cloudKeyData, std::set<std::string> &refreshAlbums,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
@@ -299,7 +306,11 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
     bool cloudStd = (localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime >= localKeyData.modifyTime);
     MEDIA_INFO_LOG("cloudStd %{public}d, cloud modifyTime: %{public}" PRId64 ", local modifyTime: %{public}" PRId64,
         cloudStd, cloudKeyData.modifyTime, localKeyData.modifyTime);
-
+    // fetch local data, to make sure the local data is consistent with the cloud data in the following merge process.
+    CHECK_AND_EXECUTE(pullData.localPhotosPoOp.has_value(),
+                      this->commonDao_.QueryPhotoByFilePath(localKeyData.filePath, pullData.localPhotosPoOp));
+    // fix file info for pullData with the latest local data.
+    this->fileManagerService_.FixFileInfo(pullData);
     int32_t ret = this->photosDao_.ConflictDataMerge(
         pullData, localKeyData.filePath, cloudStd, cloudMapIds, refreshAlbums, photoRefresh);
     if (ret != E_OK) {
@@ -314,6 +325,9 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
         MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri,
             static_cast<ChangeType>(ExtraChangeType::PHOTO_TIME_UPDATE),
             to_string(pullData.attributesFileId));
+    }
+    if (cloudStd) {
+        this->fileManagerService_.RelocateFile(pullData);
     }
     return E_OK;
 }
@@ -404,6 +418,10 @@ int32_t CloudMediaPhotosService::PullInsert(
 
     int32_t ret;
     std::vector<CloudMediaPullDataDto> allPullDatas = pullDatas;
+    // fix file info for all pull data, to make sure the following process have the complete and correct file info.
+    std::for_each(allPullDatas.begin(), allPullDatas.end(), [this](CloudMediaPullDataDto &pullData) {
+        this->fileManagerService_.FixFileInfo(pullData);
+    });
     PullRecordsConflictProc(allPullDatas, refreshAlbums, stats, failedRecords, photoRefresh);
 
     assetCompareDao_.SetRdbStore(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
@@ -563,6 +581,8 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     for (auto &cloudId : cloudIds) {
         CloudMediaPullDataDto pullData = cloudIdRelativeMap.at(cloudId);
         std::string dateAdded = pullData.localDateAdded;
+        // fix file info for each pullData, to make sure the following process have the complete and correct file info.
+        this->fileManagerService_.FixFileInfo(pullData);
         MEDIA_INFO_LOG("pullData: %{public}s", pullData.ToString().c_str());
         // 下行机已经有数据并且不是被删除
         if (pullData.localPath.empty() && !pullData.basicIsDelete) {
@@ -605,24 +625,6 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     AlbumsRefreshManager::GetInstance().SendNotifyInfoOfAssetAndAlbum(notifyType, {}, refreshAlbums);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
     return ret;
-}
-
-void CloudMediaPhotosService::ConvertPullDataToPhotosDto(const CloudMediaPullDataDto &data, PhotosDto &dto)
-{
-    MEDIA_INFO_LOG("ConvertPullDataToPhotosDto enter: %{public}s", data.cloudId.c_str());
-    int32_t mediaType =
-        (data.basicFileType == FILE_TYPE_VIDEO) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
-    dto.cloudId = data.cloudId;
-    if (!CloudMediaFileUtils::GetParentPathAndFilename(data.localPath, dto.path, dto.fileName)) {
-        MEDIA_WARN_LOG("ConvertPullDataToPhotosDto Failed to get parent path and real filename.");
-    }
-    dto.size = data.localSize;
-    dto.mediaType = mediaType;
-    dto.modifiedTime = data.attributesEditedTimeMs;
-    // new data 不更新 originalCloudId (无)
-    CloudMediaSyncUtils::FillPhotosDto(dto, data.localPath, data.propertiesRotate,
-        data.exifRotate, data.localThumbState);
-    MEDIA_INFO_LOG("ConvertPullDataToPhotosDto NewData: %{public}s", dto.cloudId.c_str());
 }
 
 void CloudMediaPhotosService::SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const PhotosPo &photo)
@@ -1302,29 +1304,21 @@ void CloudMediaPhotosService::RefreshAnalysisAlbum(const std::string &cloudId)
 
 int32_t CloudMediaPhotosService::RemoveLocalFile(const CloudMediaPullDataDto &pullData)
 {
-    std::string prefixCloud = "";
-
-    // 根据是不是湖内文件来获得不同的路径
-    std::string localPath;
-    int32_t ret =  CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
-    if (!isLocal) {
-        localPath = CloudMediaSyncUtils::GetCloudPath(pullData.localPath, prefixCloud);
-    }
-    MEDIA_INFO_LOG("RemoveLocalFile isLocal is %{public}d, localPath is %{public}s",
-        isLocal, localPath.c_str());
-    ret = unlink(localPath.c_str());
-    CHECK_AND_PRINT_LOG(ret == E_OK,
-        "unlink local failed, mergePath: %{public}s, ret: %{public}d.",
-        MediaFileUtils::DesensitizePath(localPath).c_str(),
-        ret);
-    CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
-    CloudMediaSyncUtils::RemoveEditDataParentPath(pullData.localPath);
-    CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath);
-    CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
-    CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
-    CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
-    CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
+    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
+    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(photoInfo.position.value_or(-1));
+    const std::string fileStoragePath = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    std::string targetPath = isLocal ? fileStoragePath : photoInfo.data.value_or("");
+    int32_t ret = unlink(targetPath.c_str());
+    MEDIA_INFO_LOG("RemoveLocalFile, ret: %{public}d, targetPath: %{public}s", ret, targetPath.c_str());
+    std::string cloudPath = photoInfo.data.value_or("");
+    CloudMediaSyncUtils::RemoveThmParentPath(cloudPath, PhotoColumn::FILES_CLOUD_DIR);
+    CloudMediaSyncUtils::RemoveEditDataParentPath(cloudPath);
+    CloudMediaSyncUtils::RemoveMetaDataPath(cloudPath);
+    CloudMediaSyncUtils::InvalidVideoCache(cloudPath);
+    CloudMediaSyncUtils::RemoveEditDataPath(cloudPath);
+    CloudMediaSyncUtils::RemoveMovingPhoto(photoInfo);
+    CloudMediaSyncUtils::RemoveTransCodePath(cloudPath);
     return E_OK;
 }
 
@@ -1362,6 +1356,9 @@ int32_t CloudMediaPhotosService::PullRecycleUpdate(
         pullData.SetIsRecycleUpdated(true);
         ret = this->photosDeleteService_.MoveOutTrashAndMergeWithSameAsset(photoRefresh, pullData);
     }
+    CHECK_AND_RETURN_RET(pullData.GetIsRecycleUpdated(), ret);
+    // reload local photo info after recycle update, to make sure the following process have the latest local data.
+    this->commonDao_.QueryPhotoByCloudId(pullData.cloudId, pullData.localPhotosPoOp);
     return ret;
 }
 
@@ -1565,8 +1562,7 @@ int32_t CloudMediaPhotosService::HandleInvalidCloudResource(
         return E_INVALID_VALUES;
     }
     PhotosPo photoInfo = photo.localInfoOp.value();
-    std::string fileStoragePath = CloudMediaSyncUtils::FindStoragePath(
-        photoInfo.data.value_or(""), photoInfo.storagePath.value_or(""), photoInfo.fileSourceType.value_or(0));
+    std::string fileStoragePath = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
     std::string photosData = photoInfo.data.value_or("");
     // Scenario: device has record and file exists, Handle: push again.
     bool isFileExists = (access(fileStoragePath.c_str(), F_OK) == 0);

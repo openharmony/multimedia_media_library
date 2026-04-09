@@ -15,7 +15,9 @@
 
 #include "media_string_utils.h"
 
+#include <algorithm>
 #include <charconv>
+#include <cctype>
 #include <sstream>
 
 #include "media_log.h"
@@ -67,5 +69,12 @@ std::string MediaStringUtils::FillParams(const std::string &content, const std::
         }
     }
     return result;
+}
+
+std::string MediaStringUtils::ToLower(const std::string &str)
+{
+    std::string strLower = str;
+    std::transform(strLower.begin(), strLower.end(), strLower.begin(), ::tolower);
+    return strLower;
 }
 } // namespace OHOS::Media

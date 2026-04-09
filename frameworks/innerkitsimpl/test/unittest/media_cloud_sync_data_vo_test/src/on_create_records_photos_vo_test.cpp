@@ -47,8 +47,6 @@ HWTEST_F(OnCreateRecordsPhotosVoTest, TC001_Unmarshalling_Success, TestSize.Leve
     record.version = 1;
     record.serverErrorCode = 0;
     record.isSuccess = true;
-    record.fileSourceType = 0;
-    record.storagePath = "/storage";
     record.errorType = ErrorType::TYPE_UNKNOWN;
 
     OHOS::MessageParcel parcel;

@@ -48,6 +48,9 @@ namespace OHOS::Media::CloudSync {
 static const string HMDFS_PATH_PREFIX = "/mnt/hmdfs/100";
 static const string PHOTOS_PATH = "com.huawei.hmos.photos";
 const int32_t FILE_SOURCE_TYPE_MEDIA = 0;
+constexpr uint32_t RENAME_MAX_RETRY_COUNT = 10000;
+constexpr int32_t CROSS_POLICY_ERR = 18;
+
 int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
     const int32_t exifRotate, const int32_t &thumbState)
@@ -139,18 +142,6 @@ bool CloudMediaSyncUtils::FileIsLocal(const int32_t position)
 {
     MEDIA_DEBUG_LOG("position: %{public}d.", position);
     return !!(static_cast<uint32_t>(position) & 1);
-}
-
-std::string CloudMediaSyncUtils::GetCloudPath(const std::string &path, const std::string &prefixCloud)
-{
-    std::string cloudPath;
-    if (path.find(prefixCloud) == 0) {
-        cloudPath = prefixCloud + path.substr(prefixCloud.size());
-    } else {
-        MEDIA_ERR_LOG("Failed to get cloud path: %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
-        cloudPath = "";
-    }
-    return cloudPath;
 }
 
 std::string CloudMediaSyncUtils::GetThumbParentPath(const std::string &path, const std::string &prefixCloud)
@@ -334,18 +325,21 @@ void CloudMediaSyncUtils::RemoveTransCodePath(const std::string &localPath)
     }
 }
 
-void CloudMediaSyncUtils::RemoveMovingPhoto(const CloudMediaPullDataDto &pullData)
+void CloudMediaSyncUtils::RemoveMovingPhoto(const PhotosPo &photoInfo)
 {
-    CHECK_AND_RETURN_LOG(IsMovingPhoto(pullData), "RemoveMovingPhoto Is not MovingPhoto");
-    MEDIA_INFO_LOG(
-        "RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", GetMovingPhotoVideoPath(pullData.localPath).c_str());
-    if (unlink(GetMovingPhotoVideoPath(pullData.localPath).c_str()) != 0 && errno != ENOENT) {
-        MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
+    CHECK_AND_RETURN_LOG(IsMovingPhoto(photoInfo), "RemoveMovingPhoto Is not MovingPhoto");
+    const std::string cloudPath = photoInfo.data.value_or("");
+    const std::string videoPath = GetMovingPhotoVideoPath(cloudPath);
+    MEDIA_INFO_LOG("RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", videoPath.c_str());
+    if (unlink(videoPath.c_str()) != 0 && errno != ENOENT) {
+        MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d, cloudPath: %{public}s",
+            errno, videoPath.c_str());
     }
-    MEDIA_INFO_LOG(
-        "RemoveMovingPhoto ExtraDataPath: %{public}s", GetMovingPhotoExtraDataPath(pullData.localPath).c_str());
-    if (unlink(GetMovingPhotoExtraDataPath(pullData.localPath).c_str()) != 0 && errno != ENOENT) {
-        MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
+    const std::string extraDataPath = GetMovingPhotoExtraDataPath(cloudPath);
+    MEDIA_INFO_LOG("RemoveMovingPhoto ExtraDataPath: %{public}s", extraDataPath.c_str());
+    if (unlink(extraDataPath.c_str()) != 0 && errno != ENOENT) {
+        MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d, cloudPath: %{public}s",
+            errno, extraDataPath.c_str());
     }
 }
 
@@ -516,21 +510,161 @@ void CloudMediaSyncUtils::SyncDealWithCompositePhoto(const std::string &assetDat
 #endif
 }
 
-std::string CloudMediaSyncUtils::FindStoragePath(
-    const std::string &cloudPath, const std::string &storagePath, const int32_t fileSourceType)
+/**
+ * 获取资产的文件存储路径
+ * @return 文件存储路径
+ *
+ * 数据场景：
+ * | fileSourceType  | storagePath          | position | hidden | dateTrashed | fileStoragePath |
+ * |-----------------|----------------------|----------|--------|-------------|-----------------|
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 2        | 0      | 0           | 无本地文件，预期 storagePath |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 2        | 0      | 1           | 无本地文件，预期 data |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 2        | 1      | 0           | 无本地文件，预期 data |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 2        | 1      | 1           | 无本地文件，预期 data |
+ * | LAKE(3)         | ./HO_DATA_EXT_MISC/. | 1 or 3   | 0      | 0           | storagePath     |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 1 or 3   | 0      | 1           | data |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 1 or 3   | 1      | 0           | data |
+ * | MEDIA(0)        | ./HO_DATA_EXT_MISC/. | 1 or 3   | 1      | 1           | data |
+ * | FILE_MANAGER(1) | ./Docs/.             | 2        | 0      | 0           | 无本地文件，预期 storagePath |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 2        | 0      | 1           | 无本地文件，预期 data |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 2        | 1      | 0           | 无本地文件，预期 data |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 2        | 1      | 1           | 无本地文件，预期 data |
+ * | FILE_MANAGER(1) | ./Docs/.             | 1 or 3   | 0      | 0           | storagePath     |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 1 or 3   | 0      | 1           | data |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 1 or 3   | 1      | 0           | data |
+ * | MEDIA(0), 根据 sourcePath 识别文管 | ""  | 1 or 3   | 1      | 1           | data |
+ * | MEDIA(0)        | ""                   | 任意     | 0      | 0           | data            |
+ * | MEDIA(0)        | ""                   | 任意     | 1      | 0           | data            |
+ * | MEDIA(0)        | ""                   | 任意     | 0      | 1           | data            |
+ * | MEDIA(0)        | ""                   | 任意     | 1      | 1           | data            |
+ *
+ * 差异说明：
+ * 1、纯云湖内资产必须是 MEDIA(0)，通过 storagePath 识别湖内资产；
+ * 2、纯云文管资产必须是 FILE_MANAGER(1)，通过 fileSourceType 识别文管资产；
+ * 3、隐藏和回收站资产不区分湖内和文管，通过 hidden 和 dateTrashed 识别，且必须是 MEDIA(0)；
+ * 4、湖内隐藏或回收站资产，虽然 fileSourceType 是 MEDIA(0)，但通过 storagePath 识别为湖内资产；
+ * 5、文管隐藏或回收站资产，虽然 fileSourceType 是 MEDIA(0)，但通过 sourcePath 识别为文管资产；
+ */
+std::string CloudMediaSyncUtils::FindFileStoragePath(const PhotosPo &photoInfo)
 {
-    if (fileSourceType == FILE_SOURCE_TYPE_MEDIA) {
-        return CloudMediaSyncUtils::GetLocalPath(cloudPath);
+    const int32_t fileSourceType = photoInfo.fileSourceType.value_or(0);
+    const bool isHidden = photoInfo.hidden.value_or(0) == 1;
+    const bool isTrashed = photoInfo.dateTrashed.value_or(0) != 0;
+    const std::string data = photoInfo.data.value_or("");
+    if (isHidden || isTrashed) {
+        return CloudMediaSyncUtils::GetLocalPath(data);
     }
-    return storagePath;
+
+    const std::string storagePath = photoInfo.storagePath.value_or("");
+    bool isLakeAsset = fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE);
+    isLakeAsset = isLakeAsset || MediaStringUtils::StartsWith(storagePath, LAKE_STORAGE_PATH_PREFIX);
+    const bool isFileManagerAsset = fileSourceType == static_cast<int32_t>(FileSourceType::FILE_MANAGER);
+    const bool isStoragePathValid = isLakeAsset || isFileManagerAsset;
+    CHECK_AND_RETURN_RET(!isStoragePathValid, storagePath);
+
+    return CloudMediaSyncUtils::GetLocalPath(data);
 }
 
 bool CloudMediaSyncUtils::IsFileManagerAlbumPath(const std::string &lpath)
 {
-    std::string fromDocsTarget = "/FromDocs/";
-    std::transform(fromDocsTarget.begin(), fromDocsTarget.end(), fromDocsTarget.begin(), ::tolower);
-    std::string lPathLower = lpath;
-    std::transform(lPathLower.begin(), lPathLower.end(), lPathLower.begin(), ::tolower);
+    std::string fromDocsTarget = FROM_DOCS_KEYWORD;
+    fromDocsTarget = MediaStringUtils::ToLower(fromDocsTarget);
+    std::string lPathLower = MediaStringUtils::ToLower(lpath);
     return MediaStringUtils::StartsWith(lPathLower, fromDocsTarget);
+}
+
+std::string CloudMediaSyncUtils::GetLpathWithoutDocPrefix(const std::string &lPath)
+{
+    std::string lPathWithoutPrefix = lPath;
+    const std::string fromDocsKeyWord = FROM_DOCS_KEYWORD;
+    if (CloudMediaSyncUtils::IsFileManagerAlbumPath(lPath)) {
+        lPathWithoutPrefix = lPath.substr(fromDocsKeyWord.length());
+    }
+    return lPathWithoutPrefix;
+}
+
+std::string CloudMediaSyncUtils::FindFileStoragePathWithPullData(const CloudMediaPullDataDto &pullData)
+{
+    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), "", "localPhotosPoOp has no value");
+    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    const int32_t fileSourceType = pullData.attributesFileSourceType;
+    const bool isHidden = pullData.IsHiddenAsset();
+    const bool isTrashed = pullData.basicRecycledTime != 0;
+    const std::string cloudData = photoInfo.data.value_or("");
+    const std::string cloudStoragePath = pullData.attributesStoragePath;
+    if (fileSourceType == FILE_SOURCE_TYPE_MEDIA || isHidden || isTrashed) {
+        return CloudMediaSyncUtils::GetLocalPath(cloudData);
+    }
+    return cloudStoragePath;
+}
+
+int32_t CloudMediaSyncUtils::FindUniqueFilePath(const std::string &destPath, std::string &targetFilePath)
+{
+    const std::string parentDir = MediaFileUtils::GetParentPath(destPath);
+    CHECK_AND_RETURN_RET_LOG(!parentDir.empty(),
+        E_INVALID_ARGUMENTS,
+        "can not get parent dir, dest: %{public}s",
+        MediaFileUtils::DesensitizePath(destPath).c_str());
+    if (!MediaFileUtils::IsDirExists(parentDir) && !MediaFileUtils::CreateDirectory(parentDir)) {
+        MEDIA_ERR_LOG("craete dir %{public}s error, the file path is %{public}s",
+            MediaFileUtils::DesensitizePath(parentDir).c_str(),
+            MediaFileUtils::DesensitizePath(destPath).c_str());
+        return E_INVALID_ARGUMENTS;
+    }
+
+    targetFilePath = destPath;
+    std::string fileName = MediaFileUtils::GetFileName(targetFilePath);
+    const size_t dotPos = fileName.rfind('.');
+    const std::string fileExtension = (dotPos != std::string::npos) ? fileName.substr(dotPos) : "";
+    const std::string title = (dotPos != std::string::npos) ? fileName.substr(0, dotPos) : fileName;
+    uint32_t retryCount = 0;
+    while (MediaFileUtils::IsFileExists(targetFilePath) && retryCount < RENAME_MAX_RETRY_COUNT) {
+        retryCount++;
+        fileName = title + "(" + std::to_string(retryCount) + ")" + fileExtension;
+        targetFilePath = parentDir + "/" + fileName;
+    }
+
+    const bool isValid = !MediaFileUtils::IsFileExists(targetFilePath);
+    return isValid ? E_OK : E_ERR;
+}
+
+int32_t CloudMediaSyncUtils::MoveFileWithConflictResolution(const std::string &srcPath,
+                                                            const std::string &destPath,
+                                                            std::string &finalDestPath)
+{
+    finalDestPath = destPath;
+    const bool srcFileExists = MediaFileUtils::IsFileExists(srcPath);
+    bool isValid = !srcPath.empty() && !destPath.empty() && srcFileExists;
+    CHECK_AND_RETURN_RET_LOG(isValid,
+                             E_INVALID_ARGUMENTS,
+                             "invalid args, src: %{public}s, dest: %{public}s, fileExists: %{public}d",
+                             MediaFileUtils::DesensitizePath(srcPath).c_str(),
+                             MediaFileUtils::DesensitizePath(destPath).c_str(),
+                             srcFileExists);
+
+    const int32_t uniquePathRet = CloudMediaSyncUtils::FindUniqueFilePath(destPath, finalDestPath);
+    CHECK_AND_RETURN_RET_LOG(
+        uniquePathRet == E_OK, uniquePathRet, "FindUniqueFilePath failed, destPath: %{public}s", destPath.c_str());
+
+    int64_t srcFileDateModified = 0;
+    const bool isDateModifiedValid = MediaFileUtils::GetDateModified(srcPath, srcFileDateModified);
+
+    const int32_t renameRet = rename(srcPath.c_str(), finalDestPath.c_str());
+    bool cpRet = false;
+    if (renameRet != E_OK && errno == CROSS_POLICY_ERR) {
+        cpRet = MediaFileUtils::CopyFileAndDelSrc(srcPath, finalDestPath);
+    }
+    const bool resetModifiedRet =
+        isDateModifiedValid && MediaFileUtils::UpdateModifyTimeInMsec(finalDestPath, srcFileDateModified) == E_OK;
+
+    MEDIA_INFO_LOG("completd, renameRet: %{public}d, cpRet: %{public}d, resetModifiedRet: %{public}d, "
+                   "src: %{public}s, dest: %{public}s, srcFileDateModified: %{public}s",
+                   renameRet,
+                   cpRet,
+                   resetModifiedRet,
+                   MediaFileUtils::DesensitizePath(srcPath).c_str(),
+                   MediaFileUtils::DesensitizePath(destPath).c_str(),
+                   std::to_string(srcFileDateModified).c_str());
+    return (renameRet == E_OK || cpRet) ? E_OK : E_ERR;
 }
 }  // namespace OHOS::Media::CloudSync

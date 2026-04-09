@@ -21,6 +21,7 @@
 #include <map>
 
 #include "photos_po.h"
+#include "photo_album_po.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;
@@ -33,6 +34,9 @@ public:
     int32_t QueryLocalByCloudId(const std::vector<std::string> &cloudIds, const std::vector<std::string> &columns,
         std::vector<PhotosPo> &result);
     int32_t QueryLocalMap(const int32_t &fileId, std::map<int32_t, int32_t> &localMapIds);
+    int32_t QueryPhotoByCloudId(const std::string &cloudId, std::optional<PhotosPo> &photoInfoOp) const;
+    int32_t QueryPhotoByFilePath(const std::string &filePath, std::optional<PhotosPo> &photoInfoOp) const;
+    int32_t QueryPhotoAlbumByAlbumId(const int32_t albumId, std::optional<PhotoAlbumPo> &photoAlbumInfoOp) const;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_COMMON_DAO_H
