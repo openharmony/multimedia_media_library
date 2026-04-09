@@ -83,6 +83,7 @@
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
 #include "compatible_info_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -111,6 +112,9 @@ const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
 const size_t MAX_PARCEL_SIZE = 200 * 1024;
+const int32_t MAX_CHECK_PHOTO_PERMISSION_URI_COUNT = 500;
+const int32_t URI_FORMAT_ERROR_STATE = 0;
+const int32_t NO_READ_PERMISSION_STATE = 3;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -203,6 +207,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission)},
     ani_native_function {"cancelPhotoUriPermissionInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCancelPhotoUriPermission)},
+    ani_native_function {"checkPhotoUrisReadPermissionInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission)},
     ani_native_function {"saveFormInfoInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessSaveFormInfo)},
     ani_native_function {"saveGalleryFormInfoInner", nullptr,
@@ -4918,6 +4924,140 @@ ani_int MediaLibraryAni::PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_o
     }
     PhotoAccessCancelPhotoUriPermissionExecute(env, context);
     return PhotoUriPermissionComplete(env, context);
+}
+
+static ani_status ParseCheckPhotoUrisReadPermissionArgs(ani_env *env, ani_object uris,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetStringArray(env, uris, context->uris), "Failed to get uris");
+    CHECK_COND_RET(!context->uris.empty() && context->uris.size() <= MAX_CHECK_PHOTO_PERMISSION_URI_COUNT,
+        ANI_INVALID_ARGS, "The size of uris is invalid, size: %{public}zu", context->uris.size());
+
+    for (const auto &uri : context->uris) {
+        CHECK_COND_RET(!uri.empty(), ANI_INVALID_ARGS, "The uri in uris should not be empty");
+        int32_t fileId = MediaLibraryAniUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId < 0) {
+            context->uriPermissionStateMap[uri] = URI_FORMAT_ERROR_STATE;
+            continue;
+        }
+        context->checkPhotoPermissionUris.emplace_back(uri);
+        context->uriPermissionStateMap[uri] = NO_READ_PERMISSION_STATE;
+    }
+    return ANI_OK;
+}
+
+static void CheckPhotoUrisReadPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    CHECK_IF_EQUAL(!context->checkPhotoPermissionUris.empty(), "checkPhotoPermissionUris is empty");
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    reqBody.uris = context->checkPhotoPermissionUris;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call, PAH_CHECK_PHOTO_URIS_READ_PERMISSION");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        context->SaveError(result);
+        ANI_ERR_LOG("CheckPhotoUrisReadPermission fail, result: %{public}d.", result);
+        return;
+    }
+
+    std::unordered_set<std::string> validUris(context->checkPhotoPermissionUris.begin(),
+        context->checkPhotoPermissionUris.end());
+    for (const auto &[uri, state] : respBody.uriPermissionStateMap) {
+        if (validUris.find(uri) == validUris.end()) {
+            ANI_INFO_LOG("Ignore unexpected uri in CheckPhotoUrisReadPermission response");
+            continue;
+        }
+        context->uriPermissionStateMap[uri] = state;
+    }
+}
+
+static ani_status CreatePhotoUriPermissionStateMap(ani_env *env, const unique_ptr<MediaLibraryAsyncContext> &context,
+    ani_object &aniMap)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    ani_class cls {};
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
+
+    ani_method mapConstructor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>",
+        "X{C{std.core.Iterable}C{std.core.Null}C{std.core.ReadonlyArray}}:", &mapConstructor),
+        "Can't find method <ctor> in std.core.Map");
+
+    ani_ref undefinedArgument {};
+    CHECK_STATUS_RET(env->GetUndefined(&undefinedArgument), "GetUndefined failed");
+
+    CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, undefinedArgument), "Call method <ctor> fail");
+
+    ani_method setMethod {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
+
+    for (const auto &uri : context->uris) {
+        ani_string key {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, uri, key), "ToAniString key[%{public}s] fail",
+            uri.c_str());
+        int32_t state = URI_FORMAT_ERROR_STATE;
+        auto iter = context->uriPermissionStateMap.find(uri);
+        if (iter != context->uriPermissionStateMap.end()) {
+            state = iter->second;
+        }
+        ani_int value = static_cast<ani_int>(state);
+        ani_ref setResult {};
+        CHECK_STATUS_RET(env->Object_CallMethod_Ref(aniMap, setMethod, &setResult, key, value),
+            "Call method set fail");
+    }
+    return ANI_OK;
+}
+
+static ani_object CheckPhotoUrisReadPermissionComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckPhotoUrisReadPermissionComplete");
+
+    ani_object mapRes {};
+    ani_object errorObj {};
+    if (context->error == ERR_DEFAULT) {
+        CHECK_COND_WITH_RET_MESSAGE(env, CreatePhotoUriPermissionStateMap(env, context, mapRes) == ANI_OK,
+            nullptr, "Failed to create map for uri permission state");
+    } else {
+        context->HandleError(env, errorObj);
+    }
+
+    tracer.Finish();
+    context.reset();
+    return mapRes;
+}
+
+ani_object MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission(ani_env *env, ani_object object, ani_object uris)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCheckPhotoUrisReadPermission");
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    context->assetType = TYPE_PHOTO;
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    if (ParseCheckPhotoUrisReadPermissionArgs(env, uris, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    SetUserIdFromObjectInfo(context);
+    CheckPhotoUrisReadPermissionExecute(env, context);
+    return CheckPhotoUrisReadPermissionComplete(env, context);
 }
 
 int32_t MediaLibraryAni::GetUserId()
