@@ -572,7 +572,8 @@ bool MediaCleanAllDirtyFilesTask::IsMovingPhotosInEditFolder(int32_t curBucketNu
 bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &path)
 {
     // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' and
-    // (position != 1 or file_source_type != 0 or is_temp = 1 or clean_flag != 0)) AS recordExist 纯云图和文管,临时文件跳过
+    // (position != 1 or file_source_type != 0 or is_temp = 1 or clean_flag != 0)) AS recordExist
+    // 纯云图和文管,临时文件 pending!=0 跳过
     bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
@@ -581,6 +582,7 @@ bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &pat
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE  + " != " + std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) +
         " OR " + PhotoColumn::PHOTO_CLEAN_FLAG + " != " +
         std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " OR " + MediaColumn::MEDIA_TIME_PENDING + " != 0 " +
         " OR " + PhotoColumn::PHOTO_IS_TEMP  + " = 1)" + ") AS recordExist";
     std::vector<NativeRdb::ValueObject> params = { path };
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
