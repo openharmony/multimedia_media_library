@@ -29,6 +29,7 @@
 #include "cloud_enhancement_dto.h"
 #include "grant_photo_uri_permission_dto.h"
 #include "grant_photo_uris_permission_dto.h"
+#include "check_photo_uris_read_permission_vo.h"
 #include "grant_photo_uri_permission_inner_dto.h"
 #include "cancel_photo_uri_permission_dto.h"
 #include "cancel_photo_uri_permission_inner_dto.h"
@@ -141,6 +142,8 @@ public:
     int32_t CancelAllCloudEnhancementTasks();
     int32_t GrantPhotoUriPermission(const GrantUriPermissionDto& grantUriPermissionDto);
     int32_t GrantPhotoUrisPermission(const GrantUrisPermissionDto& grantUrisPermissionDto);
+    int32_t CheckPhotoUrisReadPermission(const CheckPhotoUrisReadPermissionReqBody &reqBody,
+        CheckPhotoUrisReadPermissionRespBody &respBody);
     int32_t GrantPhotoUriPermissionInner(const GrantUriPermissionInnerDto& grantUriPermissionInnerDto);
     int32_t CancelPhotoUriPermission(const CancelUriPermissionDto& cancelUriPermissionDto);
     int32_t StartThumbnailCreationTask(const StartThumbnailCreationTaskDto& startThumbnailCreationTaskDto);

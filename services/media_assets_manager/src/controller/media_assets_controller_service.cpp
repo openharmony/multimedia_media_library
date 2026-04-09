@@ -40,6 +40,7 @@
 #include "retain_cloud_media_asset_vo.h"
 #include "grant_photo_uri_permission_vo.h"
 #include "grant_photo_uris_permission_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "cancel_photo_uri_permission_vo.h"
 #include "cancel_photo_uri_permission_inner_vo.h"
@@ -394,6 +395,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URIS_PERMISSION),
         &MediaAssetsControllerService::GrantPhotoUrisPermission
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION),
+        &MediaAssetsControllerService::CheckPhotoUrisReadPermission
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION),
@@ -2110,6 +2115,25 @@ int32_t MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &da
 
     ret = MediaAssetsService::GetInstance().GrantPhotoUrisPermission(grantUrisPermDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CheckPhotoUrisReadPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CheckPhotoUrisReadPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckPhotoUrisReadPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().CheckPhotoUrisReadPermission(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAssetsControllerService::CheckUriPermissionInner(MessageParcel &data, MessageParcel &reply)

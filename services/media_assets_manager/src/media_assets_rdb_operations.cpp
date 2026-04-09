@@ -258,6 +258,35 @@ int32_t MediaAssetsRdbOperations::CheckPhotoUriPermissionInner(MediaLibraryComma
     return errCode;
 }
 
+int32_t MediaAssetsRdbOperations::QueryPhotoAssetsReadState(const std::vector<std::string> &fileIds,
+    std::map<std::string, PhotoAssetReadState> &assetStateMap)
+{
+    assetStateMap.clear();
+    CHECK_AND_RETURN_RET(!fileIds.empty(), E_OK);
+
+    std::vector<std::string> columns = {
+        MediaColumn::MEDIA_ID,
+        "CASE WHEN " + MediaColumn::MEDIA_HIDDEN + " = " + to_string(PHOTO_HIDDEN_FLAG) +
+            " THEN 1 ELSE 0 END AS isHidden",
+        "CASE WHEN " + MediaColumn::MEDIA_DATE_TRASHED + " > 0 THEN 1 ELSE 0 END AS isTrashed",
+    };
+
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.In(MediaColumn::MEDIA_ID, fileIds);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to query photo assets read state");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+        PhotoAssetReadState readState;
+        readState.isHidden = GetInt32Val("isHidden", resultSet) != 0;
+        readState.isTrashed = GetInt32Val("isTrashed", resultSet) != 0;
+        assetStateMap.emplace(fileId, readState);
+    }
+    resultSet->Close();
+    return E_OK;
+}
+
 void MediaAssetsRdbOperations::QueryAssetsUri(const std::vector<std::string> &fileIds,
     std::vector<std::string> &uris)
 {
