@@ -55,7 +55,8 @@ public:
     static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(ani_env *env,
         const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
     static std::unique_ptr<FetchResult<FileAsset>> GetAssets(ani_env *env,
-        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
+        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate,
+        int32_t &errCode);
     static std::vector<std::unique_ptr<FileAsset>> GetFileAssetsInfo(ani_env *env,
         const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
 };
