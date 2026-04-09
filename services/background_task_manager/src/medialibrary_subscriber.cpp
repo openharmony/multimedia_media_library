@@ -1081,7 +1081,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update all editdata size
     ret = UpdateAllEditDataSize();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
-    CloudUploadChecker::RepairNoOriginPhoto();
 
     // recover cloud hidden assets
     ret = DoRecoverCloudHiddenAssets();
