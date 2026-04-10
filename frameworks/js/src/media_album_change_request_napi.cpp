@@ -2491,23 +2491,21 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAnalysisAlbumRequest(napi_env en
     photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(asyncContext->photoAlbumSubType));
     photoAlbum->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value photoAlbumNapi = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, photoAlbumNapi != nullptr, JS_E_INNER_FAIL,
-                                "Failed to create PhotoAlbumNapi");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, photoAlbumNapi != nullptr, JS_E_INNER_FAIL, "Failed to create PhotoAlbumNapi");
 
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
     CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_reference_value(env, constructor_, &constructor), JS_E_INNER_FAIL,
                                 "Failed to create reference");
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_new_instance(env, constructor, 1, &photoAlbumNapi, &instance), JS_E_INNER_FAIL,
-                                "Failed to create instance");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_new_instance(env, constructor, 1, &photoAlbumNapi, &instance),
+                                JS_E_INNER_FAIL, "Failed to create instance");
     CHECK_ARGS_RET_VOID_WITH_MEG(env, instance != nullptr, JS_E_INNER_FAIL,
                                 "Failed to create instance");
 
     MediaAlbumChangeRequestNapi* changeRequest = nullptr;
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&changeRequest)), JS_E_INNER_FAIL,
-                                "Failed to unwrap native object");
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, changeRequest != nullptr, JS_E_INNER_FAIL,
-                                "Failed to create instance");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&changeRequest)),
+                JS_E_INNER_FAIL, "Failed to unwrap native object");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, changeRequest != nullptr, JS_E_INNER_FAIL, "Failed to create instance");
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::CREATE_ANALYSIS_ALBUM);
     return instance;
 }
