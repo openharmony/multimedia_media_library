@@ -202,9 +202,7 @@
 #define CHECK_ARGS_RET_VOID_WITH_MEG(env, cond, err, msg)                 \
     do {                                                            \
         if ((cond) != napi_ok) {                                    \
-            std::string combineMsg = (OHOS::Media::jsErrMap.count(err) > 0) ? \
-                combineMsg = OHOS::Media::jsErrMap[err] : "operation not support";           \
-            if (!(msg).empty())  combineMsg = combineMsg +": " + (msg);                               \
+            std::string combineMsg = OHOS::Media::checkArgsRetWithMeg(err, msg); \
             NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, combineMsg); \
             return nullptr;                                                     \
         }                                                               \
@@ -212,6 +210,16 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+[[nodiscard]] inline std::string checkArgsRetWithMeg(int32_t err, const std::string &msg)
+{
+    std::string combineMsg = (OHOS::Media::jsErrMap.count(err) > 0) ?
+        OHOS::Media::jsErrMap.at(err) : "operation not support";
+    if (!msg.empty()) {
+        combineMsg = combineMsg + ":" + msg;
+    }
+    return combineMsg;
+}
 
 /* Constants for array index */
 const int32_t PARAM0 = 0;
