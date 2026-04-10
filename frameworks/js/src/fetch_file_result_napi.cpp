@@ -1162,7 +1162,7 @@ static void GetContainsCompleteCallback(napi_env env, napi_status status, FetchF
             napi_get_boolean(env, context->fetchResultIndexId != -1, &jsContext->data), JS_E_INNER_FAIL,
             "Failed to create boolean value");
         jsContext->status = true;
-    } else { 
+    } else {
         context->HandleError(env, jsContext->error);
     }
 
