@@ -669,7 +669,7 @@ static void HandlePixelCallback(ani_env *env, const RequestSharedPtr &request)
     ani_fn_object aniCallback = static_cast<ani_fn_object>(request->callback_.callBackRef_);
     ani_ref retVal = nullptr;
     constexpr size_t argsTwo = 2;
-    ani_object result[argsTwo];
+    ani_object result[argsTwo]{nullptr, nullptr};
     if (request->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
         return;
     }
@@ -682,11 +682,15 @@ static void HandlePixelCallback(ani_env *env, const RequestSharedPtr &request)
         return;
     }
     if (request->GetStatus() == ThumbnailStatus::THUMB_FAST) {
-        result[param1] = OHOS::Media::PixelMapTaiheAni::CreateEtsPixelMap(env,
-            shared_ptr<PixelMap>(request->GetFastPixelMap()));
+        auto fastPixelMap = request->GetFastPixelMap();
+        if (fastPixelMap != nullptr) {
+            result[param1] = OHOS::Media::PixelMapTaiheAni::CreateEtsPixelMap(env, std::move(fastPixelMap));
+        }
     } else {
-        result[param1] = OHOS::Media::PixelMapTaiheAni::CreateEtsPixelMap(env,
-            shared_ptr<PixelMap>(request->GetPixelMap()));
+        auto pixelMap = request->GetPixelMap();
+        if (pixelMap != nullptr) {
+            result[param1] = OHOS::Media::PixelMapTaiheAni::CreateEtsPixelMap(env, std::move(pixelMap));
+        }
     }
     std::vector<ani_ref> args = {reinterpret_cast<ani_ref>(result[param0]), reinterpret_cast<ani_ref>(result[param1])};
     ani_status status = env->FunctionalObject_Call(aniCallback, args.size(), args.data(), &retVal);
