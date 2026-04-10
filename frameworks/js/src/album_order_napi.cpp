@@ -75,11 +75,13 @@ napi_value AlbumOrderNapi::CreateAlbumOrderNapi(napi_env env, unique_ptr<AlbumOr
 
     napi_value constructor;
     napi_ref constructorRef = photoAccessConstructor_;
-    CHECK_ARGS(env, napi_get_reference_value(env, constructorRef, &constructor), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_reference_value(env, constructorRef, &constructor), JS_E_INNER_FAIL,
+                                "Failed to create reference");
 
     napi_value result = nullptr;
     pOrderData_ = orderData.release();
-    CHECK_ARGS(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_E_INNER_FAIL,
+                                "Failed to create instance");
     pOrderData_ = nullptr;
     return result;
 }
@@ -123,10 +125,12 @@ void AlbumOrderNapi::SetAlbumOrderNapiProperties()
 napi_value AlbumOrderNapi::AlbumOrderNapiConstructor(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL,
+                                "Failed to get undefined value");
 
     napi_value thisVar = nullptr;
-    CHECK_ARGS(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr),
+                                JS_E_INNER_FAIL, "Failed to get callback info");
     if (thisVar == nullptr) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get cb info");
         return result;
@@ -137,8 +141,9 @@ napi_value AlbumOrderNapi::AlbumOrderNapiConstructor(napi_env env, napi_callback
     if (pOrderData_ != nullptr) {
         obj->SetAlbumOrderNapiProperties();
     }
-    CHECK_ARGS(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
-        AlbumOrderNapi::AlbumOrderNapiDestructor, nullptr, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
+        AlbumOrderNapi::AlbumOrderNapiDestructor, nullptr, nullptr), JS_E_INNER_FAIL,
+        "Failed to bind native object to JavaScript object");
     obj.release();
     return thisVar;
 }
