@@ -459,7 +459,7 @@ static napi_value ParseArgsSubmitCloudEnhancementTasks(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
         CHECK_ARGS_RET_VOID_WITH_MEG(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
-                    "cloud enhancement task uri mush start with " + PhotoColumn::PHOTO_URI_PREFIX);
+                "cloud enhancement task uri mush start with " + PhotoColumn::PHOTO_URI_PREFIX);
     }
     
     context->hasCloudWatermark_ = hasCloudWatermark;
@@ -628,7 +628,7 @@ static napi_value ParseArgsCancelCloudEnhancementTasks(napi_env env, napi_callba
     for (const auto& uri : uris) {
         NAPI_INFO_LOG("CloudEnhancementNapi ParseArgsCancelCloudEnhancementTasks: %{public}s", uri.c_str());
         CHECK_ARGS_RET_VOID_WITH_MEG(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
-                    "uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
+                "uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
     }
 
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);

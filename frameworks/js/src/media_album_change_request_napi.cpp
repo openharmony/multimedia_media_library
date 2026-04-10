@@ -2499,8 +2499,7 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAnalysisAlbumRequest(napi_env en
                                 "Failed to create reference");
     CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_new_instance(env, constructor, 1, &photoAlbumNapi, &instance),
                                 JS_E_INNER_FAIL, "Failed to create instance");
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, instance != nullptr, JS_E_INNER_FAIL,
-                                "Failed to create instance");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, instance != nullptr, JS_E_INNER_FAIL, "Failed to create instance");
 
     MediaAlbumChangeRequestNapi* changeRequest = nullptr;
     CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&changeRequest)),
