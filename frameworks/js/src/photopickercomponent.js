@@ -328,6 +328,12 @@ export class PhotoPickerComponent extends ViewPU {
         } else if (null == o ? void 0 : o.has('SET_MOVINGPHOTO_STATE')) {
             this.proxy.send({ movingPhotoState: null === o ? void 0 : o.get('SET_MOVINGPHOTO_STATE')});
             console.info('PhotoPickerComponent onChanged: SET_MOVINGPHOTO_STATE');
+        } else if (o?.has('COMPLETED')) {
+            this.proxy.send({ 
+                completed: o.get('COMPLETED'),
+                date: o.get('COMPLETE_DATE')
+            });
+            console.info('PhotoPickerComponent onChanged: COMPLETED');
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
@@ -467,6 +473,7 @@ export class PhotoPickerComponent extends ViewPU {
             let u;
             let N;
             let state;
+            let recovery;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -523,7 +530,8 @@ export class PhotoPickerComponent extends ViewPU {
                     gridPinchMode: null === (u = this.pickerOptions) || void 0 === u ? void 0 : u.gridPinchMode,
                     globalMovingPhotoState:  null === (state = this.pickerOptions) || void 0 === state ? void 0 : state.globalMovingPhotoState,
                     showDateOnScrollbar:  null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.showDateOnScrollbar,
-                    backgroundOpacity:  null === (N = this.pickerOptions) || void 0 === N ? void 0 : N.backgroundOpacity
+                    backgroundOpacity:  null === (N = this.pickerOptions) || void 0 === N ? void 0 : N.backgroundOpacity,
+                    contextRecoveryInfo: null === (recovery = this.pickerOptions) || void 0 === recovery ? void 0 : recovery.contextRecoveryInfo
                 }
             }
             ,{
@@ -590,7 +598,9 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleCreateCallback(e);
         } else if ('saveCallback' === o) {
             this.handleSaveCallback(e);
-        } else if (dataType === 'onBackground') {
+        } else if ('completed' === o) {
+ 	        this.handleCompletedCallback(e);
+ 	    } else if (dataType === 'onBackground') {
             console.info('PhotoPickerComponent onReceive: onBackground');
         } else if ('onPhotoBrowserChanged' === o) {
             this.handlePhotoBrowserChange(e);
@@ -812,6 +822,11 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
     }
 
+    handleCompletedCallback(e) {
+ 	    this.pickerController.actionCompleteCallback(e.date, { 'name': '', 'code': e.code, 'message': e.message }, e.data);
+ 	    console.info('PhotoPickerComponent onReceive: handleCompletedCallback');
+ 	}
+
     parseAutoPlayScenes(autoPlayScenes) {
         if (!autoPlayScenes) {
             return undefined;
@@ -1011,6 +1026,7 @@ let PickerController = class {
         this.saveCallbackPromises = new Map();
         this.isPhotoBrowserShow = false;
         this.isMovingPhotoBadgeShownValid = false;
+        this.completedPromises = new Map();
     }
     setData(e, o) {
         if (o === undefined) {
@@ -1107,6 +1123,15 @@ let PickerController = class {
             console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(e));
         }
     }
+    
+    async completed() {
+ 	    return new Promise((resolve, reject) => {
+ 	        let date = Math.random();
+ 	        this.data = new Map([['COMPLETED', {}], ['COMPLETE_DATE', date]]); 
+ 	        this.completedPromises.set(date, [resolve, reject]);
+ 	        console.info('PhotoPickerComponent COMPLETED');
+ 	    });
+ 	}
 
     async updatePickerOptions(e) {
         if (e !== undefined) {
@@ -1248,6 +1273,20 @@ let PickerController = class {
         }
     }
 
+    actionCompleteCallback(date, err, data) {
+ 	    if (this.completedPromises.has(date)) {
+ 	        let promiseFunc = this.completedPromises.get(date);
+ 	        if (promiseFunc) {
+ 	            if (data) {
+ 	                promiseFunc[0](data);
+ 	            } else {
+ 	                promiseFunc[1](err);
+ 	            }
+ 	            this.completedPromises.delete(date);
+ 	        }
+ 	    }
+ 	}
+
     setPhotoBrowserUIElementVisibility(e, o) {
         let m = new PhotoBrowserUIElementVisibility;
         m.elements = e;
@@ -1291,6 +1330,9 @@ export class AnimatorParams {
 }
 
 export class MaxSelected {
+}
+
+export class CompletedResult {
 }
 
 export class PickerError {
@@ -1441,5 +1483,6 @@ export var MovingPhotoBadgeStateType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerConfigs, MovingPhotoBadgeStateType, PickerError };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerConfigs, MovingPhotoBadgeStateType, 
+    PickerError, CompletedResult };
 
