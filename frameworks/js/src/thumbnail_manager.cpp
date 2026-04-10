@@ -666,7 +666,7 @@ static void HandlePixelCallback(const RequestSharedPtr &request)
     }
 
     napi_value retVal = nullptr;
-    napi_value result[ARGS_TWO];
+    napi_value result[ARGS_TWO]{nullptr, nullptr};
     if (request->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
         return;
     }
@@ -679,12 +679,14 @@ static void HandlePixelCallback(const RequestSharedPtr &request)
         result[PARAM0] = nullptr;
     }
     if (request->GetStatus() == ThumbnailStatus::THUMB_FAST) {
-        if (request->GetFastPixelMap() != nullptr) {
-            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, shared_ptr<PixelMap>(request->GetFastPixelMap()));
+        auto fastPixelMap = request->GetFastPixelMap();
+        if (fastPixelMap != nullptr) {
+            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, std::move(fastPixelMap));
         }
     } else {
-        if (request->GetPixelMap() != nullptr) {
-            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, shared_ptr<PixelMap>(request->GetPixelMap()));
+        auto pixelMap = request->GetPixelMap();
+        if (pixelMap != nullptr) {
+            result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env, std::move(pixelMap));
         }
     }
 
