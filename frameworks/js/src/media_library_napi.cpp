@@ -3828,7 +3828,7 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
     jsContext->data = fileResult;
     jsContext->status = true;
     CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
-                                "Fialed to initialize error field");
+                                "Failed to initialize error field");
 }
 
 static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
