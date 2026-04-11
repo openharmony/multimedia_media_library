@@ -81,6 +81,7 @@
 #include "file_uri.h"
 #include "grant_photo_uri_permission_vo.h"
 #include "grant_photo_uris_permission_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 #include "cancel_photo_uri_permission_vo.h"
 #include "start_thumbnail_creation_task_vo.h"
 #include "stop_thumbnail_creation_task_vo.h"
@@ -141,6 +142,7 @@ const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
 const int32_t MAX_CREATE_ASSET_LIMIT = 500;
+const int32_t MAX_CHECK_PHOTO_PERMISSION_URI_COUNT = 500;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t MAX_LPATH_BUNDLENAME_LENGTH = 255;
 const int32_t MAX_LEN_LIMIT = 9999;
@@ -151,6 +153,13 @@ const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
+
+enum class PhotoPermissionState : int32_t {
+    URI_FORMAT_ERROR = 0,
+    FILE_NOT_EXIST = 1,
+    READ_PERMISSION = 2,
+    NO_READ_PERMISSION = 3,
+};
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -262,6 +271,7 @@ thread_local napi_ref MediaLibraryNapi::sCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoPermissionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sMediaAssetPermissionStateEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHideSensitiveType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDynamicRangeType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
@@ -502,6 +512,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAssetsHasPermission", CreateAssetsHasPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUriPermission", PhotoAccessGrantPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUrisPermission", PhotoAccessGrantPhotoUrisPermission),
+            DECLARE_NAPI_FUNCTION("checkPhotoUrisReadPermission", PhotoAccessCheckPhotoUrisReadPermission),
             DECLARE_NAPI_FUNCTION("cancelPhotoUriPermission", PhotoAccessCancelPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
             DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress),
@@ -557,6 +568,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoPermissionType", CreatePhotoPermissionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("MediaAssetPermissionState", CreateMediaAssetPermissionStateEnum(env)),
         DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
@@ -5909,6 +5921,159 @@ static napi_status ParseGrantMediaUris(napi_env env, napi_value arg, vector<stri
     return napi_ok;
 }
 
+static napi_status ParseCheckPhotoUrisReadPermissionArgs(napi_env env, MediaLibraryAsyncContext *context)
+{
+    CHECK_AND_RETURN_RET_WARN_LOG(context, napi_invalid_arg, "Async context is null");
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], context->uris),
+        "Failed to get uris");
+    CHECK_COND_RET(!context->uris.empty() && context->uris.size() <= MAX_CHECK_PHOTO_PERMISSION_URI_COUNT,
+        napi_invalid_arg, "The size of uris is invalid, size: %{public}zu", context->uris.size());
+    std::lock_guard<std::mutex> lock(context->uriPermissionStateMapMutex);
+    for (const auto &uri : context->uris) {
+        CHECK_COND_RET(!uri.empty(), napi_invalid_arg, "The uri in uris should not be empty");
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId < 0) {
+            context->uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::URI_FORMAT_ERROR);
+            continue;
+        }
+        context->checkPhotoPermissionUris.emplace_back(uri);
+        context->uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+    }
+    return napi_ok;
+}
+
+static napi_value ParseArgsCheckPhotoUrisReadPermission(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) == napi_ok,
+        "Failed to get object info");
+    if (ParseCheckPhotoUrisReadPermissionArgs(env, context.get()) != napi_ok) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static void CheckPhotoUrisReadPermissionExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_IF_EQUAL(!context->checkPhotoPermissionUris.empty(), "checkPhotoPermissionUris is empty");
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    reqBody.uris = context->checkPhotoPermissionUris;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, PAH_CHECK_PHOTO_URIS_READ_PERMISSION");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        context->SaveError(result);
+        NAPI_ERR_LOG("CheckPhotoUrisReadPermission fail, result: %{public}d.", result);
+        return;
+    }
+
+    std::unordered_set<std::string> validUris(context->checkPhotoPermissionUris.begin(),
+        context->checkPhotoPermissionUris.end());
+    std::lock_guard<std::mutex> lock(context->uriPermissionStateMapMutex);
+    for (const auto &[uri, state] : respBody.uriPermissionStateMap) {
+        if (validUris.find(uri) == validUris.end()) {
+            NAPI_INFO_LOG("Ignore unexpected uri in CheckPhotoUrisReadPermission response");
+            continue;
+        }
+        context->uriPermissionStateMap[uri] = state;
+    }
+}
+
+static napi_value CreatePhotoUriPermissionStateMap(napi_env env, const MediaLibraryAsyncContext *context)
+{
+    unordered_map<string, int32_t> uriPermissionStateMapSnapshot;
+    {
+        std::lock_guard<std::mutex> lock(context->uriPermissionStateMapMutex);
+        uriPermissionStateMapSnapshot = context->uriPermissionStateMap;
+    }
+
+    napi_status status;
+    napi_value mapNapiValue = nullptr;
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "Failed to create map napi value, napi status: %{public}d", static_cast<int>(status));
+
+    for (const auto &uri : context->uris) {
+        napi_value key = nullptr;
+        status = napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &key);
+        CHECK_COND_RET(status == napi_ok && key != nullptr, nullptr,
+            "Failed to create map key, napi status: %{public}d", static_cast<int>(status));
+
+        int32_t state = static_cast<int32_t>(PhotoPermissionState::URI_FORMAT_ERROR);
+        auto iter = uriPermissionStateMapSnapshot.find(uri);
+        if (iter != uriPermissionStateMapSnapshot.end()) {
+            state = iter->second;
+        }
+        napi_value value = nullptr;
+        status = napi_create_int32(env, state, &value);
+        CHECK_COND_RET(status == napi_ok && value != nullptr, nullptr,
+            "Failed to create map value, napi status: %{public}d", static_cast<int>(status));
+
+        status = napi_map_set_property(env, mapNapiValue, key, value);
+        CHECK_COND_RET(status == napi_ok, nullptr,
+            "Failed to set map property, napi status: %{public}d", static_cast<int>(status));
+    }
+    return mapNapiValue;
+}
+
+static void CheckPhotoUrisReadPermissionComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckPhotoUrisReadPermissionComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        napi_value resultMap = CreatePhotoUriPermissionStateMap(env, context);
+        if (resultMap == nullptr) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Failed to create js object for uri permission state map");
+        } else {
+            jsContext->data = resultMap;
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+        }
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessCheckPhotoUrisReadPermission(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCheckPhotoUrisReadPermission");
+
+    NAPI_DEBUG_LOG("MediaLibraryNapi::PhotoAccessCheckPhotoUrisReadPermission start");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsCheckPhotoUrisReadPermission(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CheckPhotoUrisReadPermission",
+        CheckPhotoUrisReadPermissionExecute, CheckPhotoUrisReadPermissionComplete);
+}
+
 static napi_value ParseArgsGrantPhotoUriPermissionInner(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -10467,6 +10632,11 @@ napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreatePhotoPermissionTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, photoPermissionTypeEnum, sPhotoPermissionType_);
+}
+
+napi_value MediaLibraryNapi::CreateMediaAssetPermissionStateEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, mediaAssetPermissionStateEnum, sMediaAssetPermissionStateEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateHideSensitiveTypeEnum(napi_env env)

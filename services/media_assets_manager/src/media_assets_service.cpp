@@ -63,6 +63,9 @@
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
 #include "notify_register_permission.h"
+#include "media_permission_helper.h"
+#include "ipc_skeleton.h"
+#include "media_uri_utils.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -82,6 +85,14 @@ const std::string COLUMN_DISPLAY_NAME = "display_name";
 const std::string HEIF_MIME_TYPE = "image/heif";
 const std::string HEIC_MIME_TYPE = "image/heic";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
+constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
+enum class PhotoPermissionState : int32_t {
+    URI_FORMAT_ERROR = 0,
+    FILE_NOT_EXIST = 1,
+    READ_PERMISSION = 2,
+    NO_READ_PERMISSION = 3,
+};
+constexpr bool READ_WRITE_ISOLATION = true;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
@@ -1170,6 +1181,95 @@ int32_t MediaAssetsService::GrantPhotoUrisPermission(const GrantUrisPermissionDt
     int32_t errCode = this->rdbOperation_.GrantPhotoUrisPermission(grantUrisPermCmd, values);
     MEDIA_INFO_LOG("MediaAssetsService::GrantPhotoUrisPermission ret:%{public}d", errCode);
     return errCode;
+}
+
+struct ReadPermissionCheckContext {
+    explicit ReadPermissionCheckContext(std::map<std::string, int32_t> &stateMap)
+        : uriPermissionStateMap(stateMap) {}
+
+    std::map<std::string, int32_t> &uriPermissionStateMap;
+    std::vector<std::string> checkedUris;
+    std::vector<std::string> checkedFileIds;
+    std::vector<std::string> permissionCheckUris;
+    std::vector<uint32_t> permissionFlags;
+};
+
+static void CollectCheckedPhotoUris(const std::vector<std::string> &uris, ReadPermissionCheckContext &context)
+{
+    context.checkedUris.reserve(uris.size());
+    context.checkedFileIds.reserve(uris.size());
+    for (const auto &uri : uris) {
+        std::string fileId = MediaUriUtils::GetFileIdStr(uri);
+        if (fileId == "-1" || fileId.empty()) {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::URI_FORMAT_ERROR);
+            continue;
+        }
+        context.checkedUris.emplace_back(uri);
+        context.checkedFileIds.emplace_back(fileId);
+    }
+}
+
+static int32_t PrepareReadPermissionCheck(MediaAssetsRdbOperations &rdbOperation, ReadPermissionCheckContext &context)
+{
+    std::map<std::string, PhotoAssetReadState> assetStateMap;
+    int32_t ret = rdbOperation.QueryPhotoAssetsReadState(context.checkedFileIds, assetStateMap);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to query photo assets read state");
+
+    context.permissionCheckUris.reserve(context.checkedUris.size());
+    context.permissionFlags.reserve(context.checkedUris.size());
+    for (size_t i = 0; i < context.checkedUris.size(); i++) {
+        const auto &uri = context.checkedUris[i];
+        const auto &fileId = context.checkedFileIds[i];
+        auto iter = assetStateMap.find(fileId);
+        if (iter == assetStateMap.end() || iter->second.isHidden || iter->second.isTrashed) {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::FILE_NOT_EXIST);
+            continue;
+        }
+        context.permissionCheckUris.emplace_back(uri);
+        context.permissionFlags.emplace_back(URI_PERMISSION_FLAG_READ);
+    }
+    return E_OK;
+}
+
+static int32_t UpdateReadPermissionCheckResult(ReadPermissionCheckContext &context)
+{
+    auto permissionHelper = MediaPermissionHelper::GetMediaPermissionHelper();
+    CHECK_AND_RETURN_RET_LOG(permissionHelper != nullptr, E_ERR, "permissionHelper is null");
+    permissionHelper->InitMediaPermissionHelper();
+
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    std::vector<bool> checkResults;
+    int32_t ret = permissionHelper->CheckPhotoUriPermission(tokenId, context.permissionCheckUris, checkResults,
+        context.permissionFlags, READ_WRITE_ISOLATION);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckPhotoUriPermission failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(checkResults.size() == context.permissionCheckUris.size(), E_ERR,
+        "check result size mismatch, result:%{public}zu, uri:%{public}zu",
+        checkResults.size(), context.permissionCheckUris.size());
+
+    for (size_t i = 0; i < context.permissionCheckUris.size(); i++) {
+        context.uriPermissionStateMap[context.permissionCheckUris[i]] =
+            checkResults[i] ? static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION)
+                            : static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+    }
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CheckPhotoUrisReadPermission(const CheckPhotoUrisReadPermissionReqBody &reqBody,
+    CheckPhotoUrisReadPermissionRespBody &respBody)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::CheckPhotoUrisReadPermission");
+    respBody.uriPermissionStateMap.clear();
+    CHECK_AND_RETURN_RET(!reqBody.uris.empty(), E_OK);
+
+    ReadPermissionCheckContext context(respBody.uriPermissionStateMap);
+    CollectCheckedPhotoUris(reqBody.uris, context);
+    CHECK_AND_RETURN_RET(!context.checkedFileIds.empty(), E_OK);
+
+    int32_t ret = PrepareReadPermissionCheck(rdbOperation_, context);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "PrepareReadPermissionCheck failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET(!context.permissionCheckUris.empty(), E_OK);
+
+    return UpdateReadPermissionCheckResult(context);
 }
 
 int32_t MediaAssetsService::CancelPhotoUriPermission(const CancelUriPermissionDto &cancelUriPermissionDto)

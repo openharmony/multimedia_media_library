@@ -156,6 +156,13 @@ export namespace photoAccessHelper {
     PERSISTENT_READ_IMAGEVIDEO = 1
   }
 
+  export enum MediaAssetPermissionState {
+    URI_FORMAT_ERROR = 0,
+    FILE_NOT_EXIST = 1,
+    READ_PERMISSION = 2,
+    NO_READ_PERMISSION = 3
+  }
+
   export enum HideSensitiveType {
     HIDE_LOCATION_AND_SHOOTING_PARAM = 0,
     HIDE_LOCATION_ONLY = 1,
@@ -2471,6 +2478,7 @@ export namespace photoAccessHelper {
       hideSensitiveType: HideSensitiveType): Promise<int>;
     cancelPhotoUriPermission(tokenId: long, uri: string,
       photoPermissionType: PhotoPermissionType): Promise<int>;
+    checkPhotoUrisReadPermission(uris: Array<string>): Promise<Map<string, MediaAssetPermissionState>>;
     getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions,
         callback: AsyncCallback<int | undefined>): void;
     getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions): Promise<int>;
@@ -3488,6 +3496,33 @@ export namespace photoAccessHelper {
       });
     }
 
+    checkPhotoUrisReadPermission(uris: Array<string>): Promise<Map<string, MediaAssetPermissionState>> {
+      return new Promise<Map<string, MediaAssetPermissionState>>((
+        resolve: (v: Map<string, MediaAssetPermissionState>) => void, reject: RejectString) => {
+        let cb = (): Map<string, MediaAssetPermissionState> | MediaLibraryAniError => {
+          let result: Map<string, MediaAssetPermissionState> | MediaLibraryAniError;
+          try {
+            result = this.checkPhotoUrisReadPermissionInner(uris);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Map<string, MediaAssetPermissionState>);
+            }
+          }
+        });
+      });
+    }
+
     getSupportedPhotoFormats(photoType: PhotoType): Promise<Array<string>> {
       return new Promise<Array<string>>((resolve: (v: Array<string>) => void, reject: RejectString) => {
         let cb = (): Array<string> | MediaLibraryAniError => {
@@ -3833,6 +3868,7 @@ export namespace photoAccessHelper {
       hideSensitiveType: HideSensitiveType): int;
     native cancelPhotoUriPermissionInner(tokenId: long, uri: string,
       photoPermissionType: PhotoPermissionType): int;
+    native checkPhotoUrisReadPermissionInner(uris: Array<string>): Map<string, MediaAssetPermissionState>;
     native getPhotoIndexInner(photoUri: string, albumUri: string, options: FetchOptions): int;
     native PhotoAccessRemoveFormInfo(info: FormInfo): void;
     native removeGalleryFormInfoInner(info: GalleryFormInfo): void;

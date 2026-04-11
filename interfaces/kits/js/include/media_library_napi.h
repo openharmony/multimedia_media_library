@@ -328,6 +328,7 @@ private:
     EXPORT static napi_value CreatePositionTypeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoPermissionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateMediaAssetPermissionStateEnum(napi_env env);
     EXPORT static napi_value CreateHideSensitiveTypeEnum(napi_env env);
     EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
     EXPORT static napi_value CreateHdrModeEnum(napi_env env);
@@ -344,6 +345,7 @@ private:
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value RequestPhotoUrisReadPermissionEx(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessCheckPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info);
@@ -502,6 +504,7 @@ private:
     static thread_local napi_ref sHiddenPhotosDisplayModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sPhotoPermissionType_;
+    static thread_local napi_ref sMediaAssetPermissionStateEnumRef_;
     static thread_local napi_ref sHideSensitiveType_;
     static thread_local napi_ref sDynamicRangeType_;
     static thread_local napi_ref sNotifyType_;
@@ -656,6 +659,9 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> activeAnalysisFileIds;
     std::string activeAnalysisParam;
     std::shared_ptr<ActiveAnalysisJsCallbackHolder> activeAnalysisCallbackHolder;
+    std::vector<std::string> checkPhotoPermissionUris;
+    mutable std::mutex uriPermissionStateMapMutex;
+    std::unordered_map<std::string, int32_t> uriPermissionStateMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
