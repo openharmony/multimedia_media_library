@@ -1051,7 +1051,9 @@ bool MediaCleanAllDirtyFilesTask::DealEffectFileNotExistInEditFolder(int32_t cur
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     } else if (cpSucc) {
-        // ReScan file, size may change
+        // ReScan file, size may change 没编辑过 但是带水印拍的 也需要恢复效果
+        int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
+        MEDIA_INFO_LOG("DirtyMediaHandler No Record ApplyEditEffectToFile Ret: %{public}d", ret);
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
     return true;
