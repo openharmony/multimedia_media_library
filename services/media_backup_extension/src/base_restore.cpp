@@ -81,6 +81,9 @@ static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_T
 static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
 static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
 
+const std::string PARAM_CLONE_SEARCH_STATUS = "persist.multimedia.media_analysis_service.clone_search_status";
+const std::string CLONE_SEARCH_INDEXING = "3";
+
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
     int32_t restoreMode = RESTORE_MODE_PROC_ALL_DATA;
@@ -1577,6 +1580,14 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
     totalRowNum += rowNum;
 }
 
+static void SetUpdateSearchIndexForClone()
+{
+    MEDIA_INFO_LOG("Update search index update for clone operation");
+    bool retFlag = system::SetParameter(PARAM_CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set %{public}s to %{public}s",
+        PARAM_CLONE_SEARCH_STATUS.c_str(), CLONE_SEARCH_INDEXING.c_str());
+}
+
 void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std::string &upgradePath,
     std::string &restoreExInfo)
 {
@@ -1606,8 +1617,7 @@ void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std:
  	        totalFailCount_)
         .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()))
         .ReportUpgradeEnh(std::to_string(errorCode_), GetUpgradeEnhance());
-    MediaAnalysisHelper::StartUpdateSearchIndexForClone(
-        IMediaAnalysisService::ActivateServiceType::UPDATE_SEARCH_INDEX_FOR_CLONE);
+    SetUpdateSearchIndexForClone();
 }
 
 std::string BaseRestore::GetRestoreExInfo()
