@@ -67,8 +67,26 @@ struct BundleInfo {
     std::string ownerAlbumId;
 };
 
+struct OpenDataInfo {
+    std::string uri;
+    int32_t userId = -1;
+    int32_t uid = -1;
+    std::string type;
+    int64_t timestamp = 0;
+};
+
+struct OpenPermissionInfo {
+    Security::AccessToken::AccessTokenID token;
+    std::string perm;
+    bool permGranted = false;
+    Security::AccessToken::PermissionUsedType type;
+    OpenDataInfo openDataInfo;
+};
+
 class PermissionUtils {
 public:
+    static constexpr int32_t BASE_USER_RANGE = 200000;
+
     static bool CheckCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::string &permission, const int &uid);
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
@@ -85,12 +103,12 @@ public:
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName, int32_t uid);
-    static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms);
-    static bool CheckPhotoCallerPermission(const std::string &permission);
+    static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms, OpenDataInfo info = {});
+    static bool CheckPhotoCallerPermission(const std::string &permission, OpenDataInfo info = {});
     static bool CheckPhotoCallerPermission(const std::string &permission,
-        const Security::AccessToken::AccessTokenID &tokenCaller);
+        const Security::AccessToken::AccessTokenID &tokenCaller, OpenDataInfo info = {});
     static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms, const int &uid,
-        Security::AccessToken::AccessTokenID &tokenCaller);
+        Security::AccessToken::AccessTokenID &tokenCaller, OpenDataInfo info = {});
     static bool CheckPhotoCallerPermissionNoRecord(const std::vector<std::string> &perms, const int &uid,
         Security::AccessToken::AccessTokenID &tokenCaller);
     static bool CheckPhotoCallerPermissionNoRecord(const std::string &permission,
@@ -99,12 +117,19 @@ public:
         const Security::AccessToken::PermissionUsedType type);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type, const int &uid);
+    static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
+        const Security::AccessToken::PermissionUsedType type, const OpenDataInfo &openDataInfo);
+    static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
+        const Security::AccessToken::PermissionUsedType type, const int &uid, const OpenDataInfo &openDataInfo);
     static void ClearBundleInfoInCache();
     static bool SetEPolicy();
     static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
     static bool GetTokenCallerForUid(const int &uid, Security::AccessToken::AccessTokenID &tokenCaller);
 
 private:
+    static std::vector<Security::AccessToken::AddPermParamInfo> infos_;
+    static std::vector<OpenPermissionInfo> pendingOpenPermissionInfos_;
+
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
     COMPILE_HIDDEN static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     COMPILE_HIDDEN static std::mutex bundleMgrMutex_;
@@ -118,6 +143,22 @@ private:
     static std::mutex uninstallMutex_;
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
+    static void DelayTaskInit();
+    static std::vector<Security::AccessToken::AddPermParamInfo> GetPermissionRecord();
+    static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type);
+    static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type, const OpenDataInfo &openDataInfo);
+    static void DelayAddPermissionRecord();
+    static void AddToPendingOpenPermissionInfo(const Security::AccessToken::AccessTokenID &token,
+        const std::string &perm, const bool permGranted, const Security::AccessToken::PermissionUsedType type,
+        const OpenDataInfo &openDataInfo);
+    static void HandlePendingOpenDataInfos();
+    static bool HandleEmptyOpenDataInfo(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted, const Security::AccessToken::PermissionUsedType type, const OpenDataInfo &openDataInfo);
+    static void AddPermissionRecord();
+    static void AddPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
+        const bool permGranted);
 };
 }  // namespace Media
 }  // namespace OHOS
