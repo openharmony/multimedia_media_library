@@ -185,6 +185,7 @@ public:
     EXPORT static bool CheckMovingPhotoImage(const std::string &path);
     EXPORT static bool CheckMovingPhotoEffectMode(int32_t effectMode);
     EXPORT static bool GetFileSize(const std::string& filePath, size_t& size);
+    EXPORT static bool GetFileSizeAndTime(const std::string &filePath, size_t &size, uint64_t &addTime);
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);
     EXPORT static void PrintStatInformation(const std::string& path);
