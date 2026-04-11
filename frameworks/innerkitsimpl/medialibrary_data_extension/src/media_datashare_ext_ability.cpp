@@ -393,13 +393,20 @@ static inline bool ContainsFlag(const string &mode, const char flag)
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     const bool permGranted, PermissionUsedType type)
 {
+    int32_t callingUid = IPCSkeleton::GetCallingUid();
+    OpenDataInfo openData;
+    openData.uri = cmd.GetUri().ToString();
+    openData.uid = callingUid;
+    openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
     if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         CHECK_AND_EXECUTE(mode.find("r") == string::npos,
-            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type));
+            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type, openData));
         CHECK_AND_EXECUTE(mode.find("w") == string::npos,
-            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type));
+            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type, openData));
     }
 }
 
@@ -417,7 +424,15 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     bool cond = ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC));
-    CHECK_AND_RETURN_RET(!cond, PermissionUtils::CheckPhotoCallerPermission(perms)? E_SUCCESS : E_PERMISSION_DENIED);
+    int32_t callingUid = IPCSkeleton::GetCallingUid();
+    OpenDataInfo openData;
+    openData.uri = cmd.GetUri().ToString();
+    openData.uid = callingUid;
+    openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    CHECK_AND_RETURN_RET(!cond,
+        PermissionUtils::CheckPhotoCallerPermission(perms, openData)? E_SUCCESS : E_PERMISSION_DENIED);
 
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :

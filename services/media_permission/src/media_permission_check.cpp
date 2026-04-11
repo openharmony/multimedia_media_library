@@ -18,6 +18,7 @@
 #include "media_composite_permission_check.h"
 #include "media_system_api_permission_check.h"
 #include "media_system_innerapi_permission_check.h"
+#include "ipc_skeleton.h"
 #include "media_private_permission_check.h"
 #include "media_read_permission_check.h"
 #include "media_write_permission_check.h"
@@ -52,13 +53,20 @@ std::unordered_map<PermissionType, std::shared_ptr<PermissionCheck>> PermissionC
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     const bool permGranted, PermissionUsedType type)
 {
+    int32_t callingUid = IPCSkeleton::GetCallingUid();
+    OpenDataInfo openData;
+    openData.uri = cmd.GetUri().ToString();
+    openData.uid = callingUid;
+    openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
     if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
         (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         CHECK_AND_EXECUTE(mode.find("r") == string::npos,
-            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type));
+            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type, openData));
         CHECK_AND_EXECUTE(mode.find("w") == string::npos,
-            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type));
+            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type, openData));
     }
 }
 

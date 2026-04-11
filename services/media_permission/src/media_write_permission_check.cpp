@@ -167,7 +167,14 @@ int32_t SecurityComponentPermCheck::CheckPermission(uint32_t businessCode, const
 int32_t ShortTermWritePermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("ShortTermWritePermCheck enter, API code=%{public}d", businessCode);
-    if (PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO)) {
+    int32_t callingUid = IPCSkeleton::GetCallingUid();
+    OpenDataInfo openData;
+    openData.uri = data.getOpenUri();
+    openData.uid = callingUid;
+    openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    if (PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO, openData)) {
         AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
         int err = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
             PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
