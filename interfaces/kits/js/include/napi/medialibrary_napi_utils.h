@@ -204,7 +204,7 @@
         if ((cond) != napi_ok) {                                    \
             std::string combineMsg = OHOS::Media::checkArgsRetWithMeg(err, msg); \
             NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, combineMsg); \
-            return nullptr;                                                     \
+            return;                                                     \
         }                                                               \
     } while (0)
 namespace OHOS {
