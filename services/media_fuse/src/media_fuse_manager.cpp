@@ -197,6 +197,7 @@ void MediaFuseManager::Start()
 void MediaFuseManager::Stop()
 {
     UMountFuse();
+    fuseHighDaemon_ = nullptr;
     MEDIA_INFO_LOG("Stop finished successfully");
 }
 
