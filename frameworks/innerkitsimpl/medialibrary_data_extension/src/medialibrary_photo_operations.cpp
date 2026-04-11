@@ -6199,7 +6199,7 @@ int32_t MediaLibraryPhotoOperations::ApplyEditEffectToFile(int32_t curBucketNum,
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataFile, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed To Read editdata, Path:%{public}s", editDataFile.c_str());
-        MEDIA_INFO_LOG("ApplyEditEffectToFile EDITDATA: %{public}s", editData.c_str());
+        MEDIA_DEBUG_LOG("ApplyEditEffectToFile EDITDATA: %{public}s", editData.c_str());
         const string RESTORE_STATUS = "restore";
         CHECK_AND_RETURN_RET_LOG(
             AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editData, RESTORE_STATUS) == E_OK,
@@ -6208,7 +6208,7 @@ int32_t MediaLibraryPhotoOperations::ApplyEditEffectToFile(int32_t curBucketNum,
         string editCameraData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editCameraDataFile, editCameraData) == E_OK, E_HAS_FS_ERROR,
             "Failed To Read editCameraData, Path:%{public}s", editCameraDataFile.c_str());
-        MEDIA_INFO_LOG("ApplyEditEffectToFile EDITDATACAMERA: %{public}s", editCameraData.c_str());
+        MEDIA_DEBUG_LOG("ApplyEditEffectToFile EDITDATACAMERA: %{public}s", editCameraData.c_str());
         const string RESTORE_STATUS = "restore";
         CHECK_AND_RETURN_RET_LOG(
             AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editCameraData, RESTORE_STATUS) == E_OK,
