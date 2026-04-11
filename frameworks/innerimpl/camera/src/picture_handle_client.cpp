@@ -168,7 +168,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     uint32_t auxiliaryPictureSize =  *reinterpret_cast<const uint32_t*>(addr + readoffset);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture auxiliaryPictureSize: %{public}d",
         auxiliaryPictureSize);
-    if (pictureSize > (msgLen - readoffset)) {
+    if (auxiliaryPictureSize > (msgLen - readoffset)) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture pictureSize invalid: %{public}u", auxiliaryPictureSize);
         munmap(addr, msgLen);
         close(fd);
