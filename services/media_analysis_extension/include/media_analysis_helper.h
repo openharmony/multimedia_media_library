@@ -34,7 +34,6 @@ public:
     static void StartForegroundAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds,
         int32_t taskId);
     static void PortraitDisplayGraphChange(int32_t code, const std::vector<std::string> &albumId);
-    static void StartUpdateSearchIndexForClone(int32_t code);
 
 private:
     static void StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,
