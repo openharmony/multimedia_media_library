@@ -280,9 +280,6 @@ private:
     bool CheckAlbumNameUnique(std::string albumName, const std::vector<string> &repetedAlbumName);
     void UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos, vector<string> &repetedAlbumName,
         size_t index);
-    void RenameToFakeDelete(std::string dbPath);
-    void TestInitDb(std::shared_ptr<NativeRdb::RdbStore>& store);
-    void RenamePath();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
