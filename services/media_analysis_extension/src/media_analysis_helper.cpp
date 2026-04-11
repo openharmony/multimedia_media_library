@@ -183,6 +183,22 @@ void MediaAnalysisHelper::PortraitDisplayGraphChange(int32_t code, const std::ve
         MEDIA_ERR_LOG("Actively Calling Analysis For PortraitDisplayGraph failed");
     }
 }
+
+void MediaAnalysisHelper::StartUpdateSearchIndexForClone(int32_t code)
+{
+    MEDIA_INFO_LOG("Starting search index update for clone operation");
+    MessageParcel data;
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+    if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
+        MEDIA_ERR_LOG("Write InterfaceToken failed");
+        return;
+    }
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For StartUpdateSearchIndexForClone failed");
+    }
+}
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
