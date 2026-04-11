@@ -143,6 +143,12 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         return E_ERR;
     }
     uint32_t readoffset = UINT32_LEN;
+    if (readoffset >= msgLen) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen");
+        munmap(addr, msgLen);
+        close(fd);
+        return E_ERR;
+    }
 
     // 读取dataSize
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + readoffset);
@@ -152,12 +158,20 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         return E_ERR;
     }
     readoffset += UINT32_LEN;
+    if (readoffset > msgLen) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen");
+        munmap(addr, msgLen);
+        close(fd);
+        return E_ERR;
+    }
 
     // 读取auxiliaryPictureSize
     uint32_t auxiliaryPictureSize =  *reinterpret_cast<const uint32_t*>(addr + readoffset);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture auxiliaryPictureSize: %{public}d",
         auxiliaryPictureSize);
-    if (CheckDataOverflow(readoffset, auxiliaryPictureSize, msgLen, addr) != E_OK) {
+    if (auxiliaryPictureSize > (msgLen - readoffset)) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture pictureSize invalid: %{public}u", auxiliaryPictureSize);
+        munmap(addr, msgLen);
         close(fd);
         return E_ERR;
     }
