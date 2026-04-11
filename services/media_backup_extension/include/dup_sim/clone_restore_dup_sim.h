@@ -115,9 +115,9 @@ private:
     std::atomic<uint64_t> migrateProfileNumber_{0};
     std::atomic<uint64_t> migrateDedupNumber_{0};
     std::atomic<uint64_t> migrateAffectiveNumber_{0};
-    std::vector<int32_t> insertedProfileFileIds_;
-    std::vector<int32_t> insertedDedupFileIds_;
-    std::vector<int32_t> insertedAffectiveFileIds_;
+    std::vector<int32_t> insertedProfileFileIds_;   // 记录 Profile 表实际插入的 file_id
+    std::vector<int32_t> insertedDedupFileIds_;     // 记录 Dedup 表实际插入的 file_id
+    std::vector<int32_t> insertedAffectiveFileIds_; // 记录 Affective 表实际插入的 file_id
 };
 }  // namespace OHOS::Media
 #endif  // CLONE_RESTORE_DUP_SIM_H
