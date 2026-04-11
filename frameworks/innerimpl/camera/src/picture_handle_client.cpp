@@ -157,7 +157,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         return E_ERR;
     }
     readoffset += UINT32_LEN;
-    if (readoffset >= msgLen) {
+    if (readoffset > msgLen) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen");
         munmap(addr, msgLen);
         close(fd);
