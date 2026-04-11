@@ -98,6 +98,10 @@ const std::vector<std::string> photoPermissionTypeEnum {
     "TEMPORARY_READ_IMAGEVIDEO", "PERSISTENT_READ_IMAGEVIDEO"
 };
 
+const std::vector<std::string> mediaAssetPermissionStateEnum {
+    "URI_FORMAT_ERROR", "FILE_NOT_EXIST", "READ_PERMISSION", "NO_READ_PERMISSION"
+};
+
 const std::vector<std::string> hideSensitiveTypeEnum {
     "HIDE_LOCATION_AND_SHOOTING_PARAM", "HIDE_LOCATION_ONLY", "HIDE_SHOOTING_PARAM_ONLY",
     "NO_HIDE_SENSITIVE_TYPE", "DEFAULT"
