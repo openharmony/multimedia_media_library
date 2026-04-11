@@ -73,6 +73,7 @@ private:
     bool QueryFileInfos(int32_t startFileId, DirtyFileInfo &dirtyFileInfo);
     bool OriginSourceExist(std::string &path);
     bool DealWithZeroSizeFile(std::string &path);
+    bool IsZeroSizeFile(std::string &path);
     bool ThumbnailSourceExist(std::string &path);
 
     void HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo);
@@ -146,6 +147,7 @@ private:
     bool ExistEditFlagInDBByPath(const std::string &path);
     int32_t UpdateNoneEditTimeByPath(std::string &path, int64_t editTime,
         int32_t editDataExist);
+
     std::mutex filesCacheSetMtx_;
     std::mutex fileIdsCacheSetMtx_;
     std::mutex taskRunningMutex_;

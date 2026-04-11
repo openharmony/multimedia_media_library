@@ -62,6 +62,7 @@ const std::string THM_ASTC_FILE_NAME = "THM_ASTC.astc";
 
 const std::string EDITDATA_FILE_NAME = "editdata";
 const std::string EDITDATA_CAMERA_FILE_NAME = "editdata_camera";
+const std::string EDITDATA_TRANSCODE_FILE_NAME = "transcode";
 const std::string EXTRADATA_FILE_NAME = "extraData";
 const std::string SOURCE_FILE_PREFIX_NAME = "source";
 const std::string SOURCE_FILE_VIDEO_NAME = "source.mp4";
@@ -293,10 +294,26 @@ bool MediaCleanAllDirtyFilesTask::OriginSourceExist(std::string &path)
 bool MediaCleanAllDirtyFilesTask::DealWithZeroSizeFile(std::string &path)
 {
     size_t size = 0;
+    uint64_t currentTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
+    uint64_t addTime = currentTime;
+    if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size == 0) {
+        uint64_t interval = currentTime - addTime;
+        if (interval > FOUR_WEEK) {
+            MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64,
+                interval);
+            MediaFileUtils::DeleteFileWithRetry(path);
+            MEDIA_WARN_LOG("DirtyMediaHandler DealWithZeroSizeFile File: %{public}s",
+                MediaFileUtils::DesensitizePath(path).c_str());
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MediaCleanAllDirtyFilesTask::IsZeroSizeFile(std::string &path)
+{
+    size_t size = 0;
     if (MediaFileUtils::GetFileSize(path, size) && size == 0) {
-        MediaFileUtils::DeleteFileWithRetry(path);
-        MEDIA_WARN_LOG("DirtyMediaHandler DealWithZeroSizeFile File: %{public}s",
-            MediaFileUtils::DesensitizePath(path).c_str());
         return true;
     }
     return false;
@@ -350,7 +367,7 @@ void MediaCleanAllDirtyFilesTask::DealWithPendingToEffectFile(DirtyFileInfo &dir
 void MediaCleanAllDirtyFilesTask::HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
     // pending文件 充电息屏且保存超过72小时 扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
-    MEDIA_ERR_LOG("HandleBothExistStrategy path %{public}s",
+    MEDIA_INFO_LOG("HandleBothExistStrategy path %{public}s",
         MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
@@ -405,7 +422,7 @@ void MediaCleanAllDirtyFilesTask::HandleBothNotExistStrategy(DirtyFileInfo &dirt
 void MediaCleanAllDirtyFilesTask::HandleOriginExistStrategy(DirtyFileInfo &dirtyFileInfo)
 {
     // pending文件，充电息屏且保存超过72小时扫描原图转正 DealWithPendingToEffectFile(dirtyFileInfo);
-    MEDIA_ERR_LOG("HandleOriginExistStrategy path %{public}s",
+    MEDIA_INFO_LOG("HandleOriginExistStrategy path %{public}s",
         MediaFileUtils::DesensitizePath(dirtyFileInfo.path).c_str());
 }
 
@@ -555,7 +572,8 @@ bool MediaCleanAllDirtyFilesTask::IsMovingPhotosInEditFolder(int32_t curBucketNu
 bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &path)
 {
     // SELECT EXISTS(SELECT 1 FROM photos WHERE data = '/storage/cloud/files/Photo/1/IMG_X_001.jpg' and
-    // (position != 1 or file_source_type != 0 or is_temp = 1 or clean_flag != 0)) AS recordExist 纯云图和文管,临时文件跳过
+    // (position != 1 or file_source_type != 0 or is_temp = 1 or clean_flag != 0)) AS recordExist
+    // 纯云图和文管,临时文件 pending!=0 跳过
     bool recordExist = true; // 默认值true 避免因为数据库问题 多进行处理
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, recordExist, "RdbStore Is Nullptr");
@@ -564,6 +582,7 @@ bool MediaCleanAllDirtyFilesTask::ExistCloudAssetPathInDB(const std::string &pat
         PhotoColumn::PHOTO_FILE_SOURCE_TYPE  + " != " + std::to_string(static_cast<int32_t>(FileSourceType::MEDIA)) +
         " OR " + PhotoColumn::PHOTO_CLEAN_FLAG + " != " +
         std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " OR " + MediaColumn::MEDIA_TIME_PENDING + " != 0 " +
         " OR " + PhotoColumn::PHOTO_IS_TEMP  + " = 1)" + ") AS recordExist";
     std::vector<NativeRdb::ValueObject> params = { path };
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
@@ -709,6 +728,8 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
     // 反查数据库 原图存在 元数据是否存在
     std::string extension = MediaPathUtils::GetExtension(fileName);
     MediaType mediaType = MediaFileUtils::GetMediaType(fileName);
+    CHECK_AND_RETURN_RET_LOG(!IsZeroSizeFile(path), true, "OriginFileNotExistAddToTable %{public}s file size is 0",
+        MediaFileUtils::DesensitizePath(path).c_str()); // 0kb 跳过
     if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
         if (!ExistPhotoPathInDB(path)) {
             // 扫描原图填充元数据 元数据不存在 insert 如果是动图 跳过视频处理, 因视频处理在数据库需反查模糊匹配 不精准
@@ -847,6 +868,8 @@ bool MediaCleanAllDirtyFilesTask::DealThumbsEffectAssetNotExist(int32_t curBucke
     if (MediaFileUtils::IsFileExists(thumbsBucketFolderLCDFile) &&
         !MediaFileUtils::IsFileExists(originBucketFolderFile) &&
         !MediaFileUtils::IsFileExists(originLocalBucketFile)) { // LCD 优先
+        CHECK_AND_RETURN_RET_LOG(!IsZeroSizeFile(thumbsBucketFolderLCDFile), true, "%{public}s file size is 0",
+            MediaFileUtils::DesensitizePath(thumbsBucketFolderLCDFile).c_str()); // 0kb 跳过
         MediaFileUtils::CopyFileUtil(thumbsBucketFolderLCDFile, originLocalBucketFile);
         MEDIA_INFO_LOG("DirtyMediaHandler DealThumbsEffectAssetNotExist lcd Cp To Org Bucket:%{public}d,"
             "Name: %{public}s", curBucketNum, MediaFileUtils::DesensitizePath(folderName).c_str());
@@ -854,6 +877,8 @@ bool MediaCleanAllDirtyFilesTask::DealThumbsEffectAssetNotExist(int32_t curBucke
     } else if (MediaFileUtils::IsFileExists(thumbsBucketFolderFile) &&
         !MediaFileUtils::IsFileExists(originBucketFolderFile) &&
         !MediaFileUtils::IsFileExists(originLocalBucketFile)) {
+        CHECK_AND_RETURN_RET_LOG(!IsZeroSizeFile(thumbsBucketFolderFile), true, "%{public}s file size is 0",
+            MediaFileUtils::DesensitizePath(thumbsBucketFolderFile).c_str()); // 0kb 跳过
         MediaFileUtils::CopyFileUtil(thumbsBucketFolderFile, originLocalBucketFile);
         MEDIA_INFO_LOG("DirtyMediaHandler DealThumbsEffectAssetNotExist thumbs Cp To Org Bucket:%{public}d,"
             "Name: %{public}s", curBucketNum, MediaFileUtils::DesensitizePath(folderName).c_str());
@@ -1026,7 +1051,9 @@ bool MediaCleanAllDirtyFilesTask::DealEffectFileNotExistInEditFolder(int32_t cur
         // ReScan file, size may change
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     } else if (cpSucc) {
-        // ReScan file, size may change
+        // ReScan file, size may change 没编辑过 但是带水印拍的 也需要恢复效果
+        int32_t ret = MediaAssetsService::GetInstance().ApplyEditEffectToFile(curBucketNum, fileName);
+        MEDIA_INFO_LOG("DirtyMediaHandler No Record ApplyEditEffectToFile Ret: %{public}d", ret);
         MediaAssetsService::GetInstance().ScanExistFileRecord(-1, dirtyFilePathInfo.effectFolderFile);
     }
     return true;
@@ -1201,7 +1228,8 @@ bool MediaCleanAllDirtyFilesTask::IsIllegalEditFolderFile(int32_t curBucketNum, 
     }
     for (const auto& fileName : fileNameVec) {
         if (!Starts_With(fileName, EDITDATA_FILE_NAME) && !Starts_With(fileName, EXTRADATA_FILE_NAME) &&
-            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME) && !Starts_With(fileName, EDITDATA_CAMERA_FILE_NAME)) {
+            !Starts_With(fileName, SOURCE_FILE_PREFIX_NAME) && !Starts_With(fileName, EDITDATA_CAMERA_FILE_NAME)
+            && !Starts_With(fileName, EDITDATA_TRANSCODE_FILE_NAME)) {
             MEDIA_ERR_LOG("IsLegalEditFolderFile Folder: %{public}s, Name: %{public}s",
                 MediaFileUtils::DesensitizePath(editBucketFolder).c_str(),
                 fileName.c_str());
@@ -1290,6 +1318,8 @@ bool MediaCleanAllDirtyFilesTask::ProcessMovingPhotosInEditFolder(int32_t curBuc
     bool isOriginFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editOriginFile);
     bool isEffectFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.effectFolderFile);
     bool isEditdataFileExist = MediaFileUtils::IsFileExists(dirtyFilePathInfo.editDataFile);
+    MEDIA_INFO_LOG("DirtyMediaHandler ProcessMovingPhotosInEditFolder File:%{public}s",
+        MediaFileUtils::DesensitizePath(dirtyFilePathInfo.effectFolderFile).c_str());
     if (isOriginFileExist && !isEffectFileExist) {
         return ProcessEditFolderBatchMovingPhotos(curBucketNum, folderName, dirtyFilePathInfo);
     }
@@ -1320,12 +1350,14 @@ bool MediaCleanAllDirtyFilesTask::ProcessEditFolderBatch(int32_t curBucketNum, c
 {
     CHECK_AND_RETURN_RET_INFO_LOG(!IsIllegalEditFolderFile(curBucketNum, folderName), true,
         "DirtyMediaHandler Skip Illegal File While ProcessEditFolderBatch %{public}s",
-        MediaFileUtils::DesensitizePath(folderName).c_str()); // 可优化 清理除固定名称文件之外的文件
+        MediaFileUtils::DesensitizePath(folderName).c_str()); // 清理除固定名称文件之外的文件
     DirtyFilePathInfo dirtyFilePathInfo = BuildDirtyFilePathInfo(curBucketNum, folderName);
     MEDIA_DEBUG_LOG("ProcessEditFolderBatch FileName:%{public}s", MediaFileUtils::DesensitizePath(folderName).c_str());
     if (DealWithZeroSizeFile(dirtyFilePathInfo.editOriginFile)) {
         return true;
     }
+    CHECK_AND_RETURN_RET_LOG(!IsZeroSizeFile(dirtyFilePathInfo.editOriginFile), true, "%{public}s file size is 0",
+        MediaFileUtils::DesensitizePath(dirtyFilePathInfo.editOriginFile).c_str()); // 0kb 跳过
     if (IsMovingPhotosInEditFolder(curBucketNum, folderName)) { // 动图
         return ProcessMovingPhotosInEditFolder(curBucketNum, folderName, dirtyFilePathInfo);
     } else { // 静图
