@@ -119,6 +119,7 @@ const std::string DELETE_BEHAVIOR_XML = "/data/storage/el2/base/preferences/dele
 const std::string ADAPTATION_TO_MOVING_PHOTO_XML = "/data/storage/el2/base/preferences/adaptation_to_moving_photo.xml";
 const std::string DFX_CINEMATIC_VIDEO_XML = "/data/storage/el2/base/preferences/dfx_cinematic_video.xml";
 const std::string ALIB_HEIF_DUPLICATE_XML = "/data/storage/el2/base/preferences/alib_heif_duplicate.xml";
+const std::string COMPATIBLE_CONFIG_XML = "/data/storage/el2/base/preferences/compatible_config.xml";
 const std::string ALIB_HIGH_PIXEL_DUPLICATE_XML = "/data/storage/el2/base/preferences/alib_high_pixel_duplicate.xml";
 const std::string ALIB_HIGH_PIXEL_HEIF_DUPLICATE_XML =
     "/data/storage/el2/base/preferences/alib_high_pixel_heif_duplicate.xml";
@@ -162,6 +163,7 @@ const std::string TRANSCODE_TIMES = "transcode_times";
 const std::string TRANSCODE_FAILED_TIMES = "transcode_failed_times";
 const std::string INNER_FAILED_TIMES = "inner_failed_times";
 const std::string CODEC_FAILED_TIMES = "codec_failed_times";
+const std::string APP_PACKAGE_CONFIG = "app_package_config";
 
 struct ThumbnailErrorInfo {
     int32_t method;

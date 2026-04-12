@@ -49,6 +49,10 @@ const std::vector<std::string> compatibleModeEnum {
     "ORIGINAL_FORMAT_MODE", "COMPATIBLE_FORMAT_MODE"
 };
 
+const std::vector<std::string> preferredCompatibleModeEnum {
+    "DEFAULT", "CURRENT", "COMPATIBLE"
+};
+
 const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {
     "ASSETS_MODE", "ALBUMS_MODE"
 };

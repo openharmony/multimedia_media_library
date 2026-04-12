@@ -625,6 +625,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::SetLivePhoto4dStatus
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::SetPreferredCompatibleMode
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::GetPreferredCompatibleMode
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO),
         &MediaAssetsControllerService::SetCompatibleInfo
     },
@@ -3069,6 +3077,43 @@ int32_t MediaAssetsControllerService::SetLivePhoto4dStatus(MessageParcel &data, 
     ret = MediaAssetsService::GetInstance().SetLivePhoto4dStatus(reqBody.fileId, reqBody.livePhoto4dStatus,
         reqBody.livePhoto4dLatestPair);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode start");
+    SetPreferredCompatibleModeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().SetPreferredCompatibleMode(
+        reqBody.bundleName, reqBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode start");
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetPreferredCompatibleMode(
+        reqBody.bundleName, respBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAssetsControllerService::SetCompatibleInfo(MessageParcel &data, MessageParcel &reply)

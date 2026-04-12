@@ -193,6 +193,7 @@ public:
     void ReportAdaptationToMovingPhoto();
     void ReportCinematicVideo();
     void ReportAlibHeifDuplicate();
+    void ReportMediaLibCompatConfig();
     static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
         const int32_t& totalDownload, const int32_t& southDeviceType);
     EXPORT static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
