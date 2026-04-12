@@ -1285,7 +1285,7 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
             context->error = JS_E_DISPLAYNAME;
-            context->errorMsg = "Cannnot modify displayName for burst photos."
+            context->errorMsg = "Cannnot modify displayName for burst photos.";
             return false;
         }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {

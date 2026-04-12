@@ -177,6 +177,14 @@
         }                                                           \
     } while (0)
 
+#define CHECK_COND_WITH_MSG(env, cond, err, msg)                                  \
+    do {                                                            \
+        if (!(cond)) {                                              \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                         \
+        }                                                           \
+    } while (0)
+
 #define RETURN_NAPI_TRUE(env)                                                 \
     do {                                                                      \
         napi_value result = nullptr;                                          \
@@ -199,27 +207,24 @@
         }                                                           \
     } while (0)
 
+#define CHECK_ARGS_WITH_MSG(env, cond, err, msg)                 \
+    do {                                                            \
+        if ((cond) != napi_ok) {                                    \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                          \
+        }                                                           \
+    } while (0)
+
 #define CHECK_ARGS_RET_VOID_WITH_MEG(env, cond, err, msg)                 \
     do {                                                            \
         if ((cond) != napi_ok) {                                    \
-            std::string combineMsg = OHOS::Media::checkArgsRetWithMeg(err, msg); \
-            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, combineMsg); \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
             return;                                                     \
         }                                                               \
     } while (0)
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-
-[[nodiscard]] inline std::string checkArgsRetWithMeg(int32_t err, const std::string &msg)
-{
-    std::string combineMsg = (OHOS::Media::jsErrMap.count(err) > 0) ?
-        OHOS::Media::jsErrMap.at(err) : "operation not support";
-    if (!msg.empty()) {
-        combineMsg = combineMsg + ":" + msg;
-    }
-    return combineMsg;
-}
 
 /* Constants for array index */
 const int32_t PARAM0 = 0;
