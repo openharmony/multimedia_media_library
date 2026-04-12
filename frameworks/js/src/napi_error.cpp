@@ -143,6 +143,12 @@ void NapiError::ThrowError(napi_env env, int32_t err, const std::string &errMsg)
 void NapiError::ThrowError(napi_env env, int32_t err, const char *funcName, int32_t line, const std::string &errMsg)
 {
     string message = errMsg;
+    if (err == JS_E_INNER_FAIL) {
+        std::string combineMsg = jsErrMap.count(err) > 0 ? jsErrMap.at(err) : "operation not support";
+        if (!message.empty()) {
+            message = combineMsg + ":" + message;
+        }
+    }
     if (message.empty()) {
         message = "operation not support";
         if (jsErrMap.count(err) > 0) {

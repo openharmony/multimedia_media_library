@@ -1343,11 +1343,11 @@ napi_value FetchFileResultNapi::JSContains(napi_env env, napi_callback_info info
     MediaLibraryTracer tracer;
     tracer.Start("JSContains");
 
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
-                                "Failed to get callback info");
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                        "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
-                                "Failed to get argument type");
+    CHECK_ARGS_WITH_MSG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
+                        "Failed to get argument type");
     NAPI_ASSERT(env, valueType == napi_object || valueType == napi_undefined || valueType == napi_null,
         "Invalid argument type");
     napi_get_undefined(env, &result);
@@ -1394,11 +1394,11 @@ napi_value FetchFileResultNapi::JSGetObjectsByIndexSet(napi_env env, napi_callba
     MediaLibraryTracer tracer;
     tracer.Start("JSGetObjectsByIndexSet");
 
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
                                 "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
     bool isArray = false;
-    CHECK_ARGS_WITH_MEG(env, napi_is_array(env, argv[PARAM0], &isArray), JS_E_PARAM_INVALID,
+    CHECK_ARGS_WITH_MSG(env, napi_is_array(env, argv[PARAM0], &isArray), JS_E_PARAM_INVALID,
                         "Failed to check argv[0] is array");
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -1444,11 +1444,11 @@ napi_value FetchFileResultNapi::JSGetIndex(napi_env env, napi_callback_info info
     MediaLibraryTracer tracer;
     tracer.Start("JSGetIndex");
 
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
-                                "Failed to get callback info");
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                        "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
-                                "Failed to check argument type");
+    CHECK_ARGS_WITH_MSG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
+                        "Failed to check argument type");
     NAPI_ASSERT(env, valueType == napi_object || valueType == napi_undefined || valueType == napi_null,
         "Invalid argument type");
     napi_get_undefined(env, &result);

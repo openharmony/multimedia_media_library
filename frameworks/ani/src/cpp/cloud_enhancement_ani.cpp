@@ -392,8 +392,11 @@ static ani_object ParseArgsSubmitCloudEnhancementTasks(ani_env *env, ani_object 
         "Failed to get uris");
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
-        CHECK_COND_WITH_ERR_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
-                                    "Cloud enhancement uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
+        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+            AniError::ThrowError(env, JS_E_URI,
+                "Cancel cloud enhancement task URI format error: must start with 'file://'");
+            return nullptr;
+        }
     }
     CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     context->hasCloudWatermark_ = hasCloudWatermarkBool;
@@ -572,6 +575,11 @@ static ani_object ParseArgsCancelCloudEnhancementTasks(ani_env *env, ani_object 
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
         ANI_INFO_LOG("CloudEnhancementAni ParseArgsCancelCloudEnhancementTasks: %{public}s", uri.c_str());
+        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+            AniError::ThrowError(env, JS_E_URI,
+                "Cancel cloud enhancement task URI format error: must start with 'file://'");
+            return nullptr;
+        }
         CHECK_COND_WITH_ERR_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
                                     "Cloud enhancement task uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
     }
