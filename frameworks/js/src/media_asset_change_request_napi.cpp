@@ -1023,7 +1023,7 @@ static napi_value ParseArgsDeleteAssets(
         std::string userId = MediaLibraryNapiUtils::GetUserIdFromUri(uri);
         context->userId_ = StrIsNumber(userId) ? stoi(userId) : -1;
         CHECK_COND_WITH_MSG(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
-                             "Invalid uri, uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
+                            "Invalid uri, uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
     }
 
     NAPI_INFO_LOG("DeleteAssetsExecute size:%{public}zu", uris.size());
@@ -1579,7 +1579,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetCompositeDisplayMode(napi_env env, 
     MEDIA_INFO_LOG("exchange enhancement photo : parse %{public}d ", compositeDisplayMode);
     auto changeRequest = asyncContext->objectInfo;
     CHECK_COND_WITH_MSG(env, changeRequest->GetFileAssetInstance() != nullptr, JS_E_INNER_FAIL,
-                         "Failed to create instance");
+                        "Failed to create instance");
     changeRequest->SetCompositeDisplayMode(compositeDisplayMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE);
     // SET_COMPOSITE_DISPLAY_MODE
