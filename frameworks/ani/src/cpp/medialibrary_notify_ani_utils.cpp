@@ -306,8 +306,7 @@ ani_status MediaLibraryNotifyAniUtils::InitAniArrayOperator(ani_env *env, AniArr
 
 ani_status MediaLibraryNotifyAniUtils::ToPhotoChangeInfoAniArray(ani_env *env,
     const vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>>
-    &changeInfos,
-    ani_object &aniArray)
+    &changeInfos, ani_object &aniArray, Notification::NotifyUriType uriType)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
@@ -317,7 +316,7 @@ ani_status MediaLibraryNotifyAniUtils::ToPhotoChangeInfoAniArray(ani_env *env,
         "Call method <ctor> failed.");
     for (const auto &changeInfo : changeInfos) {
         if (const auto changeInfoPtr = std::get_if<AccurateRefresh::PhotoAssetChangeData>(&changeInfo)) {
-            ani_object assetValue = MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(env, *changeInfoPtr);
+            ani_object assetValue = MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(env, *changeInfoPtr, uriType);
             CHECK_COND_RET(assetValue != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
             CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod,
                 (ani_int)resultIndex++, assetValue),
@@ -331,7 +330,7 @@ ani_status MediaLibraryNotifyAniUtils::ToPhotoChangeInfoAniArray(ani_env *env,
 }
 
 ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfo(ani_env *env,
-    const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo)
+    const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo, Notification::NotifyUriType uriType)
 {
     if (photoAssetChangeInfo.fileId_ == AccurateRefresh::INVALID_INT32_VALUE) {
         return nullptr;
@@ -358,12 +357,17 @@ ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfo(ani_env *env,
     SetValueInt64(env, "dateTrashedMs", photoAssetChangeInfo.dateTrashedMs_, retObj);
     SetValueInt64(env, "dateAddedMs", photoAssetChangeInfo.dateAddedMs_, retObj);
     SetValueInt64(env, "dateTakenMs", photoAssetChangeInfo.dateTakenMs_, retObj);
+    SetValueInt64(env, "dateModifiedMs", photoAssetChangeInfo.dateModifiedMs_, retObj);
 
+    if (uriType == Notification::NotifyUriType::HIDDEN_PHOTO_URI) {
+        SetValueInt64(env, "hiddenTime", photoAssetChangeInfo.hiddenTime_, retObj);
+    }
+    
     return retObj;
 }
 
 ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(ani_env* env,
-    const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData)
+    const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData, Notification::NotifyUriType uriType)
 {
     ani_object retObj = nullptr;
     ani_status status = ANI_OK;
@@ -371,7 +375,7 @@ ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(ani_env* env,
         "CreateAniObject fail: %{public}s", PAH_ANI_CLASS_PHOTO_ASSET_CHANGE_DATA_HANDLE.c_str());
     CHECK_COND_RET(retObj != nullptr, nullptr, "retObj is nullptr");
 
-    ani_object assetBeforeChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoBeforeChange_);
+    ani_object assetBeforeChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoBeforeChange_, uriType);
     if (assetBeforeChangeValue == nullptr) {
         SetValueNull(env, "assetBeforeChange", retObj);
     } else {
@@ -381,7 +385,7 @@ ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(ani_env* env,
         }
     }
 
-    ani_object assetAfterChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoAfterChange_);
+    ani_object assetAfterChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoAfterChange_, uriType);
     if (assetAfterChangeValue == nullptr) {
         SetValueNull(env, "assetAfterChange", retObj);
     } else {
@@ -418,7 +422,7 @@ ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeData(ani_env* env,
 }
 
 ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfos(ani_env *env,
-    const shared_ptr<Notification::MediaChangeInfo> &changeInfo)
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfo, Notification::NotifyUriType uriType)
 {
     MediaLibraryTracer tracer;
     tracer.Start("BuildPhotoAssetChangeInfos");
@@ -440,7 +444,7 @@ ani_object MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfos(ani_env *env,
         "Call Object_SetPropertyByName_Ref fail");
 
     ani_object assetResults = nullptr;
-    CHECK_COND_RET(ToPhotoChangeInfoAniArray(env, changeInfo->changeInfos, assetResults)
+    CHECK_COND_RET(ToPhotoChangeInfoAniArray(env, changeInfo->changeInfos, assetResults, uriType)
         == ANI_OK, nullptr, "Call ToPhotoChangeInfoAniArray NotifyChangeType fail");
 
     CHECK_COND_RET(env->Object_SetPropertyByName_Ref(retObj, "assetChangeDatas",
@@ -481,6 +485,7 @@ ani_object MediaLibraryNotifyAniUtils::BuildAlbumChangeInfo(ani_env* env,
     SetValueString(env, "hiddenCoverUri", albumChangeInfo.hiddenCoverUri_, retObj);
     SetValueBool(env, "isCoverChanged", albumChangeInfo.isCoverChange_, retObj);
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, retObj);
+    SetValueString(env, "lpath", albumChangeInfo.lpath_, retObj);
 
     ani_status status = ANI_OK;
     ani_object coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);

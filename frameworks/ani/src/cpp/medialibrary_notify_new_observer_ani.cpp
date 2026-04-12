@@ -133,11 +133,16 @@ static ani_object HandleObserverUriType(ani_env *env, NewJsOnChangeCallbackWrapp
     ani_object buildResult = nullptr;
     switch (wrapper->observerUriType_) {
         case Notification::PHOTO_URI:
-        case Notification::HIDDEN_PHOTO_URI:
         case Notification::TRASH_PHOTO_URI:
             buildResult = mediaChangeInfo == nullptr ?
                 MediaLibraryNotifyAniUtils::BuildPhotoAssetRecheckChangeInfos(env) :
                 MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo);
+            break;
+        case Notification::HIDDEN_PHOTO_URI:
+            buildResult = mediaChangeInfo == nullptr ?
+                MediaLibraryNotifyAniUtils::BuildPhotoAssetRecheckChangeInfos(env) :
+                MediaLibraryNotifyAniUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo,
+                    Notification::NotifyUriType::HIDDEN_PHOTO_URI);
             break;
         case Notification::PHOTO_ALBUM_URI:
         case Notification::HIDDEN_ALBUM_URI:

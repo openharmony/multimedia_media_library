@@ -903,6 +903,16 @@ int64_t FileAsset::GetChangeTime() const
     return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
 }
 
+int64_t FileAsset::GetHiddenTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_HIDDEN_TIME);
+}
+
+void FileAsset::SetHiddenTime(int64_t hiddenTime)
+{
+    member_[PhotoColumn::PHOTO_HIDDEN_TIME] = hiddenTime;
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
     lock_guard<mutex> lock(resultTypeMapMutex_);
