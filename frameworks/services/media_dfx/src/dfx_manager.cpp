@@ -659,6 +659,7 @@ int64_t DfxManager::HandleOneDayReport()
     dfxReporter_->ReportOperationRecordInfo();
     dfxReporter_->ReportCinematicVideo();
     dfxReporter_->ReportAlibHeifDuplicate();
+    dfxReporter_->ReportMediaLibCompatConfig();
     return MediaFileUtils::UTCTimeSeconds();
 }
 
