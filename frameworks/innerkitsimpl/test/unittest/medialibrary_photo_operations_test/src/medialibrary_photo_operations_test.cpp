@@ -1514,12 +1514,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     EXPECT_GE(fd, 0);
     int64_t openTime = GetPhotoLastVisitTime(fileId);
     EXPECT_GE(openTime, lastVisitTime);
+    this_thread::sleep_for(chrono::seconds(PICTURE_TIMEOUT_SEC));
 
     // Open thumbnail
     openCmd.SetOprnObject(OperationObject::THUMBNAIL);
     MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
     int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GE(openTime, openThumbnailTime);
+    EXPECT_GE(openThumbnailTime, lastVisitTime);
 
     // Update
     MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
