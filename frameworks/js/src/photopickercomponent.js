@@ -232,7 +232,8 @@ export class PhotoPickerComponent extends ViewPU {
  
  
     set revokeIndex(newValue) { 
-        return this.__revokeIndex.set(); 
+        console.log(`photopickercomponent set revokeIndex ${this.revokeIndex}`);
+        return this.__revokeIndex.set(newValue); 
     }
 
     onChanged() {
