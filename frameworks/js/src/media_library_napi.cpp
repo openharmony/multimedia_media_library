@@ -12589,13 +12589,24 @@ napi_value MediaLibraryNapi::AvailabilityUnregisterCallback(napi_env env, napi_c
         return undefinedResult;
     }
 
-    size_t argc = 0;
+    size_t argc = ARGS_ONE;
+    napi_value args[ARGS_ONE] = { nullptr };
     napi_value thisVar = nullptr;
-    GET_JS_ARGS(env, info, argc, nullptr, thisVar);
-    if (argc > 0) {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "No parameters required.");
+    GET_JS_ARGS(env, info, argc, args, thisVar);
+
+    if (argc > ARGS_ONE) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "At most 1 optional callback parameter is allowed.");
         return undefinedResult;
     }
+
+    if (argc == ARGS_ONE) {
+    napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, args[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Optional callback must be a function.");
+            return undefinedResult;
+        }
+    }
+
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
     CheckDbAvailabilityReqBody reqBody;
     reqBody.isOnlyCheckPermission = true;
