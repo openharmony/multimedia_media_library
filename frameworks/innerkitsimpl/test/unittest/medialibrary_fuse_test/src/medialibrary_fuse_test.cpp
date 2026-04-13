@@ -65,6 +65,7 @@
 #include "parameter.h"
 #include "heif_transcoding_check_utils.h"
 #include "media_upgrade.h"
+#include "media_cloud_permission_check.h"
 
 using namespace std;
 using namespace OHOS;
@@ -1062,6 +1063,166 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_SetUid_test_001, TestSize.Level
     int32_t testUid = 12345;
     MediaFuseManager::GetInstance().SetUid(testUid);
     EXPECT_EQ(MediaFuseManager::GetInstance().GetUid(), testUid);
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetPermission_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetPermission_Test_001");
+
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "cloud_photo.jpg");
+    ASSERT_GT(photoId, 0);
+
+    string fileId = to_string(photoId);
+    string path;
+    GetPathFromFileId(path, fileId);
+
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, E_OK);
+
+    MEDIA_INFO_LOG("End FUSE_CloudAssetPermission_Test_001");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetPermission_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetPermission_Test_002");
+
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "cloud_photo_no_perm.jpg");
+    ASSERT_GT(photoId, 0);
+
+    string fileId = to_string(photoId);
+    string path;
+    GetPathFromFileId(path, fileId);
+
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
+    fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = false;
+
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, E_ERR);
+
+    MEDIA_INFO_LOG("End FUSE_CloudAssetPermission_Test_002");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetPermission_Test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetPermission_Test_003");
+
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "cloud_photo_picker.jpg");
+    ASSERT_GT(photoId, 0);
+
+    string fileId = to_string(photoId);
+    string path;
+    GetPathFromFileId(path, fileId);
+
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
+
+    OHOS::DataShare::DataShareValuesBucket dataShareValue;
+    dataShareValue.Put(AppUriPermissionColumn::APP_ID, "fuse_test_appid_picker");
+    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId);
+    dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue.Put(AppUriPermissionColumn::TARGET_TOKENID, "1");
+    int ret = TestInsert(dataShareValue);
+    EXPECT_EQ(ret, 0);
+
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, E_OK);
+
+    MEDIA_INFO_LOG("End FUSE_CloudAssetPermission_Test_003");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetWithPosition_Test_001");
+
+    ClearAndRestart();
+
+    std::string insertSql =
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        "(file_id, data, size, title, display_name, media_type, position, is_temp, time_pending, hidden, " +
+        "date_trashed, transcode_time, trans_code_file_size) VALUES (888, " +
+        "'/storage/cloud/files/Photo/888/local_photo.jpg', 1000, 'local', 'local_photo.jpg', 1, " +
+        to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + ", 0, 0, 0, 0, 0, 0)";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+
+    std::string testPath = "/Photo/888/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_001 doOpenErr: %{public}d", doOpenErr);
+
+    SetTables();
+    MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_001");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetWithPosition_Test_002");
+
+    ClearAndRestart();
+
+    std::string insertSql =
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        "(file_id, data, size, title, display_name, media_type, position, is_temp, time_pending, hidden, " +
+        "date_trashed, transcode_time, trans_code_file_size) VALUES (889, " +
+        "'/storage/cloud/files/Photo/889/cloud_photo.jpg', 1000, 'cloud', 'cloud_photo.jpg', 1, " +
+        to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)) + ", 0, 0, 0, 0, 0, 0)";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+
+    std::string testPath = "/Photo/889/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_002 doOpenErr: %{public}d", doOpenErr);
+
+    SetTables();
+    MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_002");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CloudAssetWithPosition_Test_003");
+
+    ClearAndRestart();
+
+    std::string insertSql =
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        "(file_id, data, size, title, display_name, media_type, position, is_temp, time_pending, hidden, " +
+        "date_trashed, transcode_time, trans_code_file_size) VALUES (890, " +
+        "'/storage/cloud/files/Photo/890/both_photo.jpg', 1000, 'both', 'both_photo.jpg', 1, " +
+        to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) + ", 0, 0, 0, 0, 0, 0)";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+
+    std::string testPath = "/Photo/890/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_003 doOpenErr: %{public}d", doOpenErr);
+
+    SetTables();
+    MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_003");
+}
+
+HWTEST_F(MediaLibraryFuseTest, FUSE_CheckCloudPermission_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Start FUSE_CheckCloudPermission_Test_001");
+
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+    fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = true;
+
+    bool result = PermissionUtils::CheckCloudPermission();
+    EXPECT_TRUE(result);
+
+    MEDIA_INFO_LOG("End FUSE_CheckCloudPermission_Test_001");
 }
 } // namespace Media
 } // namespace OHOS

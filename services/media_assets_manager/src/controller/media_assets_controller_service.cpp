@@ -87,6 +87,7 @@
 #include "get_edit_data_dto.h"
 #include "get_cloud_enhancement_pair_dto.h"
 #include "permission_utils.h"
+#include "media_cloud_permission_check.h"
 #include "media_app_uri_permission_column.h"
 #include "cancel_request_vo.h"
 #include "start_batch_download_cloud_resources_vo.h"
@@ -1348,7 +1349,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_INFO_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
 
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
@@ -1396,8 +1397,9 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_DEBUG_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
+
     dto.predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
     if (resultSet == nullptr) {

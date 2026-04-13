@@ -16,11 +16,14 @@
 #define OHOS_MEDIALIBRARY_CLOUD_PERMISSION_CHECK_H
 
 #include "media_permission_check.h"
+#include "datashare_predicates.h"
 
 namespace OHOS::Media {
 class CloudReadPermissionCheck : public PermissionCheck {
 public:
     int32_t CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data) override;
+    static int32_t CheckPureCloudAssets(const std::string &fileId);
+    static void AddCloudAssetFilter(DataShare::DataSharePredicates &predicates);
 };
 
 class CloudWritePermissionCheck : public PermissionCheck {

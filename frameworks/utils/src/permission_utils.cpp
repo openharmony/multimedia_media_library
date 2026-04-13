@@ -664,6 +664,15 @@ bool PermissionUtils::CheckPhotoCallerPermissionNoRecord(const vector<string> &p
     return true;
 }
 
+bool PermissionUtils::CheckCloudPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    auto ret = AccessTokenKit::VerifyAccessToken(tokenCaller, CLOUD_READ_ALL_PHOTO_PERMISSION);
+    CHECK_AND_RETURN_RET(ret != PermissionState::PERMISSION_GRANTED, false);
+    ret = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_CLOUD_IMAGEVIDEO);
+    return ret != PermissionState::PERMISSION_GRANTED;
+}
+
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
     MediaLibraryTracer tracer;
