@@ -43,6 +43,7 @@ public:
     static const std::string USER_CLIENT_CHANGE EXPORT;
     static const std::string ANALYSIS_PHOTO_CHANGE EXPORT;
     static const std::string ANALYSIS_ALBUM_CHANGE EXPORT;
+    static const std::string MEDIALIBRARY_AVAILABILITY_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
@@ -63,6 +64,9 @@ public:
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_USER_DEFINE_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_USER_DEFINE_URI_MAP;
 
+    static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_AVAILABILITY_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, std::string> REGISTER_AVAILABILITY_URI_MAP;
+
     static int32_t GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
     static int32_t GetUserDefineNotifyTypeAndUri(const Notification::NotifyUriType type,
@@ -74,6 +78,9 @@ public:
     static int32_t GetSingleRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType);
     static int32_t GetSingleNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, string &uri);
+
+    static int32_t GetAvailabilityNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, std::string &uri);
 
     static napi_status SetValueInt32(const napi_env& env, const char* name, const int32_t intValue, napi_value& result);
     static napi_status SetValueInt64(const napi_env& env, const char* name, const int64_t intValue, napi_value& result);
