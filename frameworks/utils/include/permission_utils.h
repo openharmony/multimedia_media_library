@@ -35,9 +35,12 @@ const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
 const std::string PERM_READ_IMAGEVIDEO = "ohos.permission.READ_IMAGEVIDEO";
+const std::string CLOUD_READ_ALL_PHOTO_PERMISSION = "ohos.permission.READ_ALL_PHOTO";
+const std::string PERM_READ_CLOUD_IMAGEVIDEO = "ohos.permission.READ_CLOUD_IMAGEVIDEO";
 const std::string PERM_READ_AUDIO = "ohos.permission.READ_AUDIO";
 const std::string PERM_READ_DOCUMENT = "ohos.permission.READ_DOCUMENT";
 const std::string PERM_WRITE_IMAGEVIDEO = "ohos.permission.WRITE_IMAGEVIDEO";
+const std::string CLOUD_WRITE_ALL_PHOTO_PERMISSION = "ohos.permission.WRITE_ALL_PHOTO";
 const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
@@ -125,6 +128,7 @@ public:
     static bool SetEPolicy();
     static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
     static bool GetTokenCallerForUid(const int &uid, Security::AccessToken::AccessTokenID &tokenCaller);
+    static bool CheckCloudPermission();
 
 private:
     static std::vector<Security::AccessToken::AddPermParamInfo> infos_;

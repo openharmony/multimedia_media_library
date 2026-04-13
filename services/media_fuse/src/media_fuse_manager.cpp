@@ -24,6 +24,7 @@
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
+#include "media_cloud_permission_check.h"
 #include "media_fuse_high_daemon.h"
 #include "media_fuse_hdc_operations.h"
 #include "media_log.h"
@@ -409,24 +410,37 @@ int32_t MediafusePermCheckInfo::WrCheckPermission(const string &filePath, const 
     const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord)
 {
     vector<string> perms;
+    bool containsRead = false;
     if (mode.find("r") != string::npos) {
         perms.push_back(PERM_READ_IMAGEVIDEO);
+        containsRead = true;
     }
     if (mode.find("w") != string::npos) {
         perms.push_back(PERM_WRITE_IMAGEVIDEO);
     }
     if (!isNeedRecord) {
-        return PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms,
-            uid, tokenCaller)? E_SUCCESS : E_PERMISSION_DENIED;
+        if (!PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms, uid, tokenCaller)) {
+            return E_PERMISSION_DENIED;
+        }
+        if (containsRead) {
+            return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+        }
+        return E_SUCCESS;
     }
+
     OpenDataInfo openData;
     openData.uri = openUri_;
     openData.uid = uid;
     openData.userId = uid / PermissionUtils::BASE_USER_RANGE;
     openData.type = "open";
     openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    return PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData) ?
-        E_SUCCESS : E_PERMISSION_DENIED;
+    if (!PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData)) {
+        return E_PERMISSION_DENIED;
+    }
+    if (containsRead) {
+        return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+    }
+    return E_SUCCESS;
 }
  
 void MediafusePermCheckInfo::SetOpenUri(const std::string &openUri)
