@@ -40,6 +40,7 @@ const std::string RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE = "singlePhotoAl
 const std::string RegisterNotifyType::ANALYSIS_PHOTO_CHANGE = "analysisPhotoChange";
 const std::string RegisterNotifyType::ANALYSIS_ALBUM_CHANGE = "analysisAlbumChange";
 const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
+const std::string RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE = "medialibraryAvailabilityChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
     MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {

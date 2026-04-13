@@ -45,6 +45,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "media_values_bucket_utils.h"
+#include "medialibrary_notify_new.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -1770,6 +1771,7 @@ void BaseRestore::SetParameterForClone()
     MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database occupied by Clone application");
 }
 
 static void SetMediaLibraryRecoveryDone(bool flag)
@@ -1791,6 +1793,7 @@ void BaseRestore::StopParameterForClone()
     MEDIA_INFO_LOG("StopParameterForClone set 0");
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
     SetMediaLibraryRecoveryDone(true);
     MEDIA_INFO_LOG("SetMediaLibraryRecoveryDone set true");
 }
