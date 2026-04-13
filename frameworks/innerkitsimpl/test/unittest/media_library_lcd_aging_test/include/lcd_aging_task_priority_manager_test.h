@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIBRARY_LCD_AGING_TEST_H
-#define MEDIA_LIBRARY_LCD_AGING_TEST_H
+#ifndef LCD_AGING_TASK_PRIORITY_MANAGER_TEST_H
+#define LCD_AGING_TASK_PRIORITY_MANAGER_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryLcdAgingTest : public testing::Test {
+class LcdAgingTaskPriorityManagerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_LIBRARY_LCD_AGING_TEST_H
+#endif // LCD_AGING_TASK_PRIORITY_MANAGER_TEST_H

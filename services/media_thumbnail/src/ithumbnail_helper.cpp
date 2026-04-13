@@ -1163,7 +1163,7 @@ bool IThumbnailHelper::DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &
     MEDIA_INFO_LOG("Start DoCreateAstcMthAndYear, id: %{public}s, path: %{public}s, gen thumb scene: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), GetGenThumbSceneName(data.genThumbScene).c_str());
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.desiredType = ThumbnailType::MTH_ASTC;
+
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstcMthAndYear failed, try load source failed, id: %{public}s", data.id.c_str());
         return false;
@@ -1375,6 +1375,7 @@ void IThumbnailHelper::CreateAstcOnlyWithThm(std::shared_ptr<ThumbnailTaskData> 
     int32_t minSize = thmSize.width < thmSize.height ? thmSize.width : thmSize.height;
     // 短边小于350，仅生成年月纹理
     if (minSize < SHORT_SIDE_THRESHOLD) {
+        thumbnailData.loaderOpts.thumbnailSceneType = ThumbnailSceneType::ONLY_THM_DOWNLOAD;
         thumbnailData.genThumbScene = GenThumbScene::CLOUD_DOWNLOAD_THM_SHORT_SIDE_NOT_SATISFIED;
         IThumbnailHelper::DoCreateAstcMthAndYear(data->opts_, data->thumbnailData_);
         ThumbnailGenerationPostProcess::SetRegenerateAstcStatus(data->thumbnailData_, data->opts_);

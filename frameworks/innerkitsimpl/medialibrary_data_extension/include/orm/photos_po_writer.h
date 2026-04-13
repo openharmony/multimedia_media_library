@@ -258,6 +258,8 @@ private:
     void SetUniqueId(std::variant<int32_t, int64_t, double, std::string> &val);
     bool GetPhotoRiskStatus(std::string &val);
     void SetPhotoRiskStatus(std::variant<int32_t, int64_t, double, std::string> &val);
+    void SetLcdFileSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLcdFileSize(std::string &val);
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTOS_PO_WRITER_H

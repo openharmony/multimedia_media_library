@@ -917,6 +917,29 @@ int32_t ThumbnailService::CreateAstcOnlyDownloadThm(const string &id, bool isClo
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CreateAstcOnlyDownloadThm failed : %{public}d", err);
     return err;
 }
+
+int32_t ThumbnailService::RegenerateAstcBackground()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::RegenerateAstcBackground(opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "RegenerateAstcBackground failed : %{public}d", err);
+    return E_OK;
+}
+
+int32_t ThumbnailService::SyncRegenerateAstcWithLocal(const std::string &id)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
+    };
+    int32_t err = ThumbnailGenerateHelper::SyncRegenerateAstcWithLocal(opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "SyncRegenerateAstcWithLocal failed : %{public}d", err);
+    return E_OK;
+}
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

@@ -705,6 +705,7 @@ int32_t CloudSyncConvert::CompensateAttributesHashMap(
 {
     // compensate attributes HashMap here.
     CompensateDateAddedYearMonthDay(data, values);
+    CompensatePhotoLcdSize(data, values);
     return E_OK;
 }
 
@@ -756,6 +757,18 @@ int32_t CloudSyncConvert::CompensateInt64FieldsHashMap(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     // compensate attributes HashMap here.
+    return E_OK;
+}
+
+int32_t CloudSyncConvert::CompensatePhotoLcdSize(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    auto itLcdSize = data.stringfields.find(PhotoColumn::LCD_ASPECT_RATIO);
+    std::string lcdSize = "";
+    if (itLcdSize != data.stringfields.end()) {
+        lcdSize = itLcdSize->second;
+    }
+    CHECK_AND_RETURN_RET(!lcdSize.empty(), E_CLOUDSYNC_INVAL_ARG);
+    values.Put(PhotoColumn::PHOTO_LCD_SIZE, lcdSize);
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

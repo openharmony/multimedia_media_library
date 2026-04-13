@@ -153,7 +153,7 @@ public:
         EXPORT bool isHdr {false};
 
         // largest thumbnail type for the source to generate
-        ThumbnailType desiredType {ThumbnailType::NOT_DEFINED};
+        ThumbnailSceneType thumbnailSceneType {ThumbnailSceneType::DEFAULT_SCENE};
         std::unordered_map<SourceState, SourceState> loadingStates;
     };
 

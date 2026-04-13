@@ -414,6 +414,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesHashMap(const PhotosPo &re
         CHECK_AND_CONTINUE(it != stringfieldsMap.end());
         photosVo.stringfields[fieldName] = it->second;
     }
+    HandleLcdAspectRatio(stringfieldsMap, photosVo);
     return true;
 }
 
@@ -454,6 +455,16 @@ bool CloudMediaPhotoControllerProcessor::GetInt64FieldsHashMap(
     const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data)
 {
     data.int64fields = photosVo.int64fields;
+    return true;
+}
+
+// 数据库中lcd_size同步时，转换为attributes.lcd_aspect_ratio
+bool CloudMediaPhotoControllerProcessor::HandleLcdAspectRatio(
+    const std::unordered_map<std::string, std::string> &stringfieldsMap, CloudMdkRecordPhotosVo &photosVo)
+{
+    auto it = stringfieldsMap.find(PhotoColumn::PHOTO_LCD_SIZE);
+    CHECK_AND_RETURN_RET(it != stringfieldsMap.end(), false);
+    photosVo.stringfields[PhotoColumn::LCD_ASPECT_RATIO] = it->second;
     return true;
 }
 }  // namespace OHOS::Media::CloudSync
