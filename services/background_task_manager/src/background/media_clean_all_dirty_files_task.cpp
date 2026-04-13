@@ -304,7 +304,7 @@ bool MediaCleanAllDirtyFilesTask::DealWithZeroSizeFile(std::string &path)
     uint64_t currentTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
     uint64_t addTime = currentTime;
     if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size == 0) {
-        uint64_t interval = currentTime - addTime;
+        uint64_t interval = (currentTime > addTime) ? (currentTime - addTime) : 0;
         if (interval > FOUR_WEEK) {
             MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64,
                 interval);
@@ -323,7 +323,7 @@ bool MediaCleanAllDirtyFilesTask::Is4WeekAgoFile(std::string &path)
     uint64_t currentTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
     uint64_t addTime = currentTime;
     if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size != 0) {
-        uint64_t interval = currentTime - addTime;
+        uint64_t interval = (currentTime > addTime) ? (currentTime - addTime) : 0;
         if (interval > FOUR_WEEK) {
             MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64 " File: %{public}s",
                 interval, MediaFileUtils::DesensitizePath(path).c_str());
