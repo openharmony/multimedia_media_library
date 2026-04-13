@@ -92,7 +92,8 @@ export class AlbumPickerComponent extends ViewPU {
  
  
     set revokeIndex(newValue) { 
-        return this.__revokeIndex.set(); 
+        console.log(`albumpickercomponent set revokeindex ${newValue}`);
+        return this.__revokeIndex.set(newValue); 
     }
 
     initialRender() {
