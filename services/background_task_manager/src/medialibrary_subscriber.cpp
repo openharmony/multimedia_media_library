@@ -260,6 +260,7 @@ bool MedialibrarySubscriber::Subscribe(void)
 int32_t MedialibrarySubscriber::RegisterDefaultNetObserver()
 {
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    unique_lock<std::mutex> lock(registerDefaultNetObsLock_);
     if (defaultNetObserver_ == nullptr) { // 补注册
         defaultNetObserver_ = new (std::nothrow) DefaultNetConnectObserver();
         CHECK_AND_RETURN_RET_LOG(defaultNetObserver_ != nullptr, E_ERR, "Failed to get netObserver.");
