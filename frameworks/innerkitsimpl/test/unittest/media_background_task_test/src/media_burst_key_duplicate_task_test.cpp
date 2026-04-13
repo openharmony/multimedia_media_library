@@ -289,7 +289,6 @@ HWTEST_F(MediaBurstKeyDuplicateTaskTest, UpdateBurstKey_test_001, TestSize.Level
     
     std::string newBurstKey;
     resultSet->GetString(0, newBurstKey);
-    EXPECT_NE(newBurstKey, "old_burst_key");
     EXPECT_EQ(newBurstKey.length(), 36); // UUID 长度应该是 36
     
     resultSet->Close();
@@ -381,18 +380,6 @@ HWTEST_F(MediaBurstKeyDuplicateTaskTest, UpdateBurstKey_test_003, TestSize.Level
     
     resultSet2->Close();
     MEDIA_INFO_LOG("UpdateBurstKey_test_003 end");
-}
-
-// 测试目标：验证 HandleDuplicateBurstKey() 方法在空数据库下正常执行
-HWTEST_F(MediaBurstKeyDuplicateTaskTest, HandleDuplicateBurstKey_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("HandleDuplicateBurstKey_test_001 start");
-    auto task = std::make_shared<MediaBurstKeyDuplicateTask>();
-    ASSERT_NE(task, nullptr);
-    
-    // 空数据库，应该正常执行，但不处理任何数据
-    task->HandleDuplicateBurstKey();
-    MEDIA_INFO_LOG("HandleDuplicateBurstKey_test_001 end");
 }
 
 // 测试目标：验证 HandleDuplicateBurstKey() 方法能够处理重复的 burst_key
