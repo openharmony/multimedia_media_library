@@ -92,7 +92,6 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
         count = photo->EraseBundleNames(bundleName);
         photo->requestCount -= count;
     }
-    photo->requestCount += (int32_t) requestType;
     photoIdInProcess_[photoId] = photo;
     return photo->requestCount;
 }
