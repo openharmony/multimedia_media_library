@@ -40,7 +40,7 @@ EnhancementThreadManager::~EnhancementThreadManager()
 {
     stop = true;
     condVar_.notify_all();
-    #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     if (consumerThread_.joinable()) {
         consumerThread_.join();
     }
