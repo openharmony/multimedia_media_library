@@ -510,10 +510,13 @@ bool MultiStagesPhotoCaptureManager::CancelProcessRequest(const string &photoId)
 {
     CHECK_AND_RETURN_RET_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId), false,
         "photoId is empty or not in process");
-    int32_t currentRequestCount =
-        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::CANCEL_REQUEST);
-    CHECK_AND_RETURN_RET_LOG(currentRequestCount <= 0, false,
-        "not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
+    std::string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    int32_t currentRequestCount = MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(
+        photoId, RequestType::CANCEL_REQUEST, callerBundleName);
+    if (currentRequestCount > 0) {
+        MEDIA_WARN_LOG("not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
+        return false;
+    }
     auto isCancelSucc = deferredProcSession_->CancelProcessImage(photoId);
     MEDIA_INFO_LOG("cancel request isCancelSucc: %{public}d", isCancelSucc);
     return true;
@@ -546,8 +549,8 @@ void MultiStagesPhotoCaptureManager::ProcessImage(int fileId, int deliveryMode)
     string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
     MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId, fileId);
-    int32_t currentRequestCount =
-        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
+    int32_t currentRequestCount = MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(
+        photoId, RequestType::REQUEST, callerBundleName);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
         "processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
         MLOG_TAG, __FUNCTION__, __LINE__,
