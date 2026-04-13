@@ -405,6 +405,8 @@ private:
     EXPORT static napi_value SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value AnalysisPhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value AnalysisAlbumAccessUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AvailabilityRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AvailabilityUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value QueryMediaDataReady(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
@@ -481,7 +483,13 @@ private:
         Notification::NotifyUriType uriType);
     static void UnregisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
         Notification::NotifyUriType uriType);
-
+    static int32_t RegisterAvailabilityObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj);
+    static int32_t CreateAndRegisterNewAvailabilityObserver(napi_env env, napi_ref ref,
+        Notification::NotifyUriType registerUriType, std::string& registerUri, ChangeListenerNapi& listObj);
+    static int32_t OverrideExistingAvailabilityObserver(napi_env env, napi_ref ref, MediaOnNotifyNewObserver& observer,
+        Notification::NotifyUriType registerUriType);
+    static int32_t UnregisterAvailabilityObserverExecute(napi_env env, ChangeListenerNapi &listObj);
+    static void AvailabilityRegisterExecute(napi_env env, void *data);
     napi_env env_;
     int32_t userId_ = -1;
 
@@ -668,6 +676,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> checkPhotoPermissionUris;
     mutable std::mutex uriPermissionStateMapMutex;
     std::unordered_map<std::string, int32_t> uriPermissionStateMap;
+    ChangeListenerNapi* availabilityListObj = nullptr;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

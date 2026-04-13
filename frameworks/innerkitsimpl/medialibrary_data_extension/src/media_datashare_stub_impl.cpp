@@ -40,6 +40,7 @@ std::unordered_map<std::string, Notification::NotifyUriType> NOTIFY_URI_MAP = {
     {"userDefineChange", Notification::NotifyUriType::USER_DEFINE_NOTIFY_URI},
     {"analysisPhotoChange", Notification::NotifyUriType::ANALYSIS_PHOTO_URI},
     {"analysisAlbumChange", Notification::NotifyUriType::ANALYSIS_ALBUM_URI},
+    {"medialibraryAvailabilityChange", Notification::NotifyUriType::AVAILABILITY_URI},
 };
 
 const std::string URI_SEPARATOR = "file:media";

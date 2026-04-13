@@ -36,6 +36,8 @@ public:
     EXPORT ~NotificationDistribution();
     EXPORT static int32_t DistributeNotifyInfo(const std::vector<NotifyInfo>& notifyInfos);
     EXPORT static int32_t DistributeUserDefineNotifyInfo(const std::vector<UserDefineNotifyInfo>& notifyInfos);
+    EXPORT static int32_t DistributeDbAvailabilityNotifyInfo(
+        const std::vector<std::pair<std::string, std::string>>& notifyInfos);
 private:
     static MediaChangeInfo FilterNotifyInfoByPermission(const MediaChangeInfo& changeInfo, NotifyUriType notifyUriType);
     static int32_t SendNotificationWithRecheckChangeInfo(const MediaChangeInfo& changeInfo,
@@ -45,6 +47,7 @@ private:
     static int32_t ProcessNotifyInfo(const NotifyInfo& notifyInfo);
 
     static int32_t ProcessUserDefineNotifyInfo(const UserDefineNotifyInfo &notifyInfo);
+    static int32_t ProcessDbAvailabilityNotifyInfo(const std::string& status, const std::string& reason);
     static std::vector<ObserverInfo> findObservers(NotifyUriType notifyUriType);
 };
 } // namespace Notification

@@ -109,6 +109,7 @@
 #include "check_single_photo_permission_vo.h"
 #include "start_active_analysis_vo.h"
 #include "stop_active_analysis_vo.h"
+#include "check_db_availability_vo.h"
 #include "userfilemgr_uri.h"
 
 #include "parcel.h"
@@ -555,6 +556,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
             DECLARE_NAPI_FUNCTION("setPreferredCompatibleMode", PhotoAccessHelperSetPreferredCompatibleMode),
             DECLARE_NAPI_FUNCTION("getPreferredCompatibleMode", PhotoAccessHelperGetPreferredCompatibleMode),
+            DECLARE_NAPI_FUNCTION("onMedialibraryAvailability", AvailabilityRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offMedialibraryAvailability", AvailabilityUnregisterCallback),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -12425,6 +12428,237 @@ napi_value MediaLibraryNapi::PhotoAccessRegisterCallback(napi_env env, napi_call
         return undefinedResult;
     }
     return undefinedResult;
+}
+
+int32_t MediaLibraryNapi::OverrideExistingAvailabilityObserver(napi_env env, napi_ref ref,
+    MediaOnNotifyNewObserver& observer, Notification::NotifyUriType registerUriType)
+{
+    NAPI_INFO_LOG("Found existing availability observer, overriding...");
+    auto& clientObservers = observer.clientObservers_;
+    auto iter = clientObservers.find(registerUriType);
+
+    if (iter != clientObservers.end()) {
+        for (auto& oldObs : iter->second) {
+            if (oldObs != nullptr && oldObs->ref_ != nullptr) {
+                NAPI_INFO_LOG("Delete old napi_ref to avoid leak");
+                napi_delete_reference(env, oldObs->ref_);
+            }
+        }
+        iter->second.clear();
+    }
+
+    auto clientObserver = make_shared<ClientObserver>(registerUriType, ref);
+    clientObservers[registerUriType].push_back(clientObserver);
+    NAPI_INFO_LOG("Availability callback overridden successfully");
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::CreateAndRegisterNewAvailabilityObserver(napi_env env, napi_ref ref,
+    Notification::NotifyUriType registerUriType, std::string& registerUri, ChangeListenerNapi& listObj)
+{
+    auto observer = make_shared<MediaOnNotifyNewObserver>(registerUriType, registerUri, env);
+
+    Uri notifyUri(registerUri);
+    int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("RegisterObserverExtProvider failed, ret: %{public}d", ret);
+        return ret;
+    }
+
+    auto clientObserver = make_shared<ClientObserver>(registerUriType, ref);
+    observer->clientObservers_[registerUriType].push_back(clientObserver);
+    listObj.newObservers_.push_back(observer);
+
+    NAPI_INFO_LOG("Register availability observer success");
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::RegisterAvailabilityObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::AVAILABILITY_URI;
+    std::string registerUri = RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE;
+
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); ++it) {
+        if ((*it)->uriType_ == registerUriType) {
+            return OverrideExistingAvailabilityObserver(env, ref, **it, registerUriType);
+        }
+    }
+
+    return CreateAndRegisterNewAvailabilityObserver(env, ref, registerUriType, registerUri, listObj);
+}
+
+void MediaLibraryNapi::AvailabilityRegisterExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
+    CheckDbAvailabilityReqBody reqBody;
+    reqBody.isOnlyCheckPermission = false;
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("CheckDbAvailability ret:%{public}d", result);
+
+    tracer.Finish();
+}
+
+static void AvailabilityRegisterComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "AvailabilityRegisterComplete context is null");
+
+    auto jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+
+    NAPI_INFO_LOG("Availability register complete success");
+    tracer.Finish();
+}
+
+napi_value MediaLibraryNapi::AvailabilityRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AvailabilityRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterCallback");
+
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {nullptr};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+
+    if (argc != ARGS_ONE) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "requires one parameter.");
+        return nullptr;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "callback must be a function.");
+        return nullptr;
+    }
+
+    if (g_listObj == nullptr) {
+        NAPI_ERR_LOG("g_listObj is nullptr");
+        NapiError::ThrowError(env, JS_E_INNER_FAIL , "global list object is null.");
+        return nullptr;
+    }
+
+    const int32_t refCount = 1;
+    napi_ref cbRef = nullptr;
+    if (napi_create_reference(env, argv[PARAM0], refCount, &cbRef) != napi_ok) {
+        NapiError::ThrowError(env, JS_E_INNER_FAIL , "create reference failed.");
+        return nullptr;
+    }
+
+    int32_t ret = RegisterAvailabilityObserverExecute(env, cbRef, *g_listObj);
+    if (ret != E_OK) {
+        napi_delete_reference(env, cbRef);
+        NapiError::ThrowError(env, JS_E_INNER_FAIL, "register observer failed");
+        return nullptr;
+    }
+    NAPI_INFO_LOG("registercallck success");
+    std::unique_ptr<MediaLibraryAsyncContext> context = std::make_unique<MediaLibraryAsyncContext>();
+    context->callbackRef = cbRef;
+    context->error = E_OK;
+    context->work = nullptr;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, context, "AvailabilityRegisterCallback",
+        AvailabilityRegisterExecute, AvailabilityRegisterComplete
+    );
+}
+
+napi_value MediaLibraryNapi::AvailabilityUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AvailabilityUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityUnregisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    if (g_listObj == nullptr) {
+        NAPI_INFO_LOG("g_listObj is nullptr");
+        return undefinedResult;
+    }
+
+    size_t argc = 0;
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, nullptr, thisVar);
+    if (argc > 0) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "No parameters required.");
+        return undefinedResult;
+    }
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
+    CheckDbAvailabilityReqBody reqBody;
+    reqBody.isOnlyCheckPermission = true;
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("CheckDbAvailability ret:%{public}d", result);
+    if (result < 0) {
+        NAPI_ERR_LOG("CheckDbAvailability fail, result: %{public}d.", result);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "No parameters required.");
+        return undefinedResult;
+    }
+
+    int32_t ret = UnregisterAvailabilityObserverExecute(env, *g_listObj);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        return undefinedResult;
+    }
+
+    NAPI_INFO_LOG("AvailabilityUnregisterCallback success");
+    tracer.Finish();
+    return undefinedResult;
+}
+
+
+int32_t MediaLibraryNapi::UnregisterAvailabilityObserverExecute(napi_env env, ChangeListenerNapi &listObj)
+{
+    auto registerUriType = Notification::NotifyUriType::AVAILABILITY_URI;
+    std::string registerUri = RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE;
+
+    std::shared_ptr<MediaOnNotifyNewObserver> targetObserver = nullptr;
+    for (auto& obs : listObj.newObservers_) {
+        if (obs && obs->uriType_ == registerUriType) {
+            targetObserver = obs;
+            break;
+        }
+    }
+
+    if (targetObserver == nullptr) {
+        NAPI_INFO_LOG("No availability observer");
+        return E_OK;
+    }
+
+    auto& clientObserversMap = targetObserver->clientObservers_;
+    if (clientObserversMap.count(registerUriType)) {
+        auto& observers = clientObserversMap[registerUriType];
+        for (auto& co : observers) {
+            if (co && co->ref_) {
+                napi_delete_reference(env, co->ref_);
+                co->ref_ = nullptr;
+            }
+        }
+        clientObserversMap.erase(registerUriType);
+    }
+
+    int32_t ret = UserFileClient::UnregisterObserverExtProvider(Uri(registerUri), targetObserver);
+    NAPI_INFO_LOG("UnregisterObserverExtProvider ret: %{public}d", ret);
+
+    auto it = std::find(listObj.newObservers_.begin(), listObj.newObservers_.end(), targetObserver);
+    if (it != listObj.newObservers_.end()) {
+        listObj.newObservers_.erase(it);
+    }
+
+    NAPI_INFO_LOG("Availability unregister clean success");
+    return ret;
 }
 
 int32_t MediaLibraryNapi::RemoveClientObserver(napi_env env, napi_ref ref,

@@ -64,6 +64,9 @@
 #include "create_analysis_album_dto.h"
 #include "change_request_set_display_level_vo.h"
 #include "change_request_dismiss_vo.h"
+#include "check_db_availability_vo.h"
+#include "media_change_info.h"
+#include "notify_register_permission.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -227,6 +230,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS),
         &MediaAlbumsControllerService::SmartMoveAssets
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY),
+        &MediaAlbumsControllerService::CheckDbAvailability
     },
 };
 
@@ -988,5 +995,25 @@ int32_t MediaAlbumsControllerService::GetAlbumIdByLpathOrBundleName(MessageParce
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::CheckDbAvailability(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CheckDbAvailability start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    CheckDbAvailabilityReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "CheckDbAvailability Read Request Error: %{public}d", ret);
+    Notification::NotifyRegisterPermission permissionHandle;
+    ret = permissionHandle.ExecuteCheckPermission(Notification::NotifyUriType::AVAILABILITY_URI);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "Permission verification failed");
+    CHECK_AND_RETURN_RET_INFO_LOG(!reqBody.isOnlyCheckPermission, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "Permission verification success");
+    MediaAlbumsService::GetInstance().ReportFirstDbStatus();
+    return IPC::UserDefineIPC().WriteResponseBody(reply, reqBody, ret);
 }
 } // namespace OHOS::Media

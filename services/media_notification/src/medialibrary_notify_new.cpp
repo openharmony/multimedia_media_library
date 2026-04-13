@@ -24,6 +24,7 @@
 #include "medialibrary_tracer.h"
 #include "notify_task_worker.h"
 #include "notification_classification.h"
+#include "parameters.h"
 
 using namespace std;
 
@@ -72,6 +73,16 @@ void MediaLibraryNotifyNew::AddUserDefineItem(const UserDefineNotifyInfo &notify
         worker->StartWorker();
     }
     MEDIA_INFO_LOG("AddUserDefineItem");
+}
+
+void MediaLibraryNotifyNew::AddDbAvailabilityItem(const std::string& status, const std::string& reason)
+{
+    auto worker = NotifyTaskWorker::GetInstance();
+    worker->AddDbAvailabilityTaskInfo(status, reason);
+    if (!worker->IsRunning()) {
+        worker->StartWorker();
+    }
+    MEDIA_INFO_LOG("AddDbAvailabilityItem");
 }
 } // Notification
 } // Media

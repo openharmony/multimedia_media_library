@@ -90,6 +90,7 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
     int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
     int32_t SmartMoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
+    void ReportFirstDbStatus();
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

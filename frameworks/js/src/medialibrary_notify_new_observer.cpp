@@ -127,19 +127,54 @@ void MediaOnNotifyNewObserver::ProcessObserverBranches(NewJsOnChangeCallbackWrap
     }
 }
 
+std::shared_ptr<MessageParcel> MediaOnNotifyNewObserver::CreateTempParcelFromChangeInfo(
+    const DataShare::DataShareObserver::ChangeInfo &changeInfo)
+{
+    uint8_t *tempParcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
+    CHECK_AND_RETURN_RET_LOG(tempParcelData != nullptr, nullptr, "tempParcelData malloc failed");
+    
+    if (memcpy_s(tempParcelData, changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
+        NAPI_ERR_LOG("tempParcelData copy parcel data failed");
+        free(tempParcelData);
+        return nullptr;
+    }
+    
+    auto tempParcel = std::make_shared<MessageParcel>();
+    if (!tempParcel->ParseFrom(reinterpret_cast<uintptr_t>(tempParcelData), changeInfo.size_)) {
+        NAPI_ERR_LOG("Parse parcelData failed");
+        free(tempParcelData);
+        return nullptr;
+    }
+    
+    return tempParcel;
+}
+
+bool MediaOnNotifyNewObserver::ProcessDbAvailabilityData(NewJsOnChangeCallbackWrapper& callbackWrapper,
+    shared_ptr<MessageParcel>& parcel)
+{
+    NAPI_INFO_LOG("begin ProcessDbAvailabilityData");
+    callbackWrapper.dbAvailabilityInfo_ = NotificationUtils::UnmarshalDbAvailabilityData(*parcel);
+    CHECK_AND_RETURN_RET_LOG(callbackWrapper.dbAvailabilityInfo_ != nullptr, false, "invalid dbAvailabilityInfo_");
+    auto it = clientObservers_.find(Notification::NotifyUriType::AVAILABILITY_URI);
+    CHECK_AND_RETURN_RET_LOG(it != clientObservers_.end(), false, "No observer for AVAILABILITY_URI");
+    callbackWrapper.clientObservers_ = it->second;
+    callbackWrapper.observerUriType_ = Notification::NotifyUriType::AVAILABILITY_URI;
+    callbackWrapper.env_ = env_;
+    auto worker = ChangeInfoTaskWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(worker != nullptr, false, "Get ChangeInfoTaskWorker instance failed");
+    worker->AddTaskInfo(callbackWrapper);
+    CHECK_AND_EXECUTE(worker->IsRunning(), worker->StartWorker());
+    return true;
+}
+
 void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaOnNotifyNewObserver::OnChange");
     NAPI_DEBUG_LOG("begin MediaOnNotifyNewObserver OnChange");
-    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
-        NAPI_ERR_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
-        return;
-    }
-    if (changeInfo.size_ > MAX_PARCEL_SIZE) {
-        NAPI_ERR_LOG("The size of the parcel exceeds the limit.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(changeInfo.data_ != nullptr && changeInfo.size_ > 0,
+        "changeInfo.data_ is null or changeInfo.size_ is invalid");
+    CHECK_AND_RETURN_LOG(changeInfo.size_ <= MAX_PARCEL_SIZE, "The size of the parcel exceeds the limit.");
     uint8_t *parcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
     CHECK_AND_RETURN_LOG(parcelData != nullptr, "parcelData malloc failed");
     if (memcpy_s(parcelData, changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
@@ -154,7 +189,11 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
         free(parcelData);
         return;
     }
+
+    auto tempParcel = CreateTempParcelFromChangeInfo(changeInfo);
+    CHECK_AND_RETURN_LOG(tempParcel != nullptr, "Create temp parcel failed");
     NewJsOnChangeCallbackWrapper callbackWrapper;
+    CHECK_AND_RETURN_INFO_LOG(!ProcessDbAvailabilityData(callbackWrapper, tempParcel), "notify db availability");
     callbackWrapper.mediaChangeInfo_ = NotificationUtils::UnmarshalInMultiMode(*parcel);
     CHECK_AND_RETURN_LOG(callbackWrapper.mediaChangeInfo_ != nullptr, "invalid mediaChangeInfo");
     NAPI_INFO_LOG("mediaChangeInfo_ is: %{public}s", callbackWrapper.mediaChangeInfo_->ToString(true).c_str());
@@ -170,10 +209,7 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
     callbackWrapper.env_ = env_;
     ProcessObserverBranches(callbackWrapper, infoUriType);
     auto worker = ChangeInfoTaskWorker::GetInstance();
-    if (worker == nullptr) {
-        NAPI_ERR_LOG("Get ChangeInfoTaskWorker instance failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(worker != nullptr, "Get ChangeInfoTaskWorker instance failed");
     worker->AddTaskInfo(callbackWrapper);
     if (!worker->IsRunning()) {
         worker->StartWorker();
@@ -306,7 +342,27 @@ void MediaOnNotifyNewObserver::ReadyForCallbackEvent(const NewJsOnChangeCallback
     jsCallback->singleAssetClientChangeInfo_ = callbackWrapper.singleAssetClientChangeInfo_;
     jsCallback->singleAlbumClientChangeInfo_ = callbackWrapper.singleAlbumClientChangeInfo_;
     jsCallback->ChangeListenScene = callbackWrapper.ChangeListenScene;
+    jsCallback->dbAvailabilityInfo_ = callbackWrapper.dbAvailabilityInfo_;
     OnJsCallbackEvent(jsCallback);
+}
+
+static napi_value ProcessDbAvailabilityNotification(napi_env env, napi_handle_scope scope,
+    NewJsOnChangeCallbackWrapper* wrapper)
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_AND_RETURN_RET_LOG(wrapper != nullptr && wrapper->dbAvailabilityInfo_ != nullptr, result,
+        "dbAvailabilityInfo_ is nullptr");
+    napi_value statusValue = nullptr;
+    napi_create_string_utf8(env, wrapper->dbAvailabilityInfo_->status.c_str(),
+        NAPI_AUTO_LENGTH, &statusValue);
+    napi_set_named_property(env, result, "availabilityStatus", statusValue);
+    
+    napi_value reasonValue = nullptr;
+    napi_create_string_utf8(env, wrapper->dbAvailabilityInfo_->reason.c_str(),
+        NAPI_AUTO_LENGTH, &reasonValue);
+    napi_set_named_property(env, result, "unavailabilityReason", reasonValue);
+    return result;
 }
 
 static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
@@ -340,6 +396,9 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
             break;
         case Notification::SINGLE_PHOTO_ALBUM_URI:
             buildResult = ProcessSingleAlbumIdNotifications(env, scope, wrapper, mediaChangeInfo);
+            break;
+        case Notification::AVAILABILITY_URI:
+            buildResult = ProcessDbAvailabilityNotification(env, scope, wrapper);
             break;
         default:
             NAPI_ERR_LOG("Invalid registerUriType");
