@@ -78,6 +78,8 @@
 #include "medialibrary_notify_callback_wrapper_ani.h"
 #include "media_audio_column.h"
 #include <charconv>
+#include "preferred_compatible_mode_vo.h"
+#include "transcode_compatible_info_operations.h"
 #include "query_media_data_status_vo.h"
 #include "media_string_utils.h"
 #include "acquire_debug_database_vo.h"
@@ -100,6 +102,9 @@ static std::atomic<int32_t> requestIdCallback_ = 0;
 static const std::unordered_set<std::string> BETACLUB_FAULT_TREE_CODES = {
     "1025_1041_1018",
 };
+const std::string SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE = "image/heic";
+const std::string SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -241,6 +246,10 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOnCallback)},
     ani_native_function {"offSinglePhotoChangeInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOffCallback)},
+    ani_native_function {"setPreferredCompatibleModeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SetPreferredCompatibleMode)},
+    ani_native_function {"getPreferredCompatibleModeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetPreferredCompatibleMode)},
     ani_native_function {"onPhotoChange", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessOnPhotoChange)},
     ani_native_function {"offPhotoChange", nullptr,
@@ -5962,6 +5971,143 @@ int32_t MediaLibraryAni::UnregisterObserverExecute(ani_env *env,
     return ret;
 }
 
+void MediaLibraryAni::SetPreferredCompatibleMode(ani_env *env, ani_object object,
+    ani_string bundleName, ani_int mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetPreferredCompatibleMode");
+
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return;
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        return;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    string bundleNameStr;
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to parse bundleName");
+        return;
+    }
+    if (bundleNameStr.empty()) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, __FUNCTION__, __LINE__, "bundleName is empty");
+        return;
+    }
+    if (mode < static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) ||
+        mode > static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE)) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, __FUNCTION__, __LINE__,
+            "preferredCompatibleMode is invalid");
+        return;
+    }
+
+    context->bundleName = bundleNameStr;
+    context->preferredCompatibleMode = static_cast<int32_t>(mode);
+
+    SetPreferredCompatibleModeReqBody reqBody;
+    reqBody.bundleName = context->bundleName;
+    reqBody.preferredCompatibleMode = context->preferredCompatibleMode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE), reqBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, JS_E_INNER_FAIL);
+        return;
+    }
+}
+
+ani_int MediaLibraryAni::GetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPreferredCompatibleMode");
+
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+
+    string bundleNameStr;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) == ANI_OK,
+        JS_E_PARAM_INVALID, static_cast<ani_int>(PreferredCompatibleMode::DEFAULT), "Failed to parse bundleName");
+    CHECK_COND_RET(!bundleNameStr.empty(), static_cast<ani_int>(PreferredCompatibleMode::DEFAULT),
+        "bundleName is empty");
+
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    reqBody.bundleName = bundleNameStr;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, JS_E_INNER_FAIL);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+    return static_cast<ani_int>(respBody.preferredCompatibleMode);
+}
+
+static bool IsSupportedCompatibleMimeType(const std::string &mimeType)
+{
+    return mimeType == SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE ||
+        mimeType == SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE;
+}
+
+static ani_status NormalizeSupportedMimeTypes(ani_env *env, const vector<string> &supportedMimeTypes,
+    vector<string> &normalizedMimeTypes)
+{
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : supportedMimeTypes) {
+        if (!IsSupportedCompatibleMimeType(mimeType)) {
+            ANI_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_ARGS_WITH_RET_MSG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
+        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeTypes exceeds max size");
+    normalizedMimeTypes.clear();
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+    return ANI_OK;
+}
+
+static ani_status ParseSupportedMimeTypesFromConfig(ani_env *env, ani_object config, vector<string> &supportedMimeTypes)
+{
+    ani_object propertyValue;
+    ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedMimeType", propertyValue);
+    if (ret != ANI_OK || propertyValue == nullptr || MediaLibraryAniUtils::IsUndefined(env, propertyValue)) {
+        return ANI_OK;
+    }
+
+    ret = MediaLibraryAniUtils::GetStringArray(env, propertyValue, supportedMimeTypes);
+    CHECK_STATUS_RET(ret, "GetStringArray supportedMimeTypes fail");
+    vector<string> normalizedMimeTypes;
+    CHECK_COND_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes) == ANI_OK,
+        ANI_ERROR, "normalize supportedMimeTypes failed");
+    supportedMimeTypes = std::move(normalizedMimeTypes);
+    return ANI_OK;
+}
+
 void MediaLibraryAni::unregisterAssetExecute(ani_env *env, ani_object object,
     ani_fn_object callbackOff, std::string type)
 {
@@ -6295,7 +6441,11 @@ static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_string b
         CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
         supportedHighResolution = value;
     }
+    vector<string> supportedMimeTypes;
+    CHECK_COND_RET(ParseSupportedMimeTypesFromConfig(env, config, supportedMimeTypes) == ANI_OK,
+        ANI_ERROR, "parse supportedMimeTypes failed");
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     return ANI_OK;
 }
 
@@ -6313,7 +6463,11 @@ static ani_status ParseArgsSetFileCompatibleConfig(ani_env *env, ani_object conf
         CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
         supportedHighResolution = value;
     }
+    vector<string> supportedMimeTypes;
+    CHECK_COND_RET(ParseSupportedMimeTypesFromConfig(env, config, supportedMimeTypes) == ANI_OK,
+        ANI_ERROR, "parse supportedMimeTypes failed");
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     return ANI_OK;
 }
 
@@ -6328,6 +6482,7 @@ static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsy
     SetCompatibleInfoReqBody reqBody;
     reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
+    reqBody.supportedMimeTypes = context->supportedMimeTypes;
 
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
@@ -6420,7 +6575,15 @@ static void GetAssetCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAs
         AniError::ThrowError(env, JS_INNER_FAIL);
         return;
     }
+
+    std::vector<std::string> normalizedMimeTypes;
+    if (NormalizeSupportedMimeTypes(env, respBody.supportedMimeTypes, normalizedMimeTypes) != ANI_OK) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
+        return;
+    }
+
     context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = std::move(normalizedMimeTypes);
     context->retVal = E_OK;
 }
 
@@ -6432,6 +6595,10 @@ static ani_object GetAssetCompatibleConfigComplete(ani_env *env, unique_ptr<Medi
     ani_status status = MediaLibraryAniUtils::ToAniBooleanObject(env, supportedHighResolution, aniresult);
     if (status == ANI_OK) {
         env->Object_SetPropertyByName_Ref(result, "supportedHighResolution", aniresult);
+    }
+    status = MediaLibraryAniUtils::ToAniStringArray(env, context->supportedMimeTypes, aniresult);
+    if (status == ANI_OK) {
+        env->Object_SetPropertyByName_Ref(result, "supportedMimeType", aniresult);
     }
     return result;
 }
