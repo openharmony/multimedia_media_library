@@ -26,7 +26,11 @@
 
 namespace OHOS {
 namespace Media {
-
+enum class TranscodeMode {
+    DEFAULT = 0,
+    CURRENT = 1,
+    COMPATIBLE = 2,
+};
 #define EXPORT __attribute__ ((visibility ("default")))
 class HeifTranscodingCheckUtils {
 public:
@@ -38,6 +42,8 @@ public:
     EXPORT static bool CanSupportedCompatibleDuplicate(const std::string &bundleName);
     EXPORT static void UnsubscribeCotaUpdatedEvent();
     EXPORT static void ClearBundleInfoInCache();
+    EXPORT static TranscodeMode CheckTranscodeMode(const std::string &bundleName,
+        bool isHighPixel, bool isHeifFile);
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
     static int32_t ParseWhiteList(const nlohmann::json &checkListJson);

@@ -23,6 +23,7 @@ const string TabCompatibleInfoColumn::TOKEN_ID = "token_id";
 const string TabCompatibleInfoColumn::BUNDLE_NAME = "bundle_name";
 const string TabCompatibleInfoColumn::HIGH_RESOLUTION = "high_resolution";
 const string TabCompatibleInfoColumn::ENCODINGS = "encodings";
+const string TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE = "preferred_compatible_mode";
 
 const string TabCompatibleInfoColumn::TABLE = "tab_compatible_info";
 
@@ -30,7 +31,8 @@ const string TabCompatibleInfoColumn::CREATE_TABLE = "\
     CREATE TABLE IF NOT EXISTS tab_compatible_info ( \
         bundle_name TEXT NOT NULL PRIMARY KEY, \
         high_resolution INT NOT NULL DEFAULT 0, \
-        encodings TEXT \
+        encodings TEXT, \
+        preferred_compatible_mode INT NOT NULL DEFAULT 0 \
     );";
 const string TabCompatibleInfoColumn::DROP_TABLE =
     "DROP TABLE tab_compatible_info;";
