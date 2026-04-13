@@ -63,7 +63,7 @@
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
 #include "notify_register_permission.h"
-#include "media_permission_helper.h"
+#include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_uri_utils.h"
 
@@ -84,17 +84,16 @@ const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
 const std::string HEIF_MIME_TYPE = "image/heif";
 const std::string HEIC_MIME_TYPE = "image/heic";
+const std::string PERM_READ_IMAGEVIDEO_FOR_URI_CHECK = "ohos.permission.READ_IMAGEVIDEO";
 const std::string JPEG_MIME_TYPE = "image/jpeg";
 constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
-constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 enum class PhotoPermissionState : int32_t {
     URI_FORMAT_ERROR = 0,
     FILE_NOT_EXIST = 1,
     READ_PERMISSION = 2,
     NO_READ_PERMISSION = 3,
 };
-constexpr bool READ_WRITE_ISOLATION = true;
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
@@ -1193,7 +1192,7 @@ struct ReadPermissionCheckContext {
     std::vector<std::string> checkedUris;
     std::vector<std::string> checkedFileIds;
     std::vector<std::string> permissionCheckUris;
-    std::vector<uint32_t> permissionFlags;
+    std::vector<std::string> permissionCheckFileIds;
 };
 
 static void CollectCheckedPhotoUris(const std::vector<std::string> &uris, ReadPermissionCheckContext &context)
@@ -1202,7 +1201,7 @@ static void CollectCheckedPhotoUris(const std::vector<std::string> &uris, ReadPe
     context.checkedFileIds.reserve(uris.size());
     for (const auto &uri : uris) {
         std::string fileId = MediaUriUtils::GetFileIdStr(uri);
-        if (fileId == "-1" || fileId.empty()) {
+        if (fileId.empty() || fileId == "-1") {
             context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::URI_FORMAT_ERROR);
             continue;
         }
@@ -1213,45 +1212,88 @@ static void CollectCheckedPhotoUris(const std::vector<std::string> &uris, ReadPe
 
 static int32_t PrepareReadPermissionCheck(MediaAssetsRdbOperations &rdbOperation, ReadPermissionCheckContext &context)
 {
-    std::map<std::string, PhotoAssetReadState> assetStateMap;
-    int32_t ret = rdbOperation.QueryPhotoAssetsReadState(context.checkedFileIds, assetStateMap);
+    std::vector<std::string> validFileIds;
+    int32_t ret = rdbOperation.QueryPhotoAssetsReadState(context.checkedFileIds, validFileIds);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to query photo assets read state");
 
     context.permissionCheckUris.reserve(context.checkedUris.size());
-    context.permissionFlags.reserve(context.checkedUris.size());
+    context.permissionCheckFileIds.reserve(context.checkedUris.size());
     for (size_t i = 0; i < context.checkedUris.size(); i++) {
         const auto &uri = context.checkedUris[i];
         const auto &fileId = context.checkedFileIds[i];
-        auto iter = assetStateMap.find(fileId);
-        if (iter == assetStateMap.end() || iter->second.isHidden || iter->second.isTrashed) {
+        auto iter = std::find(validFileIds.begin(), validFileIds.end(), fileId);
+        if (iter == validFileIds.end()) {
             context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::FILE_NOT_EXIST);
             continue;
         }
         context.permissionCheckUris.emplace_back(uri);
-        context.permissionFlags.emplace_back(URI_PERMISSION_FLAG_READ);
+        context.permissionCheckFileIds.emplace_back(fileId);
+    }
+    return E_OK;
+}
+
+static bool IsReadPermissionType(const int32_t permissionType)
+{
+    return AppUriPermissionColumn::PERMISSION_TYPE_READ.find(permissionType) !=
+        AppUriPermissionColumn::PERMISSION_TYPE_READ.end();
+}
+
+static int32_t QueryReadPermissionByService(uint32_t tokenId,
+    const std::vector<std::string> &fileIds, std::unordered_map<std::string, bool> &filePermissionMap)
+{
+    CheckUriPermissionInnerDto dto;
+    dto.targetTokenId = static_cast<int64_t>(tokenId);
+    dto.uriType = std::to_string(AppUriPermissionColumn::URI_PHOTO);
+    dto.inFileIds = fileIds;
+    dto.columns.emplace_back(AppUriPermissionColumn::FILE_ID);
+    dto.columns.emplace_back(AppUriPermissionColumn::PERMISSION_TYPE);
+
+    int32_t ret = MediaAssetsService::GetInstance().CheckPhotoUriPermissionInner(dto);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckPhotoUriPermissionInner failed, ret:%{public}d", ret);
+
+    CHECK_AND_RETURN_RET_LOG(dto.outFileIds.size() == dto.permissionTypes.size(), E_ERR,
+        "check uri permission result size mismatch, fileIds:%{public}zu, permissionTypes:%{public}zu",
+        dto.outFileIds.size(), dto.permissionTypes.size());
+
+    for (size_t i = 0; i < dto.outFileIds.size(); i++) {
+        if (IsReadPermissionType(dto.permissionTypes[i])) {
+            filePermissionMap[dto.outFileIds[i]] = true;
+        }
     }
     return E_OK;
 }
 
 static int32_t UpdateReadPermissionCheckResult(ReadPermissionCheckContext &context)
 {
-    auto permissionHelper = MediaPermissionHelper::GetMediaPermissionHelper();
-    CHECK_AND_RETURN_RET_LOG(permissionHelper != nullptr, E_ERR, "permissionHelper is null");
-    permissionHelper->InitMediaPermissionHelper();
-
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
-    std::vector<bool> checkResults;
-    int32_t ret = permissionHelper->CheckPhotoUriPermission(tokenId, context.permissionCheckUris, checkResults,
-        context.permissionFlags, READ_WRITE_ISOLATION);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckPhotoUriPermission failed, ret:%{public}d", ret);
-    CHECK_AND_RETURN_RET_LOG(checkResults.size() == context.permissionCheckUris.size(), E_ERR,
-        "check result size mismatch, result:%{public}zu, uri:%{public}zu",
-        checkResults.size(), context.permissionCheckUris.size());
+    bool hasReadAccessTokenPermission =
+        Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_IMAGEVIDEO_FOR_URI_CHECK) == E_OK;
+
+    CHECK_AND_RETURN_RET_LOG(context.permissionCheckUris.size() == context.permissionCheckFileIds.size(), E_ERR,
+        "permission check context size mismatch, uris:%{public}zu, fileIds:%{public}zu",
+        context.permissionCheckUris.size(), context.permissionCheckFileIds.size());
+
+    if (hasReadAccessTokenPermission) {
+        for (const auto &uri : context.permissionCheckUris) {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION);
+        }
+        return E_OK;
+    }
+
+    std::unordered_map<std::string, bool> filePermissionMap;
+    int32_t ret = QueryReadPermissionByService(tokenId, context.permissionCheckFileIds, filePermissionMap);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryReadPermissionByService failed, ret:%{public}d", ret);
 
     for (size_t i = 0; i < context.permissionCheckUris.size(); i++) {
-        context.uriPermissionStateMap[context.permissionCheckUris[i]] =
-            checkResults[i] ? static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION)
-                            : static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+        auto iter = filePermissionMap.find(context.permissionCheckFileIds[i]);
+        if (iter != filePermissionMap.end()) {
+            context.uriPermissionStateMap[context.permissionCheckUris[i]] =
+                iter->second ? static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION)
+                             : static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+        } else {
+            context.uriPermissionStateMap[context.permissionCheckUris[i]] =
+                static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+        }
     }
     return E_OK;
 }
