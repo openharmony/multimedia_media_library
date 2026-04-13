@@ -53,6 +53,7 @@ private:
     std::mutex releaseMutex_;
     std::condition_variable releaseVar_;
     std::queue<CloudEnhancementThreadTask> taskQueue_;
+    std::thread consumerThread_;
 
     void DealWithTasks();
     void ExecSuccessedTask(CloudEnhancementThreadTask& task);

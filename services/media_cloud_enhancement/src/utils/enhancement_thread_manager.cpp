@@ -32,7 +32,7 @@ EnhancementThreadManager::EnhancementThreadManager()
     stop = false;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     isThreadAlive = true;
-    thread(&EnhancementThreadManager::DealWithTasks, this).detach();
+    consumerThread_ = thread(&EnhancementThreadManager::DealWithTasks, this);
 #endif
 }
 
@@ -40,17 +40,23 @@ EnhancementThreadManager::~EnhancementThreadManager()
 {
     stop = true;
     condVar_.notify_all();
-    unique_lock<mutex> lock(releaseMutex_);
-    releaseVar_.wait_for(lock, chrono::milliseconds(WAIT_RELEASE), [this]() {
-        return isThreadAlive == false;
-    });
+    #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    if (consumerThread_.joinable()) {
+        consumerThread_.join();
+    }
+#endif
 }
 
 void EnhancementThreadManager::StartConsumerThread()
 {
     if (!isThreadAlive) {
         isThreadAlive = true;
-        thread(&EnhancementThreadManager::DealWithTasks, this).detach();
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+        if (consumerThread_.joinable()) {
+            consumerThread_.join();
+        }
+        consumerThread_ = thread(&EnhancementThreadManager::DealWithTasks, this);
+#endif
     }
 }
 

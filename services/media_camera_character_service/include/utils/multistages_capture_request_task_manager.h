@@ -16,6 +16,7 @@
 #ifndef MULTISTAGES_CAPTURE_REQUEST_TASK_MANAGER_H
 #define MULTISTAGES_CAPTURE_REQUEST_TASK_MANAGER_H
 
+#include <map>
 #include <mutex>
 #include <string>
 #include <unordered_set>
@@ -39,9 +40,34 @@ struct LowQualityPhotoInfo {
     int32_t fileId;
     PhotoState state;
     int32_t requestCount;
+    std::map<std::string, int32_t> bundleNames;
     LowQualityPhotoInfo() : fileId(0), state(PhotoState::NORMAL), requestCount(0) {}
     LowQualityPhotoInfo(int32_t fileId, PhotoState state, int32_t count)
         : fileId(fileId), state(state), requestCount(count) {}
+
+    int32_t InsertBundleNames(const std::string& bundleName)
+    {
+        if (bundleNames.find(bundleName) == bundleNames.end()) {
+            bundleNames[bundleName] = 1;
+        } else {
+            int32_t count = bundleNames.at(bundleName);
+            count += 1;
+            bundleNames[bundleName] = count;
+        }
+        return bundleNames.at(bundleName);
+    }
+
+    int32_t EraseBundleNames(const std::string& bundleName)
+    {
+        if (bundleNames.find(bundleName) == bundleNames.end()) {
+            MEDIA_ERR_LOG("bundleName not found bundleName = %{public}s", bundleName.c_str());
+            return 0;
+        } else {
+            int32_t count = bundleNames.at(bundleName);
+            bundleNames.erase(bundleName);
+            return count;
+        }
+    }
 };
 
 class MultiStagesCaptureRequestTaskManager {
@@ -51,7 +77,8 @@ public:
     static void UpdatePhotoInProgress(const std::string &photoId);
     static bool ClearPhotoInProcessRequestCount(const std::string &photoId);
     static bool IsPhotoInProcess(const std::string &photoId);
-    static int32_t UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType);
+    static int32_t UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType,
+        const std::string& bundleName);
     static std::string GetProcessingPhotoId(int32_t fileId);
     static int32_t GetProcessingFileId(const std::string &photoId, int32_t &fileId);
 
