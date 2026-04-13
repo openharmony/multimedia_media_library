@@ -248,7 +248,7 @@ AstcPhase MediaLibraryAstcStat::GetAstcPhase(int32_t totalAstcCount, GenerateSce
     return phaseKey;
 }
 
-static bool IsBackupGroundTaskEmpty()
+bool MediaLibraryAstcStat::IsBackupGroundTaskEmpty()
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);

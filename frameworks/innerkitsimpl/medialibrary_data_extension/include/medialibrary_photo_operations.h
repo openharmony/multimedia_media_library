@@ -34,6 +34,7 @@
 #include "multistages_capture_dfx_capture_fault.h"
 #include "multistages_capture_dfx_capture_times.h"
 #include "multistages_capture_dfx_save_camera_photo.h"
+#include "medialibrary_async_worker.h"
 // LCOV_EXCL_START
 namespace OHOS {
 namespace Media {
@@ -62,6 +63,21 @@ public:
     std::vector<bool> isHidden = {};
 };
 
+struct DownloadThumbInfo {
+    std::string fileId;
+    std::string path;
+    bool isDownloadLcd {false};
+};
+
+class DownloadThumbData : public AsyncTaskData {
+public:
+    DownloadThumbData(const std::vector<DownloadThumbInfo> &downloadThumbInfos)
+        : downloadThumbInfos_(downloadThumbInfos){};
+    virtual ~DownloadThumbData() override = default;
+
+    std::vector<DownloadThumbInfo> downloadThumbInfos_;
+};
+
 #define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryPhotoOperations : public MediaLibraryAssetOperations {
 public:
@@ -85,6 +101,7 @@ public:
     EXPORT static int32_t ProcessMultistagesPhoto(const std::shared_ptr<FileAsset> &fileAsset,
         const uint8_t *addr, const long bytes);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
+    EXPORT static void StoreThumbnailSizeAndTime(const std::string& photoId, const std::string& photoPath);
     EXPORT static void StoreThumbnailAndEditSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static bool BatchDropThumbnailSize(const std::vector<std::string>& photoIds);
@@ -157,6 +174,7 @@ public:
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     EXPORT static int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
     EXPORT static int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
+    EXPORT static void StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos);
 private:
     static int32_t HandleSaveCameraPhoto(MediaLibraryCommand &cmd);
     static bool CheckAndReport(bool cond, const int32_t &fileId,

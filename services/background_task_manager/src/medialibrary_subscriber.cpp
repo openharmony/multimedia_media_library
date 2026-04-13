@@ -87,6 +87,8 @@
 #include "cloud_media_retain_smart_data.h"
 #include "power_mgr_client.h"
 #include "power_mode_info.h"
+#include "lcd_aging_manager.h"
+#include "lcd_aging_worker.h"
 
 using namespace OHOS::AAFwk;
 using namespace OHOS::NetManagerStandard;
@@ -1059,6 +1061,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
     CHECK_AND_RETURN_LOG(!cond, "The conditions for DoBackgroundOperation are not met, will return.");
+    PeriodicAnalyzePhotosData();
+    LcdAgingManager::GetInstance().ReadyAgingLcd();
 #ifdef META_RECOVERY_SUPPORT
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
@@ -1074,7 +1078,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
     DoAgingOperation();
-    PeriodicAnalyzePhotosData();
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
@@ -1242,6 +1245,11 @@ void MedialibrarySubscriber::DoThumbnailBgOperation()
 
     result = dataManager->GenerateHighlightThumbnailBackground();
     CHECK_AND_PRINT_LOG(result == E_OK, "GenerateHighlightThumbnailBackground failed %{public}d", result);
+
+    auto thumbnailService = ThumbnailService::GetInstance();
+    CHECK_AND_RETURN_LOG(thumbnailService != nullptr, "thumbnailService is nullptr");
+    result = thumbnailService->RegenerateAstcBackground();
+    CHECK_AND_PRINT_LOG(result == E_OK, "RegenerateAstcBackground failed %{public}d", result);
 }
 
 void MedialibrarySubscriber::StopThumbnailBgOperation()

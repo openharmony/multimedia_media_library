@@ -13,20 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIBRARY_LCD_AGING_TEST_H
-#define MEDIA_LIBRARY_LCD_AGING_TEST_H
+#ifndef MEDIALIBRARY_LCD_SIZE_TASK_TEST_H
+#define MEDIALIBRARY_LCD_SIZE_TASK_TEST_H
 
 #include <gtest/gtest.h>
 
-namespace OHOS {
-namespace Media {
-class MediaLibraryLcdAgingTest : public testing::Test {
+namespace OHOS::Media::Background {
+class MediaLibraryLcdSizeTaskTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
 };
-} // namespace Media
-} // namespace OHOS
-#endif // MEDIA_LIBRARY_LCD_AGING_TEST_H
+}  // namespace OHOS::Media::Background
+
+#endif // MEDIALIBRARY_LCD_SIZE_TASK_TEST_H

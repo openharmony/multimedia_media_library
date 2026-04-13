@@ -5017,6 +5017,17 @@ static void AddEditDataSizeColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add editdata size column end");
 }
 
+static void AddLcdFileModifyTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " ADD COLUMN " +
+        PhotoExtColumn::LCD_FILE_MODIFY_TIME + " BIGINT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add lcd_file_modify_time column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add lcd_file_modify_time column end");
+}
+
 static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -6003,6 +6014,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PREFERRED_COMPATIBLE_MODE, true)) {
         AddPreferredCompatibleMode(store, VERSION_ADD_PREFERRED_COMPATIBLE_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PREFERRED_COMPATIBLE_MODE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_LCD_AGING &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LCD_AGING, true)) {
+        AddLcdFileModifyTimeColumn(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LCD_AGING, true);
     }
 }
 
