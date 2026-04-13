@@ -18,6 +18,7 @@
 #include "album_accurate_refresh_test.h"
 
 #include <chrono>
+#include <map>
 #include <thread>
 
 #include "media_file_utils.h"
@@ -2449,6 +2450,41 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_066, T
     EXPECT_TRUE(changeRows == 1);
     // 总共999条
     EXPECT_TRUE(!albumRefreshUpdate.dataManager_.CheckIsExceed());
+}
+
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_GetUpdateValues_StringUpdate_068, TestSize.Level1)
+{
+    AlbumChangeInfo oldInfo = FAVORITE_ALBUM_INFO;
+    AlbumChangeInfo newInfo = oldInfo;
+    newInfo.lpath_ = FAVORITE_ALBUM_LPATH + "_new";
+
+    NotifyType type = NOTIFY_INVALID;
+    auto values = newInfo.GetUpdateValues(oldInfo, type);
+    map<string, ValueObject> valuesMap;
+    values.GetAll(valuesMap);
+    auto iter = valuesMap.find(PhotoAlbumColumns::ALBUM_LPATH);
+
+    EXPECT_EQ(type, NOTIFY_UPDATE);
+    EXPECT_EQ(valuesMap.size(), 1);
+    ASSERT_NE(iter, valuesMap.end());
+
+    string lpath;
+    iter->second.GetString(lpath);
+    EXPECT_EQ(lpath, newInfo.lpath_);
+}
+
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_GetUpdateValues_StringNoUpdate_069, TestSize.Level1)
+{
+    AlbumChangeInfo oldInfo = FAVORITE_ALBUM_INFO;
+    AlbumChangeInfo newInfo = oldInfo;
+
+    NotifyType type = NOTIFY_INVALID;
+    auto values = newInfo.GetUpdateValues(oldInfo, type);
+    map<string, ValueObject> valuesMap;
+    values.GetAll(valuesMap);
+
+    EXPECT_EQ(type, NOTIFY_UPDATE);
+    EXPECT_TRUE(valuesMap.empty());
 }
 
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_cmd_067, TestSize.Level2)

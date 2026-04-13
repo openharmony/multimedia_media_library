@@ -315,12 +315,17 @@ static napi_value HandleObserverUriType(napi_env env, napi_handle_scope scope,
     napi_value buildResult = nullptr;
     switch (wrapper->observerUriType_) {
         case Notification::PHOTO_URI:
-        case Notification::HIDDEN_PHOTO_URI:
         case Notification::TRASH_PHOTO_URI:
         case Notification::ANALYSIS_PHOTO_URI:
             buildResult = mediaChangeInfo == nullptr ?
                 MediaLibraryNotifyUtils::BuildPhotoAssetRecheckChangeInfos(env) :
                 MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo);
+            break;
+        case Notification::HIDDEN_PHOTO_URI:
+            buildResult = mediaChangeInfo == nullptr ?
+                MediaLibraryNotifyUtils::BuildPhotoAssetRecheckChangeInfos(env) :
+                MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo,
+                    Notification::NotifyUriType::HIDDEN_PHOTO_URI);
             break;
         case Notification::SINGLE_PHOTO_URI:
             buildResult = ProcessSinglePhotoIdNotifications(env, scope, wrapper, mediaChangeInfo);

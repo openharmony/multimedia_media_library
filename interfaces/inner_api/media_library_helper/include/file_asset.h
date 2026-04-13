@@ -262,6 +262,9 @@ public:
     EXPORT void SetLivePhoto4dLatestPair(const std::string &livePhoto4dLatestPair);
     EXPORT const std::string &GetLivePhoto4dLatestPair() const;
 
+    EXPORT int64_t GetHiddenTime() const;
+    EXPORT void SetHiddenTime(int64_t hiddenTime);
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;

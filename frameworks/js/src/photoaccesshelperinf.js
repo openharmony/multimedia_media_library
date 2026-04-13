@@ -1482,6 +1482,7 @@ export default {
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,
   CompatibleMode: photoAccessHelper.CompatibleMode,
+  PreferredCompatibleMode: photoAccessHelper.PreferredCompatibleMode,
   BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,

@@ -289,6 +289,7 @@ private:
     EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
     EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
+    EXPORT static napi_value CreatePreferredCompatibleModeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoRiskStatusEnum(napi_env env);
     EXPORT static napi_value CreateAppLinkStateEnum(napi_env env);
     EXPORT static napi_value CreateLivePhoto4dStatusEnum(napi_env env);
@@ -387,6 +388,8 @@ private:
     EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetPreferredCompatibleMode(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetPreferredCompatibleMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetFileCompatibleConfig(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetAssetCompatibleConfig(napi_env env, napi_callback_info info);
     
@@ -515,6 +518,7 @@ private:
     static thread_local napi_ref sDeliveryModeEnumRef_;
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sCompatibleModeEnumRef_;
+    static thread_local napi_ref sPreferredCompatibleModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sHighlightAlbumChangeAttributeEnumRef_;
@@ -651,6 +655,8 @@ struct MediaLibraryAsyncContext : public NapiError {
         PHOTO_ACCESS_HELPER,
         REGISTER_CHANGE
     } eventType;
+    int32_t preferredCompatibleMode = 0;
+    std::vector<std::string> supportedMimeTypes;
     int32_t photoIndex = -1;
     std::string strParam;
     bool boolResult = false;

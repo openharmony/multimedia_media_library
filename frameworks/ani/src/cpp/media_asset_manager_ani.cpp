@@ -1298,7 +1298,7 @@ void MediaAssetManagerAni::NotifyMediaDataPrepared(AssetHandler *assetHandler)
 {
     CHECK_NULL_PTR_RETURN_VOID(assetHandler, "assetHandler is nullptr");
     auto t = std::thread(assetHandler->threadSafeFunc, assetHandler);
-    t.detach();
+    t.join();
 }
 
 void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)

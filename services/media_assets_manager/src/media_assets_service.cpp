@@ -85,6 +85,8 @@ const std::string COLUMN_DISPLAY_NAME = "display_name";
 const std::string HEIF_MIME_TYPE = "image/heif";
 const std::string HEIC_MIME_TYPE = "image/heic";
 const std::string PERM_READ_IMAGEVIDEO_FOR_URI_CHECK = "ohos.permission.READ_IMAGEVIDEO";
+const std::string JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 enum class PhotoPermissionState : int32_t {
     URI_FORMAT_ERROR = 0,
@@ -1986,6 +1988,34 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     return E_SUCCESS;
 }
 
+int32_t MediaAssetsService::SetPreferredCompatibleMode(const string &bundleName, int32_t preferredCompatibleMode)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::SetPreferredCompatibleMode start");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(preferredCompatibleMode >= static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) &&
+        preferredCompatibleMode <= static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE),
+        E_INVALID_ARGUMENTS, "preferredCompatibleMode is invalid");
+
+    int32_t ret = TranscodeCompatibleInfoOperation::UpsertPreferredCompatibleMode(
+        bundleName, static_cast<PreferredCompatibleMode>(preferredCompatibleMode));
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+        "Failed to SetPreferredCompatibleMode, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetPreferredCompatibleMode(const string &bundleName, int32_t &preferredCompatibleMode)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetPreferredCompatibleMode start");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+
+    CompatibleInfo compatibleInfo;
+    int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+        "Failed to GetPreferredCompatibleMode, errCode = %{public}d", ret);
+    preferredCompatibleMode = static_cast<int32_t>(compatibleInfo.preferredCompatibleMode);
+    return E_SUCCESS;
+}
+
 int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
@@ -2059,7 +2089,29 @@ int32_t MediaAssetsService::SetCompatibleInfo(CompatibleInfo &compatibleInfo)
     MEDIA_INFO_LOG("MediaAssetsService::SetCompatibleInfo start");
     compatibleInfo.bundleName = compatibleInfo.bundleName.empty() ?
         GetClientBundleName() : compatibleInfo.bundleName;
-    int32_t ret = TranscodeCompatibleInfoOperation::InsertCompatibleInfo(compatibleInfo);
+
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : compatibleInfo.encodings) {
+        bool isSupported = (mimeType == HEIC_MIME_TYPE || mimeType == JPEG_MIME_TYPE);
+        if (!isSupported) {
+            MEDIA_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+
+    CHECK_AND_RETURN_RET_LOG(mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES, E_INVALID_ARGUMENTS,
+        "supportedMimeTypes exceeds max size");
+
+    std::vector<std::string> normalizedMimeTypes;
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
+    compatibleInfo.encodings = normalizedMimeTypes;
+    int32_t ret = TranscodeCompatibleInfoOperation::UpsertCompatibleInfo(
+        compatibleInfo.bundleName, compatibleInfo.highResolution, compatibleInfo.encodings);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to SetCompatibleInfo, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
@@ -2070,9 +2122,28 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
     CompatibleInfo compatibleInfo;
     int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to GetCompatibleInfo, errCode = %{public}d", ret);
+
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : compatibleInfo.encodings) {
+        bool isSupported = (mimeType == HEIC_MIME_TYPE || mimeType == JPEG_MIME_TYPE);
+        if (!isSupported) {
+            MEDIA_INFO_LOG("GetCompatibleInfo ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_AND_RETURN_RET_LOG(mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES, E_INVALID_ARGUMENTS,
+        "GetCompatibleInfo found too many supportedMimeTypes");
+
+    std::vector<std::string> normalizedMimeTypes;
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution = compatibleInfo.highResolution;
-    respBody.supportedMimeTypes = compatibleInfo.encodings;
+    respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }
 } // namespace OHOS::Media

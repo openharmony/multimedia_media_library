@@ -15,6 +15,10 @@
 
 #include "transcode_compatible_info_operations.h"
 
+#include <list>
+#include <mutex>
+#include <unordered_map>
+
 #include "rdb_store.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
@@ -28,6 +32,7 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::Media;
 
 const string TranscodeCompatibleInfoOperation::ENCODINGS_SEPARATOR = ",";
+constexpr int32_t INVALID_HIGH_RESOLUTION = -1;
 
 string TranscodeCompatibleInfoOperation::VectorToString(const std::vector<std::string> &vec)
 {
@@ -81,12 +86,14 @@ int32_t TranscodeCompatibleInfoOperation::InsertCompatibleInfo(CompatibleInfo& c
     string sql = "INSERT OR REPLACE INTO " + TabCompatibleInfoColumn::TABLE + " (" +
                     TabCompatibleInfoColumn::BUNDLE_NAME + ", " +
                     TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
-                    TabCompatibleInfoColumn::ENCODINGS + ") VALUES (?, ?, ?)";
+                    TabCompatibleInfoColumn::ENCODINGS + ", " +
+                    TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE + ") VALUES (?, ?, ?, ?)";
 
     vector<NativeRdb::ValueObject> values = {
         NativeRdb::ValueObject(compatibleInfo.bundleName),
         NativeRdb::ValueObject(to_string(compatibleInfo.highResolution)),
-        NativeRdb::ValueObject(VectorToString(compatibleInfo.encodings))
+        NativeRdb::ValueObject(VectorToString(compatibleInfo.encodings)),
+        NativeRdb::ValueObject(static_cast<int32_t>(compatibleInfo.preferredCompatibleMode))
     };
     int32_t ret = rdbStore->ExecuteSql(sql, values);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
@@ -124,6 +131,79 @@ int32_t TranscodeCompatibleInfoOperation::UpdataCompatibleInfo(CompatibleInfo& c
     return E_OK;
 }
 
+int32_t TranscodeCompatibleInfoOperation::UpsertCompatibleInfo(const std::string &bundleName, bool highResolution,
+    const std::vector<std::string> &encodings)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+
+    string sql = "INSERT INTO " + TabCompatibleInfoColumn::TABLE + " (" +
+                    TabCompatibleInfoColumn::BUNDLE_NAME + ", " +
+                    TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
+                    TabCompatibleInfoColumn::ENCODINGS + ", " +
+                    TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE + ") VALUES (?, ?, ?, ?) " +
+                    "ON CONFLICT(" + TabCompatibleInfoColumn::BUNDLE_NAME + ") DO UPDATE SET " +
+                    TabCompatibleInfoColumn::HIGH_RESOLUTION + " = excluded." +
+                    TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
+                    TabCompatibleInfoColumn::ENCODINGS + " = CASE WHEN excluded." +
+                    TabCompatibleInfoColumn::ENCODINGS + " = '' THEN " +
+                    TabCompatibleInfoColumn::TABLE + "." + TabCompatibleInfoColumn::ENCODINGS +
+                    " ELSE excluded." + TabCompatibleInfoColumn::ENCODINGS + " END";
+
+    vector<NativeRdb::ValueObject> values = {
+        NativeRdb::ValueObject(bundleName),
+        NativeRdb::ValueObject(highResolution ? 1 : 0),
+        NativeRdb::ValueObject(VectorToString(encodings)),
+        NativeRdb::ValueObject(static_cast<int32_t>(PreferredCompatibleMode::DEFAULT))
+    };
+    int32_t ret = rdbStore->ExecuteSql(sql, values);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
+        "Upsert compatibleInfo failed, ret : %{public}d", ret);
+
+    CompatibleInfo compatibleInfo;
+    compatibleInfo.bundleName = bundleName;
+    compatibleInfo.highResolution = highResolution;
+    compatibleInfo.encodings = encodings;
+
+    MEDIA_INFO_LOG("Upsert compatibleInfo success");
+    return E_OK;
+}
+
+int32_t TranscodeCompatibleInfoOperation::UpsertPreferredCompatibleMode(const std::string &bundleName,
+    PreferredCompatibleMode preferredCompatibleMode)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+
+    string sql = "INSERT INTO " + TabCompatibleInfoColumn::TABLE + " (" +
+                    TabCompatibleInfoColumn::BUNDLE_NAME + ", " +
+                    TabCompatibleInfoColumn::HIGH_RESOLUTION + ", " +
+                    TabCompatibleInfoColumn::ENCODINGS + ", " +
+                    TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE + ") VALUES (?, ?, ?, ?) " +
+                    "ON CONFLICT(" + TabCompatibleInfoColumn::BUNDLE_NAME + ") DO UPDATE SET " +
+                    TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE + " = excluded." +
+                    TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE;
+
+    vector<NativeRdb::ValueObject> values = {
+        NativeRdb::ValueObject(bundleName),
+        NativeRdb::ValueObject(INVALID_HIGH_RESOLUTION),
+        NativeRdb::ValueObject(""),
+        NativeRdb::ValueObject(static_cast<int32_t>(preferredCompatibleMode))
+    };
+    int32_t ret = rdbStore->ExecuteSql(sql, values);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_DB_FAIL,
+        "Upsert preferredCompatibleMode failed, ret : %{public}d", ret);
+
+    CompatibleInfo compatibleInfo;
+    compatibleInfo.bundleName = bundleName;
+    compatibleInfo.preferredCompatibleMode = preferredCompatibleMode;
+
+    MEDIA_INFO_LOG("Upsert preferredCompatibleMode success");
+    return E_OK;
+}
+
 int32_t TranscodeCompatibleInfoOperation::DeleteCompatibleInfo(const std::string &bundleName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -155,7 +235,8 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
     vector<string> columns = {
         TabCompatibleInfoColumn::BUNDLE_NAME,
         TabCompatibleInfoColumn::HIGH_RESOLUTION,
-        TabCompatibleInfoColumn::ENCODINGS
+        TabCompatibleInfoColumn::ENCODINGS,
+        TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE
     };
 
     auto resultSet = rdbStore->Query(predicates, columns);
@@ -164,6 +245,7 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
 
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Query compatibleInfo not found");
+        resultSet->Close();
         return E_OK;
     }
 
@@ -180,6 +262,12 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
     string encodingsStr;
     resultSet->GetString(index, encodingsStr);
     compatibleInfo.encodings = StringToVector(encodingsStr);
+
+    resultSet->GetColumnIndex(TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE, index);
+    int32_t preferredCompatibleMode = static_cast<int32_t>(PreferredCompatibleMode::DEFAULT);
+    resultSet->GetInt(index, preferredCompatibleMode);
+    compatibleInfo.preferredCompatibleMode = static_cast<PreferredCompatibleMode>(preferredCompatibleMode);
+    resultSet->Close();
 
     MEDIA_INFO_LOG("Query compatibleInfo success");
 

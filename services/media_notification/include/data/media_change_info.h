@@ -70,6 +70,7 @@ enum NotifyUriType {
     INVALID,
     BATCH_DOWNLOAD_PROGRESS_URI,
     USER_DEFINE_NOTIFY_URI,
+    ANY,
 };
 
 class NotifyDetailInfo : public Parcelable {
