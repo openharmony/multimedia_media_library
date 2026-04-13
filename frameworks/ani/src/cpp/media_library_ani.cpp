@@ -84,6 +84,7 @@
 #include "release_debug_database_vo.h"
 #include "compatible_info_vo.h"
 #include "check_photo_uris_read_permission_vo.h"
+#include "get_albumid_by_lpath_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -115,6 +116,7 @@ const size_t MAX_PARCEL_SIZE = 200 * 1024;
 const int32_t MAX_CHECK_PHOTO_PERMISSION_URI_COUNT = 500;
 const int32_t URI_FORMAT_ERROR_STATE = 0;
 const int32_t NO_READ_PERMISSION_STATE = 3;
+const int32_t MAX_LPATH_BUNDLENAME_LENGTH = 255;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -283,6 +285,10 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::SetFileCompatibleConfig)},
     ani_native_function {"getAssetCompatibleConfigInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::GetAssetCompatibleConfig)},
+    ani_native_function {"getAlbumIdByLpathInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetAlbumIdByLpath)},
+    ani_native_function {"getAlbumIdByBundleNameInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetAlbumIdByBundleName)},
 };
 } // namespace
 
@@ -3879,6 +3885,7 @@ ani_object MediaLibraryAni::CreatePhotoAsset(ani_env *env, ani_object object,
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     asyncContext->objectInfo = Unwrap(env, object);
+    asyncContext->isCreateByComponent = true;
 
     CHECK_COND_WITH_RET_MESSAGE(env,
         ANI_OK == ParseArgsCreatePhotoAsset(env, photoType, extension, title, asyncContext),
@@ -5810,6 +5817,11 @@ void MediaLibraryAni::registerAssetExecute(ani_env *env, ani_object object, ani_
     int32_t ret = RegisterObserverExecute(env, cbOnRef, *obj->listObj_, uriType);
     if (ret == E_OK) {
         ANI_INFO_LOG("PhotoAccessRegisterCallback success");
+    } else if (ret == E_PERMISSION_DENIED) {
+        env->GlobalReference_Delete(cbOnRef);
+        cbOnRef = nullptr;
+        AniError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "permission denied");
+        return;
     } else {
         env->GlobalReference_Delete(cbOnRef);
         cbOnRef = nullptr;
@@ -6465,5 +6477,209 @@ ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object ob
     return GetAssetCompatibleConfigComplete(env, context);
 }
 
+static std::string ParseLpath(ani_env *env, ani_string lpath,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string lpathStr = "";
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return lpathStr;
+    }
+    CHECK_COND_RET(context.get() != nullptr, lpathStr, "context is nullptr");
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, lpath, lpathStr) == ANI_OK,
+        JS_E_PARAM_INVALID, lpathStr, "Failed to parse lpath");
+    if (lpathStr.empty() || lpathStr.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        ANI_ERR_LOG("lpath is invalid");
+        AniError::ThrowError(env, JS_E_PARAM_INVALID);
+        return lpathStr;
+    }
+    ANI_INFO_LOG("lpathStr: %{public}s", lpathStr.c_str());
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lpathStr);
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+        ANI_INFO_LOG("Created new PhotoAlbum object");
+    }
+    context->photoAlbumData->SetLPath(lpathStr);
+    return lpathStr;
+}
+
+static ani_status ParseArgsGetAlbumIdByLpath(ani_env* env, ani_string lpath,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string lpathStr = ParseLpath(env, lpath, context);
+    CHECK_COND_RET(lpathStr != "", ANI_ERROR, "Failed to parse lpath");
+    CHECK_COND_RET(context->photoAlbumData, ANI_ERROR, "Failed to create photo album data");
+    static const std::unordered_set<std::string> MEDIA_DIRS = {
+        "/DCIM/Camera",
+        "/Pictures/Screenshots",
+        "/Pictures/Screenrecords"
+    };
+    bool isValidLpath = MEDIA_DIRS.find(lpathStr) == MEDIA_DIRS.end();
+    if (isValidLpath) {
+        ANI_ERR_LOG("lpath is Invalid");
+        AniError::ThrowError(env, JS_E_PARAM_INVALID);
+        return ANI_ERROR;
+    }
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+    return ANI_OK;
+}
+
+static void GetAlbumIdByLpathExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->photoAlbumData, "photoAlbumData is null");
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_LPATH), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, ret);
+        return;
+    }
+    int32_t albumId = respBody.albumId;
+    context->photoAlbumData->SetAlbumId(albumId);
+}
+
+static ani_int GetAlbumIdByLpathComplete(ani_env *env,
+    std::unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    ani_int retVal = DEFAULT_ERR_ANI_DOUBLE;
+    CHECK_COND_RET(env != nullptr, retVal, "env is null");
+    CHECK_COND_WITH_RET_MESSAGE(env, asyncContext != nullptr, retVal, "asyncContext is nullptr");
+
+    if (asyncContext->error == ERR_DEFAULT) {
+        if (MediaLibraryAniUtils::ToAniInt(env,
+            asyncContext->photoAlbumData->GetAlbumId(), retVal) != ANI_OK) {
+            ANI_ERR_LOG("ToAniInt failed");
+            (void)asyncContext.release();
+            return retVal;
+        }
+    } else {
+        ani_object error = {};
+        asyncContext->HandleError(env, error);
+    }
+    (void)asyncContext.release();
+    return retVal;
+}
+
+
+ani_int MediaLibraryAni::GetAlbumIdByLpath(ani_env *env, ani_object object, ani_string lpath)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpath");
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_ERROR;
+    }
+
+    if (ParseArgsGetAlbumIdByLpath(env, lpath, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_ERROR;
+    }
+    GetAlbumIdByLpathExec(env, context);
+    tracer.Finish();
+    return GetAlbumIdByLpathComplete(env, context);
+}
+
+static void GetAlbumIdByLpathOrBundleNameExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameExecute");
+
+    GetAlbumIdByLpathReqBody reqBody;
+    GetAlbumIdByLpathRespBody respBody;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(context->businessCode), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call is failed");
+        context->SaveError(ret);
+        return;
+    }
+    int32_t albumId = respBody.albumId;
+    context->photoAlbumData->SetAlbumId(albumId);
+}
+
+static ani_object GetAlbumIdByLpathOrBundleNameComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumIdByLpathOrBundleNameComplete");
+
+    ani_object result {};
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        ANI_ERR_LOG("GetAlbumIdByLpath failed, error: %{public}d", context->error);
+        context->HandleError(env, errorObj);
+        return nullptr;
+    }
+
+    int albumId = context->photoAlbumData->GetAlbumId();
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryAniUtils::ToAniIntObject(env, albumId, result) == ANI_OK,
+        nullptr, "Failed to create albumId value");
+
+    tracer.Finish();
+    return result;
+}
+
+static ani_status ParseArgsGetAlbumIdByBundleName(ani_env *env, ani_string bundleName,
+    std::unique_ptr<MediaLibraryAsyncContext>& context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+
+    string bundleNameStr;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetString(env, bundleName, bundleNameStr), "GetString failed");
+
+    if (bundleNameStr.empty() || bundleNameStr.length() > MAX_LPATH_BUNDLENAME_LENGTH) {
+        ANI_ERR_LOG("bundle_name is invalid");
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "bundle_name is invalid");
+        return ANI_INVALID_ARGS;
+    }
+
+    ANI_INFO_LOG("bundle_name: %{public}s", bundleNameStr.c_str());
+
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleNameStr);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_PRIORITY, to_string(1));
+
+    if (context->photoAlbumData == nullptr) {
+        context->photoAlbumData = std::make_unique<PhotoAlbum>();
+    }
+    context->photoAlbumData->SetAlbumName(bundleNameStr);
+    context->fetchColumn.clear();
+    context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_ID);
+
+    return ANI_OK;
+}
+
+ani_object MediaLibraryAni::GetAlbumIdByBundleName(ani_env *env, ani_object object, ani_string bundleName)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->objectInfo = Unwrap(env, object);
+    if (asyncContext->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetAlbumIdByBundleName(env, bundleName, asyncContext) == ANI_OK,
+        nullptr, "Failed to parse get album id by bundleName");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ALBUM_BY_BUNDLENAME);
+    SetUserIdFromObjectInfo(asyncContext);
+    GetAlbumIdByLpathOrBundleNameExecute(env, asyncContext);
+    return GetAlbumIdByLpathOrBundleNameComplete(env, asyncContext);
+}
 } // namespace Media
 } // namespace OHOS
