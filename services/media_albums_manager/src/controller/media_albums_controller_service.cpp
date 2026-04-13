@@ -46,6 +46,7 @@
 #include "query_albums_vo.h"
 #include "query_albums_dto.h"
 #include "permission_common.h"
+#include "media_cloud_permission_check.h"
 #include "get_albums_by_ids_vo.h"
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
@@ -774,6 +775,8 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
         }
         dto.predicates.And()->EqualTo("owner_appid", clientAppId);
+    } else {
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
 
     auto resultSet = MediaAlbumsService::GetInstance().AlbumGetAssets(dto);
