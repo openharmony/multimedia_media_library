@@ -83,14 +83,17 @@ public:
     static napi_status SetValueNull(const napi_env& env, const char* name, napi_value& result);
 
     static napi_value BuildPhotoAssetChangeInfo(napi_env env,
-        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo);
+        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoAssetChangeData(napi_env env,
-        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData);
+        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoNapiArray(napi_env env,
         const std::vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>>
-        &changeInfos);
+        &changeInfos, Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoAssetChangeInfos(napi_env env,
-        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildAlbumChangeInfosArray(napi_env env,
         const std::vector<std::shared_ptr<AccurateRefresh::AlbumChangeInfo>> &albumChangeInfos);
 

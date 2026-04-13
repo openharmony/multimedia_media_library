@@ -101,6 +101,9 @@
 #include "get_cloned_album_uris_vo.h"
 #include "acquire_debug_database_vo.h"
 #include "compatible_info_vo.h"
+#include "preferred_compatible_mode_vo.h"
+#include "transcode_compatible_info_operations.h"
+#include "media_map_const_utils.h"
 #include "release_debug_database_vo.h"
 #include "query_media_data_status_vo.h"
 #include "check_single_photo_permission_vo.h"
@@ -266,6 +269,7 @@ thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDeliveryModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sPreferredCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSourceModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
@@ -309,6 +313,10 @@ static std::string GetActiveAnalysisPromiseErrorMessage(int32_t code)
 using ClientObserverListMap = std::map<std::string, std::vector<std::shared_ptr<ClientObserver>>>;
 using GlobalObserverMap = std::map<Notification::NotifyUriType, ClientObserverListMap>;
 using ClientObserverListMapIter = ClientObserverListMap::iterator;
+
+constexpr const char *SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE = "image/heic";
+constexpr const char *SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 
 thread_local napi_ref MediaLibraryNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::photoAccessHelperConstructor_ = nullptr;
@@ -545,6 +553,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
             DECLARE_NAPI_FUNCTION("setAssetCompatibleCapability", PhotoAccessHelperSetFileCompatibleConfig),
             DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
+            DECLARE_NAPI_FUNCTION("setPreferredCompatibleMode", PhotoAccessHelperSetPreferredCompatibleMode),
+            DECLARE_NAPI_FUNCTION("getPreferredCompatibleMode", PhotoAccessHelperGetPreferredCompatibleMode),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -577,6 +587,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DeliveryMode", CreateDeliveryModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PreferredCompatibleMode", CreatePreferredCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
         DECLARE_NAPI_PROPERTY("CompatibleMode", CreateCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
@@ -9397,6 +9408,11 @@ napi_value MediaLibraryNapi::CreateCompatibleModeEnum(napi_env env)
     return CreateNumberEnumProperty(env, compatibleModeEnum, sCompatibleModeEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreatePreferredCompatibleModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, preferredCompatibleModeEnum, sPreferredCompatibleModeEnumRef_);
+}
+
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
@@ -15266,6 +15282,235 @@ napi_value MediaLibraryNapi::QueryMediaDataReady(napi_env env, napi_callback_inf
        QueryMediaDataReadyExecute, QueryMediaDataReadyCompleteCallback);
 }
 
+static napi_value ParseArgsSetPreferredCompatibleMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_E_PARAM_INVALID);
+    CHECK_COND(env, !bundleName.empty(), JS_E_PARAM_INVALID);
+
+    int32_t preferredCompatibleMode = 0;
+    CHECK_ARGS(env, napi_get_value_int32(env, context->argv[ARGS_ONE], &preferredCompatibleMode), JS_E_PARAM_INVALID);
+    CHECK_COND(env, preferredCompatibleMode >= static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) &&
+        preferredCompatibleMode <= static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE), JS_E_PARAM_INVALID);
+
+    context->bundleName = bundleName;
+    context->preferredCompatibleMode = preferredCompatibleMode;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSSetPreferredCompatibleModeExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPreferredCompatibleModeExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    SetPreferredCompatibleModeReqBody reqBody;
+    reqBody.bundleName = context->bundleName;
+    reqBody.preferredCompatibleMode = context->preferredCompatibleMode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE), reqBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(JS_E_INNER_FAIL);
+        return;
+    }
+    context->retVal = E_OK;
+}
+
+static void JSSetPreferredCompatibleModeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPreferredCompatibleModeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperSetPreferredCompatibleMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetPreferredCompatibleMode");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSetPreferredCompatibleMode(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetPreferredCompatibleMode",
+        JSSetPreferredCompatibleModeExecute, JSSetPreferredCompatibleModeCompleteCallback);
+}
+
+static napi_value ParseArgsGetPreferredCompatibleMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_E_PARAM_INVALID);
+    CHECK_COND(env, !bundleName.empty(), JS_E_PARAM_INVALID);
+    context->bundleName = bundleName;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSGetPreferredCompatibleModeExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPreferredCompatibleModeExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE), reqBody, respBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(JS_E_INNER_FAIL);
+        return;
+    }
+    context->preferredCompatibleMode = respBody.preferredCompatibleMode;
+    context->retVal = E_OK;
+}
+
+static void JSGetPreferredCompatibleModeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPreferredCompatibleModeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_create_int32(env, context->preferredCompatibleMode, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperGetPreferredCompatibleMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetPreferredCompatibleMode");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPreferredCompatibleMode(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPreferredCompatibleMode",
+        JSGetPreferredCompatibleModeExecute, JSGetPreferredCompatibleModeCompleteCallback);
+}
+
+static bool IsSupportedCompatibleMimeType(const std::string &mimeType)
+{
+    return mimeType == SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE ||
+        mimeType == SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE;
+}
+
+static napi_value NormalizeSupportedMimeTypes(napi_env env, const std::vector<std::string> &supportedMimeTypes,
+    std::vector<std::string> &normalizedMimeTypes)
+{
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : supportedMimeTypes) {
+        if (!IsSupportedCompatibleMimeType(mimeType)) {
+            NAPI_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_ARGS_WITH_MEG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
+        JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
+
+    normalizedMimeTypes.clear();
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseSupportedMimeTypesFromConfig(napi_env env, napi_value configObj,
+    std::vector<std::string> &supportedMimeTypes)
+{
+    supportedMimeTypes.clear();
+    napi_value supportedMimeTypesValue = nullptr;
+    if (napi_get_named_property(env, configObj, "supportedMimeType", &supportedMimeTypesValue) != napi_ok) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
+
+    napi_valuetype supportedMimeTypesType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, supportedMimeTypesValue, &supportedMimeTypesType), JS_E_PARAM_INVALID);
+    if (supportedMimeTypesType != napi_undefined && supportedMimeTypesType != napi_null) {
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, supportedMimeTypesValue, supportedMimeTypes),
+            JS_E_PARAM_INVALID);
+        std::vector<std::string> normalizedMimeTypes;
+        CHECK_NULLPTR_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes));
+        supportedMimeTypes = std::move(normalizedMimeTypes);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -15300,7 +15545,10 @@ static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_i
         CHECK_ARGS(env, napi_get_value_bool(env, supportedHighResolutionValue, &supportedHighResolution),
             JS_E_PARAM_INVALID);
     }
+    vector<string> supportedMimeTypes;
+    CHECK_NULLPTR_RET(ParseSupportedMimeTypesFromConfig(env, configObj, supportedMimeTypes));
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -15316,6 +15564,7 @@ static void JSSetFileCompatibleConfigExecute(napi_env env, void *data)
     SetCompatibleInfoReqBody reqBody;
     reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
+    reqBody.supportedMimeTypes = context->supportedMimeTypes;
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
     if (ret != 0) {
@@ -15407,7 +15656,16 @@ static void JSGetAssetCompatibleConfigExecute(napi_env env, void *data)
         context->SaveError(ret);
         return;
     }
+
+    std::vector<std::string> normalizedMimeTypes;
+    if (NormalizeSupportedMimeTypes(env, respBody.supportedMimeTypes, normalizedMimeTypes) == nullptr) {
+        NAPI_ERR_LOG("GetAssetCompatibleConfig invalid supportedMimeTypes");
+        context->SaveError(JS_E_PARAM_INVALID);
+        return;
+    }
+
     context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = std::move(normalizedMimeTypes);
     context->retVal = E_OK;
 }
 
@@ -15431,6 +15689,15 @@ static void JSGetAssetCompatibleConfigCompleteCallback(napi_env env, napi_status
         napi_value supportedHighResolutionValue = nullptr;
         napi_get_boolean(env, supportedHighResolution, &supportedHighResolutionValue);
         napi_set_named_property(env, configObj, "supportedHighResolution", supportedHighResolutionValue);
+
+        napi_value supportedMimeTypeValue = nullptr;
+        napi_create_array_with_length(env, context->supportedMimeTypes.size(), &supportedMimeTypeValue);
+        for (size_t i = 0; i < context->supportedMimeTypes.size(); i++) {
+            napi_value mimeTypeValue = nullptr;
+            napi_create_string_utf8(env, context->supportedMimeTypes[i].c_str(), NAPI_AUTO_LENGTH, &mimeTypeValue);
+            napi_set_element(env, supportedMimeTypeValue, i, mimeTypeValue);
+        }
+        napi_set_named_property(env, configObj, "supportedMimeType", supportedMimeTypeValue);
 
         jsContext->data = configObj;
     } else {

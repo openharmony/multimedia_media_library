@@ -5956,6 +5956,17 @@ static void AddHighlightGrowingTime(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add tab_highlight_album growing_time columns end");
 }
 
+static void AddPreferredCompatibleMode(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + TabCompatibleInfoColumn::TABLE + " ADD COLUMN " +
+            TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE + " INT NOT NULL DEFAULT 0 ",
+    };
+    MEDIA_INFO_LOG("Add tab_compatible_info preferred_compatible_mode column start");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add tab_compatible_info preferred_compatible_mode column end");
+}
+
 void AddUniqueIdColumnsToAlbums(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
@@ -5986,6 +5997,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, true)) {
         AddUniqueIdColumnsToAlbums(store, VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_ADD_PREFERRED_COMPATIBLE_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PREFERRED_COMPATIBLE_MODE, true)) {
+        AddPreferredCompatibleMode(store, VERSION_ADD_PREFERRED_COMPATIBLE_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PREFERRED_COMPATIBLE_MODE, true);
     }
 }
 

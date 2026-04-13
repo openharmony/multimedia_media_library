@@ -47,6 +47,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
 
     { PhotoColumn::MEDIA_DATE_ADDED, TYPE_INT64 },
     { PhotoColumn::MEDIA_DATE_TAKEN, TYPE_INT64 },
+    { PhotoColumn::MEDIA_DATE_MODIFIED, TYPE_INT64 },
 
     { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
     { PhotoColumn::PHOTO_SYNC_STATUS, TYPE_INT32 },
@@ -127,6 +128,7 @@ static void FillFromResultSet(PhotoAssetChangeInfo &assetChangeInfo, const share
     assetChangeInfo.thumbnailVisible_ = getInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE);
     assetChangeInfo.dateAddedMs_ = getLong(PhotoColumn::MEDIA_DATE_ADDED);
     assetChangeInfo.dateTakenMs_ = getLong(PhotoColumn::MEDIA_DATE_TAKEN);
+    assetChangeInfo.dateModifiedMs_ = getLong(PhotoColumn::MEDIA_DATE_MODIFIED);
     assetChangeInfo.subType_ = getInt(PhotoColumn::PHOTO_SUBTYPE);
     assetChangeInfo.syncStatus_ = getInt(PhotoColumn::PHOTO_SYNC_STATUS);
     assetChangeInfo.cleanFlag_ = getInt(PhotoColumn::PHOTO_CLEAN_FLAG);
@@ -204,7 +206,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", position_: " << position_ << ", size_: " << size_;
         ss << ", mimeType_: " << mimeType_ << ", shootingMode_: " << shootingMode_;
         ss << ", frontCamera_: " << frontCamera_ << ", movingPhotoEffectMode_: " << movingPhotoEffectMode_;
-        ss << ", livephoto4dStatus_: " << livephoto4dStatus_;
+        ss << ", livephoto4dStatus_: " << livephoto4dStatus_ << ", dateModifiedMs_: " << dateModifiedMs_;
         AlbumChangeInfosToString(ss, albumChangeInfos_);
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
@@ -246,11 +248,13 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteString(dateDay_);
         ret = ret && parcel.WriteBool(isFavorite_);
         ret = ret && parcel.WriteBool(isHidden_);
+        ret = ret && parcel.WriteInt64(hiddenTime_);
         ret = ret && parcel.WriteInt32(strongAssociation_);
         ret = ret && parcel.WriteInt32(thumbnailVisible_);
         ret = ret && parcel.WriteInt64(dateTrashedMs_);
         ret = ret && parcel.WriteInt64(dateAddedMs_);
         ret = ret && parcel.WriteInt64(dateTakenMs_);
+        ret = ret && parcel.WriteInt64(dateModifiedMs_);
         ret = ret && parcel.WriteInt32(ownerAlbumId_);
         ret = ret && parcel.WriteInt32(position_);
         ret = ret && parcel.WriteString(displayName_);
@@ -296,11 +300,13 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
         ret = ret && parcel.ReadString(dateDay_);
         ret = ret && parcel.ReadBool(isFavorite_);
         ret = ret && parcel.ReadBool(isHidden_);
+        ret = ret && parcel.ReadInt64(hiddenTime_);
         ret = ret && parcel.ReadInt32(strongAssociation_);
         ret = ret && parcel.ReadInt32(thumbnailVisible_);
         ret = ret && parcel.ReadInt64(dateTrashedMs_);
         ret = ret && parcel.ReadInt64(dateAddedMs_);
         ret = ret && parcel.ReadInt64(dateTakenMs_);
+        ret = ret && parcel.ReadInt64(dateModifiedMs_);
         ret = ret && parcel.ReadInt32(ownerAlbumId_);
         ret = ret && parcel.ReadInt32(position_);
         ret = ret && parcel.ReadString(displayName_);
@@ -334,6 +340,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         thumbnailVisible_ = info.thumbnailVisible_;
         dateAddedMs_ = info.dateAddedMs_;
         dateTakenMs_ = info.dateTakenMs_;
+        dateModifiedMs_ = info.dateModifiedMs_;
         subType_ = info.subType_;
         syncStatus_ = info.syncStatus_;
         cleanFlag_ = info.cleanFlag_;
@@ -372,6 +379,7 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         thumbnailVisible_ == info.thumbnailVisible_ &&
         dateAddedMs_ == info.dateAddedMs_ &&
         dateTakenMs_ == info.dateTakenMs_ &&
+        dateModifiedMs_ == info.dateModifiedMs_ &&
         subType_ == info.subType_ &&
         syncStatus_ == info.syncStatus_ &&
         cleanFlag_ == info.cleanFlag_ &&
@@ -431,6 +439,7 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     GET_ASSET_DIFF(thumbnailVisible_);
     GET_ASSET_DIFF(dateAddedMs_);
     GET_ASSET_DIFF(dateTakenMs_);
+    GET_ASSET_DIFF(dateModifiedMs_);
     GET_ASSET_DIFF(subType_);
     GET_ASSET_DIFF(syncStatus_);
     GET_ASSET_DIFF(cleanFlag_);

@@ -36,6 +36,7 @@
 #include "power_efficiency_manager.h"
 #include "settings_data_manager.h"
 #include "userfile_manager_types.h"
+#include "media_compatible_info_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -866,6 +867,36 @@ std::vector<std::string> DfxDatabaseUtils::QueryAlbumNamesByUploadStatus(const i
         albumNames.emplace_back(std::move(albumNameStr));
     }
     return albumNames;
+}
+
+int32_t DfxDatabaseUtils::QueryAllCompatibleInfo(std::map<std::string, DfxCompatibleInfo>& infoMap)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr");
+    NativeRdb::RdbPredicates predicates(TabCompatibleInfoColumn::TABLE);
+    std::vector<std::string> columns = {
+        TabCompatibleInfoColumn::BUNDLE_NAME,
+        TabCompatibleInfoColumn::HIGH_RESOLUTION,
+        TabCompatibleInfoColumn::ENCODINGS,
+        TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE
+    };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "query compatible info result is null");
+    
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        do {
+            std::string bundleName = GetStringVal(TabCompatibleInfoColumn::BUNDLE_NAME, resultSet);
+            if (!bundleName.empty()) {
+                DfxCompatibleInfo info;
+                info.highResolution = GetInt32Val(TabCompatibleInfoColumn::HIGH_RESOLUTION, resultSet) > 0;
+                info.encodings = GetStringVal(TabCompatibleInfoColumn::ENCODINGS, resultSet);
+                info.futureField = GetInt32Val(TabCompatibleInfoColumn::PREFERRED_COMPATIBLE_MODE, resultSet);
+                infoMap[bundleName] = std::move(info);
+            }
+        } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    }
+    resultSet->Close();
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

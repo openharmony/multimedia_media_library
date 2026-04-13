@@ -197,6 +197,7 @@ void MediaFuseManager::Start()
 void MediaFuseManager::Stop()
 {
     UMountFuse();
+    fuseHighDaemon_ = nullptr;
     MEDIA_INFO_LOG("Stop finished successfully");
 }
 
@@ -508,12 +509,13 @@ bool MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller, bool isNeedR
     return rslt;
 }
 
-static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, const string &fileId)
+static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, std::string &mimeType, const string &fileId)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_MIME_TYPE);
     columns.push_back(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
@@ -527,6 +529,7 @@ static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, const string
         return E_ERR;
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        mimeType = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_MIME_TYPE);
         compatibleMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
     }
     return E_SUCCESS;
@@ -615,7 +618,12 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, filePath: %{private}s", filePath.c_str());
     int32_t compatibleMode = 0;
-    GetCompatibleModeFromFileId(compatibleMode, fileId);
+    std::string mimeType("");
+    CHECK_AND_RETURN_RET_LOG(GetCompatibleModeFromFileId(compatibleMode, mimeType, fileId) == E_OK, E_INNER_FAIL,
+        "Get compatible mode failed, fileId: %{public}s", fileId.c_str());
+    bool isHighPixel = IsHighPixelPicture(fileId);
+    bool isHeif = (mimeType == "image/heif" || mimeType == "image/heic");
+    CHECK_AND_RETURN_RET_INFO_LOG(isHighPixel || isHeif, E_INNER_FAIL, "[transcode] not high, not heif");
     CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
         "Is not have transcode file, filePath: %{private}s", filePath.c_str());
     string path = MediaEditUtils::GetEditDataDir(filePath);
@@ -625,9 +633,16 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
     string tempPath = path + "/transcode.jpg";
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((tempPath)), E_INNER_FAIL, "transcode.jpg is not exist");
 
-    bool isHighPixel = IsHighPixelPicture(fileId);
-    bool isHeif = (MediaFileUtils::GetExtensionFromPath(filePath) == "heif" ||
-        MediaFileUtils::GetExtensionFromPath(filePath) == "heic");
+    auto ret = HeifTranscodingCheckUtils::CheckTranscodeMode(bundleName, isHighPixel, isHeif);
+    CHECK_AND_RETURN_RET_INFO_LOG(ret != TranscodeMode::CURRENT,
+        E_INNER_FAIL, "CheckTranscodeMode is CURRENT, bundleName: %{public}s", bundleName.c_str());
+    if (ret == TranscodeMode::COMPATIBLE) {
+        MEDIA_INFO_LOG("CheckTranscodeMode is COMPATIBLE, bundleName: %{public}s", bundleName.c_str());
+        filePath = tempPath;
+        SetTranscodeType(isHighPixel, isHeif, transcodeType);
+        return E_OK;
+    }
+
     if (!NeedTranscodeHighPixelPicture(isHighPixel, uid, bundleName)) {
         if (!isHeif) {
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
@@ -680,7 +695,8 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
 static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
 {
     int32_t compatibleMode = 0;
-    if (GetCompatibleModeFromFileId(compatibleMode, fileId) != E_SUCCESS) {
+    std::string mimeType("");
+    if (GetCompatibleModeFromFileId(compatibleMode, mimeType, fileId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
         return E_ERR;
     }

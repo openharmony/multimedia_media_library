@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-
+#include <map>
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "rdb_predicates.h"
@@ -31,6 +31,12 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 struct QuerySizeAndResolution;
+
+struct DfxCompatibleInfo {
+    bool highResolution = false;
+    std::string encodings = "";
+    int32_t futureField = 0;
+};
 
 class DfxDatabaseUtils {
 public:
@@ -50,6 +56,7 @@ public:
     EXPORT static bool GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo);
     EXPORT static int32_t QueryAncoPhotosFormatAndCount(AncoCountFormatInfo &reportData);
     EXPORT static std::vector<std::string> QueryAlbumNamesByUploadStatus(const int32_t uploadStatus);
+    EXPORT static int32_t QueryAllCompatibleInfo(std::map<std::string, DfxCompatibleInfo>& infoMap);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

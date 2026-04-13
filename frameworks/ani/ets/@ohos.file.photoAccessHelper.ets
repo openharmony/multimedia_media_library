@@ -1598,6 +1598,7 @@ export namespace photoAccessHelper {
     DATE_ADDED_YEAR = 'date_added_year',
     DATE_ADDED_MONTH = 'date_added_month',
     DATE_ADDED_DAY = 'date_added_day',
+    HIDDEN_TIME = "hidden_time",
   }
 
   export enum AlbumKeys {
