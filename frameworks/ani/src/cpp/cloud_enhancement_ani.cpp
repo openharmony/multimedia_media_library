@@ -580,8 +580,6 @@ static ani_object ParseArgsCancelCloudEnhancementTasks(ani_env *env, ani_object 
                 "Cancel cloud enhancement task URI format error: must start with 'file://'");
             return nullptr;
         }
-        CHECK_COND_WITH_ERR_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI,
-                                    "Cloud enhancement task uri must start with " + PhotoColumn::PHOTO_URI_PREFIX);
     }
 
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);
