@@ -6075,10 +6075,8 @@ static ani_status NormalizeSupportedMimeTypes(ani_env *env, const vector<string>
 {
     std::map<std::string, bool> mimeTypeMap;
     for (const auto &mimeType : supportedMimeTypes) {
-        if (!IsSupportedCompatibleMimeType(mimeType)) {
-            ANI_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
-            continue;
-        }
+        CHECK_ARGS_WITH_RET_MSG(env, IsSupportedCompatibleMimeType(mimeType), JS_E_PARAM_INVALID,
+            ANI_ERROR, "supportedMimeType is invalid");
         mimeTypeMap[mimeType] = true;
     }
     CHECK_ARGS_WITH_RET_MSG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
@@ -6576,14 +6574,8 @@ static void GetAssetCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAs
         return;
     }
 
-    std::vector<std::string> normalizedMimeTypes;
-    if (NormalizeSupportedMimeTypes(env, respBody.supportedMimeTypes, normalizedMimeTypes) != ANI_OK) {
-        AniError::ThrowError(env, JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
-        return;
-    }
-
     context->supportedHighResolution = respBody.supportedHighResolution;
-    context->supportedMimeTypes = std::move(normalizedMimeTypes);
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
     context->retVal = E_OK;
 }
 
