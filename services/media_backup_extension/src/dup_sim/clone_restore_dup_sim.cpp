@@ -381,13 +381,13 @@ void CloneRestoreDupSim::RestoreProfileData()
         (unsigned long long)migrateProfileNumber_.load(),
         (long long)(end - start));
 
-    // 记录需要刷新的分数类型的 mask 值	 
-    // Profile 表需要全量记录所有源端 file_id（包含重复不克隆的部分）的 BIT20	 
-    MEDIA_INFO_LOG("record bit20 of mask for profile");	 
-    for (const auto &pair : photoInfoMap_) {	 
-        if (pair.second.fileIdNew != -1) {	 
-            UpdateScoreMask(pair.second.fileIdNew, BIT20); 
-        } 
+    // 记录需要刷新的分数类型的 mask 值
+    // Profile 表需要全量记录所有源端 file_id（包含重复不克隆的部分）的 BIT20
+    MEDIA_INFO_LOG("record bit20 of mask for profile");
+    for (const auto &pair : photoInfoMap_) {
+        if (pair.second.fileIdNew != -1) {
+            UpdateScoreMask(pair.second.fileIdNew, BIT20);
+        }
     }
 }
 
