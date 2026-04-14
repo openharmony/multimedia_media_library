@@ -17,6 +17,7 @@
 #define MEDIA_LIBRARY_UPGRADE_TASK_H
 
 #include "rdb_store.h"
+#include "upgrade_visibility.h"
 #include <string>
 #include <memory>
 #include <functional>

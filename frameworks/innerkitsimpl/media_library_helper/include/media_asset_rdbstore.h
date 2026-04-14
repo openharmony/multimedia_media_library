@@ -61,7 +61,7 @@ private:
     std::mutex mutex_;
 };
 
-class COMPILE_HIDDEN MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
+class COMPILE_HIDDEN MediaLibraryAssetCallBack : public NativeRdb::RdbOpenCallback {
 public:
     int32_t OnCreate(NativeRdb::RdbStore& rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore& rdbStore, int32_t oldVersion, int32_t newVersion) override;

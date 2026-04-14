@@ -15,7 +15,11 @@
 
 #ifndef UPGRADE_VISION_SQLS_H
 #define UPGRADE_VISION_SQLS_H
+// table name need to be added here
+#define TABLE_TAB_ANALYSIS_LABEL "tab_analysis_label"
+// column name should be added here
 
+// sqls only execute in upgrade progress should be added here
 #define SQL_CREATE_TAB_ANALYSIS_OCR \
     "CREATE TABLE IF NOT EXISTS tab_analysis_ocr (" \
     "id INTEGER PRIMARY KEY AUTOINCREMENT, " \
@@ -134,7 +138,7 @@
     "CASE WHEN date_trashed > 0 THEN 2 ELSE 0 END," \
     "0," \
     "CASE WHEN subtype = 1 THEN -1 ELSE 0 END," \
-    "CASE WHEN subtype = 1 THEN -1 ELSE 0 END," \
+    "CASE WHEN subtype = 1 THEN -1 ELSE 0 END" \
     "FROM Photos WHERE MEDIA_TYPE = 1"
 
 #endif // UPGRADE_VISION_SQLS_H

@@ -17,10 +17,12 @@
 #define MEDIA_LIBRARY_UPGRADE_TASK_REGISTRY_H
 
 #include "media_library_upgrade_task.h"
+#include "upgrade_visibility.h"
 #include <vector>
 #include <memory>
-#include <string>
+#include <mutex>
 #include <map>
+#include <string>
 
 namespace OHOS {
 namespace Media {
@@ -36,7 +38,7 @@ public:
      * @brief 获取注册表单例
      * @return 注册表引用
      */
-    static UpgradeTaskRegistry& GetInstance();
+    UPGRADE_EXPORT static UpgradeTaskRegistry& GetInstance();
 
     // 禁止拷贝和赋值
     UpgradeTaskRegistry(const UpgradeTaskRegistry&) = delete;
@@ -52,7 +54,7 @@ public:
      * @brief 获取所有升级任务
      * @return 升级任务列表
      */
-    std::vector<std::shared_ptr<IUpgradeTask>> GetAllTasks() const;
+    UPGRADE_EXPORT std::vector<std::shared_ptr<IUpgradeTask>> GetAllTasks() const;
 
     /**
      * @brief 根据模块名称获取升级任务
@@ -73,7 +75,7 @@ public:
      * @param currentVersion 当前版本
      * @return 需要执行的升级任务列表
      */
-    std::vector<std::shared_ptr<IUpgradeTask>> GetTasksAfterVersion(int32_t currentVersion) const;
+    UPGRADE_EXPORT std::vector<std::shared_ptr<IUpgradeTask>> GetTasksAfterVersion(int32_t currentVersion) const;
 
     /**
      * @brief 获取指定版本之后指定类型的升级任务
@@ -81,7 +83,8 @@ public:
      * @param isSync 任务类型（true=同步，false=异步）
      * @return 需要执行的升级任务列表
      */
-    std::vector<std::shared_ptr<IUpgradeTask>> GetTasksAfterVersion(int32_t currentVersion, bool isSync) const;
+    UPGRADE_EXPORT std::vector<std::shared_ptr<IUpgradeTask>> GetTasksAfterVersion(int32_t currentVersion,
+        bool isSync) const;
 
     /**
      * @brief 清空所有任务
@@ -93,6 +96,7 @@ private:
     ~UpgradeTaskRegistry() = default;
 
     // 支持同一版本号注册多个任务（用于同步/异步升级场景）
+    mutable std::mutex mutex_;
     std::map<int32_t, std::vector<std::shared_ptr<IUpgradeTask>>> tasksByVersion_;
     std::map<std::string, std::vector<std::shared_ptr<IUpgradeTask>>> tasksByModule_;
 };

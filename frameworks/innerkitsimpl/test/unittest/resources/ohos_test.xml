@@ -553,4 +553,15 @@
             <option name="shell" value="rm -rf /storage/media/local/files/Photo/*"/>
         </cleaner>
     </target>
+    <target name="media_library_upgrade_schema_test">
+        <preparer>
+            <option name="push" value="upgrade_database/upgrade_test_5_0_187.db -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/upgrade_test_5_0_187.db-shm -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/upgrade_test_5_0_187.db-wal -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/upgrade_test_6_1_561.db -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/upgrade_test_6_1_561.db-dwr -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/upgrade_test_6_1_561.db-compare -> /data/test/" src="res"/>
+            <option name="push" value="upgrade_database/rdb_upgrade_events_6_1.xml -> /data/test/" src="res"/>
+        </preparer>
+    </target>
 </configuration>

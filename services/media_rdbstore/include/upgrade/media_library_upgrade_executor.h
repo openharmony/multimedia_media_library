@@ -19,6 +19,7 @@
 #include "media_library_upgrade_task.h"
 #include "media_library_upgrade_observer.h"
 #include "medialibrary_upgrade_utils.h"
+#include "upgrade_visibility.h"
 #include <vector>
 #include <memory>
 

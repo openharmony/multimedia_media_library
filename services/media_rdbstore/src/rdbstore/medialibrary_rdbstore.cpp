@@ -813,6 +813,147 @@ static int32_t DropPhotoStatusForSearchIndex(RdbStore &store)
 }
 REGISTER_ASYNC_UPGRADE_TASK(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, "Photos", DropPhotoStatusForSearchIndex);
 
+namespace {
+    struct ColumnInfo {
+        const std::string& name;
+        const std::string& type;
+    };
+
+    const ColumnInfo PHOTO_TABLE_COLUMNS[] = {
+        {MediaColumn::MEDIA_ID, "INTEGER PRIMARY KEY AUTOINCREMENT"},
+        {MediaColumn::MEDIA_FILE_PATH, "TEXT"},
+        {MediaColumn::MEDIA_SIZE, "BIGINT"},
+        {MediaColumn::MEDIA_TITLE, "TEXT"},
+        {MediaColumn::MEDIA_NAME, "TEXT"},
+        {MediaColumn::MEDIA_TYPE, "INT"},
+        {MediaColumn::MEDIA_MIME_TYPE, "TEXT"},
+        {MediaColumn::MEDIA_OWNER_PACKAGE, "TEXT"},
+        {MediaColumn::MEDIA_OWNER_APPID, "TEXT"},
+        {MediaColumn::MEDIA_PACKAGE_NAME, "TEXT"},
+        {MediaColumn::MEDIA_DEVICE_NAME, "TEXT"},
+        {MediaColumn::MEDIA_DATE_ADDED, "BIGINT"},
+        {MediaColumn::MEDIA_DATE_MODIFIED, "BIGINT"},
+        {MediaColumn::MEDIA_DATE_TAKEN, "BIGINT DEFAULT 0"},
+        {MediaColumn::MEDIA_DURATION, "INT"},
+        {MediaColumn::MEDIA_TIME_PENDING, "BIGINT DEFAULT 0"},
+        {MediaColumn::MEDIA_IS_FAV, "INT DEFAULT 0"},
+        {MediaColumn::MEDIA_DATE_TRASHED, "BIGINT DEFAULT 0"},
+        {MediaColumn::MEDIA_DATE_DELETED, "BIGINT DEFAULT 0"},
+        {MediaColumn::MEDIA_HIDDEN, "INT DEFAULT 0"},
+        {MediaColumn::MEDIA_PARENT_ID, "INT DEFAULT 0"},
+        {MediaColumn::MEDIA_RELATIVE_PATH, "TEXT"},
+        {MediaColumn::MEDIA_VIRTUAL_PATH, "TEXT UNIQUE"},
+
+        {PhotoColumn::PHOTO_DIRTY, "INT DEFAULT 1"},
+        {PhotoColumn::PHOTO_CLOUD_ID, "TEXT"},
+        {PhotoColumn::PHOTO_META_DATE_MODIFIED, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_SYNC_STATUS, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_CLOUD_VERSION, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_ORIENTATION, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_EXIF_ROTATE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_LATITUDE, "DOUBLE DEFAULT 0"},
+        {PhotoColumn::PHOTO_LONGITUDE, "DOUBLE DEFAULT 0"},
+        {PhotoColumn::PHOTO_HEIGHT, "INT"},
+        {PhotoColumn::PHOTO_WIDTH, "INT"},
+        {PhotoColumn::PHOTO_EDIT_TIME, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_LCD_VISIT_TIME, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_POSITION, "INT DEFAULT 1"},
+        {PhotoColumn::PHOTO_SUBTYPE, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, "INT"},
+        {PhotoColumn::CAMERA_SHOT_KEY, "TEXT"},
+        {PhotoColumn::PHOTO_USER_COMMENT, "TEXT"},
+        {PhotoColumn::PHOTO_ALL_EXIF, "TEXT"},
+        {PhotoColumn::PHOTO_DATE_YEAR, "TEXT"},
+        {PhotoColumn::PHOTO_DATE_MONTH, "TEXT"},
+        {PhotoColumn::PHOTO_DATE_DAY, "TEXT"},
+        {PhotoColumn::PHOTO_SHOOTING_MODE, "TEXT"},
+        {PhotoColumn::PHOTO_SHOOTING_MODE_TAG, "TEXT"},
+        {PhotoColumn::PHOTO_LAST_VISIT_TIME, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_HIDDEN_TIME, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_THUMB_STATUS, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_CLEAN_FLAG, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_ID, "TEXT"},
+        {PhotoColumn::PHOTO_QUALITY, "INT"},
+        {PhotoColumn::PHOTO_FIRST_VISIT_TIME, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, "INT DEFAULT 0"},
+        {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_COVER_POSITION, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_THUMBNAIL_READY, "BIGINT DEFAULT 0"},
+        {PhotoColumn::PHOTO_LCD_SIZE, "TEXT"},
+        {PhotoColumn::PHOTO_THUMB_SIZE, "TEXT"},
+        {PhotoColumn::PHOTO_FRONT_CAMERA, "TEXT"},
+        {PhotoColumn::PHOTO_IS_TEMP, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_BURST_COVER_LEVEL, "INT DEFAULT 1"},
+        {PhotoColumn::PHOTO_BURST_KEY, "TEXT"},
+        {PhotoColumn::PHOTO_CE_AVAILABLE, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_CE_STATUS_CODE, "INT"},
+        {PhotoColumn::PHOTO_STRONG_ASSOCIATION, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_DETAIL_TIME, "TEXT"},
+        {PhotoColumn::PHOTO_OWNER_ALBUM_ID, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, "TEXT"},
+        {PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_SOURCE_PATH, "TEXT"},
+        {PhotoColumn::SUPPORTED_WATERMARK_TYPE, "INT"},
+        {PhotoColumn::PHOTO_METADATA_FLAGS, "INT DEFAULT 0"},
+        {PhotoColumn::PHOTO_CHECK_FLAG, "INT DEFAULT 0"},
+        {PhotoColumn::STAGE_VIDEO_TASK_STATUS, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_IS_AUTO, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_MEDIA_SUFFIX, "TEXT"},
+        {PhotoColumn::PHOTO_IS_RECENT_SHOW, "INT NOT NULL DEFAULT 1"},
+        {PhotoColumn::IS_STYLE_PHOTO, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME, "BIGINT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_VISIT_COUNT, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_LCD_VISIT_COUNT, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_XT_STYLE_TEMPLATE_NAME, "TEXT DEFAULT '-1'"},
+        {PhotoColumn::SUPPORTED_DEFERRED_EFFECTS, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::DEFERRED_EFFECT_STATUS, "INT NOT NULL DEFAULT -1"},
+        {PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_HAS_APPLINK, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_APPLINK, "TEXT"},
+        {PhotoColumn::PHOTO_TRANSCODE_TIME, "BIGINT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, "BIGINT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_FILE_INODE, "TEXT"},
+        {PhotoColumn::PHOTO_STORAGE_PATH, "TEXT"},
+        {PhotoColumn::PHOTO_FILE_SOURCE_TYPE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_HDR_MODE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_VIDEO_MODE, "INT NOT NULL DEFAULT -1"},
+        {PhotoColumn::PHOTO_EDIT_DATA_EXIST, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_ASPECT_RATIO, "DOUBLE NOT NULL DEFAULT -2"},
+        {PhotoColumn::PHOTO_CHANGE_TIME, "BIGINT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_IS_CRITICAL, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_RISK_STATUS, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_MOVINGPHOTO_ENHANCEMENT_TYPE, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::PHOTO_DATE_ADDED_DAY, "TEXT"},
+        {PhotoColumn::PHOTO_DATE_ADDED_MONTH, "TEXT"},
+        {PhotoColumn::PHOTO_DATE_ADDED_YEAR, "TEXT"},
+        {PhotoColumn::UNIQUE_ID, "TEXT DEFAULT '-1'"},
+        {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, "INT NOT NULL DEFAULT 0"},
+        {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, "TEXT"},
+        {PhotoColumn::PHOTO_FILE_HIDDEN, "INT NOT NULL DEFAULT 0"}
+    };
+
+    constexpr size_t PHOTO_TABLE_COLUMN_COUNT = sizeof(PHOTO_TABLE_COLUMNS) / sizeof(ColumnInfo);
+}
+
+void MediaLibraryRdbStore::CheckAndAddPhotoTableColumns(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start check and add photo table columns");
+    auto &rdbStore = *store->GetRaw().get();
+
+    for (size_t i = 0; i < PHOTO_TABLE_COLUMN_COUNT; ++i) {
+        AddColumnIfNotExists(rdbStore, PHOTO_TABLE_COLUMNS[i].name, PHOTO_TABLE_COLUMNS[i].type,
+            PhotoColumn::PHOTOS_TABLE);
+    }
+
+    MEDIA_INFO_LOG("end check and add photo table columns");
+}
+
 void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {

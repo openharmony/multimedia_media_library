@@ -21,9 +21,6 @@
 namespace OHOS {
 namespace Media {
 
-// 需要状态管理的起始版本号 VERSION_FIX_DB_UPGRADE_TO_API20
-const int32_t STATUS_MANAGEMENT_START_VERSION = 350;
-
 void UpgradeExecutor::SetObserver(std::shared_ptr<IUpgradeObserver> observer)
 {
     observer_ = observer;
@@ -85,19 +82,23 @@ int32_t UpgradeExecutor::ExecuteTask(const std::shared_ptr<IUpgradeTask>& task,
 
     NotifyUpgradeComplete(task, ret);
 
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Task %{public}s (version %{public}d) failed with error: %{public}d",
-            task->GetName().c_str(), version, ret);
-        return ret;
-    }
-
     // 只有 VERSION_FIX_DB_UPGRADE_TO_API20 及之后的版本才需要设置升级状态
     if (version >= STATUS_MANAGEMENT_START_VERSION) {
         RdbUpgradeUtils::SetUpgradeStatus(version, isSync, upgradeEventPath_);
         MEDIA_INFO_LOG("Task %{public}s (version %{public}d) status set",
             task->GetName().c_str(), version);
     }
-    SetRdbConfigVersion(version);
+
+    // 异步任务执行完成时，更新旧版本号
+    if (!isSync) {
+        SetRdbConfigVersion(version);
+    }
+
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Task %{public}s (version %{public}d) failed with error: %{public}d",
+            task->GetName().c_str(), version, ret);
+        return ret;
+    }
 
     MEDIA_INFO_LOG("Task %{public}s (version %{public}d) completed successfully",
         task->GetName().c_str(), version);
@@ -134,6 +135,11 @@ int32_t UpgradeExecutor::ExecuteTasks(const std::vector<std::shared_ptr<IUpgrade
         if (ret != NativeRdb::E_OK) {
             failedCount++;
         }
+    }
+
+    // 同步任务全部完成时，记录旧版本号
+    if (isSync) {
+        SetRdbConfigVersion(currentVersion);
     }
 
     if (failedCount > 0) {

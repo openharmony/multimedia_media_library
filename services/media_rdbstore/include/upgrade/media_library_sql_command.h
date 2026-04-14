@@ -16,6 +16,7 @@
 #ifndef MEDIA_LIBRARY_SQL_COMMAND_H
 #define MEDIA_LIBRARY_SQL_COMMAND_H
 
+#include "upgrade_visibility.h"
 #include "rdb_store.h"
 #include "value_object.h"
 #include <string>

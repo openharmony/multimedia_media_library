@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef UPGRADE_ALBUM_SQLS_H
-#define UPGRADE_ALBUM_SQLS_H
-// table name need to be added here
-#define TABLE_ALBUM_PLUGIN "album_plugin"
-
-// column name should be added here
-
-// sqls only execute in upgrade progress should be added here
-#endif // UPGRADE_ALBUM_SQLS_H
+#ifndef UPGRADE_VISIBILITY
+#define UPGRADE_VISIBILITY
+#ifndef UPGRADE_EXPORT
+#ifndef UPGRADE_EXPORT __attribute__ ((visibility ("default")))
+#endif
+#endif // UPGRADE_VISIBILITY

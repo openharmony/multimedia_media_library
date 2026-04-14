@@ -75,14 +75,15 @@ int32_t UpgradeManager::DoUpgrade(NativeRdb::RdbStore& store, bool isSync)
 
     // 执行升级任务
     int32_t ret = executor_.ExecuteTasks(tasks, store, currentVersion_, isSync);
+    if (!isCloned_) {
+        RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, currentVersion_, targetVersion_, isSync);
+    }
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("ExecuteTasks failed");
-        RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, currentVersion_, targetVersion_, isSync);
         return ret;
     }
 
     MEDIA_INFO_LOG("Upgrade completed successfully");
-    RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, currentVersion_, targetVersion_, isSync);
     return NativeRdb::E_OK;
 }
 
@@ -97,105 +98,91 @@ int32_t UpgradeManager::UpgradeAsync(NativeRdb::RdbStore& store)
 }
 
 bool UpgradeManager::IsSchemaSubsetByAttach(NativeRdb::RdbStore& mainStore,
-    const std::string& attachDbPath, const std::string& attachAlias)
+    NativeRdb::RdbStore& subsetStore)
 {
-    int32_t ret = AttachDatabase(mainStore, attachDbPath, attachAlias);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Attach database failed, path: %{private}s, ret: %{public}d", attachDbPath.c_str(), ret);
+    // 获取主数据库的所有表名
+    std::set<std::string> mainTables = GetTablesFromStore(mainStore);
+    if (mainTables.empty()) {
+        MEDIA_ERR_LOG("Failed to get tables from main store");
         return false;
     }
 
-    int32_t missingTables = CheckMissingTables(mainStore, attachAlias);
-    if (missingTables > 0) {
-        MEDIA_INFO_LOG("Found %{public}d missing tables", missingTables);
-        DetachDatabase(mainStore, attachAlias);
+    // 获取子数据库的所有表名
+    std::set<std::string> subsetTables = GetTablesFromStore(subsetStore);
+    if (subsetTables.empty()) {
+        MEDIA_ERR_LOG("Failed to get tables from subset store");
         return false;
     }
 
-    int32_t missingColumns = CheckMissingColumns(mainStore, attachAlias);
-    if (missingColumns > 0) {
-        MEDIA_INFO_LOG("Found %{public}d missing columns", missingColumns);
-        DetachDatabase(mainStore, attachAlias);
-        return false;
+    // 检查子数据库的表是否都在主数据库中
+    for (const auto& tableName : subsetTables) {
+        if (mainTables.find(tableName) == mainTables.end()) {
+            MEDIA_INFO_LOG("Table %{private}s not found in main store", tableName.c_str());
+            return false;
+        }
     }
 
-    DetachDatabase(mainStore, attachAlias);
+    // 检查每个表的列是否都在主数据库中
+    for (const auto& tableName : subsetTables) {
+        std::set<std::string> mainColumns = GetColumnsFromStore(mainStore, tableName);
+        std::set<std::string> subsetColumns = GetColumnsFromStore(subsetStore, tableName);
+
+        if (mainColumns.empty() || subsetColumns.empty()) {
+            MEDIA_ERR_LOG("Failed to get columns for table %{private}s", tableName.c_str());
+            return false;
+        }
+
+        for (const auto& columnName : subsetColumns) {
+            if (mainColumns.find(columnName) == mainColumns.end()) {
+                MEDIA_INFO_LOG("Column %{private}s not found in table %{private}s of main store",
+                    columnName.c_str(), tableName.c_str());
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
-int32_t UpgradeManager::AttachDatabase(NativeRdb::RdbStore& store,
-    const std::string& dbPath, const std::string& alias)
+std::set<std::string> UpgradeManager::GetTablesFromStore(NativeRdb::RdbStore& store)
 {
-    std::string sql = "ATTACH DATABASE '" + dbPath + "' AS " + alias;
-    return UpgradeHelper::ExecSqlWithRetry([&]() { return store.ExecuteSql(sql); });
-}
-
-int32_t UpgradeManager::DetachDatabase(NativeRdb::RdbStore& store, const std::string& alias)
-{
-    std::string sql = "DETACH DATABASE " + alias;
-    return UpgradeHelper::ExecSqlWithRetry([&]() { return store.ExecuteSql(sql); });
-}
-
-int32_t UpgradeManager::CheckMissingTables(NativeRdb::RdbStore& store, const std::string& attachAlias)
-{
-    std::string sql = 
-        "SELECT COUNT(*) FROM " + attachAlias + ".sqlite_master "
-        "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
-        "AND name NOT IN ("
-        "    SELECT name FROM main.sqlite_master "
-        "    WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        ")";
+    std::set<std::string> tables;
+    std::string sql = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\'";
 
     auto resultSet = store.QuerySql(sql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Check missing tables failed");
-        return -1;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query tables from store");
+        return tables;
     }
 
-    int32_t count = 0;
-    resultSet->GetInt(0, count);
-    return count;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string tableName;
+        resultSet->GetString(0, tableName);
+        tables.insert(tableName);
+    }
+
+    return tables;
 }
 
-int32_t UpgradeManager::CheckMissingColumns(NativeRdb::RdbStore& store, const std::string& attachAlias)
+std::set<std::string> UpgradeManager::GetColumnsFromStore(NativeRdb::RdbStore& store,
+    const std::string& tableName)
 {
-    std::string getTablesSql =
-        "SELECT name FROM " + attachAlias + ".sqlite_master "
-        "WHERE type='table' AND name NOT LIKE 'sqlite_%'";
+    std::set<std::string> columns;
+    std::string sql = "SELECT name FROM pragma_table_info(\'" + tableName + "\')";
 
-    auto tableResultSet = store.QuerySql(getTablesSql);
-    if (tableResultSet == nullptr) {
-        MEDIA_ERR_LOG("Get tables from attached database failed");
-        return -1;
+    auto resultSet = store.QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query columns for table %{private}s", tableName.c_str());
+        return columns;
     }
 
-    int32_t missingCount = 0;
-    while (tableResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        std::string tableName;
-        tableResultSet->GetString(0, tableName);
-
-        std::string checkColumnsSql =
-            "SELECT COUNT(*) FROM pragma_table_info('" + attachAlias + "." + tableName + "') "
-            "WHERE name NOT IN ("
-            "    SELECT name FROM pragma_table_info('" + tableName + "')"
-            ")";
-
-        auto columnResultSet = store.QuerySql(checkColumnsSql);
-        if (columnResultSet == nullptr || columnResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Check columns for table %{private}s failed", tableName.c_str());
-            continue;
-        }
-
-        int32_t count = 0;
-        columnResultSet->GetInt(0, count);
-        missingCount += count;
-
-        if (count > 0) {
-            MEDIA_INFO_LOG("Table %{private}s has %{public}d missing columns", tableName.c_str(), count);
-        }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string columnName;
+        resultSet->GetString(0, columnName);
+        columns.insert(columnName);
     }
 
-    return missingCount;
+    return columns;
 }
 
 } // namespace Media

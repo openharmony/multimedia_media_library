@@ -15,6 +15,10 @@
 
 #ifndef UPGRADE_OTHER_TABLE_SQLS_H
 #define UPGRADE_OTHER_TABLE_SQLS_H
+// table name need to be added here
 
+// column name should be added here
+
+// sqls only execute in upgrade progress should be added here
 
 #endif // UPGRADE_OTHER_TABLE_SQLS_H

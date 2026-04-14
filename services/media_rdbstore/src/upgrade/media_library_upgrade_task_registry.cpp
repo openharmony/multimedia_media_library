@@ -38,18 +38,20 @@ void UpgradeTaskRegistry::RegisterTask(std::shared_ptr<IUpgradeTask> task)
     int32_t version = task->GetVersion();
     std::string moduleName = task->GetModuleName();
 
+    std::lock_guard<std::mutex> lock(mutex_);
     // 按版本号注册（支持同一版本号多个任务）
     tasksByVersion_[version].push_back(task);
 
     // 按模块名称注册
     tasksByModule_[moduleName].push_back(task);
 
-    MEDIA_INFO_LOG("Registered upgrade task: %{public}s (version %{public}d, module %{public}s",
+    MEDIA_INFO_LOG("Registered upgrade task: %{public}s (version %{public}d, module %{public}s)",
                    task->GetName().c_str(), version, moduleName.c_str());
 }
 
 std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetAllTasks() const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::shared_ptr<IUpgradeTask>> tasks;
     for (const auto& pair : tasksByVersion_) {
         for (const auto& task : pair.second) {
@@ -61,6 +63,7 @@ std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetAllTasks() co
 
 std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksByModule(const std::string& moduleName) const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto it = tasksByModule_.find(moduleName);
     if (it != tasksByModule_.end()) {
         return it->second;
@@ -70,6 +73,7 @@ std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksByModule
 
 std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksByVersion(int32_t version) const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto it = tasksByVersion_.find(version);
     if (it != tasksByVersion_.end()) {
         return it->second;
@@ -79,6 +83,7 @@ std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksByVersio
 
 std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksAfterVersion(int32_t currentVersion) const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::shared_ptr<IUpgradeTask>> tasks;
     // map 遍历默认按版本号从小到大排序
     for (const auto& pair : tasksByVersion_) {
@@ -93,6 +98,7 @@ std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksAfterVer
 std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksAfterVersion(int32_t currentVersion,
     bool isSync) const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::shared_ptr<IUpgradeTask>> tasks;
     // map 遍历默认按版本号从小到大排序
     for (const auto& pair : tasksByVersion_) {
@@ -108,6 +114,7 @@ std::vector<std::shared_ptr<IUpgradeTask>> UpgradeTaskRegistry::GetTasksAfterVer
 
 void UpgradeTaskRegistry::Clear()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     tasksByVersion_.clear();
     tasksByModule_.clear();
     MEDIA_INFO_LOG("UpgradeTaskRegistry cleared");
