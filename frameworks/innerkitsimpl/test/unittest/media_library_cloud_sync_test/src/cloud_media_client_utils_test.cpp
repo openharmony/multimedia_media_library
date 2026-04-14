@@ -28,6 +28,7 @@ using namespace OHOS::Media::CloudSync;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t TEST_USER_ID = 100;
 
 void CloudMediaClientUtilsTest::SetUpTestCase(void)
 {
@@ -115,7 +116,7 @@ HWTEST_F(CloudMediaClientUtilsTest, GetVideoCachePath_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Start GetVideoCachePath_Test_001");
     std::string filePath = "/storage/cloud/files/Video/1/VID_001.mp4";
-    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath);
+    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath, TEST_USER_ID);
     EXPECT_EQ(result, "");
     MEDIA_INFO_LOG("End GetVideoCachePath_Test_001");
 }
@@ -124,7 +125,7 @@ HWTEST_F(CloudMediaClientUtilsTest, GetVideoCachePath_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Start GetVideoCachePath_Test_002");
     std::string filePath = "/invalid/path/Video/1/VID_001.mp4";
-    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath);
+    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath, TEST_USER_ID);
     EXPECT_TRUE(result.empty());
     MEDIA_INFO_LOG("End GetVideoCachePath_Test_002");
 }
@@ -133,7 +134,7 @@ HWTEST_F(CloudMediaClientUtilsTest, GetVideoCachePath_Test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Start GetVideoCachePath_Test_003");
     std::string filePath = "/storage/cloud/files/Photo/1/IMG_001.jpg";
-    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath);
+    std::string result = CloudMediaClientUtils::GetVideoCachePath(filePath, TEST_USER_ID);
     EXPECT_EQ(result, "");
     MEDIA_INFO_LOG("End GetVideoCachePath_Test_003");
 }
