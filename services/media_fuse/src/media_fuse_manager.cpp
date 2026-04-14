@@ -357,172 +357,6 @@ int32_t MediaFuseManager::DoMedialibraryReadPermission(const string &fileId, con
     return permGranted;
 }
 
-int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
-{
-    string fileId;
-    string target = path;
-    bool cond = (path == nullptr || strlen(path) == 0);
-
-    fuse_context *ctx = fuse_get_context();
-#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-    if (ctx != nullptr) {
-        int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
-        if (criticalCheck != E_SUCCESS) {
-            return E_PERMISSION_DENIED;
-        }
-    }
-#endif
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
-    int32_t ret;
-    int32_t splitCount = countSubString(path, "/");
-    if (splitCount != URI_SLASH_NUM_API10) {
-        ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
-    } else {
-        ret = GetFileIdFromUriForGetAttr(fileId, path);
-        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
-        int32_t position = 0;
-        int64_t accesstime = 0;
-        int64_t changeTime = 0;
-        ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
-        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
-        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
-        int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
-        CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
-        ret = lstat(target.c_str(), stbuf);
-        if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
-            if (accesstime > MILLISECONDS_THRESHOLD) {
-                accesstime /= MILLISECONDS_PER_SECOND;
-            }
-            if (changeTime > MILLISECONDS_THRESHOLD) {
-                changeTime /= MILLISECONDS_PER_SECOND;
-            }
-            stbuf->st_atime = accesstime;
-            stbuf->st_ctime = changeTime;
-        }
-    }
-    stbuf->st_mode = stbuf->st_mode | 0x6;
-    MEDIA_DEBUG_LOG("get attr succ");
-    return ret;
-}
-
-int32_t MediafusePermCheckInfo::WrCheckPermission(const string &filePath, const string &mode,
-    const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord)
-{
-    vector<string> perms;
-    bool containsRead = false;
-    if (mode.find("r") != string::npos) {
-        perms.push_back(PERM_READ_IMAGEVIDEO);
-        containsRead = true;
-    }
-    if (mode.find("w") != string::npos) {
-        perms.push_back(PERM_WRITE_IMAGEVIDEO);
-    }
-    if (!isNeedRecord) {
-        if (!PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms, uid, tokenCaller)) {
-            return E_PERMISSION_DENIED;
-        }
-        if (containsRead) {
-            return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
-        }
-        return E_SUCCESS;
-    }
-
-    OpenDataInfo openData;
-    openData.uri = openUri_;
-    openData.uid = uid;
-    openData.userId = uid / PermissionUtils::BASE_USER_RANGE;
-    openData.type = "open";
-    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    if (!PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData)) {
-        return E_PERMISSION_DENIED;
-    }
-    if (containsRead) {
-        return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
-    }
-    return E_SUCCESS;
-}
- 
-void MediafusePermCheckInfo::SetOpenUri(const std::string &openUri)
-{
-    openUri_ = openUri;
-}
-
-static bool CheckPermissionType(const vector<int32_t> currentTypes, const set<int32_t> targetTypes)
-{
-    for (int32_t type : currentTypes) {
-        if (targetTypes.count(type) > 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static int32_t DbCheckPermission(const string &filePath, const string &mode, const string &fileId,
-    const string &appId, const AccessTokenID &tokenCaller)
-{
-    if (appId.empty() || fileId.empty() || (tokenCaller == INVALID_TOKENID)) {
-        MEDIA_ERR_LOG("invalid input");
-        return E_PERMISSION_DENIED;
-    }
-    NativeRdb::RdbPredicates rdbPredicate(TABLE_PERMISSION);
-    rdbPredicate.EqualTo("file_id", fileId);
-    rdbPredicate.And()->BeginWrap()->EqualTo("appid", appId)
-        ->Or()->EqualTo("target_tokenId", to_string(tokenCaller))->EndWrap();
-    vector<string> columns;
-    columns.push_back(FIELD_PERMISSION_TYPE);
-    columns.push_back("file_id");
-    columns.push_back("appid");
-    columns.push_back("target_tokenId");
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_PERMISSION_DENIED, "Failed to get permission type");
-    vector<int32_t> permissionTypes;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
-        permissionTypes.push_back(permissionType);
-        MEDIA_INFO_LOG("get permissionType %{public}d", permissionType);
-    }
-    bool cond = ((mode.find("r") != string::npos) &&
-        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_READ)));
-    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
-    cond = ((mode.find("w") != string::npos) &&
-        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_WRITE)));
-    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
-    return E_SUCCESS;
-}
-
-bool MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller, bool isNeedRecord)
-{
-    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller, isNeedRecord);
-    bool rslt;
-    if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("wr check succ");
-        return true;
-    }
-    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
-    if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("db check succ");
-        rslt = true;
-    } else {
-        rslt = false;
-    }
-    OpenDataInfo openData;
-    openData.uri = openUri_;
-    openData.uid = uid_;
-    openData.userId = uid_ / PermissionUtils::BASE_USER_RANGE;
-    openData.type = "open";
-    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    if (mode_.find("r") != string::npos && isNeedRecord) {
-        PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, rslt,
-            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
-    }
-    if (mode_.find("w") != string::npos && isNeedRecord) {
-        PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, rslt,
-            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
-    }
-    return rslt;
-}
-
 static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, std::string &mimeType, const string &fileId)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
@@ -668,6 +502,174 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
     filePath = tempPath;
     SetTranscodeType(isHighPixel, isHeif, transcodeType);
     return E_OK;
+}
+
+int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
+{
+    string fileId;
+    string target = path;
+    bool cond = (path == nullptr || strlen(path) == 0);
+
+    fuse_context *ctx = fuse_get_context();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+    if (ctx != nullptr) {
+        int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
+        if (criticalCheck != E_SUCCESS) {
+            return E_PERMISSION_DENIED;
+        }
+    }
+#endif
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
+    int32_t ret;
+    int32_t splitCount = countSubString(path, "/");
+    if (splitCount != URI_SLASH_NUM_API10) {
+        ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
+    } else {
+        ret = GetFileIdFromUriForGetAttr(fileId, path);
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
+        int32_t position = 0;
+        int64_t accesstime = 0;
+        int64_t changeTime = 0;
+        ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
+        CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
+        int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
+        CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
+        TranscodeType type;
+        GetTranscodeUri(target, fileId, MEDIA_FILEMODE_READONLY, ctx->uid, type);
+        ret = lstat(target.c_str(), stbuf);
+        if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
+            if (accesstime > MILLISECONDS_THRESHOLD) {
+                accesstime /= MILLISECONDS_PER_SECOND;
+            }
+            if (changeTime > MILLISECONDS_THRESHOLD) {
+                changeTime /= MILLISECONDS_PER_SECOND;
+            }
+            stbuf->st_atime = accesstime;
+            stbuf->st_ctime = changeTime;
+        }
+    }
+    stbuf->st_mode = stbuf->st_mode | 0x6;
+    MEDIA_DEBUG_LOG("get attr succ");
+    return ret;
+}
+
+int32_t MediafusePermCheckInfo::WrCheckPermission(const string &filePath, const string &mode,
+    const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord)
+{
+    vector<string> perms;
+    bool containsRead = false;
+    if (mode.find("r") != string::npos) {
+        perms.push_back(PERM_READ_IMAGEVIDEO);
+        containsRead = true;
+    }
+    if (mode.find("w") != string::npos) {
+        perms.push_back(PERM_WRITE_IMAGEVIDEO);
+    }
+    if (!isNeedRecord) {
+        if (!PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms, uid, tokenCaller)) {
+            return E_PERMISSION_DENIED;
+        }
+        if (containsRead) {
+            return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+        }
+        return E_SUCCESS;
+    }
+
+    OpenDataInfo openData;
+    openData.uri = openUri_;
+    openData.uid = uid;
+    openData.userId = uid / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    if (!PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData)) {
+        return E_PERMISSION_DENIED;
+    }
+    if (containsRead) {
+        return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+    }
+    return E_SUCCESS;
+}
+ 
+void MediafusePermCheckInfo::SetOpenUri(const std::string &openUri)
+{
+    openUri_ = openUri;
+}
+
+static bool CheckPermissionType(const vector<int32_t> currentTypes, const set<int32_t> targetTypes)
+{
+    for (int32_t type : currentTypes) {
+        if (targetTypes.count(type) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int32_t DbCheckPermission(const string &filePath, const string &mode, const string &fileId,
+    const string &appId, const AccessTokenID &tokenCaller)
+{
+    if (appId.empty() || fileId.empty() || (tokenCaller == INVALID_TOKENID)) {
+        MEDIA_ERR_LOG("invalid input");
+        return E_PERMISSION_DENIED;
+    }
+    NativeRdb::RdbPredicates rdbPredicate(TABLE_PERMISSION);
+    rdbPredicate.EqualTo("file_id", fileId);
+    rdbPredicate.And()->BeginWrap()->EqualTo("appid", appId)
+        ->Or()->EqualTo("target_tokenId", to_string(tokenCaller))->EndWrap();
+    vector<string> columns;
+    columns.push_back(FIELD_PERMISSION_TYPE);
+    columns.push_back("file_id");
+    columns.push_back("appid");
+    columns.push_back("target_tokenId");
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_PERMISSION_DENIED, "Failed to get permission type");
+    vector<int32_t> permissionTypes;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
+        permissionTypes.push_back(permissionType);
+        MEDIA_INFO_LOG("get permissionType %{public}d", permissionType);
+    }
+    bool cond = ((mode.find("r") != string::npos) &&
+        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_READ)));
+    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
+    cond = ((mode.find("w") != string::npos) &&
+        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_WRITE)));
+    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
+    return E_SUCCESS;
+}
+
+bool MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller, bool isNeedRecord)
+{
+    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller, isNeedRecord);
+    bool rslt;
+    if (err == E_SUCCESS) {
+        MEDIA_INFO_LOG("wr check succ");
+        return true;
+    }
+    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
+    if (err == E_SUCCESS) {
+        MEDIA_INFO_LOG("db check succ");
+        rslt = true;
+    } else {
+        rslt = false;
+    }
+    OpenDataInfo openData;
+    openData.uri = openUri_;
+    openData.uid = uid_;
+    openData.userId = uid_ / PermissionUtils::BASE_USER_RANGE;
+    openData.type = "open";
+    openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    if (mode_.find("r") != string::npos && isNeedRecord) {
+        PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, rslt,
+            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
+    }
+    if (mode_.find("w") != string::npos && isNeedRecord) {
+        PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, rslt,
+            PermissionUsedTypeValue::PICKER_TYPE, uid_, openData);
+    }
+    return rslt;
 }
 
 static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode,
