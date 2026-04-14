@@ -1095,6 +1095,7 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart
             UpgradeManager::GetInstance().UpgradeAsync(*rdbStore->GetRaw().get());
         }
         // !! Do not add index here !!
+        MediaLibraryRdbStore::CheckAndAddPhotoTableColumns(rdbStore);
         MediaLibraryRdbStore::AddUpgradeIndex(rdbStore);
         RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, oldVersion, MEDIA_RDB_VERSION,
             false);

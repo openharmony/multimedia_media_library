@@ -29,15 +29,7 @@ void DefaultUpgradeObserver::OnUpgradeStart(const std::shared_ptr<IUpgradeTask>&
 }
 
 void DefaultUpgradeObserver::OnUpgradeComplete(const std::shared_ptr<IUpgradeTask>& task, int32_t ret)
-{
-    if (ret == NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Upgrade completed: %{public}s (version %{public}d)",
-                       task->GetName().c_str(), task->GetVersion());
-    } else {
-        MEDIA_ERR_LOG("Upgrade failed: %{public}s (version %{public}d), error: %{public}d",
-                      task->GetName().c_str(), task->GetVersion(), ret);
-    }
-}
+{}
 
 void DefaultUpgradeObserver::OnUpgradeProgress(int32_t currentVersion,
     int32_t targetVersion, int32_t completedCount, int32_t totalCount)

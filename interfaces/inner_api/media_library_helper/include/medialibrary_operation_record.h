@@ -125,7 +125,7 @@ namespace Media {
 // Listening of album: update
 #define OPERATION_ALBUM_UPDATE_TRIGGER "operation_album_update_trigger"
 #define SQL_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER \
-    "CREATE TRIGGER IF NOT EXISTS operation_album_update_trigger AFTER UPDATE ON Photos" \
+    "CREATE TRIGGER IF NOT EXISTS operation_album_update_trigger AFTER UPDATE ON PhotoAlbum" \
     " FOR EACH ROW " \
     " WHEN (" \
     " NEW.album_name <> OLD.album_name" \

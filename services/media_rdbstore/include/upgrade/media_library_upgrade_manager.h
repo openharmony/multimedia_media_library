@@ -18,6 +18,7 @@
 
 #include "media_library_upgrade_executor.h"
 #include "media_library_upgrade_observer.h"
+#include "upgrade_visibility.h"
 #include "rdb_store.h"
 #include "medialibrary_db_const.h"
 #include <memory>
@@ -27,9 +28,6 @@
 
 namespace OHOS {
 namespace Media {
-#ifndef EXPORT
-#define EXPORT __attribute__ ((visibility ("default")))
-#endif
 
 struct UpgradeManagerConfig {
     bool isCloned;
@@ -47,7 +45,7 @@ struct UpgradeManagerConfig {
  *
  * 提供统一的升级管理接口
  */
-class EXPORT UpgradeManager {
+class UPGRADE_EXPORT UpgradeManager {
 public:
     /**
      * @brief 获取管理器单例
@@ -85,14 +83,13 @@ public:
     void SetObserver(std::shared_ptr<IUpgradeObserver> observer);
 
     /**
-     * @brief 判断第二个数据库的表结构是否为第一个数据库的子集（使用 ATTACH 语法）
+     * @brief 判断第二个数据库的表结构是否为第一个数据库的子集（内存对比）
      * @param mainStore 主数据库 RdbStore
-     * @param attachDbPath 待检查的数据库文件路径
-     * @param attachAlias 附加数据库的别名（默认为 "subset_db"）
-     * @return true: attachDb 是 mainStore 的子集; false: 不是子集
+     * @param subsetStore 待检查的数据库 RdbStore
+     * @return true: subsetStore 是 mainStore 的子集; false: 不是子集
      */
     static bool IsSchemaSubsetByAttach(NativeRdb::RdbStore& mainStore,
-        const std::string& attachDbPath, const std::string& attachAlias = "subset_db");
+        NativeRdb::RdbStore& subsetStore);
 
 private:
     UpgradeManager() = default;
@@ -107,38 +104,19 @@ private:
     int32_t DoUpgrade(NativeRdb::RdbStore& store, bool isSync);
 
     /**
-     * @brief 执行 ATTACH 操作
+     * @brief 从 RdbStore 获取所有表名
      * @param store 数据库存储对象
-     * @param dbPath 待附加的数据库路径
-     * @param alias 别名
-     * @return 错误码
+     * @return 表名集合
      */
-    static int32_t AttachDatabase(NativeRdb::RdbStore& store,
-        const std::string& dbPath, const std::string& alias);
+    static std::set<std::string> GetTablesFromStore(NativeRdb::RdbStore& store);
 
     /**
-     * @brief 执行 DETACH 操作
+     * @brief 从 RdbStore 获取指定表的所有列名
      * @param store 数据库存储对象
-     * @param alias 别名
-     * @return 错误码
+     * @param tableName 表名
+     * @return 列名集合
      */
-    static int32_t DetachDatabase(NativeRdb::RdbStore& store, const std::string& alias);
-
-    /**
-     * @brief 使用单个 SQL 查询检查附加数据库是否有主数据库中不存在的表
-     * @param store 数据库存储对象
-     * @param attachAlias 附加数据库别名
-     * @return 不存在的表数量（0 表示所有表都存在）
-     */
-    static int32_t CheckMissingTables(NativeRdb::RdbStore& store, const std::string& attachAlias);
-
-    /**
-     * @brief 使用单个 SQL 查询检查附加数据库表是否有主数据库中不存在的字段
-     * @param store 数据库存储对象
-     * @param attachAlias 附加数据库别名
-     * @return 缺少字段的数量（0 表示所有字段都存在）
-     */
-    static int32_t CheckMissingColumns(NativeRdb::RdbStore& store, const std::string& attachAlias);
+    static std::set<std::string> GetColumnsFromStore(NativeRdb::RdbStore& store, const std::string& tableName);
 
     UpgradeExecutor executor_;
     std::shared_ptr<IUpgradeObserver> observer_;

@@ -32,7 +32,7 @@ using namespace std;
 static vector<pair<int32_t, int32_t>> VersionAddVisionTable(NativeRdb::RdbStore& store)
 {
     SqlBuilder builder;
-    auto commands = builder.DropTable("tab_analysis_label")
+    auto commands = builder.DropTable(TABLE_TAB_ANALYSIS_LABEL)
                            .AddRawSql(SQL_CREATE_TAB_ANALYSIS_OCR)
                            .AddRawSql(SQL_CREATE_TAB_ANALYSIS_LABEL)
                            .AddRawSql(SQL_CREATE_TAB_ANALYSIS_AESTHETICS)

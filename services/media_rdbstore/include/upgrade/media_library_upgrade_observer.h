@@ -17,6 +17,7 @@
 #define MEDIA_LIBRARY_UPGRADE_OBSERVER_H
 
 #include "media_library_upgrade_task.h"
+#include "upgrade_visibility.h"
 
 namespace OHOS {
 namespace Media {
@@ -61,7 +62,7 @@ public:
  *
  * 提供默认的日志输出实现
  */
-class DefaultUpgradeObserver : public IUpgradeObserver {
+class UPGRADE_EXPORT DefaultUpgradeObserver : public IUpgradeObserver {
 public:
     void OnUpgradeStart(const std::shared_ptr<IUpgradeTask>& task) override;
     void OnUpgradeComplete(const std::shared_ptr<IUpgradeTask>& task, int32_t ret) override;

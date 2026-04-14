@@ -37,11 +37,8 @@
 #define REGISTER_SYNC_UPGRADE_TASK(version_enum, module_name, func) \
     namespace { \
         const bool g_sync_upgrade_task_##version_enum = []() { \
-            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> int32_t { \
-                return func(store); \
-            }; \
-            UpgradeTask::Config config(version_enum, #version_enum, \
-                                       module_name, true, upgradeFunc); \
+            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> int32_t { return func(store); }; \
+            UpgradeTask::Config config(version_enum, #version_enum, module_name, true, upgradeFunc); \
             auto task = std::make_shared<UpgradeTask>(config); \
             UpgradeTaskRegistry::GetInstance().RegisterTask(task); \
             return true; \
@@ -62,11 +59,8 @@
 #define REGISTER_ASYNC_UPGRADE_TASK(version_enum, module_name, func) \
     namespace { \
         const bool g_async_upgrade_task_##version_enum = []() { \
-            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> int32_t { \
-                return func(store); \
-            }; \
-            UpgradeTask::Config config(version_enum, #version_enum, \
-                                       module_name, false, upgradeFunc); \
+            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> int32_t { return func(store); }; \
+            UpgradeTask::Config config(version_enum, #version_enum, module_name, false, upgradeFunc); \
             auto task = std::make_shared<UpgradeTask>(config); \
             UpgradeTaskRegistry::GetInstance().RegisterTask(task); \
             return true; \
@@ -87,16 +81,13 @@
 #define REGISTER_SYNC_UPGRADE_MODULE_TASK(version_enum, module_name, func) \
     namespace { \
         const bool g_sync_upgrade_task_##version_enum = []() { \
-            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>> { \
-                return func(store); \
-            }; \
-            UpgradeModuleTask::Config config(version_enum, #version_enum, \
-                                       module_name, true, upgradeFunc); \
+            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>>
+            { return func(store); }; \
+            UpgradeModuleTask::Config config(version_enum, #version_enum, module_name, true, upgradeFunc); \
             auto task = std::make_shared<UpgradeModuleTask>(config); \
             UpgradeTaskRegistry::GetInstance().RegisterTask(task); \
             return true; \
-        }(); \
-    }
+        }(); }
 
 
 /**
@@ -113,16 +104,13 @@
 #define REGISTER_ASYNC_UPGRADE_MODULE_TASK(version_enum, module_name, func) \
     namespace { \
         const bool g_async_upgrade_task_##version_enum = []() { \
-            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>> { \
-                return func(store); \
-            }; \
-            UpgradeModuleTask::Config config(version_enum, #version_enum, \
-                                       module_name, false, upgradeFunc); \
+            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>> \
+                { return func(store); }; \
+            UpgradeModuleTask::Config config(version_enum, #version_enum, module_name, false, upgradeFunc); \
             auto task = std::make_shared<UpgradeModuleTask>(config); \
             UpgradeTaskRegistry::GetInstance().RegisterTask(task); \
             return true; \
-        }(); \
-    }
+        }(); }
 
 
 #endif // MEDIA_LIBRARY_UPGRADE_MACROS_H

@@ -88,6 +88,7 @@ public:
     EXPORT static void SetOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetOldVersion();
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void CheckAndAddPhotoTableColumns(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddUpgradeIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);

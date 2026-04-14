@@ -17,6 +17,7 @@
 #define MEDIA_LIBRARY_SQL_BUILDER_H
 
 #include "media_library_sql_command.h"
+#include "upgrade_visibility.h"
 #include "value_object.h"
 #include <memory>
 #include <vector>
@@ -39,7 +40,7 @@ public:
      * @param sql SQL 语句
      * @return 构建器引用
      */
-    SqlBuilder& AddRawSql(const std::string& sql);
+    UPGRADE_EXPORT SqlBuilder& AddRawSql(const std::string& sql);
 
     /**
      * @brief 添加参数化 SQL 命令（支持占位符和参数）
@@ -47,7 +48,8 @@ public:
      * @param args 参数列表
      * @return 构建器引用
      */
-    SqlBuilder& AddParameterizedSql(const std::string& sql, const std::vector<NativeRdb::ValueObject>& args);
+    UPGRADE_EXPORT SqlBuilder& AddParameterizedSql(const std::string& sql,
+        const std::vector<NativeRdb::ValueObject>& args);
 
     /**
      * @brief 添加列
@@ -56,7 +58,7 @@ public:
      * @param columnType 列类型
      * @return 构建器引用
      */
-    SqlBuilder& AddColumn(const std::string& tableName,
+    UPGRADE_EXPORT SqlBuilder& AddColumn(const std::string& tableName,
                           const std::string& columnName,
                           const std::string& columnType);
 
@@ -66,7 +68,7 @@ public:
      * @param columnName 列名
      * @return 构建器引用
      */
-    SqlBuilder& DropColumn(const std::string& tableName, const std::string& columnName);
+    UPGRADE_EXPORT SqlBuilder& DropColumn(const std::string& tableName, const std::string& columnName);
 
     /**
      * @brief 创建索引
@@ -75,7 +77,7 @@ public:
      * @param columnName 列名
      * @return 构建器引用
      */
-    SqlBuilder& CreateIndex(const std::string& indexName,
+    UPGRADE_EXPORT SqlBuilder& CreateIndex(const std::string& indexName,
                             const std::string& tableName,
                             const std::string& columnName);
 
@@ -84,32 +86,32 @@ public:
      * @param indexName 索引名
      * @return 构建器引用
      */
-    SqlBuilder& DropIndex(const std::string& indexName);
+    UPGRADE_EXPORT SqlBuilder& DropIndex(const std::string& indexName);
 
     /**
      * @brief 删除触发器
      * @param triggerName 触发器名
      * @return 构建器引用
      */
-    SqlBuilder& DropTrigger(const std::string& triggerName);
+    UPGRADE_EXPORT SqlBuilder& DropTrigger(const std::string& triggerName);
 
     /**
      * @brief 删除表
      * @param tableName 表名
      * @return 构建器引用
      */
-    SqlBuilder& DropTable(const std::string& tableName);
+    UPGRADE_EXPORT SqlBuilder& DropTable(const std::string& tableName);
 
     /**
      * @brief 构建命令列表
      * @return 命令列表
      */
-    std::vector<std::shared_ptr<ISqlCommand>> Build() const;
+    UPGRADE_EXPORT std::vector<std::shared_ptr<ISqlCommand>> Build() const;
 
     /**
      * @brief 清空构建器
      */
-    void Clear();
+    UPGRADE_EXPORT void Clear();
 
 private:
     std::vector<std::shared_ptr<ISqlCommand>> commands_;

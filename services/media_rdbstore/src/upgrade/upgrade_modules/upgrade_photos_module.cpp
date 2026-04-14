@@ -31,8 +31,8 @@ using namespace std;
 static vector<pair<int32_t, int32_t>> AddPhotoRiskStatusColumnsAndDeleteCritical(NativeRdb::RdbStore &store)
 {
     SqlBuilder builder;
-    auto commands = builder.AddColumn(TABLE_PHOTOS, "photo_risk_status", "INT DEFAULT 0 NOT NULL")
-                           .DropColumn(TABLE_PHOTOS, "critical_type")
+    auto commands = builder.AddColumn(TABLE_PHOTOS, COLUMN_PHOTO_RISK_STATUS, "INT DEFAULT 0 NOT NULL")
+                           .DropColumn(TABLE_PHOTOS, COLUMN_CRITICAL_TYPE)
                            .Build();
     return UpgradeHelper::ExecuteCommands(commands, store, true);
 }

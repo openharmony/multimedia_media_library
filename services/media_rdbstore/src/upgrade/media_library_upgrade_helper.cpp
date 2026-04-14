@@ -31,7 +31,7 @@ int32_t UpgradeHelper::ExecSqlWithRetry(std::function<int32_t()> execSql)
     int32_t currentTime = 0;
     int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
-    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
+    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime < MAX_TRY_TIMES) {
         err = execSql();
         switch (err) {
             case NativeRdb::E_OK:

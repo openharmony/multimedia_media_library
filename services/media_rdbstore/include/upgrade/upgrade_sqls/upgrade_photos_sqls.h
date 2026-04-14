@@ -15,7 +15,11 @@
 
 #ifndef UPGRADE_PHOTOS_SQLS_H
 #define UPGRADE_PHOTOS_SQLS_H
-
+// table name need to be added here
 #define TABLE_PHOTOS "Photos"
+// column name should be added here
+#define COLUMN_PHOTO_RISK_STATUS "photo_risk_status"
+#define COLUMN_CRITICAL_TYPE "critical_type"
+// sqls only execute in upgrade progress should be added here
 
 #endif // UPGRADE_PHOTOS_SQLS_H
