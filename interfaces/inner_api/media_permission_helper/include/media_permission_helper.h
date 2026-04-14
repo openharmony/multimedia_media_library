@@ -137,6 +137,33 @@ public:
     EXPORT int32_t GetUrisFromFusePaths(const std::vector<std::string> paths, std::vector<std::string> &uris);
     // LCOV_EXCL_STOP
 
+    /**
+     * @brief Reserve or clear persistent permissions when an app is uninstalled
+     *
+     * @param isReservePermission true to reserve, false to clear
+     * @param appIdentifier app identifier
+     * @param bundleName package name
+     * @param bundleIndex app twin index (must be 0 for primary app)
+     * @param tokenId token id of the app
+     * @return 0 for success, -1 for failure
+     */
+    EXPORT int32_t ReservePhotoUriPermission(const bool isReservePermission,
+        const string appIdentifier, const string bundleName, const uint32_t bundleIndex,
+        uint32_t tokenId);
+
+    /**
+     * @brief Resume persistent permissions when an app is reinstalled
+     *
+     * @param appIdentifier app identifier
+     * @param bundleName package name
+     * @param bundleIndex app twin index (must be 0 for primary app)
+     * @param tokenId new token id of the reinstalled app
+     * @return 0 for success, -1 for failure
+     */
+    EXPORT int32_t ResumePhotoUriPermission(const string appIdentifier,
+        const string bundleName, const uint32_t bundleIndex,
+        uint32_t tokenId);
+
 private:
     int32_t userId_{-1};
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;

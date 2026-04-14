@@ -26,6 +26,7 @@
 #include "dfx_const.h"
 #include "dfx_reporter.h"
 #include "media_app_uri_permission_column.h"
+#include "persist_permission_column.h"
 #include "media_old_photos_column.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_business_record_column.h"
@@ -1986,6 +1987,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoUpgrade::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX,
+    PersistPermissionColumn::CREATE_PERSIST_PERMISSION_TABLE,
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoUpgrade::CREATE_PHOTO_BURSTKEY_INDEX,
@@ -4585,6 +4587,16 @@ static void UpgradeUriPermissionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void AddPersistPermissionTable(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add Persist_Permission table");
+    const vector<string> sqls = {
+        PersistPermissionColumn::CREATE_PERSIST_PERMISSION_TABLE,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add Persist_Permission table");
+}
+
 static void UpgradeHighlightAlbumChange(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_HIGHLIGHT_CHANGE_FUNCTION) {
@@ -5997,7 +6009,7 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         // 此处升级回退，未合入主干
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_TAB_COMPATIBLE_INFO, true);
     }
-
+ 
     if (oldVersion < VERSION_ADD_WATERMARK_TABLE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_WATERMARK_TABLE, true)) {
         AddWatermarkTable(store, VERSION_ADD_WATERMARK_TABLE);
@@ -6020,6 +6032,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LCD_AGING, true)) {
         AddLcdFileModifyTimeColumn(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LCD_AGING, true);
+    }
+    
+    if (oldVersion < VERSION_ADD_PERSIST_PERMISSION_TABLE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PERSIST_PERMISSION_TABLE, true)) {
+        AddPersistPermissionTable(store, VERSION_ADD_PERSIST_PERMISSION_TABLE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PERSIST_PERMISSION_TABLE, true);
     }
 }
 
