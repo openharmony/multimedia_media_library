@@ -74,6 +74,10 @@ int32_t CloudMediaAlbumDao::HandleLPathAndAlbumType(PhotoAlbumDto &record)
         albumType = PhotoAlbumType::USER;
         subType = PhotoAlbumSubType::USER_GENERIC;
     }
+    if (CloudMediaSyncUtils::IsFileManagerAlbumPath(localPath)) {
+        albumType = PhotoAlbumType::SOURCE;
+        subType = PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER;
+    }
     if (record.albumType == static_cast<int32_t>(PhotoAlbumType::INVALID)) {
         record.albumDateAdded = record.albumDateCreated;
         record.albumDateModified = 0;
