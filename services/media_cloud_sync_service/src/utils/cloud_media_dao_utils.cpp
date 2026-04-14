@@ -131,13 +131,11 @@ int32_t CloudMediaDaoUtils::ExecuteSql(const std::string &sql)
 int32_t CloudMediaDaoUtils::GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath)
 {
     PathInfo pathInfo;
-    int32_t userId = 100;
     CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
     PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
     pathInfo.storagePath = localPhotosPo.storagePath.value_or("");
     pathInfo.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
     pathInfo.filePath = localPhotosPo.data.value_or("");
-    pathInfo.userId = userId;
     return GetLocalPathWithAnco(pathInfo, localPath);
 }
 
