@@ -190,6 +190,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
         {{SYSTEMINNERAPI_PERM, READ_PERM}, {SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE),
         {{SYSTEMINNERAPI_PERM, READ_PERM}, {SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION), {{SYSTEMINNERAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION), {{SYSTEMINNERAPI_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION), {{}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE), {{SYSTEMAPI_PERM}}},

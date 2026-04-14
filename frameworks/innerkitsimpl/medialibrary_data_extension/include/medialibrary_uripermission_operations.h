@@ -48,6 +48,10 @@ public:
     EXPORT static int32_t GrantUriPermission(MediaLibraryCommand &cmd,
         const std::vector<DataShareValuesBucket> &values);
     EXPORT static void DeleteAllTemporaryAsync();
+    EXPORT static int32_t ReservePhotoUriPermission(bool isReserve, uint32_t tokenId,
+        const std::string &appIdentifier, const std::string &bundleName, uint32_t bundleIndex);
+    EXPORT static int32_t ResumePhotoUriPermission(uint32_t tokenId, const std::string &appIdentifier,
+        const std::string &bundleName, uint32_t bundleIndex);
 };
 } // Media
 } // OHOS

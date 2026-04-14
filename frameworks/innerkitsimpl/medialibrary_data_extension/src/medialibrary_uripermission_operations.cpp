@@ -29,6 +29,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_app_uri_permission_column.h"
+#include "persist_permission_column.h"
 #include "medialibrary_appstate_observer.h"
 #include "medialibrary_rdb_transaction.h"
 #include "permission_utils.h"
@@ -623,6 +624,103 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
     int32_t ret = GetUriPermissionMode(fileId, bundleName, static_cast<int32_t>(tableType), permissionMode);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     return (permissionMode.find(mode) != string::npos) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
+int32_t UriPermissionOperations::ReservePhotoUriPermission(bool isReserve, uint32_t tokenId,
+    const string &appIdentifier, const string &bundleName, uint32_t bundleIndex)
+{
+    MEDIA_INFO_LOG("UriPermissionOperations::ReservePhotoUriPermission start, isReserve: %{public}d, "
+        "tokenId: %{public}u", isReserve, tokenId);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
+    if (isReserve) {
+        NativeRdb::ValuesBucket values;
+        values.PutLong(PersistPermissionColumn::PERSIST_TOKENID, tokenId);
+        values.PutString(PersistPermissionColumn::PERSIST_APPIDENTIFIER, appIdentifier);
+        values.PutString(PersistPermissionColumn::PERSIST_BUNDLE_NAME, bundleName);
+        values.PutLong(PersistPermissionColumn::PERSIST_BUNDLE_INDEX, bundleIndex);
+
+        int64_t insertRow;
+        int32_t errCode = rdbStore->Insert(insertRow, PersistPermissionColumn::PERSIST_PERMISSION_TABLE, values);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Failed to insert persist permission, errCode = %{public}d", errCode);
+    } else {
+        NativeRdb::RdbPredicates predicates(PersistPermissionColumn::PERSIST_PERMISSION_TABLE);
+        predicates.EqualTo(PersistPermissionColumn::PERSIST_TOKENID, static_cast<int64_t>(tokenId));
+        predicates.EqualTo(PersistPermissionColumn::PERSIST_APPIDENTIFIER, appIdentifier);
+        predicates.EqualTo(PersistPermissionColumn::PERSIST_BUNDLE_NAME, bundleName);
+        predicates.EqualTo(PersistPermissionColumn::PERSIST_BUNDLE_INDEX, static_cast<int64_t>(bundleIndex));
+
+        int32_t errCode = rdbStore->Delete(predicates);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Failed to delete persist permission, errCode = %{public}d", errCode);
+
+        predicates.Clear();
+        predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+        std::vector<std::string> permissionTypes = { std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ),
+                    std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_WRITE)};
+        predicates.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+        
+        errCode = rdbStore->Delete(predicates);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Failed to clear uri permission, errCode = %{public}d", errCode);
+    }
+
+    return E_SUCCESS;
+}
+
+int32_t UriPermissionOperations::ResumePhotoUriPermission(uint32_t tokenId, const string &appIdentifier,
+    const string &bundleName, uint32_t bundleIndex)
+{
+    MEDIA_INFO_LOG("UriPermissionOperations::ResumePhotoUriPermission start, tokenId: %{public}u", tokenId);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
+    NativeRdb::RdbPredicates predicates(PersistPermissionColumn::PERSIST_PERMISSION_TABLE);
+    predicates.EqualTo(PersistPermissionColumn::PERSIST_APPIDENTIFIER, appIdentifier);
+    predicates.And()->EqualTo(PersistPermissionColumn::PERSIST_BUNDLE_NAME, bundleName);
+    predicates.And()->EqualTo(PersistPermissionColumn::PERSIST_BUNDLE_INDEX, static_cast<int64_t>(bundleIndex));
+
+    std::vector<std::string> columns = {
+        PersistPermissionColumn::PERSIST_TOKENID
+    };
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_INFO_LOG("No persist permission found, return db fail");
+        return E_DB_FAIL;
+    }
+
+    int32_t oldTokenId = 0;
+    int32_t ret = resultSet->GetInt(0, oldTokenId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to get old tokenId");
+    resultSet->Close();
+
+    NativeRdb::RdbPredicates predicatesUriPermission(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    predicatesUriPermission.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, oldTokenId);
+    
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutLong(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+
+    int32_t updatedRows;
+    ret = rdbStore->Update(updatedRows, updateValues, predicatesUriPermission);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR,
+        "Failed to update uri permission, errCode = %{public}d", ret);
+
+    if (updatedRows == 0) {
+        MEDIA_INFO_LOG("No uri permissions found to update, not deleting persist marker");
+    }
+
+    predicates.Clear();
+    predicates.EqualTo(PersistPermissionColumn::PERSIST_TOKENID, oldTokenId);
+
+    ret = rdbStore->Delete(predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to delete persist permission");
+
+    return E_SUCCESS;
 }
 }   // Media
 }   // OHOS
