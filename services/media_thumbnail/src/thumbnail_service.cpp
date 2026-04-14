@@ -915,7 +915,7 @@ int32_t ThumbnailService::CreateAstcOnlyDownloadThm(const string &id, bool isClo
 
     int err = ThumbnailGenerateHelper::CreateAstcOnlyDownloadThm(opts, isCloudInsertTaskPriorityHigh);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CreateAstcOnlyDownloadThm failed : %{public}d", err);
-    return err;
+    return E_OK;
 }
 
 int32_t ThumbnailService::RegenerateAstcBackground()

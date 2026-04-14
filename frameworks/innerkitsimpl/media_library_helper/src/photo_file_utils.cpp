@@ -243,7 +243,11 @@ DateParts PhotoFileUtils::ConstructDateAddedDateParts(int64_t dateAdded)
 
 std::string PhotoFileUtils::GetLocalLcdPath(const std::string &photoPath)
 {
-    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+    if (!MediaPathUtils::CheckPhotoPath(photoPath)) {
+        return "";
+    }
+    if (photoPath.find("..") != string::npos) {
+        MEDIA_ERR_LOG("Invalid photoPath with path traversal: %{private}s", photoPath.c_str());
         return "";
     }
     return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/LCD.jpg";
@@ -251,7 +255,11 @@ std::string PhotoFileUtils::GetLocalLcdPath(const std::string &photoPath)
 
 std::string PhotoFileUtils::GetLocalLcdExPath(const std::string &photoPath)
 {
-    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+    if (!MediaPathUtils::CheckPhotoPath(photoPath)) {
+        return "";
+    }
+    if (photoPath.find("..") != string::npos) {
+        MEDIA_ERR_LOG("Invalid photoPath with path traversal: %{private}s", photoPath.c_str());
         return "";
     }
     return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/THM_EX/LCD.jpg";
