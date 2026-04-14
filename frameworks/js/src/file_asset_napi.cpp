@@ -1285,22 +1285,26 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Cannnot modify displayName for burst photos.";
             return false;
         }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
             if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         } else {
             if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         }
     } else {
         if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Title is invalid.";
             return false;
         }
     }

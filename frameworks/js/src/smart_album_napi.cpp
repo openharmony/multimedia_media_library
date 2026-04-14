@@ -693,6 +693,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckAlbumName(context->objectInfo->GetSmartAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
+        context->errorMsg = "Album name is invalid";
         NAPI_ERR_LOG("Failed to checkDisplayName");
         return;
     }
