@@ -524,4 +524,13 @@ std::string CloudMediaSyncUtils::FindStoragePath(
     }
     return storagePath;
 }
+
+bool CloudMediaSyncUtils::IsFileManagerAlbumPath(const std::string &lpath)
+{
+    std::string fromDocsTarget = "/FromDocs/";
+    std::transform(fromDocsTarget.begin(), fromDocsTarget.end(), fromDocsTarget.begin(), ::tolower);
+    std::string lPathLower = lpath;
+    std::transform(lPathLower.begin(), lPathLower.end(), lPathLower.begin(), ::tolower);
+    return MediaStringUtils::StartsWith(lPathLower, fromDocsTarget);
+}
 }  // namespace OHOS::Media::CloudSync

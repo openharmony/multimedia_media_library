@@ -295,6 +295,22 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, IsUserAlbumPath_Test, TestSize.Level1)
     EXPECT_EQ(ret, true);
 }
 
+HWTEST_F(CloudMediaSyncServiceUtilsTest, IsFileManagerAlbumPath_Test, TestSize.Level1)
+{
+    string path;
+    auto ret = CloudMediaSyncUtils::IsFileManagerAlbumPath(path);
+    EXPECT_EQ(ret, false);
+    path = "/pictures/users/test/car";
+    ret = CloudMediaSyncUtils::IsFileManagerAlbumPath(path);
+    EXPECT_EQ(ret, false);
+    path = "/FromDocs/Documents";
+    ret = CloudMediaSyncUtils::IsFileManagerAlbumPath(path);
+    EXPECT_EQ(ret, true);
+    path = "/fromdocs/Documents";
+    ret = CloudMediaSyncUtils::IsFileManagerAlbumPath(path);
+    EXPECT_EQ(ret, true);
+}
+
 HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test, TestSize.Level1)
 {
     int32_t thumbState = 0;
