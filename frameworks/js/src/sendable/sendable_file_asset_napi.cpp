@@ -498,6 +498,7 @@ static bool CheckDisplayNameInCommitModify(SendableFileAssetAsyncContext *contex
         } else {
             if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "File display name is invalid";
                 return false;
             }
         }

@@ -2586,6 +2586,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathParams(context))) {
         context->error = JS_E_RELATIVEPATH;
+        context->errorMsg = "Invalid relativePath";
         return;
     }
     bool isValid = false;
@@ -3841,7 +3842,8 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
     napi_value fileResult = GetOldUriMap(env, context);
 
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to create initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(
             env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result"
@@ -3851,7 +3853,8 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
 
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
@@ -3862,14 +3865,16 @@ static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status statu
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
         napi_value mapNapiValue {nullptr};
         napi_create_map(env, &mapNapiValue);
         jsContext->data = mapNapiValue;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to initialize error field.");
         GetOldUriQueryResult(env, context, jsContext);
     }
 
@@ -4099,7 +4104,7 @@ static napi_value ParseArgsGetAssetsByOldUris(napi_env env, napi_callback_info i
     context->uris = uris;
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -7461,7 +7466,8 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
         context->argv[PARAM0], context, ASSET_FETCH_OPT), JS_E_PARAM_INVALID);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -9364,15 +9370,16 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumChangeAttributeEnum(napi_env en
     };
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_create_object(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_create_object(env, &result), JS_E_INNER_FAIL,
+                        "Failed to create instance");
 
     for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
-        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
-            JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_E_INNER_FAIL, "Failed to add property");
     }
 
-    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
-        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
+        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL, "Failed to create reference");
     return result;
 }
 
@@ -10324,7 +10331,8 @@ static void GetOldAlbumUriQueryResult(napi_env env, MediaLibraryAsyncContext *co
     napi_value fileResult = GetOldAlbumUriMap(env, context);
 
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(
             env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result"
@@ -10334,7 +10342,8 @@ static void GetOldAlbumUriQueryResult(napi_env env, MediaLibraryAsyncContext *co
 
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
@@ -10345,14 +10354,16 @@ static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status statu
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
         napi_value mapNapiValue {nullptr};
         napi_create_map(env, &mapNapiValue);
         jsContext->data = mapNapiValue;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to initialize error field");
         GetOldAlbumUriQueryResult(env, context, jsContext);
     } else {
         context->HandleError(env, jsContext->error);
@@ -10603,7 +10614,8 @@ static napi_value ParseArgsGetAlbumsByOldUris(napi_env env, napi_callback_info i
     context->albumUris = uris;
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -10727,6 +10739,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     }
     if (!CheckTitleCompatible(context)) {
         context->error = JS_E_DISPLAYNAME;
+        context->errorMsg = "Title is invalid";
         return;
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) && (!CheckRelativePathParams(context))) {
@@ -14468,7 +14481,8 @@ static napi_value CheckOrderStyle(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     orderStyle = static_cast<OrderStyleType>(albumOrderStyle);
     return result;
 }
@@ -14497,15 +14511,15 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
     if (context->argc == maxArgs) {
         auto status =
             MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
-        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, status, JS_E_INNER_FAIL,"Failed to get fetch option");
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
-    CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL);
+    CHECK_COND_WITH_MSG(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL, "Invalid fetch columns");
     AddNoSmartFetchColumns(context->fetchColumn);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -14544,14 +14558,16 @@ static void GetNapiPhotoAlbumResult(napi_env env, MediaLibraryAsyncContext *cont
 {
     napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Photo Album Result");
         return;
     }
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_status status, void *data)
@@ -14562,9 +14578,11 @@ static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_stat
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
     if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         context->HandleError(env, jsContext->error);
     } else {
         GetNapiPhotoAlbumResult(env, context, jsContext);
@@ -14607,7 +14625,8 @@ static napi_value AddDefaultAlbumOrderColumns(napi_env env, unique_ptr<MediaLibr
     fetchColumns.assign(validFetchColumns.begin(), validFetchColumns.end());
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value.");
     return result;
 }
 
@@ -14639,7 +14658,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
     if (context->argc == maxArgs) {
         auto status =
             MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
-        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, status, JS_E_INNER_FAIL, "Failed to get fetch option");
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
@@ -14647,7 +14666,8 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
         JS_E_PARAM_INVALID, "Failed to add default columns");
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                                "Failed to create boolean value");
     return result;
 }
 
@@ -14710,7 +14730,8 @@ static void GetAlbumOrderCallbackComplete(napi_env env, napi_status status, void
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
@@ -14786,21 +14807,23 @@ static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleT
     vector<DataShare::DataShareValuesBucket> &dataShareValuesBuckets)
 {
     bool isArray = false;
-    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_is_array(env, arg, &isArray), JS_E_INNER_FAIL, "Failed to check array type");
     CHECK_ARGS_WITH_MEG(env, isArray == true, JS_E_PARAM_INVALID, "Failed to check array type");
 
     uint32_t len = 0;
-    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_array_length(env, arg, &len), JS_E_INNER_FAIL, "Failed to get array length");
     CHECK_ARGS_WITH_MEG(env, len > 0, JS_E_PARAM_INVALID, "Failed to check array length");
 
     for (uint32_t i = 0; i < len; i++) {
         napi_value orderData = nullptr;
-        CHECK_ARGS(env, napi_get_element(env, arg, i, &orderData), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, napi_get_element(env, arg, i, &orderData), JS_E_INNER_FAIL,
+                            "Failed to get array element");
         CHECK_ARGS_WITH_MEG(env, orderData != nullptr, JS_E_PARAM_INVALID, "Failed to get album order element");
 
         AlbumOrderNapi *obj = nullptr;
         DataShareValuesBucket valuesBucket;
-        CHECK_ARGS(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), 
+                            JS_E_INNER_FAIL, "Failed to unwrap native object");
         CHECK_ARGS_WITH_MEG(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get albumOrder napi object");
 
         if (obj->GetAlbumId() <= 0) {
@@ -14815,7 +14838,8 @@ static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleT
     }
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, 
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -14845,7 +14869,8 @@ static napi_value ParseArgsSetPhotoAlbumOrder(napi_env env, napi_callback_info i
     CHECK_ARGS_WITH_MEG(env, context->valuesBucketArray.size() <= MAX_SET_ORDER_ARRAY_SIZE, JS_E_PARAM_INVALID,
         "Exceeded the maximum batch input quantity, can not update album order");
 
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -15062,7 +15087,8 @@ static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info
     context->valuesBucket.Put(CONST_MEDIA_DATA_BETA_SCENARIO, betaScenario);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Fail to get boolean value");
     return result;
 }
 
@@ -15131,21 +15157,25 @@ static void JSAcquireDebugDatabaseCallbackComplete(napi_env env, napi_status sta
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to get undefined value");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to get undefined value");
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
         napi_value resultMap = AcquireDebugDatabaseResultMap(env, context->debugDatabaseMap);
         if (resultMap == nullptr) {
-            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+            CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                        "Failed to get undefined value");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_E_INNER_FAIL,
                 "Failed to create js object for AcquireDebugDatabase resultMap");
             return;
         }
         jsContext->data = resultMap;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to get undefined value");
     }
     tracer.Finish();
     if (context->work != nullptr) {
@@ -15192,7 +15222,8 @@ static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info
     context->valuesBucket.Put(CONST_MEDIA_DATA_BETA_DEBUG_DB_FD, fileFd);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to get boolean value");
     return result;
 }
 
@@ -15278,7 +15309,8 @@ static napi_value HandleOneArgGetAlbumByLpath(napi_env env, unique_ptr<MediaLibr
     }
     context->photoAlbumData->SetLPath(lpath);
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -15286,7 +15318,8 @@ static napi_value ParseArgsGetAlbumIdByLpath(napi_env env, napi_callback_info in
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15349,8 +15382,10 @@ static void GetAlbumIdByLpathOrBundleNameCompleteCallback(napi_env env, napi_sta
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error Field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data Field");
     if (status != napi_ok || context->error != ERR_DEFAULT) {
         NAPI_ERR_LOG("GetAlbumIdByLpath failed, status: %{public}d, error: %{public}d", status, context->error);
         context->HandleError(env, jsContext->error);
@@ -15406,7 +15441,8 @@ static napi_value HandleOneArgGetAlbumIdByBundleName(napi_env env,
     }
     context->photoAlbumData->SetAlbumName(bundle_name);
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -15414,7 +15450,8 @@ static napi_value ParseArgsGetAlbumIdByBundleName(napi_env env, napi_callback_in
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15449,7 +15486,8 @@ static napi_value ParseArgsQueryMediaDataReady(napi_env env, napi_callback_info 
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15468,8 +15506,10 @@ static void QueryMediaDataReadyCompleteCallback(napi_env env, napi_status status
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data field");
     if (status != napi_ok || context->error != ERR_DEFAULT) {
         NAPI_ERR_LOG("QueryMediaDataReady failed, status: %{public}d, error: %{public}d", status, context->error);
         context->HandleError(env, jsContext->error);
