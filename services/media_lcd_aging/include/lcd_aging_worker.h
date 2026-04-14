@@ -13,29 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_LCD_AGING_UTILS_H
-#define OHOS_MEDIA_LCD_AGING_UTILS_H
+#ifndef OHOS_MEDIA_LCD_AGING_WORKER_H
+#define OHOS_MEDIA_LCD_AGING_WORKER_H
 
-#include <vector>
-
-#include "cloud_sync_common.h"
-#include "lcd_aging_file_info.h"
-#include "photos_po.h"
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 namespace OHOS::Media {
-using namespace OHOS::Media::ORM;
-using namespace OHOS::FileManagement::CloudSync;
-
-class LcdAgingUtils {
+class LcdAgingWorker {
 public:
-    int32_t GetMaxThresholdOfLcd(int64_t &lcdNumber);
-    int32_t GetScaleThresholdOfLcd(int64_t &lcdNumber);
-    std::vector<DentryFileInfo> ConvertAgingFileToDentryFile(const std::vector<LcdAgingFileInfo> &agingFileInfos);
-    bool HasExThumbnail(const LcdAgingFileInfo &agingFileInfo);
+    static LcdAgingWorker& GetInstance();
+    void StartLcdAgingWorker();
+    bool IsRunning();
 
 private:
-    static int64_t maxLcdNumber_;
-    static int64_t scaleLcdNumber_;
+    LcdAgingWorker() {}
+    ~LcdAgingWorker();
+    LcdAgingWorker(const LcdAgingWorker &worker) = delete;
+    const LcdAgingWorker &operator=(const LcdAgingWorker &worker) = delete;
+
+    void HandleLcdAgingTask();
+
+private:
+    std::atomic<bool> isThreadRunning_ {false};
+    std::thread workerThread_;
 };
 }  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_LCD_AGING_UTILS_H
+#endif  // OHOS_MEDIA_LCD_AGING_WORKER_H

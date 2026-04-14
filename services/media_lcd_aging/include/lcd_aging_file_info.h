@@ -13,20 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIBRARY_LCD_AGING_TEST_H
-#define MEDIA_LIBRARY_LCD_AGING_TEST_H
+#ifndef OHOS_MEDIA_LCD_AGING_FILE_INFO_H
+#define OHOS_MEDIA_LCD_AGING_FILE_INFO_H
 
-#include <gtest/gtest.h>
+#include <string>
 
-namespace OHOS {
-namespace Media {
-class MediaLibraryLcdAgingTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+namespace OHOS::Media {
+struct LcdAgingFileInfo {
+    int32_t fileId {-1};
+    std::string cloudId;
+    std::string path;
+    std::string localLcdPath;
+    std::string localLcdExPath;
+    int32_t mediaType {-1};
+    int32_t orientation {-1};
+    int32_t exifRotate {-1};
+    int64_t thumbnailReady {-1};
+    int64_t dateModified {-1};
+    int32_t lcdFileSize {0};
+    bool needFixLcdFileSize {false};
+    bool hasExThumbnail {false};
 };
-} // namespace Media
-} // namespace OHOS
-#endif // MEDIA_LIBRARY_LCD_AGING_TEST_H
+}  // namespace OHOS::Media
+#endif  // OHOS_MEDIA_LCD_AGING_FILE_INFO_H

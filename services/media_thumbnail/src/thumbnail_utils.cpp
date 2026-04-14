@@ -1623,6 +1623,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         CONST_MEDIA_DATA_DB_DATE_MODIFIED,
         CONST_MEDIA_DATA_DB_DIRTY,
         MediaColumn::MEDIA_NAME,
+        CONST_MEDIA_DATA_DB_THUMBNAIL_READY,
     };
 
     CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfo(opts.store, predicates, columns, data, err),
@@ -1964,6 +1965,37 @@ bool ThumbnailUtils::GetThumbSizeByPath(const std::string &thumbPath, Size& size
     size.height = imageInfo.size.height;
     size.width = imageInfo.size.width;
     return true;
+}
+
+int32_t ThumbnailUtils::QueryRegenerateAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos)
+{
+    vector<string> column = {
+        CONST_MEDIA_DATA_DB_ID, CONST_MEDIA_DATA_DB_FILE_PATH, CONST_MEDIA_DATA_DB_MEDIA_TYPE, CONST_MEDIA_DATA_DB_NAME,
+        CONST_MEDIA_DATA_DB_POSITION, CONST_MEDIA_DATA_DB_ORIENTATION, PhotoColumn::PHOTO_EXIF_ROTATE,
+        CONST_MEDIA_DATA_DB_DATE_TAKEN, CONST_MEDIA_DATA_DB_DATE_MODIFIED, PhotoColumn::PHOTO_THUMB_STATUS,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "8");
+    rdbPredicates.BeginWrap()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
+        ->EndWrap()
+        ->Or()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")->Or()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "2")
+        ->EndWrap()
+        ->EndWrap()
+        ->EndWrap();
+
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos),
+        E_ERR, "QueryThumbnailDataInfos failed");
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 } // namespace Media

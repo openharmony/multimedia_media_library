@@ -62,6 +62,8 @@ enum class ThumbnailReady : int32_t {
     THUMB_TO_UPLOAD,
     THUMB_UPLOAD_COMPLETED,
     THUMB_UPGRADE,
+    THUMB_REBUILD_KVDB,
+    THUMB_NEED_REGENERATE_ASTC,
 };
 
 enum class LcdReady : int64_t {
@@ -107,6 +109,12 @@ enum class GenThumbScene : uint32_t {
     NO_AVAILABLE_MTH_AND_YEAR_THUMB,
     REPAIR_EXIFROTATE,
     THUMB_IS_OBSOLETE,
+};
+
+enum class ThumbnailSceneType : int32_t {
+    DEFAULT_SCENE = -1,
+    MTH_YEAR_ASTC_ONDEMAND,
+    ONLY_THM_DOWNLOAD,
 };
 
 constexpr int32_t THUMBNAIL_VERSION = 0;

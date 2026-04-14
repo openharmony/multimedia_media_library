@@ -104,7 +104,7 @@ private:
     EXPORT static bool ProcessDeleteBatch(const std::vector<std::string> &fileIds,
         const std::vector<std::string> &paths, const std::vector<std::string> &dateTakens,
         const std::vector<int64_t> &lcdVisitTimes, std::vector<int32_t> &subTypes);
-    static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
+    static void DeleteAllCloudMediaAssetsOperation();
     EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE,
         SmartDataProcessingMode mode = SmartDataProcessingMode::NONE);
     EXPORT int32_t DeleteEmptyCloudAlbums();

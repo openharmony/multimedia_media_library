@@ -35,7 +35,7 @@ EXPORT Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size 
 EXPORT bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts);
 EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err);
 EXPORT bool NeedAutoResize(const Size &size);
-EXPORT int32_t ParseDesiredMinSide(const ThumbnailType &type);
+EXPORT int32_t ParseDesiredMinSide(const ThumbnailSceneType &type);
 
 const std::unordered_map<SourceState, std::string> STATE_NAME_MAP = {
     { SourceState::BEGIN, "BEGIN" },
@@ -179,6 +179,11 @@ public:
      * Define source loading states sequence for creating astc resolved cloud THM.
      */
     static const std::unordered_map<SourceState, SourceState> CLOUD_THM_SOURCE_LOADING_STATES;
+
+    /*
+     * Define source loading states sequence for creating astc resolved cloud THM or LCD.
+     */
+    static const std::unordered_map<SourceState, SourceState> CLOUD_THM_OR_LCD_LOADING_STATES;
 
     SourceLoader(Size &desiredSize, ThumbnailData &data) : data_(data), desiredSize_(desiredSize)
     {

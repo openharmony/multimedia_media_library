@@ -240,4 +240,20 @@ DateParts PhotoFileUtils::ConstructDateAddedDateParts(int64_t dateAdded)
     DateParts dateParts = {dateYear, dateMonth, dateDay};
     return dateParts;
 }
+
+std::string PhotoFileUtils::GetLocalLcdPath(const std::string &photoPath)
+{
+    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/LCD.jpg";
+}
+
+std::string PhotoFileUtils::GetLocalLcdExPath(const std::string &photoPath)
+{
+    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/THM_EX/LCD.jpg";
+}
 } // namespace OHOS::Media

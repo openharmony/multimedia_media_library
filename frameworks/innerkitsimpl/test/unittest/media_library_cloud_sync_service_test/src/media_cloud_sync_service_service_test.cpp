@@ -41,8 +41,11 @@
 #include "cloud_media_scan_service.h"
 #undef private
 #include "cloud_file_error.h"
+#include "lcd_aging_dao.h"
 #include "lcd_aging_utils.h"
 #include "cloud_lake_info.h"
+#include "ithumbnail_helper.h"
+#include "thumbnail_source_loading.h"
 
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -2003,17 +2006,221 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaAlbumService_PullDelete_Test_001, 
     EXPECT_EQ(ret, E_OK);
 }
 
+static int64_t GetExpectedNumberOfLcd()
+{
+    int64_t lcdThresholdNumber = -1;
+    int32_t ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
+    EXPECT_EQ(ret, E_OK);
+    int64_t lcdCurrentNumber = -1;
+    ret = LcdAgingDao().GetCurrentNumberOfLcd(lcdCurrentNumber);
+    EXPECT_EQ(ret, E_OK);
+    return lcdThresholdNumber - lcdCurrentNumber;
+}
+
+// 测试空map情况
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetFullSyncDownloadInfo_test_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetFullSyncDownloadInfo_test_001");
+    ValuesBucket values;
+    SetValuesBucketInPhotosTable(PhotoColumn::MEDIA_DATE_TAKEN, "1756111539577", values);
+    int64_t id = -1;
+    InsertTable(g_rdbStore, PhotoColumn::PHOTOS_TABLE, values, id);
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(id);
+    data.path = "/storage/cloud/files/Photo/1/CreateImageThumbnailTest_001.jpg";
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    bool result = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, data);
+    EXPECT_EQ(result, true);
+
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
     CloudMediaDownloadService service;
     std::map<std::string, int64_t> flagsInfo;
     int32_t ret = service.GetFullSyncDownloadInfo(flagsInfo);
     EXPECT_EQ(ret, E_OK);
-    int64_t lcdThresholdNumber = -1;
-    ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
-    EXPECT_EQ(ret, E_OK);
     bool isValid = flagsInfo.find("DOWNLOAD_LCD") != flagsInfo.end();
     EXPECT_TRUE(isValid);
     EXPECT_GE(flagsInfo["DOWNLOAD_LCD"], lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+    InitTestTables(g_rdbStore);
+}
+
+// 测试map中已包含DOWNLOAD_LCD的情况
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetFullSyncDownloadInfo_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetFullSyncDownloadInfo_test_002");
+    std::map<std::string, int64_t> flagsInfo;
+    flagsInfo["DOWNLOAD_LCD"] = 100;
+    CloudMediaDownloadService service;
+    int32_t ret = service.GetFullSyncDownloadInfo(flagsInfo);
+    EXPECT_EQ(ret, E_OK);
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_FALSE(flagsInfo.empty());
+    EXPECT_TRUE(flagsInfo.find("DOWNLOAD_LCD") != flagsInfo.end());
+    EXPECT_GE(flagsInfo["DOWNLOAD_LCD"], lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// 测试map中包含其他flag的情况
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetFullSyncDownloadInfo_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetFullSyncDownloadInfo_test_003");
+    std::map<std::string, int64_t> flagsInfo;
+    flagsInfo["OTHER_FLAG"] = 50;
+    CloudMediaDownloadService service;
+    int32_t ret = service.GetFullSyncDownloadInfo(flagsInfo);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(flagsInfo.empty());
+    EXPECT_FALSE(flagsInfo.find("DOWNLOAD_LCD") != flagsInfo.end());
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that first call to GetDownloadNumberOfLcd queries database and returns valid lcdNumber
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_001");
+    CloudMediaDownloadService service;
+    int64_t lcdNumber = -1;
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_GE(lcdNumber, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that second call to GetDownloadNumberOfLcd decrements by 200 (cache logic)
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_002");
+    CloudMediaDownloadService service;
+    int64_t lcdNumber = -1;
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_GE(lcdNumber, lcdThresholdNumber);
+    
+    int64_t firstLcdNumber = lcdNumber;
+    ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(lcdNumber, firstLcdNumber - 200);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that 10th call to GetDownloadNumberOfLcd triggers database query (queryCount >= QUERY_INTERVAL)
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_003");
+    CloudMediaDownloadService service;
+    int64_t lcdNumber = -1;
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_GE(lcdNumber, lcdThresholdNumber);
+    
+    for (int i = 0; i < 9; i++) {
+        ret = service.GetDownloadNumberOfLcd(lcdNumber);
+        EXPECT_EQ(ret, E_OK);
+    }
+
+    ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_GE(lcdNumber, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that when lcdNumberCache <= 200, database query is triggered
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_004");
+    CloudMediaDownloadService service;
+    CloudMediaDownloadService::lcdNumberCache_ = 100;
+    int64_t lcdNumber = -1;
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_EQ(lcdNumber, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that 30 consecutive calls to GetDownloadNumberOfLcd work correctly
+// Expected behavior: database query triggered at calls 1, 12, 23 (every 10 calls after first)
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_005");
+    CloudMediaDownloadService service;
+    int64_t lcdNumber = -1;
+    int64_t firstQueryValue = -1;
+    int64_t secondQueryValue = -1;
+    int64_t thirdQueryValue = -1;
+    
+    for (int i = 0; i < 30; i++) {
+        int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+        EXPECT_EQ(ret, E_OK);
+        EXPECT_GE(lcdNumber, 0);
+        
+        if (i == 0) {
+            firstQueryValue = lcdNumber;
+        } else if (i == 10) {
+            secondQueryValue = lcdNumber;
+        } else if (i == 20) {
+            thirdQueryValue = lcdNumber;
+        }
+    }
+    
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_GE(firstQueryValue, lcdThresholdNumber);
+    EXPECT_GE(secondQueryValue, lcdThresholdNumber);
+    EXPECT_GE(thirdQueryValue, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: Verify that when lcdNumberCache decrements to <= 0, database query is triggered
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_006");
+    CloudMediaDownloadService service;
+    CloudMediaDownloadService::lcdNumberCache_ = 300;
+    int64_t lcdNumber = -1;
+
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(lcdNumber, 100);
+    
+    ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    EXPECT_GE(lcdNumber, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
+}
+
+// Test: timeout
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadNumberOfLcd_test_007, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Begin CloudMediaDownloadService_GetDownloadNumberOfLcd_test_007");
+    int64_t lcdThresholdNumber = GetExpectedNumberOfLcd();
+    CloudMediaDownloadService::lastCallTime_ = 1;
+    CloudMediaDownloadService service;
+    CloudMediaDownloadService::lcdNumberCache_ = 300;
+    int64_t lcdNumber = -1;
+    int32_t ret = service.GetDownloadNumberOfLcd(lcdNumber);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(lcdNumber, lcdThresholdNumber);
+    CloudMediaDownloadService::lcdNumberCache_ = 0;
+    CloudMediaDownloadService::queryCount_ = 0;
 }
 }
