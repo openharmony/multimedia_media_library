@@ -28,8 +28,8 @@
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 
-const int32_t BIT1 = 1 << 1;  // 图像意义分
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT1 = 1u << 1;  // 图像意义分
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 const string ID = "id";
 const string FILE_ID = "file_id";
@@ -115,7 +115,7 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 
 void CloneRestoreClassify::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
-    std::unordered_map<int32_t, int32_t>* scoreMaskMap)
+    std::unordered_map<int32_t, uint32_t>* scoreMaskMap)
 {
     sceneCode_ = sceneCode;
     taskId_ = taskId;
@@ -761,7 +761,7 @@ void CloneRestoreClassify::CheckLabelToAnalysisVideoTotalTable()
     CHECK_AND_PRINT_INFO_LOG(ret == NativeRdb::E_OK, "check video total failed");
 }
 
-void CloneRestoreClassify::UpdateScoreMask(int32_t fileId, int32_t mask)
+void CloneRestoreClassify::UpdateScoreMask(int32_t fileId, uint32_t mask)
 {
     if (externalScoreMaskMap_ == nullptr) {
         return;

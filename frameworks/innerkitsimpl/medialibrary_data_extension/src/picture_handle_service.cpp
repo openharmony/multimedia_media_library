@@ -157,6 +157,11 @@ bool PictureHandlerService::WriteProperties(MessageParcel &data, std::shared_ptr
     }
     MEDIA_DEBUG_LOG("PictureHandlerService::WriteProperties editable:%{public}d", pixelMap->IsEditable());
     data.WriteBool(pixelMap->IsEditable());
+#ifdef IMAGE_COLORSPACE_FLAG
+    int32_t colorSpaceName = static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
+    MEDIA_DEBUG_LOG("PictureHandlerService::WriteProperties colorSpaceName:%{public}d", colorSpaceName);
+    data.WriteInt32(colorSpaceName);
+#endif
     return true;
 }
 

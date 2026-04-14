@@ -564,7 +564,8 @@ const std::string PhotoExtUpgrade::CREATE_PHOTO_EXT_TABLE =
     "CREATE TABLE IF NOT EXISTS " +
     PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
     PhotoExtColumn::PHOTO_ID + " INTEGER PRIMARY KEY, " +
-    PhotoExtColumn::THUMBNAIL_SIZE + " BIGINT DEFAULT 0)";
+    PhotoExtColumn::THUMBNAIL_SIZE + " BIGINT DEFAULT 0, " +
+    PhotoExtColumn::LCD_FILE_MODIFY_TIME + " BIGINT NOT NULL DEFAULT 0)";
 
 // For Photos table query filter
 const std::string PhotoUpgrade::PHOTOS_QUERY_FILTER =

@@ -34,6 +34,7 @@
 #include "cloud_report_utils.h"
 #include "nlohmann/json.hpp"
 #include "mdk_record_photos_data.h"
+#include "cloud_media_path_utils.h"
 
 namespace OHOS::Media::CloudSync {
 
@@ -46,6 +47,7 @@ std::string CloudFileDataConvert::suffix_ = "/hmdfs/account/files";
 const std::string CloudFileDataConvert::recordType_ = "media";
 constexpr off_t THUMB_LIMIT_SIZE = 2 * 1024 * 1024;
 constexpr int32_t USER_COMMENT_LIMIT_SIZE = 1024;
+const int32_t FILE_SOURCE_TYPE_MEDIA = 0;
 
 CloudFileDataConvert::CloudFileDataConvert(CloudOperationType type, int32_t userId) : userId_(userId), type_(type)
 {}
@@ -341,23 +343,6 @@ int32_t CloudFileDataConvert::HandleProperties(
     return E_OK;
 }
 
-std::string CloudFileDataConvert::GetLowerPath(const std::string &path)
-{
-    size_t pos = path.find(sandboxPrefix_);
-    if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("invalid path");
-        return "";
-    }
-    return prefix_ + std::to_string(userId_) + suffix_ + path.substr(pos + sandboxPrefix_.size());
-}
-
-static void DeleteTmpFile(bool needDelete, const std::string &path)
-{
-    CHECK_AND_RETURN(needDelete);
-    bool isValid = unlink(path.c_str()) >= 0;
-    CHECK_AND_PRINT_LOG(isValid, "unlink temp file fail, err: %{public}d, path: %{public}s", errno, path.c_str());
-}
-
 int32_t CloudFileDataConvert::HandleRawFile(
     std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto)
 {
@@ -458,30 +443,29 @@ int32_t CloudFileDataConvert::CheckContentLivePhoto(const CloudMdkRecordPhotosVo
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
     bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
-    CHECK_AND_PRINT_LOG(!isMovingPhoto && !isGraffiti,
-        "HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
-    if (isMovingPhoto && !isGraffiti) {
+    bool isMediaLivePhoto = upLoadRecord.fileSourceType == FILE_SOURCE_TYPE_MEDIA;
+    isMediaLivePhoto = isMediaLivePhoto && isMovingPhoto && !isGraffiti;
+    if (isMediaLivePhoto) {
         std::string localPath = CloudMediaClientUtils::FindLocalPathFromCloudPath(path, userId_);
         bool isValid = MovingPhotoFileUtils::IsExistsLivePhotoFiles(localPath);
         isValid = isValid && MovingPhotoFileUtils::ConvertToLivePhoto(path, coverPosition, lowerPath, userId_) == E_OK;
-        CHECK_AND_RETURN_RET_LOG(isValid, E_CONTENT_COVERT_LIVE_PHOTO, "convert to live photo fail");
+        CHECK_AND_RETURN_RET_LOG(isValid,
+                                 E_CONTENT_COVERT_LIVE_PHOTO,
+                                 "convert to live photo fail, content-info: %{public}s",
+                                 this->GetContentRelatedLog(upLoadRecord).c_str());
     } else {
-        int32_t ret = CloudMediaClientUtils::GetLocalPathByPhotosVo(upLoadRecord, lowerPath, userId_);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("GetLocalPathByPhotosVo fail");
-            return ret;
-        }
+        lowerPath = CloudMediaPathUtils::FindStoragePath(
+            upLoadRecord.fileSourceType, upLoadRecord.data, upLoadRecord.storagePath, userId_);
     }
+    MEDIA_DEBUG_LOG("CheckContentLivePhoto completed, lowerPath: %{public}s, content-info: %{public}s",
+                    MediaFileUtils::DesensitizePath(lowerPath).c_str(),
+                    this->GetContentRelatedLog(upLoadRecord).c_str());
     return E_OK;
 }
 
 int32_t CloudFileDataConvert::CheckContentFile(const CloudMdkRecordPhotosVo &upLoadRecord, const std::string &lowerPath)
 {
-    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
-        upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
-    bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
     struct stat fileStat;
-
     int err = stat(lowerPath.c_str(), &fileStat);
     if (err < 0) {
         int32_t errNum = errno;
@@ -490,19 +474,25 @@ int32_t CloudFileDataConvert::CheckContentFile(const CloudMdkRecordPhotosVo &upL
             UtilCloud::FaultType::FILE,
             errNum,
             "get context size failed errno : " + std::to_string(errNum)});
-        MEDIA_ERR_LOG("HandleContent errno : %{public}d, path : %{public}s, %{public}d, %{public}d",
-            errno,
-            lowerPath.c_str(),
-            isMovingPhoto,
-            isGraffiti);
-        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
+        MEDIA_ERR_LOG("CheckContentFile stat err, "
+                      "errno: %{public}d, err: %{public}d, lowerPath: %{public}s, content-info: %{public}s",
+                      errNum,
+                      err,
+                      MediaFileUtils::DesensitizePath(lowerPath).c_str(),
+                      this->GetContentRelatedLog(upLoadRecord).c_str());
         return E_CONTENT_SOURCE_BASIC + errNum;
     }
     if (fileStat.st_size <= 0) {
-        MEDIA_ERR_LOG("HandleContent content size err");
-        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
+        MEDIA_ERR_LOG("CheckContentFile size err, size: %{public}s, lowerPath: %{public}s, content-info: %{public}s",
+                      std::to_string(fileStat.st_size).c_str(),
+                      MediaFileUtils::DesensitizePath(lowerPath).c_str(),
+                      this->GetContentRelatedLog(upLoadRecord).c_str());
         return E_CONTENT_SIZE_IS_ZERO;
     }
+    MEDIA_DEBUG_LOG("CheckContentFile completed, size: %{public}s, lowerPath: %{public}s, content-info: %{public}s",
+                    std::to_string(fileStat.st_size).c_str(),
+                    MediaFileUtils::DesensitizePath(lowerPath).c_str(),
+                    this->GetContentRelatedLog(upLoadRecord).c_str());
     return E_OK;
 }
 
@@ -513,9 +503,6 @@ int32_t CloudFileDataConvert::HandleContent(
     std::string lowerPath = "";
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
-    bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
-    CHECK_AND_PRINT_LOG(!isMovingPhoto && !isGraffiti,
-        "HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
     int32_t ret = this->CheckContentLivePhoto(upLoadRecord, lowerPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleContent CheckContentLivePhoto err: %{public}d", ret);
     ret = this->CheckContentFile(upLoadRecord, lowerPath);
@@ -529,7 +516,6 @@ int32_t CloudFileDataConvert::HandleContent(
     ret = HandleEditData(data, path, isMovingPhoto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("HandleContent handle EditData err %{public}d", ret);
-        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
         return ret;
     }
     return E_OK;
@@ -1135,5 +1121,22 @@ void CloudFileDataConvert::ConvertInt64FieldsHashMap(MDKRecordPhotosData &data, 
         onFetchPhotoVo.int64fields[fieldName] = valueLongOp.value();
     }
     return;
+}
+
+std::string CloudFileDataConvert::GetContentRelatedLog(const CloudMdkRecordPhotosVo &upLoadRecord) const
+{
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
+        upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
+    bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
+    bool isMediaLivePhoto = upLoadRecord.fileSourceType == FILE_SOURCE_TYPE_MEDIA;
+    std::stringstream log;
+    log << "fileId: " << upLoadRecord.fileId << ", ";
+    log << "cloudId: " << upLoadRecord.cloudId << ", ";
+    log << "fileSourceType: " << upLoadRecord.fileSourceType << ", ";
+    log << "isMediaLivePhoto: " << isMediaLivePhoto << ", ";
+    log << "isMovingPhoto: " << isMovingPhoto << ", ";
+    log << "isGraffiti: " << isGraffiti << ", ";
+    log << "data: " << MediaFileUtils::DesensitizePath(upLoadRecord.data.c_str());
+    return log.str();
 }
 } // namespace OHOS::Media::CloudSync

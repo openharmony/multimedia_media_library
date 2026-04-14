@@ -272,6 +272,9 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
     CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
         "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
+    bool isHighPixel = IsHighPixelPicture(fileAsset->GetWidth(), fileAsset->GetHeight());
+    bool isHeifType = (fileAsset->GetMimeType() == "image/heif" || fileAsset->GetMimeType() == "image/heic");
+    CHECK_AND_RETURN_RET_INFO_LOG(isHighPixel || isHeifType, E_INNER_FAIL, "not high, not heif");
     auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
         "MediaLibraryBundleManager::GetInstance() returned nullptr");
@@ -284,8 +287,20 @@ int32_t MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(std:
         "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     string newPath = path + "/transcode.jpg";
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-    bool isHeifType = (MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heif" ||
-        MediaFileUtils::GetExtensionFromPath(fileAsset->GetPath()) == "heic");
+
+    auto transcodeMode = HeifTranscodingCheckUtils::CheckTranscodeMode(clientBundle, isHighPixel, isHeifType);
+    CHECK_AND_RETURN_RET_INFO_LOG(transcodeMode != TranscodeMode::CURRENT,
+        E_INNER_FAIL, "CheckTranscodeMode is CURRENT, bundleName: %{public}s", clientBundle.c_str());
+
+    if (transcodeMode == TranscodeMode::COMPATIBLE) {
+        MEDIA_INFO_LOG("CheckTranscodeMode is COMPATIBLE, bundleName: %{public}s", clientBundle.c_str());
+        if (!isHighPixel) {
+            CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif");
+        }
+        fileAsset->SetPath(newPath);
+        return E_OK;
+    }
+
     if (!NeedTranscodeHighPixelPicture(fileAsset->GetWidth(), fileAsset->GetHeight())) {
         if (!isHeifType) {
             MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", path.c_str());

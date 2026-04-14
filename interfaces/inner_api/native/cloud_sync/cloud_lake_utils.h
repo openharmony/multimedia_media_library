@@ -32,7 +32,10 @@ public:
         return str.compare(0, prefix.size(), prefix) == 0;
     }
 
-    // 提供给端云使用
+    /**
+     * @brief [Deprecated] GetAbsoluteLakePath is deprecated, please use CloudMediaPathUtils::FindStoragePath instead.
+     * @return absolute path in lake if the storagePath is a lake path, otherwise return empty string.
+     **/
     static std::string GetAbsoluteLakePath(const std::string &storagePath, int32_t userId)
     {
         std::string lakeDir = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/";

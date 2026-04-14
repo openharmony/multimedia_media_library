@@ -155,15 +155,13 @@ bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data
 
 int32_t ThumbnailGenerationPostProcess::SetRegenerateAstcStatus(const ThumbnailData& data, const ThumbRdbOpt& opts)
 {
-    ThumbnailUtils::StoreThumbnailSize(opts, data);
-
     AccurateRefresh::AssetAccurateRefresh assetRefresh;
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, data.id);
     // 下载的THM短边小于350时，仅生成年月纹理，设置thumbnail_ready = 8
-    constexpr int64_t THUMB_NEED_REGENERATE_ASTC = 8;
     NativeRdb::ValuesBucket values;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, THUMB_NEED_REGENERATE_ASTC);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY,
+        static_cast<int64_t>(ThumbnailReady::THUMB_NEED_REGENERATE_ASTC));
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     Size thumbSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {

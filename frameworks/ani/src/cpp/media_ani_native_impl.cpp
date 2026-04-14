@@ -70,7 +70,7 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(ani_en
 }
 
 std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(ani_env *env,
-    const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
+    const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate, int32_t &errCode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetAssets Excute");
@@ -83,6 +83,7 @@ std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(ani_env *e
 
     if (!PhotoAccessGetAssetsExecute(context)) {
         ANI_ERR_LOG("PhotoAccessGetAssetsExecute failed");
+        errCode = context->error;
         return nullptr;
     }
     return std::move(context->fetchFileResult);
@@ -487,6 +488,7 @@ bool MediaAniNativeImpl::PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibrar
     }
     if (resultSet == nullptr) {
         ANI_ERR_LOG("resultSet is nullptr");
+        context->SaveError(errCode);
         return false;
     }
 

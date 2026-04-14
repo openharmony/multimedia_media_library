@@ -93,6 +93,7 @@ public:
     std::optional<int32_t> photoRiskStatus;           // PhotoColumn::PHOTO_RISK_STATUS
     std::optional<std::string> packageName;           // MediaColumn::MEDIA_PACKAGE_NAME
     std::optional<int32_t> southDeviceType;           // PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE
+    std::optional<int32_t> lcdFileSize;
 
     /* keep cloud_id at the last; so RecordToValueBucket can skip it*/
     std::optional<int32_t> fileId;       //  MediaColumn::MEDIA_ID;

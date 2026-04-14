@@ -252,7 +252,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_albu
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_album_test_001");
     PortraitAlbumSource portraitAlbumSource;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
@@ -268,7 +268,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clus
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_clustering_test_001");
     PortraitAlbumSource portraitAlbumSource;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     vector<string> tableList = { VISION_FACE_TAG_TABLE, PhotoColumn::PHOTOS_TABLE,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
@@ -285,7 +285,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_te
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_image_face_test_001");
     PortraitAlbumSource portraitAlbumSource;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
@@ -303,7 +303,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_tes
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_map_test_001");
     PortraitAlbumSource portraitAlbumSource;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap;

@@ -25,6 +25,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "post_event_utils.h"
+#include "medialibrary_notify_new.h"
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
@@ -84,12 +85,14 @@ void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
         do {
             MediaLibraryTracer tracer;
             tracer.Start("MediaLibraryRestore::Restore");
+            Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database corrupted");
             errCode = rdb->Restore("");
             MEDIA_INFO_LOG("MediaLibraryRestore::Restore errCode = %{public}d", errCode);
             if (errCode == NativeRdb::E_SQLITE_BUSY) {
                 retryTimes--;
                 continue;
             }
+            Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
             break;
         } while (retryTimes > 0);
         MEDIA_INFO_LOG("MediaLibraryRestore::Restore [end]. errCode = %{public}d", errCode);

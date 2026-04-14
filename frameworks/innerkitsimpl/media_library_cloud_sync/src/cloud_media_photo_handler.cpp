@@ -84,7 +84,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecordsInner(
                 MEDIA_INFO_LOG("Need clear VideoCache, attributesMediaType: %{public}d, localPath: %{public}s",
                     data.attributesMediaType,
                     MediaFileUtils::DesensitizePath(data.localPath).c_str());
-                CloudMediaClientUtils::InvalidVideoCache(data.localPath);
+                CloudMediaClientUtils::InvalidVideoCache(data.localPath, userId_);
             }
         }
         respBody.MergeRespBody(nodeRespBody);

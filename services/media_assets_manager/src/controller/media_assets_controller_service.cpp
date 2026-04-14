@@ -40,6 +40,7 @@
 #include "retain_cloud_media_asset_vo.h"
 #include "grant_photo_uri_permission_vo.h"
 #include "grant_photo_uris_permission_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "cancel_photo_uri_permission_vo.h"
 #include "cancel_photo_uri_permission_inner_vo.h"
@@ -86,6 +87,7 @@
 #include "get_edit_data_dto.h"
 #include "get_cloud_enhancement_pair_dto.h"
 #include "permission_utils.h"
+#include "media_cloud_permission_check.h"
 #include "media_app_uri_permission_column.h"
 #include "cancel_request_vo.h"
 #include "start_batch_download_cloud_resources_vo.h"
@@ -396,6 +398,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::GrantPhotoUrisPermission
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION),
+        &MediaAssetsControllerService::CheckPhotoUrisReadPermission
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION),
         &MediaAssetsControllerService::CancelPhotoUriPermission
     },
@@ -618,6 +624,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS),
         &MediaAssetsControllerService::SetLivePhoto4dStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::SetPreferredCompatibleMode
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::GetPreferredCompatibleMode
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO),
@@ -1343,7 +1357,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_INFO_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
 
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
@@ -1391,8 +1405,9 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_DEBUG_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
+
     dto.predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
     if (resultSet == nullptr) {
@@ -2110,6 +2125,25 @@ int32_t MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &da
 
     ret = MediaAssetsService::GetInstance().GrantPhotoUrisPermission(grantUrisPermDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CheckPhotoUrisReadPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CheckPhotoUrisReadPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckPhotoUrisReadPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().CheckPhotoUrisReadPermission(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAssetsControllerService::CheckUriPermissionInner(MessageParcel &data, MessageParcel &reply)
@@ -3045,6 +3079,43 @@ int32_t MediaAssetsControllerService::SetLivePhoto4dStatus(MessageParcel &data, 
     ret = MediaAssetsService::GetInstance().SetLivePhoto4dStatus(reqBody.fileId, reqBody.livePhoto4dStatus,
         reqBody.livePhoto4dLatestPair);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode start");
+    SetPreferredCompatibleModeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().SetPreferredCompatibleMode(
+        reqBody.bundleName, reqBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode start");
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetPreferredCompatibleMode(
+        reqBody.bundleName, respBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAssetsControllerService::SetCompatibleInfo(MessageParcel &data, MessageParcel &reply)

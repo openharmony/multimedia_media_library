@@ -23,6 +23,7 @@
 #define private public
 #define protected public
 #include "media_albums_controller_service.h"
+#include "media_analysis_data_controller_service.h"
 #undef private
 #undef protected
 
@@ -36,7 +37,8 @@
 #include "medialibrary_business_code.h"
 #include "media_upgrade.h"
 #include "media_file_uri.h"
-#include "change_request_set_cover_uri_vo.h"
+#include "change_request_set_default_cover_uri_vo.h"
+
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_db_sqls_more.h"
@@ -224,7 +226,7 @@ HWTEST_F(AlbumSetCoverUriTest, SetAnalysisAlbumCoverUri_Test_003, TestSize.Level
     ConstructAnalysisAlbumData(albumId);
     MessageParcel data;
     MessageParcel reply;
-    ChangeRequestSetCoverUriReqBody reqBody;
+    ChangeRequestSetDefaultCoverUriReqBody reqBody;
     reqBody.albumId = std::to_string(albumId);
     reqBody.coverUri = "file://media/Photo/"+ std::to_string(assetFileId) +"/IMG_171335.jpg";
     reqBody.albumType = 4096;
@@ -232,7 +234,7 @@ HWTEST_F(AlbumSetCoverUriTest, SetAnalysisAlbumCoverUri_Test_003, TestSize.Level
     if (!reqBody.Marshalling(data)) {
         MEDIA_INFO_LOG("reqBody Marshalling failed");
     }
-    auto service = make_shared<MediaAlbumsControllerService>();
+    auto service = make_shared<AnalysisData::MediaAnalysisDataControllerService>();
     service->ChangeRequestSetDefaultCoverUri(data, reply);
 
     IPC::MediaRespVo<MediaEmptyObjVo> resp;

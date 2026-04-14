@@ -29,11 +29,11 @@ const std::string AESTHETICS_SCORE_TABLE = "tab_analysis_aesthetics_score";
 const std::string AFFECTIVE_TABLE = "tab_analysis_affective";
 const std::string PROFILE_TABLE = "tab_analysis_profile";
 const std::string DEDUP_TABLE = "tab_analysis_dedup";
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 void RefreshTotalScore::Init(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap,
-    const std::unordered_map<int32_t, int32_t> &scoreMaskMap, int64_t shouldEndTime)
+    const std::unordered_map<int32_t, uint32_t> &scoreMaskMap, int64_t shouldEndTime)
 {
     MEDIA_INFO_LOG("RefreshTotalScore Init");
     this->mediaLibraryRdb_ = mediaLibraryRdb;
@@ -96,15 +96,15 @@ void RefreshTotalScore::CalculateCloneTotalScore()
         auto maskIt = scoreMaskMap_.find(newFileId);
         CHECK_AND_CONTINUE(maskIt != scoreMaskMap_.end());
 
-        int32_t mask = maskIt->second;
-        int32_t cloneScore = totalScore & mask;
+        uint32_t mask = maskIt->second;
+        uint32_t cloneScore = static_cast<uint32_t>(totalScore) & mask;
 
         // 对于标记位（如BIT20），如果mask中有，直接设置，不进行&运算
         if (mask & BIT20) {
             cloneScore |= BIT20;
         }
 
-        cloneTotalScores_[newFileId] = cloneScore;
+        cloneTotalScores_[newFileId] = static_cast<int32_t>(cloneScore);
     }
     totalResultSet->Close();
 
@@ -140,8 +140,8 @@ void RefreshTotalScore::MergeWithDestinationTotalScore()
         auto destIt = destTotalScores.find(newFileId);
         if (destIt != destTotalScores.end()) {
             // 合并克隆分数和目标库分数
-            int32_t mergedScore = cloneScore | destIt->second;
-            std::vector<NativeRdb::ValueObject> bindArgs = {mergedScore, newFileId};
+            uint32_t mergedScore = static_cast<uint32_t>(cloneScore) | static_cast<uint32_t>(destIt->second);
+            std::vector<NativeRdb::ValueObject> bindArgs = {static_cast<int32_t>(mergedScore), newFileId};
             mediaLibraryRdb_->ExecuteSql(updateSql, bindArgs);
         }
     }

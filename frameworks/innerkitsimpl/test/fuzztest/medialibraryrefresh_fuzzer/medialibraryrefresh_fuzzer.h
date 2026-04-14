@@ -39,6 +39,7 @@ const int32_t ASSET_STRONG_ASSOCIATION_NORMAL = static_cast<int32_t>(StrongAssoc
 const int32_t ASSET_THUMBNAIL_VISIBLE = 1;
 const int64_t ASSET_DATE_ADDED = 123456;
 const int64_t ASSET_DATE_TAKEN = 123456;
+const int64_t ASSET_DATE_MODIFIED = 123456;
 const int32_t ASSET_SUBTYPE_DEFAULT = static_cast<int32_t>(PhotoSubType::DEFAULT);
 const int32_t ASSET_SYNC_STATUS_VISIBLE = static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE);
 const int32_t ASSET_CLEAN_FLAG_NO = static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN);
@@ -191,7 +192,8 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     "", // shooting_mode
     0, // effect_mode
     "", // front_camera
-    0 //livephoto4dStatus
+    0, //livephoto4dStatus
+    ASSET_DATE_MODIFIED
 };
 
 const std::vector<PhotoAlbumSubType> PHOTO_ALBUM_SUB_TYPE = {

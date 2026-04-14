@@ -765,6 +765,10 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
     delete context;
 }
 
@@ -997,6 +1001,10 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
     delete context;
 }
 
@@ -1137,6 +1145,10 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+    }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
     }
     delete context;
 }
@@ -1442,6 +1454,10 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
     delete context;
 }
 
@@ -1561,6 +1577,10 @@ static void TrashAlbumComplete(napi_env env, napi_status status, void *data)
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+    }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
     }
     delete context;
 }
@@ -1858,6 +1878,10 @@ static void GetFaceIdCompleteCallback(napi_env env, napi_status status, void *da
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
             *jsContext);
     }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
     delete context;
 }
 
@@ -2137,6 +2161,10 @@ static void GetFusionAssetsInfoCompleteCallback(napi_env env, napi_status status
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
             *jsContext);
+    }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
     }
     delete context;
 }

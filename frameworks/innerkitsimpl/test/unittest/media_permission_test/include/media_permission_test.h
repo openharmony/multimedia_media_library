@@ -29,6 +29,19 @@ public:
     void TearDown();
     std::shared_ptr<Media::AbsPermissionHandler> permissionHandler_ = nullptr;
 };
+
+class CloudPermissionTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+    static void SetPermissionWithReadImageVideo(uint64_t &tokenId);
+    static void SetPermissionWithReadCloudImageVideo(uint64_t &tokenId);
+    static void SetPermissionWithBoth(uint64_t &tokenId);
+    static void SetPermissionWithoutAny(uint64_t &tokenId);
+    static void ResetPermission(uint64_t tokenId);
+};
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIA_PERMISSION_TEST_H

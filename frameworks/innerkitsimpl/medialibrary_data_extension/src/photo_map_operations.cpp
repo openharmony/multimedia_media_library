@@ -50,6 +50,7 @@
 #include "dfx_const.h"
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
+#include "medialibrary_analysis_album_operations.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -507,13 +508,25 @@ static std::string GetBackupPortraitCoverUri(const shared_ptr<MediaLibraryRdbSto
 }
 
 static bool SetPortraitCoverByUri(const shared_ptr<MediaLibraryRdbStore>& rdbStore, string coverUri,
-    const string albumIds)
+    const string albumIds, vector<string> targetAlbumIds)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "RdbStore is nullptr!");
+    vector<int32_t> updateAlbumIds;
+    for (const auto &albumId : targetAlbumIds) {
+        CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(albumId));
+            updateAlbumIds.push_back(std::stoi(albumId));
+    }
     std::string updateCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
         "' WHERE " + ALBUM_ID + " IN ( " + albumIds + " ) AND " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " ;";
-    int32_t ret = rdbStore->ExecuteSql(updateCoverUri);
+    int32_t ret = MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(std::vector<string>{updateCoverUri},
+        updateAlbumIds);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "UpdateCoverUri failed, ret = %{public}d", ret);
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, false, "Can not get MediaLibraryNotify Instance");
+    for (int32_t albumId : updateAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+    }
     return true;
 }
 
@@ -558,8 +571,28 @@ int32_t DoSmartMoveAssets(const string &albumId, const string targetAlbumId,
             E_ERR, "handleSqlParam targetAlbumIds fail ! ");
         std::string backupCoverUri = GetBackupPortraitCoverUri(rdbStore, albumIdsStr);
         CHECK_AND_RETURN_RET_LOG(!backupCoverUri.empty(), E_ERR, "GetBackupPortraitCoverUri fail");
-        CHECK_AND_RETURN_RET_LOG(SetPortraitCoverByUri(rdbStore, backupCoverUri, albumIdsStr),
-            E_ERR, "SetPortraitCoverByUri fail");
+        CHECK_AND_RETURN_RET_LOG(SetPortraitCoverByUri(rdbStore, backupCoverUri, albumIdsStr,
+            mergedAlbumInfo.targetAlbumIds), E_ERR, "SetPortraitCoverByUri fail");
+    }
+    return E_OK;
+}
+
+int32_t NotifyChangedAssets(const vector<string> &AddAssetsArray, const vector<string> &RemoveAssetsArray,
+    const string &sourceAlbumId, const string &targetAlbumId)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    for (size_t i = 0; i < AddAssetsArray.size(); i++) {
+        CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(AddAssetsArray[i]));
+        std::string UpdateUri = PhotoColumn::PHOTO_URI_PREFIX + AddAssetsArray[i];
+        watch->Notify(MediaFileUtils::Encode(UpdateUri),
+            NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, std::stoi(sourceAlbumId));
+    }
+    for (size_t i = 0; i < RemoveAssetsArray.size(); i++) {
+        CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(RemoveAssetsArray[i]));
+        std::string UpdateUri = PhotoColumn::PHOTO_URI_PREFIX + RemoveAssetsArray[i];
+        watch->Notify(MediaFileUtils::Encode(UpdateUri),
+            NotifyType::NOTIFY_ALBUM_ADD_ASSET, std::stoi(targetAlbumId));
     }
     return E_OK;
 }
@@ -577,18 +610,8 @@ int32_t PhotoMapOperations::SmartMoveAssets(const string &albumId,
 
     int32_t ret = DoSmartMoveAssets(albumId, targetAlbumId, assetsArray, mergedAlbumInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "SmartMoveAssets Fail ");
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    for (size_t i = 0; i < assetsArray.size(); i++) {
-        std::string UpdateUri = PhotoColumn::PHOTO_URI_PREFIX + assetsArray[i];
-        watch->Notify(MediaFileUtils::Encode(UpdateUri),
-            NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, std::stoi(albumId));
-    }
-    for (size_t i = 0; i < mergedAlbumInfo.unCommonAssets.size(); i++) {
-        std::string UpdateUri = PhotoColumn::PHOTO_URI_PREFIX + mergedAlbumInfo.unCommonAssets[i];
-        watch->Notify(MediaFileUtils::Encode(UpdateUri),
-            NotifyType::NOTIFY_ALBUM_ADD_ASSET, std::stoi(targetAlbumId));
-    }
+    CHECK_AND_RETURN_RET_LOG(NotifyChangedAssets(assetsArray, mergedAlbumInfo.unCommonAssets,
+        albumId, targetAlbumId) == E_OK, E_ERR, "NotifyChangedAssets Fail ");
     return ret;
 }
 

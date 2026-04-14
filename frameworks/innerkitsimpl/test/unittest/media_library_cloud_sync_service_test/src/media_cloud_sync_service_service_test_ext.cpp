@@ -420,26 +420,6 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_OnFdirtyRecordSuccess_Test_
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_HandleNoContentUploadFail_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosService service;
-    PhotosDto photo;
-    photo.path = "/data/local/tmp";
-    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    int32_t ret = service.HandleNoContentUploadFail(photo, photoRefresh);
-    EXPECT_EQ(ret, E_RDB);
-}
-
-HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_HandleNoContentUploadFail_Test_002, TestSize.Level1)
-{
-    CloudMediaPhotosService service;
-    PhotosDto photo;
-    photo.path = "/data/tddxxx.txt";
-    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
-    int32_t ret = service.HandleNoContentUploadFail(photo, photoRefresh);
-    EXPECT_EQ(ret, E_RDB);
-}
-
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_ClearLocalData_Test_001, TestSize.Level1)
 {
     // 用例说明：测试 ClearLocalData 方法，localPhotosPoOp 无值
@@ -701,13 +681,18 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_OnRecordFailedErr
     CloudErrorDetail detail;
     detail.detailCode = static_cast<int32_t>(ErrorDetailCode::CONTENT_NOT_FIND);
     photo.errorDetails.push_back(detail);
-    photo.cloudId = "test_cloud_id";
-    photo.path = "/storage/cloud/files/Photo/test.jpg";
+    photo.path = "/storage/cloud/files/Photo/16/IMG_20240101_123456.jpg";
+    PhotosPo photoInfo = PhotosPo();
+    photoInfo.data = "/storage/cloud/files/Photo/16/IMG_20240101_123456.jpg";
+    photoInfo.cloudId = "cloud_id1";
+    photoInfo.storagePath = "/storage/media/local/files/Photo/16/IMG_20240101_123456.jpg";
+    photoInfo.fileSourceType = 0;
+    photo.localInfoOp = photoInfo;
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     int32_t ret = service.OnRecordFailedErrorDetails(photo, photoRefresh);
 
-    EXPECT_NE(ret, E_OK);
+    EXPECT_NE(ret, E_DATA);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_GetCloudPath_Test_001, TestSize.Level1)
@@ -745,14 +730,15 @@ HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleDuplicatedR
     EXPECT_EQ(ret, E_DATA);
 }
 
-HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleSameCloudResource_Test_001, TestSize.Level1)
+HWTEST_F(CloudMediaSyncServiceTestExt, CloudMediaPhotosService_HandleInvalidCloudResource_Test_001, TestSize.Level1)
 {
-    // 用例说明：测试 HandleSameCloudResource 方法，路径为空
+    // 用例说明：测试 HandleInvalidCloudResource 方法，路径为空
     CloudMediaPhotosService service;
     PhotosDto photo;
     photo.path = "";
 
-    int32_t ret = service.HandleSameCloudResource(photo);
+    auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    int32_t ret = service.HandleInvalidCloudResource(photo, photoRefresh);
 
     EXPECT_EQ(ret, E_INVALID_VALUES);
 }

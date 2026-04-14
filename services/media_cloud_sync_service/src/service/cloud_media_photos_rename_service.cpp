@@ -22,6 +22,7 @@
 #include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media::CloudSync {
+const int32_t FILE_SOURCE_TYPE_MEDIA = 0;
 int32_t CloudMediaPhotosRenameService::FindTitleAndSuffix(
     const std::string &displayName, std::string &title, std::string &suffix)
 {
@@ -53,6 +54,7 @@ int32_t CloudMediaPhotosRenameService::FindNextStoragePath(
 {
     std::string storagePath = photoInfo.storagePath.value_or("");
     bool isValid = !storagePath.empty() && !nextDisplayName.empty();
+    isValid = isValid && photoInfo.fileSourceType.value_or(0) != FILE_SOURCE_TYPE_MEDIA;
     CHECK_AND_RETURN_RET(isValid, E_DATA); // Ignore
     auto index = storagePath.rfind('/');
     isValid = index != std::string::npos;

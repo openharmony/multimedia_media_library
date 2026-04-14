@@ -34,15 +34,15 @@
 
 namespace OHOS::Media {
 // Score mask bits
-const int32_t BIT0 = 1 << 0;  // 美学基础分
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT0 = 1u << 0;  // 美学基础分
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 BeautyScoreClone::BeautyScoreClone(
     const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
     const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
     const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap,
     const int64_t maxBeautyFileId,
-    std::unordered_map<int32_t, int32_t>* scoreMaskMap)
+    std::unordered_map<int32_t, uint32_t>* scoreMaskMap)
     : sourceRdb_(sourceRdb),
       destRdb_(destRdb),
       photoInfoMap_(photoInfoMap),
@@ -488,7 +488,7 @@ void BeautyScoreClone::UpdateAnalysisTotalTblBeautyScoreAll(std::shared_ptr<Nati
     UpdateAnalysisTotalTblForScoreColumn(newRdbStore, oldRdbStore, fileIdOld, "aesthetics_score_all");
 }
 
-void BeautyScoreClone::UpdateScoreMask(int32_t fileId, int32_t mask)
+void BeautyScoreClone::UpdateScoreMask(int32_t fileId, uint32_t mask)
 {
     if (externalScoreMaskMap_ != nullptr) {
         (*externalScoreMaskMap_)[fileId] |= mask;

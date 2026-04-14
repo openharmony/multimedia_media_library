@@ -24,6 +24,9 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+using namespace OHOS::Security::AccessToken;
+
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckCallerPermission_test_001, TestSize.Level1)
 {
     string permission = "";
@@ -202,6 +205,142 @@ HWTEST_F(MediaLibraryCommonUtilsTest, permission_utils_test_002, TestSize.Level1
     perms = {"PERMISSION_NAME_READ_MEDIA", "PERMISSION_NAME_WRITE_MEDIA"};
     ret = PermissionUtils::CheckCallerPermission(perms);
     EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CheckPhotoCallerPermission_with_open_data_001, TestSize.Level1)
+{
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/4";
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    
+    bool ret = PermissionUtils::CheckPhotoCallerPermission(PERM_READ_IMAGEVIDEO, openData);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CheckPhotoCallerPermission_with_open_data_002, TestSize.Level1)
+{
+    vector<string> perms = {PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO};
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/5";
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+
+    bool ret = PermissionUtils::CheckPhotoCallerPermission(perms, openData);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CheckPhotoCallerPermission_with_open_data_003, TestSize.Level1)
+{
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/6";
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    
+    AccessTokenID tokenCaller = 123456;
+    bool ret = PermissionUtils::CheckPhotoCallerPermission(PERM_READ_IMAGEVIDEO, tokenCaller, openData);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CheckPhotoCallerPermission_with_open_data_004, TestSize.Level1)
+{
+    vector<string> perms = {PERM_READ_IMAGEVIDEO};
+    int uid = 100100;
+    AccessTokenID tokenCaller = 123456;
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/7";
+    openData.uid = uid;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    
+    bool ret = PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CheckPhotoCallerPermission_empty_perms_with_open_data_001, TestSize.Level1)
+{
+    vector<string> perms;
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/8";
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    
+    bool ret = PermissionUtils::CheckPhotoCallerPermission(perms, openData);
+    EXPECT_FALSE(ret);
+}
+
+static void ResetPermissionRecordBatch()
+{
+    PermissionUtils::infos_.clear();
+    PermissionUtils::pendingOpenPermissionInfos_.clear();
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CollectPermissionInfo_with_open_data_001, TestSize.Level1)
+{
+    OpenDataInfo openData;
+    openData.uri = "file://media/photo/8";
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
+    
+    ResetPermissionRecordBatch();
+    PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, false, type, openData);
+    EXPECT_EQ(PermissionUtils::infos_.size(), 0);
+    EXPECT_EQ(PermissionUtils::pendingOpenPermissionInfos_.size(), 0);
+    ResetPermissionRecordBatch();
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CollectPermissionInfo_with_open_data_002, TestSize.Level1)
+{
+    vector<string> perms;
+    OpenDataInfo openData;
+    openData.uid = 100100;
+    openData.userId = 0;
+    openData.type = "open";
+    openData.timestamp = 1234567890;
+    PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
+    
+    ResetPermissionRecordBatch();
+    PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, false, type, openData);
+    EXPECT_EQ(PermissionUtils::infos_.size(), 0);
+    EXPECT_EQ(PermissionUtils::pendingOpenPermissionInfos_.size(), 0);
+    ResetPermissionRecordBatch();
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, test_CollectPermissionInfo_with_open_data_003, TestSize.Level1)
+{
+    OpenDataInfo openData1;
+    openData1.uri = "file://media/photo/10";
+    openData1.uid = 100100;
+    openData1.userId = 0;
+    openData1.type = "open";
+    openData1.timestamp = 1234567890;
+    PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
+    
+    OpenDataInfo openData2;
+    openData2.uri = "file://media/photo/11";
+    openData2.uid = 100100;
+    openData2.userId = 0;
+    openData2.type = "open";
+    openData2.timestamp = 1234567891;
+    
+    ResetPermissionRecordBatch();
+    PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, true, type, openData1);
+    PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, false, type, openData2);
+    EXPECT_EQ(PermissionUtils::infos_.size(), 0);
+    EXPECT_EQ(PermissionUtils::pendingOpenPermissionInfos_.size(), 0);
+    ResetPermissionRecordBatch();
 }
 } // namespace Media
 } // namespace OHOS

@@ -94,12 +94,12 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
         MEDIA_ERR_LOG("NotifyChangeExt parcel.GetDataSize failed");
         return E_PARCEL_GET_SIZE_FAILED;
     }
-    auto *uBuf = new (std::nothrow) uint8_t[parcel.GetDataSize()];
+    auto uBuf = std::make_unique<uint8_t[]>(parcel.GetDataSize());
     if (uBuf == nullptr) {
         MEDIA_ERR_LOG("parcel.GetDataSize is null");
         return E_PARCEL_GET_SIZE_FAILED;
     }
-    int ret = memcpy_s(uBuf, parcel.GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel.GetDataSize());
+    int ret = memcpy_s(uBuf.get(), parcel.GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel.GetDataSize());
     if (ret != 0) {
         MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);
     }
@@ -111,7 +111,7 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
     }
     MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, NotifyType is %{public}d",
         notifyUri.ToString().c_str(), type);
-    return obsMgrClient->NotifyChangeExt({changeType, {notifyUri}, uBuf, parcel.GetDataSize()});
+    return obsMgrClient->NotifyChangeExt({changeType, {notifyUri}, uBuf.get(), parcel.GetDataSize()});
 }
 
 static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)

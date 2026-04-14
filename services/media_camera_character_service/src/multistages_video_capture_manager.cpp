@@ -502,8 +502,8 @@ void MultiStagesVideoCaptureManager::ProcessVideo(const ProcessVideoDto &dto)
     }
 
     std::string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    int32_t currentRequestCount =
-        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(videoId, RequestType::REQUEST);
+    int32_t currentRequestCount = MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(
+        videoId, RequestType::REQUEST, callerBundleName);
     HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} "
         "ProcessVideo, pkg name: %{public}s, videoId %{public}s, mode: %{public}d, count: %{public}d",
         MLOG_TAG, __FUNCTION__, __LINE__,
@@ -571,10 +571,13 @@ void MultiStagesVideoCaptureManager::CancelProcessRequest(const string &videoId)
 {
     CHECK_AND_RETURN_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(videoId),
         "videoId is empty or not in process");
-    int32_t currentRequestCount =
-        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(videoId, RequestType::CANCEL_REQUEST);
-    CHECK_AND_RETURN_LOG(currentRequestCount <= 0,
-        "not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
+    std::string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    int32_t currentRequestCount = MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(
+        videoId, RequestType::CANCEL_REQUEST, callerBundleName);
+    if (currentRequestCount > 0) {
+        MEDIA_WARN_LOG("not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
+        return;
+    }
     DfxManager::GetInstance()->HandleCinematicVideoAddEndTime(CinematicWaitType::CANCEL_CINEMATIC, videoId);
     deferredProcSession_->CancelProcessVideo(videoId);
 }

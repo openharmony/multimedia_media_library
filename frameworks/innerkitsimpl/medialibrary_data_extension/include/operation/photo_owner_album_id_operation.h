@@ -24,6 +24,8 @@
 #include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 class PhotoOwnerAlbumIdOperation {
 public:
     struct MediaData {
@@ -58,13 +60,13 @@ public:  // getter & setter
 public:
     int32_t FixPhotoRelation();
     int32_t BuildAlbumBySourcePath(const std::string &sourcePath);
+    EXPORT std::string ToStringWithComma(const std::vector<std::string> &fileIds) const;
+    EXPORT std::string ToStringWithCommaAndQuote(const std::vector<std::string> &fileIds) const;
+    EXPORT std::string FillParams(const std::string &sql, const std::vector<std::string> &bindArgs);
 
 private:
     std::string ToStringWithComma(const std::vector<NativeRdb::ValueObject> &bindArgs) const;
-    std::string ToStringWithComma(const std::vector<std::string> &fileIds) const;
-    std::string ToStringWithCommaAndQuote(const std::vector<std::string> &fileIds) const;
     std::string ToString(const MediaData &albumInfo) const;
-    std::string FillParams(const std::string &sql, const std::vector<std::string> &bindArgs);
     std::vector<std::string> GetFileIdsWithoutAlbum(const std::string &fileIdWithComma, bool &containsScreenVideo);
     std::vector<std::string> GetFileIdsWithAlbum(const std::string &fileIdWithComma, bool &containsScreenVideo);
     int32_t FixPhotoRelationForNoAlbum(const std::vector<std::string> &fileIds);

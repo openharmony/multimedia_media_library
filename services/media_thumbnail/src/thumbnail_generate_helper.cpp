@@ -323,9 +323,10 @@ int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
         "CreateAstcMthAndYear query data from fileId failed, id: %{public}s", opts.fileId.c_str());
 
     data.loaderOpts.loadingStates = data.isLocalFile ?
-        SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+        SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_THM_OR_LCD_LOADING_STATES;
     data.needGenerateExThumbnail = false;
     data.genThumbScene = GenThumbScene::NO_AVAILABLE_MTH_AND_YEAR_THUMB;
+    data.loaderOpts.thumbnailSceneType = ThumbnailSceneType::MTH_YEAR_ASTC_ONDEMAND;
     CHECK_AND_RETURN_RET(IThumbnailHelper::DoCreateAstcMthAndYear(opts, data), E_ERR);
     return E_OK;
 }
@@ -757,6 +758,8 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
     }
     if (!isLocalThumbnailAvailable) {
         CacheStreamReadThumbDbStatus(opts, data, thumbType);
+        ReGenerateAstc(opts, data, thumbType);
+        MediaLibraryPhotoOperations::StoreThumbnailInfoAsync({ {data.id, data.path, thumbType == ThumbnailType::LCD} });
         return fd;
     }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE &&
@@ -1087,6 +1090,94 @@ bool ThumbnailGenerateHelper::CanLoadLocalThm(const ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(isLocalThumbExist, false,
         "Local thumb: %{public}s is not exist", DfxUtils::GetSafePath(localThmPath).c_str());
     return true;
+}
+
+bool ThumbnailGenerateHelper::CanLoadLocalLcd(const ThumbnailData &data)
+{
+    std::string localLcdPath = ThumbnailUtils::IsExCloudThumbnail(data) ?
+        ThumbnailFileUtils::GetLocalThumbnailFilePath(data.path, ThumbnailType::LCD_EX) :
+        ThumbnailFileUtils::GetLocalThumbnailFilePath(data.path, ThumbnailType::LCD);
+    CHECK_AND_RETURN_RET_LOG(!localLcdPath.empty(), false,
+        "Failed to Get GetLocalThumbnailFilePath, path:%{public}s", DfxUtils::GetSafePath(data.path).c_str());
+
+    bool isLocalLcdExist = MediaFileUtils::IsFileExists(localLcdPath);
+    CHECK_AND_RETURN_RET_LOG(isLocalLcdExist, false,
+        "Local lcd: %{public}s is not exist", DfxUtils::GetSafePath(localLcdPath).c_str());
+    return true;
+}
+
+void ThumbnailGenerateHelper::ReGenerateAstc(ThumbRdbOpt& opts, ThumbnailData& data, ThumbnailType thumbType)
+{
+    CHECK_AND_RETURN(thumbType == ThumbnailType::LCD);
+    CHECK_AND_RETURN(data.thumbnailReady == static_cast<int64_t>(ThumbnailReady::THUMB_NEED_REGENERATE_ASTC));
+    MEDIA_INFO_LOG("begin to regenerete astc, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    data.genThumbScene = GenThumbScene::NO_AVAILABLE_THUMB;
+    data.needGenerateExThumbnail = false;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailUtils::IsExCloudThumbnail(data) ?
+        IThumbnailHelper::CreateAstcEx : IThumbnailHelper::CreateAstc,
+        opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
+}
+
+void RegenerateAstcByLocal(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+    auto &thumbnailData = data->thumbnailData_;
+    ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::BACKGROUND,
+        LoadSourceType::LOCAL_PHOTO);
+    if (thumbnailData.isLocalFile) {
+        thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+        IThumbnailHelper::CreateAstc(data);
+        return;
+    }
+
+    CHECK_AND_RETURN_WARN_LOG(ThumbnailGenerateHelper::CanLoadLocalLcd(thumbnailData),
+        "Local lcd is not exist, id:%{public}s, path:%{public}s, thumbStatus:%{public}d",
+        thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.thumbnailStatus);
+    thumbnailData.needGenerateExThumbnail = false;
+    thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES;
+    ThumbnailUtils::IsExCloudThumbnail(thumbnailData) ?
+        IThumbnailHelper::CreateAstcEx(data) : IThumbnailHelper::CreateAstc(data);
+}
+
+int32_t ThumbnailGenerateHelper::RegenerateAstcBackground(ThumbRdbOpt &opts)
+{
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+        E_FREE_SIZE_NOT_ENOUGH, "Free size is not enough");
+    vector<ThumbnailData> infos;
+    int32_t err = ThumbnailUtils::QueryRegenerateAstcInfos(opts, infos);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to GetNoAstcData %{private}d", err);
+
+    MEDIA_INFO_LOG("need regenerate astc data size: %{public}d", static_cast<int>(infos.size()));
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        infos[i].genThumbScene = GenThumbScene::NO_THUMB_AND_GEN_IT_BACKGROUND;
+        opts.row = infos[i].id;
+        IThumbnailHelper::AddThumbnailGenerateTask(RegenerateAstcByLocal,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::SyncRegenerateAstcWithLocal(ThumbRdbOpt &opts)
+{
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "rdbStore is null");
+
+    ThumbnailData data;
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::BACKGROUND, LoadSourceType::LOCAL_PHOTO);
+    data.genThumbScene = GenThumbScene::NO_AVAILABLE_THUMB;
+    data.needGenerateExThumbnail = false;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES;
+
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, data);
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "taskData is null");
+    ThumbnailUtils::IsExCloudThumbnail(data) ?
+        IThumbnailHelper::CreateAstcEx(taskData) : IThumbnailHelper::CreateAstc(taskData);
+    return E_OK;
 }
 // LCOV_EXCL_STOP
 } // namespace Media

@@ -273,5 +273,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_008, TestSize.Level1)
     fileAsset.SetAppLinkState(TEST_APP_LINK_STATE);
     EXPECT_EQ(fileAsset.GetAppLinkState(), TEST_APP_LINK_STATE);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_009, TestSize.Level1)
+{
+    FileAsset fileAsset;
+
+    const int64_t TEST_HIDDEN_TIME = 1;
+    fileAsset.SetHiddenTime(TEST_HIDDEN_TIME);
+    EXPECT_EQ(fileAsset.GetHiddenTime(), TEST_HIDDEN_TIME);
+}
 } // namespace Media
 } // namespace OHOS

@@ -123,6 +123,7 @@ static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 const int32_t PACKOPTION_QUALITY = 90;
 const int32_t PACKOPTION_QUALITY_HEIF = 95;
+const int32_t PACKOPTION_FULL_QUALITY = 100;
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -4944,6 +4945,29 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
         "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
 }
 
+void MediaLibraryPhotoOperations::StoreThumbnailSizeAndTime(const string& photoId, const string& photoPath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Medialibrary rdbStore is nullptr!");
+
+    string thumbnailDir {photoPath};
+    CHECK_AND_RETURN_LOG(ConvertPhotoPathToThumbnailDirPath(thumbnailDir),
+        "Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
+    uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    string sql = "INSERT INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+        PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE + ", " +
+        PhotoExtColumn::LCD_FILE_MODIFY_TIME +
+        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ", " +
+        to_string(currentTime) + ")" +
+        " ON CONFLICT(" + PhotoExtColumn::PHOTO_ID + ")" + " DO UPDATE SET " +
+        PhotoExtColumn::THUMBNAIL_SIZE + " = " + to_string(photoThumbnailSize) + ", " +
+        PhotoExtColumn::LCD_FILE_MODIFY_TIME + " = " + to_string(currentTime);
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
+}
+
 bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -6146,10 +6170,10 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToExistPhoto(const std::string &i
         "Failed To Create Temp Filters File %{private}s", tempOutputPath.c_str());
     tracer.Start("MediaChangeEffect::TakeEffect");
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
-    int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
-    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, PACKOPTION_FULL_QUALITY);
     tracer.Finish();
-    if (ret != E_OK) {
+    size_t size = 0;
+    if (ret != E_OK || (MediaFileUtils::GetFileSize(tempOutputPath, size) && size == 0)) {
         HILOG_COMM_ERROR("%{public}s:{%{public}s:%{public}d} ToExistPhoto, TakeEffect Error. ret = %{public}d",
             MLOG_TAG, __FUNCTION__, __LINE__, ret);
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
@@ -6180,6 +6204,7 @@ int32_t MediaLibraryPhotoOperations::ApplyEditEffectToFile(int32_t curBucketNum,
 {
     const std::string ROOT_MEDIA_ORG_DIR = "/storage/cloud/files/Photo/";
     const std::string EDITDATA_FILE_NAME = "editdata";
+    const std::string EDITDATA_CAMERA_FILE_NAME = "editdata_camera";
     const std::string SOURCE_FILE_PREFIX_NAME = "source";
     const std::string ROOT_MEDIA_EDIT_DIR = "/storage/cloud/files/.editData/Photo/";
 
@@ -6190,16 +6215,29 @@ int32_t MediaLibraryPhotoOperations::ApplyEditEffectToFile(int32_t curBucketNum,
     std::string editBucketFolder = ROOT_MEDIA_EDIT_DIR + std::to_string(curBucketNum) +
         SLASH_STR + fileName; // 编辑文件目录名 包含editdata extraData source.jpg~heic source.mp4
     std::string editDataFile = editBucketFolder + SLASH_STR + EDITDATA_FILE_NAME;
+    std::string editCameraDataFile = editBucketFolder + SLASH_STR + EDITDATA_CAMERA_FILE_NAME;
     std::string editOriginFile = editBucketFolder + SLASH_STR + SOURCE_FILE_PREFIX_NAME + DOT_STR + extension;
     // std::string editOriginMovingPhotoVideo = editBucketFolder + SLASH_STR + SOURCE_FILE_VIDEO_NAME;
-    string editData;
-    CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataFile, editData) == E_OK, E_HAS_FS_ERROR,
-        "Failed To Read editdata, Path:%{public}s", editDataFile.c_str());
-    MEDIA_ERR_LOG("ApplyEditEffectToFile EDITDATA: %{public}s", editData.c_str());
-    const string RESTORE_STATUS = "restore";
-    CHECK_AND_RETURN_RET_LOG(
-        AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editData, RESTORE_STATUS) == E_OK,
-        E_FAIL, "Failed To Add Filters To Photo");
+    if (MediaFileUtils::IsFileExists(editDataFile)) {
+        string editData;
+        CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataFile, editData) == E_OK, E_HAS_FS_ERROR,
+            "Failed To Read editdata, Path:%{public}s", editDataFile.c_str());
+        MEDIA_DEBUG_LOG("ApplyEditEffectToFile EDITDATA: %{public}s", editData.c_str());
+        const string RESTORE_STATUS = "restore";
+        CHECK_AND_RETURN_RET_LOG(
+            AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editData, RESTORE_STATUS) == E_OK,
+            E_FAIL, "Failed To Add Filters To Photo");
+    } else if (MediaFileUtils::IsFileExists(editCameraDataFile)) {
+        string editCameraData;
+        CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editCameraDataFile, editCameraData) == E_OK, E_HAS_FS_ERROR,
+            "Failed To Read editCameraData, Path:%{public}s", editCameraDataFile.c_str());
+        MEDIA_DEBUG_LOG("ApplyEditEffectToFile EDITDATACAMERA: %{public}s", editCameraData.c_str());
+        const string RESTORE_STATUS = "restore";
+        CHECK_AND_RETURN_RET_LOG(
+            AddFiltersToExistPhoto(editOriginFile, effectFolderFile, editCameraData, RESTORE_STATUS) == E_OK,
+            E_FAIL, "Failed To Add Filters editCameraData To Photo");
+    }
+
     int32_t fileId = -1;
     int32_t ret = GetFileIdByPathFromDB(effectFolderFile, fileId);
     CHECK_AND_RETURN_RET_LOG(fileId > 0 && ret == E_OK, E_FAIL, "Failed To Get Asset Record %{public}d", ret);
@@ -6219,6 +6257,29 @@ int32_t MediaLibraryPhotoOperations::ScanExistFileRecord(int32_t fileId, const s
 {
     ScanFile(path, false, true, true);
     return E_OK;
+}
+static void HandleThumbFiles(AsyncTaskData *data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "data is nullptr");
+    auto *taskData = static_cast<DownloadThumbData *>(data);
+    for (const auto &downloadThumbInfo : taskData->downloadThumbInfos_) {
+        if (downloadThumbInfo.isDownloadLcd) {
+            MediaLibraryPhotoOperations::StoreThumbnailSizeAndTime(downloadThumbInfo.fileId, downloadThumbInfo.path);
+            continue;
+        }
+        MediaLibraryPhotoOperations::StoreThumbnailSize(downloadThumbInfo.fileId, downloadThumbInfo.path);
+    }
+}
+
+void MediaLibraryPhotoOperations::StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos)
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "failed to get asyncWorker");
+    auto *taskData = new (std::nothrow) DownloadThumbData(downloadThumbInfos);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "failed to alloc async data forDownloadThumbData");
+    auto thumbFilesTask = make_shared<MediaLibraryAsyncTask>(HandleThumbFiles, taskData);
+    CHECK_AND_RETURN_LOG(thumbFilesTask != nullptr, "Failed to create async task");
+    asyncWorker->AddTask(thumbFilesTask, true);
 }
 } // namespace Media
 } // namespace OHOS

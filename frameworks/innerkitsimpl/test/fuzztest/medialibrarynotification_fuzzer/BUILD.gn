@@ -19,6 +19,7 @@ ohos_fuzztest("MediaLibraryNotificationFuzzTest") {
   fuzz_config_file = "."
 
   include_dirs = [
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
@@ -57,6 +58,7 @@ ohos_fuzztest("MediaLibraryNotificationFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/abs_permission_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/db_permission_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/grant_permission_handler.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloud_permission_check.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/media_tool_permission_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/pemission_common.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/read_write_permission_handler.cpp",

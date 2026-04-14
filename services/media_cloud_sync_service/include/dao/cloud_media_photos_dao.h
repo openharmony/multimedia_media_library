@@ -30,7 +30,6 @@
 #include "result_set.h"
 #include "medialibrary_db_const.h"
 #include "cloud_media_sync_const.h"
-#include "cloud_media_file_utils.h"
 #include "photo_album_dto.h"
 #include "medialibrary_rdbstore.h"
 #include "safe_vector.h"
@@ -132,8 +131,6 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> BatchQueryLocal(
         const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount,
         CleanType cleanType = CleanType::TYPE_NOT_CLEAN);
-    int32_t DeleteLocalFileNotExistRecord(const PhotosDto &photo);
-    int32_t RenewSameCloudResource(const PhotosDto &photo);
     int32_t RepushDuplicatedPhoto(const PhotosDto &photo);
     void ClearAlbumMap();
     int32_t QueryAnalysisAlbum(const std::string &cloudId, std::vector<std::string> &analysisAlbumIds);
@@ -226,6 +223,7 @@ private:
                 (1 = {1} OR hidden = 0) AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
+                file_source_type != 1 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
         ) \
@@ -256,6 +254,7 @@ private:
                 (1 = {1} OR hidden = 0) AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
+                file_source_type != 1 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
         ) \
