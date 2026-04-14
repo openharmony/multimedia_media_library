@@ -111,6 +111,12 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_THM_SOURC
     { SourceState::CLOUD_THUMB, SourceState::FINISH },
 };
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_THM_OR_LCD_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_THUMB },
+    { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::FINISH },
+};
+
 std::string GetLocalThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
@@ -258,14 +264,14 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
     }
 }
 
-int32_t ParseDesiredMinSide(const ThumbnailType &type)
+int32_t ParseDesiredMinSide(const ThumbnailSceneType &type)
 {
     switch (type) {
-        case ThumbnailType::THUMB:
-            return SHORT_SIDE_THRESHOLD;
-            break;
-        case ThumbnailType::MTH_ASTC:
+        case ThumbnailSceneType::MTH_YEAR_ASTC_ONDEMAND:
             return MONTH_SHORT_SIDE_THRESHOLD;
+            break;
+        case ThumbnailSceneType::ONLY_THM_DOWNLOAD:
+            return DEFAULT_ORIGINAL;
             break;
         default:
             break;
@@ -715,7 +721,7 @@ std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 
 bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
-    int minDesiredSide = ParseDesiredMinSide(data.loaderOpts.desiredType);
+    int minDesiredSide = ParseDesiredMinSide(data.loaderOpts.thumbnailSceneType);
     if (minSize < minDesiredSide) {
         return false;
     }
@@ -741,6 +747,9 @@ std::string CloudLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
+    if (data.loaderOpts.thumbnailSceneType == ThumbnailSceneType::MTH_YEAR_ASTC_ONDEMAND) {
+        return true;
+    }
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         return true;
     }

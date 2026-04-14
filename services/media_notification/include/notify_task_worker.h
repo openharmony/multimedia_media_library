@@ -46,6 +46,7 @@ public:
     EXPORT void StartWorker();
     EXPORT void AddTaskInfo(NotifyInfoInner &notifyInfoInner);
     EXPORT void AddUserDefineTaskInfo(const UserDefineNotifyInfo &notifyInfoInner);
+    EXPORT void AddDbAvailabilityTaskInfo(const std::string& status, const std::string& reason);
     EXPORT bool IsRunning();
 
 private:
@@ -59,7 +60,9 @@ private:
     EXPORT void DistributeNotifyInfo(std::vector<NotifyInfo> notifyInfos);
 
     EXPORT std::vector<UserDefineNotifyInfo> GetCurrentUserDefineNotifyVec();
+    EXPORT std::vector<std::pair<std::string, std::string>> GetCurrentDbAvailabilityNotifyVec();
     EXPORT void HandleUserDefineNotifyTask();
+    EXPORT void HandleDbAvailabilityTask();
 
 private:
     EXPORT static std::unordered_map<int32_t, NotifyTaskInfo> taskInfos_;
@@ -73,6 +76,9 @@ private:
 
     EXPORT static std::vector<UserDefineNotifyInfo> userDefineTaskInfos_;
     EXPORT static std::mutex userDefineVecMutex_;
+
+    EXPORT static std::vector<std::pair<std::string, std::string>> dbAvailabilityTaskInfos_;
+    EXPORT static std::mutex dbAvailabilityVecMutex_;
 };
 } // namespace Notification
 } // namespace Media

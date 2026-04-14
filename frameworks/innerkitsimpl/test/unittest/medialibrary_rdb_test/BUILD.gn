@@ -37,6 +37,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_scanner/include/scanner",
     "${MEDIALIB_THUMBNAIL_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/include",
   ]
 
   cflags = [ "-fno-access-control" ]
@@ -81,6 +82,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "ffrt:libffrt",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
     "ipc:ipc_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",

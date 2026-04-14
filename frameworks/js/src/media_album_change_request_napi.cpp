@@ -40,6 +40,7 @@
 #include "delete_albums_vo.h"
 #include "change_request_set_album_name_vo.h"
 #include "change_request_set_cover_uri_vo.h"
+#include "change_request_set_default_cover_uri_vo.h"
 #include "change_request_dismiss_vo.h"
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
@@ -2123,7 +2124,7 @@ static bool SetDefaultCoverUriExecute(MediaAlbumChangeRequestAsyncContext& conte
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
-    ChangeRequestSetCoverUriReqBody reqBody;
+    ChangeRequestSetDefaultCoverUriReqBody reqBody;
     reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
     reqBody.coverUri = photoAlbum->GetCoverUri();
     reqBody.albumType = photoAlbum->GetPhotoAlbumType();
@@ -2134,7 +2135,11 @@ static bool SetDefaultCoverUriExecute(MediaAlbumChangeRequestAsyncContext& conte
     int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to set cover uri, err: %{public}d", ret);
-        context.error = JS_INNER_FAIL;
+        if (ret == E_INVALID_VALUES) {
+            context.error = JS_E_PARAM_INVALID;
+        } else {
+            context.error = JS_E_INNER_FAIL;
+        }
         return false;
     }
     return true;
@@ -2486,17 +2491,20 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAnalysisAlbumRequest(napi_env en
     photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(asyncContext->photoAlbumSubType));
     photoAlbum->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value photoAlbumNapi = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
-    CHECK_COND(env, photoAlbumNapi != nullptr, JS_INNER_FAIL);
+    CHECK_COND_WITH_MSG(env, photoAlbumNapi != nullptr, JS_E_INNER_FAIL, "Failed to create PhotoAlbumNapi");
 
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
-    CHECK_ARGS(env, napi_get_reference_value(env, constructor_, &constructor), JS_INNER_FAIL);
-    CHECK_ARGS(env, napi_new_instance(env, constructor, 1, &photoAlbumNapi, &instance), JS_INNER_FAIL);
-    CHECK_COND(env, instance != nullptr, JS_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_reference_value(env, constructor_, &constructor), JS_E_INNER_FAIL,
+                        "Failed to create reference");
+    CHECK_ARGS_WITH_MSG(env, napi_new_instance(env, constructor, 1, &photoAlbumNapi, &instance),
+                        JS_E_INNER_FAIL, "Failed to create instance");
+    CHECK_COND_WITH_MSG(env, instance != nullptr, JS_E_INNER_FAIL, "Failed to create instance");
 
     MediaAlbumChangeRequestNapi* changeRequest = nullptr;
-    CHECK_ARGS(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&changeRequest)), JS_INNER_FAIL);
-    CHECK_COND(env, changeRequest != nullptr, JS_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&changeRequest)),
+                JS_E_INNER_FAIL, "Failed to unwrap native object");
+    CHECK_COND_WITH_MSG(env, changeRequest != nullptr, JS_E_INNER_FAIL, "Failed to create instance");
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::CREATE_ANALYSIS_ALBUM);
     return instance;
 }

@@ -47,10 +47,10 @@ public:
         const std::string &timeStr, const std::string &format, bool isUTC = false);
     EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
     EXPORT static int64_t NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue);
-    EXPORT static std::string GetAbsoluteLakeDir(int32_t userId);
-    EXPORT static std::string GetAbsoluteLakePath(const std::string &storagePath, int32_t userId);
     // Construct Photos column value of date_added_year, date_added_month, date_added_day from date_added
     EXPORT static DateParts ConstructDateAddedDateParts(int64_t dateAdded);
+    EXPORT static std::string GetLocalLcdPath(const std::string &photoPath);
+    EXPORT static std::string GetLocalLcdExPath(const std::string &photoPath);
 
 protected:
     EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);

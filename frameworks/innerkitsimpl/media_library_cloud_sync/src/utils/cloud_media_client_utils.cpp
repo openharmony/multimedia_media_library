@@ -27,35 +27,14 @@
 
 namespace OHOS::Media::CloudSync {
 // Anco FileSourceType
-const int32_t MEDIA_HO_LAKE_CONST = 3;
-const std::string PREFIX = "/data/service/el2/";
-const std::string SUFFIX = "/hmdfs/account/files";
-const std::string SANDBOXPREFIX = "/storage/cloud/files";
-static const std::string HMDFS_PATH_PREFIX = "/mnt/hmdfs/100";
 static const std::string PHOTOS_PATH = "com.huawei.hmos.photos";
+static std::string GetHmdfsPathPrefix(int32_t userId)
+{
+    return "/mnt/hmdfs/" + std::to_string(userId);
+}
+
 const std::string PHOTO_CLOUD_PATH_URI = "/storage/cloud/files/";
 const std::string PHOTO_MEDIA_PATH_URI = "/storage/media/local/files/";
-std::string CloudMediaClientUtils::GetLowerPath(const std::string &path, int32_t userId)
-{
-    size_t pos = path.find(SANDBOXPREFIX);
-    if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("invalid path");
-        return "";
-    }
-    return PREFIX + std::to_string(userId) + SUFFIX + path.substr(pos + SANDBOXPREFIX.size());
-}
-
-int32_t CloudMediaClientUtils::GetLocalPathByPhotosVo(const CloudMdkRecordPhotosVo &photosVo, std::string &localPath,
-    int32_t userId)
-{
-    if (photosVo.fileSourceType != MEDIA_HO_LAKE_CONST) {
-        localPath = GetLowerPath(photosVo.data, userId);
-    } else {
-        localPath = CloudLakeUtils::GetAbsoluteLakePath(photosVo.storagePath, userId);
-    }
-    return E_OK;
-}
-
 std::string CloudMediaClientUtils::GetLocalPath(const std::string &path)
 {
     std::string localPath = path;
@@ -96,19 +75,20 @@ std::string CloudMediaClientUtils::AppendUserId(const std::string &path, int32_t
     return path;
 }
 
-std::string CloudMediaClientUtils::GetVideoCachePath(const std::string &filePath)
+std::string CloudMediaClientUtils::GetVideoCachePath(const std::string &filePath, int32_t userId)
 {
     std::string result = "";
     const std::string sandboxPrefix = "/storage/cloud";
     const std::string cachePathPrefix = "/account/device_view/local/data/";
     const std::string cachepathSuffix = "/.video_cache";
+    CHECK_AND_RETURN_RET(userId >= 0, result);
     size_t pos = filePath.find(sandboxPrefix);
     if (pos != 0 || pos == std::string::npos) {
         MEDIA_ERR_LOG(
             "GetVideoCachePath Invalid filePath, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
         return result;
     }
-    std::string cachePath = HMDFS_PATH_PREFIX + cachePathPrefix + PHOTOS_PATH +
+    std::string cachePath = GetHmdfsPathPrefix(userId) + cachePathPrefix + PHOTOS_PATH +
         cachepathSuffix + filePath.substr(sandboxPrefix.length());
     MEDIA_INFO_LOG("The cachePath is: %{public}s", cachePath.c_str());
     auto resolvedPath = realpath(cachePath.c_str(), nullptr);
@@ -129,15 +109,16 @@ std::string CloudMediaClientUtils::GetVideoCachePath(const std::string &filePath
     return cachePath;
 }
 
-void CloudMediaClientUtils::InvalidVideoCache(const std::string &localPath)
+void CloudMediaClientUtils::InvalidVideoCache(const std::string &localPath, int32_t userId)
 {
     MEDIA_INFO_LOG("InvalidVideoCache loca path: %{public}s", MediaFileUtils::DesensitizePath(localPath).c_str());
     const std::string sandboxPrefix = "/storage/cloud";
+    CHECK_AND_RETURN_LOG(userId >= 0, "InvalidVideoCache Invalid userId: %{public}d", userId);
     size_t pos = localPath.find(sandboxPrefix);
     CHECK_AND_RETURN_LOG(pos == 0 && pos != std::string::npos,
         "InvalidVideoCache Invalid localPath, sandboxPrefix: %{public}s",
         sandboxPrefix.c_str());
-    std::string videoCachePath = GetVideoCachePath(localPath);
+    std::string videoCachePath = GetVideoCachePath(localPath, userId);
     CHECK_AND_RETURN_LOG(!videoCachePath.empty(), "InvalidVideoCache Invalid videoCachePath");
     CHECK_AND_RETURN_LOG(unlink(videoCachePath.c_str()) >= 0,
         "InvalidVideoCache Failed to unlink video cache: %{public}s, errno: %{public}d",

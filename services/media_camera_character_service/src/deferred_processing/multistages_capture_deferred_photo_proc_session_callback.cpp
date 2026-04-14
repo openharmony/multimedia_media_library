@@ -47,6 +47,7 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
@@ -331,6 +332,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleForIsTemp(
             static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
     UpdateHighQualityPictureInfo(fileAsset->GetId(), cloudImageEnhanceFlag, modifyType);
     MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileAsset->GetId());
+    NotifyIfTempFile(fileAsset);
 }
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::HandleOnProcessImageDone(const std::string &imageId,
     std::shared_ptr<CameraStandard::PictureIntf> pictureIntf, uint32_t cloudImageEnhanceFlag)

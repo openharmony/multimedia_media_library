@@ -31,6 +31,7 @@ public:
     static const std::string BUNDLE_NAME EXPORT;
     static const std::string HIGH_RESOLUTION EXPORT;
     static const std::string ENCODINGS EXPORT;
+    static const std::string PREFERRED_COMPATIBLE_MODE EXPORT;
 
     static const std::string CREATE_TABLE;
     static const std::string DROP_TABLE;

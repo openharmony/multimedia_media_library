@@ -130,6 +130,7 @@
 #include "global_scanner.h"
 #include "media_upgrade.h"
 #include <functional>
+#include "lcd_aging_manager.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -998,6 +999,12 @@ void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         UpdateCinematicVideoAlbum(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_CINEMATIC_VIDEO_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, false);
+    }
+
+    if (oldVersion < VERSION_ADD_LCD_AGING &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LCD_AGING, true)) {
+        LcdAgingManager::GetInstance().DelayLcdAgingTime();
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LCD_AGING, true);
     }
 }
 

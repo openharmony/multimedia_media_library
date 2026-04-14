@@ -40,11 +40,6 @@ bool PhotoFileUtils::HasSource(bool hasEditDataCamera, int64_t editTime, int32_t
                 effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
 }
 
-std::string PhotoFileUtils::GetAbsoluteLakeDir(int32_t userId)
-{
-    return "/mnt/data/" + to_string(userId) + "/HO_MEDIA/";
-}
-
 int32_t PhotoFileUtils::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
 {
     if (srcPath.empty()) {
@@ -233,18 +228,6 @@ int64_t PhotoFileUtils::NormalizeTimestamp(int64_t timestamp, int64_t fallbackVa
     return timestamp;
 }
 
-// 提供给端云使用
-string PhotoFileUtils::GetAbsoluteLakePath(const std::string &storagePath, int32_t userId)
-{
-    string lakeDir = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/";
-    if (!MediaStringUtils::StartsWith(storagePath, lakeDir)) {
-        MEDIA_INFO_LOG("Failed to check storagePath: %{public}s", storagePath.c_str());
-        return "";
-    }
-
-    return GetAbsoluteLakeDir(userId) + storagePath.substr(lakeDir.length());
-}
-
 DateParts PhotoFileUtils::ConstructDateAddedDateParts(int64_t dateAdded)
 {
     if (dateAdded <= 0) {
@@ -256,5 +239,21 @@ DateParts PhotoFileUtils::ConstructDateAddedDateParts(int64_t dateAdded)
     const auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(dateAddedDateInfo);
     DateParts dateParts = {dateYear, dateMonth, dateDay};
     return dateParts;
+}
+
+std::string PhotoFileUtils::GetLocalLcdPath(const std::string &photoPath)
+{
+    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/LCD.jpg";
+}
+
+std::string PhotoFileUtils::GetLocalLcdExPath(const std::string &photoPath)
+{
+    if (photoPath.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/THM_EX/LCD.jpg";
 }
 } // namespace OHOS::Media

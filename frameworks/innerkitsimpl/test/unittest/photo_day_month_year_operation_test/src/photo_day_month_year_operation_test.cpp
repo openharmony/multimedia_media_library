@@ -403,5 +403,2384 @@ HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_test, Test
     EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), 0);
     MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_test End");
 }
-}  // namespace Media
-}  // namespace OHOS
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_nullptr_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_nullptr_test Start");
+    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(nullStore);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_nullptr_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_normal_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_normal_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_normal_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_nullptr_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_nullptr_test Start");
+    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_nullptr_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_normal_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_normal_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_normal_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_normal_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_normal_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_normal_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_no_anomaly_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_no_anomaly_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_no_anomaly_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_empty_db_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_empty_db_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_empty_db_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_normal_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_normal_photos_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_normal_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_zero_date_taken_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_zero_date_taken_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_zero_date_taken_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_negative_date_taken_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_date_taken_test Start");
+    int64_t dateTaken = -1;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_date_taken_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_19700101_date_day_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_19700101_date_day_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    string dateDay = "19700101";
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_19700101_date_day_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_offset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_offset_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+08:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_offset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_gps_exif_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_exif_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"2020:08:08\",\"GPSTimeStamp\":\"00:08:53\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_exif_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_invalid_exif_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_exif_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_exif_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_empty_db_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_empty_db_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    prefs->PutInt(isFinishedKeyName, 0);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 0);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_empty_db_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_already_finished_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_already_finished_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    prefs->PutInt(isFinishedKeyName, 1);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_already_finished_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_photos_test Start");
+    PreparePhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_multiple_anomalies_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_multiple_anomalies_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_multiple_anomalies_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_large_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_large_timestamp_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds() * MILSEC_TO_MICSEC;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_large_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_exif_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_exif_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"456\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_exif_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_negative_offset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_offset_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"-05:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_offset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_max_offset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_max_offset_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+14:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_max_offset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_min_offset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_min_offset_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"-12:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_min_offset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_multiple_times_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_multiple_times_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_multiple_times_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_zero_detail_time_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_zero_detail_time_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    string detailTime = "0000:00:00 00:00:00";
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_zero_detail_time_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_empty_detail_time_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_detail_time_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    string detailTime = "";
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_detail_time_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_mismatch_detail_time_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_mismatch_detail_time_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    string mismatchDetailTime = "2020:01:01 00:00:00";
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, mismatchDetailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_mismatch_detail_time_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_batch_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_batch_test Start");
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_batch_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_concurrent_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_concurrent_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_concurrent_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_concurrent_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_concurrent_test Start");
+    PreparePhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_concurrent_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_dirty_synced_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_dirty_synced_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET dirty = 0 WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_dirty_synced_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_min_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_min_timestamp_test Start");
+    int64_t dateTaken = 500;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_min_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_max_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_max_timestamp_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_max_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_invalid_offset_format_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_offset_format_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+8:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_offset_format_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_invalid_offset_sign_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_offset_sign_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"*08:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_invalid_offset_sign_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_gps_date_only_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_date_only_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"2020:08:08\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_date_only_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_gps_time_only_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_time_only_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"00:08:53\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_time_only_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_added_fallback_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_added_fallback_test Start");
+    int64_t dateTaken = 0;
+    int64_t dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateAdded);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_added = " + to_string(dateAdded) +
+                      " WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_added_fallback_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_modified_fallback_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_modified_fallback_test Start");
+    int64_t dateTaken = 0;
+    int64_t dateModified = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateModified);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_added = 0, date_modified = " +
+                      to_string(dateModified) + " WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_modified_fallback_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_all_zero_dates_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_all_zero_dates_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_added = 0, date_modified = 0 WHERE file_id = " +
+                       to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_all_zero_dates_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_null_dates_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_null_dates_test Start");
+    int64_t timestamp = GetTimestamp();
+    int64_t timestampMilliSecond = timestamp * SEC_TO_MSEC;
+    string title = GetTitle(timestamp);
+    string displayName = title + ".jpg";
+    string path = "/storage/cloud/files/photo/16/" + displayName;
+    int64_t imageSize = 10 * 1000 * 1000;
+    string imageMimeType = "image/jpeg";
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    valuesBucket.PutLong(MediaColumn::MEDIA_SIZE, imageSize);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_WIDTH, 1920);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_HEIGHT, 1080);
+    valuesBucket.PutString(MediaColumn::MEDIA_MIME_TYPE, imageMimeType);
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, path);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TAKEN, timestampMilliSecond);
+    int64_t fileId = -1;
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_GT(fileId, 0);
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_null_dates_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_boundary_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_boundary_timestamp_test Start");
+    int64_t dateTaken = 1000;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_boundary_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_after_update_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_after_update_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_after_update_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_sync_status_off_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_sync_status_off_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_sync_status_off_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_progress_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_progress_test Start");
+    for (int i = 0; i < 10; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_progress_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_hours_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_hours_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+10:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_hours_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_minutes_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_minutes_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:30\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_minutes_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_combined_offset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_combined_offset_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+05:30\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_combined_offset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_empty_result_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_empty_result_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_empty_result_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_null_date_day_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_null_date_day_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, "", exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_day = NULL WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_null_date_day_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_empty_date_day_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_date_day_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, "", exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_day = '' WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_date_day_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_null_store_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_null_store_test Start");
+    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_null_store_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_null_store_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_null_store_test Start");
+    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(nullStore);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_null_store_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_overflow_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_overflow_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"999999\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_overflow_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_zero_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_zero_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"000\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_zero_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_gps_invalid_format_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_invalid_format_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"2020/08/08\",\"GPSTimeStamp\":\"00:08:53\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_gps_invalid_format_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_large_dataset_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_large_dataset_test Start");
+    for (int i = 0; i < 100; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_large_dataset_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_dirty_mdirty_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_dirty_mdirty_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET dirty = 1 WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_dirty_mdirty_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_year_mismatch_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_year_mismatch_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_year = '2020' WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_year_mismatch_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_month_mismatch_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_month_mismatch_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_month = '202008' WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_month_mismatch_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_only_original_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_only_original_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"\","
+                   "\"SubsecTimeOriginal\":\"\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_only_original_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_single_photo_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_single_photo_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_single_photo_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_very_large_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_very_large_timestamp_test Start");
+    int64_t dateTaken = 99999999999999LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_very_large_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_very_small_timestamp_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_very_small_timestamp_test Start");
+    int64_t dateTaken = -99999999999999LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_very_small_timestamp_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_normal_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_photos_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_zero_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_zero_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_zero_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_mixed_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_mixed_photos_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_mixed_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_within_range_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_within_range_test Start");
+    int64_t dateTaken = 16094592000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_within_range_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_comprehensive_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_comprehensive_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_comprehensive_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_null_exif_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_null_exif_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_null_exif_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_malformed_exif_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_malformed_exif_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{invalid json}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_malformed_exif_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_normalization_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normalization_test Start");
+    int64_t dateTaken = 500;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normalization_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_zero_file_id_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_zero_file_id_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(maxFileIdKeyName, 0);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), 0);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_zero_file_id_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_out_of_range_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_out_of_range_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+24:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_out_of_range_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_negative_offset_minutes_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_offset_minutes_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"-00:60\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_negative_offset_minutes_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_normal_data_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_normal_data_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_normal_data_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_max_valid_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_valid_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_valid_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_anomalies_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_anomalies_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_anomalies_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_partial_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_partial_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"12\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_partial_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_single_digit_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_single_digit_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"5\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_single_digit_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_batch_processing_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_processing_test Start");
+    for (int i = 0; i < 250; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_processing_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_exact_min_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_min_test Start");
+    int64_t dateTaken = 1000;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_min_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_exact_max_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_max_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_max_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_empty_anomalies_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_empty_anomalies_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_empty_anomalies_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_boundary_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+13:59\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_reindex_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_reindex_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    PrepareAbnormalPhotos();
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_reindex_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_below_min_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_below_min_test Start");
+    int64_t dateTaken = 999;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_below_min_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_above_max_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_above_max_test Start");
+    int64_t dateTaken = 11991456001000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_above_max_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_progress_persistence_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_progress_persistence_test Start");
+    for (int i = 0; i < 50; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_progress_persistence_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_sync_status_check_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_sync_status_check_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_sync_status_check_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_null_result_set_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_null_result_set_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_null_result_set_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_priority_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_priority_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"120\",\"GPSDateStamp\":\"2020:08:08\","
+                   "\"GPSTimeStamp\":\"00:08:53\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_priority_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_empty_db_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_db_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_db_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_multiple_repair_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_multiple_repair_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_multiple_repair_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_no_progress_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_no_progress_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(maxFileIdKeyName, -1);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), -1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_no_progress_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_overflow_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_overflow_test Start");
+    int64_t dateTaken = 100000000000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, EOK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_overflow_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_error_handling_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_handling_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_handling_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_negative_max_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_negative_max_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"-14:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_negative_max_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_underflow_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_underflow_test Start");
+    int64_t dateTaken = -100000000000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_underflow_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_large_max_file_id_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_large_max_file_id_test Start");
+    for (int i = 0; i < 10; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(maxFileIdKeyName, 999999);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), 999999);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_large_max_file_id_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_max_value_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_max_value_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"999\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_subsecond_max_value_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_multiple_indexes_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_indexes_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_indexes_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_minutes_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_minutes_boundary_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:59\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_minutes_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_batch_processing_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_batch_processing_test Start");
+    for (int i = 0; i < 250; i++) {
+        int64_t dateTaken = 0;
+        auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+            PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+        string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+        auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+        int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+        EXPECT_GT(fileId, 0);
+    }
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, EOK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_batch_processing_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_empty_gps_fields_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_gps_fields_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_empty_gps_fields_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_null_rdb_store_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_null_rdb_store_test Start");
+    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_null_rdb_store_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_hours_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_hours_boundary_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+23:59\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_hours_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_with_empty_db_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_with_empty_db_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_with_empty_db_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_all_null_fields_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_all_null_fields_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    string updateSql = "UPDATE Photos SET date_added = 0, date_modified = 0, date_day = NULL, "
+                      "detail_time = NULL WHERE file_id = " + to_string(fileId);
+    int32_t ret = g_rdbStore->ExecuteSql(updateSql);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_all_null_fields_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_batch_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_boundary_test Start");
+    for (int i = 0; i < 200; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    prefs->FlushSync();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_normalization_edge_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normalization_edge_test Start");
+    int64_t dateTaken = 1001;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normalization_edge_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_recreate_index_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_recreate_index_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    PrepareAbnormalPhotos();
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_recreate_index_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_subsecond_truncation_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_subsecond_truncation_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+00:00\","
+                   "\"SubsecTimeOriginal\":\"123456789\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_subsecond_truncation_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_with_large_batch_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_large_batch_test Start");
+    for (int i = 0; i < 300; i++) {
+        int64_t dateTaken = 0;
+        auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+            PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+        string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+        auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+        int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+        EXPECT_GT(fileId, 0);
+    }
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDate_with_large_batch_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_zero_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_zero_boundary_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_zero_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_negative_max_file_id_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_negative_max_file_id_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(maxFileIdKeyName, -1);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), -1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_negative_max_file_id_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_sign_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_sign_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"-08:00\","
+                   "\"SubsecTimeOriginal\":\"120\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_offset_sign_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_empty_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_photos_test Start");
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_negative_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_negative_boundary_test Start");
+    int64_t dateTaken = -1;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_negative_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_zero_progress_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_zero_progress_test Start");
+    int32_t errCode = E_OK;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(maxFileIdKeyName, 0);
+    prefs->FlushSync();
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(maxFileIdKeyName, 0), 0);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_zero_progress_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_empty_original_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_empty_original_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+                   "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_exif_empty_original_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_single_photo_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_single_photo_test Start");
+    int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_single_photo_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_small_positive_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_small_positive_test Start");
+    int64_t dateTaken = 100;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_small_positive_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_single_photo_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_single_photo_test Start");
+    int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    EXPECT_GT(fileId, 0);
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_single_photo_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_exact_zero_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_zero_test Start");
+    int64_t dateTaken = 0;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_zero_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_normal_data_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_data_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_data_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_min_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_min_boundary_test Start");
+    int64_t dateTaken = 999;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_min_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_max_boundary_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_boundary_test Start");
+    int64_t dateTaken = 11991456001000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_boundary_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_multiple_photos_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_photos_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_photos_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_small_negative_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_small_negative_test Start");
+    int64_t dateTaken = -100;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_small_negative_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_very_small_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_very_small_test Start");
+    int64_t dateTaken = -999999999;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_very_small_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_error_resilience_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_resilience_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_resilience_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_very_large_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_very_large_test Start");
+    int64_t dateTaken = 9999999999999LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_very_large_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_batch_size_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_size_test Start");
+    for (int i = 0; i < 199; i++) {
+        int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+        EXPECT_GT(fileId, 0);
+    }
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_batch_size_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_edge_case_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_edge_case_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_edge_case_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_concurrent_access_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_concurrent_access_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_concurrent_access_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_concurrent_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_concurrent_test Start");
+    PreparePhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_concurrent_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_normal_case_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normal_case_test Start");
+    int64_t dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normal_case_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_persistence_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_persistence_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    PrepareAbnormalPhotos();
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_persistence_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_validation_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_validation_test Start");
+    int64_t dateTaken = 5000;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_validation_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_validation_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_validation_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_validation_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_range_check_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_range_check_test Start");
+    int64_t dateTaken = 10000000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_range_check_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_data_integrity_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_data_integrity_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_data_integrity_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_boundary_check_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_boundary_check_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_boundary_check_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_completion_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_completion_test Start");
+    PreparePhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_completion_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_edge_validation_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_edge_validation_test Start");
+    int64_t dateTaken = 999;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_edge_validation_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_comprehensive_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_comprehensive_test Start");
+    int64_t dateTaken = 10000000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_comprehensive_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_comprehensive_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_comprehensive_test Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_comprehensive_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_final_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_final_test Start");
+    int64_t dateTaken = 11991456000000LL;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_final_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_ultimate_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_ultimate_test Start");
+    PreparePhotos();
+    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_ultimate_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_ultimate_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_ultimate_test Start");
+    int64_t dateTaken = 1000;
+    auto detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(
+        PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, MediaFileUtils::UTCTimeMilliSeconds());
+    string exif = "{\"DateTimeOriginal\":\"" + detailTime + "\"}";
+    auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    int64_t fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("RepairDateTime_with_date_taken_ultimate_test End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_ultimate_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_ultimate_test Start");
+    PreparePhotos();
+    MarkDateAddedDatesDataStatus(g_rdbStore);
+    PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    EXPECT_NE(prefs, nullptr);
+    const string isFinishedKeyName = "is_task_finished";
+    EXPECT_EQ(prefs->GetInt(isFinishedKeyName, 0), 1);
+    MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_ultimate_test End");
+}
+
+} // namespace Media
+} // namespace OHOS

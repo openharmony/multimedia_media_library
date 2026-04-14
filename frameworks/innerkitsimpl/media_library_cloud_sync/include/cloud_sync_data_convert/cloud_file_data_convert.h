@@ -55,7 +55,6 @@ public:
     int32_t HandleExifRotate(std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord);
 
     /* attachments */
-    std::string GetLowerPath(const std::string &path);
     int32_t HandleEditData(std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto);
     int32_t HandleContent(std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord);
     int32_t HandleThumbnail(std::map<std::string, MDKRecordField> &recordData, std::string &path, bool needUseExDir);
@@ -105,6 +104,7 @@ private:
     void ConvertInt64FieldsHashMap(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo);
     void HandleRotation(int32_t &rotation, MDKRecordPhotosData &data);
     void HandlePropertyExifRotate(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo);
+    std::string GetContentRelatedLog(const CloudMdkRecordPhotosVo &upLoadRecord) const;
 
 private:
     /* identifier */

@@ -28,6 +28,7 @@
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
 #endif
+#include "ipc_skeleton.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -67,10 +68,16 @@ int32_t AbsPermissionHandler::ExecuteCheckPermissionWithDfx(MediaLibraryCommand 
         MEDIA_DEBUG_LOG("dfx begin");
         bool permGranted = err == E_SUCCESS;
         PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
+        int32_t callingUid = IPCSkeleton::GetCallingUid();
+        OpenDataInfo openData;
+        openData.uri = cmd.GetUri().ToString();
+        openData.uid = callingUid;
+        openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
+        openData.type = "open";
         if (permParam.isWrite) {
-            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type);
+            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type, openData);
         } else {
-            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
+            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type, openData);
         }
         MEDIA_DEBUG_LOG("dfx end");
     }

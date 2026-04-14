@@ -599,7 +599,7 @@ int32_t CloudMediaDataClientHandler::GetFullSyncDownloadInfo(std::map<std::strin
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
             .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GetFullSyncDownloadInfo, ret: %{public}d", ret);
-    MEDIA_INFO_LOG("GetFullSyncDownloadInfo: %{public}s", respBody.ToString().c_str());
+    MEDIA_DEBUG_LOG("GetFullSyncDownloadInfo: %{public}s", respBody.ToString().c_str());
     flagsInfo = respBody.flagsInfo;
     return ret;
 }

@@ -20,13 +20,13 @@
 #include <string>
 
 #include "backup_const.h"
-#include "dao_utils.h"
 #include "media_log.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "nlohmann/json.hpp"
 #include "photos_backup.h"
 #include "userfile_manager_types.h"
+#include "media_string_utils.h"
 
 using namespace testing::ext;
 

@@ -383,23 +383,25 @@ HWTEST_F(MediaAnalysisDataServiceTest, GetOrderPosition_GetRowCountFailed, TestS
 // - 覆盖场景：GetPortraitRelationship 函数中查询结果为空
 // - 覆盖分支点：resultSet == nullptr 分支 (306行)
 // - 触发条件：查询返回空结果集
-// - 业务验证：函数应返回 JS_INNER_FAIL 错误码
+// - 业务验证：函数应返回 函数应返回 E_ERR
 HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_QueryFailed, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start GetPortraitRelationship_QueryFailed");
     CleanAnalysisAlbum();
-    
+
+    MediaLibraryUnistoreManager::GetInstance().Stop();
     int32_t albumId = 1;
     GetRelationshipRespBody resp;
-    
+
     int32_t ret = MediaAnalysisDataService::GetInstance().GetPortraitRelationship(albumId, resp);
-    EXPECT_EQ(ret, JS_INNER_FAIL);
+    EXPECT_EQ(ret, E_ERR);
+    MediaLibraryUnitTestUtils::InitUnistore();
     MEDIA_INFO_LOG("end GetPortraitRelationship_QueryFailed");
 }
 
 // 用例说明：测试 GetPortraitRelationship 获取行数失败
 // - 覆盖场景：GetPortraitRelationship 函数中 GetRowCount 失败
-// - 覆盖分支点：resultSet->GetRowCount() 失败分支 (312行)
+// - 覆盖分支点：resultSet->GetRowCount() = 0 失败分支 (312行)
 // - 触发条件：获取行数操作失败
 // - 业务验证：函数应返回 JS_INNER_FAIL 错误码
 HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_GetRowCountFailed, TestSize.Level1)
@@ -413,24 +415,6 @@ HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_GetRowCountFailed
     int32_t ret = MediaAnalysisDataService::GetInstance().GetPortraitRelationship(albumId, resp);
     EXPECT_EQ(ret, JS_INNER_FAIL);
     MEDIA_INFO_LOG("end GetPortraitRelationship_GetRowCountFailed");
-}
-
-// 用例说明：测试 GetPortraitRelationship 定位第一行失败
-// - 覆盖场景：GetPortraitRelationship 函数中 GoToFirstRow 失败
-// - 覆盖分支点：resultSet->GoToFirstRow() 失败分支 (317行)
-// - 触发条件：定位第一行操作失败
-// - 业务验证：函数应返回 JS_INNER_FAIL 错误码
-HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_GoToFirstRowFailed, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("start GetPortraitRelationship_GoToFirstRowFailed");
-    CleanAnalysisAlbum();
-    
-    int32_t albumId = 1;
-    GetRelationshipRespBody resp;
-    
-    int32_t ret = MediaAnalysisDataService::GetInstance().GetPortraitRelationship(albumId, resp);
-    EXPECT_EQ(ret, JS_INNER_FAIL);
-    MEDIA_INFO_LOG("end GetPortraitRelationship_GoToFirstRowFailed");
 }
 
 // 用例说明：测试 GetAnalysisProcess 无效类型

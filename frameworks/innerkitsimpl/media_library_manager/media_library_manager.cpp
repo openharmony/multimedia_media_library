@@ -18,6 +18,7 @@
 #include "media_library_manager.h"
 
 #include <fcntl.h>
+#include <sys/xattr.h>
 
 #include "accesstoken_kit.h"
 #include "directory_ex.h"
@@ -555,6 +556,10 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         return dataShareHelper->OpenFile(openUri, "R");
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
+    if ((sandboxPath.find("LCD") != std::string::npos) && CheckIsCloudFile(sandboxPath)) {
+        Uri openUri(uriStr);
+        return dataShareHelper->OpenFile(openUri, "R");
+    }
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
     if (fd > 0 && sandboxPath.find("LCD.jpg") != std::string::npos) {
         UpdateAssetVisitCount(dataShareHelper, MediaFileUtils::GetIdFromUri(uriStr));
@@ -1542,6 +1547,17 @@ FetchResult<FileAsset> MediaLibraryManager::GetAssets(const PhotoAlbum &album,
         return fileAsset;
     }
     return FetchResult<FileAsset>(std::move(resultSet));
+}
+
+bool MediaLibraryManager::CheckIsCloudFile(const std::string &sandboxPath)
+{
+    constexpr size_t MAX_ATTR_NAME = 64;
+    constexpr const char* CLOUD_LOCATION_ATTR = "user.cloud.location";
+    char cloudvalue[MAX_ATTR_NAME] = {'\0'};
+    auto valueLen = getxattr(sandboxPath.c_str(), CLOUD_LOCATION_ATTR, cloudvalue, MAX_ATTR_NAME);
+    CHECK_AND_RETURN_RET_LOG(valueLen > 0, false, "failed to getxattr, sandboxPath: %{public}s", sandboxPath.c_str());
+    constexpr const char FILE_POSITION_CLOUD = '2';
+    return cloudvalue[0] == FILE_POSITION_CLOUD;
 }
 } // namespace Media
 } // namespace OHOS

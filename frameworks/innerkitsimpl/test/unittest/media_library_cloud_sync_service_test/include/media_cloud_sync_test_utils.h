@@ -42,5 +42,7 @@ void InitPhotoAlbumTable(std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 int32_t InsertTable(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const std::string &tableName,
     OHOS::NativeRdb::ValuesBucket &values);
+int32_t InsertTable(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const std::string &tableName,
+    OHOS::NativeRdb::ValuesBucket &values, int64_t &rowId);
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_TEST_UTILS_H

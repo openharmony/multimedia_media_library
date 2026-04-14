@@ -18,7 +18,6 @@
 #include "cloud_media_data_dao.h"
 
 #include "media_file_utils.h"
-#include "cloud_media_file_utils.h"
 #include "cloud_media_dao_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "result_set_reader.h"

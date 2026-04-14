@@ -65,7 +65,6 @@ public:
     int32_t CreatePhotoAlbum(const std::string& albumName);
     int32_t ChangeRequestSetAlbumName(const ChangeRequestSetAlbumNameDto& dto);
     int32_t ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto);
-    int32_t ChangeRequestSetDefaultCoverUri(const ChangeRequestSetCoverUriDto& dto);
     int32_t ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubtype);
     int32_t AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode);
     int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
@@ -91,7 +90,7 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
     int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
     int32_t SmartMoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
-    int32_t CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody);
+    void ReportFirstDbStatus();
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

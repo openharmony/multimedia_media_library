@@ -30,6 +30,7 @@
 #include "datashare_observer.h"
 #include "cloud_sync_utils.h"
 #include "medialibrary_related_system_state_manager.h"
+#include "default_net_connect_observer.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,10 +38,10 @@ namespace Media {
 enum class StatusEventType {
     CHARGING,
     DISCHARGING,
-    POWER_CONNECTED,
-    POWER_DISCONNECTED,
     SCREEN_OFF,
     SCREEN_ON,
+    POWER_CONNECTED,
+    POWER_DISCONNECTED,
     BATTERY_CHANGED,
     THERMAL_LEVEL_CHANGED,
     TIME_TICK
@@ -78,6 +79,9 @@ public:
     EXPORT static bool IsCharging();
 private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
+    OHOS::sptr<OHOS::Media::DefaultNetConnectObserver> defaultNetObserver_;
+#endif
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
@@ -105,6 +109,7 @@ private:
     DelayTask backgroundDelayTask_{"backgroundTask"};
     DelayTask thumbnailBgDelayTask_{"thumbnailBgTask"};
     EXPORT static bool Subscribe(void);
+    EXPORT void OnReceiveEventSubAction(const std::string &action);
     EXPORT void OnReceiveEventSub(const EventFwk::CommonEventData &eventData);
     EXPORT void ClearDirtyData();
     EXPORT void DoBackgroundOperation();
@@ -152,10 +157,11 @@ private:
     bool CheckOnRestoreAndTryResetFlag();
     void UpdateGlobalStatusForBgTask();
     bool IsBackgroundTaskAllowed();
-
 #ifdef MEDIALIBRARY_FACARD_SUPPORT
     void InitFaCardAfterDataShareReady(const std::string &action);
 #endif
+    int32_t RegisterDefaultNetObserver();
+    std::mutex registerDefaultNetObsLock_;
 };
 }  // namespace Media
 }  // namespace OHOS

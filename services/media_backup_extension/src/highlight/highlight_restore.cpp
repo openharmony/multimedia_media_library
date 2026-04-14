@@ -391,13 +391,14 @@ void HighlightRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> 
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
         }
     } while (rowCount == PAGE_SIZE);
+
+    UpdateAlbumCovers(photoInfoMap);
 }
 
 void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
     const HighlightPhotoInfo &highlightPhoto)
 {
     CHECK_AND_RETURN(highlightPhoto.photoInfo.fileIdNew > 0);
-    UpdateAlbumInfoCoverUris(highlightPhoto);
 
     std::stringstream storyIdss(highlightPhoto.storyIds);
     std::string storyId;
@@ -412,18 +413,30 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
     }
 }
 
-void HighlightRestore::UpdateAlbumInfoCoverUris(const HighlightPhotoInfo &highlightPhoto)
+
+void HighlightRestore::UpdateAlbumCovers(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
-    for (auto &info : albumInfos_) {
-        if (info.coverId != highlightPhoto.fileIdOld) {
+    CHECK_AND_RETURN_INFO_LOG(!albumInfos_.empty(), "albumInfos_ is empty, no need to update covers.");
+
+    for (auto &albumInfo : albumInfos_) {
+        if (albumInfo.coverId <= 0) {
             continue;
         }
-        info.coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            std::to_string(highlightPhoto.photoInfo.fileIdNew),
-            MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
+
+        auto it = photoInfoMap.find(albumInfo.coverId);
+        if (it == photoInfoMap.end()) {
+            MEDIA_ERR_LOG("album %{public}s coverId %{public}d not found in photoInfoMap, skip.",
+                MediaFileUtils::DesensitizeName(albumInfo.albumName).c_str(), albumInfo.coverId);
+            continue;
+        }
+
+        const PhotoInfo &photoInfo = it->second;
+        albumInfo.coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            std::to_string(photoInfo.fileIdNew),
+            MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
         MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.",
-            MediaFileUtils::DesensitizeName(info.albumName).c_str(),
-            MediaFileUtils::DesensitizeUri(info.coverUri).c_str());
+            MediaFileUtils::DesensitizeName(albumInfo.albumName).c_str(),
+            MediaFileUtils::DesensitizeUri(albumInfo.coverUri).c_str());
     }
 }
 

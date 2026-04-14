@@ -72,7 +72,7 @@ void MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(const string &p
 }
 
 int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(const std::string &photoId,
-    RequestType requestType)
+    RequestType requestType, const std::string& bundleName)
 {
     unique_lock<mutex> lock(mutex_);
     if (photoIdInProcess_.count(photoId) == 0) {
@@ -83,7 +83,15 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
 
     shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
     CHECK_AND_RETURN_RET_LOG((photo != nullptr), 0, "UpdatePhotoInProcessRequestCount failed, photo is nullptr");
-    photo->requestCount += (int32_t) requestType;
+
+    int32_t count = 0;
+    if (requestType == RequestType::REQUEST) {
+        count = photo->InsertBundleNames(bundleName);
+        photo->requestCount += (int32_t) requestType;
+    } else {
+        count = photo->EraseBundleNames(bundleName);
+        photo->requestCount -= count;
+    }
     photoIdInProcess_[photoId] = photo;
     return photo->requestCount;
 }
