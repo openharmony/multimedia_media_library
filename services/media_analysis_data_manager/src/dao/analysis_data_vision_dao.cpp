@@ -370,7 +370,7 @@ int32_t AnalysisDataVisionDao::DeleteFromVisionProfileByFileId(const string &fil
         UPDATE tab_analysis_total \
         SET status = 0, similarity = 0, duplicate = 0, total_score = 0 \
         WHERE \
-            file_id = ? AND (similarity = 1 OR duplicate = 1 OR total_score = 1);";
+            file_id = ? AND (similarity <> 0 OR duplicate <> 0 OR total_score <> 0);";
     const std::vector<NativeRdb::ValueObject> bindArgs = {fileId};
 
     int64_t changedRowCount = 0;
@@ -379,14 +379,6 @@ int32_t AnalysisDataVisionDao::DeleteFromVisionProfileByFileId(const string &fil
     CHECK_AND_RETURN_RET_LOG(changedRowCount > 0, errCode,
         "Failed to reset tab_analysis_total, fileId: %{public}s", fileId.c_str());
 
-    string CLEAR_PROFILE_BY_FILE_ID = "\
-        DELETE FROM tab_analysis_profile \
-        WHERE \
-            file_id = ?;";
-    errCode = rdbStore->ExecuteSql(CLEAR_PROFILE_BY_FILE_ID, bindArgs);
-    CHECK_AND_PRINT_LOG(errCode == NativeRdb::E_OK,
-        "Failed to clear tab_analysis_profile: %{public}s", fileId.c_str());
-    
     string CLEAR_DEDUP_BY_FILE_ID = "\
         DELETE FROM tab_analysis_dedup \
         WHERE \
