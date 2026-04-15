@@ -45,6 +45,8 @@
 #include "cancel_photo_uri_permission_vo.h"
 #include "cancel_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
+#include "reserve_photo_uri_permission_vo.h"
+#include "resume_photo_uri_permission_vo.h"
 #include "start_asset_change_scan_vo.h"
 #include "start_asset_change_scan_dto.h"
 #include "start_thumbnail_creation_task_vo.h"
@@ -328,6 +330,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION),
         &MediaAssetsControllerService::GrantPhotoUriPermissionInner
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION),
+        &MediaAssetsControllerService::ReservePhotoUriPermission
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION),
+        &MediaAssetsControllerService::ResumePhotoUriPermission
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION),
@@ -3154,6 +3164,44 @@ int32_t MediaAssetsControllerService::GetCompatibleInfo(MessageParcel &data, Mes
         MEDIA_ERR_LOG("MediaAssetsControllerService::GetCompatibleInfo fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
     }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::ReservePhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ReservePhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ReservePhotoUriPermissionReqBody reqBody;
+    ReservePhotoUriPermissionRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ReservePhotoUriPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().ReservePhotoUriPermission(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::ResumePhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ResumePhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ResumePhotoUriPermissionReqBody reqBody;
+    ResumePhotoUriPermissionRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ResumePhotoUriPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().ResumePhotoUriPermission(reqBody, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

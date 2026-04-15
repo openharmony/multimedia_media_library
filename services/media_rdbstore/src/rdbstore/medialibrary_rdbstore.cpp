@@ -26,6 +26,7 @@
 #include "dfx_const.h"
 #include "dfx_reporter.h"
 #include "media_app_uri_permission_column.h"
+#include "persist_permission_column.h"
 #include "media_old_photos_column.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_business_record_column.h"
@@ -2316,6 +2317,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoUpgrade::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX,
+    PersistPermissionColumn::CREATE_PERSIST_PERMISSION_TABLE,
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoUpgrade::CREATE_PHOTO_BURSTKEY_INDEX,
@@ -6489,6 +6491,18 @@ int32_t AddUniqueIdColumnsToAlbums(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, "Album", AddUniqueIdColumnsToAlbums);
+
+static int32_t AddPersistPermissionTable(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add Persist_Permission table");
+    const vector<string> sqls = {
+        PersistPermissionColumn::CREATE_PERSIST_PERMISSION_TABLE,
+    };
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_PERSIST_PERMISSION_TABLE);
+    MEDIA_INFO_LOG("End add Persist_Permission table");
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PERSIST_PERMISSION_TABLE, "OtherTable", AddPersistPermissionTable);
 
 static int32_t CreatePhotosExtTable(RdbStore &store)
 {
