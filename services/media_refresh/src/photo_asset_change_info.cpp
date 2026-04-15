@@ -69,6 +69,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
     { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
     { PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, TYPE_INT32 },
+    { PhotoColumn::LOCAL_ASSET_SIZE, TYPE_INT64 },
 };
 
 static void AlbumChangeInfosToString(stringstream &ss,
@@ -148,6 +149,7 @@ static void FillFromResultSet(PhotoAssetChangeInfo &assetChangeInfo, const share
         getInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
     assetChangeInfo.frontCamera_ = getStr(PhotoColumn::PHOTO_FRONT_CAMERA);
     assetChangeInfo.livephoto4dStatus_ = getInt(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS);
+    assetChangeInfo.localAssetSize_ = getLong(PhotoColumn::LOCAL_ASSET_SIZE);
 }
 
 vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(

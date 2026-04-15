@@ -1302,6 +1302,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(const unorde
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.mediaType);
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    value.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, data->GetLocalAssetSize());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, -1);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
@@ -1390,6 +1391,7 @@ int32_t PhotoCustomRestoreOperation::GetFileMetadata(std::unique_ptr<Metadata> &
         return E_FAIL;
     }
     data->SetFileSize(statInfo.st_size);
+    data->SetLocalAssetSize(statInfo.st_size);
     auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
     if (dateModified == 0) {
         dateModified = MediaFileUtils::UTCTimeMilliSeconds();

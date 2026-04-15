@@ -29,6 +29,7 @@
 #endif
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
+#include "media_update_local_asset_size_task.h"
 #include "media_update_moving_photo_duration_task.h"
 #include "media_clean_all_dirty_files_task.h"
 #include "media_burst_key_duplicate_task.h"
@@ -53,6 +54,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         std::make_shared<MediaLivePhoto4dStatusTask>(),
         std::make_shared<MediaUpdateMovingPhotoDurationTask>(),
         std::make_shared<MediaBurstKeyDuplicateTask>(),
+        std::make_shared<MediaUpdateLocalAssetSizeTask>(),
     };
 }
 

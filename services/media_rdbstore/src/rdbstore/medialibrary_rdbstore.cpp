@@ -6002,6 +6002,17 @@ void AddUniqueIdColumnsToAlbums(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("add PhotoAlbum unique_id columns ends");
 }
 
+static void AddLocalAssetSizeColumn(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::LOCAL_ASSET_SIZE + " BIGINT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add Photos local_asset_size columns starts");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add Photos local_asset_size columns ends");
+}
+
 static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_TAB_COMPATIBLE_INFO &&
@@ -6038,6 +6049,12 @@ static void UpgradeExtensionPart16(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PERSIST_PERMISSION_TABLE, true)) {
         AddPersistPermissionTable(store, VERSION_ADD_PERSIST_PERMISSION_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PERSIST_PERMISSION_TABLE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN, true)) {
+        AddLocalAssetSizeColumn(store, VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN, true);
     }
 }
 
