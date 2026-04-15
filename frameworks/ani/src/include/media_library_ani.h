@@ -289,6 +289,8 @@ public:
     static void PhotoAccessOffPhotoAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static void PhotoAccessOffHiddenAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static void PhotoAccessOffTrashedAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
+    static void SetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName, ani_int mode);
+    static ani_int GetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName);
     static ani_object QueryMediaDataReady(ani_env *env, ani_object object, ani_string dataKey);
     static ani_object PhotoAccessAcquireDebugDatabase(ani_env* env, ani_object object, ani_string betaIssueId,
         ani_string betaScenario);
@@ -410,6 +412,8 @@ struct MediaLibraryAsyncContext : public AniError {
     bool boolResult = false;
     std::map<std::string, std::string> debugDatabaseMap;
     bool supportedHighResolution = false;
+    int32_t preferredCompatibleMode = 0;
+    std::vector<std::string> supportedMimeTypes;
     std::string bundleName;
 };
 } // namespace Media
