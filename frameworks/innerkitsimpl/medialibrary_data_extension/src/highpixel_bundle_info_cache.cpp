@@ -35,7 +35,8 @@ void HighPixelBundleInfoCache::ClearBundleInfoInCache()
     bundleInfoList200_.clear();
 }
 
-bool HighPixelBundleInfoCache::GetBundleCacheInfo(const std::string &bundleName, bool &isSupport, HighPixelType pixelType)
+bool HighPixelBundleInfoCache::GetBundleCacheInfo(const std::string &bundleName,
+    bool &isSupport, HighPixelType pixelType)
 {
     if (pixelType == HighPixelType::PIXEL_50) {
         std::lock_guard<std::mutex> lock(cacheMutex50_);
@@ -58,7 +59,8 @@ bool HighPixelBundleInfoCache::GetBundleCacheInfo(const std::string &bundleName,
     }
 }
 
-void HighPixelBundleInfoCache::InsertBundleCacheInfo(const std::string &bundleName, bool isSupport, HighPixelType pixelType)
+void HighPixelBundleInfoCache::InsertBundleCacheInfo(const std::string &bundleName,
+    bool isSupport, HighPixelType pixelType)
 {
     if (pixelType == HighPixelType::PIXEL_50) {
         std::lock_guard<std::mutex> lock(cacheMutex50_);

@@ -57,9 +57,9 @@ const string LIST_STRATEGY_DENYLIST = "denyList";
 const string PIXEL_50_STRATEGY = "50-Stratgy";
 const string PIXEL_200_STRATEGY = "200-Stratgy";
 const string PIXEL_50_WHITELIST = "50-whiteList";
-const string PIXEL_50_BLACKLIST = "50-blackList";
+const string PIXEL_50_DENYLIST = "50-denyList";
 const string PIXEL_200_WHITELIST = "200-whiteList";
-const string PIXEL_200_BLACKLIST = "200-blackList";
+const string PIXEL_200_DENYLIST = "200-denyList";
 constexpr uint8_t HIGH_PIXEL_FLAG = 1 << 3;
 constexpr uint8_t HEIF_FILE_FLAG = 1 << 2;
 constexpr uint8_t SUPPORT_HIGH_FLAG = 1 << 1;
@@ -461,16 +461,16 @@ int32_t HeifTranscodingCheckUtils::ParseHighPixelCheckList(const nlohmann::json 
         PraseHighPixelList(checkListJson, PIXEL_50_WHITELIST, whiteList50_);
     }
 
-    if (checkListJson.contains(PIXEL_50_BLACKLIST) && checkListJson[PIXEL_50_BLACKLIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_50_BLACKLIST, denyList50_);
+    if (checkListJson.contains(PIXEL_50_DENYLIST) && checkListJson[PIXEL_50_DENYLIST].is_array()) {
+        PraseHighPixelList(checkListJson, PIXEL_50_DENYLIST, denyList50_);
     }
 
     if (checkListJson.contains(PIXEL_200_WHITELIST) && checkListJson[PIXEL_200_WHITELIST].is_array()) {
         PraseHighPixelList(checkListJson, PIXEL_200_WHITELIST, whiteList200_);
     }
 
-    if (checkListJson.contains(PIXEL_200_BLACKLIST) && checkListJson[PIXEL_200_BLACKLIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_200_BLACKLIST, denyList200_);
+    if (checkListJson.contains(PIXEL_200_DENYLIST) && checkListJson[PIXEL_200_DENYLIST].is_array()) {
+        PraseHighPixelList(checkListJson, PIXEL_200_DENYLIST, denyList200_);
     }
 
     return E_OK;
@@ -621,7 +621,7 @@ bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundl
         if (!CompareVersion(bundleInfo.versionName, it->second)) {
             HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
             MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
-                "than %{public}d pixel black list version %{public}s",
+                "than %{public}d pixel deny list version %{public}s",
                 bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType), it->second.c_str());
             return false;
         }
