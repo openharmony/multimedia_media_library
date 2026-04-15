@@ -68,6 +68,7 @@
 #include "media_uri_utils.h"
 #include "permission_utils.h"
 #include "transcode_compatible_info_operations.h"
+#include "medialibrary_uripermission_operations.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -2150,4 +2151,34 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }
+
+int32_t MediaAssetsService::ReservePhotoUriPermission(const ReservePhotoUriPermissionReqBody &reqBody,
+    ReservePhotoUriPermissionRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::ReservePhotoUriPermission start, isReserve: %{public}d, "
+        "tokenId: %{public}u", reqBody.isReserve, reqBody.tokenId);
+
+    int32_t errCode = UriPermissionOperations::ReservePhotoUriPermission(reqBody.isReserve,
+        reqBody.tokenId, reqBody.appIdentifier, reqBody.bundleName, reqBody.bundleIndex);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode,
+        "Failed to reserve photo uri permission, errCode = %{public}d", errCode);
+
+    respBody.result = E_SUCCESS;
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::ResumePhotoUriPermission(const ResumePhotoUriPermissionReqBody &reqBody,
+    ResumePhotoUriPermissionRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::ResumePhotoUriPermission start, tokenId: %{public}u", reqBody.tokenId);
+
+    int32_t errCode = UriPermissionOperations::ResumePhotoUriPermission(reqBody.tokenId,
+        reqBody.appIdentifier, reqBody.bundleName, reqBody.bundleIndex);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode,
+        "Failed to resume photo uri permission, errCode = %{public}d", errCode);
+
+    respBody.result = E_SUCCESS;
+    return E_SUCCESS;
+}
+
 } // namespace OHOS::Media
