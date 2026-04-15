@@ -286,6 +286,10 @@ MEDIALIB_HEIF_ACCESS_STAT:
   INNER_FAILED_TIMES: { type: INT32, desc: Number of failures due to internal errors }
   CODEC_FAILED_TIMES: { type: INT32, desc: Codec error failure count }
 
+MEDIALIB_COMPATIBEL_CONFIG:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: 24-hour cycle check-in for comparison, preserve: true }
+  APP_PACKAGE_CONFIG: { type: STRING, desc: The media library compatibility configuration of the app package }
+
 MEDIALIB_PHOTO_INFO:
   __BASE: { type: STATISTIC, level: CRITICAL, desc: Report the photo assets info and batch download tasks info, preserve: true }
   LOCAL_IMAGE_COUNT: { type: INT32, desc: Count of local images }

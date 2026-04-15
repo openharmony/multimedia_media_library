@@ -108,7 +108,6 @@ static void CloudFileDataConvertFuzzer()
     cloudFileDataConvert.HandleProperties(dataMap, upLoadRecord);
 
     int32_t orientation = provider->ConsumeIntegral<int32_t>();
-    cloudFileDataConvert.GetLowerPath(path);
     cloudFileDataConvert.HandleEditData(dataMap, path, isMovingPhoto);
     cloudFileDataConvert.HandleContent(dataMap, upLoadRecord);
     cloudFileDataConvert.HandleThumbnail(recordData, path, orientation);

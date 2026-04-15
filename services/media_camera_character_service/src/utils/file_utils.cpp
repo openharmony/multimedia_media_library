@@ -42,6 +42,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+namespace fs = std::filesystem;
 const std::string MIME_TYPE_HEIF = "image/heif";
 const std::string MIME_TYPE_HEIC = "image/heic";
 const uint8_t PACKOPTION_QUALITY = 90;
@@ -84,6 +85,12 @@ int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeS
         MEDIA_ERR_LOG("write fail, ret: %{public}d, errno: %{public}d", ret, errno);
         DeleteFile(filePathTemp);
         return ret;
+    }
+
+    auto normalizedDstPath = std::filesystem::absolute(filePath).lexically_normal();
+    if (normalizedDstPath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for destination path:%{public}s", filePath.c_str());
+        return E_ERR;
     }
 
     ret = rename(filePathTemp.c_str(), filePath.c_str());
@@ -237,7 +244,13 @@ int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
  
     MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
         DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
-    return rename(tempPath.c_str(), targetPath.c_str());
+    int ret = rename(tempPath.c_str(), targetPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("rename fail, ret: %{public}d, errno: %{public}d", ret, errno);
+        DeleteFile(tempPath);
+        return ret;
+    }
+    return ret;
 }
 
 int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdited, bool isMovingPhotoEffectMode)
@@ -283,7 +296,7 @@ int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdit
 
 int32_t FileUtils::DeleteTempVideoFile(const std::string &filePath)
 {
-    MEDIA_INFO_LOG("filePath: %{public}s", filePath.c_str());
+    MEDIA_INFO_LOG("filePath: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     string tempPath = filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.'));
     if (IsFileExist(tempPath)) {
         return DeleteFile(tempPath);

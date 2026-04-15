@@ -70,6 +70,8 @@ enum NotifyUriType {
     INVALID,
     BATCH_DOWNLOAD_PROGRESS_URI,
     USER_DEFINE_NOTIFY_URI,
+    ANY,
+    AVAILABILITY_URI,
 };
 
 class NotifyDetailInfo : public Parcelable {
@@ -324,6 +326,32 @@ private:
         this->notifyUri = static_cast<NotifyUriType>(parcel.ReadUint16());
         this->notifyType = static_cast<AccurateNotifyType>(parcel.ReadUint16());
         this->isSystem = parcel.ReadBool();
+        return true;
+    }
+};
+
+class DbAvailabilityData {
+public:
+    NotifyUriType notifyType;
+    std::string status;
+    std::string reason;
+
+    bool WriteToParcel(Parcel &parcel) const
+    {
+        if (!parcel.WriteUint16(static_cast<uint16_t>(notifyType))) return false;
+        if (!parcel.WriteString(status)) return false;
+        if (!parcel.WriteString(reason)) return false;
+        return true;
+    }
+
+    bool Unmarshalling(Parcel &parcel)
+    {
+        uint16_t type = 0;
+        if (!parcel.ReadUint16(type)) return false;
+        notifyType = static_cast<NotifyUriType>(type);
+        if (notifyType != NotifyUriType::AVAILABILITY_URI) return false;
+        if (!parcel.ReadString(status)) return false;
+        if (!parcel.ReadString(reason)) return false;
         return true;
     }
 };

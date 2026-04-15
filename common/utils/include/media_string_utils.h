@@ -17,6 +17,7 @@
 #define COMMON_UTILS_MEDIA_STRING_UTILS_H_
 
 #include <string>
+#include <vector>
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -31,6 +32,7 @@ public:
     EXPORT static bool ConvertToInt(const std::string &number, int &value);
     EXPORT static bool StartsWith(const std::string &str, const std::string &prefix);
     EXPORT static bool EndsWith(const std::string &str, const std::string &suffix);
+    EXPORT static std::string FillParams(const std::string &content, const std::vector<std::string> &bindArgs);
 };
 } // namespace OHOS::Media
 

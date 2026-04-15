@@ -34,39 +34,45 @@ const std::string START_MTP_SERVICE = "StartMtpService";
 void MediaMtpServiceManager::StopMtpService()
 {
     MEDIA_INFO_LOG("mtp MediaMtpServiceManager StopMtpService");
-    CHECK_AND_RETURN_LOG(handler_, "Dynamic library libmedia_mtp.z.so not loaded");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        CHECK_AND_RETURN_LOG(handler_, "Dynamic library libmedia_mtp.z.so not loaded");
 
-    using StopMtpServiceFunc = void(*)();
-    StopMtpServiceFunc stopMtpService = (StopMtpServiceFunc)dlsym(handler_, STOP_MTP_SERVICE.c_str());
-    if (stopMtpService == nullptr) {
-        MEDIA_ERR_LOG("Not find stopMtpService func.");
-        CloseLibrary();
-        return;
+        using StopMtpServiceFunc = void(*)();
+        StopMtpServiceFunc stopMtpService = (StopMtpServiceFunc)dlsym(handler_, STOP_MTP_SERVICE.c_str());
+        if (stopMtpService == nullptr) {
+            MEDIA_ERR_LOG("Not find stopMtpService func.");
+            CloseLibrary();
+            return;
+        }
+
+        stopMtpService();
+        isNeedClose_.store(true);
     }
-
-    stopMtpService();
-    isNeedClose_.store(true);
     NotifyRefreshStopWaitTime();
 }
 
 void MediaMtpServiceManager::StartMtpService(const MtpMode mode)
 {
     MEDIA_INFO_LOG("mtp MediaMtpServiceManager StartMtpService");
-    if (handler_ == nullptr) {
-        handler_ = dlopen(PLUGIN_SO_PATH.c_str(), RTLD_NOW);
-        CHECK_AND_RETURN_LOG(handler_, "Not find libmedia_mtp.z.so");
-    }
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (handler_ == nullptr) {
+            handler_ = dlopen(PLUGIN_SO_PATH.c_str(), RTLD_NOW);
+            CHECK_AND_RETURN_LOG(handler_, "Not find libmedia_mtp.z.so");
+        }
 
-    using StartMtpServiceFunc = void(*)(uint32_t mtpMode);
-    StartMtpServiceFunc startMtpServiceFunc = (StartMtpServiceFunc) dlsym(handler_, START_MTP_SERVICE.c_str());
-    if (startMtpServiceFunc == nullptr) {
-        MEDIA_ERR_LOG("mtp dlsym failed: %{public}s", dlerror());
-        CloseLibrary();
-        return;
+        using StartMtpServiceFunc = void(*)(uint32_t mtpMode);
+        StartMtpServiceFunc startMtpServiceFunc = (StartMtpServiceFunc) dlsym(handler_, START_MTP_SERVICE.c_str());
+        if (startMtpServiceFunc == nullptr) {
+            MEDIA_ERR_LOG("mtp dlsym failed: %{public}s", dlerror());
+            CloseLibrary();
+            return;
+        }
+        startMtpServiceFunc(static_cast<uint32_t>(mode));
+        isNeedClose_.store(false);
+        isTimerRefresh_.store(true);
     }
-    startMtpServiceFunc(static_cast<uint32_t>(mode));
-    isNeedClose_.store(false);
-    isTimerRefresh_.store(true);
     cv_.notify_all();
 }
 
@@ -110,10 +116,13 @@ void MediaMtpServiceManager::CloseLibrary()
     isNeedClose_.store(false);
     isTimerRefresh_.store(false);
     cv_.notify_all();
-    if (handler_ != nullptr) {
-        dlclose(handler_);
-        handler_ = nullptr;
-        MEDIA_DEBUG_LOG("Dynamic library libmedia_mtp.z.so closed");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (handler_ != nullptr) {
+            dlclose(handler_);
+            handler_ = nullptr;
+            MEDIA_DEBUG_LOG("Dynamic library libmedia_mtp.z.so closed");
+        }
     }
 }
 } // namespace Media

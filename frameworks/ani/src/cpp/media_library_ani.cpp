@@ -83,6 +83,7 @@
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
 #include "compatible_info_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -110,6 +111,10 @@ const int32_t MAX_LEN_LIMIT = 9999;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
+const size_t MAX_PARCEL_SIZE = 200 * 1024;
+const int32_t MAX_CHECK_PHOTO_PERMISSION_URI_COUNT = 500;
+const int32_t URI_FORMAT_ERROR_STATE = 0;
+const int32_t NO_READ_PERMISSION_STATE = 3;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -186,6 +191,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithMode)},
     ani_native_function {"createAssetsForAppWithAlbumInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithAlbum)},
+    ani_native_function {"createPhotoAssetInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::CreatePhotoAsset)},
     ani_native_function {"getDataAnalysisProgressInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessHelperGetDataAnalysisProgress)},
     ani_native_function {"releaseInner", nullptr,
@@ -202,6 +209,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission)},
     ani_native_function {"cancelPhotoUriPermissionInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCancelPhotoUriPermission)},
+    ani_native_function {"checkPhotoUrisReadPermissionInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission)},
     ani_native_function {"saveFormInfoInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessSaveFormInfo)},
     ani_native_function {"saveGalleryFormInfoInner", nullptr,
@@ -390,6 +399,11 @@ void ChangeListenerAni::OnChange(MediaChangeListener &listener, const ani_ref cb
             return;
         }
         if (msg->changeInfo_.size_ > 0) {
+            if (msg->changeInfo_.size_ > MAX_PARCEL_SIZE) {
+                ANI_ERR_LOG("The size of the parcel exceeds the limit.");
+                delete msg;
+                return;
+            }
             msg->data_ = reinterpret_cast<uint8_t *>(malloc(msg->changeInfo_.size_));
             if (msg->data_ == nullptr) {
                 ANI_ERR_LOG("new msg->data failed");
@@ -1567,6 +1581,8 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
     MediaLibraryTracer tracer;
     tracer.Start("GetAssets");
     ANI_DEBUG_LOG("GetAssetsInner start");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
 
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
@@ -1589,7 +1605,14 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
         ANI_ERR_LOG("UnwrapPredicate failed");
         return nullptr;
     }
-    std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(env, fetchColumnsVec, predicate);
+    int errCode = 0;
+    std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(env, fetchColumnsVec,
+        predicate, errCode);
+    ani_object errorObj {};
+    if (errCode != ERR_DEFAULT) {
+        asyncContext->error = errCode;
+        asyncContext->HandleError(env, errorObj);
+    }
     CHECK_COND_RET(fileAsset != nullptr, nullptr, "GetAssets failed");
     ani_object result = nullptr;
     if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniPtr(env, std::move(fileAsset), result)) {
@@ -3618,6 +3641,53 @@ static ani_status ParseArgsCreatePhotoAssetComponent(ani_env* env, ani_enum_item
     return ANI_OK;
 }
 
+static ani_status ParseArgsCreatePhotoAsset(ani_env* env, ani_enum_item photoTypeAni,
+    ani_string extension, ani_object titleObj, unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is nullptr");
+
+    // Parse photoType
+    int32_t mediaTypeInt;
+    if (MediaLibraryEnumAni::EnumGetValueInt32(env, photoTypeAni, mediaTypeInt) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get photoType");
+        return ANI_ERROR;
+    }
+    MediaType mediaType = static_cast<MediaType>(mediaTypeInt);
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid photoType");
+        return ANI_ERROR;
+    }
+
+    // Parse extension
+    std::string extensionStr;
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, extension, extensionStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get extension");
+        return ANI_ERROR;
+    }
+    CHECK_COND_WITH_RET_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extensionStr), ANI_ERROR,
+        "Failed to check extension");
+    asyncContext->valuesBucket.Put(CONST_ASSET_EXTENTION, extensionStr);
+
+    // Parse title if exists
+    ani_boolean isUndefined;
+    env->Reference_IsUndefined(titleObj, &isUndefined);
+    if (!isUndefined) {
+        std::string titleStr;
+        if (MediaLibraryAniUtils::GetParamStringPathMax(env, titleObj, titleStr) != ANI_OK) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get title");
+            return ANI_ERROR;
+        }
+        std::string totalSize = titleStr + "." + extensionStr;
+        CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckDisplayName(totalSize, true) == 0, ANI_ERROR,
+            "Display size is error");
+        asyncContext->valuesBucket.Put(MediaColumn::MEDIA_TITLE, titleStr);
+    }
+
+    asyncContext->valuesBucket.Put(CONST_MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+    return ANI_OK;
+}
+
 static ani_object CreateAsset(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context, ani_object &error)
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
@@ -3737,6 +3807,86 @@ ani_object MediaLibraryAni::CreateAssetComponent([[maybe_unused]] ani_env *env, 
         ANI_OK == ParseArgsCreatePhotoAssetComponent(env, photoTypeAni, extension, options, asyncContext),
         nullptr, "Failed to parse args");
     PhotoAccessCreateAssetExecute(asyncContext);
+    return CreateAssetComplete(env, asyncContext);
+}
+
+static int32_t CallPhotoAccessCreateAsset(unique_ptr<MediaLibraryAsyncContext> &context, std::string &outUri)
+{
+    bool isValid = false;
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = context->valuesBucket.Get(CONST_MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    if (context->needSystemApp) {
+        reqBody.photoSubtype = context->valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+        string displayName = context->valuesBucket.Get(CONST_MEDIA_DATA_DB_NAME, isValid);
+        string cameraShotKey = context->valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
+        reqBody.displayName = displayName;
+        reqBody.cameraShotKey = cameraShotKey;
+    } else {
+        string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+        string extension = context->valuesBucket.Get(CONST_ASSET_EXTENTION, isValid);
+        reqBody.title = title;
+        reqBody.extension = extension;
+    }
+
+    CreateAssetRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode,
+        reqBody, respBody);
+    if (errCode != 0) {
+        ANI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+        return errCode;
+    }
+    outUri = respBody.outUri;
+    return respBody.fileId;
+}
+
+static void PhotoAccessCreatePhotoAssetExecute(unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCreateAssetExecute");
+
+    if (context == nullptr) {
+        ANI_ERR_LOG("PhotoAccessCreateAssetExecute: context is null");
+        return;
+    }
+
+    string outUri;
+    int index = -EINVAL;
+    if (context->businessCode != static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)) {
+        index = CallPhotoAccessCreateAsset(context, outUri);
+    } else {
+        context->error = JS_E_PARAM_INVALID;
+        return;
+    }
+    if (index >= 0) {
+        context->uri = outUri;
+    } else if (index == E_PERMISSION_DENIED) {
+        context->error = OHOS_PERMISSION_DENIED_CODE;
+    } else {
+        ANI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
+        context->error = JS_E_INNER_FAIL;
+    }
+}
+
+ani_object MediaLibraryAni::CreatePhotoAsset(ani_env *env, ani_object object,
+    ani_enum_item photoType, ani_string extension, ani_string title)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreatePhotoAsset");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    asyncContext->objectInfo = Unwrap(env, object);
+
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        ANI_OK == ParseArgsCreatePhotoAsset(env, photoType, extension, title, asyncContext),
+        nullptr, "Failed to parse args");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
+    SetUserIdFromObjectInfo(asyncContext);
+
+    PhotoAccessCreatePhotoAssetExecute(asyncContext);
     return CreateAssetComplete(env, asyncContext);
 }
 
@@ -4912,6 +5062,140 @@ ani_int MediaLibraryAni::PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_o
     }
     PhotoAccessCancelPhotoUriPermissionExecute(env, context);
     return PhotoUriPermissionComplete(env, context);
+}
+
+static ani_status ParseCheckPhotoUrisReadPermissionArgs(ani_env *env, ani_object uris,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetStringArray(env, uris, context->uris), "Failed to get uris");
+    CHECK_COND_RET(!context->uris.empty() && context->uris.size() <= MAX_CHECK_PHOTO_PERMISSION_URI_COUNT,
+        ANI_INVALID_ARGS, "The size of uris is invalid, size: %{public}zu", context->uris.size());
+
+    for (const auto &uri : context->uris) {
+        CHECK_COND_RET(!uri.empty(), ANI_INVALID_ARGS, "The uri in uris should not be empty");
+        int32_t fileId = MediaLibraryAniUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId < 0) {
+            context->uriPermissionStateMap[uri] = URI_FORMAT_ERROR_STATE;
+            continue;
+        }
+        context->checkPhotoPermissionUris.emplace_back(uri);
+        context->uriPermissionStateMap[uri] = NO_READ_PERMISSION_STATE;
+    }
+    return ANI_OK;
+}
+
+static void CheckPhotoUrisReadPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    CHECK_IF_EQUAL(!context->checkPhotoPermissionUris.empty(), "checkPhotoPermissionUris is empty");
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    reqBody.uris = context->checkPhotoPermissionUris;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call, PAH_CHECK_PHOTO_URIS_READ_PERMISSION");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        context->SaveError(result);
+        ANI_ERR_LOG("CheckPhotoUrisReadPermission fail, result: %{public}d.", result);
+        return;
+    }
+
+    std::unordered_set<std::string> validUris(context->checkPhotoPermissionUris.begin(),
+        context->checkPhotoPermissionUris.end());
+    for (const auto &[uri, state] : respBody.uriPermissionStateMap) {
+        if (validUris.find(uri) == validUris.end()) {
+            ANI_INFO_LOG("Ignore unexpected uri in CheckPhotoUrisReadPermission response");
+            continue;
+        }
+        context->uriPermissionStateMap[uri] = state;
+    }
+}
+
+static ani_status CreatePhotoUriPermissionStateMap(ani_env *env, const unique_ptr<MediaLibraryAsyncContext> &context,
+    ani_object &aniMap)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    ani_class cls {};
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
+
+    ani_method mapConstructor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>",
+        "X{C{std.core.Iterable}C{std.core.Null}C{std.core.ReadonlyArray}}:", &mapConstructor),
+        "Can't find method <ctor> in std.core.Map");
+
+    ani_ref undefinedArgument {};
+    CHECK_STATUS_RET(env->GetUndefined(&undefinedArgument), "GetUndefined failed");
+
+    CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, undefinedArgument), "Call method <ctor> fail");
+
+    ani_method setMethod {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
+
+    for (const auto &uri : context->uris) {
+        ani_string key {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, uri, key), "ToAniString key[%{public}s] fail",
+            uri.c_str());
+        int32_t state = URI_FORMAT_ERROR_STATE;
+        auto iter = context->uriPermissionStateMap.find(uri);
+        if (iter != context->uriPermissionStateMap.end()) {
+            state = iter->second;
+        }
+        ani_int value = static_cast<ani_int>(state);
+        ani_ref setResult {};
+        CHECK_STATUS_RET(env->Object_CallMethod_Ref(aniMap, setMethod, &setResult, key, value),
+            "Call method set fail");
+    }
+    return ANI_OK;
+}
+
+static ani_object CheckPhotoUrisReadPermissionComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckPhotoUrisReadPermissionComplete");
+
+    ani_object mapRes {};
+    ani_object errorObj {};
+    if (context->error == ERR_DEFAULT) {
+        CHECK_COND_WITH_RET_MESSAGE(env, CreatePhotoUriPermissionStateMap(env, context, mapRes) == ANI_OK,
+            nullptr, "Failed to create map for uri permission state");
+    } else {
+        context->HandleError(env, errorObj);
+    }
+
+    tracer.Finish();
+    context.reset();
+    return mapRes;
+}
+
+ani_object MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission(ani_env *env, ani_object object, ani_object uris)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCheckPhotoUrisReadPermission");
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    context->assetType = TYPE_PHOTO;
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    if (ParseCheckPhotoUrisReadPermissionArgs(env, uris, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    SetUserIdFromObjectInfo(context);
+    CheckPhotoUrisReadPermissionExecute(env, context);
+    return CheckPhotoUrisReadPermissionComplete(env, context);
 }
 
 int32_t MediaLibraryAni::GetUserId()

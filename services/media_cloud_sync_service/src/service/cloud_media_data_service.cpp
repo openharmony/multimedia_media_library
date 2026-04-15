@@ -25,7 +25,6 @@
 #include "cloud_sync_notify_handler.h"
 #include "cloud_media_sync_utils.h"
 #include "directory_ex.h"
-#include "cloud_media_file_utils.h"
 #include "media_file_utils.h"
 #include "cloud_media_attachment_utils.h"
 #include "media_itypes_utils.h"

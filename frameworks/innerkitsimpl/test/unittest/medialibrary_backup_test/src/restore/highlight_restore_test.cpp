@@ -278,7 +278,11 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_same_cover_album_udpate_test_00
     HighlightRestore::HighlightPhotoInfo highlightPhoto;
     highlightPhoto.fileIdOld = TEST_FILE_ID_OLD;
     highlightPhoto.photoInfo.fileIdNew = TEST_FILE_ID_NEW;
-    highlightRestore.UpdateAlbumInfoCoverUris(highlightPhoto);
+    highlightPhoto.photoInfo.displayName = "";
+    highlightPhoto.photoInfo.cloudPath = "";
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    photoInfoMap[TEST_FILE_ID_OLD] = highlightPhoto.photoInfo;
+    highlightRestore.UpdateAlbumCovers(photoInfoMap);
 
     for (const auto &albumInfo : highlightRestore.albumInfos_) {
         bool expectedResult = albumInfo.coverId == TEST_FILE_ID_OLD;

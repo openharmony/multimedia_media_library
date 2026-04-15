@@ -60,6 +60,8 @@
 #include "thumbnail_service.h"
 #include "parameters.h"
 #include "cloud_file_error.h"
+#include "medialibrary_related_system_state_manager.h"
+#include "lcd_aging_task_priority_manager.h"
 
 // LCOV_EXCL_START
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
@@ -872,6 +874,7 @@ int32_t CloudMediaPhotosService::OnMdirtyRecords(std::vector<PhotosDto> &records
         photoRefresh != nullptr, E_RDB_STORE_NULL, "Photos OnMdirtyRecords Failed to get photoRefresh.");
     int32_t ret = E_OK;
     for (auto &photo : records) {
+        this->photosDao_.FindPhotoInfo(photo);
         int32_t err;
         if (photo.isSuccess) {
             err = this->photosDao_.OnModifyPhotoRecord(photo, photoRefresh);
@@ -972,6 +975,7 @@ int32_t CloudMediaPhotosService::OnDeleteRecords(std::vector<PhotosDto> &records
         photoRefresh != nullptr, E_RDB_STORE_NULL, "Photos OnMdirtyRecords Failed to get photoRefresh.");
     int32_t ret = E_OK;
     for (auto &photo : records) {
+        this->photosDao_.FindPhotoInfo(photo);
         int32_t err;
         MEDIA_DEBUG_LOG("CloudMediaPhotosService::OnDeleteRecords isSuccess: %{public}d", photo.isSuccess);
         if (photo.isSuccess) {
@@ -1015,6 +1019,7 @@ int32_t CloudMediaPhotosService::OnCopyRecords(std::vector<PhotosDto> &records, 
 
     int32_t ret = E_OK;
     for (auto &photo : records) {
+        this->photosDao_.FindPhotoInfo(photo);
         int32_t err;
         MEDIA_INFO_LOG("OnCopyRecords photo: %{public}s", photo.ToString().c_str());
         if (photo.isSuccess) {
@@ -1068,7 +1073,7 @@ int32_t CloudMediaPhotosService::OnRecordFailedErrorDetails(
             return HandleSameNameUploadFail(photo, photoRefresh);
         }
         if (errorDetailcode == ErrorDetailCode::CONTENT_NOT_FIND) {
-            return HandleNoContentUploadFail(photo, photoRefresh);
+            return HandleInvalidCloudResource(photo, photoRefresh);
         }
         if (errorType != ErrorType::TYPE_NOT_NEED_RETRY) {
             MEDIA_ERR_LOG("unknown error code record failed, errorDetailcode = %{public}d", errorDetailcode);
@@ -1105,34 +1110,6 @@ int32_t CloudMediaPhotosService::HandleDuplicatedResource(const PhotosDto &photo
     return E_DATA;
 }
 
-// failure scenario handler for same cloud resource, never return E_OK. E_DATA when process success.
-int32_t CloudMediaPhotosService::HandleSameCloudResource(const PhotosDto &photo)
-{
-    std::string path = photo.path;
-    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_VALUES, "HandleSameCloudResource data invalid, photo: %{public}s",
-        photo.ToString().c_str());
-
-    bool isLake = photo.fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE);
-    std::string localPath = isLake ? CloudMediaSyncUtils::GetLocalPath(path) : photo.storagePath;
-    MEDIA_INFO_LOG("HandleSameCloudResource isLake is %{public}d, localPath is %{public}s",
-        isLake, localPath.c_str());
-    bool isFileExists = (access(localPath.c_str(), F_OK) == 0);
-    CHECK_AND_EXECUTE(!isFileExists, this->photosDao_.RenewSameCloudResource(photo));
-    CHECK_AND_RETURN_RET_LOG(!isFileExists, E_DATA, "HandleSameCloudResource push again %{public}s",
-        MediaFileUtils::DesensitizePath(path).c_str());
-    int32_t ret = this->photosDao_.DeleteLocalFileNotExistRecord(photo);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "DeleteLocalFileNotExistRecord err: %{public}d, path: %{public}s",
-        ret, MediaFileUtils::DesensitizePath(path).c_str());
-    std::string cloudPath = GetCloudPath(path);
-    CHECK_AND_RETURN_RET_LOG(!cloudPath.empty(), E_DATA, "cloudPath is empty, path: %{public}s",
-        MediaFileUtils::DesensitizePath(path).c_str());
-    bool isValid = (unlink(cloudPath.c_str()) >= 0);
-    CHECK_AND_PRINT_LOG(isValid, "unlink fail, path: %{public}s, err: %{public}d",
-        MediaFileUtils::DesensitizePath(cloudPath).c_str(), errno);
-    CloudMediaSyncUtils::RemoveThmParentPath(path, PhotoColumn::FILES_CLOUD_DIR);
-    return E_DATA;
-}
-
 int32_t CloudMediaPhotosService::OnRecordFailed(
     PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
@@ -1154,7 +1131,7 @@ int32_t CloudMediaPhotosService::OnRecordFailed(
         return HandleDuplicatedResource(photo);
     } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RENEW_RESOURCE) {
         MEDIA_ERR_LOG("renew resource");
-        return HandleSameCloudResource(photo);
+        return HandleInvalidCloudResource(photo, photoRefresh);
     }
     if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::ALBUM_NOT_EXIST)) {
         MEDIA_ERR_LOG("ALBUM NOT EXIST PhotosService");
@@ -1162,28 +1139,6 @@ int32_t CloudMediaPhotosService::OnRecordFailed(
         return this->photosDao_.HandleNotExistAlbumRecord(photo);
     }
     return this->OnRecordFailedErrorDetails(photo, photoRefresh);
-}
-
-int32_t CloudMediaPhotosService::HandleNoContentUploadFail(
-    const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
-{
-    MEDIA_INFO_LOG("HandleNoContentUploadFail");
-    std::string path = photo.path;
-    std::string tmpPath = LakeFileUtils::GetAssetRealPath(path);
-    int32_t ret = E_OK;
-    if (access(tmpPath.c_str(), F_OK) == 0) {
-        // 本地有图
-        MEDIA_INFO_LOG("HandleNoContentUploadFail file found");
-        ret = this->photosDao_.ClearCloudInfo(photo.cloudId, photoRefresh);
-        return E_RDB;
-    }
-    ret = this->photosDao_.DeleteFileNotExistPhoto(path, photoRefresh);
-    MEDIA_INFO_LOG("HandleNoContentUploadFail ret is %{public}d", ret);
-    if (ret != E_OK) {
-        return E_RDB;
-    }
-    CloudMediaSyncUtils::RemoveThmParentPath(path, "");
-    return ret;
 }
 
 int32_t CloudMediaPhotosService::HandleDetailcode(const ErrorDetailCode &errorCode)
@@ -1227,6 +1182,7 @@ int32_t CloudMediaPhotosService::OnStartSync()
 
     CloudMediaDfxService::SyncStart("", 1);
     MediaGallerySyncNotify::GetInstance().NotifyProgressBegin();
+    LcdAgingTaskPriorityManager::GetInstance().RegisterHighPriorityTask(HighPriorityTaskType::CLOUD_PULL);
     return this->photosDao_.ClearPhotoFailedRecords();
 }
 
@@ -1239,6 +1195,7 @@ int32_t CloudMediaPhotosService::OnCompleteSync()
 
 int32_t CloudMediaPhotosService::OnCompletePull(const MediaOperateResult &optRet)
 {
+    LcdAgingTaskPriorityManager::GetInstance().UnregisterHighPriorityTask(HighPriorityTaskType::CLOUD_PULL);
     const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status";
     auto cloudSyncStatus = system::GetIntParameter(CLOUDSYNC_SWITCH_STATUS_KEY, 0);
 
@@ -1592,6 +1549,52 @@ int32_t CloudMediaPhotosService::ProcessDuplicatePhoto(const CloudMediaPullDataD
     }
 
     return E_OK;
+}
+
+/**
+ * @brief if file not exist, delete the record and remove the cloud file, otherwise push again.
+ * @return failure scenario handler for invalid cloud resource, never return E_OK. E_DATA when process success.
+ **/
+int32_t CloudMediaPhotosService::HandleInvalidCloudResource(
+    const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+{
+    // Check: local PhotoInfo must be obtained before handle.
+    if (!photo.localInfoOp.has_value()) {
+        MEDIA_ERR_LOG("local file is deleted, PhotosDto: %{public}s", photo.ToString().c_str());
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_DATA, 1);
+        return E_INVALID_VALUES;
+    }
+    PhotosPo photoInfo = photo.localInfoOp.value();
+    std::string fileStoragePath = CloudMediaSyncUtils::FindStoragePath(
+        photoInfo.data.value_or(""), photoInfo.storagePath.value_or(""), photoInfo.fileSourceType.value_or(0));
+    std::string photosData = photoInfo.data.value_or("");
+    // Scenario: device has record and file exists, Handle: push again.
+    bool isFileExists = (access(fileStoragePath.c_str(), F_OK) == 0);
+    CHECK_AND_EXECUTE(!isFileExists, this->photosDao_.ClearCloudInfo(photo.cloudId, photoRefresh));
+    CHECK_AND_RETURN_RET_LOG(!isFileExists,
+                             E_DATA,
+                             "HandleInvalidCloudResource push again, "
+                             "path: %{public}s, fileStoragePath: %{public}s",
+                             MediaFileUtils::DesensitizePath(photosData).c_str(),
+                             MediaFileUtils::DesensitizePath(fileStoragePath).c_str());
+    // Scenario: device has record but file not exists, Handle: delete records and remove files.
+    int32_t ret = this->photosDao_.DeleteFileNotExistPhoto(photosData, photoRefresh);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK,
+                             E_RDB,
+                             "DeleteFileNotExistPhoto, ret: %{public}d, PhotosDto: %{public}s",
+                             ret,
+                             photo.ToString().c_str());
+    std::string cloudPath = GetCloudPath(photosData);
+    CHECK_AND_RETURN_RET_LOG(!cloudPath.empty(),
+                             E_DATA,
+                             "cloudPath is empty, path: %{public}s, PhotosDto: %{public}s",
+                             MediaFileUtils::DesensitizePath(photosData).c_str(),
+                             photo.ToString().c_str());
+    bool isValid = (unlink(cloudPath.c_str()) >= 0);
+    CHECK_AND_PRINT_LOG(isValid, "unlink fail, path: %{public}s, err: %{public}d",
+        MediaFileUtils::DesensitizePath(cloudPath).c_str(), errno);
+    CloudMediaSyncUtils::RemoveThmParentPath(photosData, PhotoColumn::FILES_CLOUD_DIR);
+    return E_DATA;
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP

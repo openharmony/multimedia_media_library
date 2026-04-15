@@ -13,18 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DAO_UTILS_TEST_H
-#define OHOS_MEDIA_DAO_UTILS_TEST_H
+#define MLOG_TAG "MediaChangeRequestSetDefaultCoverUriDto"
 
-#include "gtest/gtest.h"
+#include "change_request_set_default_cover_uri_dto.h"
+
+#include <sstream>
 
 namespace OHOS::Media {
-class DaoUtilsTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
-};
-}  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_DAO_UTILS_TEST_H
+using namespace std;
+std::string ChangeRequestSetDefaultCoverUriDto::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"albumId\": \"" << albumId << "\","
+       << "\"coverUri\": \"" << coverUri << "\","
+       << "\"albumSubtype\": \"" << to_string(static_cast<int32_t>(albumSubtype))
+       << "}";
+    return ss.str();
+}
+} // namespace OHOS::Media

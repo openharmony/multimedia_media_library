@@ -645,15 +645,15 @@ static int32_t DoTranscodeFailedDfx(const std::string &errMsg, const TranscodeEr
     return ret;
 }
 
-int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, size_t &size,
+int32_t PhotoFileOperation::CreateTmpCompatibleDup(const TranscodeFileInfo &srcInfo, size_t &size,
     int32_t width, int32_t height, TranscodeType transcodeType)
 {
-    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(srcPath),
+    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(srcInfo.filePath),
         DoTranscodeFailedDfx("Origin file is not exists.", INNER_FAILED, E_PARAM_CONVERT_FORMAT, transcodeType));
     const std::string extension = "jpg";
     const std::string duplicate = "/transcode.jpg";
     PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
-    sourcePhotoInfo.filePath = std::move(srcPath);
+    sourcePhotoInfo.filePath = std::move(srcInfo.data);
     auto editDataFolder = BuildEditDataFolder(sourcePhotoInfo);
     CHECK_AND_RETURN_RET(!editDataFolder.empty(), DoTranscodeFailedDfx(
         "CreateTmpCompatibleDup editDataFolder is empty", INNER_FAILED, E_INNER_FAIL, transcodeType));
@@ -663,7 +663,7 @@ int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, s
     }
 
     auto targetPath = std::move(editDataFolder) + duplicate;
-    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath,
+    CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(srcInfo.filePath, targetPath,
         extension, width, height),
         DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, transcodeType, targetPath));
 

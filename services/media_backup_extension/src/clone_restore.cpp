@@ -472,8 +472,6 @@ bool CloneRestore::BackupPreprocess()
 
         // mark hdc data in temp database as invalid
         bool ret = InvalidateHdcCloudData(backupRdb);
-        MEDIA_INFO_LOG("add restore dir");
-        dirMappingList_.push_back("/data/storage/el2/database/rdb/");
         if (!ret) {
             MEDIA_ERR_LOG("fail to delete hdc data");
             SetErrorCode(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED);
@@ -482,6 +480,9 @@ bool CloneRestore::BackupPreprocess()
             UpgradeRestoreTaskReport(sceneCode_, taskId_).ReportError(errorInfo);
             return false;
         }
+
+        MEDIA_INFO_LOG("add restore dir");
+        dirMappingList_.push_back("/data/storage/el2/database/rdb/");
     }
     return true;
 }
@@ -591,6 +592,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     StopParameterForClone();
     SetMediaAnalysisClearDirtyDataParameter();
     CloseAllKvStore();
+    DelayLcdAgingTime();
     MEDIA_INFO_LOG("End clone restore");
 }
 

@@ -36,6 +36,8 @@
 #include "result_set_utils.h"
 #include "media_file_uri.h"
 #include "media_upgrade.h"
+#include "media_cloud_permission_check.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -104,6 +106,15 @@ static const string SQL_INSERT_PHOTO =
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_POSITION + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " +
     PhotoColumn::PHOTO_OWNER_ALBUM_ID + ")";
+
+static void InsertAssetIntoPhotosTableWithPosition(
+    const string &data, const string &title, int32_t albumId, int32_t position)
+{
+    g_rdbStore->ExecuteSql(
+        SQL_INSERT_PHOTO + "VALUES ('" + data + "', 175258, '" + title + "', '" + title +
+        ".jpg', 1, 'com.ohos.camera', '相机', 1748423617814, 1748424146785, 1748424146785, 0, 0, 0, 0, " +
+        "1280, 960, 0, " + to_string(position) + ", '1', " + to_string(albumId) + ")");
+}
 
 static void InsertAssetIntoPhotosTable(const string &data, const string &title, int32_t albumId)
 {
@@ -230,5 +241,81 @@ HWTEST_F(AlbumGetAssetsTest, GetAssets_Test_001, TestSize.Level0)
     EXPECT_LT(count, 0);
 
     MEDIA_INFO_LOG("end GetAssets_Test_001");
+}
+
+HWTEST_F(AlbumGetAssetsTest, AlbumGetAssets_CloudFilter_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start AlbumGetAssets_CloudFilter_Test_001");
+
+    string albumName = "cloud_filter_album";
+    CreateUserAlbum(albumName);
+    vector<string> columns;
+    auto resultSet = QueryAsset(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_NAME, albumName, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    ASSERT_GT(albumId, 0);
+
+    string localTitle = "local_album_pic";
+    string localData = "/storage/cloud/files/Photo/9/IMG_local.jpg";
+    InsertAssetIntoPhotosTableWithPosition(
+        localData, localTitle, albumId, static_cast<int32_t>(PhotoPositionType::LOCAL));
+
+    string cloudTitle = "cloud_album_pic";
+    string cloudData = "/storage/cloud/files/Photo/9/IMG_cloud.jpg";
+    InsertAssetIntoPhotosTableWithPosition(
+        cloudData, cloudTitle, albumId, static_cast<int32_t>(PhotoPositionType::CLOUD));
+
+    string bothTitle = "both_album_pic";
+    string bothData = "/storage/cloud/files/Photo/9/IMG_both.jpg";
+    InsertAssetIntoPhotosTableWithPosition(
+        bothData, bothTitle, albumId, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+
+    int32_t count = AlbumGetAssets(to_string(albumId));
+    MEDIA_INFO_LOG("AlbumGetAssets_CloudFilter_Test_001 count: %{public}d", count);
+
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("end AlbumGetAssets_CloudFilter_Test_001");
+}
+
+HWTEST_F(AlbumGetAssetsTest, AlbumGetAssets_CloudFilter_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start AlbumGetAssets_CloudFilter_Test_002");
+
+    string albumName = "cloud_only_album";
+    CreateUserAlbum(albumName);
+    vector<string> columns;
+    auto resultSet = QueryAsset(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_NAME, albumName, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    ASSERT_GT(albumId, 0);
+
+    string cloudTitle = "cloud_only_pic";
+    string cloudData = "/storage/cloud/files/Photo/9/IMG_cloud_only.jpg";
+    InsertAssetIntoPhotosTableWithPosition(
+        cloudData, cloudTitle, albumId, static_cast<int32_t>(PhotoPositionType::CLOUD));
+
+    int32_t count = AlbumGetAssets(to_string(albumId));
+    MEDIA_INFO_LOG("AlbumGetAssets_CloudFilter_Test_002 count: %{public}d", count);
+
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("end AlbumGetAssets_CloudFilter_Test_002");
+}
+
+HWTEST_F(AlbumGetAssetsTest, AddCloudAssetFilter_AlbumPredicates_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start AddCloudAssetFilter_AlbumPredicates_Test_001");
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, "1");
+
+    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
+
+    std::string whereClause = predicates.GetWhereClause();
+    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_POSITION) != std::string::npos);
+    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID) != std::string::npos);
+
+    MEDIA_INFO_LOG("end AddCloudAssetFilter_AlbumPredicates_Test_001");
 }
 }  // namespace OHOS::Media

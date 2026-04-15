@@ -82,13 +82,16 @@ public:
     static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator);
     static ani_status ToPhotoChangeInfoAniArray(ani_env *env,
         const vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>>
-        &changeInfos, ani_object &aniArray);
+        &changeInfos, ani_object &aniArray, Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static ani_object BuildPhotoAssetChangeInfo(ani_env* env,
-        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo);
+        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static ani_object BuildPhotoAssetChangeData(ani_env* env,
-        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData);
+        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static ani_object BuildPhotoAssetChangeInfos(ani_env* env,
-        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
 
     static ani_object BuildAlbumChangeInfo(ani_env* env, const AccurateRefresh::AlbumChangeInfo &albumChangeInfo);
     static ani_object BuildAlbumChangeData(ani_env* env, const AccurateRefresh::AlbumChangeData &albumChangeData);

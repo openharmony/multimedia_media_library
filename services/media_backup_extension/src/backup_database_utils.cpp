@@ -24,6 +24,7 @@
 #include "backup_const_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "parameters.h"
 #include "vision_video_total_column.h"
 #include "vision_image_face_column.h"
 #include "vision_column_comm.h"
@@ -37,6 +38,7 @@ const int32_t SCALE_MIN_SIZE = 1080;
 const int32_t SCALE_MAX_SIZE = 2560;
 const int32_t UPDATE_COUNT = 200;
 const int32_t STAMP_PARAM = 4;
+const int32_t INTEGRITY_CHECK_TABLE_COUNT = 2;
 const float SCALE_DEFAULT = 0.25;
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
@@ -60,6 +62,13 @@ const std::string FACE_CLUSTERING_VALUE = "3";
 const std::string FACE_CLUSTERING_FAIL_VALUE = "4";
 const std::string TAGID_WAITING_FOR_ANALYSIS_VALUE = "-1";
 const std::string TAGID_NO_NEED_TO_ANALYSIS_VALUE = "-2";
+const std::string CONST_LOGSYSTEM_VERSIONTYPE = "const.logsystem.versiontype";
+const std::string BETA_VERSIONTYPE = "beta";
+const std::string PHOTOS_TABLE_NAME = "Photos";
+const std::string GALLERY_MEDIA_TABLE_NAME = "gallery_media";
+const std::string PHOTO_ALBUM_TABLE_NAME = "PhotoAlbum";
+const std::string INTEGRITY_CHECK_OK = "ok";
+const std::string INTEGRITY_CHECK_ERROR = "integrity error";
 
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
 static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
@@ -1047,23 +1056,74 @@ void BackupDatabaseUtils::BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::Rd
     }
 }
 
-std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
-    const std::string &dbTag)
+static bool IsBetaVersionCheck()
 {
-    const std::string querySql = "PRAGMA " + COLUMN_INTEGRITY_CHECK;
-    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    std::string versionType = system::GetParameter(CONST_LOGSYSTEM_VERSIONTYPE, "unknown");
+    return versionType == BETA_VERSIONTYPE;
+}
+
+static std::string CheckSingleTableIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+                                             const std::string &tableName)
+{
+    std::string querySql = "PRAGMA quick_check(" + tableName + ")";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG ("Query resultSet is null or GoToFirstRow failed.");
-        return "";
+        MEDIA_ERR_LOG("Query for table %{public}s failed, resultSet is null",
+                      MediaFileUtils::DesensitizeName(tableName).c_str());
+        return "query failed";
     }
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         resultSet->Close();
-        return "";
+        MEDIA_ERR_LOG("No result row for table %{public}s", MediaFileUtils::DesensitizeName(tableName).c_str());
+        return "no result";
     }
     std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
-    MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
     resultSet->Close();
     return result;
+}
+
+std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
+                                                  const std::string &dbTag)
+{
+    if (!IsBetaVersionCheck()) {
+        MEDIA_INFO_LOG("CheckDbIntegrity: Commercial version, skip integrity check, scene=%{public}d, tag=%{public}s",
+                       sceneCode, dbTag.c_str());
+        return "";
+    }
+
+    MEDIA_INFO_LOG("CheckDbIntegrity: Beta version, start integrity check for scene=%{public}d, tag=%{public}s",
+                   sceneCode, dbTag.c_str());
+
+    if (sceneCode == UPGRADE_RESTORE_ID || sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        std::string result = CheckSingleTableIntegrity(rdbStore, GALLERY_MEDIA_TABLE_NAME);
+        MEDIA_INFO_LOG("Check db integrity final result: scene=%{public}d, tag=%{public}s, result=%{public}s",
+                       sceneCode, dbTag.c_str(), result.c_str());
+        return result;
+    }
+
+    if (sceneCode != CLONE_RESTORE_ID && sceneCode != DEFAULT_RESTORE_ID) {
+        MEDIA_INFO_LOG("No need to check db integrity, scene=%{public}d, tag=%{public}s", sceneCode, dbTag.c_str());
+        return "";
+    }
+
+    uint32_t successCount = 0;
+    uint32_t expectedCount = INTEGRITY_CHECK_TABLE_COUNT;
+    std::vector<std::string> tables = {PHOTOS_TABLE_NAME, PHOTO_ALBUM_TABLE_NAME};
+    for (const auto &table : tables) {
+        std::string result = CheckSingleTableIntegrity(rdbStore, table);
+        if (result == INTEGRITY_CHECK_OK) {
+            successCount++;
+            MEDIA_INFO_LOG("Integrity check for table %{public}s: ok", MediaFileUtils::DesensitizeName(table).c_str());
+        } else {
+            MEDIA_ERR_LOG("Integrity check for table %{public}s failed: %{public}s",
+                          MediaFileUtils::DesensitizeName(table).c_str(), result.c_str());
+        }
+    }
+
+    std::string finalResult = (successCount == expectedCount) ? INTEGRITY_CHECK_OK : INTEGRITY_CHECK_ERROR;
+    MEDIA_INFO_LOG("Check db integrity final result: scene=%{public}d, tag=%{public}s, result=%{public}s", sceneCode,
+                   dbTag.c_str(), finalResult.c_str());
+    return finalResult;
 }
 
 int32_t BackupDatabaseUtils::QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)

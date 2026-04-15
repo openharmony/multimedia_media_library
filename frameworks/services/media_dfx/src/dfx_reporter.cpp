@@ -804,6 +804,56 @@ static bool GetTransCodeXML(TranscodeType transcodeType, string &XML)
     return success;
 }
 
+void DfxReporter::ReportMediaLibCompatConfig()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(COMPATIBLE_CONFIG_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    std::map<std::string, DfxCompatibleInfo> infoMap;
+    int32_t retDb = DfxDatabaseUtils::QueryAllCompatibleInfo(infoMap);
+    if (retDb != E_OK) {
+        MEDIA_ERR_LOG("QueryAllCompatibleInfo failed: %{public}d", retDb);
+        return;
+    }
+    map<string, NativePreferences::PreferencesValue> xmlMap = prefs->GetAll();
+    nlohmann::json jsonData;
+    for (const auto& pair : infoMap) {
+        string bundleName = pair.first;
+        const DfxCompatibleInfo& dbInfo = pair.second;
+        string dbValueStr = to_string(dbInfo.highResolution) + "," + dbInfo.encodings + "," +
+            to_string(dbInfo.futureField);
+        string xmlValueStr = prefs->GetString(bundleName, "");
+        if (dbValueStr != xmlValueStr) {
+            jsonData[bundleName] = dbValueStr;
+        }
+    }
+    if (jsonData.empty() && xmlMap.size() == infoMap.size()) {
+        MEDIA_ERR_LOG("Compat config has no change, skip reporting.");
+        return;
+    } else {
+        int ret = HiSysEventWrite(
+            MEDIA_LIBRARY,
+            "MEDIALIB_COMPATIBEL_CONFIG",
+            HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "APP_PACKAGE_CONFIG", jsonData.dump());
+        if (ret != 0) {
+            MEDIA_ERR_LOG("Report compat config error:%{public}d", ret);
+            return;
+        }
+    }
+    prefs->Clear();
+    for (const auto& pair : infoMap) {
+        string dbValueStr = to_string(pair.second.highResolution) + "," + pair.second.encodings + "," +
+            to_string(pair.second.futureField);
+        prefs->PutString(pair.first, dbValueStr);
+    }
+    prefs->FlushSync();
+}
+
 static void ReportAlibDuplicate(TranscodeType transcodeType)
 {
     int32_t errCode;

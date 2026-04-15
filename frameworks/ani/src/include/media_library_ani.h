@@ -216,6 +216,8 @@ public:
         ani_string displayName, ani_object options);
     static ani_object CreateAssetComponent([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_enum_item photoTypeAni, ani_string extension, ani_object options);
+    static ani_object CreatePhotoAsset(ani_env *env, ani_object object,
+        ani_enum_item photoType, ani_string extension, ani_string title);
     static ani_object GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static ani_object GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
@@ -249,6 +251,7 @@ public:
         ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType);
     static ani_int PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_long aniTokenId,
         ani_string aniUri, ani_enum_item photoPermissionType);
+    static ani_object PhotoAccessCheckPhotoUrisReadPermission(ani_env *env, ani_object object, ani_object uris);
     static ani_int PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_string photoUri, ani_string albumUri, ani_object options);
     static ani_object PhotoAccessGetSupportedPhotoFormats(ani_env *env, ani_object object, ani_enum_item photoTypeAni);
@@ -380,6 +383,8 @@ struct MediaLibraryAsyncContext : public AniError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    std::vector<std::string> checkPhotoPermissionUris;
+    std::map<std::string, int32_t> uriPermissionStateMap;
     bool isForce = false;
     bool hiddenOnly = false;
     bool isAnalysisAlbum = false;

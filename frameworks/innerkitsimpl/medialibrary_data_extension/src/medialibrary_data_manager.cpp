@@ -131,6 +131,7 @@
 #include "global_scanner.h"
 #include "media_upgrade.h"
 #include <functional>
+#include "lcd_aging_manager.h"
 #include "media_library_upgrade_macros.h"
 
 using namespace std;
