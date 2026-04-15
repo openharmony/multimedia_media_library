@@ -29,14 +29,14 @@ namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 
 // Score mask bits
-const int32_t BIT2 = 1 << 2;  // 人像展示分
-const int32_t BIT20 = 1 << 20;  // 刷新状态标记
+const uint32_t BIT2 = 1u << 2;  // 人像展示分
+const uint32_t BIT20 = 1u << 20;  // 刷新状态标记
 
 void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
     const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied,
-    std::unordered_map<int32_t, int32_t>* scoreMaskMap)
+    std::unordered_map<int32_t, uint32_t>* scoreMaskMap)
 {
     MEDIA_INFO_LOG("CloneRestorePortrait Init");
     this->sceneCode_ = sceneCode;
@@ -105,7 +105,8 @@ void CloneRestorePortrait::DeleteExistingCluseringInfo()
 static void ClearProfileFaceScore(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     MEDIA_INFO_LOG("Clear tab_analysis_profile face_score and face_score_version");
-    std::string clearProfileFaceScoreSql = "UPDATE tab_analysis_profile SET face_score = 0, face_score_version = ''";
+    std::string clearProfileFaceScoreSql =
+        "UPDATE tab_analysis_profile SET face_score = NULL, face_score_version = NULL";
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, clearProfileFaceScoreSql);
 }
 
@@ -1067,7 +1068,7 @@ void CloneRestorePortrait::ReportPortraitCloneStat(int32_t sceneCode)
         migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
 }
 
-void CloneRestorePortrait::UpdateScoreMask(int32_t fileId, int32_t mask)
+void CloneRestorePortrait::UpdateScoreMask(int32_t fileId, uint32_t mask)
 {
     if (externalScoreMaskMap_ != nullptr) {
         (*externalScoreMaskMap_)[fileId] |= mask;

@@ -840,6 +840,7 @@ static void CommitModifyNative(napi_env env, void *data)
     auto objectPtr = context->objectPtr;
     if (MediaFileUtils::CheckAlbumName(objectPtr->GetAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
+        context->errorMsg = "album name invalid";
         NAPI_ERR_LOG("album name invalid = %{private}s", objectPtr->GetAlbumName().c_str());
         return;
     }

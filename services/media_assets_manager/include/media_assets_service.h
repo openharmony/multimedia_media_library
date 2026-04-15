@@ -29,6 +29,7 @@
 #include "cloud_enhancement_dto.h"
 #include "grant_photo_uri_permission_dto.h"
 #include "grant_photo_uris_permission_dto.h"
+#include "check_photo_uris_read_permission_vo.h"
 #include "grant_photo_uri_permission_inner_dto.h"
 #include "cancel_photo_uri_permission_dto.h"
 #include "cancel_photo_uri_permission_inner_dto.h"
@@ -82,6 +83,7 @@
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
 #include "transcode_compatible_info_operations.h"
+#include "preferred_compatible_mode_vo.h"
 #include "compatible_info_vo.h"
 
 namespace OHOS::Media {
@@ -141,6 +143,8 @@ public:
     int32_t CancelAllCloudEnhancementTasks();
     int32_t GrantPhotoUriPermission(const GrantUriPermissionDto& grantUriPermissionDto);
     int32_t GrantPhotoUrisPermission(const GrantUrisPermissionDto& grantUrisPermissionDto);
+    int32_t CheckPhotoUrisReadPermission(const CheckPhotoUrisReadPermissionReqBody &reqBody,
+        CheckPhotoUrisReadPermissionRespBody &respBody);
     int32_t GrantPhotoUriPermissionInner(const GrantUriPermissionInnerDto& grantUriPermissionInnerDto);
     int32_t CancelPhotoUriPermission(const CancelUriPermissionDto& cancelUriPermissionDto);
     int32_t StartThumbnailCreationTask(const StartThumbnailCreationTaskDto& startThumbnailCreationTaskDto);
@@ -199,6 +203,8 @@ public:
     int32_t OpenAssetCompress(const OpenAssetCompressDto &dto, OpenAssetCompressRespBody &respBody);
     int32_t NotifyAssetSended(const std::string &uri);
     int32_t GetAssetCompressVersion(int32_t &version);
+    int32_t SetPreferredCompatibleMode(const std::string &bundleName, int32_t preferredCompatibleMode);
+    int32_t GetPreferredCompatibleMode(const std::string &bundleName, int32_t &preferredCompatibleMode);
     int32_t GetCompressAssetSize(const std::vector<std::string> &uris, GetCompressAssetSizeRespBody &respBody);
     int32_t QueryMediaDataStatus(const std::string &dataKey, bool &result);
     int32_t CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType);

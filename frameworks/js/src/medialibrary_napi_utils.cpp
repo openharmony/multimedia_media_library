@@ -28,6 +28,7 @@
 #include "media_asset_manager_napi.h"
 #include "media_device_column.h"
 #include "media_file_uri.h"
+#include "media_log.h"
 #include "media_library_napi_def.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
@@ -67,6 +68,8 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
+static const int32_t MIN_REQUIRED_PARAMS_1 = 1;
+static const int32_t MIN_REQUIRED_PARAMS_2 = 2;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -713,6 +716,37 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     return napi_ok;
 }
 
+template <>
+napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext,
+    const size_t minArgs, const size_t maxArgs)
+{
+    napi_value thisVar = nullptr;
+    asyncContext->argc = maxArgs;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+        nullptr), "Failed to get cb info");
+    CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
+        "Number of args is invalid");
+    if (minArgs > 0) {
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+    }
+    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo)),
+        "Failed to unwrap thisVar");
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
+    CHECK_STATUS_RET(napi_create_reference(env, thisVar, NAPI_INIT_REF_COUNT, &asyncContext->objectInfoRef),
+        "Failed to create objectInfo reference");
+    napi_status status = GetParamCallback(env, asyncContext);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to get callback param!");
+        if (asyncContext->objectInfoRef != nullptr) {
+            napi_delete_reference(env, asyncContext->objectInfoRef);
+            asyncContext->objectInfoRef = nullptr;
+        }
+        return status;
+    }
+    return napi_ok;
+}
+
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::ParseArgsTwoCallback(napi_env env, napi_callback_info info,
     AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
@@ -945,20 +979,24 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 }
 
 void MediaLibraryNapiUtils::HandleError(
-    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr)
+    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr,
+    const string &errorMsg)
 {
     if (error == ERR_DEFAULT) {
         return;
     }
 
-    string errMsg = "System inner fail";
+    string errMsg = errorMsg;
     int originalError = error;
-    if (jsErrMap.count(error) > 0) {
-        errMsg = jsErrMap.at(error);
-    } else {
-        error = JS_INNER_FAIL;
-        if (realErr != 0 && jsErrMap.count(realErr) > 0) {
-            errMsg = jsErrMap.at(realErr);
+    if (errMsg.empty()) {
+        errMsg = "System inner fail";
+        if (jsErrMap.count(error) > 0) {
+            errMsg = jsErrMap.at(error);
+        } else {
+            error = JS_INNER_FAIL;
+            if (realErr != 0 && jsErrMap.count(realErr) > 0) {
+                errMsg = jsErrMap.at(realErr);
+            }
         }
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
@@ -1263,20 +1301,27 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
     for (auto& operationItem : operationList) {
         switch (operationItem.operation) {
             case OHOS::DataShare::OperationType::LIKE : {
-                std::string field = std::get<string>(operationItem.singleParams[0]);
-                std::string value = std::get<string>(operationItem.singleParams[1]);
-                if (field.compare("FeaturedSinglePortrait") == 0 && value.compare("true") == 0) {
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_2,
+                    "at least two parameters are required.");
+                std::string* field = std::get_if<string>(&operationItem.singleParams[0]);
+                std::string* value = std::get_if<string>(&operationItem.singleParams[1]);
+                CHECK_AND_BREAK_ERR_LOG(field != nullptr && value != nullptr, "field or value is null.");
+                if (field->compare("FeaturedSinglePortrait") == 0 && value->compare("true") == 0) {
                     isFeaturedSinglePortrait = true;
                 } else {
-                    featuredSinglePortraitPredicates.Like(field, value);
+                    featuredSinglePortraitPredicates.Like(*field, *value);
                 }
                 break;
             }
             case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_1,
+                    "at least one parameters are required.");
                 featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
                 break;
             }
             case OHOS::DataShare::OperationType::LIMIT : {
+                CHECK_AND_BREAK_ERR_LOG(operationItem.singleParams.size() >= MIN_REQUIRED_PARAMS_2,
+                    "at least two parameters are required.");
                 featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
                 break;
             }
@@ -2662,10 +2707,6 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Med
 
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, bool &param);
-
-template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
-    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
-    const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,

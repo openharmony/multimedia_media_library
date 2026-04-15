@@ -52,6 +52,9 @@
 #include "medialibrary_unistore_manager.h"
 #include "vision_photo_map_column.h"
 #include "location_column.h"
+#include "medialibrary_notify_new.h"
+#include "medialibrary_restore.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -144,15 +147,6 @@ int32_t MediaAlbumsService::SetPortraitCoverUri(const ChangeRequestSetCoverUriDt
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
     values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
     return MediaLibraryAlbumOperations::SetCoverUri(values, predicates);
-}
-
-int32_t MediaAlbumsService::ChangeRequestSetDefaultCoverUri(const ChangeRequestSetCoverUriDto& dto)
-{
-    const string albumId = dto.albumId;
-    const string coverUri = dto.coverUri;
-    CHECK_AND_RETURN_RET_LOG(!albumId.empty(), E_ERR, "albumId is empty illegal");
-    CHECK_AND_RETURN_RET_LOG(!coverUri.empty(), E_ERR, "coverUri is empty illegal");
-    return MediaLibraryAlbumOperations::SetDefaultCoverUri(albumId, coverUri);
 }
 
 int32_t MediaAlbumsService::SetGroupAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto)
@@ -990,12 +984,18 @@ int32_t MediaAlbumsService::GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &
     return E_OK;
 }
 
-int32_t MediaAlbumsService::CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody)
+void MediaAlbumsService::ReportFirstDbStatus()
 {
-    std::string albumName = dto.albumName;
-    auto rowId = MediaLibraryAlbumOperations::CreatePortraitAlbum(albumName);
-    CHECK_AND_RETURN_RET_LOG(rowId > 0, E_INNER_FAIL, "Failed to createportraitalbum");
-    respBody.albumId = rowId;
-    return E_OK;
+    std::string cloneFlagStr = OHOS::system::GetParameter("multimedia.medialibrary.cloneFlag", "0");
+    bool currentCloningStatus = (cloneFlagStr != "0");
+    bool isRestoring = MediaLibraryRestore::GetInstance().IsRestoring();
+    if (currentCloningStatus) {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable",
+            "Database occupied by Clone application");
+    } else if (isRestoring) {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database corrupted");
+    } else {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
+    }
 }
 } // namespace OHOS::Media

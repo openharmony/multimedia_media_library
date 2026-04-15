@@ -225,6 +225,15 @@ ResultSetDataType AlbumChangeInfo::GetAnalysisAlbumDataType(const std::string &c
     return item->second;
 }
 
+void AddStringFieldUpdate(ValuesBucket &values, stringstream &ss, const string &column, const string &oldValue,
+    const string &newValue)
+{
+    if (newValue != oldValue) {
+        values.PutString(column, newValue);
+        ss << column << ": " << oldValue << " -> " << newValue << ", ";
+    }
+}
+
 ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type)
 {
     stringstream ss;
@@ -266,6 +275,7 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
         values.PutLong(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, hiddenCoverDateTime_);
         ss << "hiddenCoverDateTime_: " << oldAlbumInfo.hiddenCoverDateTime_ << " -> " << hiddenCoverDateTime_;
     }
+    AddStringFieldUpdate(values, ss, PhotoAlbumColumns::ALBUM_LPATH, oldAlbumInfo.lpath_, lpath_);
 
     type = oldAlbumInfo.count_ < count_ ? NOTIFY_ALBUM_ADD_ASSET :
         (oldAlbumInfo.count_ > count_ ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
@@ -320,6 +330,7 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         }
         ret = ret && parcel.WriteInt32(orderSection_);
         ret = ret && parcel.WriteInt32(albumsOrder_);
+        ret = ret && parcel.WriteString(lpath_);
     }
     ret = ret && parcel.WriteInt32(albumId_);
     return ret;
@@ -365,6 +376,7 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
         }
         ret = ret && parcel.ReadInt32(orderSection_);
         ret = ret && parcel.ReadInt32(albumsOrder_);
+        ret = ret && parcel.ReadString(lpath_);
     }
     ret = ret && parcel.ReadInt32(albumId_);
     return ret;

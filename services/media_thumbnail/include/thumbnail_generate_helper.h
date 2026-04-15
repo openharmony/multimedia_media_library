@@ -51,6 +51,9 @@ public:
     EXPORT static int32_t FixThumbnailExifRotateAfterDownloadAsset(ThumbRdbOpt &opts, bool needDeleteFromVisionTables);
     EXPORT static int32_t CreateAstcOnlyDownloadThm(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh);
     EXPORT static bool CanLoadLocalThm(const ThumbnailData &data);
+    EXPORT static bool CanLoadLocalLcd(const ThumbnailData &data);
+    EXPORT static int32_t RegenerateAstcBackground(ThumbRdbOpt &opts);
+    EXPORT static int32_t SyncRegenerateAstcWithLocal(ThumbRdbOpt &opts);
 
 private:
     EXPORT static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
@@ -67,6 +70,7 @@ private:
     EXPORT static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas,
         bool isWifiConnected);
     EXPORT static void CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts);
+    EXPORT static void ReGenerateAstc(ThumbRdbOpt& opts, ThumbnailData& data, ThumbnailType thumbType);
 };
 } // namespace Media
 } // namespace OHOS

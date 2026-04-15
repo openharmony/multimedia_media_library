@@ -18,6 +18,9 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_notification_utils.h"
+#include "medialibrary_restore.h"
+#include "medialibrary_notify_new.h"
+#include "parameters.h"
 #include "ipc_skeleton.h"
 
 #include <cctype>
@@ -247,6 +250,25 @@ void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
     shared_ptr<MediaChangeInfo> recheckChangeInfo = make_shared<MediaChangeInfo>();
     recheckChangeInfo->notifyUri = registerUri;
     recheckChangeInfo->isForRecheck = true;
+    if (registerUri == NotifyUriType::AVAILABILITY_URI) {
+        bool isRestoring = MediaLibraryRestore::GetInstance().IsRestoring();
+        std::string cloneFlagStr = OHOS::system::GetParameter("multimedia.medialibrary.cloneFlag", "0");
+        bool isCloneOccupied = (cloneFlagStr != "0");
+        bool isUnavailable = isRestoring || isCloneOccupied;
+        std::string status = isUnavailable ? "unavailable" : "available";
+        std::string reason;
+        if (isRestoring) {
+            reason = "Database corrupted";
+        } else if (isCloneOccupied) {
+            reason = "Database occupied by Clone application";
+        } else {
+            reason = "";
+        }
+        MEDIA_INFO_LOG("Reconnect: isRestoring=%{public}d, isCloneOccupied=%{public}d, status=%{public}s",
+            isRestoring, isCloneOccupied, status.c_str());
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem(status, reason);
+        return;
+    }
     if (registerUri == PHOTO_URI || registerUri == HIDDEN_PHOTO_URI || registerUri == TRASH_PHOTO_URI) {
         recheckChangeInfo->notifyType = Notification::AccurateNotifyType::NOTIFY_ASSET_ADD;
     } else {

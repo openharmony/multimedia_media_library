@@ -33,6 +33,7 @@
 #include "safe_vector.h"
 #include "medialibrary_unittest_utils.h"
 #include "media_file_utils.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace testing::ext;
@@ -78,11 +79,11 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_Test, TestSize.Level1)
 {
     string sql = "SELECT name, score FROM Stu WHERE age >= ? AND age <= ?;";
     vector<string> bindArgs = {"18", "45"};
-    string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, sql);
 
     sql = "SELECT name, score FROM Stu WHERE age >= {0} AND age <= {1};";
-    result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT name, score FROM Stu WHERE age >= 18 AND age <= 45;");
 }
 
@@ -824,7 +825,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_SingleParam, TestSize.Level1
     // 用例说明：测试FillParams功能；覆盖单参数分支（触发条件：bindArgs.size()==1）；验证SQL中{0}被正确替换
     std::string sql = "SELECT * FROM table WHERE id = {0}";
     std::vector<std::string> bindArgs = {"123"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE id = 123");
 }
 
@@ -833,7 +834,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_MultipleParams, TestSize.Lev
     // 用例说明：测试FillParams功能；覆盖多参数分支（触发条件：bindArgs.size()>1）；验证SQL中{0}和{1}被正确替换
     std::string sql = "SELECT * FROM table WHERE id = {0} AND name = {1}";
     std::vector<std::string> bindArgs = {"123", "test"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE id = 123 AND name = test");
 }
 
@@ -842,7 +843,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_NoParams, TestSize.Level1)
     // 用例说明：测试FillParams功能；覆盖无参数分支（触发条件：bindArgs.size()==0）；验证SQL原样返回
     std::string sql = "SELECT * FROM table";
     std::vector<std::string> bindArgs = {};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table");
 }
 
@@ -851,7 +852,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_EmptySql, TestSize.Level1)
     // 用例说明：测试FillParams功能；覆盖空SQL分支（触发条件：sql为空字符串）；验证返回空字符串
     std::string sql = "";
     std::vector<std::string> bindArgs = {"value"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "");
 }
 
@@ -860,7 +861,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_ThreeParams, TestSize.Level1
     // 用例说明：测试FillParams功能；覆盖三参数分支（触发条件：bindArgs.size()==3）；验证SQL中{0}、{1}、{2}被正确替换
     std::string sql = "INSERT INTO table VALUES ({0}, {1}, {2})";
     std::vector<std::string> bindArgs = {"1", "2", "3"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "INSERT INTO table VALUES (1, 2, 3)");
 }
 
@@ -869,7 +870,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_RepeatedParam, TestSize.Leve
     // 用例说明：测试FillParams功能；覆盖重复占位符分支（触发条件：SQL中{0}出现多次）；验证所有{0}都被替换为同一值
     std::string sql = "SELECT * FROM table WHERE id = {0} OR parent_id = {0}";
     std::vector<std::string> bindArgs = {"123"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE id = 123 OR parent_id = 123");
 }
 
@@ -878,7 +879,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_StringParam, TestSize.Level1
     // 用例说明：测试FillParams功能；覆盖字符串参数分支（触发条件：参数为字符串类型）；验证字符串参数正确替换
     std::string sql = "SELECT * FROM table WHERE name = '{0}'";
     std::vector<std::string> bindArgs = {"testname"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE name = 'testname'");
 }
 
@@ -887,7 +888,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_FiveParams, TestSize.Level1)
     // 用例说明：测试FillParams功能；覆盖五参数分支（触发条件：bindArgs.size()==5）；验证5个占位符都被正确替换
     std::string sql = "SELECT * FROM table WHERE a={0} AND b={1} AND c={2} AND d={3} AND e={4}";
     std::vector<std::string> bindArgs = {"1", "2", "3", "4", "5"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE a=1 AND b=2 AND c=3 AND d=4 AND e=5");
 }
 
@@ -896,8 +897,17 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_LongStringValue, TestSize.Le
     // 用例说明：测试FillParams功能；覆盖长参数值分支（触发条件：参数值长度很长）；验证长参数值正确替换
     std::string sql = "SELECT * FROM table WHERE description = {0}";
     std::vector<std::string> bindArgs = {"This is a long description that contains many words"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE description = This is a long description that contains many words");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_ValueContainsFlag, TestSize.Level1)
+{
+    // 用例说明：测试FillParams功能；覆盖CHECK_AND_CONTINUE异常分支（触发条件：val包含flag）；验证函数能正确处理并继续替换下一个占位符
+    std::string sql = "SELECT * FROM table WHERE a = {0} AND b = {1}";
+    std::vector<std::string> bindArgs = {"{0}-value1", "value2"};
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
+    EXPECT_EQ(result, "SELECT * FROM table WHERE a = {0} AND b = value2");
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_AllNumbers, TestSize.Level1)
@@ -1207,166 +1217,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SingleSeparator, TestSiz
     EXPECT_EQ(result, "[1,2,3]");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_ValidPath, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖有效路径分支（触发条件：path包含/storage/cloud/files前缀）；验证返回正确的lower路径
-    std::string path = "/storage/cloud/files/test/image.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/100/hmdfs/account/files/test/image.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_InvalidPath, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖无效路径分支（触发条件：path不包含/storage/cloud/files前缀）；验证返回空字符串
-    std::string path = "/invalid/path/test.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_EmptyPath, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖空路径分支（触发条件：path为空字符串）；验证返回空字符串
-    std::string path = "";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_DifferentUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖不同用户ID分支（触发条件：userId=200）；验证返回包含正确userId的路径
-    std::string path = "/storage/cloud/files/test/file.txt";
-    int32_t userId = 200;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/200/hmdfs/account/files/test/file.txt";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_ZeroUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖零用户ID分支（触发条件：userId=0）；验证返回包含userId=0的路径
-    std::string path = "/storage/cloud/files/test/data.bin";
-    int32_t userId = 0;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/0/hmdfs/account/files/test/data.bin";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_NegativeUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖负用户ID分支（触发条件：userId=-1）；验证返回包含负userId的路径
-    std::string path = "/storage/cloud/files/test/negative.jpg";
-    int32_t userId = -1;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/-1/hmdfs/account/files/test/negative.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_LongPath, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖长路径分支（触发条件：path包含多层子目录）；验证长路径正确转换
-    std::string path = "/storage/cloud/files/very/long/path/structure/to/test/file.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/100/hmdfs/account/files/very/long/path/structure/to/test/file.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_NonLakeFile, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖非Lake文件分支（触发条件：fileSourceType!=3）；验证调用GetLowerPath并返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/data/service/el2/100/hmdfs/account/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_LakeFile, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖Lake文件分支（触发条件：fileSourceType==3）；验证调用CloudLakeUtils并返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "/storage/lake/path/image.jpg";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_EmptyData, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖空data分支（触发条件：photosVo.data为空）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_EmptyStoragePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖空storagePath分支（触发条件：photosVo.storagePath为空且fileSourceType==3）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 3;
-    photosVo.storagePath = "";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_ZeroUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖零用户ID分支（触发条件：userId=0）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 0;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_NegativeUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖负用户ID分支（触发条件：userId=-1）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = -1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_LargeUserId, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖大用户ID分支（触发条件：userId=999999）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 999999;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_WithValidData, TestSize.Level1)
 {
     // 用例说明：测试GetLocalPathByPullData功能；覆盖有效数据分支（触发条件：localPhotosPoOp有值）；验证调用GetLocalPathWithAnco并返回E_OK
@@ -1643,45 +1493,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FiveFileSourceType
     EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_TwoFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖fileSourceType==2分支（触发条件：fileSourceType==2）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 2;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_FourFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖fileSourceType==4分支（触发条件：fileSourceType==4）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 4;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_FiveFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖fileSourceType==5分支（触发条件：fileSourceType==5）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 5;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_TwoFileSourceType, TestSize.Level1)
 {
     // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==2分支（触发条件：fileSourceType==2）；验证返回E_OK
@@ -1746,7 +1557,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_MultipleSamePlaceholders, Te
     // 用例说明：测试FillParams功能；覆盖重复占位符分支（触发条件：{0}出现多次）；验证所有{0}都被替换
     std::string sql = "SELECT * FROM table WHERE a={0} AND b={1} AND c={0}";
     std::vector<std::string> bindArgs = {"value1", "value2"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE a=value1 AND b=value2 AND c=value1");
 }
 
@@ -1755,7 +1566,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_NestedPlaceholders, TestSize
     // 用例说明：测试FillParams功能；覆盖嵌套占位符分支（触发条件：SQL包含括号和多个占位符）；验证嵌套结构正确处理
     std::string sql = "SELECT * FROM table WHERE id={0} AND (a={1} OR b={2})";
     std::vector<std::string> bindArgs = {"100", "200", "300"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE id=100 AND (a=200 OR b=300)");
 }
 
@@ -1764,7 +1575,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_PlaceholderAtStart, TestSize
     // 用例说明：测试FillParams功能；覆盖占位符在开头分支（触发条件：{0}在SQL开头）；验证开头占位符正确替换
     std::string sql = "{0} FROM table";
     std::vector<std::string> bindArgs = {"SELECT"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT FROM table");
 }
 
@@ -1773,7 +1584,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_PlaceholderAtEnd, TestSize.L
     // 用例说明：测试FillParams功能；覆盖占位符在末尾分支（触发条件：{0}在SQL末尾）；验证末尾占位符正确替换
     std::string sql = "SELECT * FROM table WHERE id={0}";
     std::vector<std::string> bindArgs = {"123"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "SELECT * FROM table WHERE id=123");
 }
 
@@ -1782,7 +1593,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_TenPlaceholders, TestSize.Le
     // 用例说明：测试FillParams功能；覆盖多占位符分支（触发条件：bindArgs.size()==10）；验证10个占位符全部正确替换
     std::string sql = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}";
     std::vector<std::string> bindArgs = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
-    std::string result = CloudMediaDaoUtils::FillParams(sql, bindArgs);
+    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
     EXPECT_EQ(result, "a,b,c,d,e,f,g,h,i,j");
 }
 
@@ -1944,71 +1755,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SeparatorUnderscore, Tes
     std::vector<uint64_t> vec = {100, 200, 300};
     std::string result = CloudMediaDaoUtils::VectorToString(vec, "_");
     EXPECT_EQ(result, "[100_200_300]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_SimplePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖简单路径分支（触发条件：path只有一层子目录）；验证简单路径正确转换
-    std::string path = "/storage/cloud/files/file.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/100/hmdfs/account/files/file.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_PathWithSubdirs, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖多级子目录分支（触发条件：path包含多级子目录）；验证多级子目录正确转换
-    std::string path = "/storage/cloud/files/photos/2023/image.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/100/hmdfs/account/files/photos/2023/image.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_UserIdOne, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖用户ID为1分支（触发条件：userId==1）；验证返回包含userId=1的路径
-    std::string path = "/storage/cloud/files/test.jpg";
-    int32_t userId = 1;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    std::string expected = "/data/service/el2/1/hmdfs/account/files/test.jpg";
-    EXPECT_EQ(result, expected);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLowerPath_PathWithoutFiles, TestSize.Level1)
-{
-    // 用例说明：测试GetLowerPath功能；覆盖无效前缀分支（触发条件：path缺少/files后缀）；验证返回空字符串
-    std::string path = "/storage/cloud/test.jpg";
-    int32_t userId = 100;
-    std::string result = CloudMediaDaoUtils::GetLowerPath(path, userId);
-    EXPECT_EQ(result, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_DifferentFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖fileSourceType==10分支（触发条件：fileSourceType==10）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 10;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 100;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPhotosVo_UserIdOne, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPhotosVo功能；覆盖userId==1分支（触发条件：userId==1）；验证返回E_OK
-    CloudMdkRecordPhotosVo photosVo;
-    photosVo.data = "/storage/cloud/files/test/image.jpg";
-    photosVo.fileSourceType = 1;
-    photosVo.storagePath = "/storage/lake/path";
-    int32_t userId = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPhotosVo(photosVo, localPath, userId);
-    EXPECT_EQ(result, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_DifferentFileSourceType, TestSize.Level1)
@@ -2174,4 +1920,4 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test_002, TestSize.Level1
     EXPECT_EQ(photosDto.packageName, "test_package_name_inner");
     EXPECT_EQ(photosDto.photoRiskStatus, 1);
 }
-}
+}  // namespace OHOS::Media::CloudSync

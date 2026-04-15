@@ -61,15 +61,15 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
         const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap,
         const int64_t maxBeautyFileId,
-        std::unordered_map<int32_t, int32_t>* scoreMaskMap = nullptr);
+        std::unordered_map<int32_t, uint32_t>* scoreMaskMap = nullptr);
 
     bool CloneBeautyScoreInfo();
 
     int64_t GetMigratedScoreCount() const { return migrateScoreNum_; }
     int64_t GetMigratedFileCount() const { return migrateScoreFileNumber_; }
     int64_t GetTotalTimeCost() const { return migrateScoreTotalTimeCost_; }
-    const std::unordered_map<int32_t, int32_t>& GetScoreMaskMap() const { return scoreMaskMap_; }
-    void UpdateScoreMask(int32_t fileId, int32_t mask);
+    const std::unordered_map<int32_t, uint32_t>& GetScoreMaskMap() const { return scoreMaskMap_; }
+    void UpdateScoreMask(int32_t fileId, uint32_t mask);
 
 private:
     std::unordered_set<int32_t> CloneBeautyScoreInBatches(const std::vector<int32_t>& oldFileIds,
@@ -136,8 +136,8 @@ private:
     int64_t migrateScoreNum_ = 0;
     int64_t migrateScoreFileNumber_ = 0;
     int64_t migrateScoreTotalTimeCost_ = 0;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
-    std::unordered_map<int32_t, int32_t>* externalScoreMaskMap_ = nullptr;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
+    std::unordered_map<int32_t, uint32_t>* externalScoreMaskMap_ = nullptr;
 };
 
 template<typename T, typename U>

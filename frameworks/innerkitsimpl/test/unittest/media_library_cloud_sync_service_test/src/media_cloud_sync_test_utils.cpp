@@ -282,4 +282,14 @@ int32_t InsertTable(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const std::s
     }
     return ret;
 }
+
+int32_t InsertTable(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const std::string &tableName,
+    OHOS::NativeRdb::ValuesBucket &values, int64_t &rowId)
+{
+    int32_t ret = rdbStore->Insert(rowId, tableName, values);
+    if (ret != E_OK) {
+        GTEST_LOG_(ERROR) << "insert table: " << tableName << ", failed, ret: " << ret;
+    }
+    return ret;
+}
 }

@@ -1285,22 +1285,26 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Cannnot modify displayName for burst photos.";
             return false;
         }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
             if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         } else {
             if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         }
     } else {
         if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Title is invalid.";
             return false;
         }
     }
@@ -3089,6 +3093,7 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_DATE_ADDED_DAY,
         PhotoColumn::UNIQUE_ID,
         PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
+        PhotoColumn::PHOTO_HIDDEN_TIME,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {

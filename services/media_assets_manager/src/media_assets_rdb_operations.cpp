@@ -258,6 +258,31 @@ int32_t MediaAssetsRdbOperations::CheckPhotoUriPermissionInner(MediaLibraryComma
     return errCode;
 }
 
+int32_t MediaAssetsRdbOperations::QueryPhotoAssetsReadState(const std::vector<std::string> &fileIds,
+    std::vector<std::string> &validFileIds)
+{
+    validFileIds.clear();
+    CHECK_AND_RETURN_RET(!fileIds.empty(), E_OK);
+
+    std::vector<std::string> columns = {
+        MediaColumn::MEDIA_ID
+    };
+
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.In(MediaColumn::MEDIA_ID, fileIds);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to query photo assets read state");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+        validFileIds.push_back(fileId);
+    }
+    resultSet->Close();
+    return E_OK;
+}
+
 void MediaAssetsRdbOperations::QueryAssetsUri(const std::vector<std::string> &fileIds,
     std::vector<std::string> &uris)
 {

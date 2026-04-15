@@ -62,6 +62,7 @@ ohos_fuzztest("MediaLibraryCloudUploadCheckerFuzzTest") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
     "player_framework:media_client",
     "preferences:native_preferences",
     "relational_store:native_rdb",

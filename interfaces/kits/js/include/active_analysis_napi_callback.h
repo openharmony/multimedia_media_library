@@ -28,6 +28,14 @@
 namespace OHOS::Media {
 class ActiveAnalysisJsCallbackHolder;
 
+enum class ActiveAnalysisSaBindResult : uint8_t {
+    BOUND = 0,
+    ALREADY_COMPLETED,
+    INVALID_REMOTE,
+    HOLDER_RELEASED,
+    ADD_DEATH_RECIPIENT_FAILED,
+};
+
 class ActiveAnalysisSaDeathRecipient final : public IRemoteObject::DeathRecipient {
 public:
     explicit ActiveAnalysisSaDeathRecipient(std::weak_ptr<ActiveAnalysisJsCallbackHolder> holder);
@@ -48,7 +56,7 @@ public:
 
     int32_t NotifyResult(int32_t result, const char *source = "unknown");
     void HandleSaDied();
-    bool BindSaRemote(const sptr<IRemoteObject> &saRemote);
+    ActiveAnalysisSaBindResult BindSaRemote(const sptr<IRemoteObject> &saRemote);
     void Release();
     void SetRegistryId(uint64_t registryId);
 

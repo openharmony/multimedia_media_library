@@ -76,7 +76,7 @@ public:
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
         const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied,
-        std::unordered_map<int32_t, int32_t>* scoreMaskMap = nullptr);
+        std::unordered_map<int32_t, uint32_t>* scoreMaskMap = nullptr);
     void Restore();
     void RefreshTotalScore();
 
@@ -87,7 +87,7 @@ private:
     void UpdateTotalTableForProfile();
     void UpdateTotalTableForDedup();
     void UpdateTotalTableForAffective();
-    void UpdateScoreMask(int32_t fileId, int32_t mask);
+    void UpdateScoreMask(int32_t fileId, uint32_t mask);
     std::vector<ProfileInfo> QueryProfileTblByFileIds(const std::string &fileIdClause);
     void BatchInsertProfileData(const std::vector<ProfileInfo> &profileInfos,
         const std::unordered_set<int32_t> &existingFileIds);
@@ -110,8 +110,8 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
     bool isCloudRestoreSatisfied_;
-    std::unordered_map<int32_t, int32_t> scoreMaskMap_;
-    std::unordered_map<int32_t, int32_t>* externalScoreMaskMap_ = nullptr;
+    std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
+    std::unordered_map<int32_t, uint32_t>* externalScoreMaskMap_ = nullptr;
     std::atomic<uint64_t> migrateProfileNumber_{0};
     std::atomic<uint64_t> migrateDedupNumber_{0};
     std::atomic<uint64_t> migrateAffectiveNumber_{0};

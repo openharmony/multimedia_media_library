@@ -19,11 +19,11 @@
 #include <sstream>
 
 #include "backup_database_utils.h"
-#include "dao_utils.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "backup_const.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media {
 /**
@@ -241,14 +241,14 @@ int32_t PhotosDao::GetBackupMediaCount(const std::vector<int32_t> &mediaTypes,
 {
     std::vector<std::string> bindArgs = { BackupDatabaseUtils::JoinValues(mediaTypes, ","),
         BackupDatabaseUtils::JoinValues(fileSourceTypes, ","), BackupDatabaseUtils::JoinValues(positionTypes, ",") };
-    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_MEDIA_COUNT, bindArgs);
+    std::string querySql = MediaStringUtils::FillParams(SQL_PHOTOS_GET_MEDIA_COUNT, bindArgs);
     return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, "count");
 }
 
 int32_t PhotosDao::GetBackupAudioCount(const std::vector<int32_t> &mediaTypes)
 {
     std::vector<std::string> bindArgs = { BackupDatabaseUtils::JoinValues(mediaTypes, ",") };
-    std::string querySql = DaoUtils::FillParams(SQL_AUDIOS_GET_AUDIO_COUNT, bindArgs);
+    std::string querySql = MediaStringUtils::FillParams(SQL_AUDIOS_GET_AUDIO_COUNT, bindArgs);
     return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, "count");
 }
 
@@ -316,7 +316,7 @@ std::unordered_set<std::string> PhotosDao::GetExistingStoragePaths(const std::ve
     for (const auto &storagePath : storagePaths) {
         BackupDatabaseUtils::UpdateSelection(selection, storagePath, true);
     }
-    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_EXISTING_STORAGE_PATHS, { selection });
+    std::string querySql = MediaStringUtils::FillParams(SQL_PHOTOS_GET_EXISTING_STORAGE_PATHS, { selection });
     std::vector<NativeRdb::ValueObject> params = { maxFileId, FileSourceType::MEDIA_HO_LAKE };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, existingStoragePaths);
@@ -337,7 +337,7 @@ std::unordered_set<std::string> PhotosDao::GetExistingData(const std::vector<std
     for (const auto &datum : data) {
         BackupDatabaseUtils::UpdateSelection(selection, datum, true);
     }
-    std::string querySql = DaoUtils::FillParams(SQL_PHOTOS_GET_EXISTING_DATA, { selection });
+    std::string querySql = MediaStringUtils::FillParams(SQL_PHOTOS_GET_EXISTING_DATA, { selection });
     std::vector<NativeRdb::ValueObject> params = { maxFileId };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, existingData);

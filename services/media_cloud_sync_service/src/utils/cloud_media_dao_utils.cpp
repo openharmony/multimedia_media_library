@@ -31,15 +31,6 @@ namespace OHOS::Media::CloudSync {
 
 // Anco FileSourceType
 const int32_t MEDIA_HO_LAKE_CONST = 3;
-const std::string PREFIX = "/data/service/el2/";
-const std::string SUFFIX = "/hmdfs/account/files";
-const std::string DOWNLOADDIR = "/.cloud_cache/download_cache";
-const std::string SANDBOXPREFIX = "/storage/cloud/files";
-const std::string PREFIXLCD = "/mnt/hmdfs/";
-const std::string SUFFIXLCD = "/account/device_view/local/files";
-const std::string PREFIXCLOUD = "/storage/cloud/";
-const std::string SUFFIXCLOUD = "/files";
-const std::string TMPSUFFIX = ".temp.download";
 
 std::string CloudMediaDaoUtils::ToStringWithCommaAndQuote(const std::vector<std::string> &values)
 {
@@ -63,30 +54,6 @@ std::string CloudMediaDaoUtils::ToStringWithComma(const std::vector<std::string>
         }
     }
     return os.str();
-}
-
-std::string CloudMediaDaoUtils::FillParams(const std::string &sql, const std::vector<std::string> &bindArgs)
-{
-    std::stringstream os;
-    std::string flag;
-    const std::string leftBrace = "{";
-    const std::string rightBrace = "}";
-    std::string val;
-    std::string result = sql;
-    for (size_t i = 0; i < bindArgs.size(); i++) {
-        flag = leftBrace + std::to_string(i) + rightBrace;
-        val = bindArgs[i];
-        size_t pos = result.find(flag);
-        while (pos != std::string::npos) {
-            os.str("");
-            os << result.substr(0, pos) << bindArgs[i];
-            os << (pos + flag.length() <= result.length() ? result.substr(pos + flag.length()) : "");
-            result = os.str();
-            os.str("");
-            pos = result.find(flag);
-        }
-    }
-    return result;
 }
 
 std::vector<std::string> CloudMediaDaoUtils::GetNumbers(const std::vector<std::string> &albumIds)
@@ -161,43 +128,14 @@ int32_t CloudMediaDaoUtils::ExecuteSql(const std::string &sql)
     return rdbStore->ExecuteSql(sql);
 }
 
-std::string CloudMediaDaoUtils::GetLowerPath(const std::string &path, int32_t userId)
-{
-    size_t pos = path.find(SANDBOXPREFIX);
-    if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("invalid path");
-        return "";
-    }
-    return PREFIX + std::to_string(userId) + SUFFIX + path.substr(pos + SANDBOXPREFIX.size());
-}
-
-int32_t CloudMediaDaoUtils::GetLocalPathByPhotosVo(const CloudMdkRecordPhotosVo &photosVo, std::string &localPath,
-    int32_t userId)
-{
-    PathInfo pathInfo;
-    pathInfo.storagePath = photosVo.storagePath;
-    pathInfo.fileSourceType = photosVo.fileSourceType;
-    pathInfo.filePath = photosVo.data;
-    pathInfo.userId = userId;
-
-    if (pathInfo.fileSourceType != MEDIA_HO_LAKE_CONST) {
-        localPath = GetLowerPath(pathInfo.filePath, pathInfo.userId);
-    } else {
-        localPath = CloudLakeUtils::GetAbsoluteLakePath(pathInfo.storagePath, pathInfo.userId);
-    }
-    return E_OK;
-}
-
 int32_t CloudMediaDaoUtils::GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath)
 {
     PathInfo pathInfo;
-    int32_t userId = 100;
     CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
     PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
     pathInfo.storagePath = localPhotosPo.storagePath.value_or("");
     pathInfo.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
     pathInfo.filePath = localPhotosPo.data.value_or("");
-    pathInfo.userId = userId;
     return GetLocalPathWithAnco(pathInfo, localPath);
 }
 

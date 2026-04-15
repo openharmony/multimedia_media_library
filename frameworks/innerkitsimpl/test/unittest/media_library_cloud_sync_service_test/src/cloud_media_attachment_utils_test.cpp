@@ -27,8 +27,6 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_edit_utils.h"
-#include "photo_file_utils.h"
-#include "cloud_media_file_utils.h"
 #include "thumbnail_const.h"
 
 using namespace testing::ext;

@@ -42,6 +42,7 @@ struct RenameFileInfo {
     std::string title;
     std::string displayName;
 };
+
 public:
     std::string GetDisplayName(const PhotosPo &photosPo);
     int32_t GetFileId(const PhotosPo &photosPo);
@@ -82,8 +83,10 @@ private:
     void CalEditDataSizeInHandlePhoto(const ORM::PhotosPo &photo);
     int32_t FindAttachments(const std::vector<PhotosPo> &photoInfos, std::vector<PhotoAttachmentDto> &attachmentList);
     int32_t CleanAttachments(std::vector<PhotoAttachmentDto> &attachmentList, int64_t &attachmentSize);
-    void NotifyCoverContentChange(const std::vector<std::string> &notifyVector);
+    void NotifyCoverContentChange(const std::vector<std::string> &fileIds);
     int32_t GetDownloadNumberOfLcd(int64_t &lcdNumber);
+    int32_t UpdateLcdNumberCache();
+    void HandleDownloadThms(const std::unordered_map<std::string, int32_t> &downloadThumbnailMap);
 
 private:
     const uint32_t TYPE_THM_MASK = 0x1;
@@ -104,6 +107,9 @@ private:
     CloudMediaDownloadServiceProcessor processor_;
     CloudMediaScanService scanService_;
     CloudMediaCommonDao commonDao_;
+    static int64_t lcdNumberCache_;
+    static int32_t queryCount_;
+    static int64_t lastCallTime_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DOWNLOAD_SERVICE_H

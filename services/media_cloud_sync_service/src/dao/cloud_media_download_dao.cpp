@@ -35,6 +35,7 @@
 #include "album_accurate_refresh.h"
 #include "metadata_extractor.h"
 #include "exif_rotate_utils.h"
+#include "media_string_utils.h"
 
 namespace OHOS::Media::CloudSync {
 NativeRdb::AbsRdbPredicates CloudMediaDownloadDao::GetDownloadThmsConditions(const int32_t type)
@@ -134,7 +135,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadThm(const std::vector<std::string> 
                 thumb_status = thumb_status & ? \
         WHERE cloud_id IN ({0});";
     std::vector<std::string> params = {CloudMediaDaoUtils::ToStringWithCommaAndQuote(cloudIds)};
-    std::string execSql = CloudMediaDaoUtils::FillParams(sql, params);
+    std::string execSql = MediaStringUtils::FillParams(sql, params);
     std::vector<NativeRdb::ValueObject> bindArgs = {static_cast<int32_t>(~THM_TO_DOWNLOAD_MASK)};
     int32_t ret = rdbStore->ExecuteSql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to UpdateDownloadThm.");
@@ -156,7 +157,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadLcd(const std::vector<std::string> 
             SET thumb_status = thumb_status & ? \
         WHERE cloud_id IN ({0});";
     std::vector<std::string> params = {CloudMediaDaoUtils::ToStringWithCommaAndQuote(cloudIds)};
-    std::string execSql = CloudMediaDaoUtils::FillParams(sql, params);
+    std::string execSql = MediaStringUtils::FillParams(sql, params);
     std::vector<NativeRdb::ValueObject> bindArgs = {static_cast<int32_t>(~LCD_TO_DOWNLOAD_MASK)};
     int32_t ret = rdbStore->ExecuteSql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to UpdateDownloadLcd.");

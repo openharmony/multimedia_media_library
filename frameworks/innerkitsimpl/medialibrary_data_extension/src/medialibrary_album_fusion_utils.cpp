@@ -59,7 +59,9 @@ const int32_t ALBUM_FUSION_UPGRADE_SUCCESS = 1;
 const int32_t ALBUM_FUSION_UPGRADE_FAIL = 0;
 const int32_t ALBUM_FUSION_BATCH_COUNT = 200;
 const int32_t HIGH_PIXEL_SCALE = 2;
-const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
+const int32_t HIGH_PIXEL_START_SIZE = 6 * 1024 * 8 * 1024;
+const int32_t HIGH_PIXEL_STOP_SIZE = 4 * 1024 * 6 * 1024;
+const double HIGH_PIXEL_RESIZE_SCALE = 1.4;
 const string SQL_GET_DUPLICATE_PHOTO = "SELECT p.file_id FROM Photos p "
             "LEFT JOIN PhotoAlbum a ON p.owner_album_id = a.album_id "
             "WHERE p.dirty = 7 AND a.album_id IS NULL LIMIT 500";
@@ -2227,7 +2229,7 @@ static int32_t UpdateTranscodeTime(int32_t fileId)
 
 static bool IsHighPixelPicture(int32_t width, int32_t height)
 {
-    if (width * height >= HIGH_PIXEL_SIZE) {
+    if (width * height >= HIGH_PIXEL_START_SIZE) {
         return true;
     }
     return false;
@@ -2242,6 +2244,11 @@ static bool GetDesireSize(int32_t &width, int32_t &height)
     while (IsHighPixelPicture(width, height)) {
         width /= HIGH_PIXEL_SCALE;
         height /= HIGH_PIXEL_SCALE;
+    }
+
+    if (width * height > HIGH_PIXEL_STOP_SIZE) {
+        width /= HIGH_PIXEL_RESIZE_SCALE;
+        height /= HIGH_PIXEL_RESIZE_SCALE;
     }
     
     return true;
@@ -2309,6 +2316,19 @@ static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet>
     return E_OK;
 }
 
+static int32_t GetTranscodeFileInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    PhotoFileOperation::TranscodeFileInfo &srcInfo)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_INNER_FAIL, "no resultset data.");
+    srcInfo.data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int32_t fileSourceType = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+    auto cond = (fileSourceType == static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE) ||
+        fileSourceType == static_cast<int32_t>(FileSourceType::FILE_MANAGER));
+    srcInfo.filePath = cond ? GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet) : srcInfo.data;
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, const std::string &path, size_t &size,
     int32_t &dupExist, TranscodeType& transcodeType)
 {
@@ -2324,6 +2344,7 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     }
 
     const std::string querySql = R"(SELECT exist_compatible_duplicate, position, is_temp, time_pending, hidden,
+        data, storage_path, file_source_type,
         date_trashed, date_deleted, mime_type, height, width FROM Photos WHERE file_id = ?)";
     std::vector<NativeRdb::ValueObject> params = { fileId };
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
@@ -2331,12 +2352,17 @@ int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, con
     int32_t width = 0;
     int32_t height = 0;
     auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist, width, height, transcodeType);
+    PhotoFileOperation::TranscodeFileInfo srcInfo {
+        .data = path,
+        .filePath = path
+    };
+    CHECK_AND_EXECUTE(err != E_OK, (void)GetTranscodeFileInfo(resultSet, srcInfo));
     CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
     if (dupExist > 0) {
         return err;
     }
     if (err == E_OK) {
-        return PhotoFileOperation().CreateTmpCompatibleDup(path, size, width, height, transcodeType);
+        return PhotoFileOperation().CreateTmpCompatibleDup(srcInfo, size, width, height, transcodeType);
     }
     MEDIA_ERR_LOG("CheckTmpCompatibleDup fail %{public}d", err);
     dfxManager->HandleTranscodeFailed(INNER_FAILED, transcodeType);

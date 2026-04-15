@@ -2550,6 +2550,12 @@ void MediaAssetManagerNapi::JSCancelRequestComplete(napi_env env, napi_status, v
     tracer.Start("JSCancelRequestComplete");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    if (jsContext == nullptr) {
+        MEDIA_ERR_LOG("Async jsContext is null");
+        delete context;
+        return;
+    }
+
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {

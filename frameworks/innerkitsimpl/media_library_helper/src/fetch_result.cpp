@@ -119,6 +119,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_DATE_ADDED_DAY, TYPE_STRING },
         { PhotoColumn::PHOTO_DATE_ADDED_MONTH, TYPE_STRING },
         { PhotoColumn::PHOTO_DATE_ADDED_YEAR, TYPE_STRING },
+        { PhotoColumn::PHOTO_HIDDEN_TIME, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
 }

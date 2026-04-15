@@ -193,7 +193,8 @@
                   "dk_record_parser.h",
                   "cloud_media_factory.h",
                   "i_cloud_media_data_handler.h",
-                  "cloud_media_data_handler.h"
+                  "cloud_media_data_handler.h",
+                  "cloud_media_path_utils.h"
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"

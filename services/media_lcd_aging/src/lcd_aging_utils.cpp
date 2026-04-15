@@ -19,15 +19,24 @@
 #include <cinttypes>
 #include <map>
 
+#include "exif_rotate_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 constexpr double LCD_SCALE_FACTOR = 0.8;
 constexpr int64_t GB_SIZE = 1000 * 1000 * 1000;
 constexpr int64_t TEN_THOUSAND = 10000;
 constexpr int64_t TWENTY_THOUSAND = 20000;
+const std::string DENTRY_INFO_LCD_EX = "THM_EX/LCD";
+const std::string DENTRY_INFO_LCD = "LCD";
+const std::string FILE_NAME_LCD = "LCD.jpg";
+const int64_t THUMB_DENTRY_SIZE = 2 * 1024 * 1024;
+
+int64_t LcdAgingUtils::maxLcdNumber_ = -1;
+int64_t LcdAgingUtils::scaleLcdNumber_ = -1;
 
 // key = storage size, value = max lcd number
 // storage size <= 128GB, max lcd number = 2 * 10000
@@ -42,31 +51,67 @@ const std::map<int64_t, int64_t> LcdMaxNumberMap = {
 
 int32_t LcdAgingUtils::GetMaxThresholdOfLcd(int64_t &lcdNumber)
 {
+    if (maxLcdNumber_ > 0) {
+        lcdNumber = maxLcdNumber_;
+        return E_OK;
+    }
+
     int64_t diskSize = MediaFileUtils::GetTotalSize();
     CHECK_AND_EXECUTE(diskSize > 0, diskSize = MediaFileUtils::GetTotalSize());
     CHECK_AND_RETURN_RET_LOG(diskSize > 0, E_ERR, "Failed to GetTotalSize, diskSize:%{public}" PRId64, diskSize);
 
     if (diskSize < LcdMaxNumberMap.begin()->first) {
-        lcdNumber = TWENTY_THOUSAND;
+        maxLcdNumber_ = TWENTY_THOUSAND;
+        lcdNumber = maxLcdNumber_;
         return E_OK;
     }
 
     for (auto it = LcdMaxNumberMap.rbegin(); it != LcdMaxNumberMap.rend(); it++) {
         CHECK_AND_CONTINUE(diskSize >= it->first);
-        lcdNumber = it->second;
+        maxLcdNumber_ = it->second;
         break;
     }
-
+    lcdNumber = maxLcdNumber_;
     return E_OK;
 }
 
 int32_t LcdAgingUtils::GetScaleThresholdOfLcd(int64_t &lcdNumber)
 {
+    if (scaleLcdNumber_ > 0) {
+        lcdNumber = scaleLcdNumber_;
+        return E_OK;
+    }
+
     int64_t maxLcdNumber = -1;
     int32_t ret = GetMaxThresholdOfLcd(maxLcdNumber);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetMaxThresholdOfLcd");
 
-    lcdNumber = static_cast<int64_t>(maxLcdNumber * LCD_SCALE_FACTOR);
+    scaleLcdNumber_ = static_cast<int64_t>(maxLcdNumber * LCD_SCALE_FACTOR);
+    lcdNumber = scaleLcdNumber_;
     return E_OK;
+}
+
+std::vector<DentryFileInfo> LcdAgingUtils::ConvertAgingFileToDentryFile(
+    const std::vector<LcdAgingFileInfo> &agingFileInfos)
+{
+    std::vector<DentryFileInfo> dentryFileInfos;
+    for (auto &agingFileInfo : agingFileInfos) {
+        DentryFileInfo dentryFileInfo;
+        dentryFileInfo.cloudId = agingFileInfo.cloudId;
+        dentryFileInfo.modifiedTime = agingFileInfo.dateModified;
+        dentryFileInfo.path = agingFileInfo.path;
+        dentryFileInfo.size = THUMB_DENTRY_SIZE;
+        dentryFileInfo.fileType = agingFileInfo.hasExThumbnail ? DENTRY_INFO_LCD_EX : DENTRY_INFO_LCD;
+
+        dentryFileInfo.fileName = FILE_NAME_LCD;
+        dentryFileInfos.emplace_back(dentryFileInfo);
+    }
+    return dentryFileInfos;
+}
+
+bool LcdAgingUtils::HasExThumbnail(const LcdAgingFileInfo &agingFileInfo)
+{
+    return (agingFileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE) &&
+        (agingFileInfo.orientation != 0 || agingFileInfo.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT));
 }
 }  // namespace OHOS::Media

@@ -35,9 +35,11 @@ shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::GetInstance()
 {
     if (asyncWorkerInstance_ == nullptr) {
         lock_guard<mutex> lockGuard(instanceLock_);
-        asyncWorkerInstance_ = shared_ptr<MediaLibraryAsyncWorker>(new MediaLibraryAsyncWorker());
-        if (asyncWorkerInstance_ != nullptr) {
-            asyncWorkerInstance_->Init();
+        if (asyncWorkerInstance_ == nullptr) {
+            asyncWorkerInstance_ = shared_ptr<MediaLibraryAsyncWorker>(new MediaLibraryAsyncWorker());
+            if (asyncWorkerInstance_ != nullptr) {
+                asyncWorkerInstance_->Init();
+            }
         }
     }
     return asyncWorkerInstance_;
@@ -55,6 +57,7 @@ MediaLibraryAsyncWorker::~MediaLibraryAsyncWorker()
             thread.join();
         }
     }
+    lock_guard<mutex> lockGuard(instanceLock_);
     asyncWorkerInstance_ = nullptr;
 }
 

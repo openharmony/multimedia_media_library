@@ -145,14 +145,19 @@ static int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
         MEDIA_ERR_LOG("Get path failed");
         return E_INVALID_VALUES;
     }
-    int32_t errCode = MediaFileUtils::CreateAsset(path);
+    auto normalizedDstPath = std::filesystem::absolute(path).lexically_normal();
+    if (normalizedDstPath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for destination path:%{public}s", path.c_str());
+        return E_INVALID_VALUES;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(normalizedDstPath);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Can not create asset");
         return errCode;
     }
 
     if (isMovingPhoto) {
-        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(normalizedDstPath);
         errCode = MediaFileUtils::CreateAsset(videoPath);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Can not create video asset");

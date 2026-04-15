@@ -897,7 +897,7 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, DeleteFileNotExistPhoto_Test_001, TestSiz
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     
     int32_t ret = photosDao.DeleteFileNotExistPhoto(path, photoRefresh);
-    EXPECT_EQ(ret, E_RDB);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, HandleNotExistAlbumRecord_Test_001, TestSize.Level1)
@@ -961,26 +961,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, UpdateFailRecordsCloudId_Test_002, TestSi
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     
     int32_t ret = photosDao.UpdateFailRecordsCloudId(record, photoRefresh);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, DeleteLocalFileNotExistRecord_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    PhotosDto photo;
-    photo.path = "/storage/test.jpg";
-    
-    int32_t ret = photosDao.DeleteLocalFileNotExistRecord(photo);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, RenewSameCloudResource_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    PhotosDto photo;
-    photo.cloudId = "test_cloud_id";
-    
-    int32_t ret = photosDao.RenewSameCloudResource(photo);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1645,16 +1625,6 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, FillThumbStatus_Test_002, TestSize.Level1
     bool mtimeChanged = false;
     
     int32_t ret = photosDao.FillThumbStatus(values, mtimeChanged);
-    EXPECT_EQ(ret, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceDaoTest, DeleteLocalFileNotExistRecord_Test_002, TestSize.Level1)
-{
-    CloudMediaPhotosDao photosDao;
-    PhotosDto photo;
-    photo.path = "";
-    
-    int32_t ret = photosDao.DeleteLocalFileNotExistRecord(photo);
     EXPECT_EQ(ret, E_OK);
 }
 

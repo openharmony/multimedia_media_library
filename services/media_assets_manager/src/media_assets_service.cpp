@@ -63,6 +63,9 @@
 #include "photo_day_month_year_operation.h"
 #include "preferences_helper.h"
 #include "notify_register_permission.h"
+#include "accesstoken_kit.h"
+#include "ipc_skeleton.h"
+#include "media_uri_utils.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -81,7 +84,16 @@ const std::string COLUMN_OLD_DATA = "old_data";
 const std::string COLUMN_DISPLAY_NAME = "display_name";
 const std::string HEIF_MIME_TYPE = "image/heif";
 const std::string HEIC_MIME_TYPE = "image/heic";
+const std::string PERM_READ_IMAGEVIDEO_FOR_URI_CHECK = "ohos.permission.READ_IMAGEVIDEO";
+const std::string JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
+enum class PhotoPermissionState : int32_t {
+    URI_FORMAT_ERROR = 0,
+    FILE_NOT_EXIST = 1,
+    READ_PERMISSION = 2,
+    NO_READ_PERMISSION = 3,
+};
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
 
@@ -1172,6 +1184,138 @@ int32_t MediaAssetsService::GrantPhotoUrisPermission(const GrantUrisPermissionDt
     return errCode;
 }
 
+struct ReadPermissionCheckContext {
+    explicit ReadPermissionCheckContext(std::map<std::string, int32_t> &stateMap)
+        : uriPermissionStateMap(stateMap) {}
+
+    std::map<std::string, int32_t> &uriPermissionStateMap;
+    std::vector<std::string> checkedUris;
+    std::vector<std::string> checkedFileIds;
+    std::vector<std::string> permissionCheckUris;
+    std::vector<std::string> permissionCheckFileIds;
+};
+
+static void CollectCheckedPhotoUris(const std::vector<std::string> &uris, ReadPermissionCheckContext &context)
+{
+    context.checkedUris.reserve(uris.size());
+    context.checkedFileIds.reserve(uris.size());
+    for (const auto &uri : uris) {
+        std::string fileId = MediaUriUtils::GetFileIdStr(uri);
+        if (fileId.empty() || fileId == "-1") {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::URI_FORMAT_ERROR);
+            continue;
+        }
+        context.checkedUris.emplace_back(uri);
+        context.checkedFileIds.emplace_back(fileId);
+    }
+}
+
+static int32_t PrepareReadPermissionCheck(MediaAssetsRdbOperations &rdbOperation, ReadPermissionCheckContext &context)
+{
+    std::vector<std::string> validFileIds;
+    int32_t ret = rdbOperation.QueryPhotoAssetsReadState(context.checkedFileIds, validFileIds);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to query photo assets read state");
+
+    context.permissionCheckUris.reserve(context.checkedUris.size());
+    context.permissionCheckFileIds.reserve(context.checkedUris.size());
+    for (size_t i = 0; i < context.checkedUris.size(); i++) {
+        const auto &uri = context.checkedUris[i];
+        const auto &fileId = context.checkedFileIds[i];
+        auto iter = std::find(validFileIds.begin(), validFileIds.end(), fileId);
+        if (iter == validFileIds.end()) {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::FILE_NOT_EXIST);
+            continue;
+        }
+        context.permissionCheckUris.emplace_back(uri);
+        context.permissionCheckFileIds.emplace_back(fileId);
+    }
+    return E_OK;
+}
+
+static bool IsReadPermissionType(const int32_t permissionType)
+{
+    return AppUriPermissionColumn::PERMISSION_TYPE_READ.find(permissionType) !=
+        AppUriPermissionColumn::PERMISSION_TYPE_READ.end();
+}
+
+static int32_t QueryReadPermissionByService(uint32_t tokenId,
+    const std::vector<std::string> &fileIds, std::unordered_map<std::string, bool> &filePermissionMap)
+{
+    CheckUriPermissionInnerDto dto;
+    dto.targetTokenId = static_cast<int64_t>(tokenId);
+    dto.uriType = std::to_string(AppUriPermissionColumn::URI_PHOTO);
+    dto.inFileIds = fileIds;
+    dto.columns.emplace_back(AppUriPermissionColumn::FILE_ID);
+    dto.columns.emplace_back(AppUriPermissionColumn::PERMISSION_TYPE);
+
+    int32_t ret = MediaAssetsService::GetInstance().CheckPhotoUriPermissionInner(dto);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckPhotoUriPermissionInner failed, ret:%{public}d", ret);
+
+    CHECK_AND_RETURN_RET_LOG(dto.outFileIds.size() == dto.permissionTypes.size(), E_ERR,
+        "check uri permission result size mismatch, fileIds:%{public}zu, permissionTypes:%{public}zu",
+        dto.outFileIds.size(), dto.permissionTypes.size());
+
+    for (size_t i = 0; i < dto.outFileIds.size(); i++) {
+        if (IsReadPermissionType(dto.permissionTypes[i])) {
+            filePermissionMap[dto.outFileIds[i]] = true;
+        }
+    }
+    return E_OK;
+}
+
+static int32_t UpdateReadPermissionCheckResult(ReadPermissionCheckContext &context)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    bool hasReadAccessTokenPermission =
+        Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenId, PERM_READ_IMAGEVIDEO_FOR_URI_CHECK) == E_OK;
+
+    CHECK_AND_RETURN_RET_LOG(context.permissionCheckUris.size() == context.permissionCheckFileIds.size(), E_ERR,
+        "permission check context size mismatch, uris:%{public}zu, fileIds:%{public}zu",
+        context.permissionCheckUris.size(), context.permissionCheckFileIds.size());
+
+    if (hasReadAccessTokenPermission) {
+        for (const auto &uri : context.permissionCheckUris) {
+            context.uriPermissionStateMap[uri] = static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION);
+        }
+        return E_OK;
+    }
+
+    std::unordered_map<std::string, bool> filePermissionMap;
+    int32_t ret = QueryReadPermissionByService(tokenId, context.permissionCheckFileIds, filePermissionMap);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryReadPermissionByService failed, ret:%{public}d", ret);
+
+    for (size_t i = 0; i < context.permissionCheckUris.size(); i++) {
+        auto iter = filePermissionMap.find(context.permissionCheckFileIds[i]);
+        if (iter != filePermissionMap.end()) {
+            context.uriPermissionStateMap[context.permissionCheckUris[i]] =
+                iter->second ? static_cast<int32_t>(PhotoPermissionState::READ_PERMISSION)
+                             : static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+        } else {
+            context.uriPermissionStateMap[context.permissionCheckUris[i]] =
+                static_cast<int32_t>(PhotoPermissionState::NO_READ_PERMISSION);
+        }
+    }
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CheckPhotoUrisReadPermission(const CheckPhotoUrisReadPermissionReqBody &reqBody,
+    CheckPhotoUrisReadPermissionRespBody &respBody)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::CheckPhotoUrisReadPermission");
+    respBody.uriPermissionStateMap.clear();
+    CHECK_AND_RETURN_RET(!reqBody.uris.empty(), E_OK);
+
+    ReadPermissionCheckContext context(respBody.uriPermissionStateMap);
+    CollectCheckedPhotoUris(reqBody.uris, context);
+    CHECK_AND_RETURN_RET(!context.checkedFileIds.empty(), E_OK);
+
+    int32_t ret = PrepareReadPermissionCheck(rdbOperation_, context);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "PrepareReadPermissionCheck failed, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET(!context.permissionCheckUris.empty(), E_OK);
+
+    return UpdateReadPermissionCheckResult(context);
+}
+
 int32_t MediaAssetsService::CancelPhotoUriPermission(const CancelUriPermissionDto &cancelUriPermissionDto)
 {
     MEDIA_INFO_LOG("enter MediaAssetsService::CancelPhotoUriPermission");
@@ -1288,12 +1432,20 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     }
     int indexOfPhotoId = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
+    if (indexOfPhotoId < 0) {
+        MEDIA_ERR_LOG("Failed to get photoId");
+        return E_ERR;
+    }
     std::string photoId;
     resultSet->GetString(indexOfPhotoId, photoId);
     resp.photoId = photoId;
 
     int columnIndexQuality = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
+    if (columnIndexQuality < 0) {
+        MEDIA_ERR_LOG("Failed to get photoQuality");
+        return E_ERR;
+    }
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
     resp.photoQuality = currentPhotoQuality;
@@ -1836,6 +1988,34 @@ int32_t MediaAssetsService::GetCompressAssetSize(const std::vector<std::string> 
     return E_SUCCESS;
 }
 
+int32_t MediaAssetsService::SetPreferredCompatibleMode(const string &bundleName, int32_t preferredCompatibleMode)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::SetPreferredCompatibleMode start");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+    CHECK_AND_RETURN_RET_LOG(preferredCompatibleMode >= static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) &&
+        preferredCompatibleMode <= static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE),
+        E_INVALID_ARGUMENTS, "preferredCompatibleMode is invalid");
+
+    int32_t ret = TranscodeCompatibleInfoOperation::UpsertPreferredCompatibleMode(
+        bundleName, static_cast<PreferredCompatibleMode>(preferredCompatibleMode));
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+        "Failed to SetPreferredCompatibleMode, errCode = %{public}d", ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetPreferredCompatibleMode(const string &bundleName, int32_t &preferredCompatibleMode)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::GetPreferredCompatibleMode start");
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), E_INVALID_ARGUMENTS, "bundleName is empty");
+
+    CompatibleInfo compatibleInfo;
+    int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+        "Failed to GetPreferredCompatibleMode, errCode = %{public}d", ret);
+    preferredCompatibleMode = static_cast<int32_t>(compatibleInfo.preferredCompatibleMode);
+    return E_SUCCESS;
+}
+
 int32_t MediaAssetsService::CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::CheckSinglePhotoPermission start");
@@ -1909,7 +2089,29 @@ int32_t MediaAssetsService::SetCompatibleInfo(CompatibleInfo &compatibleInfo)
     MEDIA_INFO_LOG("MediaAssetsService::SetCompatibleInfo start");
     compatibleInfo.bundleName = compatibleInfo.bundleName.empty() ?
         GetClientBundleName() : compatibleInfo.bundleName;
-    int32_t ret = TranscodeCompatibleInfoOperation::InsertCompatibleInfo(compatibleInfo);
+
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : compatibleInfo.encodings) {
+        bool isSupported = (mimeType == HEIC_MIME_TYPE || mimeType == JPEG_MIME_TYPE);
+        if (!isSupported) {
+            MEDIA_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+
+    CHECK_AND_RETURN_RET_LOG(mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES, E_INVALID_ARGUMENTS,
+        "supportedMimeTypes exceeds max size");
+
+    std::vector<std::string> normalizedMimeTypes;
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
+    compatibleInfo.encodings = normalizedMimeTypes;
+    int32_t ret = TranscodeCompatibleInfoOperation::UpsertCompatibleInfo(
+        compatibleInfo.bundleName, compatibleInfo.highResolution, compatibleInfo.encodings);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to SetCompatibleInfo, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
@@ -1920,9 +2122,28 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
     CompatibleInfo compatibleInfo;
     int32_t ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to GetCompatibleInfo, errCode = %{public}d", ret);
+
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : compatibleInfo.encodings) {
+        bool isSupported = (mimeType == HEIC_MIME_TYPE || mimeType == JPEG_MIME_TYPE);
+        if (!isSupported) {
+            MEDIA_INFO_LOG("GetCompatibleInfo ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
+            continue;
+        }
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_AND_RETURN_RET_LOG(mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES, E_INVALID_ARGUMENTS,
+        "GetCompatibleInfo found too many supportedMimeTypes");
+
+    std::vector<std::string> normalizedMimeTypes;
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution = compatibleInfo.highResolution;
-    respBody.supportedMimeTypes = compatibleInfo.encodings;
+    respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }
 } // namespace OHOS::Media
