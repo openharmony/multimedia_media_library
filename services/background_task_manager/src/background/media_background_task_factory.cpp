@@ -53,7 +53,6 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         std::make_shared<MediaLivePhoto4dStatusTask>(),
         std::make_shared<MediaUpdateMovingPhotoDurationTask>(),
         std::make_shared<MediaBurstKeyDuplicateTask>(),
-        std::make_shared<MediaCleanAllDirtyFilesTask>(), // should be last task
     };
 }
 

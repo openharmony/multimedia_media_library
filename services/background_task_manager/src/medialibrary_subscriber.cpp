@@ -1127,6 +1127,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     HeightWidthCorrectOperation::UpdateHeightAndWidth();
+    CloudUploadChecker::RepairNoOriginPhoto();
     ShootingModeAlbumOperation::UpdateShootingModeAlbum();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
