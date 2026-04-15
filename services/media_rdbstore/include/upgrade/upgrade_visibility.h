@@ -16,6 +16,6 @@
 #ifndef UPGRADE_VISIBILITY
 #define UPGRADE_VISIBILITY
 #ifndef UPGRADE_EXPORT
-#ifndef UPGRADE_EXPORT __attribute__ ((visibility ("default")))
+#define UPGRADE_EXPORT __attribute__ ((visibility ("default")))
 #endif
 #endif // UPGRADE_VISIBILITY

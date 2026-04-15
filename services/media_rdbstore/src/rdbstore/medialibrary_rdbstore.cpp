@@ -336,7 +336,7 @@ static int32_t AddPetFaceIndex(RdbStore& store)
          CREATE_PET_INDEX,
          CREATE_PET_TAG_ID_INDEX,
      };
-     MEDIA_INFO_LOG("add pet face index start");
+    MEDIA_INFO_LOG("add pet face index start");
     int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_ADD_PET_TABLES);
     MEDIA_INFO_LOG("add pet face index end");
     return ret;

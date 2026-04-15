@@ -797,7 +797,7 @@ static bool IsFormatTriggerMatch(const std::string &trigger, const std::vector<s
  * @param triggerDetails 触发器详细信息输出向量（包含差异的完整SQL）
  */
 static void CompareTriggers(std::vector<std::string> &triggers1, std::vector<std::string> &triggers2,
-                           std::vector<std::string> &differences, std::vector<std::string> &triggerDetails)
+    std::vector<std::string> &differences, std::vector<std::string> &triggerDetails)
 {
     // 过滤掉需要排除的触发器
     std::vector<std::string> filteredTriggers1 = FilterTriggers(triggers1);
