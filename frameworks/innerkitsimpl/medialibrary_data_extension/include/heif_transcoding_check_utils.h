@@ -53,6 +53,10 @@ private:
     static int32_t ParseHighPixelCheckList(const nlohmann::json &checkListJson, const std::string &path);
     static int32_t ParsePixelWhiteListFromFile();
     static int32_t ReadCheckList();
+    static bool CheckHighPixelWhiteList(const std::string &bundleName,
+        const HighPixelType &pixelType, const std::unordered_map<std::string, std::string>* whiteList);
+    static bool CheckHighPixelBlackList(const std::string &bundleName,
+        const HighPixelType &pixelType, const std::unordered_map<std::string, std::string>* denyList);
     static void ClearCheckList();
     static int32_t SubscribeCotaUpdatedEvent();
     static bool isUseWhiteList_;
