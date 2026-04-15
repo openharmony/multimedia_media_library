@@ -129,7 +129,8 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     0, // effect_mode
     "", // front_camera
     0, //livephoto4dStatus
-    ASSET_DATE_MODIFIED
+    ASSET_DATE_MODIFIED,
+    0,  // local_asset_size
 };
 
 void SetTables()

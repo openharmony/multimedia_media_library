@@ -82,6 +82,8 @@ private:
     int32_t DeletePhotoExtTable(const std::string &fileId);
     int32_t HandlePackageName(
             const PhotosPo &sourcePhotoInfo, const PhotosPo &targetPhotoInfo, NativeRdb::ValuesBucket &values);
+    int32_t HandleLocalAssetSize(
+            const PhotosPo &sourcePhotoInfo, const PhotosPo &targetPhotoInfo, NativeRdb::ValuesBucket &values);
     int32_t HandleSouthDeviceType(const PhotosPo &sourcePhotoInfo, const PhotosPo &targetPhotoInfo,
         NativeRdb::ValuesBucket &values);
 
