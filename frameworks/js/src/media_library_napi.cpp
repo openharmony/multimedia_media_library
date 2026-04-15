@@ -15750,10 +15750,8 @@ static napi_value NormalizeSupportedMimeTypes(napi_env env, const std::vector<st
 {
     std::map<std::string, bool> mimeTypeMap;
     for (const auto &mimeType : supportedMimeTypes) {
-        if (!IsSupportedCompatibleMimeType(mimeType)) {
-            NAPI_INFO_LOG("ignore invalid supportedMimeType: %{public}s", mimeType.c_str());
-            continue;
-        }
+        CHECK_ARGS_WITH_MEG(env, IsSupportedCompatibleMimeType(mimeType), JS_E_PARAM_INVALID,
+            "supportedMimeType is invalid");
         mimeTypeMap[mimeType] = true;
     }
     CHECK_ARGS_WITH_MEG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
@@ -15942,15 +15940,8 @@ static void JSGetAssetCompatibleConfigExecute(napi_env env, void *data)
         return;
     }
 
-    std::vector<std::string> normalizedMimeTypes;
-    if (NormalizeSupportedMimeTypes(env, respBody.supportedMimeTypes, normalizedMimeTypes) == nullptr) {
-        NAPI_ERR_LOG("GetAssetCompatibleConfig invalid supportedMimeTypes");
-        context->SaveError(JS_E_PARAM_INVALID);
-        return;
-    }
-
     context->supportedHighResolution = respBody.supportedHighResolution;
-    context->supportedMimeTypes = std::move(normalizedMimeTypes);
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
     context->retVal = E_OK;
 }
 
