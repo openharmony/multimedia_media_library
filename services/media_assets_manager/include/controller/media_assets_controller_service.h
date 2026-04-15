@@ -103,6 +103,8 @@ public:
     EXPORT int32_t GrantPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CancelPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t ReservePhotoUriPermission(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t ResumePhotoUriPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t RequestContent(MessageParcel &data, MessageParcel &reply);
