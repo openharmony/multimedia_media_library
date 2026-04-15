@@ -32,6 +32,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "thumbnail_service.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 namespace OHOS::Media::Common {
 int32_t MediaAssetsDeleteService::DeleteLocalAssets(const std::vector<std::string> &fileIds)
@@ -356,7 +357,7 @@ int32_t MediaAssetsDeleteService::CleanLocalFileAndCreateDentryFile(
     ret = this->mediaAssetsDao_.ResetPositionToCloudOnly(photoRefresh, photoInfo.fileId.value_or(-1));
     // clean transcode info
     if (photoInfo.attributes.find(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE) != photoInfo.attributes.end()) {
-        MediaLibraryAssetOperations::DeleteTransCodeInfo(photoInfo.data.value_or(""),
+        MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(photoInfo.data.value_or(""),
             to_string(photoInfo.fileId.value_or(-1)), __func__);
     }
     MEDIA_INFO_LOG("ResetPositionToCloudOnly, "
