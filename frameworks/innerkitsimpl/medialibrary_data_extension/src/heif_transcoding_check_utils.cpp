@@ -171,29 +171,43 @@ sptr<AppExecFwk::IBundleMgr> HeifTranscodingCheckUtils::GetSysBundleManager()
     return bundleMgr_;
 }
 
-int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
+static bool CheckListDUE(nlohmann::json& json)
 {
     bool dueFileHasPixelStrategy = false;
-    if (IsFileExists(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME)) {
-        std::ifstream dueFile;
-        dueFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
-        if (dueFile.is_open()) {
-            std::stringstream dueBuffer;
-            dueBuffer << dueFile.rdbuf();
-            std::string dueJStr = dueBuffer.str();
-            dueFile.close();
-            if (!dueJStr.empty() && nlohmann::json::accept(dueJStr)) {
-                nlohmann::json dueCheckListJson = nlohmann::json::parse(dueJStr, nullptr, false);
-                if (!dueCheckListJson.is_discarded()) {
-                    dueFileHasPixelStrategy = dueCheckListJson.contains(PIXEL_50_STRATEGY) ||
-                                             dueCheckListJson.contains(PIXEL_200_STRATEGY);
-                    if (dueFileHasPixelStrategy) {
-                        ParseHighPixelCheckList(dueCheckListJson, DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
-                        return E_OK;
-                    }
-                }
-            }
-        }
+    if (!IsFileExists(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME)) {
+        return false;
+    }
+    std::ifstream dueFile;
+    dueFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
+    if (!dueFile.is_open()) {
+        return false;
+    }
+    std::stringstream dueBuffer;
+    dueBuffer << dueFile.rdbuf();
+    std::string dueJStr = dueBuffer.str();
+    dueFile.close();
+    if (dueJStr.empty() || !nlohmann::json::accept(dueJStr)) {
+        return false;
+    }
+    nlohmann::json dueCheckListJson = nlohmann::json::parse(dueJStr, nullptr, false);
+    if (dueCheckListJson.is_discarded()) {
+        return false;
+    }
+    dueFileHasPixelStrategy = dueCheckListJson.contains(PIXEL_50_STRATEGY) ||
+                            dueCheckListJson.contains(PIXEL_200_STRATEGY);
+    if (dueFileHasPixelStrategy) {
+        json = dueFileHasPixelStrategy;
+        return true;
+    }
+    return false;
+}
+
+int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
+{
+    nlohmann::json dueCheckListJson;
+    if (CheckListDUE(dueCheckListJson)) {
+        ParseHighPixelCheckList(dueCheckListJson, DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
+        return E_OK;
     }
 
     std::ifstream jFile;
