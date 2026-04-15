@@ -556,39 +556,52 @@ bool HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(const std::strin
     }
 }
 
-bool HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(const std::string &bundleName, const HighPixelType &type)
+bool HeifTranscodingCheckUtils::CheckHighPixelWhiteList(const std::string &bundleName,
+    const HighPixelType &pixelType, const WhiteList* whiteList)
 {
-    bool isUseWhiteList = false;
-    WhiteList* whiteList = nullptr;
-    WhiteList* denyList = nullptr;
-    HighPixelType pixelType;
-
-    if (type == HighPixelType::PIXEL_50) {
-        isUseWhiteList = isUseWhiteList50_;
-        whiteList = &whiteList50_;
-        denyList = &denyList50_;
-        pixelType = HighPixelType::PIXEL_50;
-    } else if (type == HighPixelType::PIXEL_200) {
-        isUseWhiteList = isUseWhiteList200_;
-        whiteList = &whiteList200_;
-        denyList = &denyList200_;
-        pixelType = HighPixelType::PIXEL_200;
-    } else {
-        MEDIA_ERR_LOG("Invalid TranscodeType");
+    auto it = whiteList->find(bundleName);
+    if (it == whiteList->end()) {
+        MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel white list", bundleName.c_str(),
+            static_cast<int>(pixelType));
         return false;
     }
+    bool isSupport = false;
+    if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
+        MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
+            bundleName.c_str(), isSupport, static_cast<int>(pixelType));
+        return isSupport;
+    }
+    AppExecFwk::BundleInfo bundleInfo;
+    ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+        bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
+        bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
+    if (state != 0) {
+        MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
+        return false;
+    }
+    if (!CompareVersion(bundleInfo.versionName, it->second)) {
+        HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
+        MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
+            "than %{public}d pixel white list version %{public}s",
+            bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType), it->second.c_str());
+        return false;
+    }
+    HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, true, pixelType);
+    MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is in "
+        "%{public}d pixel white list and meets the version requirement",
+        bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType));
+    return true;
+}
 
-    if (isUseWhiteList) {
-        auto it = whiteList->find(bundleName);
-        if (it == whiteList->end()) {
-            MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel white list", bundleName.c_str(),
-                static_cast<int>(type));
-            return false;
-        }
+bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundleName,
+    const HighPixelType &pixelType, const WhiteList* denyList)
+{
+    auto it = denyList->find(bundleName);
+    if (denyList->find(bundleName) != denyList->end()) {
         bool isSupport = false;
         if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
             MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
-                bundleName.c_str(), isSupport, static_cast<int>(type));
+                bundleName.c_str(), isSupport, static_cast<int>(pixelType));
             return isSupport;
         }
         AppExecFwk::BundleInfo bundleInfo;
@@ -596,63 +609,56 @@ bool HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(const std::string &
             bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
             bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
         if (state != 0) {
-            MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
+            MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d",
+                bundleName.c_str(), state);
+            return false;
+        }
+        if (it->second == "0") {
+            HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
+            MEDIA_DEBUG_LOG("Bundle %{public}s include version all", bundleName.c_str());
             return false;
         }
         if (!CompareVersion(bundleInfo.versionName, it->second)) {
             HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
             MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
-                "than %{public}d pixel white list version %{public}s",
-                bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(type), it->second.c_str());
+                "than %{public}d pixel black list version %{public}s",
+                bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType), it->second.c_str());
             return false;
         }
         HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, true, pixelType);
-        MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is in "
-            "%{public}d pixel white list and meets the version requirement",
-            bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(type));
+        MEDIA_INFO_LOG("Bundle %{public}s is in %{public}d pixel deny list", bundleName.c_str(),
+            static_cast<int>(pixelType));
         return true;
+    }
+    MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel deny list", bundleName.c_str(),
+        static_cast<int>(pixelType));
+    return true;
+}
+
+bool HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(const std::string &bundleName,
+    const HighPixelType &pixelType)
+{
+    bool isUseWhiteList = false;
+    WhiteList* whiteList = nullptr;
+    WhiteList* denyList = nullptr;
+
+    if (pixelType == HighPixelType::PIXEL_50) {
+        isUseWhiteList = isUseWhiteList50_;
+        whiteList = &whiteList50_;
+        denyList = &denyList50_;
+    } else if (pixelType == HighPixelType::PIXEL_200) {
+        isUseWhiteList = isUseWhiteList200_;
+        whiteList = &whiteList200_;
+        denyList = &denyList200_;
     } else {
-        auto it = denyList->find(bundleName);
-        if (denyList->find(bundleName) != denyList->end()) {
-            bool isSupport = false;
-            if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
-                MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
-                    bundleName.c_str(), isSupport, static_cast<int>(type));
-                return isSupport;
-            }
-            AppExecFwk::BundleInfo bundleInfo;
-            ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
-                bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
-                bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
-            if (state != 0) {
-                MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d",
-                    bundleName.c_str(), state);
-                return false;
-            }
+        MEDIA_ERR_LOG("Invalid TranscodeType");
+        return false;
+    }
 
-            if (it->second == "0") {
-                HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
-                MEDIA_DEBUG_LOG("Bundle %{public}s include version all", bundleName.c_str());
-                return false;
-            }
-
-            if (!CompareVersion(bundleInfo.versionName, it->second)) {
-                HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
-                MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
-                    "than %{public}d pixel black list version %{public}s",
-                    bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(type), it->second.c_str());
-                return false;
-            }
-
-            HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, true, pixelType);
-            MEDIA_INFO_LOG("Bundle %{public}s is in %{public}d pixel deny list", bundleName.c_str(),
-                static_cast<int>(type));
-            return true;
-        }
-
-        MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel deny list", bundleName.c_str(),
-            static_cast<int>(type));
-        return true;
+    if (isUseWhiteList) {
+        return CheckHighPixelWhiteList(bundleName, pixelType, whiteList);
+    } else {
+        return CheckHighPixelBlackList(bundleName, pixelType, denyList);
     }
 }
 }
