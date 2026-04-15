@@ -54,8 +54,8 @@ const string COTA_EVENT_INFO_SUBTYPE_VALUE = "heif_transcoding";
 const string LIST_STRATEGY = "listStrategy";
 const string LIST_STRATEGY_WHITELIST = "whiteList";
 const string LIST_STRATEGY_DENYLIST = "denyList";
-const string PIXEL_50_STRATEGY = "50-Stratgy";
-const string PIXEL_200_STRATEGY = "200-Stratgy";
+const string PIXEL_50_STRATEGY = "50-Strategy";
+const string PIXEL_200_STRATEGY = "200-Strategy";
 const string PIXEL_50_WHITELIST = "50-whiteList";
 const string PIXEL_50_DENYLIST = "50-denyList";
 const string PIXEL_200_WHITELIST = "200-whiteList";
@@ -196,7 +196,7 @@ static bool CheckListDUE(nlohmann::json& json)
     dueFileHasPixelStrategy = dueCheckListJson.contains(PIXEL_50_STRATEGY) ||
                             dueCheckListJson.contains(PIXEL_200_STRATEGY);
     if (dueFileHasPixelStrategy) {
-        json = dueFileHasPixelStrategy;
+        json = dueCheckListJson;
         return true;
     }
     return false;
@@ -413,7 +413,7 @@ int32_t HeifTranscodingCheckUtils::ParseDenyList(const nlohmann::json &checkList
     return E_OK;
 }
 
-static void PraseHighPixelList(const nlohmann::json &checkListJson,
+static void ParseHighPixelList(const nlohmann::json &checkListJson,
     const string &listStr, std::unordered_map<std::string, std::string> &list)
 {
     for (const auto &item : checkListJson[listStr]) {
@@ -472,19 +472,19 @@ int32_t HeifTranscodingCheckUtils::ParseHighPixelCheckList(const nlohmann::json 
     }
 
     if (checkListJson.contains(PIXEL_50_WHITELIST) && checkListJson[PIXEL_50_WHITELIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_50_WHITELIST, whiteList50_);
+        ParseHighPixelList(checkListJson, PIXEL_50_WHITELIST, whiteList50_);
     }
 
     if (checkListJson.contains(PIXEL_50_DENYLIST) && checkListJson[PIXEL_50_DENYLIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_50_DENYLIST, denyList50_);
+        ParseHighPixelList(checkListJson, PIXEL_50_DENYLIST, denyList50_);
     }
 
     if (checkListJson.contains(PIXEL_200_WHITELIST) && checkListJson[PIXEL_200_WHITELIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_200_WHITELIST, whiteList200_);
+        ParseHighPixelList(checkListJson, PIXEL_200_WHITELIST, whiteList200_);
     }
 
     if (checkListJson.contains(PIXEL_200_DENYLIST) && checkListJson[PIXEL_200_DENYLIST].is_array()) {
-        PraseHighPixelList(checkListJson, PIXEL_200_DENYLIST, denyList200_);
+        ParseHighPixelList(checkListJson, PIXEL_200_DENYLIST, denyList200_);
     }
 
     return E_OK;
@@ -611,7 +611,7 @@ bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundl
     const HighPixelType &pixelType, const WhiteList* denyList)
 {
     auto it = denyList->find(bundleName);
-    if (denyList->find(bundleName) != denyList->end()) {
+    if (it != denyList->end()) {
         bool isSupport = false;
         if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
             MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
