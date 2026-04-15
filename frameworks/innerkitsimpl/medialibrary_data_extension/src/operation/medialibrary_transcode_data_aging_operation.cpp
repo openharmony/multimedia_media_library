@@ -259,6 +259,9 @@ static bool NeedTranscodeHighPixelPicture(int32_t width, int32_t height)
         if (IsSupportHighResolution(clientBundle)) {
             return false;
         }
+        if (HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(clientBundle, HighPixelType::PIXEL_200)) {
+            return false;
+        }
         MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
         return true;
     }

@@ -66,6 +66,8 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_uri_utils.h"
+#include "permission_utils.h"
+#include "transcode_compatible_info_operations.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -2142,7 +2144,9 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
     }
 
     respBody.bundleName = compatibleInfo.bundleName;
-    respBody.supportedHighResolution = compatibleInfo.highResolution;
+    respBody.supportedHighResolution =
+        compatibleInfo.highResolution ? compatibleInfo.highResolution :
+        HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200);
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }
