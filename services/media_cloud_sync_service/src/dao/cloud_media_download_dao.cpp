@@ -299,6 +299,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const OnDownloadAssetData &as
     predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, assetData.path);
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    values.Put(PhotoColumn::LOCAL_ASSET_SIZE, scanResult.localAssetSize);
     if (assetData.fixFileType) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     }

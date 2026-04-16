@@ -302,6 +302,9 @@ public:
     EXPORT void SetUniqueId(const std::string &uniqueId);
     EXPORT const std::string GetUniqueId() const;
 
+    EXPORT int64_t GetLocalAssetSize() const;
+    EXPORT void SetLocalAssetSize(int64_t localAssetSize);
+
 private:
     int32_t userId_ = -1;
     std::string albumUri_;

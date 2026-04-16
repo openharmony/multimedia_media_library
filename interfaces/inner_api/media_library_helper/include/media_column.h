@@ -190,6 +190,7 @@ public:
     static const std::string UNIQUE_ID EXPORT;
     static const std::string MOVING_PHOTO_LIVEPHOTO_4D_STATUS EXPORT;
     static const std::string MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR EXPORT;
+    static const std::string LOCAL_ASSET_SIZE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

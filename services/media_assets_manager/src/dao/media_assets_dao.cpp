@@ -91,6 +91,7 @@ int32_t MediaAssetsDao::ResetPositionToCloudOnly(
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
     values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
+    values.PutInt(PhotoColumn::LOCAL_ASSET_SIZE, 0);    // position = 2时, local_asset_size = 0
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     MEDIA_INFO_LOG("ResetPositionToCloudOnly Update Ret: %{public}d, ChangedRows: %{public}d", ret, changedRows);
@@ -370,6 +371,7 @@ int32_t MediaAssetsDao::UpdatePositionToBoth(const PhotosPo &sourcePhotoInfo, co
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
     this->HandlePackageName(sourcePhotoInfo, targetPhotoInfo, values);
+    this->HandleLocalAssetSize(sourcePhotoInfo, targetPhotoInfo, values);
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
     MEDIA_INFO_LOG("UpdatePositionToBoth Completed, "
@@ -455,6 +457,21 @@ int32_t MediaAssetsDao::HandlePackageName(
     isValid = targetPhotoInfo.packageName.value_or("").empty();
     CHECK_AND_RETURN_RET(isValid, E_OK);
     values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, sourcePhotoInfo.packageName.value_or(""));
+    return E_OK;
+}
+
+int32_t MediaAssetsDao::HandleLocalAssetSize(
+    const PhotosPo &sourcePhotoInfo, const PhotosPo &targetPhotoInfo, NativeRdb::ValuesBucket &values)
+{
+    if (targetPhotoInfo.localAssetSize.value_or(0) != 0) {
+        MEDIA_ERR_LOG("localAssetSize should be zero.");
+        return E_ERR;
+    }
+    if (sourcePhotoInfo.localAssetSize.value_or(0) == 0) {
+        MEDIA_ERR_LOG("localAssetSize should not be zero.");
+        return E_ERR;
+    }
+    values.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, sourcePhotoInfo.localAssetSize.value_or(0));
     return E_OK;
 }
 

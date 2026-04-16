@@ -887,6 +887,11 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
         MEDIA_WARN_LOG("Failed to get extra data file size");
     }
     data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
+    if (data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        data->SetLocalAssetSize(data->GetLocalAssetSize());
+    } else {
+        data->SetLocalAssetSize(data->GetLocalAssetSize() + videoData->GetFileSize() + extraDataSize);
+    }
 
     int64_t videoDateModified = 0;
     if (MediaFileUtils::GetDateModified(videoPath, videoDateModified) &&
