@@ -3187,7 +3187,7 @@ napi_value FileAssetNapi::HandleGettingSpecialKey(napi_env env, const string &ke
         } else {
             napi_create_int32(env, height, &jsResult);
         }
-    } else if(key = PhotoColumn::MEDIA_SIZE) {
+    } else if (key = PhotoColumn::MEDIA_SIZE) {
         if (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
             napi_create_int64(env,
                 obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE), &jsResult);
