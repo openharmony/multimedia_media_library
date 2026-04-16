@@ -3256,6 +3256,37 @@ int64_t FileAssetNapi::GetCompatDate(const string inputKey, const int64_t date)
     return date;
 }
 
+static bool IsHighPixelPicture(int32_t width, int32_t height)
+{
+    const int32_t HIGH_PIXEL_START_SIZE = 6 * 1024 * 8 * 1024;
+    if (width * height >= HIGH_PIXEL_START_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static bool GetDesireSize(int32_t &width, int32_t &height)
+{
+    const int32_t HIGH_PIXEL_STOP_SIZE = 4 * 1024 * 6 * 1024;
+    const double HIGH_PIXEL_RESIZE_SCALE = 1.4;
+    const int32_t HIGH_PIXEL_SCALE = 2;
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+
+    while (IsHighPixelPicture(width, height)) {
+        width /= HIGH_PIXEL_SCALE;
+        height /= HIGH_PIXEL_SCALE;
+    }
+
+    if (width * height > HIGH_PIXEL_STOP_SIZE) {
+        width /= HIGH_PIXEL_RESIZE_SCALE;
+        height /= HIGH_PIXEL_RESIZE_SCALE;
+    }
+    
+    return true;
+}
+
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -3283,6 +3314,30 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
         NapiError::ThrowError(env, JS_E_FILE_KEY);
+        return jsResult;
+    }
+
+    if (inputKey == PhotoColumn::PHOTO_WIDTH &&
+        (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0)) {
+        int32_t width = obj->fileAssetPtr->GetWidth();
+        int32_t height = obj->fileAssetPtr->GetHeight();
+        GetDesireSize(width, height);
+        napi_create_int32(env, width, &jsResult);
+        return jsResult;
+    }
+
+    if (inputKey == PhotoColumn::PHOTO_HEIGHT &&
+        (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0)) {
+        int32_t width = obj->fileAssetPtr->GetWidth();
+        int32_t height = obj->fileAssetPtr->GetHeight();
+        GetDesireSize(width, height);
+        napi_create_int32(env, height, &jsResult);
+        return jsResult;
+    }
+
+    if (inputKey == PhotoColumn::MEDIA_SIZE &&
+        (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0)) {
+        napi_create_int64(env, obj->fileAssetPtr->GetSize(), &jsResult);
         return jsResult;
     }
 
