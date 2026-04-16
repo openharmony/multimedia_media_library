@@ -48,7 +48,7 @@ export struct AlbumPickerComponent {
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
           this.handleOnReceive(wantParam);
-        }).onError(() => {
+        }).onError((error) => {
           console.info('AlbumPickerComponent onError');
           console.info('AlbumPickerComponent revokeIndex: ' + this.revokeIndex); 
           if (error.code === 100014) { 
