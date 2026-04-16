@@ -678,11 +678,16 @@ int32_t CloudMediaDownloadService::FindAttachments(
         PhotoAttachmentDto attachmentDto;
         attachmentDto.fileId = fileId;
         attachmentDto.cloudPath = cloudFilePath;
+        std::string metaPath;
         if (MovingPhotoFileUtils::IsMovingPhoto(photo.subtype.value_or(0), photo.movingPhotoEffectMode.value_or(0),
                                                 photo.originalSubtype.value_or(0))) {
             MovingPhotoFileUtils::FindMovingPhotoAttachments(cloudFilePath, attachmentDto.attachments);
         } else {
             MediaFileUtils::FindNormalPhotoAttachments(cloudFilePath, attachmentDto.attachments);
+        }
+        int32_t ret = PhotoFileUtils::GetMetaPathFromOrignalPath(cloudFilePath, metaPath);
+        if (ret == E_OK) {
+            attachmentDto.attachments.emplace_back(metaPath);
         }
         CHECK_AND_CONTINUE(!attachmentDto.attachments.empty());
         attachmentList.emplace_back(attachmentDto);
