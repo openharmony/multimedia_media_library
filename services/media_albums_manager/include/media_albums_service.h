@@ -91,6 +91,7 @@ public:
     int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
     int32_t SmartMoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
     void ReportFirstDbStatus();
+    void ReportCloneDbStatus();
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

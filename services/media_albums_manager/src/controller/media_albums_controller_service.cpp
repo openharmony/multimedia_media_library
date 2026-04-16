@@ -236,6 +236,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY),
         &MediaAlbumsControllerService::CheckDbAvailability
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_CLONE_STATUS),
+        &MediaAlbumsControllerService::NotifyDbAvailability
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -1018,5 +1022,15 @@ int32_t MediaAlbumsControllerService::CheckDbAvailability(MessageParcel &data, M
         "Permission verification success");
     MediaAlbumsService::GetInstance().ReportFirstDbStatus();
     return IPC::UserDefineIPC().WriteResponseBody(reply, reqBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::NotifyDbAvailability(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("NotifyDbAvailability start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_CLONE_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    MediaAlbumsService::GetInstance().ReportCloneDbStatus();
+    return IPC::UserDefineIPC().WriteResponseBody(reply);
 }
 } // namespace OHOS::Media

@@ -12573,7 +12573,7 @@ napi_value MediaLibraryNapi::AvailabilityRegisterCallback(napi_env env, napi_cal
     int32_t ret = RegisterAvailabilityObserverExecute(env, cbRef, *g_listObj);
     if (ret != E_OK) {
         napi_delete_reference(env, cbRef);
-        NapiError::ThrowError(env, JS_E_INNER_FAIL, "register observer failed");
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
         return nullptr;
     }
     NAPI_INFO_LOG("registercallck success");
