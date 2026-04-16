@@ -81,7 +81,7 @@
 #define REGISTER_SYNC_UPGRADE_MODULE_TASK(version_enum, module_name, func) \
     namespace { \
         const bool g_sync_upgrade_task_##version_enum = []() { \
-            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>>
+            auto upgradeFunc = [](NativeRdb::RdbStore& store) -> std::vector<std::pair<int32_t, int32_t>> \
                 { return func(store); }; \
             UpgradeModuleTask::Config config(version_enum, #version_enum, module_name, true, upgradeFunc); \
             auto task = std::make_shared<UpgradeModuleTask>(config); \
