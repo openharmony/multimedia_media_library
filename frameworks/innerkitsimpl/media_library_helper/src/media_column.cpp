@@ -228,6 +228,7 @@ const std::string PhotoColumn::UNIQUE_ID = "unique_id";
 
 const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS = "livephoto_4d_status";
 const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR = "livephoto_4d_latest_pair";
+const std::string PhotoColumn::LOCAL_ASSET_SIZE = "local_asset_size";
 
 const std::string PhotoColumn::LCD_ASPECT_RATIO = "lcd_aspect_ratio";
 

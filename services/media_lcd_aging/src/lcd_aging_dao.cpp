@@ -29,7 +29,8 @@ namespace OHOS::Media {
 using namespace OHOS::Media::CloudSync;
 
 constexpr uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;
-constexpr int64_t TWELVE_HOUR_S = 12 * 60 * 60;
+// 下载12h内的LCD图，不进行老化
+constexpr int64_t LCD_DOWNLOAD_TWELVE_HOUR_S = 12 * 60 * 60;
 
 int32_t LcdAgingDao::GetCurrentNumberOfLcd(int64_t &lcdNumber)
 {
@@ -54,7 +55,7 @@ int32_t LcdAgingDao::QueryAgingLcdDataInternal(const int32_t size, const std::ve
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "%{public}s Failed to get rdbStore.", logPrefix);
 
     int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
-    int64_t lcdFileTime = currentTime - TWELVE_HOUR_S;
+    int64_t lcdFileTime = currentTime - LCD_DOWNLOAD_TWELVE_HOUR_S;
     std::vector<NativeRdb::ValueObject> bindArgs = { lcdFileTime, size };
     std::string fileIdNotIn = PhotoOwnerAlbumIdOperation().ToStringWithCommaAndQuote(notAgingFileIds);
     std::string execSql = PhotoOwnerAlbumIdOperation().FillParams(sql, {fileIdNotIn});

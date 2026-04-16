@@ -504,6 +504,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     CloudMediaScanService::ScanResult scanResult;
+    this->scanService_.ScanDownloadedFile(photo, scanResult);
     this->scanService_.ScanDownloadedFile(assetData.path, scanResult);
     ret = this->dao_.UpdateDownloadAsset(assetData, scanResult);
     CalEditDataSizeInHandlePhoto(photo);

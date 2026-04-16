@@ -435,6 +435,9 @@ static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
         if (IsSupportHighResolution(bundleName)) {
             return false;
         }
+        if (HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200)) {
+            return false;
+        }
         MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
         return true;
     }

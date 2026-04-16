@@ -57,29 +57,9 @@ int32_t LcdAgingManager::ReadyAgingLcd()
         LcdAgingWorker::GetInstance().StartLcdAgingWorker();
         return E_OK;
     }
-    int64_t lastLcdAgingEndTime = this->GetLastLcdAgingEndTime();
-    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
-    if (lastLcdAgingEndTime < 0 || lastLcdAgingEndTime - currentTime > ONE_DAY) {
-        MEDIA_ERR_LOG("invalid lastLcdAgingEndTime: %{public}" PRId64, lastLcdAgingEndTime);
-        lastLcdAgingEndTime = lastLcdAgingEndTime < 0 ? 0 : currentTime;
-        this->UpdateLastLcdAgingEndTime(lastLcdAgingEndTime);
-    }
-    bool isValid = (currentTime - lastLcdAgingEndTime) >= ONE_DAY;
-    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR,
-        "lastLcdAgingEndTime: %{public}" PRId64 ", currentTime: %{public}" PRId64, lastLcdAgingEndTime, currentTime);
 
-    int64_t maxLcdNumber = -1;
-    int32_t ret = LcdAgingUtils().GetMaxThresholdOfLcd(maxLcdNumber);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetMaxThresholdOfLcd, ret: %{public}d", ret);
-    int64_t currentLcdNumber = -1;
-    ret = this->lcdAgingDao_.GetCurrentNumberOfLcd(currentLcdNumber);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetCurrentNumberOfLcd, ret: %{public}d", ret);
-    isValid = currentLcdNumber > maxLcdNumber;
-    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "no need aging lcd, currentLcdNumber: %{public}" PRId64
-        ", maxLcdNumber: %{public}" PRId64, currentLcdNumber, maxLcdNumber);
-
-    MEDIA_INFO_LOG("ready to aging lcd, lastLcdAgingEndTime: %{public}" PRId64 ", currentLcdNumber: %{public}" PRId64
-        ", maxLcdNumber: %{public}" PRId64, lastLcdAgingEndTime, currentLcdNumber, maxLcdNumber);
+    CHECK_AND_RETURN_RET_LOG(this->IsAgingPeriodSatisfied(), E_ERR, "failed to check lcd aging period");
+    CHECK_AND_RETURN_RET_LOG(this->IsAgingThresholdSatisfied(), E_ERR, "failed to check lcd aging threshold");
     this->hasAgingLcdNumber_ = 0;
     this->isInAgingPeriod_.store(true);
     LcdAgingWorker::GetInstance().StartLcdAgingWorker();
@@ -235,6 +215,7 @@ int32_t LcdAgingManager::DeleteLocalFile(const std::string &localPath)
         return E_ERR;
     }
     if (!MediaFileUtils::DeleteFile(localPath)) {
+        // 删除文件失败，兜底重试一次
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(localPath),
             "Failed to delete localPath, path: %{public}s", localPath.c_str());
         return E_ERR;
@@ -370,5 +351,37 @@ bool LcdAgingManager::IsLcdAgingStatusOn()
 void LcdAgingManager::ClearNotAgingFileIds()
 {
     this->notAgingFileIds_.clear();
+}
+
+bool LcdAgingManager::IsAgingPeriodSatisfied()
+{
+    int64_t lastLcdAgingEndTime = this->GetLastLcdAgingEndTime();
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    if (lastLcdAgingEndTime < 0 || lastLcdAgingEndTime - currentTime > ONE_DAY) {
+        MEDIA_ERR_LOG("invalid lastLcdAgingEndTime: %{public}" PRId64, lastLcdAgingEndTime);
+        lastLcdAgingEndTime = lastLcdAgingEndTime < 0 ? 0 : currentTime;
+        this->UpdateLastLcdAgingEndTime(lastLcdAgingEndTime);
+    }
+    bool isValid = (currentTime - lastLcdAgingEndTime) >= ONE_DAY;
+    CHECK_AND_RETURN_RET_LOG(isValid, false,
+        "lastLcdAgingEndTime: %{public}" PRId64 ", currentTime: %{public}" PRId64, lastLcdAgingEndTime, currentTime);
+    MEDIA_INFO_LOG("aging period satisfied, lastLcdAgingEndTime: %{public}" PRId64, lastLcdAgingEndTime);
+    return true;
+}
+
+bool LcdAgingManager::IsAgingThresholdSatisfied()
+{
+    int64_t maxLcdNumber = -1;
+    int32_t ret = LcdAgingUtils().GetMaxThresholdOfLcd(maxLcdNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Failed to GetMaxThresholdOfLcd, ret: %{public}d", ret);
+    int64_t currentLcdNumber = -1;
+    ret = this->lcdAgingDao_.GetCurrentNumberOfLcd(currentLcdNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Failed to GetCurrentNumberOfLcd, ret: %{public}d", ret);
+    bool isValid = currentLcdNumber > maxLcdNumber;
+    CHECK_AND_RETURN_RET_LOG(isValid, false, "no need aging lcd, currentLcdNumber: %{public}" PRId64
+        ", maxLcdNumber: %{public}" PRId64, currentLcdNumber, maxLcdNumber);
+    MEDIA_INFO_LOG("aging threshold satisfied, currentLcdNumber: %{public}" PRId64 ", maxLcdNumber: %{public}" PRId64,
+        currentLcdNumber, maxLcdNumber);
+    return true;
 }
 }  // namespace OHOS::Media

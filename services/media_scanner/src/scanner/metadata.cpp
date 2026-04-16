@@ -696,5 +696,15 @@ int32_t Metadata::GetVideoMode() const
 {
     return videoMode_;
 }
+
+void Metadata::SetLocalAssetSize(const VariantData &localAssetSize)
+{
+    localAssetSize_ = std::get<int64_t>(localAssetSize);
+}
+
+int64_t Metadata::GetLocalAssetSize() const
+{
+    return localAssetSize_;
+}
 } // namespace Media
 } // namespace OHOS

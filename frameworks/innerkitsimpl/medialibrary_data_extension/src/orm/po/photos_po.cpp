@@ -39,7 +39,8 @@ void PhotosPo::GetBasicInfo(std::stringstream &ss) const
        << "\"hiddenTime\": " << hiddenTime.value_or(0) << ", "
        << "\"dateTrashed\": " << dateTrashed.value_or(0) << ", "
        << "\"orientation\": " << orientation.value_or(0) << ", "
-       << "\"sourcePath\": \"" << sourcePath.value_or("") << "\", ";
+       << "\"sourcePath\": \"" << sourcePath.value_or("") << "\", "
+       << "\"localAssetSize\": " << localAssetSize.value_or(0) << ", ";
 }
 
 void PhotosPo::GetPropertiesInfo(std::stringstream &ss) const
