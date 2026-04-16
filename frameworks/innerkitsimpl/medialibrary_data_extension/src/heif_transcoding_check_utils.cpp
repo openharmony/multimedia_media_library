@@ -41,7 +41,7 @@ using namespace nlohmann;
 namespace OHOS {
 namespace Media {
 const std::string HEIF_TRANSCODING_CHECKLIST_NAME = "heif_transcoding_checklist.json";
-const std::string HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH =
+const std::string HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH =
     "/system/etc/com.ohos.medialibrary.medialibrarydata/heif_transcoding/" + HEIF_TRANSCODING_CHECKLIST_NAME;
 const string DUE_INSTALL_DIR =
     "/data/service/el1/public/update/param_service/install/system/etc/"
@@ -211,10 +211,10 @@ int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
     }
 
     std::ifstream jFile;
-    jFile.open(HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+    jFile.open(HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH);
     if (!jFile.is_open()) {
         MEDIA_WARN_LOG("Failed to open pixel whitelist file: %{public}s",
-            HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH.c_str());
+            HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH.c_str());
         return E_FAIL;
     }
 
@@ -226,7 +226,7 @@ int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
     if (!jStr.empty() && nlohmann::json::accept(jStr)) {
         nlohmann::json checkListJson = nlohmann::json::parse(jStr, nullptr, false);
         if (!checkListJson.is_discarded()) {
-            ParseHighPixelCheckList(checkListJson, HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+            ParseHighPixelCheckList(checkListJson, HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH);
             return E_OK;
         }
     }
@@ -241,10 +241,10 @@ int32_t HeifTranscodingCheckUtils::ReadCheckList()
         jFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
         if (!jFile.is_open()) {
             MEDIA_WARN_LOG("Failed to open file in DUE install directory, falling back to local path");
-            jFile.open(HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+            jFile.open(HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH);
         }
     } else {
-        jFile.open(HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+        jFile.open(HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH);
     }
     if (!jFile.is_open()) {
         MEDIA_ERR_LOG("Failed to open file, Error: %{public}s", std::strerror(errno));
