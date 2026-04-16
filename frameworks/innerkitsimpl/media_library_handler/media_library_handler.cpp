@@ -237,6 +237,7 @@ int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &re
 
         string uriStr;
         if (fileSourceType == FILE_POS_LAKE && StartWith(storagePath, ROOT_LAKE_DIR)) {
+            MEDIA_INFO_LOG("convert lake path: %{private}s", storagePath.c_str());
             uriStr = ROOT_LAKE_DIR + to_string(userId) + "/" + storagePath.substr(ROOT_LAKE_DIR.length());
         } else if (StartWith(path, ROOT_MEDIA_DIR)) {
             uriStr = OHOS::Media::HMDFS + to_string(userId) + OHOS::Media::CLOUD_MERGE_VIEW +
