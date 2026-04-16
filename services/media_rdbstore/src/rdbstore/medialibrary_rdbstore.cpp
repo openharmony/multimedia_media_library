@@ -4959,7 +4959,10 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_PORTRAIT_COVER_SELECTION_ADD_COLUMNS, "Album"
 static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEST_FACE_BOUNDING + " BLOB ",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_X + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_Y + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_WIDTH + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_HEIGHT + " REAL",
     };
     MEDIA_INFO_LOG("Add best face bounding column for group album start");
     ExecSqlsWithDfx(sqls, store, version);
@@ -5463,7 +5466,7 @@ static int32_t AddAppUriPermissionInfo(RdbStore &store)
     return ExecSqls(sqls, store);
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_APP_URI_PERMISSION_INFO, "OtherTable",
-    VERSION_ADD_APP_URI_PERMISSION_INFO);
+    AddAppUriPermissionInfo);
 
 static int32_t AddCoverPosition(RdbStore &store)
 {
@@ -5680,19 +5683,19 @@ static int32_t AddAssetAlbumOperationTable(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
         "DROP TABLE IF EXISTS tab_asset_and_album_operation",
-        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        SQL_CREATE_TAB_ASSET_ALBUM_OPERATION,
         "DROP TABLE IF EXISTS operation_asset_insert_trigger",
-        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_INSERT_TRIGGER,
         "DROP TABLE IF EXISTS operation_asset_delete_trigger",
-        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_DELETE_TRIGGER,
         "DROP TABLE IF EXISTS operation_asset_update_trigger",
-        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_insert_trigger",
-        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_delete_trigger",
-        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_update_trigger",
-        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
     };
     int32_t ret = ExecSqls(executeSqlStrs, store);
     MEDIA_INFO_LOG("create asset and album operation table end");
@@ -5704,19 +5707,19 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_FILTER_TAB_ASSET_ALBUM_OPERATION, "Album", Ad
 static int32_t AddAssetAlbumOperationTableForSync(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
-        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        SQL_CREATE_TAB_ASSET_ALBUM_OPERATION,
         "DROP TABLE IF EXISTS operation_asset_insert_trigger",
-        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_INSERT_TRIGGER,
         "DROP TABLE IF EXISTS operation_asset_delete_trigger",
-        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_DELETE_TRIGGER,
         "DROP TABLE IF EXISTS operation_asset_update_trigger",
-        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_insert_trigger",
-        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_delete_trigger",
-        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
         "DROP TABLE IF EXISTS operation_album_update_trigger",
-        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+        SQL_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
     };
     int32_t ret = ExecSqls(executeSqlStrs, store);
     MEDIA_INFO_LOG("create asset and album operation table sync end");
@@ -5748,7 +5751,7 @@ static int32_t AddAnalysisUpdateVideoSearchTrigger(RdbStore &store)
         CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
         CREATE_ANALYSIS_UPDATE_VIDEO_SEARCH_TRIGGER,
     };
-    int32_t ret = ExecSqlsWithDfx(sqls, store, version);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_ANALYSIS_UPDATE_SEARCH_TRIGGER);
     MEDIA_INFO_LOG("End add analysis update video search trigger");
     return ret;
 }
@@ -5817,11 +5820,11 @@ static int32_t AddFileSourceType(RdbStore &store)
         DROP_INSERT_VISION_TRIGGER,
         UPGRADE_VISION_INSERT_TRIGGER_FOR_FILE_SOURCE_TYPE,
         "DROP TRIGGER IF EXISTS operation_asset_insert_trigger",
-        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_INSERT_TRIGGER,
         "DROP TRIGGER IF EXISTS operation_asset_delete_trigger",
-        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_DELETE_TRIGGER,
         "DROP TRIGGER IF EXISTS operation_asset_update_trigger",
-        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        SQL_CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
         DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
         INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
         DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
