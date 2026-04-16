@@ -4894,8 +4894,14 @@ static int32_t AddIsTempToTrigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_DAY_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_FAVORITE_INDEX,
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
-        PhotoUpgrade::INDEX_SCTHP_DAY,
+        PhotoUpgrade::CREATE_SCHPT_DAY_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoUpgrade::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_FAVORITE_INDEX,
         PhotoUpgrade::INDEX_SCTHP_ADDTIME,
     };
     MEDIA_INFO_LOG("Add is_temp to trigger in upgrade");
@@ -4912,19 +4918,6 @@ static int32_t AddDisplayNameIndex(RdbStore &store)
     return ExecSqls(executeSqlStrs, store);
 }
 REGISTER_SYNC_UPGRADE_TASK(PHOTOS_CREATE_DISPLAYNAME_INDEX, "Photos", AddDisplayNameIndex);
-
-static int32_t AddAppUriPermissionInfo(RdbStore &store)
-{
-    const std::string SYNC_DATA_FROM_PHOTOS_SQL =
-        "insert into "+ AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "(" +
-        AppUriPermissionColumn::APP_URI_PERMISSION_URI + ", " +
-        AppUriPermissionColumn::APP_URI_PERMISSION_TYPE + ", " +
-        AppUriPermissionColumn::APP_URI_PERMISSION_TOKENID + ") " +
-        "select " + PhotoColumn::PHOTO_URI + ", 0, 0 from " + PhotoColumn::PHOTOS_TABLE +
-        " where " + PhotoColumn::PHOTO_OWNER_PACKAGE + " != 'com.ohos.photos'";
-    const vector<string> sqls = { SYNC_DATA_FROM_PHOTOS_SQL };
-    return ExecSqls(sqls, store);
-}
 
 static int32_t UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
 {
@@ -4951,16 +4944,19 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_FRONT_CAMERA_TYPE, "Photos", AddFrontCame
 static int32_t AddPortraitCoverSelectionColumn(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start add portrait cover selection column");
+
     const vector<string> sqls = {
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + COVER_SELECTION_SCORE + " REAL default -1 ",
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
-        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_X + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_Y + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_WIDTH + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_HEIGHT + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + FACE_AESTHETICS_SCORE + " REAL",
     };
     return ExecSqls(sqls, store);
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_PORTRAIT_COVER_SELECTION_ADD_COLUMNS, "Album", AddPortraitCoverSelectionColumn);
 
-static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
+static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEST_FACE_BOUNDING + " BLOB ",
@@ -4969,7 +4965,7 @@ static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
-static void AddGroupVersion(RdbStore &store)
+static void AddGroupVersion(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GROUP_VERSION + " TEXT ",
@@ -4981,12 +4977,12 @@ static void AddGroupVersion(RdbStore &store)
 static int32_t AddBestFaceBoundingAndGroupVersion(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start add best face bounding and group version");
-    AddBestFaceBoundingColumnForGroupAlbum(store, VERSION_ADD_BEST_FACE_BOUNDING_AND_GROUPVERSION);
-    AddGroupVersion(store, VERSION_ADD_BEST_FACE_BOUNDING_AND_GROUPVERSION);
+    AddBestFaceBoundingColumnForGroupAlbum(store, VERSION_ADD_BEST_FACE_BOUNDING);
+    AddGroupVersion(store, VERSION_ADD_BEST_FACE_BOUNDING);
     MEDIA_INFO_LOG("End add best face bounding and group version");
     return NativeRdb::E_OK;
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_BEST_FACE_BOUNDING_AND_GROUPVERSION, "Vision",
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_BEST_FACE_BOUNDING, "Vision",
     AddBestFaceBoundingAndGroupVersion);
 
 static int32_t AddSouthDeviceType(RdbStore &store)
@@ -5007,7 +5003,9 @@ static int32_t AddCreateTmpCompatibleDup(RdbStore &store)
     MEDIA_INFO_LOG("Start add create_tmp_compatible_dup columns");
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
-            " ADD COLUMN " + PhotoColumn::PHOTO_CREATE_TMP_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0",
+            " ADD COLUMN " + PhotoColumn::PHOTO_TRANSCODE_TIME  + " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE  + " BIGINT NOT NULL DEFAULT 0",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
             " ADD COLUMN " + PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE  + " INT NOT NULL DEFAULT 0"
     };
@@ -5052,17 +5050,6 @@ static int32_t AddAffective(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_AFFECTIVE_TABLE, "Vision", AddAffective);
-
-static int32_t UpdatePhotoVideoModeTigger(RdbStore &store)
-{
-    static const vector<string> executeSqlStrs = {
-        PhotoUpgrade::DROP_PHOTOS_MDIRTY_TRIGGER,
-        PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER,
-    };
-    int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_UPDATE_VIDEO_MODE_TRIGGERS);
-    return ret;
-}
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_VIDEO_MODE_TRIGGERS, "Photos", UpdatePhotoVideoModeTigger);
 
 static int32_t AddVideoMode(RdbStore &store)
 {
@@ -5130,7 +5117,7 @@ static int32_t AddOriginalSubtype(RdbStore &store)
     MEDIA_INFO_LOG("start add original_subtype column");
     return ExecSqls(sqls, store);
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ORIGINAL_SUBTYPE, "Photos", AddOriginalSubtype);
+REGISTER_SYNC_UPGRADE_TASK(VISION_ADD_ORIGINAL_SUBTYPE, "Photos", AddOriginalSubtype);
 
 static void ReportFailInfoAsync(AsyncTaskData *data)
 {
