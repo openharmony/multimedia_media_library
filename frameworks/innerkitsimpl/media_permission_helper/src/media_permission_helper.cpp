@@ -91,7 +91,7 @@ static sptr<IRemoteObject> InitToken()
     return remoteObj;
 }
 
-void MediaPermissionHelper::InitMediaPermissionHelper()
+int32_t MediaPermissionHelper::InitMediaPermissionHelper()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     int32_t activeUser = GetCurrentAccountId();
@@ -100,7 +100,7 @@ void MediaPermissionHelper::InitMediaPermissionHelper()
         auto token = InitToken();
         if (token == nullptr) {
             MEDIA_ERR_LOG("fail to get token, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
-            return;
+            return E_ERR;
         }
         Uri uri = Uri(MEDIALIBRARY_DATA_URI);
         std::string multiUri = MediaUriUtils::GetMultiUri(uri, activeUser).ToString();
@@ -108,9 +108,11 @@ void MediaPermissionHelper::InitMediaPermissionHelper()
         if (dataShareHelper_ == nullptr) {
             MEDIA_ERR_LOG(
                 "dataShareHelper Creator failed, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
+            return E_ERR;
         }
         userId_ = activeUser;
     }
+    return E_OK;
 }
 
 bool MediaPermissionHelper::ForceReconnect()
@@ -651,7 +653,10 @@ int32_t MediaPermissionHelper::ReservePhotoUriPermission(const bool isReservePer
         isReservePermission, appIdentifier.c_str(), bundleName.c_str(), bundleIndex, tokenId);
     
     CHECK_AND_RETURN_RET_LOG(bundleIndex == 0, E_ERR, "bundleIndex must be 0");
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_INFO_LOG("ReservePhotoUriPermission dataShareHelper_ is nullptr");
+        ForceReconnect();
+    }
 
     ReservePhotoUriPermissionReqBody reqBody;
     reqBody.isReserve = isReservePermission;
@@ -686,7 +691,10 @@ int32_t MediaPermissionHelper::ResumePhotoUriPermission(const string appIdentifi
         appIdentifier.c_str(), bundleName.c_str(), bundleIndex, tokenId);
     
     CHECK_AND_RETURN_RET_LOG(bundleIndex == 0, E_ERR, "bundleIndex must be 0");
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_INFO_LOG("ReservePhotoUriPermission dataShareHelper_ is nullptr");
+        ForceReconnect();
+    }
 
     ResumePhotoUriPermissionReqBody reqBody;
     reqBody.appIdentifier = appIdentifier;
