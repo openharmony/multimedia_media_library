@@ -166,6 +166,7 @@ int32_t TranscodeCompatibleInfoOperation::UpsertCompatibleInfo(const std::string
     compatibleInfo.bundleName = bundleName;
     compatibleInfo.highResolution = highResolution;
     compatibleInfo.encodings = encodings;
+    compatibleInfoCache_.erase(bundleName);
     MEDIA_INFO_LOG("Upsert compatibleInfo success");
     return E_OK;
 }
@@ -199,7 +200,7 @@ int32_t TranscodeCompatibleInfoOperation::UpsertPreferredCompatibleMode(const st
     CompatibleInfo compatibleInfo;
     compatibleInfo.bundleName = bundleName;
     compatibleInfo.preferredCompatibleMode = preferredCompatibleMode;
-
+    compatibleInfoCache_.erase(bundleName);
     MEDIA_INFO_LOG("Upsert preferredCompatibleMode success");
     return E_OK;
 }
