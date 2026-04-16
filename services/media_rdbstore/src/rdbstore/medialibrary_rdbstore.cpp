@@ -905,13 +905,9 @@ namespace {
         {PhotoColumn::PHOTO_IS_AUTO, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_MEDIA_SUFFIX, "TEXT"},
         {PhotoColumn::PHOTO_IS_RECENT_SHOW, "INT NOT NULL DEFAULT 1"},
-        {PhotoColumn::IS_STYLE_PHOTO, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME, "BIGINT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_VISIT_COUNT, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_LCD_VISIT_COUNT, "INT NOT NULL DEFAULT 0"},
-        {PhotoColumn::PHOTO_XT_STYLE_TEMPLATE_NAME, "TEXT DEFAULT '-1'"},
-        {PhotoColumn::SUPPORTED_DEFERRED_EFFECTS, "INT NOT NULL DEFAULT 0"},
-        {PhotoColumn::DEFERRED_EFFECT_STATUS, "INT NOT NULL DEFAULT -1"},
         {PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_HAS_APPLINK, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::PHOTO_APPLINK, "TEXT"},
@@ -936,7 +932,6 @@ namespace {
         {PhotoColumn::UNIQUE_ID, "TEXT DEFAULT '-1'"},
         {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, "TEXT"},
-        {PhotoColumn::PHOTO_FILE_HIDDEN, "INT NOT NULL DEFAULT 0"}
     };
 
     constexpr size_t PHOTO_TABLE_COLUMN_COUNT = sizeof(PHOTO_TABLE_COLUMNS) / sizeof(ColumnInfo);
@@ -4702,19 +4697,6 @@ static int32_t AddDynamicRangeAndCloudEnhanceFixWrapper(RdbStore &store)
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_HDR_AND_CLOUD_ENHANCEMENT_FIX, "Photos", AddDynamicRangeAndCloudEnhanceFixWrapper);
 
-static int32_t AddIsStylePhoto(RdbStore &store)
-{
-    MEDIA_INFO_LOG("start add is_style_photo column");
-    const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-            PhotoColumn::IS_STYLE_PHOTO + " INT NOT NULL DEFAULT 0"
-    };
-    int32_t ret = ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("end add is_style_photo column");
-    return ret;
-}
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IS_STYLE_PHOTO, "Photos", AddIsStylePhoto);
-
 REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER, "Album", UpdateSourcePhotoAlbumTrigger);
 REGISTER_SYNC_UPGRADE_TASK(VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED, "Album", UpdateSourcePhotoAlbumTrigger);
 REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN, "Album", UpdateSourcePhotoAlbumTrigger);
@@ -4932,19 +4914,6 @@ static int32_t AddIsTempToTrigger(RdbStore &store)
     return ExecSqls(executeSqlStrs, store);
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_IS_TEMP_TO_TRIGGER, "Photos", AddIsTempToTrigger);
-
-static int32_t AddXtStyleTemplateNameType(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_XT_STYLE_TEMPLATE_NAME +
-        " TEXT DEFAULT '-1'"
-    };
-    MEDIA_INFO_LOG("Start add xt_style_template_name column");
-    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_XT_STYLE_TEMPLATE_NAME_TYPE);
-    MEDIA_INFO_LOG("End add xt_style_template_name column");
-    return ret;
-}
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_XT_STYLE_TEMPLATE_NAME_TYPE, "Photos", AddXtStyleTemplateNameType);
 
 static int32_t AddDisplayNameIndex(RdbStore &store)
 {
@@ -6525,6 +6494,117 @@ static int32_t AddSearchTag(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_SEARCH_TAG, "Photos", AddSearchTag);
+
+static int32_t AsyncUpgradeFromAllVersionFirstPart(RdbStore& rdbStore)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
+    if (prefs != nullptr) {
+        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
+        int32_t detailTimeFixed = prefs->GetInt(DETAIL_TIME_FIXED, 0);
+        MEDIA_INFO_LOG("prefs current detailTimeFixed: %{public}d", detailTimeFixed);
+        if (detailTimeFixed == NEED_FIXED) {
+            errCode = UpdateDateTakenToMillionSecond(rdbStore);
+            errCode = UpdateDateTakenIndex(rdbStore);
+            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+            prefs->PutInt(DETAIL_TIME_FIXED, ALREADY_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("detailTimeFixed set to: %{public}d", ALREADY_FIXED);
+        }
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_FILEID");
+    errCode = AddIndexForFileIdAsync(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_INDEX_FOR_FILEID");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
+    errCode = UpdateIndexForCover(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_INDEX_FOR_COVER");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
+    if (prefs != nullptr) {
+        int32_t thumbnailVisibleFixed = prefs->GetInt(THUMBNAIL_VISIBLE_FIXED, 0);
+        MEDIA_INFO_LOG("prefs current thumbnailVisibleFixed: %{public}d", thumbnailVisibleFixed);
+        if (thumbnailVisibleFixed == NEED_FIXED) {
+            errCode = UpdateThumbnailVisibleAndIdx(rdbStore);
+            prefs->PutInt(THUMBNAIL_VISIBLE_FIXED, ALREADY_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("thumbnailVisibleFixed set to: %{public}d", ALREADY_FIXED);
+        }
+        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
+    errCode = UpdateDateTakenAndDetailTime(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_READY_COUNT_INDEX");
+    errCode = AddReadyCountIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_READY_COUNT_INDEX");
+    return errCode;
+}
+
+static int32_t AsyncUpgradeFromAllVersionSecondPart(RdbStore& rdbStore)
+{
+    MEDIA_INFO_LOG("Start VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+    int32_t ret = RevertFixDateAddedIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_INDEX");
+    ret = AddAlbumIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_PHOTO_DATEADD_INDEX");
+    ret = AddPhotoDateAddedIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_PHOTO_DATEADD_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_REFRESH_PERMISSION_APPID");
+    MediaLibraryRdbUtils::TransformAppId2TokenId(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_REFRESH_PERMISSION_APPID");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
+    ret = AddCloudEnhancementAlbumIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
+    ret = UpdatePhotosDateAndIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL");
+    ret = UpdateLocationDefaultNull(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_IDX");
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
+    ret = UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
+    ret = UpdateLocationKnowledgeIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
+    ret = AddAlbumSubtypeAndNameIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
+    return ret;
+}
+
+static int32_t FixDbUpgradeToApi20(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start FixDbUpgradeToApi20");
+    int32_t ret = AsyncUpgradeFromAllVersionFirstPart(store);
+    ret = AsyncUpgradeFromAllVersionSecondPart(store);
+    MEDIA_INFO_LOG("end FixDbUpgradeToApi20");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_DB_UPGRADE_TO_API20, "Photos", FixDbUpgradeToApi20);
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
