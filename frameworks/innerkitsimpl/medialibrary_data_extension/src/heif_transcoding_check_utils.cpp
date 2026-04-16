@@ -452,10 +452,10 @@ int32_t HeifTranscodingCheckUtils::ParseHighPixelCheckList(const nlohmann::json 
 
     whiteList50_.clear();
     denyList50_.clear();
-    isUseWhiteList50_ = false;
+    isUseWhiteList50_ = true;
     whiteList200_.clear();
     denyList200_.clear();
-    isUseWhiteList200_ = false;
+    isUseWhiteList200_ = true;
 
     if (checkListJson.contains(PIXEL_50_STRATEGY) && checkListJson[PIXEL_50_STRATEGY].is_string()) {
         string strategy50 = checkListJson[PIXEL_50_STRATEGY].get<std::string>();
