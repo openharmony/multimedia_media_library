@@ -3170,29 +3170,29 @@ napi_value FileAssetNapi::HandleGettingSpecialKey(napi_env env, const string &ke
         int32_t videoMode = value == -1 ? static_cast<int32_t>(VideoMode::NOT_LOG_VIDEO) : value;
         napi_create_int32(env, videoMode, &jsResult);
     } else if (key == PhotoColumn::PHOTO_WIDTH) {
-        int32_t width = obj->fileAssetPtr->GetWidth();
-        if (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
-            int32_t height = obj->fileAssetPtr->GetHeight();
+        int32_t width = fileAssetPtr->GetWidth();
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+            int32_t height = fileAssetPtr->GetHeight();
             GetDesireSize(width, height);
             napi_create_int32(env, width, &jsResult);
         } else {
             napi_create_int32(env, width, &jsResult);
         }
     } else if (key == PhotoColumn::PHOTO_HEIGHT) {
-        int32_t height = obj->fileAssetPtr->GetHeight();
-        if (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
-            int32_t width = obj->fileAssetPtr->GetWidth();
+        int32_t height = fileAssetPtr->GetHeight();
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+            int32_t width = fileAssetPtr->GetWidth();
             GetDesireSize(width, height);
             napi_create_int32(env, height, &jsResult);
         } else {
             napi_create_int32(env, height, &jsResult);
         }
-    } else if (key = PhotoColumn::MEDIA_SIZE) {
-        if (obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+    } else if (key == PhotoColumn::MEDIA_SIZE) {
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
             napi_create_int64(env,
-                obj->fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE), &jsResult);
+                fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE), &jsResult);
         } else {
-            napi_create_int64(env, obj->fileAssetPtr->GetSize(), &jsResult);
+            napi_create_int64(env, fileAssetPtr->GetSize(), &jsResult);
         }
     }
 
