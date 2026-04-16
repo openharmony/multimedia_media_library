@@ -54,6 +54,12 @@ const string COTA_EVENT_INFO_SUBTYPE_VALUE = "heif_transcoding";
 const string LIST_STRATEGY = "listStrategy";
 const string LIST_STRATEGY_WHITELIST = "whiteList";
 const string LIST_STRATEGY_DENYLIST = "denyList";
+const string PIXEL_50_STRATEGY = "50-Strategy";
+const string PIXEL_200_STRATEGY = "200-Strategy";
+const string PIXEL_50_WHITELIST = "50-whiteList";
+const string PIXEL_50_DENYLIST = "50-denyList";
+const string PIXEL_200_WHITELIST = "200-whiteList";
+const string PIXEL_200_DENYLIST = "200-denyList";
 constexpr uint8_t HIGH_PIXEL_FLAG = 1 << 3;
 constexpr uint8_t HEIF_FILE_FLAG = 1 << 2;
 constexpr uint8_t SUPPORT_HIGH_FLAG = 1 << 1;
@@ -86,6 +92,13 @@ using DenyList = std::unordered_set<std::string>;
 WhiteList HeifTranscodingCheckUtils::whiteList_;
 DenyList HeifTranscodingCheckUtils::denyList_;
 bool HeifTranscodingCheckUtils::isUseWhiteList_ = false;
+
+WhiteList HeifTranscodingCheckUtils::whiteList50_;
+WhiteList HeifTranscodingCheckUtils::denyList50_;
+bool HeifTranscodingCheckUtils::isUseWhiteList50_ = false;
+WhiteList HeifTranscodingCheckUtils::whiteList200_;
+WhiteList HeifTranscodingCheckUtils::denyList200_;
+bool HeifTranscodingCheckUtils::isUseWhiteList200_ = false;
 
 sptr<AppExecFwk::IBundleMgr> HeifTranscodingCheckUtils::bundleMgr_ = nullptr;
 mutex HeifTranscodingCheckUtils::bundleMgrMutex_;
@@ -158,8 +171,71 @@ sptr<AppExecFwk::IBundleMgr> HeifTranscodingCheckUtils::GetSysBundleManager()
     return bundleMgr_;
 }
 
+static bool CheckListDUE(nlohmann::json& json)
+{
+    bool dueFileHasPixelStrategy = false;
+    if (!IsFileExists(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME)) {
+        return false;
+    }
+    std::ifstream dueFile;
+    dueFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
+    if (!dueFile.is_open()) {
+        return false;
+    }
+    std::stringstream dueBuffer;
+    dueBuffer << dueFile.rdbuf();
+    std::string dueJStr = dueBuffer.str();
+    dueFile.close();
+    if (dueJStr.empty() || !nlohmann::json::accept(dueJStr)) {
+        return false;
+    }
+    nlohmann::json dueCheckListJson = nlohmann::json::parse(dueJStr, nullptr, false);
+    if (dueCheckListJson.is_discarded()) {
+        return false;
+    }
+    dueFileHasPixelStrategy = dueCheckListJson.contains(PIXEL_50_STRATEGY) ||
+                            dueCheckListJson.contains(PIXEL_200_STRATEGY);
+    if (dueFileHasPixelStrategy) {
+        json = dueCheckListJson;
+        return true;
+    }
+    return false;
+}
+
+int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
+{
+    nlohmann::json dueCheckListJson;
+    if (CheckListDUE(dueCheckListJson)) {
+        ParseHighPixelCheckList(dueCheckListJson, DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
+        return E_OK;
+    }
+
+    std::ifstream jFile;
+    jFile.open(HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+    if (!jFile.is_open()) {
+        MEDIA_WARN_LOG("Failed to open pixel whitelist file: %{public}s",
+            HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH.c_str());
+        return E_FAIL;
+    }
+
+    std::stringstream buffer;
+    buffer << jFile.rdbuf();
+    std::string jStr = buffer.str();
+    jFile.close();
+
+    if (!jStr.empty() && nlohmann::json::accept(jStr)) {
+        nlohmann::json checkListJson = nlohmann::json::parse(jStr, nullptr, false);
+        if (!checkListJson.is_discarded()) {
+            ParseHighPixelCheckList(checkListJson, HEIF_TRANSCODING_CLECK_LIST_JSON_LOCAL_PATH);
+            return E_OK;
+        }
+    }
+    return E_FAIL;
+}
+
 int32_t HeifTranscodingCheckUtils::ReadCheckList()
 {
+    ParsePixelWhiteListFromFile();
     std::ifstream jFile;
     if (IsFileExists(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME)) {
         jFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
@@ -268,6 +344,9 @@ bool CompareVersion(const std::string& v1, const std::string& v2)
 {
     std::vector<int> parts1 = SplitVersion(v1);
     std::vector<int> parts2 = SplitVersion(v2);
+    if (parts1.size() == 1 && parts1[0] == 0) {
+        return true;
+    }
 
     size_t n = std::max(parts1.size(), parts2.size());
     parts1.resize(n, 0);
@@ -334,6 +413,83 @@ int32_t HeifTranscodingCheckUtils::ParseDenyList(const nlohmann::json &checkList
     return E_OK;
 }
 
+static void ParseHighPixelList(const nlohmann::json &checkListJson,
+    const string &listStr, std::unordered_map<std::string, std::string> &list)
+{
+    for (const auto &item : checkListJson[listStr]) {
+        if (item.is_string()) {
+            std::string str = item.get<std::string>();
+            size_t atPos = str.find('@');
+            if (atPos == 0 || atPos == str.size() - 1) {
+                MEDIA_ERR_LOG("Invalid format in 50-whiteList item: %{public}s", str.c_str());
+                continue;
+            }
+            std::string bundleName = str.substr(0, atPos);
+            std::string version;
+            if (atPos == std::string::npos) {
+                version = "0";
+            } else {
+                version = str.substr(atPos + 1);
+            }
+            MEDIA_DEBUG_LOG("Bundle %{public}s with version %{public}s added to 50-whiteList",
+                bundleName.c_str(), version.c_str());
+            auto it = list.find(bundleName);
+            if (it == list.end()) {
+                list[bundleName] = version;
+                continue;
+            }
+            if (CompareVersion(version, it->second)) {
+                it->second = version;
+            }
+        }
+    }
+}
+
+int32_t HeifTranscodingCheckUtils::ParseHighPixelCheckList(const nlohmann::json &checkListJson,
+    const std::string &path)
+{
+    MEDIA_INFO_LOG("ParseHighPixelCheckList from path: %{public}s", path.c_str());
+
+    whiteList50_.clear();
+    denyList50_.clear();
+    isUseWhiteList50_ = false;
+    whiteList200_.clear();
+    denyList200_.clear();
+    isUseWhiteList200_ = false;
+
+    if (checkListJson.contains(PIXEL_50_STRATEGY) && checkListJson[PIXEL_50_STRATEGY].is_string()) {
+        string strategy50 = checkListJson[PIXEL_50_STRATEGY].get<std::string>();
+        isUseWhiteList50_ = (strategy50 == LIST_STRATEGY_WHITELIST);
+        MEDIA_INFO_LOG("50 pixel strategy: %{public}s, isUseWhiteList: %{public}d",
+            strategy50.c_str(), isUseWhiteList50_);
+    }
+
+    if (checkListJson.contains(PIXEL_200_STRATEGY) && checkListJson[PIXEL_200_STRATEGY].is_string()) {
+        string strategy200 = checkListJson[PIXEL_200_STRATEGY].get<std::string>();
+        isUseWhiteList200_ = (strategy200 == LIST_STRATEGY_WHITELIST);
+        MEDIA_INFO_LOG("200 pixel strategy: %{public}s, isUseWhiteList: %{public}d",
+            strategy200.c_str(), isUseWhiteList200_);
+    }
+
+    if (checkListJson.contains(PIXEL_50_WHITELIST) && checkListJson[PIXEL_50_WHITELIST].is_array()) {
+        ParseHighPixelList(checkListJson, PIXEL_50_WHITELIST, whiteList50_);
+    }
+
+    if (checkListJson.contains(PIXEL_50_DENYLIST) && checkListJson[PIXEL_50_DENYLIST].is_array()) {
+        ParseHighPixelList(checkListJson, PIXEL_50_DENYLIST, denyList50_);
+    }
+
+    if (checkListJson.contains(PIXEL_200_WHITELIST) && checkListJson[PIXEL_200_WHITELIST].is_array()) {
+        ParseHighPixelList(checkListJson, PIXEL_200_WHITELIST, whiteList200_);
+    }
+
+    if (checkListJson.contains(PIXEL_200_DENYLIST) && checkListJson[PIXEL_200_DENYLIST].is_array()) {
+        ParseHighPixelList(checkListJson, PIXEL_200_DENYLIST, denyList200_);
+    }
+
+    return E_OK;
+}
+
 inline bool IsSupportHeif(const std::vector<std::string> &encodings)
 {
     return std::find(encodings.begin(), encodings.end(), "image/heic") != encodings.end();
@@ -370,6 +526,7 @@ TranscodeMode HeifTranscodingCheckUtils::CheckTranscodeMode(const std::string &b
 void HeifTranscodingCheckUtils::ClearBundleInfoInCache()
 {
     HeifBundleInfoCache::ClearBundleInfoInCache();
+    HighPixelBundleInfoCache::ClearBundleInfoInCache();
 }
 
 bool HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(const std::string &bundleName)
@@ -410,6 +567,112 @@ bool HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(const std::strin
         }
         MEDIA_INFO_LOG("Bundle %{public}s is not in deny list", bundleName.c_str());
         return false;
+    }
+}
+
+bool HeifTranscodingCheckUtils::CheckHighPixelWhiteList(const std::string &bundleName,
+    const HighPixelType &pixelType, const WhiteList* whiteList)
+{
+    auto it = whiteList->find(bundleName);
+    if (it == whiteList->end()) {
+        MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel white list", bundleName.c_str(),
+            static_cast<int>(pixelType));
+        return false;
+    }
+    bool isSupport = false;
+    if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
+        MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
+            bundleName.c_str(), isSupport, static_cast<int>(pixelType));
+        return isSupport;
+    }
+    AppExecFwk::BundleInfo bundleInfo;
+    ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+        bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
+        bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
+    if (state != 0) {
+        MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
+        return false;
+    }
+    if (!CompareVersion(bundleInfo.versionName, it->second)) {
+        HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
+        MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
+            "than %{public}d pixel white list version %{public}s",
+            bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType), it->second.c_str());
+        return false;
+    }
+    HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, true, pixelType);
+    MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is in "
+        "%{public}d pixel white list and meets the version requirement",
+        bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType));
+    return true;
+}
+
+bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundleName,
+    const HighPixelType &pixelType, const WhiteList* denyList)
+{
+    auto it = denyList->find(bundleName);
+    if (it != denyList->end()) {
+        bool isSupport = false;
+        if (HighPixelBundleInfoCache::GetBundleCacheInfo(bundleName, isSupport, pixelType)) {
+            MEDIA_INFO_LOG("[cache] %{public}s is use highPixel [%{public}d] for %{public}d pixel",
+                bundleName.c_str(), isSupport, static_cast<int>(pixelType));
+            return isSupport;
+        }
+        AppExecFwk::BundleInfo bundleInfo;
+        ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+            bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
+            bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
+        if (state != 0) {
+            MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d",
+                bundleName.c_str(), state);
+            return false;
+        }
+        if (it->second == "0") {
+            HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
+            MEDIA_DEBUG_LOG("Bundle %{public}s include version all", bundleName.c_str());
+            return false;
+        }
+        if (!CompareVersion(bundleInfo.versionName, it->second)) {
+            HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
+            MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
+                "than %{public}d pixel deny list version %{public}s",
+                bundleName.c_str(), bundleInfo.versionName.c_str(), static_cast<int>(pixelType), it->second.c_str());
+            return false;
+        }
+        HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, true, pixelType);
+        MEDIA_INFO_LOG("Bundle %{public}s is in %{public}d pixel deny list", bundleName.c_str(),
+            static_cast<int>(pixelType));
+        return true;
+    }
+    MEDIA_INFO_LOG("Bundle %{public}s is not in %{public}d pixel deny list", bundleName.c_str(),
+        static_cast<int>(pixelType));
+    return true;
+}
+
+bool HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(const std::string &bundleName,
+    const HighPixelType &pixelType)
+{
+    bool isUseWhiteList = false;
+    WhiteList* whiteList = nullptr;
+    WhiteList* denyList = nullptr;
+
+    if (pixelType == HighPixelType::PIXEL_50) {
+        isUseWhiteList = isUseWhiteList50_;
+        whiteList = &whiteList50_;
+        denyList = &denyList50_;
+    } else if (pixelType == HighPixelType::PIXEL_200) {
+        isUseWhiteList = isUseWhiteList200_;
+        whiteList = &whiteList200_;
+        denyList = &denyList200_;
+    } else {
+        MEDIA_ERR_LOG("Invalid TranscodeType");
+        return false;
+    }
+
+    if (isUseWhiteList) {
+        return CheckHighPixelWhiteList(bundleName, pixelType, whiteList);
+    } else {
+        return CheckHighPixelBlackList(bundleName, pixelType, denyList);
     }
 }
 }
