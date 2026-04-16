@@ -138,7 +138,7 @@ export class AlbumPickerComponent extends ViewPU {
             SecurityUIExtensionComponent.onReceive((e => {
                 this.handleOnRecevie(e);
             }));
-            SecurityUIExtensionComponent.onError((() => {
+            SecurityUIExtensionComponent.onError(((error) => {
                 console.info('AlbumPickerComponent onError');
                 console.info('AlbumPickerComponent revokeIndex: ' + this.revokeIndex); 
                 if (error.code === 100014) { 
