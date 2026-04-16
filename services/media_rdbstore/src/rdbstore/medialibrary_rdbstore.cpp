@@ -6262,8 +6262,9 @@ static int32_t UpdateMdirtyTriggerForStrongAssociation(RdbStore &store)
         "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
         PhotoUpgrade::CREATE_PHOTOS_MDIRTY_TRIGGER,
     };
-    ExecSqlsWithDfx(sqls, store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION);
     MEDIA_INFO_LOG("Update mdirty trigger for strong association end");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_STRONG_ASSOCIATION,
     "Photos", UpdateMdirtyTriggerForStrongAssociation);
@@ -6275,8 +6276,9 @@ static int32_t UpdateSourceAlbumBundleNameTriggerUseLpath(RdbStore &store)
         INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     };
     MEDIA_INFO_LOG("start update source album bundle name trigger use lpath");
-    ExecSqlsWithDfx(sqls, store, VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH);
     MEDIA_INFO_LOG("end update source album bundle name trigger use lpath");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_SOURCE_ALBUM_BUNDLE_UPDATE_TRIGGER_USE_LPATH,
     "Photos", UpdateSourceAlbumBundleNameTriggerUseLpath);
@@ -6287,8 +6289,9 @@ static int32_t AddEditOperation(RdbStore &store)
         "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " + EDIT_OPERATION + " INT ",
     };
     MEDIA_INFO_LOG("add edit operation column start");
-    ExecSqlsWithDfx(executeSqlStrs, store, VERSION_ADD_EDIT_OPERATION);
+    int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_ADD_EDIT_OPERATION);
     MEDIA_INFO_LOG("start add edit operation column end");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_EDIT_OPERATION, "Vision", AddEditOperation);
 
@@ -6299,8 +6302,9 @@ static int32_t AddPhotoAlbumHidden(RdbStore &store)
             PhotoAlbumColumns::ALBUM_HIDDEN + " INT NOT NULL DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add photoalbum hidden column start");
-    ExecSqlsWithDfx(sqls, store, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
     MEDIA_INFO_LOG("Add photoalbum hidden column end");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_ALBUM_HIDDEN, "Album", AddPhotoAlbumHidden);
 
@@ -6315,8 +6319,9 @@ static int32_t AddDateAddedYearMonthDay(RdbStore &store)
             PhotoColumn::PHOTO_DATE_ADDED_DAY + " TEXT ",
     };
     MEDIA_INFO_LOG("Add date_added year month day columns start");
-    ExecSqlsWithDfx(sqls, store, VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY);
     MEDIA_INFO_LOG("Add date_added year month day columns end");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY, "Photos", AddDateAddedYearMonthDay);
 
@@ -6328,8 +6333,9 @@ static int32_t AddPersonScoreAndHighlightFlush(RdbStore &store)
         "ALTER TABLE " + VISION_PROFILE + " ADD COLUMN " + PERSONALIZATION_SCORE_VERSION + " TEXT ",
     };
     MEDIA_INFO_LOG("Add personalization_score and highlight_flush columns start");
-    ExecSqlsWithDfx(sqls, store, VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH);
     MEDIA_INFO_LOG("Add personalization_score and highlight_flush columns end");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PERSON_SCORE_AND_HIGHLIGHT_FLUSH, "Vision", AddPersonScoreAndHighlightFlush);
 
@@ -6339,9 +6345,10 @@ static int32_t AddCinematicVideoAlbum(RdbStore &store)
     int32_t err = MediaLibraryRdbStore::PrepareShootingModeAlbum(store);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Prepare cinematic video album failed, ret: %{public}d", err);
-        RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, err);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, 0, err);
     }
     MEDIA_INFO_LOG("End add cinematic video album");
+    return err;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, "Album", AddCinematicVideoAlbum);
 
@@ -6354,8 +6361,9 @@ static int32_t UpdateTriggerForAnalysisAlbum(RdbStore &store)
         CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
-    ExecSqlsWithDfx(executeSqlStrs, store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
+    int32_t ret = ExecSqlsWithDfx(executeSqlStrs, store, VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM);
     MEDIA_INFO_LOG("End update album modify trigger");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_TRIGGER_FOR_ANALYSIS_ALBUM, "Vision", UpdateTriggerForAnalysisAlbum);
 
@@ -6365,8 +6373,9 @@ static int32_t CreateTabComPatibleInfo(RdbStore &store)
     const vector<string> sqls = {
         TabCompatibleInfoColumn::CREATE_TABLE
     };
-    ExecSqlsWithDfx(sqls, store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_CREATE_TAB_COMPATIBLE_INFO);
     MEDIA_INFO_LOG("create tab_compatible_info ends");
+    return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_COMPATIBLE_INFO, "OtherTable", CreateTabComPatibleInfo);
 
