@@ -95,10 +95,10 @@ bool HeifTranscodingCheckUtils::isUseWhiteList_ = false;
 
 WhiteList HeifTranscodingCheckUtils::whiteList50_;
 WhiteList HeifTranscodingCheckUtils::denyList50_;
-bool HeifTranscodingCheckUtils::isUseWhiteList50_ = false;
+bool HeifTranscodingCheckUtils::isUseWhiteList50_ = true;
 WhiteList HeifTranscodingCheckUtils::whiteList200_;
 WhiteList HeifTranscodingCheckUtils::denyList200_;
-bool HeifTranscodingCheckUtils::isUseWhiteList200_ = false;
+bool HeifTranscodingCheckUtils::isUseWhiteList200_ = true;
 
 sptr<AppExecFwk::IBundleMgr> HeifTranscodingCheckUtils::bundleMgr_ = nullptr;
 mutex HeifTranscodingCheckUtils::bundleMgrMutex_;
