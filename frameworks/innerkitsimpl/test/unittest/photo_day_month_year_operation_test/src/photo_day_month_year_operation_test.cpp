@@ -422,24 +422,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_normal_test, Tes
     MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_normal_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_nullptr_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_nullptr_test Start");
-    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
-    EXPECT_NE(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_nullptr_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_normal_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_normal_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_normal_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDate_normal_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdatePhotosDate_normal_test Start");
@@ -1081,18 +1063,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_boundary_timestamp_
     MEDIA_INFO_LOG("RepairDateTime_with_boundary_timestamp_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_after_update_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_after_update_test Start");
-    PreparePhotos();
-    PrepareAbnormalPhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_after_update_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_sync_status_off_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_sync_status_off_test Start");
@@ -1220,15 +1190,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_empty_date_day_test
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_empty_date_day_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_null_store_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_null_store_test Start");
-    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
-    EXPECT_NE(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_null_store_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_null_store_test, TestSize.Level1)
@@ -1434,17 +1395,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_very_small_timestam
     MEDIA_INFO_LOG("RepairDateTime_with_very_small_timestamp_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_normal_photos_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_photos_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_photos_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_zero_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_offset_zero_test Start");
@@ -1495,19 +1445,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_within_r
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_within_range_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateAndIdx_comprehensive_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_comprehensive_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    int32_t count = QueryAbnormalPhotosCount();
-    EXPECT_EQ(count, 0);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateAndIdx_comprehensive_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_null_exif_test, TestSize.Level1)
@@ -1631,16 +1568,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_max_vali
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_valid_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_anomalies_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_anomalies_test Start");
-    PreparePhotos();
-    PrepareAbnormalPhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_anomalies_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_partial_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_subsecond_partial_test Start");
@@ -1754,20 +1681,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_boundary_tes
     MEDIA_INFO_LOG("RepairDateTime_with_offset_boundary_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_reindex_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_reindex_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    PrepareAbnormalPhotos();
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_reindex_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_below_min_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_below_min_test Start");
@@ -1860,14 +1773,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_priority_test,
     MEDIA_INFO_LOG("RepairDateTime_with_exif_priority_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_empty_db_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_db_test Start");
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_db_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_multiple_repair_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_multiple_repair_test Start");
@@ -1913,15 +1818,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_overflow
     int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
     EXPECT_EQ(ret, EOK);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_overflow_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_error_handling_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_handling_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_handling_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_negative_max_test, TestSize.Level1)
@@ -1993,19 +1889,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_subsecond_max_value
     MEDIA_INFO_LOG("RepairDateTime_with_subsecond_max_value_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_multiple_indexes_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_indexes_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_indexes_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_minutes_boundary_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_offset_minutes_boundary_test Start");
@@ -2057,15 +1940,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_empty_gps_fields_te
     int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("RepairDateTime_with_empty_gps_fields_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_null_rdb_store_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_null_rdb_store_test Start");
-    shared_ptr<MediaLibraryRdbStore> nullStore = nullptr;
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(nullStore);
-    EXPECT_NE(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_null_rdb_store_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_hours_boundary_test, TestSize.Level1)
@@ -2147,20 +2021,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_normaliz
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normalization_edge_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_recreate_index_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_recreate_index_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    PrepareAbnormalPhotos();
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_recreate_index_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_subsecond_truncation_test, TestSize.Level1)
@@ -2251,14 +2111,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_offset_sign_test, T
     MEDIA_INFO_LOG("RepairDateTime_with_offset_sign_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_empty_photos_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_photos_test Start");
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_empty_photos_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_negative_boundary_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_negative_boundary_test Start");
@@ -2306,16 +2158,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_exif_empty_original
     int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("RepairDateTime_with_exif_empty_original_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_single_photo_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_single_photo_test Start");
-    int64_t fileId = InsertPhoto(MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
-    EXPECT_GT(fileId, 0);
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_single_photo_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_small_positive_test, TestSize.Level1)
@@ -2369,15 +2211,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_exact_ze
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_exact_zero_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_normal_data_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_data_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_normal_data_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_min_boundary_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_min_boundary_test Start");
@@ -2410,15 +2243,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_max_boun
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_max_boundary_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_multiple_photos_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_photos_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_multiple_photos_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_small_negative_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_small_negative_test Start");
@@ -2449,17 +2273,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_very_sma
     int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_very_small_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_error_resilience_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_resilience_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_error_resilience_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_very_large_test, TestSize.Level1)
@@ -2513,17 +2326,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_edge_cas
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_edge_case_test End");
 }
 
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_concurrent_access_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_concurrent_access_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_concurrent_access_test End");
-}
-
 HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotoDateAddedDateInfo_with_concurrent_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdatePhotoDateAddedDateInfo_with_concurrent_test Start");
@@ -2557,20 +2359,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_normal_c
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_normal_case_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_persistence_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_persistence_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    PrepareAbnormalPhotos();
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_persistence_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_validation_test, TestSize.Level1)
@@ -2622,21 +2410,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_range_ch
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_range_check_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_data_integrity_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_data_integrity_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    int32_t count = QueryAbnormalPhotosCount();
-    EXPECT_EQ(count, 0);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_data_integrity_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_boundary_check_test, TestSize.Level1)
@@ -2738,15 +2511,6 @@ HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_final_te
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("RepairDateTime_with_date_taken_final_test End");
-}
-
-HWTEST_F(PhotoDayMonthYearOperationTest, UpdatePhotosDateIdx_with_ultimate_test, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_ultimate_test Start");
-    PreparePhotos();
-    int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(g_rdbStore);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("UpdatePhotosDateIdx_with_ultimate_test End");
 }
 
 HWTEST_F(PhotoDayMonthYearOperationTest, RepairDateTime_with_date_taken_ultimate_test, TestSize.Level1)
