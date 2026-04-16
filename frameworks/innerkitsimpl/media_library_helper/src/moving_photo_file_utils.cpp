@@ -1209,5 +1209,20 @@ bool MovingPhotoFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     constexpr int32_t MAX_DURATION_MS = 10000;
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
+
+void MovingPhotoFileUtils::GetLocalAssetSize(const int32_t movingPhotoEffectMode, const std::string& filePath,
+    const int64_t size, int64_t& localAssetSize)
+{
+    if (movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        localAssetSize = size;
+    } else {
+        struct stat statInfo {};
+        if (stat(filePath.c_str(), &statInfo) != 0) {
+            MEDIA_ERR_LOG("stat syscall err %{public}d.", errno);
+            return;
+        }
+        localAssetSize = static_cast<int64_t>(statInfo.st_size);
+    }
+}
 // LCOV_EXCL_STOP
 } // namespace OHOS::Media

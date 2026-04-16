@@ -1929,8 +1929,6 @@ export namespace photoAccessHelper {
 
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let blockQueue: containers.BlockingQueue<Array<T> | MediaLibraryAniError> =
-          new containers.ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
         let cb = (): Array<T> | MediaLibraryAniError => {
         let result: Array<T> | MediaLibraryAniError;
           try {
@@ -1938,7 +1936,6 @@ export namespace photoAccessHelper {
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
-          blockQueue.push(result);
           return result;
         };
         taskpool.execute(cb).then((ret: Any): void => {
@@ -1953,7 +1950,6 @@ export namespace photoAccessHelper {
             }
           }
         });
-        blockQueue.pop();
       });
     }
 
@@ -2690,8 +2686,6 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>(
         (resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let blockQueue: containers.BlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError> =
-          new containers.ArrayBlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError>(2);
         let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
           let result: FetchResult<PhotoAsset> | MediaLibraryAniError;
           try {
@@ -2699,7 +2693,6 @@ export namespace photoAccessHelper {
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
-          blockQueue.push(result);
           return result;
         };
 
@@ -2715,7 +2708,6 @@ export namespace photoAccessHelper {
             }
           }
         });
-        blockQueue.pop();
       });
     }
 

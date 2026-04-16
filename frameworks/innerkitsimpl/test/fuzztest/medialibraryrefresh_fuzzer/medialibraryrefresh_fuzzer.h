@@ -193,7 +193,8 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     0, // effect_mode
     "", // front_camera
     0, //livephoto4dStatus
-    ASSET_DATE_MODIFIED
+    ASSET_DATE_MODIFIED,
+    0,  // local_asset_size
 };
 
 const std::vector<PhotoAlbumSubType> PHOTO_ALBUM_SUB_TYPE = {

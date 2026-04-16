@@ -3627,11 +3627,11 @@ static int32_t GetZipFile(const std::string &srcPath, const std::string &destPat
 static int32_t DropAnalysisTables(shared_ptr<NativeRdb::RdbStore> &store)
 {
     MEDIA_INFO_LOG("Start drop analysis tables");
-    int32_t err = store.ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
+    int32_t err = store->ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
     CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute drop vision_trigger");
     for (const auto &tableName : VISION_HIGHLIGHT_TABLES) {
         string sql = "DROP TABLE IF EXISTS " + tableName;
-        err = store.ExecuteSql(sql);
+        err = store->ExecuteSql(sql);
         CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute: %{private}s", sql.c_str());
     }
     return E_SUCCESS;

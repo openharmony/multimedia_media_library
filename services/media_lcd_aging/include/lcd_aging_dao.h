@@ -69,7 +69,7 @@ private:
             WHERE file_id in ({0}) \
         ), \
         LatestFileId AS ( \
-            SELECT DISTINCT file_id \
+            SELECT file_id \
             FROM Photos \
             WHERE sync_status = 0 \
             AND clean_flag = 0 \

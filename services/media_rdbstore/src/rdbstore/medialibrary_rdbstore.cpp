@@ -932,6 +932,7 @@ namespace {
         {PhotoColumn::UNIQUE_ID, "TEXT DEFAULT '-1'"},
         {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, "INT NOT NULL DEFAULT 0"},
         {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, "TEXT"},
+        {PhotoColumn::LOCAL_ASSET_SIZE, "BIGINT NOT NULL DEFAULT 0"},
     };
 
     constexpr size_t PHOTO_TABLE_COLUMN_COUNT = sizeof(PHOTO_TABLE_COLUMNS) / sizeof(ColumnInfo);
@@ -3600,7 +3601,6 @@ static int32_t AddCloudEnhancementAlbum(RdbStore& store)
     }
     return err;
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM, "Album", AddCloudEnhancementAlbum);
 
 static int32_t AddHighlightTriggerColumn(RdbStore &store)
 {
@@ -3853,7 +3853,7 @@ static int32_t UpdateAOIUpgradeWrapper(RdbStore &store)
     ret = AddGeoDefaultValue(store);
     return ret;
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UDAPTE_AOI, "Vision", UpdateAOIUpgradeWrapper);
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_AOI, "Vision", UpdateAOIUpgradeWrapper);
 
 static int32_t FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
 {
@@ -3892,7 +3892,7 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_APPLINK_VERSION, "Photos", AddAppLinkColu
 static int32_t AddDcAnalysisColumn(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_MODIFIED_TIME_STAMP + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_MODIFY_TIME_STAMP + " BIGINT DEFAULT 0",
         "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_MODIFY_TIME_STAMP + " BIGINT DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add DC analysis column start");
@@ -3917,7 +3917,7 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_DC_ANALYSIS_INDEX_UPDATE, "Vision", AddDc
 static int32_t AddIsRectificationCover(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::IS_RECTIFICATION_COVER +
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECTIFICATION_COVER +
             " INT NOT NULL DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add is_rectification_cover column start");
@@ -4074,7 +4074,8 @@ static int32_t AddLakeFileColumn(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start add lake file column");
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_LAKE_META_VERSION + " TEXT ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FILE_INODE + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_STORAGE_PATH + " TEXT",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE +
             " INT NOT NULL DEFAULT 0",
     };
@@ -4443,7 +4444,7 @@ int32_t CreateTabOperationLog(RdbStore &store)
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_OPERATION_LOG, "OtherTable", CreateTabOperationLog);
 
-static int32_t UpdatePhotoAlbumTigger(RdbStore &store)
+static int32_t UpdatePhotoAlbumTigger(RdbStore &store, int32_t version)
 {
     static const vector<string> executeSqlStrs = {
         "DROP TRIGGER IF EXISTS album_modify_trigger",
@@ -4619,18 +4620,6 @@ static int32_t CreateTabFacardPhotosRetry(RdbStore &store)
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY, "Photos", CreateTabFacardPhotosRetry);
 
-static int32_t AddAnalysisAlbumColumnsAndTables(RdbStore &store)
-{
-    AddPropertyImageFace(store);
-    AddNodeTagTables(store);
-    AddTotalAestheticsSelectedNegativeColumns(store);
-    AddNewColumnForAnalysisAlbum(store);
-    AddSimilarFaceTable(store);
-    AddSimilarityCheckingOperation(store);
-    return NativeRdb::E_OK;
-}
-REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_ANALYSIS_ALBUM_COLUMNS_AND_TABLES, "Vision", AddAnalysisAlbumColumnsAndTables);
-
 static int32_t AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking cloud enhancement column");
@@ -4771,7 +4760,6 @@ static int32_t UpdateCloudTrigger(RdbStore &store)
     };
     return ExecSqls(sqls, store);
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_CLOUD_TRIGGER, "Photos", UpdateCloudTrigger);
 
 static int32_t AddSupportedWatermarkType(RdbStore &store)
 {
@@ -4855,7 +4843,7 @@ static int32_t UpdateDataAddedIndexWithFileId(RdbStore &store)
     MEDIA_INFO_LOG("start update index of date added with file desc");
     return ExecSqls(sqls, store);
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_DATA_ADDED_INDEX, "Photos", UpdateDataAddedIndexWithFileId);
+REGISTER_SYNC_UPGRADE_TASK(VISION_UPDATE_DATA_ADDED_INDEX, "Photos", UpdateDataAddedIndexWithFileId);
 
 static int32_t UpdateMultiCropInfo(RdbStore &store)
 {
@@ -4866,7 +4854,7 @@ static int32_t UpdateMultiCropInfo(RdbStore &store)
     MEDIA_INFO_LOG("start update multi crop triggers");
     return ExecSqls(executeSqlStrs, store);
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_MULTI_CROP_INFO, "Photos", UpdateMultiCropInfo);
+REGISTER_SYNC_UPGRADE_TASK(VISION_UPDATE_MULTI_CROP_INFO, "Photos", UpdateMultiCropInfo);
 
 static int32_t UpdateSearchIndexTrigger(RdbStore &store)
 {
@@ -4879,7 +4867,7 @@ static int32_t UpdateSearchIndexTrigger(RdbStore &store)
     MEDIA_INFO_LOG("start update search index");
     return ExecSqls(sqls, store);
 }
-REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_SEARCH_INDEX_TRIGGER, "Photos", UpdateSearchIndexTrigger);
+REGISTER_SYNC_UPGRADE_TASK(VISION_UPDATE_SEARCH_INDEX_TRIGGER, "Photos", UpdateSearchIndexTrigger);
 
 static int32_t UpdatePhotosSearchUpdateTrigger(RdbStore &store)
 {
@@ -6472,6 +6460,19 @@ static int32_t AddPersistPermissionTable(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PERSIST_PERMISSION_TABLE, "OtherTable", AddPersistPermissionTable);
+
+static int32_t AddLocalAssetSizeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::LOCAL_ASSET_SIZE + " BIGINT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add Photos local_asset_size columns starts");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN);
+    MEDIA_INFO_LOG("Add Photos local_asset_size columns ends");
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN, "Photos", AddLocalAssetSizeColumn);
 
 static int32_t CreatePhotosExtTable(RdbStore &store)
 {

@@ -825,6 +825,21 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
     return GetAssetFromResultSet(resultSet, columns);
 }
 
+int32_t MediaLibraryAssetOperations::GetFileAssetVectorFromDb(std::vector<std::shared_ptr<FileAsset>> &fileAssetVector,
+    MediaLibraryCommand& cmd, const std::vector<std::string>& columns)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    auto resultSet = rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    return GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
+}
+
 int32_t MediaLibraryAssetOperations::GetFileAssetVectorFromDb(AbsPredicates &predicates, OperationObject oprnObject,
     vector<shared_ptr<FileAsset>> &fileAssetVector, const vector<string> &columns, const string &networkId)
 {

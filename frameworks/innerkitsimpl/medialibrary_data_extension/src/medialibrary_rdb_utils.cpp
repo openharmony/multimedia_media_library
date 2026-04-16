@@ -3589,8 +3589,7 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(RdbStore &store)
         int changeRows = 0;
         CHECK_AND_EXECUTE(store.Update(changeRows, refreshValues, rdbPredicate) != E_OK, successCount++);
     }
-    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}lu, successcount:%{public}d",
-        tokenIdMap.size(), successCount);
+    MEDIA_INFO_LOG("TransformAppId2TokenId successcount:%{public}d", successCount);
 }
 
 static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformOwnerAppid(RdbStore &store)

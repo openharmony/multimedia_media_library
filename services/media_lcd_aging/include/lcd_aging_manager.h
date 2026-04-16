@@ -53,6 +53,8 @@ private:
     int32_t GetNeedAgingLcdSize(int64_t &taskSize);
     int32_t FinishAgingTask();
     bool IsLcdAgingStatusOn();
+    bool IsAgingPeriodSatisfied();
+    bool IsAgingThresholdSatisfied();
 
 private:
     LcdAgingDao lcdAgingDao_;
