@@ -3141,7 +3141,7 @@ bool FileAssetNapi::IsSpecialKey(const string &key)
         PENDING_STATUS,
         PhotoColumn::PHOTO_EXIF_ROTATE,
         PhotoColumn::PHOTO_WIDTH,
-        PhotoColumn::PHOTO_HEIGHT.
+        PhotoColumn::PHOTO_HEIGHT,
         PhotoColumn::MEDIA_SIZE
     };
 
