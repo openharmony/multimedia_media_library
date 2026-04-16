@@ -686,5 +686,51 @@ HWTEST_F(MediaLibraryHelperUnitTest, ConvertToMovingPhoto_005, TestSize.Level1)
     EXPECT_EQ(CompareIfArrayEquals(extraDataArray, FILE_TEST_EXTRA_DATA), true);
     EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLocalAssetSize_01, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MovingPhotoFileUtils_GetLocalAssetSize_01 begin");
+
+    std::string dirPath = "/data/test/GetLocalAssetSize";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    std::string filePath = dirPath + "/" + "photo.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+
+    int64_t localAssetSize = 100;
+    int64_t inputSize = -100;
+    MovingPhotoFileUtils::GetLocalAssetSize(static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY),
+        filePath, inputSize, localAssetSize);
+
+    // 获取文件的实际大小
+    struct stat statInfo {};
+    stat(filePath.c_str(), &statInfo);
+    int64_t expectedSize = static_cast<int64_t>(statInfo.st_size);
+
+    EXPECT_EQ(localAssetSize, expectedSize);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLocalAssetSize_02, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MovingPhotoFileUtils_GetLocalAssetSize_02 begin");
+
+    int64_t localAssetSize = 100;
+    int64_t inputSize = -100;
+    MovingPhotoFileUtils::GetLocalAssetSize(static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY),
+        "invalid_path.jpg", inputSize, localAssetSize);
+
+    EXPECT_EQ(localAssetSize, 100);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLocalAssetSize_03, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MovingPhotoFileUtils_GetLocalAssetSize_03 begin");
+
+    int64_t localAssetSize = 100;
+    int64_t inputSize = -100;
+    MovingPhotoFileUtils::GetLocalAssetSize(static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT),
+        "invalid_path.jpg", inputSize, localAssetSize);
+
+    EXPECT_EQ(localAssetSize, inputSize);
+}
 } // namespace Media
 } // namespace OHOS

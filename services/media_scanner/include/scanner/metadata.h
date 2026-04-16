@@ -194,6 +194,9 @@ public:
     EXPORT void SetFileSourceType(const VariantData &fileSourceType);
     EXPORT int32_t GetFileSourceType() const;
 
+    EXPORT void SetLocalAssetSize(const VariantData &localAssetSize);
+    EXPORT int64_t GetLocalAssetSize() const;
+
     EXPORT void Init();
     void InitV2();
 
@@ -213,6 +216,7 @@ private:
     int64_t size_;
     int64_t dateModified_;
     int64_t dateAdded_;
+    int64_t localAssetSize_;
 
     std::string fileExt_;
     int32_t parentId_;

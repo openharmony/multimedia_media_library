@@ -1023,5 +1023,16 @@ const string FileAsset::GetUniqueId() const
 {
     return GetStrMember(PhotoColumn::UNIQUE_ID);
 }
+
+int64_t FileAsset::GetLocalAssetSize() const
+{
+    return GetInt64Member(PhotoColumn::LOCAL_ASSET_SIZE);
+}
+
+void FileAsset::SetLocalAssetSize(int64_t localAssetSize)
+{
+    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
+    member_[PhotoColumn::LOCAL_ASSET_SIZE] = localAssetSize;
+}
 }  // namespace Media
 }  // namespace OHOS
