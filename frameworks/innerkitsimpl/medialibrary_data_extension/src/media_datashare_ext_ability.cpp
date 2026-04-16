@@ -19,6 +19,7 @@
 #include "app_mgr_client.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_utils.h"
+#include "clone_status_listener.h"
 #include "dataobs_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "media_app_uri_permission_column.h"
@@ -200,6 +201,7 @@ void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
 #endif
+    CloneStatusListener::GetInstance()->RegisterCloneStatusChangeListener();
 }
 
 static bool CheckUnlockScene(int64_t startTime)
