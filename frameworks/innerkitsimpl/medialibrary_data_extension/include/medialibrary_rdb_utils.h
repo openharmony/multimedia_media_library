@@ -184,6 +184,7 @@ public:
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const int64_t fileId);
     EXPORT static void TransformAppId2TokenId(const std::shared_ptr<MediaLibraryRdbStore> &store);
+    static void TransformAppId2TokenId(NativeRdb::RdbStore &store);
     EXPORT static int32_t FillOneAlbumCountAndCoverUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         int32_t albumId, PhotoAlbumSubType subtype, std::string &sql);
     EXPORT static void UpdateSystemAlbumExcludeSource(bool shouldNotify = false);
@@ -194,7 +195,7 @@ public:
         UpdateAlbumData &data, NativeRdb::ValuesBucket &values, const bool hiddenState);
     EXPORT static bool QueryShootingModeAlbumIdByType(ShootingModeAlbumType type, int32_t& albumId);
     EXPORT static bool QueryAllShootingModeAlbumIds(std::vector<int32_t>& albumIds);
-    EXPORT static void TransformOwnerAppIdToTokenId(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    EXPORT static void TransformOwnerAppIdToTokenId(NativeRdb::RdbStore &rdbStore);
     EXPORT static void CleanAmbiguousColumn(std::vector<std::string> &columns,
         DataShare::DataSharePredicates &predicates, const std::string tableName);
     EXPORT static int32_t GetAlbumIdBySubType(PhotoAlbumSubType subtype);
