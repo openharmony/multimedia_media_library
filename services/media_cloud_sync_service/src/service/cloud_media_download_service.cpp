@@ -813,6 +813,7 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     OnDownloadAssetData assetData;
     for (const auto &photosPo : photosPoVec) {
         assetData = this->GetOnDownloadAssetData(photosPo, downloadedFileInfos);
+        assetData.localPhotosPoOp = photosPo;
         MEDIA_DEBUG_LOG("OnDownloadAsset, photosPo: %{public}s, assetData: %{public}s",
             photosPo.ToString().c_str(),
             assetData.ToString().c_str());
