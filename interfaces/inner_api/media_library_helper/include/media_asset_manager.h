@@ -67,15 +67,10 @@ struct AssetHandler {
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
 public:
-    MultiStagesTaskObserver(int fileId)
-        : fileId_(fileId) {};
     void OnChange(const ChangeInfo &changelnfo) override;
 
 private:
     std::map<std::string, AssetHandler *> GetAssetHandlers(const std::string uriString);
-
-private:
-    int fileId_;
 };
 
 class MediaAssetManager {
