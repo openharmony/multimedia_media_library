@@ -52,7 +52,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    EXPORT void InitMediaPermissionHelper();
+    EXPORT int32_t InitMediaPermissionHelper();
 
     /**
      * @brief Check PhotoUri Permission
