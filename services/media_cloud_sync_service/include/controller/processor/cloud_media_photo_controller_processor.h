@@ -64,6 +64,8 @@ private:
     bool GetInt64FieldsHashMap(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo);
     bool GetInt64FieldsHashMap(const OnFetchPhotosVo &photosVo, CloudMediaPullDataDto &data);
     bool HandleUserComment(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo);
+    bool HandleLcdAspectRatio(const std::unordered_map<std::string, std::string> &stringfieldsMap,
+        CloudMdkRecordPhotosVo &photosVo);
 
 private:
     static constexpr int32_t USER_COMMENT_LIMIT_SIZE = 1024;

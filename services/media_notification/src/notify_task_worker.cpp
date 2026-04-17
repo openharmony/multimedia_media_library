@@ -45,6 +45,9 @@ std::mutex NotifyTaskWorker::mapMutex_;
 std::vector<UserDefineNotifyInfo> NotifyTaskWorker::userDefineTaskInfos_;
 std::mutex NotifyTaskWorker::userDefineVecMutex_;
 
+std::vector<std::pair<std::string, std::string>> NotifyTaskWorker::dbAvailabilityTaskInfos_;
+std::mutex NotifyTaskWorker::dbAvailabilityVecMutex_;
+
 static const int32_t MAX_WAIT_TIME = 50;
 static const int32_t WAIT_FOR_MS = 100;
 shared_ptr<NotifyTaskWorker> NotifyTaskWorker::GetInstance()
@@ -94,9 +97,15 @@ void NotifyTaskWorker::AddUserDefineTaskInfo(const UserDefineNotifyInfo &notifyI
     userDefineTaskInfos_.push_back(notifyInfoInner);
 }
 
+void NotifyTaskWorker::AddDbAvailabilityTaskInfo(const std::string& status, const std::string& reason)
+{
+    lock_guard<mutex> lock(dbAvailabilityVecMutex_);
+    dbAvailabilityTaskInfos_.emplace_back(status, reason);
+}
+
 bool NotifyTaskWorker::IsTaskInfosEmpty()
 {
-    return taskInfos_.empty() && userDefineTaskInfos_.empty();
+    return taskInfos_.empty() && userDefineTaskInfos_.empty() && dbAvailabilityTaskInfos_.empty();
 }
 
 bool NotifyTaskWorker::IsRunning()
@@ -139,6 +148,14 @@ std::vector<UserDefineNotifyInfo> NotifyTaskWorker::GetCurrentUserDefineNotifyVe
     return notifyTaskInfos;
 }
 
+std::vector<std::pair<std::string, std::string>> NotifyTaskWorker::GetCurrentDbAvailabilityNotifyVec()
+{
+    lock_guard<mutex> lock(dbAvailabilityVecMutex_);
+    auto tasks = std::move(dbAvailabilityTaskInfos_);
+    dbAvailabilityTaskInfos_.clear();
+    return tasks;
+}
+
 void NotifyTaskWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(workLock_);
@@ -176,6 +193,15 @@ void NotifyTaskWorker::HandleUserDefineNotifyTask()
     NotificationDistribution::DistributeUserDefineNotifyInfo(notifyTaskInfos);
 }
 
+void NotifyTaskWorker::HandleDbAvailabilityTask()
+{
+    auto notifyTaskInfos = GetCurrentDbAvailabilityNotifyVec();
+    if (notifyTaskInfos.empty()) {
+        return;
+    }
+    NotificationDistribution::DistributeDbAvailabilityNotifyInfo(notifyTaskInfos);
+}
+
 std::vector<MediaChangeInfo> NotifyTaskWorker::ClassifyNotifyInfo(std::vector<NotifyTaskInfo> &notifyTaskInfos)
 {
     MEDIA_INFO_LOG("ClassifyNotifyInfo");
@@ -204,6 +230,7 @@ void NotifyTaskWorker::HandleNotifyTaskPeriod()
         }
         HandleNotifyTask();
         HandleUserDefineNotifyTask();
+        HandleDbAvailabilityTask();
         noTaskTims_ = 0;
     }
     NotificationUtils::UpdateNotificationProp();

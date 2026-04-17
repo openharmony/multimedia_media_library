@@ -34,6 +34,9 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "media_cloud_permission_check.h"
+#include "get_self_permissions.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -52,6 +55,16 @@ static const string SQL_INSERT_PHOTO =
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " + PhotoColumn::PHOTO_BURST_KEY + ")";
 static const string VALUES_END = ") ";
+
+static const string SQL_INSERT_PHOTO_WITH_POSITION =
+    "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_SIZE +
+    ", " + MediaColumn::MEDIA_TITLE + ", " + MediaColumn::MEDIA_NAME + ", " + MediaColumn::MEDIA_TYPE + ", " +
+    MediaColumn::MEDIA_OWNER_PACKAGE + ", " + MediaColumn::MEDIA_PACKAGE_NAME + ", " + MediaColumn::MEDIA_DATE_ADDED +
+    ", " + MediaColumn::MEDIA_DATE_MODIFIED + ", " + MediaColumn::MEDIA_DATE_TAKEN + ", " +
+    MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
+    MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
+    PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " + PhotoColumn::PHOTO_BURST_KEY +
+    ", " + PhotoColumn::PHOTO_POSITION + ")";
 
 static int32_t ClearTable(const string &table)
 {
@@ -193,6 +206,18 @@ static void InsertAsset(string displayName, string title, string burstKey)
                             ".jpg', 175258, '" + title + "', '" + displayName + ".jpg', 1, " +
                             "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
                             "1280, 960, 0, '1', '" + burstKey + "'" + VALUES_END;
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
+}
+
+static void InsertAssetWithPosition(string displayName, string title, string burstKey, int32_t position)
+{
+    std::string insertSql = SQL_INSERT_PHOTO_WITH_POSITION + " VALUES (" + "'/storage/cloud/files/Photo/16/" +
+                            displayName + ".jpg', 175258, '" + title + "', '" + displayName + ".jpg', 1, " +
+                            "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
+                            "1280, 960, 0, '1', '" + burstKey + "', " + to_string(position) + VALUES_END;
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
@@ -354,4 +379,113 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_008, TestSize.Level0)
     ASSERT_TRUE(mediaId == fileId1 || mediaId == fileId2);
 }
 
+HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_001 Begin");
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+
+    string localPic = "local_pic";
+    InsertAssetWithPosition(localPic, localPic, "", static_cast<int32_t>(PhotoPositionType::LOCAL));
+
+    string cloudPic = "cloud_pic";
+    InsertAssetWithPosition(cloudPic, cloudPic, "", static_cast<int32_t>(PhotoPositionType::CLOUD));
+
+    string bothPic = "both_pic";
+    InsertAssetWithPosition(bothPic, bothPic, "", static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+
+    DataShare::DataSharePredicates predicates;
+    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
+
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    int32_t result = GetAssets(resultSet);
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t count = 0;
+    if (resultSet->GoToFirstRow() == E_OK) {
+        do {
+            int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+            EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::CLOUD));
+            count++;
+        } while (resultSet->GoToNextRow() == E_OK);
+    }
+    MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_001 result count: %{public}d", count);
+}
+
+HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_002 Begin");
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+
+    string localPic = "local_pic2";
+    InsertAssetWithPosition(localPic, localPic, "", static_cast<int32_t>(PhotoPositionType::LOCAL));
+
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    int32_t result = GetAssets(resultSet);
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+
+    int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+    EXPECT_EQ(position, static_cast<int32_t>(PhotoPositionType::LOCAL));
+}
+
+HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetBurstAssets_CloudFilter_Test_001 Begin");
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+
+    string burstKey = "burst_cloud_test";
+
+    string localBurst = "local_burst";
+    InsertAssetWithPosition(localBurst, localBurst, burstKey, static_cast<int32_t>(PhotoPositionType::LOCAL));
+
+    string cloudBurst = "cloud_burst";
+    InsertAssetWithPosition(cloudBurst, cloudBurst, burstKey, static_cast<int32_t>(PhotoPositionType::CLOUD));
+
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    int32_t result = GetBurstAssets(burstKey, resultSet);
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t count = 0;
+    if (resultSet->GoToFirstRow() == E_OK) {
+        do {
+            int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+            EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::CLOUD));
+            count++;
+        } while (resultSet->GoToNextRow() == E_OK);
+    }
+    MEDIA_INFO_LOG("GetBurstAssets_CloudFilter_Test_001 result count: %{public}d", count);
+}
+
+HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetBurstAssets_CloudFilter_Test_002 Begin");
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+
+    string burstKey = "burst_cloud_only";
+
+    string cloudBurst = "cloud_burst_only";
+    InsertAssetWithPosition(cloudBurst, cloudBurst, burstKey, static_cast<int32_t>(PhotoPositionType::CLOUD));
+
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    int32_t result = GetBurstAssets(burstKey, resultSet);
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_NE(resultSet->GoToFirstRow(), E_OK);
+}
+
+HWTEST_F(GetAssetsTest, AddCloudAssetFilter_WithPredicates_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AddCloudAssetFilter_WithPredicates_Test_001 Begin");
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+
+    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
+
+    std::string whereClause = predicates.GetWhereClause();
+    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_POSITION) != std::string::npos);
+    EXPECT_TRUE(whereClause.find(MediaColumn::MEDIA_TYPE) != std::string::npos);
+}
 }  // namespace OHOS::Media

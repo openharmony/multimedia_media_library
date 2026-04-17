@@ -78,11 +78,14 @@
 #include "medialibrary_notify_callback_wrapper_ani.h"
 #include "media_audio_column.h"
 #include <charconv>
+#include "preferred_compatible_mode_vo.h"
+#include "transcode_compatible_info_operations.h"
 #include "query_media_data_status_vo.h"
 #include "media_string_utils.h"
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
 #include "compatible_info_vo.h"
+#include "check_photo_uris_read_permission_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -99,6 +102,9 @@ static std::atomic<int32_t> requestIdCallback_ = 0;
 static const std::unordered_set<std::string> BETACLUB_FAULT_TREE_CODES = {
     "1025_1041_1018",
 };
+const std::string SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE = "image/heic";
+const std::string SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -111,6 +117,9 @@ const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
 const size_t MAX_PARCEL_SIZE = 200 * 1024;
+const int32_t MAX_CHECK_PHOTO_PERMISSION_URI_COUNT = 500;
+const int32_t URI_FORMAT_ERROR_STATE = 0;
+const int32_t NO_READ_PERMISSION_STATE = 3;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -205,6 +214,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission)},
     ani_native_function {"cancelPhotoUriPermissionInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCancelPhotoUriPermission)},
+    ani_native_function {"checkPhotoUrisReadPermissionInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission)},
     ani_native_function {"saveFormInfoInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessSaveFormInfo)},
     ani_native_function {"saveGalleryFormInfoInner", nullptr,
@@ -235,6 +246,10 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOnCallback)},
     ani_native_function {"offSinglePhotoChangeInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::SinglePhotoChangeOffCallback)},
+    ani_native_function {"setPreferredCompatibleModeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::SetPreferredCompatibleMode)},
+    ani_native_function {"getPreferredCompatibleModeInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetPreferredCompatibleMode)},
     ani_native_function {"onPhotoChange", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessOnPhotoChange)},
     ani_native_function {"offPhotoChange", nullptr,
@@ -5058,6 +5073,140 @@ ani_int MediaLibraryAni::PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_o
     return PhotoUriPermissionComplete(env, context);
 }
 
+static ani_status ParseCheckPhotoUrisReadPermissionArgs(ani_env *env, ani_object uris,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetStringArray(env, uris, context->uris), "Failed to get uris");
+    CHECK_COND_RET(!context->uris.empty() && context->uris.size() <= MAX_CHECK_PHOTO_PERMISSION_URI_COUNT,
+        ANI_INVALID_ARGS, "The size of uris is invalid, size: %{public}zu", context->uris.size());
+
+    for (const auto &uri : context->uris) {
+        CHECK_COND_RET(!uri.empty(), ANI_INVALID_ARGS, "The uri in uris should not be empty");
+        int32_t fileId = MediaLibraryAniUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId < 0) {
+            context->uriPermissionStateMap[uri] = URI_FORMAT_ERROR_STATE;
+            continue;
+        }
+        context->checkPhotoPermissionUris.emplace_back(uri);
+        context->uriPermissionStateMap[uri] = NO_READ_PERMISSION_STATE;
+    }
+    return ANI_OK;
+}
+
+static void CheckPhotoUrisReadPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    CHECK_IF_EQUAL(!context->checkPhotoPermissionUris.empty(), "checkPhotoPermissionUris is empty");
+
+    CheckPhotoUrisReadPermissionReqBody reqBody;
+    reqBody.uris = context->checkPhotoPermissionUris;
+    CheckPhotoUrisReadPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CHECK_PHOTO_URIS_READ_PERMISSION);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call, PAH_CHECK_PHOTO_URIS_READ_PERMISSION");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        context->SaveError(result);
+        ANI_ERR_LOG("CheckPhotoUrisReadPermission fail, result: %{public}d.", result);
+        return;
+    }
+
+    std::unordered_set<std::string> validUris(context->checkPhotoPermissionUris.begin(),
+        context->checkPhotoPermissionUris.end());
+    for (const auto &[uri, state] : respBody.uriPermissionStateMap) {
+        if (validUris.find(uri) == validUris.end()) {
+            ANI_INFO_LOG("Ignore unexpected uri in CheckPhotoUrisReadPermission response");
+            continue;
+        }
+        context->uriPermissionStateMap[uri] = state;
+    }
+}
+
+static ani_status CreatePhotoUriPermissionStateMap(ani_env *env, const unique_ptr<MediaLibraryAsyncContext> &context,
+    ani_object &aniMap)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    ani_class cls {};
+    static const std::string className = "std.core.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Map");
+
+    ani_method mapConstructor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>",
+        "X{C{std.core.Iterable}C{std.core.Null}C{std.core.ReadonlyArray}}:", &mapConstructor),
+        "Can't find method <ctor> in std.core.Map");
+
+    ani_ref undefinedArgument {};
+    CHECK_STATUS_RET(env->GetUndefined(&undefinedArgument), "GetUndefined failed");
+
+    CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, undefinedArgument), "Call method <ctor> fail");
+
+    ani_method setMethod {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
+        "Can't find method set in std.core.Map");
+
+    for (const auto &uri : context->uris) {
+        ani_string key {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, uri, key), "ToAniString key[%{public}s] fail",
+            uri.c_str());
+        int32_t state = URI_FORMAT_ERROR_STATE;
+        auto iter = context->uriPermissionStateMap.find(uri);
+        if (iter != context->uriPermissionStateMap.end()) {
+            state = iter->second;
+        }
+        ani_int value = static_cast<ani_int>(state);
+        ani_ref setResult {};
+        CHECK_STATUS_RET(env->Object_CallMethod_Ref(aniMap, setMethod, &setResult, key, value),
+            "Call method set fail");
+    }
+    return ANI_OK;
+}
+
+static ani_object CheckPhotoUrisReadPermissionComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckPhotoUrisReadPermissionComplete");
+
+    ani_object mapRes {};
+    ani_object errorObj {};
+    if (context->error == ERR_DEFAULT) {
+        CHECK_COND_WITH_RET_MESSAGE(env, CreatePhotoUriPermissionStateMap(env, context, mapRes) == ANI_OK,
+            nullptr, "Failed to create map for uri permission state");
+    } else {
+        context->HandleError(env, errorObj);
+    }
+
+    tracer.Finish();
+    context.reset();
+    return mapRes;
+}
+
+ani_object MediaLibraryAni::PhotoAccessCheckPhotoUrisReadPermission(ani_env *env, ani_object object, ani_object uris)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCheckPhotoUrisReadPermission");
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    context->assetType = TYPE_PHOTO;
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    if (ParseCheckPhotoUrisReadPermissionArgs(env, uris, context) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    SetUserIdFromObjectInfo(context);
+    CheckPhotoUrisReadPermissionExecute(env, context);
+    return CheckPhotoUrisReadPermissionComplete(env, context);
+}
+
 int32_t MediaLibraryAni::GetUserId()
 {
     return userId_;
@@ -5822,6 +5971,141 @@ int32_t MediaLibraryAni::UnregisterObserverExecute(ani_env *env,
     return ret;
 }
 
+void MediaLibraryAni::SetPreferredCompatibleMode(ani_env *env, ani_object object,
+    ani_string bundleName, ani_int mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetPreferredCompatibleMode");
+
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return;
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        return;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    string bundleNameStr;
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to parse bundleName");
+        return;
+    }
+    if (bundleNameStr.empty()) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, __FUNCTION__, __LINE__, "bundleName is empty");
+        return;
+    }
+    if (mode < static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) ||
+        mode > static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE)) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, __FUNCTION__, __LINE__,
+            "preferredCompatibleMode is invalid");
+        return;
+    }
+
+    context->bundleName = bundleNameStr;
+    context->preferredCompatibleMode = static_cast<int32_t>(mode);
+
+    SetPreferredCompatibleModeReqBody reqBody;
+    reqBody.bundleName = context->bundleName;
+    reqBody.preferredCompatibleMode = context->preferredCompatibleMode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE), reqBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, JS_E_INNER_FAIL);
+        return;
+    }
+}
+
+ani_int MediaLibraryAni::GetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPreferredCompatibleMode");
+
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (env == nullptr || context == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+
+    string bundleNameStr;
+    CHECK_ARGS_WITH_RET_MSG(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr) == ANI_OK,
+        JS_E_PARAM_INVALID, static_cast<ani_int>(PreferredCompatibleMode::DEFAULT), "Failed to parse bundleName");
+    CHECK_COND_RET(!bundleNameStr.empty(), static_cast<ani_int>(PreferredCompatibleMode::DEFAULT),
+        "bundleName is empty");
+
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    reqBody.bundleName = bundleNameStr;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        AniError::ThrowError(env, JS_E_INNER_FAIL);
+        return static_cast<ani_int>(PreferredCompatibleMode::DEFAULT);
+    }
+    return static_cast<ani_int>(respBody.preferredCompatibleMode);
+}
+
+static bool IsSupportedCompatibleMimeType(const std::string &mimeType)
+{
+    return mimeType == SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE ||
+        mimeType == SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE;
+}
+
+static ani_status NormalizeSupportedMimeTypes(ani_env *env, const vector<string> &supportedMimeTypes,
+    vector<string> &normalizedMimeTypes)
+{
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : supportedMimeTypes) {
+        CHECK_ARGS_WITH_RET_MSG(env, IsSupportedCompatibleMimeType(mimeType), JS_E_PARAM_INVALID,
+            ANI_ERROR, "supportedMimeType is invalid");
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_ARGS_WITH_RET_MSG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
+        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeTypes exceeds max size");
+    normalizedMimeTypes.clear();
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+    return ANI_OK;
+}
+
+static ani_status ParseSupportedMimeTypesFromConfig(ani_env *env, ani_object config, vector<string> &supportedMimeTypes)
+{
+    ani_object propertyValue;
+    ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedMimeType", propertyValue);
+    if (ret != ANI_OK || propertyValue == nullptr || MediaLibraryAniUtils::IsUndefined(env, propertyValue)) {
+        return ANI_OK;
+    }
+
+    ret = MediaLibraryAniUtils::GetStringArray(env, propertyValue, supportedMimeTypes);
+    CHECK_STATUS_RET(ret, "GetStringArray supportedMimeTypes fail");
+    vector<string> normalizedMimeTypes;
+    CHECK_COND_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes) == ANI_OK,
+        ANI_ERROR, "normalize supportedMimeTypes failed");
+    supportedMimeTypes = std::move(normalizedMimeTypes);
+    return ANI_OK;
+}
+
 void MediaLibraryAni::unregisterAssetExecute(ani_env *env, ani_object object,
     ani_fn_object callbackOff, std::string type)
 {
@@ -6155,7 +6439,11 @@ static ani_status ParseArgsSetFileCompatibleSysConfig(ani_env *env, ani_string b
         CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
         supportedHighResolution = value;
     }
+    vector<string> supportedMimeTypes;
+    CHECK_COND_RET(ParseSupportedMimeTypesFromConfig(env, config, supportedMimeTypes) == ANI_OK,
+        ANI_ERROR, "parse supportedMimeTypes failed");
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     return ANI_OK;
 }
 
@@ -6173,7 +6461,11 @@ static ani_status ParseArgsSetFileCompatibleConfig(ani_env *env, ani_object conf
         CHECK_STATUS_RET(ret, "GetBool supportedHighResolution fail");
         supportedHighResolution = value;
     }
+    vector<string> supportedMimeTypes;
+    CHECK_COND_RET(ParseSupportedMimeTypesFromConfig(env, config, supportedMimeTypes) == ANI_OK,
+        ANI_ERROR, "parse supportedMimeTypes failed");
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     return ANI_OK;
 }
 
@@ -6188,6 +6480,7 @@ static void SetFileCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAsy
     SetCompatibleInfoReqBody reqBody;
     reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
+    reqBody.supportedMimeTypes = context->supportedMimeTypes;
 
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
@@ -6280,7 +6573,9 @@ static void GetAssetCompatibleConfigExec(ani_env *env, unique_ptr<MediaLibraryAs
         AniError::ThrowError(env, JS_INNER_FAIL);
         return;
     }
+
     context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
     context->retVal = E_OK;
 }
 
@@ -6292,6 +6587,10 @@ static ani_object GetAssetCompatibleConfigComplete(ani_env *env, unique_ptr<Medi
     ani_status status = MediaLibraryAniUtils::ToAniBooleanObject(env, supportedHighResolution, aniresult);
     if (status == ANI_OK) {
         env->Object_SetPropertyByName_Ref(result, "supportedHighResolution", aniresult);
+    }
+    status = MediaLibraryAniUtils::ToAniStringArray(env, context->supportedMimeTypes, aniresult);
+    if (status == ANI_OK) {
+        env->Object_SetPropertyByName_Ref(result, "supportedMimeType", aniresult);
     }
     return result;
 }

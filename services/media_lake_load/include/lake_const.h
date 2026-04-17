@@ -108,6 +108,7 @@ struct InnerFileInfo {
     double longitude {0.0};
     bool needInsert {true};
     IsBurstType isBurst {IsBurstType::OTHER_TYPE};
+    int64_t localAssetSize{0};
 };
 
 enum LakeScanMode : int32_t {

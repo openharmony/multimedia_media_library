@@ -55,6 +55,7 @@ static void PrintUriList(ChangeType changeType, const list<Uri> &uris)
 
 static int32_t TryNotifyChange()
 {
+    std::lock_guard<mutex> lock(MediaGallerySyncNotify::mtx_);
     MediaGallerySyncNotify::recordAdded_++;
     if (MediaGallerySyncNotify::recordAdded_ % NOTIFY_INTERVALS == 0) {
         auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
@@ -75,14 +76,16 @@ static int32_t TryNotifyChange()
 
 static int32_t NotifyFileAssetChange(bool notify, const std::string &uri, const ChangeType changeType)
 {
-    std::lock_guard<mutex> lock(MediaGallerySyncNotify::mtx_);
-    auto iterator = MediaGallerySyncNotify::notifyListMap_.find(changeType);
-    if (iterator != MediaGallerySyncNotify::notifyListMap_.end()) {
-        iterator->second.emplace_back(Uri(uri));
-    } else {
-        list<Uri> newList;
-        newList.emplace_back(Uri(uri));
-        MediaGallerySyncNotify::notifyListMap_.insert(make_pair(changeType, newList));
+    {
+        std::lock_guard<mutex> lock(MediaGallerySyncNotify::mtx_);
+        auto iterator = MediaGallerySyncNotify::notifyListMap_.find(changeType);
+        if (iterator != MediaGallerySyncNotify::notifyListMap_.end()) {
+            iterator->second.emplace_back(Uri(uri));
+        } else {
+            list<Uri> newList;
+            newList.emplace_back(Uri(uri));
+            MediaGallerySyncNotify::notifyListMap_.insert(make_pair(changeType, newList));
+        }
     }
     if (!notify) {
         return E_OK;

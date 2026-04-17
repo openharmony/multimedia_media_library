@@ -22,6 +22,7 @@
 #include <fuse.h>
 #include <atomic>
 #include "media_fuse_low_daemon.h"
+#include "access_token.h"
 
 // LCOV_EXCL_START
 namespace OHOS {
@@ -67,11 +68,15 @@ public:
         const std::string &appId, const int32_t &uid);
     ~MediafusePermCheckInfo() = default;
     bool CheckPermission(uint32_t &tokenCaller, bool isNeedRecord = true);
+    int32_t WrCheckPermission(const std::string &filePath, const std::string &mode, const uid_t &uid,
+        OHOS::Security::AccessToken::AccessTokenID &tokenCaller, bool isNeedRecord = true);
+    void SetOpenUri(const std::string &openUri);
 private:
     std::string filePath_;
     std::string mode_;
     std::string fileId_;
     std::string appId_;
+    std::string openUri_;
     int32_t uid_;
 };
 } // namespace Media

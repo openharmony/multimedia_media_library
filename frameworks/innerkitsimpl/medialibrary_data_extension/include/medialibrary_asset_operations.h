@@ -138,6 +138,8 @@ public:
         const std::vector<std::string> &paths, const std::string &table, const std::vector<std::string> &dateTakens,
         std::vector<int32_t> &subTypes);
     EXPORT static std::string GetAssetCompressCachePath(const std::string &path);
+    static int32_t GetFileAssetVectorFromDb(std::vector<std::shared_ptr<FileAsset>> &fileAssetVector,
+        MediaLibraryCommand& cmd, const std::vector<std::string>& columns);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,

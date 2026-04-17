@@ -33,6 +33,7 @@
 #include "bundle_info.h"
 #include "parameters.h"
 #include "permission_whitelist_utils.h"
+#include <nlohmann/json.hpp>
 
 namespace OHOS {
 namespace Media {
@@ -43,16 +44,20 @@ using namespace OHOS::AppExecFwk;
 
 const int32_t CAPACITY = 50;
 const int32_t HDC_SHELL_UID = 2000;
-const int32_t BASE_USER_RANGE = 200000;
 
 std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
+std::unordered_set<uint64_t> PermissionUtils::systemAppCache_ = {};
+
+vector<AddPermParamInfo> PermissionUtils::infos_ {};
+vector<OpenPermissionInfo> PermissionUtils::pendingOpenPermissionInfos_ {};
 
 bool g_isDelayTask;
 std::mutex addPhotoPermissionRecordLock_;
 std::thread delayTask_;
-std::vector<Security::AccessToken::AddPermParamInfo> infos_;
+std::mutex pendingOpenDataInfosLock_;
+constexpr int URI_NUMBER_THRESHOLD = 50; // Max uri number for a single report of permission infos
 
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::bundleMgr_ = nullptr;
 mutex PermissionUtils::bundleMgrMutex_;
@@ -274,7 +279,7 @@ bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
     return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);
 }
 
-void AddPermissionRecord(const AccessTokenID &token, const string &perm, const bool permGranted)
+void PermissionUtils::AddPermissionRecord(const AccessTokenID &token, const string &perm, const bool permGranted)
 {
     if (!ShouldAddPermissionRecord(token)) {
         return;
@@ -288,7 +293,7 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
     }
 }
 
-vector<AddPermParamInfo> GetPermissionRecord()
+vector<AddPermParamInfo> PermissionUtils::GetPermissionRecord()
 {
     lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
     vector<AddPermParamInfo> result = infos_;
@@ -296,7 +301,7 @@ vector<AddPermParamInfo> GetPermissionRecord()
     return result;
 }
 
-void AddPermissionRecord()
+void PermissionUtils::AddPermissionRecord()
 {
     vector<AddPermParamInfo> infos = GetPermissionRecord();
     for (const auto &info : infos) {
@@ -307,38 +312,17 @@ void AddPermissionRecord()
                 info.permissionName.c_str(), info.successCount, ret);
         }
         MEDIA_DEBUG_LOG("Info: token = %{private}d, perm = %{private}s, permGranted = %{private}d, \
-            !permGranted = %{private}d, type = %{public}d", info.tokenId, info.permissionName.c_str(),
-            info.successCount, info.failCount, info.type);
-    }
-    infos.clear();
-}
-
-void DelayAddPermissionRecord()
-{
-    string name("DelayAddPermissionRecord");
-    pthread_setname_np(pthread_self(), name.c_str());
-    MEDIA_INFO_LOG("DelayTask start");
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    AddPermissionRecord();
-    g_isDelayTask = false;
-    MEDIA_INFO_LOG("DelayTask end");
-}
-
-void DelayTaskInit()
-{
-    if (!g_isDelayTask) {
-        MEDIA_INFO_LOG("DelayTaskInit");
-        delayTask_ = thread(DelayAddPermissionRecord);
-        delayTask_.detach();
-        g_isDelayTask = true;
+            !permGranted = %{private}d, type = %{public}d, extra = %{private}s", info.tokenId,
+            info.permissionName.c_str(), info.successCount, info.failCount, info.type,
+            info.extra.c_str());
     }
 }
 
-void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
+void PermissionUtils::CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type)
 {
     lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
-    DelayTaskInit();
+    PermissionUtils::DelayTaskInit();
 
     if (!ShouldAddPermissionRecord(token)) {
         return;
@@ -357,6 +341,207 @@ void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     }
 }
 
+bool PermissionUtils::HandleEmptyOpenDataInfo(const AccessTokenID &token, const string &perm,
+    const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
+{
+    if (openDataInfo.uri.empty()) {
+        CollectPermissionRecord(token, perm, permGranted, type);
+        return true;
+    }
+    return false;
+}
+
+static std::vector<AddPermParamInfo>::iterator FindMatchingPermissionInfo(
+    std::vector<AddPermParamInfo> &infos, const AccessTokenID &token,
+    const string &perm, const PermissionUsedType type)
+{
+    return find_if(infos.begin(), infos.end(), [&token, &perm, type](auto &info) {
+        return info.tokenId == token && info.permissionName == perm && info.type == type;
+    });
+}
+
+void PermissionUtils::AddToPendingOpenPermissionInfo(const AccessTokenID &token, const string &perm,
+    const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
+{
+    lock_guard<mutex> lock(pendingOpenDataInfosLock_);
+    OpenPermissionInfo openInfo;
+    openInfo.token = token;
+    openInfo.perm = perm;
+    openInfo.permGranted = permGranted;
+    openInfo.type = type;
+    openInfo.openDataInfo = openDataInfo;
+    pendingOpenPermissionInfos_.push_back(openInfo);
+}
+
+static nlohmann::json BuildUriItem(const std::string &uri, int64_t timestamp)
+{
+    nlohmann::json uriItem = nlohmann::json::object();
+    uriItem["uri"] = uri;
+    if (timestamp <= 0) {
+        timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    }
+    uriItem["timestamp"] = timestamp;
+    return uriItem;
+}
+
+static bool ParseExtraJson(const std::string &extra, nlohmann::json &extraJson)
+{
+    extraJson = nlohmann::json::object();
+
+    if (extra.empty()) {
+        return true;
+    }
+
+    extraJson = nlohmann::json::parse(extra, nullptr, false);
+    if (extraJson.is_discarded()) {
+        MEDIA_ERR_LOG("Parse extra JSON failed");
+        extraJson = nlohmann::json::object();
+        return false;
+    }
+    return true;
+}
+
+static bool UpdatePermissionInfoWithOpenData(AddPermParamInfo &info, const OpenDataInfo &openDataInfo)
+{
+    if (openDataInfo.uri.empty()) {
+        // Nothing to update
+        return true;
+    }
+
+    if (info.extra.empty()) {
+        nlohmann::json newItem;
+        newItem["type"] = openDataInfo.type;
+        newItem["uid"] = openDataInfo.uid;
+        newItem["userId"] = openDataInfo.userId;
+        newItem["uris"] = nlohmann::json::array(
+            { BuildUriItem(openDataInfo.uri, openDataInfo.timestamp) });
+        info.extra = newItem.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return true;
+    }
+
+    nlohmann::json extraJson = nlohmann::json::object();
+    if (!ParseExtraJson(info.extra, extraJson) || !extraJson.is_object()) {
+        return false;
+    }
+
+    const auto typeIt = extraJson.find("type");
+    const auto uidIt = extraJson.find("uid");
+    const auto userIdIt = extraJson.find("userId");
+    if (typeIt == extraJson.end() || !typeIt->is_string() ||
+        uidIt == extraJson.end() || !uidIt->is_number_integer() ||
+        userIdIt == extraJson.end() || !userIdIt->is_number_integer()) {
+        return false;
+    }
+
+    if (typeIt->get_ref<const std::string&>() == openDataInfo.type &&
+        uidIt->get<int32_t>() == openDataInfo.uid &&
+        userIdIt->get<int32_t>() == openDataInfo.userId) {
+        auto urisIt = extraJson.find("uris");
+        if (urisIt == extraJson.end() || !urisIt->is_array()) {
+            extraJson["uris"] = nlohmann::json::array();
+            urisIt = extraJson.find("uris");
+        }
+        if (urisIt->size() >= URI_NUMBER_THRESHOLD) {
+            return false;
+        }
+        urisIt->push_back(BuildUriItem(openDataInfo.uri, openDataInfo.timestamp));
+        info.extra = extraJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return true;
+    }
+    // Can not update this permission info
+    return false;
+}
+
+void PermissionUtils::CollectPermissionRecord(const AccessTokenID &token, const string &perm,
+    const bool permGranted, const PermissionUsedType type, const OpenDataInfo &openDataInfo)
+{
+    if (HandleEmptyOpenDataInfo(token, perm, permGranted, type, openDataInfo)) {
+        return;
+    }
+
+    lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
+
+    if (!ShouldAddPermissionRecord(token)) {
+        return;
+    }
+
+    PermissionUtils::DelayTaskInit();
+
+    auto iter = FindMatchingPermissionInfo(infos_, token, perm, type);
+    if (iter != infos_.end()) {
+        // Use existing permission info
+        if (!UpdatePermissionInfoWithOpenData(*iter, openDataInfo)) {
+            AddToPendingOpenPermissionInfo(token, perm, permGranted, type, openDataInfo);
+        }
+    } else {
+        // Create new permission info
+        AddPermParamInfo info {};
+        info.tokenId = token;
+        info.permissionName = perm;
+        info.successCount = permGranted;
+        info.failCount = !permGranted;
+        info.type = type;
+
+        UpdatePermissionInfoWithOpenData(info, openDataInfo);
+        infos_.push_back(info);
+    }
+}
+
+void PermissionUtils::HandlePendingOpenDataInfos()
+{
+    std::vector<OpenPermissionInfo> pendingInfosTmp {};
+    {
+        lock_guard<mutex> lock(pendingOpenDataInfosLock_);
+        if (!pendingOpenPermissionInfos_.empty()) {
+            pendingInfosTmp.swap(pendingOpenPermissionInfos_);
+        }
+    }
+    for (const auto& info : pendingInfosTmp) {
+        CollectPermissionRecord(info.token, info.perm, info.permGranted, info.type, info.openDataInfo);
+    }
+}
+
+void PermissionUtils::DelayAddPermissionRecord()
+{
+    string name("DelayAddPermissionRecord");
+    pthread_setname_np(pthread_self(), name.c_str());
+    MEDIA_INFO_LOG("DelayTask start");
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    AddPermissionRecord();
+    {
+        std::lock_guard<std::mutex> lock(addPhotoPermissionRecordLock_);
+        g_isDelayTask = false;
+        if (!infos_.empty()) {
+            // If other threads scheduled any new report tasks during reporting, start another reporting cycle
+            delayTask_ = thread(DelayAddPermissionRecord);
+            delayTask_.detach();
+            g_isDelayTask = true;
+        }
+    }
+
+    HandlePendingOpenDataInfos(); // Will trigger a new independent reporting cycle
+                                  // if there are any pending permission infos
+
+    MEDIA_INFO_LOG("DelayTask end");
+}
+
+void PermissionUtils::DelayTaskInit()
+{
+    if (!g_isDelayTask) {
+        MEDIA_INFO_LOG("DelayTaskInit");
+        delayTask_ = thread(DelayAddPermissionRecord);
+        delayTask_.detach();
+        g_isDelayTask = true;
+    }
+}
+
+void PermissionUtils::CollectPermissionInfo(const std::string &permission, const bool permGranted,
+    const PermissionUsedType type, const OpenDataInfo &openDataInfo)
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    CollectPermissionRecord(tokenCaller, permission, permGranted, type, openDataInfo);
+}
+
 void PermissionUtils::CollectPermissionInfo(const string &permission,
     const bool permGranted, const PermissionUsedType type)
 {
@@ -364,43 +549,44 @@ void PermissionUtils::CollectPermissionInfo(const string &permission,
     CollectPermissionRecord(tokenCaller, permission, permGranted, type);
 }
 
-bool PermissionUtils::CheckPhotoCallerPermission(const string &permission)
+bool PermissionUtils::CheckPhotoCallerPermission(const string &permission, OpenDataInfo info)
 {
     PermissionUsedType type = PermissionUsedTypeValue::NORMAL_TYPE;
     AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
-        CollectPermissionRecord(tokenCaller, permission, false, type);
+        CollectPermissionRecord(tokenCaller, permission, false, type, info);
         return false;
     }
-    CollectPermissionRecord(tokenCaller, permission, true, type);
+    CollectPermissionRecord(tokenCaller, permission, true, type, info);
     return true;
 }
 
-bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms)
+bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, OpenDataInfo info)
 {
     if (perms.empty()) {
         return false;
     }
 
     for (const auto &perm : perms) {
-        if (!CheckPhotoCallerPermission(perm)) {
+        if (!CheckPhotoCallerPermission(perm, info)) {
             return false;
         }
     }
     return true;
 }
 
-bool PermissionUtils::CheckPhotoCallerPermission(const string &permission, const AccessTokenID &tokenCaller)
+bool PermissionUtils::CheckPhotoCallerPermission(const string &permission, const AccessTokenID &tokenCaller,
+    OpenDataInfo info)
 {
     PermissionUsedType type = PermissionUsedTypeValue::NORMAL_TYPE;
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
-        CollectPermissionRecord(tokenCaller, permission, false, type);
+        CollectPermissionRecord(tokenCaller, permission, false, type, info);
         return false;
     }
-    CollectPermissionRecord(tokenCaller, permission, true, type);
+    CollectPermissionRecord(tokenCaller, permission, true, type, info);
     return true;
 }
 
@@ -440,6 +626,14 @@ bool PermissionUtils::GetTokenCallerForUid(const int &uid, AccessTokenID &tokenC
 }
 
 void PermissionUtils::CollectPermissionInfo(const string &permission,
+    const bool permGranted, const PermissionUsedType type, const int &uid, const OpenDataInfo &openDataInfo)
+{
+    AccessTokenID tokenCaller = INVALID_TOKENID;
+    GetTokenCallerForUid(uid, tokenCaller);
+    CollectPermissionRecord(tokenCaller, permission, permGranted, type, openDataInfo);
+}
+
+void PermissionUtils::CollectPermissionInfo(const string &permission,
     const bool permGranted, const PermissionUsedType type, const int &uid)
 {
     AccessTokenID tokenCaller = INVALID_TOKENID;
@@ -448,13 +642,13 @@ void PermissionUtils::CollectPermissionInfo(const string &permission,
 }
 
 bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, const int &uid,
-    AccessTokenID &tokenCaller)
+    AccessTokenID &tokenCaller, OpenDataInfo info)
 {
     bool err = GetTokenCallerForUid(uid, tokenCaller);
     CHECK_AND_RETURN_RET(!perms.empty(), false);
     CHECK_AND_RETURN_RET(err != false, false);
     for (const auto &perm : perms) {
-        CHECK_AND_RETURN_RET(CheckPhotoCallerPermission(perm, tokenCaller), false);
+        CHECK_AND_RETURN_RET(CheckPhotoCallerPermission(perm, tokenCaller, info), false);
     }
     return true;
 }
@@ -469,6 +663,15 @@ bool PermissionUtils::CheckPhotoCallerPermissionNoRecord(const vector<string> &p
         CHECK_AND_RETURN_RET(CheckPhotoCallerPermissionNoRecord(perm, tokenCaller), false);
     }
     return true;
+}
+
+bool PermissionUtils::CheckCloudPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    auto ret = AccessTokenKit::VerifyAccessToken(tokenCaller, CLOUD_READ_ALL_PHOTO_PERMISSION);
+    CHECK_AND_RETURN_RET(ret != PermissionState::PERMISSION_GRANTED, false);
+    ret = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_CLOUD_IMAGEVIDEO);
+    return ret != PermissionState::PERMISSION_GRANTED;
 }
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
@@ -548,10 +751,21 @@ bool PermissionUtils::IsBetaVersion()
     return versionType == "beta";
 }
 
+bool PermissionUtils::IsSystemAppBycache(const uint64_t tokenId)
+{
+    if (systemAppCache_.find(tokenId) != systemAppCache_.end()) {
+        return true;
+    } else if (TokenIdKit::IsSystemAppByFullTokenID(tokenId)) {
+        systemAppCache_.insert(tokenId);
+        return true;
+    }
+    return false;
+}
+
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-    return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    return IsSystemAppBycache(tokenId);
 }
 
 bool PermissionUtils::CheckIsSystemAppByUid()

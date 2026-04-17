@@ -82,6 +82,8 @@ public:
     EXPORT static int32_t GetMovingPhotoVideoDuration(const std::string &path);
     EXPORT static int32_t GetMovingPhotoVideoDuration(const UniqueFd &uniqueFd);
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
+    EXPORT static void GetLocalAssetSize(const int32_t movingPhotoEffectMode, const std::string& filePath,
+        const int64_t size, int64_t& localAssetSize);
 };
 } // namespace OHOS::Media
 

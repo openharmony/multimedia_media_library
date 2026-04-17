@@ -28,7 +28,7 @@ class AlbumPluginTableEventHandler : public IRdbOpenEvent {
 public:
     int32_t OnCreate(NativeRdb::RdbStore &store) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &store, int oldVersion, int newVersion) override;
-    int32_t FixMinecraftPE(NativeRdb::RdbStore &store, int32_t oldVersion, int32_t newVersion);
+    int32_t FixMinecraftPE(NativeRdb::RdbStore &store);
 
 private:
     int32_t InitiateData(NativeRdb::RdbStore &store);

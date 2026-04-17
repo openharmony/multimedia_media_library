@@ -55,6 +55,11 @@
 // LCOV_EXCL_START
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+
+int64_t CloudMediaDownloadService::lcdNumberCache_ = 0;
+int32_t CloudMediaDownloadService::queryCount_ = 0;
+int64_t CloudMediaDownloadService::lastCallTime_ = 0;
+
 int32_t CloudMediaDownloadService::GetDownloadThmNum(const int32_t type, int32_t &totalNum)
 {
     return this->dao_.GetDownloadThmNum(type, totalNum);
@@ -222,7 +227,6 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
 
     int32_t ret = E_ERR;
     ret = this->OnDownloadThm(thmVector, result);
-    CHECK_AND_EXECUTE(ret != E_OK, notifyVector.insert(notifyVector.end(), thmVector.begin(), thmVector.end()));
     ret = this->OnDownloadLcd(lcdVector, result);
     if (ret == E_OK) {
         astcVector.insert(astcVector.end(), lcdVector.begin(), lcdVector.end());
@@ -232,8 +236,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
         astcVector.insert(astcVector.end(), bothVector.begin(), bothVector.end());
     }
     MEDIA_INFO_LOG("size of astcVector is %{public}zu, sceneCode:%{public}d", astcVector.size(), sceneCode);
-    notifyVector.insert(notifyVector.end(), astcVector.begin(), astcVector.end());
-    NotifyCoverContentChange(notifyVector);
+    HandleDownloadThms(downloadThumbnailMap);
     CHECK_AND_RETURN_RET(sceneCode == 0, E_OK);
     //Only sceneCode is Default(0) can notify ASC task.
     this->NotifyDownloadLcdOrThm(astcVector, PhotoColumn::PHOTO_CLOUD_URI_PREFIX);
@@ -501,6 +504,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     CloudMediaScanService::ScanResult scanResult;
+    this->scanService_.ScanDownloadedFile(photo, scanResult);
     this->scanService_.ScanDownloadedFile(assetData.path, scanResult);
     ret = this->dao_.UpdateDownloadAsset(assetData, scanResult);
     CalEditDataSizeInHandlePhoto(photo);
@@ -675,11 +679,16 @@ int32_t CloudMediaDownloadService::FindAttachments(
         PhotoAttachmentDto attachmentDto;
         attachmentDto.fileId = fileId;
         attachmentDto.cloudPath = cloudFilePath;
+        std::string metaPath;
         if (MovingPhotoFileUtils::IsMovingPhoto(photo.subtype.value_or(0), photo.movingPhotoEffectMode.value_or(0),
                                                 photo.originalSubtype.value_or(0))) {
             MovingPhotoFileUtils::FindMovingPhotoAttachments(cloudFilePath, attachmentDto.attachments);
         } else {
             MediaFileUtils::FindNormalPhotoAttachments(cloudFilePath, attachmentDto.attachments);
+        }
+        int32_t ret = PhotoFileUtils::GetMetaPathFromOrignalPath(cloudFilePath, metaPath);
+        if (ret == E_OK) {
+            attachmentDto.attachments.emplace_back(metaPath);
         }
         CHECK_AND_CONTINUE(!attachmentDto.attachments.empty());
         attachmentList.emplace_back(attachmentDto);
@@ -711,28 +720,60 @@ int32_t CloudMediaDownloadService::CleanAttachments(
     return E_OK;
 }
 
-void CloudMediaDownloadService::NotifyCoverContentChange(const std::vector<std::string> &notifyVector)
+void CloudMediaDownloadService::NotifyCoverContentChange(const std::vector<std::string> &fileIds)
 {
-    std::vector<std::string> fileIds;
-    this->dao_.GetFileIdFromCloudId(notifyVector, fileIds);
+    CHECK_AND_RETURN_LOG(!fileIds.empty(), "fileIds is empty");
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
     albumRefresh.IsCoverContentChange(fileIds);
 }
 
 int32_t CloudMediaDownloadService::GetDownloadNumberOfLcd(int64_t &lcdNumber)
 {
-    int64_t lcdCurrentNumber = -1;
-    int32_t ret = LcdAgingDao().GetCurrentNumberOfLcd(lcdCurrentNumber);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetCurrentNumberOfLcd, ret: %{public}d", ret);
+    constexpr int32_t QUERY_INTERVAL = 9;
+    constexpr int32_t LCD_DECREMENT_VALUE = 200;
+    constexpr int64_t CALL_TIME_INTERVAL = 30 * 60 * 1000;
+    auto currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+    bool needQuery = false;
+    if (lcdNumberCache_ <= LCD_DECREMENT_VALUE) {
+        needQuery = true;
+    } else if (queryCount_ >= QUERY_INTERVAL) {
+        needQuery = true;
+    } else if (lastCallTime_ > 0 && (currentTime - lastCallTime_) >= CALL_TIME_INTERVAL) {
+        needQuery = true;
+    }
+    lastCallTime_ = currentTime;
+    int32_t ret = E_ERR;
+    if (needQuery) {
+        queryCount_ = 0;
+        ret = this->UpdateLcdNumberCache();
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to UpdateLcdNumberCache, ret: %{public}d", ret);
+    } else {
+        queryCount_++;
+        lcdNumberCache_ = lcdNumberCache_ - LCD_DECREMENT_VALUE;
+        if (lcdNumberCache_ <= 0) {
+            ret = this->UpdateLcdNumberCache();
+            CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to UpdateLcdNumberCache, ret: %{public}d", ret);
+        }
+    }
+    MEDIA_INFO_LOG("queryCount_: %{public}d, lcdNumberCache_: %{public}" PRId64, queryCount_, lcdNumberCache_);
+    CHECK_AND_EXECUTE(lcdNumberCache_ > 0, lcdNumberCache_ = 0);
+    lcdNumber = lcdNumberCache_;
+    return E_OK;
+}
 
+int32_t CloudMediaDownloadService::UpdateLcdNumberCache()
+{
     int64_t lcdThresholdNumber = -1;
-    ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
+    int32_t ret = LcdAgingUtils().GetScaleThresholdOfLcd(lcdThresholdNumber);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetScaleThresholdOfLcd, ret: %{public}d", ret);
 
-    lcdNumber = lcdThresholdNumber - lcdCurrentNumber;
-    CHECK_AND_EXECUTE(lcdNumber > 0, lcdNumber = 0);
-    MEDIA_INFO_LOG("get lcdCurrentNumber: %{public}" PRId64 ", lcdThresholdNumber: %{public}" PRId64
-        ", lcdNumber: %{public}" PRId64, lcdCurrentNumber, lcdThresholdNumber, lcdNumber);
+    int64_t lcdCurrentNumber = -1;
+    ret = LcdAgingDao().GetCurrentNumberOfLcd(lcdCurrentNumber);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to GetCurrentNumberOfLcd, ret: %{public}d", ret);
+
+    this->lcdNumberCache_ = lcdThresholdNumber - lcdCurrentNumber;
+    MEDIA_INFO_LOG("query from db, lcdCurrentNumber: %{public}" PRId64 ", lcdThresholdNumber: %{public}" PRId64,
+        lcdCurrentNumber, lcdThresholdNumber);
     return E_OK;
 }
 
@@ -772,6 +813,7 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     OnDownloadAssetData assetData;
     for (const auto &photosPo : photosPoVec) {
         assetData = this->GetOnDownloadAssetData(photosPo, downloadedFileInfos);
+        assetData.localPhotosPoOp = photosPo;
         MEDIA_DEBUG_LOG("OnDownloadAsset, photosPo: %{public}s, assetData: %{public}s",
             photosPo.ToString().c_str(),
             assetData.ToString().c_str());
@@ -786,6 +828,36 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
         result.emplace_back(mediaResult);
     }
     return E_OK;
+}
+
+void CloudMediaDownloadService::HandleDownloadThms(const std::unordered_map<std::string, int32_t> &downloadThumbnailMap)
+{
+    std::vector<std::string> cloudIds;
+    for (const auto &pair : downloadThumbnailMap) {
+        cloudIds.emplace_back(pair.first);
+    }
+    CHECK_AND_RETURN_LOG(!cloudIds.empty(), "cloudIds is empty");
+    std::vector<std::string> queryColums = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::PHOTO_CLOUD_ID };
+    std::vector<PhotosPo> photoInfoList;
+    int32_t ret = this->commonDao_.QueryLocalByCloudId(cloudIds, queryColums, photoInfoList);
+    std::vector<DownloadThumbInfo> downloadThumbInfos;
+    std::vector<std::string> fileIds;
+    for (const auto &photoInfo : photoInfoList) {
+        DownloadThumbInfo downloadThumbInfo;
+        CHECK_AND_CONTINUE(photoInfo.fileId.has_value());
+        downloadThumbInfo.fileId = std::to_string(photoInfo.fileId.value());
+        fileIds.emplace_back(downloadThumbInfo.fileId);
+        downloadThumbInfo.path = photoInfo.data.value_or("");
+        auto it = downloadThumbnailMap.find(photoInfo.cloudId.value_or(""));
+        CHECK_AND_CONTINUE_ERR_LOG(it != downloadThumbnailMap.end(),
+            "invalid cloudId: %{public}s", photoInfo.cloudId.value_or("").c_str());
+        downloadThumbInfo.isDownloadLcd = (it->second == TYPE_LCD || it->second == TYPE_THM_AND_LCD);
+        downloadThumbInfos.push_back(downloadThumbInfo);
+    }
+
+    NotifyCoverContentChange(fileIds);
+    MediaLibraryPhotoOperations::StoreThumbnailInfoAsync(downloadThumbInfos);
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP

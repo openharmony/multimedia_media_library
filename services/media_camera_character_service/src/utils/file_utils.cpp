@@ -93,7 +93,7 @@ int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeS
         return E_ERR;
     }
 
-    ret = rename(filePathTemp.c_str(), filePath.c_str());
+    ret = rename(filePathTemp.c_str(), normalizedDstPath.c_str());
     if (ret < 0) {
         MEDIA_ERR_LOG("rename fail, ret: %{public}d, errno: %{public}d", ret, errno);
         DeleteFile(filePathTemp);

@@ -20,8 +20,10 @@
 #include <vector>
 
 #include "metadata.h"
+#include "photos_po.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 class EXPORT CloudMediaScanService {
 public:
     class ScanResult {
@@ -44,6 +46,7 @@ public:
         int32_t orientation{0};
         double aspectRatio{-2};
         int32_t exifRotate{0};
+        int64_t localAssetSize{0};
 
     public:
         std::string ToString() const;
@@ -54,6 +57,7 @@ public:
     int32_t ScanMetaData(const std::string& path, std::unique_ptr<Metadata>& data);
     int32_t ScanDownloadedFile(const std::string& path, CloudMediaScanService::ScanResult& result);
     void UpdateAndNotifyShootingModeAlbumIfNeeded(const CloudMediaScanService::ScanResult& scanResult);
+    int32_t ScanDownloadedFile(const PhotosPo &photoInfo, CloudMediaScanService::ScanResult& result);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_SERVICE_H

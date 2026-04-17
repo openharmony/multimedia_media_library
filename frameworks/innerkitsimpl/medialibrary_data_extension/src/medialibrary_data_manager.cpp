@@ -125,11 +125,14 @@
 #endif
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_upgrade_utils.h"
+#include "media_library_upgrade_manager.h"
 #include "settings_data_manager.h"
 #include "media_image_framework_utils.h"
 #include "global_scanner.h"
 #include "media_upgrade.h"
 #include <functional>
+#include "lcd_aging_manager.h"
+#include "media_library_upgrade_macros.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -450,7 +453,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     return E_OK;
 }
 
-static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t FillMediaSuffixForHistoryData(RdbStore& store)
 {
     MEDIA_INFO_LOG("start to fill media suffix for history data");
 
@@ -460,38 +463,35 @@ static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>
     const string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
                  " SET " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " = " + calculatedSuffix +
                  " WHERE " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " IS NULL";
-    int ret = store->ExecuteSql(sql);
+    int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "FillMediaSuffixForHistoryData failed: execute sql failed");
     MEDIA_INFO_LOG("end fill media suffix for history data");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_MEDIA_SUFFIX_COLUMN, "Photos", FillMediaSuffixForHistoryData);
 
-static void AddImageFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store)
+static int32_t FixDbUpgradeFromApi15(RdbStore &store)
 {
+    MEDIA_INFO_LOG("Start VERSION_ANALYZE_PHOTOS");
+    MediaLibraryRdbUtils::AnalyzePhotosData();
+    MEDIA_INFO_LOG("End VERSION_ANALYZE_PHOTOS");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+    int32_t ret = FillMediaSuffixForHistoryData(store);
+    MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_DB_UPGRADE_FROM_API15, "Photos", FixDbUpgradeFromApi15);
+
+static int32_t AddImageFaceTagIdIndex(RdbStore& store)
+{
+    int32_t ret = store.ExecuteSql(CREATE_IMAGE_FACE_TAG_ID_INDEX);
     MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
-    int ret = store->ExecuteSql(CREATE_IMAGE_FACE_TAG_ID_INDEX);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddImageFaceTagIdIndex failed: execute sql failed");
-    MEDIA_INFO_LOG("end TAG_ID index for VISION_IMAGE_FACE_TABLE");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_IMAGE_FACE_TAG_ID_INDEX, "Vision", AddImageFaceTagIdIndex);
 
-static void AddGroupTagIndex(const shared_ptr<MediaLibraryRdbStore>& store)
-{
-    MEDIA_INFO_LOG("start to add group tag index");
-
-    int ret = store->ExecuteSql(CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddGroupTagIndex failed: execute sql failed");
-
-    MEDIA_INFO_LOG("end add group tag index");
-}
-
-static void AddAnalysisPhotoMapAssetIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("Adding map_asset index for ANALYSIS_PHOTO_MAP");
-    int ret = store->ExecuteSql(CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddAnalysisPhotoMapAssetIndex failed: execute sql failed");
-    MEDIA_INFO_LOG("end map_asset index for ANALYSIS_PHOTO_MAP");
-}
-
-static void FixTabExtDirtyData(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t FixTabExtDirtyData(RdbStore& store)
 {
     MEDIA_INFO_LOG("start to fix tab ext dirty data");
     std::string cleanExtDirtyDataSql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
@@ -501,15 +501,14 @@ static void FixTabExtDirtyData(const shared_ptr<MediaLibraryRdbStore>& store)
                             " WHERE " + PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID +
                             " = " + PhotoExtColumn::PHOTOS_EXT_TABLE + "." + PhotoExtColumn::PHOTO_ID +
                             ");";
-    int ret = store->ExecuteSql(cleanExtDirtyDataSql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "FixTabExtDirtyData failed: execute sql failed");
+    int32_t ret = store.ExecuteSql(cleanExtDirtyDataSql);
     MEDIA_INFO_LOG("end fix tab ext dirty data");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_TAB_EXT_DIRTY_DATA, "OtherTable", FixTabExtDirtyData);
 
-static void UpdateIsRectificationCover(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+static int32_t UpdateIsRectificationCover(RdbStore& store)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
-
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.NotEqualTo(PhotoColumn::PHOTO_COVER_POSITION, 0);
 
@@ -517,22 +516,24 @@ static void UpdateIsRectificationCover(const shared_ptr<MediaLibraryRdbStore> rd
     values.PutInt(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
 
     int32_t changedRows = 0;
-    int32_t err = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update is_rectification_cover failed, err: %{public}d", err);
+    int32_t err = store.Update(changedRows, values, predicates);
+    return err;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_IS_RECTIFICATION_COVER, "Photos", UpdateIsRectificationCover);
 
-static void FixOrientation180DirtyThumbnail(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t FixOrientation180DirtyThumbnail(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start to fix dirty thumbnail");
     std::string sql =
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 6" +
         " WHERE " + PhotoColumn::PHOTO_ORIENTATION + " = 180 AND " + MediaColumn::MEDIA_TYPE + " = 1";
-    int ret = store->ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End fix dirty thumbnail");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL, "Photos", FixOrientation180DirtyThumbnail);
 
-static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t AddShootingModeAlbumIndex(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start to add shooting mode album index");
     const vector<string> sqls = {
@@ -542,29 +543,67 @@ static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
         PhotoUpgrade::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
         PhotoUpgrade::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
     };
+    int32_t ret = NativeRdb::E_OK;
     for (const auto& sql : sqls) {
-        int ret = store->ExecuteSql(sql);
+        ret = store.ExecuteSql(sql);
         CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
     }
     MEDIA_INFO_LOG("End add shooting mode album index");
+    return ret;
 }
 
-static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store, int32_t version)
+static int32_t AddHistoryPanoramaModeAlbumData(RdbStore& store)
 {
-    MEDIA_INFO_LOG("Start to Update burst mode album index");
-    const vector<string> sqls = {
-        PhotoUpgrade::DROP_BURST_MODE_ALBUM_INDEX,
-        PhotoUpgrade::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
-    };
-    for (size_t i = 0; i < sqls.size(); i++) {
-        int ret = store->ExecuteSql(sqls[i]);
-        RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
-        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    }
-    MEDIA_INFO_LOG("End Update burst mode album index");
+    MEDIA_INFO_LOG("Start to add panorama mode album data");
+    const string panoramaModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::PANORAMA_MODE));
+    const string sql = "UPDATE Photos SET shooting_mode = " + panoramaModeAlbumType +
+        " WHERE shooting_mode_tag IN (" + CAMERA_CUSTOM_SM_PANORAMA +
+        ", " + CAMERA_CUSTOM_SM_PHOTO_STITCHING + ")";
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End add panorama mode album data");
+    return ret;
 }
 
-static void DeleteDirtytagIdFromFaceTagTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t AddHistoryAIHighPixelModeAlbumData(RdbStore& store)
+{
+    MEDIA_INFO_LOG("Start to add ai high pixel mode album data");
+    const string highPixelModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::HIGH_PIXEL));
+    const string sql = "UPDATE Photos SET shooting_mode = " + highPixelModeAlbumType +
+        " WHERE shooting_mode_tag = " + AI_HIGH_PIXEL_TAG;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End add ai high pixel mode album data");
+    return ret;
+}
+
+static int32_t UpdateAllShootingModeAlbums(RdbStore& store)
+{
+    vector<int32_t> albumIds;
+    vector<string> albumIdsStr;
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds), E_ERR,
+        "Failed to query shooting mode album ids");
+    for (auto albumId : albumIds) {
+        albumIdsStr.push_back(to_string(albumId));
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_ERR);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+    return NativeRdb::E_OK;
+}
+
+static int32_t VersionShootingModeAlbum(RdbStore& store)
+{
+    int32_t ret = AddShootingModeAlbumIndex(store);
+    ret = AddHistoryPanoramaModeAlbumData(store);
+    ret = AddHistoryAIHighPixelModeAlbumData(store);
+    ret = UpdateAllShootingModeAlbums(store);
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION,
+    "Album", VersionShootingModeAlbum);
+
+static int32_t DeleteDirtytagIdFromFaceTagTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     MEDIA_INFO_LOG("Start to update face tag table");
@@ -575,13 +614,14 @@ static void DeleteDirtytagIdFromFaceTagTable(const shared_ptr<MediaLibraryRdbSto
         VISION_FACE_TAG_TABLE + "." + TAG_ID + " = " + VISION_VIDEO_FACE_TABLE + "." + TAG_ID +
         " ) AND NOT EXISTS ( SELECT 1 FROM " + VISION_IMAGE_FACE_TABLE + " WHERE " + VISION_FACE_TAG_TABLE + "." +
         TAG_ID + " = " + VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " ) )";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End update face tag table");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-static void UpdateVideoFaceTagId(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t UpdateVideoFaceTagId(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     MEDIA_INFO_LOG("Start to update video face tagId");
@@ -590,13 +630,14 @@ static void UpdateVideoFaceTagId(const shared_ptr<MediaLibraryRdbStore>& store,
         VISION_VIDEO_FACE_TABLE + "." + TAG_ID + " FROM " + VISION_VIDEO_FACE_TABLE +
         " WHERE NOT EXISTS ( SELECT 1 FROM " + VISION_FACE_TAG_TABLE + " WHERE " + VISION_FACE_TAG_TABLE + "." +
         TAG_ID + " = " + VISION_VIDEO_FACE_TABLE + "." + TAG_ID + " ) ) OR " + TAG_ID + " = -2";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End update video face tagId");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-static void UpdateVideoTotalFaceId(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t UpdateVideoTotalFaceId(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     MEDIA_INFO_LOG("Start to update face id of video total");
@@ -609,133 +650,134 @@ static void UpdateVideoTotalFaceId(const shared_ptr<MediaLibraryRdbStore>& store
         ") AS ser_info WHERE ser_info." + FILE_ID + " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + " ) WHERE " +
         " EXISTS (SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + VISION_VIDEO_FACE_TABLE + "." + FILE_ID +
         " = " + VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ") AND " + VISION_VIDEO_TOTAL_TABLE + "." + FACE + " = 2";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End update face id of video total");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t UpdateVideoFaceTagid(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start UpdateVideoFaceTagid");
+    int32_t upgradedIndex = 0;
+    int32_t ret = DeleteDirtytagIdFromFaceTagTable(store, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
+    ret = UpdateVideoFaceTagId(store, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
+    ret = UpdateVideoTotalFaceId(store, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
+    MEDIA_INFO_LOG("end UpdateVideoFaceTagid");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_VIDEO_FACE_TAGID, "Vision", UpdateVideoFaceTagid);
+
+static int32_t Update3DGSAlbumInternal(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start to Update 3DGS mode album");
     vector<string> albumIdsStr;
     int32_t albumId = -1;
-    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
-        ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), "Failed to query 3DGS album id");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_ERR);
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), E_ERR, "Failed to query 3DGS album id");
     albumIdsStr.push_back(to_string(albumId));
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(store, albumIdsStr);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
     MEDIA_INFO_LOG("End Update 3DGS mode album");
+    return NativeRdb::E_OK;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_3DGS_MODE, "Album", Update3DGSAlbumInternal);
 
-static void InsertLabelAndFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t InsertLabelAndFaceToAnalysisVideoTotalTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     const string sql = "INSERT INTO " + VISION_VIDEO_TOTAL_TABLE + " ( " + FILE_ID + ", " + STATUS + ", " + LABEL +
         ", " + FACE + " ) SELECT " + FILE_ID + ", " + STATUS + ", " + LABEL + ", " + FACE + " FROM " +
         VISION_TOTAL_TABLE + " WHERE " + FILE_ID + " IN ( SELECT " + FILE_ID + " FROM " + PHOTOS_TABLE +
         " WHERE media_type = 2 )";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End insert face and label to vision");
-}
-
-static void CheckFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
-    int32_t version, int32_t upgradedIndex)
-{
-    const std::string checkFaceSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
-        FACE + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
-        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + FILE_ID + " = " +
-        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
-    int ret = store->ExecuteSql(checkFaceSql);
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
     RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End check face to vision");
+    return ret;
 }
 
-static void CheckLabelToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t CheckLabelToAnalysisVideoTotalTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     const std::string checkLabelSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
         LABEL + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
         "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_LABEL_TABLE + " WHERE " + FILE_ID + " = " +
         VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
-    int ret = store->ExecuteSql(checkLabelSql);
+    int32_t ret = store.ExecuteSql(checkLabelSql);
+    MEDIA_INFO_LOG("End check face and label");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
     RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End check label to vision");
+    return ret;
 }
 
-static void UpdateFaceToAnalysisVideoTotalTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t CheckFaceToAnalysisVideoTotalTable(RdbStore& store,
+    int32_t version, int32_t upgradedIndex)
+{
+    const std::string checkFaceSql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " +
+        FACE + " = 0, " + STATUS + " = CASE WHEN " + STATUS + " = 1 THEN 0 ELSE " + STATUS + " END " +
+        "WHERE NOT EXISTS (" + "SELECT 1 FROM " + VISION_VIDEO_FACE_TABLE + " WHERE " + FILE_ID + " = " +
+        VISION_VIDEO_TOTAL_TABLE + "." + FILE_ID + ");";
+    int32_t ret = store.ExecuteSql(checkFaceSql);
+    MEDIA_INFO_LOG("End check face and label");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
+}
+
+static int32_t UpdateFaceToAnalysisVideoTotalTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     const string sql = "UPDATE " + VISION_VIDEO_TOTAL_TABLE + " SET " + FACE + " = 2 WHERE " + FACE + " = 1";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End upgrade face for video total");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-static void UpdateLabelAndFaceToAnalysisTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t UpdateLabelAndFaceToAnalysisTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     const string sql = "UPDATE " + VISION_TOTAL_TABLE + " SET " + LABEL + " = 0, " + FACE + " = 0 WHERE " +
         FILE_ID + " IN ( SELECT " + FILE_ID + " FROM " + PHOTOS_TABLE + " WHERE media_type = 2 )";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End upgrade face and label");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-static void UpdateStatusToAnalysisTable(const shared_ptr<MediaLibraryRdbStore>& store,
+static int32_t UpdateStatusToAnalysisTable(RdbStore& store,
     int32_t version, int32_t upgradedIndex)
 {
     const string sql = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0 WHERE " + FILE_ID +" IN (SELECT " +
         FILE_ID + " FROM " + PHOTOS_TABLE + " WHERE media_type = 2) AND " + STATUS + " = 1";
-    int ret = store->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End upgrade status of video data");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, upgradedIndex, ret);
+    return ret;
 }
 
-
-static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t UpdateVideoLableFace(RdbStore &store)
 {
-    MEDIA_INFO_LOG("Start to add panorama mode album data");
-    const string panoramaModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::PANORAMA_MODE));
-    const string sql = "UPDATE Photos SET shooting_mode = " + panoramaModeAlbumType +
-        " WHERE shooting_mode_tag IN (" + CAMERA_CUSTOM_SM_PANORAMA +
-        ", " + CAMERA_CUSTOM_SM_PHOTO_STITCHING + ")";
-    int ret = store->ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End add panorama mode album data");
+    MEDIA_INFO_LOG("start UpdateVideoLableFace");
+    int32_t upgradedIndex = 0;
+    int32_t ret = InsertLabelAndFaceToAnalysisVideoTotalTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    ret = CheckLabelToAnalysisVideoTotalTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    ret = CheckFaceToAnalysisVideoTotalTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    ret = UpdateFaceToAnalysisVideoTotalTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    ret = UpdateLabelAndFaceToAnalysisTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    ret = UpdateStatusToAnalysisTable(store, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
+    MEDIA_INFO_LOG("end UpdateVideoLableFace");
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_VIDEO_LABLE_FACE, "Vision", UpdateVideoLableFace);
 
-static void AddHistoryAIHighPixelModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
-{
-    MEDIA_INFO_LOG("Start to add ai high pixel mode album data");
-    const string highPixelModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::HIGH_PIXEL));
-    const string sql = "UPDATE Photos SET shooting_mode = " + highPixelModeAlbumType +
-        " WHERE shooting_mode_tag = " + AI_HIGH_PIXEL_TAG;
-    int ret = store->ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End add ai high pixel mode album data");
-}
-
-static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
-{
-    vector<int32_t> albumIds;
-    vector<string> albumIdsStr;
-    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds),
-        "Failed to query shooting mode album ids");
-    for (auto albumId : albumIds) {
-        albumIdsStr.push_back(to_string(albumId));
-    }
-
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
-}
-
-static void UpdateQuickCaptureAndTimeLapseAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+static int32_t UpdateQuickCaptureAndTimeLapseAlbums(RdbStore& store)
 {
     vector<string> albumIdsStr;
     vector<ShootingModeAlbumType> albumTypes;
@@ -749,10 +791,15 @@ static void UpdateQuickCaptureAndTimeLapseAlbums(const shared_ptr<MediaLibraryRd
         }
     }
 
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, NativeRdb::E_ERROR);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+    return NativeRdb::E_OK;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, "Album",
+    UpdateQuickCaptureAndTimeLapseAlbums);
 
-static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& store)
+static int32_t SetExifRotateAfterAddColumn(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start to set exif rotate");
     std::string sql =
@@ -764,137 +811,117 @@ static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& 
             " WHEN exif_rotate = 0 AND media_type = 1 AND orientation = 270 THEN 8 "
             " ELSE exif_rotate " +
         " END ";
-    int ret = store->ExecuteSql(sql);
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End set exif rotate");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE, 0, ret);
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE, "Photos", SetExifRotateAfterAddColumn);
 
-static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+static int32_t UpdateBurstModeAlbumIndex(RdbStore &store)
 {
-    MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
-    int32_t errCode = 0;
+    MEDIA_INFO_LOG("Start to Update burst mode album index");
+    const vector<string> sqls = {
+        PhotoUpgrade::DROP_BURST_MODE_ALBUM_INDEX,
+        PhotoUpgrade::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+    };
+    int32_t ret = NativeRdb::E_OK;
+    for (size_t i = 0; i < sqls.size(); i++) {
+        ret = store.ExecuteSql(sqls[i]);
+        int num = static_cast<int>(i);
+        if (ret != NativeRdb::E_OK) {
+            RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, num, ret);
+        }
+    }
+    MEDIA_INFO_LOG("End Update burst mode album index");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, "Photos", UpdateBurstModeAlbumIndex);
+
+static int32_t MarkDateAddedDatesDataStatus(RdbStore& store)
+{
+    vector<string> columns = {"max(file_id)"};
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = store.QueryByStep(predicates, columns);
+    bool needUpdateDateAddedDatesData = true;
+    CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), NativeRdb::E_ERROR, "Query max file id failed");
+    int32_t maxFileId = GetInt32Val("max(file_id)", resultSet);
+    needUpdateDateAddedDatesData = (maxFileId > 0);
+
+    int32_t errCode = E_OK;
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
-    if (prefs != nullptr) {
-        int32_t detailTimeFixed = prefs->GetInt(DETAIL_TIME_FIXED, 0);
-        MEDIA_INFO_LOG("prefs current detailTimeFixed: %{public}d", detailTimeFixed);
-        if (detailTimeFixed == NEED_FIXED) {
-            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
-            MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
-            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-            prefs->PutInt(DETAIL_TIME_FIXED, ALREADY_FIXED);
-            prefs->FlushSync();
-            MEDIA_INFO_LOG("detailTimeFixed set to: %{public}d", ALREADY_FIXED);
-        }
-        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
-    }
-    MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_FILEID");
-    MediaLibraryRdbStore::AddIndexForFileIdAsync(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_INDEX_FOR_FILEID");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
-    MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_INDEX_FOR_COVER");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
-    if (prefs != nullptr) {
-        int32_t thumbnailVisibleFixed = prefs->GetInt(THUMBNAIL_VISIBLE_FIXED, 0);
-        MEDIA_INFO_LOG("prefs current thumbnailVisibleFixed: %{public}d", thumbnailVisibleFixed);
-        if (thumbnailVisibleFixed == NEED_FIXED) {
-            MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
-            prefs->PutInt(THUMBNAIL_VISIBLE_FIXED, ALREADY_FIXED);
-            prefs->FlushSync();
-            MEDIA_INFO_LOG("thumbnailVisibleFixed set to: %{public}d", ALREADY_FIXED);
-        }
-        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
-    }
-    MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
-    MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_READY_COUNT_INDEX");
-    MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_READY_COUNT_INDEX");
+        NativePreferences::PreferencesHelper::GetPreferences(
+            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs != nullptr, NativeRdb::E_ERROR,
+        "GetPreferences returned nullptr, errcode: %{public}d", errCode);
+    const string isFinishedKeyName = "is_task_finished";
+    const string maxFileIdKeyName = "max_file_id";
+    prefs->PutInt(isFinishedKeyName, needUpdateDateAddedDatesData ? 0 : 1);
+    prefs->PutInt(maxFileIdKeyName, maxFileId);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("Mark date added dates need update: %{public}d", needUpdateDateAddedDatesData ? 1 : 0);
+    return NativeRdb::E_OK;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY, "Photos", MarkDateAddedDatesDataStatus);
 
-static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+static int32_t UpdateCinematicVideoAlbum(RdbStore& store)
 {
-    MEDIA_INFO_LOG("Start VERSION_REVERT_FIX_DATE_ADDED_INDEX");
-    MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_REVERT_FIX_DATE_ADDED_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_INDEX");
-    MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_PHOTO_DATEADD_INDEX");
-    MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_PHOTO_DATEADD_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_REFRESH_PERMISSION_APPID");
-    MediaLibraryRdbUtils::TransformAppId2TokenId(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_REFRESH_PERMISSION_APPID");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
-    MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
-    PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_IDX");
-    PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_IDX");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
-    MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
-
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
-    MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
-    MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
+    MEDIA_INFO_LOG("Start update cinematic video album");
+    int32_t albumId = -1;
+    CHECK_AND_RETURN_RET_LOG(
+        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::CINEMATIC_VIDEO_ALBUM, albumId),
+        NativeRdb::E_ERROR,
+        "Failed to query albumId of cinematic video album");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, NativeRdb::E_ERROR, "rdbStore is nullptr");
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { std::to_string(albumId) });
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, NativeRdb::E_ERROR, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, std::to_string(albumId)), NotifyType::NOTIFY_ADD);
+    MEDIA_INFO_LOG("End update cinematic video album, albumId: %{public}d", albumId);
+    return NativeRdb::E_OK;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, "Album", UpdateCinematicVideoAlbum);
 
-static void UpdatePhotoChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
-    int32_t index)
+static int32_t UpdatePhotoChangeTime(RdbStore &rdbStore, int32_t version, int32_t index)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
-
     MEDIA_INFO_LOG("Start updating photo change time");
     const string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
         " SET " + PhotoColumn::PHOTO_CHANGE_TIME + " = " + PhotoColumn::MEDIA_DATE_MODIFIED;
-    int ret = rdbStore->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = rdbStore.ExecuteSql(sql);
     MEDIA_INFO_LOG("End updating photo change time");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    return ret;
 }
 
-static void UpdatePhotoAlbumChangeTime(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t version,
-    int32_t index)
+static int32_t UpdatePhotoAlbumChangeTime(RdbStore &store, int32_t version, int32_t index)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
-
     MEDIA_INFO_LOG("Start updating photo album change time");
     const string sql = "UPDATE " + PhotoAlbumColumns::TABLE +
         " SET " + PhotoAlbumColumns::CHANGE_TIME + " = " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED;
-    int ret = rdbStore->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End updating photo album change time");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, index, ret);
+    return ret;
 }
 
-static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
+static int32_t AddChangeTime(RdbStore &store)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+    MEDIA_INFO_LOG("start AddChangeTime");
+    int32_t index = 0;
+    int32_t ret = UpdatePhotoChangeTime(store, VERSION_ADD_CHANGE_TIME, index++);
+    ret = UpdatePhotoAlbumChangeTime(store, VERSION_ADD_CHANGE_TIME, index++);
+    MEDIA_INFO_LOG("end AddChangeTime");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_CHANGE_TIME, "Photos", AddChangeTime);
 
+static int32_t FillSouthDeviceType(RdbStore& store)
+{
     auto southDeviceType = SouthDeviceType::SOUTH_DEVICE_CLOUD;
     auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
     if (switchStatus == SwitchStatus::HDC) {
@@ -909,12 +936,15 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(southDeviceType));
     int32_t changedRows = 0;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+    int32_t ret = store.Update(changedRows, values, predicates);
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_SOUTH_DEVICE_TYPE, 0, ret);
+    return ret;
 }
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_SOUTH_DEVICE_TYPE, "Photos", FillSouthDeviceType);
 
-static void UpdatePhotoAlbumHidden(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
+static int32_t UpdatePhotoAlbumHidden(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start to Update photoalbum hidden column");
     std::string sql =
@@ -923,399 +953,13 @@ static void UpdatePhotoAlbumHidden(const shared_ptr<MediaLibraryRdbStore>& rdbSt
         " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) +
         " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
         " AND " + PhotoAlbumColumns::ALBUM_COUNT + " = 0";
-    int ret = rdbStore->ExecuteSql(sql);
-    RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    int32_t ret = store.ExecuteSql(sql);
     MEDIA_INFO_LOG("End Update photoalbum hidden column");
+    CHECK_AND_RETURN_RET(ret != NativeRdb::E_OK, NativeRdb::E_OK);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_PHOTO_ALBUM_HIDDEN, 0, ret);
+    return ret;
 }
-
-static void MarkDateAddedDatesDataStatus(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
-{
-    vector<string> columns = {"max(file_id)"};
-    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    auto resultSet = rdbStore->QueryByStep(predicates, columns);
-    bool needUpdateDateAddedDatesData = true;
-    CHECK_AND_RETURN_LOG(TryToGoToFirstRow(resultSet), "Query max file id failed");
-    int32_t maxFileId = GetInt32Val("max(file_id)", resultSet);
-    needUpdateDateAddedDatesData = (maxFileId > 0);
-
-    int32_t errCode = E_OK;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(
-            PhotoDayMonthYearOperation::DATE_ADDED_DATE_UPGRADE_XML, errCode);
-    CHECK_AND_RETURN_LOG(prefs != nullptr, "GetPreferences returned nullptr, errcode: %{public}d", errCode);
-    const string isFinishedKeyName = "is_task_finished";
-    const string maxFileIdKeyName = "max_file_id";
-    prefs->PutInt(isFinishedKeyName, needUpdateDateAddedDatesData ? 0 : 1);
-    prefs->PutInt(maxFileIdKeyName, maxFileId);
-    prefs->FlushSync();
-    MEDIA_INFO_LOG("Mark date added dates need update: %{public}d", needUpdateDateAddedDatesData ? 1 : 0);
-}
-
-static void UpdateCinematicVideoAlbum(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
-{
-    MEDIA_INFO_LOG("Start update cinematic video album");
-    int32_t albumId = -1;
-    CHECK_AND_RETURN_LOG(
-        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::CINEMATIC_VIDEO_ALBUM, albumId),
-        "Failed to query albumId of cinematic video album");
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { std::to_string(albumId) });
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, std::to_string(albumId)), NotifyType::NOTIFY_ADD);
-    MEDIA_INFO_LOG("End update cinematic video album, albumId: %{public}d", albumId);
-}
-
-void HandleUpgradeRdbAsyncPart6(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_ADD_CHANGE_TIME &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CHANGE_TIME, false)) {
-        int32_t index = 0;
-        UpdatePhotoChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
-        UpdatePhotoAlbumChangeTime(rdbStore, VERSION_ADD_CHANGE_TIME, index++);
-        rdbStore->SetOldVersion(VERSION_ADD_CHANGE_TIME);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CHANGE_TIME, false);
-    }
-
-    if (oldVersion < VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false)) {
-        MediaLibraryRdbStore::DropPhotoStatusForSearchIndex(rdbStore, VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
-        rdbStore->SetOldVersion(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_DROP_PHOTO_STATUS_FOR_SEARCH_INDEX, false);
-    }
-
-    if (oldVersion < VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY, false)) {
-        MarkDateAddedDatesDataStatus(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_DATE_ADDED_YEAR_MONTH_DAY, false);
-    }
-
-    if (oldVersion < VERSION_ADD_CINEMATIC_VIDEO_ALBUM &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, false)) {
-        UpdateCinematicVideoAlbum(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_CINEMATIC_VIDEO_ALBUM);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_CINEMATIC_VIDEO_ALBUM, false);
-    }
-}
-
-void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX, false)) {
-        MediaLibraryRdbStore::AddVideoFaceTagIdIndex(rdbStore, VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX);
-        rdbStore->SetOldVersion(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX, false);
-    }
-
-    if (oldVersion < VERSION_UPDATE_VIDEO_LABLE_FACE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_LABLE_FACE, false)) {
-        int32_t upgradedIndex = 0;
-        InsertLabelAndFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        CheckFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        CheckLabelToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        UpdateFaceToAnalysisVideoTotalTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        UpdateLabelAndFaceToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        UpdateStatusToAnalysisTable(rdbStore, VERSION_UPDATE_VIDEO_LABLE_FACE, upgradedIndex++);
-        rdbStore->SetOldVersion(VERSION_UPDATE_VIDEO_LABLE_FACE);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_LABLE_FACE, false);
-    }
-
-    if (oldVersion < VERSION_UPDATE_VIDEO_FACE_TAGID &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_VIDEO_FACE_TAGID, false)) {
-        int32_t upgradedIndex = 0;
-        DeleteDirtytagIdFromFaceTagTable(rdbStore, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
-        UpdateVideoFaceTagId(rdbStore, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
-        UpdateVideoTotalFaceId(rdbStore, VERSION_UPDATE_VIDEO_FACE_TAGID, upgradedIndex++);
-        rdbStore->SetOldVersion(VERSION_UPDATE_VIDEO_FACE_TAGID);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_VIDEO_FACE_TAGID, false);
-    }
-
-    if (oldVersion < VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false)) {
-        UpdateQuickCaptureAndTimeLapseAlbums(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_QUICK_CAPTURE_AND_TIME_LAPSE, false);
-    }
-
-    if (oldVersion < VERSION_ADD_PET_TABLES &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PET_TABLES, false)) {
-        MediaLibraryRdbStore::AddPetTagIdIndex(rdbStore, VERSION_ADD_PET_TABLES);
-        rdbStore->SetOldVersion(VERSION_ADD_PET_TABLES);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PET_TABLES, false);
-    }
-
-    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_HIDDEN &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false)) {
-        UpdatePhotoAlbumHidden(rdbStore, VERSION_ADD_PHOTO_ALBUM_HIDDEN);
-        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_ALBUM_HIDDEN);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_PHOTO_ALBUM_HIDDEN, false);
-    }
-    HandleUpgradeRdbAsyncPart6(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
-
-void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false)) {
-        MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(rdbStore, VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
-        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false);
-    }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false)) {
-        MediaLibraryRdbStore::AddIndexForCloudAndPitaya(rdbStore, VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
-        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false);
-    }
-
-    if (oldVersion < VERSION_ADD_3DGS_MODE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
-        UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
-        Update3DGSAlbumInternal(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
-    }
-
-    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
-        MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
-        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
-    }
-
-    if (oldVersion < VERSION_UPDATE_BURST_MODE_ALBUM_INDEX &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false)) {
-        UpdateBurstModeAlbumIndex(rdbStore, VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
-        rdbStore->SetOldVersion(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false);
-    }
-
-    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false)) {
-        MediaLibraryRdbStore::UpdateIndexDateAdded(rdbStore, VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
-        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false);
-    }
-    HandleUpgradeRdbAsyncPart5(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
-
-void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
-        MEDIA_INFO_LOG("Start VERSION_ADD_GROUP_TAG_INDEX");
-        AddGroupTagIndex(rdbStore);
-        MEDIA_INFO_LOG("End VERSION_ADD_GROUP_TAG_INDEX");
-
-        MEDIA_INFO_LOG("Start VERSION_IMAGE_FACE_TAG_ID_INDEX");
-        AddImageFaceTagIdIndex(rdbStore);
-        MEDIA_INFO_LOG("End VERSION_IMAGE_FACE_TAG_ID_INDEX");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_PHOTO_SORT");
-        MediaLibraryRdbStore::AddPhotoSortIndex(rdbStore);
-        MEDIA_INFO_LOG("End VERSION_ADD_INDEX_FOR_PHOTO_SORT");
-
-        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_FROM_API18);
-    }
-
-    if (oldVersion < VERSION_TRANSFER_OWNERAPPID_TO_TOKENID) {
-        MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(rdbStore);
-        rdbStore->SetOldVersion(VERSION_TRANSFER_OWNERAPPID_TO_TOKENID);
-    }
-
-    if (oldVersion < VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE) {
-        SetExifRotateAfterAddColumn(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
-    }
-
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
-        AsyncUpgradeFromAllVersionFirstPart(rdbStore);
-        AsyncUpgradeFromAllVersionSecondPart(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_DB_UPGRADE_TO_API20, false);
-    }
-
-    if (oldVersion < VERSION_ADD_SOUTH_DEVICE_TYPE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, false)) {
-        FillSouthDeviceType(rdbStore, VERSION_ADD_SOUTH_DEVICE_TYPE);
-        rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
-    }
-    HandleUpgradeRdbAsyncPart4(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
-
-void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
-        MEDIA_INFO_LOG("Start VERSION_ANALYZE_PHOTOS");
-        MediaLibraryRdbUtils::AnalyzePhotosData();
-        MEDIA_INFO_LOG("End VERSION_ANALYZE_PHOTOS");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
-        FillMediaSuffixForHistoryData(rdbStore);
-        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
-
-        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_FROM_API15);
-    }
-
-    if (oldVersion < VERSION_FIX_TAB_EXT_DIRTY_DATA) {
-        FixTabExtDirtyData(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_TAB_EXT_DIRTY_DATA);
-    }
-
-    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
-        MEDIA_INFO_LOG("Start VERSION_ADD_IS_RECTIFICATION_COVER");
-        UpdateIsRectificationCover(rdbStore);
-        MEDIA_INFO_LOG("End VERSION_ADD_IS_RECTIFICATION_COVER");
-
-        rdbStore->SetOldVersion(VERSION_ADD_IS_RECTIFICATION_COVER);
-    }
-
-    if (oldVersion < VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL) {
-        FixOrientation180DirtyThumbnail(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL);
-    }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT) {
-        MediaLibraryRdbStore::AddPhotoSortIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT);
-    }
-
-    if (oldVersion < VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX) {
-        MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX);
-    }
-
-    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
-        AddShootingModeAlbumIndex(rdbStore);
-        AddHistoryPanoramaModeAlbumData(rdbStore);
-        AddHistoryAIHighPixelModeAlbumData(rdbStore);
-        UpdateAllShootingModeAlbums(rdbStore);
-        rdbStore->SetOldVersion(VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION);
-    }
-
-    HandleUpgradeRdbAsyncPart3(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
-
-void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
-        MediaLibraryRdbStore::UpdatePhotoQualityCloned(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_PHOTO_QUALITY_CLONED);
-    }
-
-    if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
-        FillMediaSuffixForHistoryData(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
-    }
-
-    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX) {
-        MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX);
-    }
-
-    if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
-        AddImageFaceTagIdIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_IMAGE_FACE_TAG_ID_INDEX);
-    }
-
-    if (oldVersion < VERSION_ADD_GROUP_TAG_INDEX) {
-        AddGroupTagIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_GROUP_TAG_INDEX);
-    }
-
-    if (oldVersion < VERSION_ANALYZE_PHOTOS) {
-        MediaLibraryRdbUtils::AnalyzePhotosData();
-        rdbStore->SetOldVersion(VERSION_ANALYZE_PHOTOS);
-    }
-
-    if (oldVersion < VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX) {
-        AddAnalysisPhotoMapAssetIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
-    }
-
-    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY) {
-        MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY);
-    }
-
-    if (oldVersion < VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX) {
-        MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX);
-    }
-
-    HandleUpgradeRdbAsyncPart2(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
-
-void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_ADD_READY_COUNT_INDEX) {
-        MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_READY_COUNT_INDEX);
-    }
-
-    if (oldVersion < VERSION_FIX_PICTURE_LCD_SIZE) {
-        MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_PICTURE_LCD_SIZE);
-    }
-
-    if (oldVersion < VERSION_REVERT_FIX_DATE_ADDED_INDEX) {
-        MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_REVERT_FIX_DATE_ADDED_INDEX);
-    }
-
-    if (oldVersion < VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX) {
-        MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX);
-    }
-
-    if (oldVersion < VERSION_ADD_PHOTO_DATEADD_INDEX) {
-        MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_DATEADD_INDEX);
-    }
-
-    if (oldVersion < VERSION_ADD_ALBUM_INDEX) {
-        MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_ALBUM_INDEX);
-    }
-
-    if (oldVersion < VERSION_REFRESH_PERMISSION_APPID) {
-        MediaLibraryRdbUtils::TransformAppId2TokenId(rdbStore);
-        rdbStore->SetOldVersion(VERSION_REFRESH_PERMISSION_APPID);
-    }
-
-    if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_AND_IDX) {
-        PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
-    }
-
-    if (oldVersion < VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL) {
-        MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL);
-    }
-
-    if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_IDX) {
-        PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_IDX);
-    }
-
-    if (oldVersion < VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX) {
-        MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
-    }
-
-    HandleUpgradeRdbAsyncPart1(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_ALBUM_HIDDEN, "Album", UpdatePhotoAlbumHidden);
 
 static void MultiStagesInitOperation()
 {
@@ -1323,52 +967,6 @@ static void MultiStagesInitOperation()
     MultiStagesVideoCaptureManager::GetInstance().Init();
 }
 
-void UpgradeAsync(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
-{
-    MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
-    // compare older version, update and set old version
-    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-        MediaLibraryRdbStore::CreateBurstIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
-    }
-
-    if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-        MediaLibraryRdbStore::UpdateBurstDirty(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
-    }
-
-    if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-        MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
-    }
-    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-        MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
-        MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
-        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-        rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
-    }
-    if (oldVersion < VERSION_MOVE_AUDIOS) {
-        MediaLibraryAudioOperations::MoveToMusic();
-        MediaLibraryRdbStore::ClearAudios(rdbStore);
-        rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
-    }
-    if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
-        MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
-    }
-    if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
-        MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_ADD_THUMBNAIL_VISIBLE);
-    }
-    if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
-        MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME);
-    }
-
-    HandleUpgradeRdbAsyncExtension(rdbStore, oldVersion);
-    // !! Do not add upgrade code here !!
-    rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
-}
 void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart)
 {
     std::thread([isInMediaLibraryOnStart] {
@@ -1381,9 +979,13 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart
         int32_t oldVersion = rdbStore->GetOldVersion();
         int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
         if (oldVersion != -1 && oldVersion < MEDIA_RDB_VERSION) {
-            UpgradeAsync(rdbStore, oldVersion);
+            // 使用新的数据库异步升级框架
+            UpgradeManagerConfig config(false, RDB_UPGRADE_EVENT, RDB_CONFIG, oldVersion, MEDIA_RDB_VERSION);
+            UpgradeManager::GetInstance().Initialize(config);
+            UpgradeManager::GetInstance().UpgradeAsync(*rdbStore->GetRaw().get());
         }
         // !! Do not add index here !!
+        MediaLibraryRdbStore::CheckAndAddPhotoTableColumns(rdbStore);
         MediaLibraryRdbStore::AddUpgradeIndex(rdbStore);
         RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, oldVersion, MEDIA_RDB_VERSION,
             false);

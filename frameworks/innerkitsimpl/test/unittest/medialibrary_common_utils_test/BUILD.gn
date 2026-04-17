@@ -70,4 +70,6 @@ ohos_unittest("medialibrary_common_utils_test") {
 
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+
+  cflags = ["-fno-access-control"]
 }

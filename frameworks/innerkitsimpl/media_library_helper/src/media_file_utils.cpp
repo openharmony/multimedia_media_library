@@ -2163,6 +2163,25 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
     return true;
 }
 
+bool MediaFileUtils::GetFileSizeAndTime(const std::string &filePath, size_t &size, uint64_t &addTime)
+{
+    struct stat statbuf;
+    if (lstat(filePath.c_str(), &statbuf) == -1) {
+        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno,
+            MediaFileUtils::DesensitizePath(filePath).c_str());
+        size = 0;
+        return false;
+    }
+    if (statbuf.st_size < 0) {
+        MEDIA_WARN_LOG("File size is negative, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+        size = 0;
+        return false;
+    }
+    size = static_cast<size_t>(statbuf.st_size);
+    addTime = static_cast<uint64_t>(statbuf.st_ctime);
+    return true;
+}
+
 bool MediaFileUtils::SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret)
 {
     const std::string split(MOVING_PHOTO_URI_SPLIT);

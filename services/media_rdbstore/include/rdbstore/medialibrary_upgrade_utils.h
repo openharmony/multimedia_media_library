@@ -18,14 +18,17 @@
  
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "upgrade_visibility.h"
  
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-static const std::string RDB_UPGRADE_EVENT = "/data/storage/el2/base/preferences/rdb_upgrade_events.xml";
-static const std::string RDB_FIX_RECORDS = "/data/storage/el2/base/preferences/rdb_fix_records.xml";
-static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
-static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
+#define RDB_UPGRADE_EVENT "/data/storage/el2/base/preferences/rdb_upgrade_events.xml"
+#define RDB_CONFIG "/data/storage/el2/base/preferences/rdb_config.xml"
+#define RDB_FIX_RECORDS "/data/storage/el2/base/preferences/rdb_fix_records.xml"
+#define DETAIL_TIME_FIXED "detail_time_fixed"
+#define THUMBNAIL_VISIBLE_FIXED "thumbnail_visible_fixed"
+// 需要状态管理的起始版本号 VERSION_FIX_DB_UPGRADE_TO_API20
+constexpr int32_t STATUS_MANAGEMENT_START_VERSION = 350;
 static const int32_t NEED_FIXED = 1;
 static const int32_t ALREADY_FIXED = 2;
 static constexpr uint32_t UPGRADE_EXCEPTION_VERSIONS_STR_LIMIT = 1024;
@@ -42,8 +45,9 @@ public:
     RdbUpgradeUtils() = delete;
     ~RdbUpgradeUtils() = delete;
  
-    EXPORT static bool HasUpgraded(int32_t version, bool isSync);
-    EXPORT static void SetUpgradeStatus(int32_t version, bool isSync);
+    UPGRADE_EXPORT static bool HasUpgraded(int32_t version, bool isSync, const std::string& path = RDB_UPGRADE_EVENT);
+    UPGRADE_EXPORT static void SetUpgradeStatus(int32_t version, bool isSync,
+        const std::string& path = RDB_UPGRADE_EVENT);
     static void AddMapValueToPreference();
     static void AddUpgradeDfxMessages(int32_t version, int32_t index, int32_t error);
     static void ReportUpgradeDfxMessages(int64_t startTime, int32_t srcVersion,

@@ -161,6 +161,7 @@ private:
     void InitFaCardAfterDataShareReady(const std::string &action);
 #endif
     int32_t RegisterDefaultNetObserver();
+    std::mutex registerDefaultNetObsLock_;
 };
 }  // namespace Media
 }  // namespace OHOS
