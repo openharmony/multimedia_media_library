@@ -40,6 +40,7 @@ inline static const std::string PHOTOS_SYNC_SWITCH_KEY = "photos_sync_options";
 inline static const std::string PHOTOS_USER_PROPERTY_URI =
     "datashare:///com.huawei.hmos.photos.provider.userPropertySettings";
 inline static const std::string PHOTOS_SYNC_SWITCH_USER_KEY = "photos_sync_options_user";
+inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_USER = "photos_all_album_upload_user";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD = "photos_all_album_upload";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_OFF = "0";
 static constexpr int32_t BASE_USER_RANGE = 200000;
@@ -165,6 +166,49 @@ static int32_t QueryParamInDeviceSettingData(const std::string &key, std::string
     return E_OK;
 }
 
+static int32_t UpdateParamInDeviceSettingData(const std::string &key, const std::string &value)
+{
+    MediaSettingDataHelper dataShareHelper;
+    if (!dataShareHelper) {
+        MEDIA_ERR_LOG("failed to init dataShareHelper");
+        return E_DB_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Update device key: %{public}s", key.c_str());
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("KEYWORD", key);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put("VALUE", value);
+
+    std::string updateUri = SETTING_DATA_COMMON_URI + "&key=" + key;
+    Uri uri(updateUri);
+    auto ret = dataShareHelper->UpdateEx(uri, predicates, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(ret.first == DataShare::E_OK, ret.first,
+        "update device key failed, err: %{public}d", ret.first);
+    return ret.first;
+}
+
+static int32_t InsertParamInDeviceSettingData(const std::string &key, const std::string &value)
+{
+    MediaSettingDataHelper dataShareHelper;
+    if (!dataShareHelper) {
+        MEDIA_ERR_LOG("failed to init dataShareHelper");
+        return E_DB_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Insert device key: %{public}s", key.c_str());
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put("KEYWORD", key);
+    valuesBucket.Put("VALUE", value);
+
+    std::string insertUri = SETTING_DATA_COMMON_URI + "&key=" + key;
+    Uri uri(insertUri);
+    auto ret = dataShareHelper->InsertEx(uri, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(ret.first == DataShare::E_OK, ret.first,
+        "insert device key failed, return: %{public}d", ret.first);
+    return ret.first;
+}
+
 SwitchStatus SettingsDataManager::GetPhotosSyncSwitchDeviceStatus()
 {
     std::string value;
@@ -270,9 +314,24 @@ static AlbumUploadSwitchStatus StringToAlbumUploadSwitchStatus(const std::string
 AlbumUploadSwitchStatus SettingsDataManager::GetAllAlbumUploadStatus()
 {
     std::string value;
-    auto ret = QueryParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, value);
+    auto ret = QueryParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD_USER, value);
     if (ret != E_OK) {
-        return AlbumUploadSwitchStatus::NONE;
+        MEDIA_INFO_LOG("query album upload user key failed, notify photos init");
+        int32_t notifyRet = NotifyPhotosSyncSwitchInitByUpdate();
+        if (notifyRet == E_OK) {
+            ret = QueryParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD_USER, value);
+            if (ret == E_OK) {
+                return StringToAlbumUploadSwitchStatus(value);
+            }
+            MEDIA_WARN_LOG("query album upload user key after init still failed");
+        } else {
+            MEDIA_WARN_LOG("notify photos init by datashare update failed, ret: %{public}d", notifyRet);
+        }
+        MEDIA_WARN_LOG("fallback to query album upload device key");
+        ret = QueryParamInDeviceSettingData(ALL_PHOTOS_ALBUM_UPLOAD, value);
+        if (ret != E_OK) {
+            return AlbumUploadSwitchStatus::NONE;
+        }
     }
     return StringToAlbumUploadSwitchStatus(value);
 }
@@ -325,8 +384,18 @@ int32_t SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload()
 {
     AlbumUploadSwitchStatus ret = GetAllAlbumUploadStatus();
     if (ret != AlbumUploadSwitchStatus::NONE) {
-        return UpdateParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+        int32_t updateRet = UpdateParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD_USER, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+        if (updateRet == E_OK) {
+            return updateRet;
+        }
+        MEDIA_WARN_LOG("update album upload user key failed, fallback to device key, ret: %{public}d", updateRet);
+        return UpdateParamInDeviceSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
     }
-    return InsertParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+    int32_t insertRet = InsertParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD_USER, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+    if (insertRet == E_OK) {
+        return insertRet;
+    }
+    MEDIA_WARN_LOG("insert album upload user key failed, fallback to device key, ret: %{public}d", insertRet);
+    return InsertParamInDeviceSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
 }
 }
