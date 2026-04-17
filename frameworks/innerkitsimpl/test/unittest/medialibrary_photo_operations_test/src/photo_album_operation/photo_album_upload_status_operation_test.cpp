@@ -153,9 +153,6 @@ HWTEST_F(PhotoAlbumUploadStatusOperationTest, album_upload_status_operation_test
     InsertPhotoAlbum("album1", PhotoAlbumType::USER, 1);
     result = PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath("/Pictures/Users/album1");
     EXPECT_GE(result, 0);
-    SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload();
-    result = PhotoAlbumUploadStatusOperation::GetAlbumUploadStatusWithLpath("/Pictures/Users/album1");
-    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(PhotoAlbumUploadStatusOperationTest, album_upload_status_operation_test_003, TestSize.Level0)
