@@ -296,12 +296,14 @@ export class PhotoPickerComponent extends ViewPU {
         } else if (null == o ? void 0 : o.has('SET_MOVINGPHOTO_STATE')) {
             this.proxy.send({ movingPhotoState: null === o ? void 0 : o.get('SET_MOVINGPHOTO_STATE')});
             console.info('PhotoPickerComponent onChanged: SET_MOVINGPHOTO_STATE');
-        } else if (o?.has('COMPLETED')) {
-            this.proxy.send({ 
-                completed: o.get('COMPLETED'),
-                date: o.get('COMPLETE_DATE')
-            });
-            console.info('PhotoPickerComponent onChanged: COMPLETED');
+        } else {
+            this.handleAnotherOnChanges(o);           
+        }
+    }
+
+    handleAnotherOnChanges(o) {
+        if(null == o ? void 0 : o?.has('COMPLETED')) {
+            this.onComplete(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
@@ -320,6 +322,14 @@ export class PhotoPickerComponent extends ViewPU {
             this.proxy.send({ itemClickResult: itemClickResult });
             console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
         }
+    }
+
+    onComplete(o) {
+        this.proxy.send({ 
+            completed: o.get('COMPLETED'),
+            date: o.get('COMPLETE_DATE') 
+        });
+        console.info('PhotoPickerComponent onChanged: COMPLETED');
     }
 
     onUpdateConfig(o) {
