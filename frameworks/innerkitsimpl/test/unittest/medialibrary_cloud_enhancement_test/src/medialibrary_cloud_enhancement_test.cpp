@@ -59,6 +59,7 @@
 #include "media_edit_utils.h"
 #endif
 #include "media_upgrade.h"
+#include "medialibrary_mock_tocken.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -110,6 +111,12 @@ static const uint8_t BUFFER[] = {
     40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138,
     0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 40, 162,
     138, 0, 40, 162, 138, 0, 40, 162, 138, 0, 255, 217
+};
+
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
+static const std::vector<std::string> perms = {
+    "ohos.permission.WRITE_IMAGEVIDEO"
 };
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
@@ -397,6 +404,18 @@ shared_ptr<NativeRdb::ResultSet> GetQueryResultSet(string photoId)
     return nullptr;
 }
 
+static void SetHapPermission()
+{
+    MEDIA_INFO_LOG("NotificationMergingTest start");
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+ 
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
+    MEDIA_INFO_LOG("NotificationMergingTest end");
+}
 
 void MediaLibraryCloudEnhancementTest::SetUpTestCase(void)
 {
@@ -420,6 +439,10 @@ void MediaLibraryCloudEnhancementTest::TearDownTestCase(void)
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
     MEDIA_INFO_LOG("Clean is finish");
 }
 
@@ -457,6 +480,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_init_001, TestSize.Level1)
 HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_enhancement_update_operation_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_handle_enhancement_update_operation_002 Start");
+    SetHapPermission();
     DataSharePredicates predicates;
     string photoUri = "file://media/Photo/1/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoUri);
@@ -491,13 +515,18 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_enhancement_update_ope
     MediaLibraryCommand cmd5(cancelAllTasksUri);
     cmd5.SetDataSharePred(predicates);
     ret = EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd5);
-    EXPECT_EQ(ret, -1);
+    EXPECT_EQ(ret, 0);
     uriStr = CONST_PAH_CLOUD_ENHANCEMENT_SYNC;
     Uri syncTasksUri(uriStr);
     MediaLibraryCommand cmd6(syncTasksUri);
     cmd6.SetDataSharePred(predicates);
     ret = EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd6);
-    EXPECT_EQ(ret, -1);
+    EXPECT_EQ(ret, 0);
+    // Clear permissions to avoid affecting other use cases
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
     MEDIA_INFO_LOG("manager_handle_enhancement_update_operation_002 End");
 }
 
@@ -653,11 +682,17 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_operation_007, 
 HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_operation_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_handle_cancel_all_operation_008 Start");
+    SetHapPermission();
     EnhancementManager &instance = EnhancementManager::GetInstance();
     int32_t result = instance.HandleCancelAllOperation();
-    EXPECT_EQ(result, -1);
+    EXPECT_EQ(result, 0);
+    // Clear permissions to avoid affecting other use cases
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
     result = instance.HandleCancelAllOperation();
-    EXPECT_EQ(result, -1);
+    EXPECT_EQ(result, -202);
     MEDIA_INFO_LOG("manager_handle_cancel_all_operation_008 End");
 }
 

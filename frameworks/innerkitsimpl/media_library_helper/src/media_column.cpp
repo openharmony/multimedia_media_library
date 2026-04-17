@@ -228,6 +228,9 @@ const std::string PhotoColumn::UNIQUE_ID = "unique_id";
 
 const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS = "livephoto_4d_status";
 const std::string PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR = "livephoto_4d_latest_pair";
+const std::string PhotoColumn::LOCAL_ASSET_SIZE = "local_asset_size";
+
+const std::string PhotoColumn::LCD_ASPECT_RATIO = "lcd_aspect_ratio";
 
 const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE, PHOTO_BURST_KEY,
@@ -254,7 +257,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_RISK_STATUS,
     PhotoColumn::PHOTO_DATE_ADDED_YEAR, PhotoColumn::PHOTO_DATE_ADDED_MONTH, PhotoColumn::PHOTO_DATE_ADDED_DAY,
     PhotoColumn::UNIQUE_ID, PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
-    PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR,
+    PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, PhotoColumn::PHOTO_HIDDEN_TIME,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -323,6 +326,7 @@ const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
 const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
 const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
 const std::string PhotoExtColumn::EDITDATA_SIZE = "editdata_size";
+const std::string PhotoExtColumn::LCD_FILE_MODIFY_TIME = "lcd_file_modify_time";
 
 }  // namespace Media
 }  // namespace OHOS

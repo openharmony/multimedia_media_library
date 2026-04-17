@@ -52,6 +52,9 @@
 #include "medialibrary_unistore_manager.h"
 #include "vision_photo_map_column.h"
 #include "location_column.h"
+#include "medialibrary_notify_new.h"
+#include "medialibrary_restore.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -979,5 +982,20 @@ int32_t MediaAlbumsService::GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &
     resultSet->Close();
     respBody.albumId = albumId;
     return E_OK;
+}
+
+void MediaAlbumsService::ReportFirstDbStatus()
+{
+    std::string cloneFlagStr = OHOS::system::GetParameter("multimedia.medialibrary.cloneFlag", "0");
+    bool currentCloningStatus = (cloneFlagStr != "0");
+    bool isRestoring = MediaLibraryRestore::GetInstance().IsRestoring();
+    if (currentCloningStatus) {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable",
+            "Database occupied by Clone application");
+    } else if (isRestoring) {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database corrupted");
+    } else {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
+    }
 }
 } // namespace OHOS::Media

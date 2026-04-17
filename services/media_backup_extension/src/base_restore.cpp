@@ -45,6 +45,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "media_values_bucket_utils.h"
+#include "medialibrary_notify_new.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -80,6 +81,12 @@ static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT
 static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND = 5000;
 static const std::string MEDIA_LIBRARY_PREF_XML = "/data/storage/el2/base/preferences/media_library_preferences.xml";
 static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_preferences_recovery_flag";
+
+const std::string PARAM_CLONE_SEARCH_STATUS = "persist.multimedia.media_analysis_service.clone_search_status";
+const std::string CLONE_SEARCH_INDEXING = "3";
+
+const std::string LCD_AGING_XML = "/data/storage/el2/base/preferences/lcd_aging.xml";
+const std::string LAST_LCD_AGING_END_TIME = "last_lcd_aging_end_time";
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -237,6 +244,7 @@ void BaseRestore::StartRestore(const std::string &backupRestoreDir, const std::s
     StopParameterForRestore();
     StopParameterForClone();
     SetMediaAnalysisClearDirtyDataParameter();
+    DelayLcdAgingTime();
 }
 
 int32_t BaseRestore::Init(void)
@@ -1577,6 +1585,14 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
     totalRowNum += rowNum;
 }
 
+static void SetUpdateSearchIndexForClone()
+{
+    MEDIA_INFO_LOG("Update search index update for clone operation");
+    bool retFlag = system::SetParameter(PARAM_CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set %{public}s to %{public}s",
+        PARAM_CLONE_SEARCH_STATUS.c_str(), CLONE_SEARCH_INDEXING.c_str());
+}
+
 void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std::string &upgradePath,
     std::string &restoreExInfo)
 {
@@ -1606,6 +1622,7 @@ void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std:
  	        totalFailCount_)
         .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()))
         .ReportUpgradeEnh(std::to_string(errorCode_), GetUpgradeEnhance());
+    SetUpdateSearchIndexForClone();
 }
 
 std::string BaseRestore::GetRestoreExInfo()
@@ -1758,6 +1775,7 @@ void BaseRestore::SetParameterForClone()
     MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database occupied by Clone application");
 }
 
 static void SetMediaLibraryRecoveryDone(bool flag)
@@ -1779,6 +1797,7 @@ void BaseRestore::StopParameterForClone()
     MEDIA_INFO_LOG("StopParameterForClone set 0");
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
     SetMediaLibraryRecoveryDone(true);
     MEDIA_INFO_LOG("SetMediaLibraryRecoveryDone set true");
 }
@@ -2403,6 +2422,18 @@ void BaseRestore::SetCloneParameterAndStopSync()
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
+}
+
+void BaseRestore::DelayLcdAgingTime()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(LCD_AGING_XML, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
+
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    prefs->PutLong(LAST_LCD_AGING_END_TIME, currentTime);
+    prefs->FlushSync();
 }
 } // namespace Media
 } // namespace OHOS

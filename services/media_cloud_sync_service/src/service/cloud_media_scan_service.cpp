@@ -25,6 +25,7 @@
 #include "metadata.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
+#include "moving_photo_file_utils.h"
 #include "photo_album_column.h"
 #include "scanner_utils.h"
 #include "shooting_mode_column.h"
@@ -170,5 +171,12 @@ std::string CloudMediaScanService::ScanResult::ToString() const
        << "frontCamera" << frontCamera << ", "
        << "subType" << subType;
     return ss.str();
+}
+
+int32_t CloudMediaScanService::ScanDownloadedFile(const PhotosPo &photoInfo, CloudMediaScanService::ScanResult& result)
+{
+    MovingPhotoFileUtils::GetLocalAssetSize(photoInfo.movingPhotoEffectMode.value_or(0), photoInfo.data.value_or(""),
+        photoInfo.size.value_or(0), result.localAssetSize);
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

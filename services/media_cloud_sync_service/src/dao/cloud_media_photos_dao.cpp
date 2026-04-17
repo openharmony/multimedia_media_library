@@ -413,6 +413,7 @@ void CloudMediaPhotosDao::UpdateRecordToDatabasePrepare(const CloudMediaPullData
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
         values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA));
+        values.Put(PhotoColumn::LOCAL_ASSET_SIZE, 0);
     }
     this->FillThumbStatus(values, mtimeChanged);
 }

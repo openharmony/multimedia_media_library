@@ -75,11 +75,13 @@ napi_value AlbumOrderNapi::CreateAlbumOrderNapi(napi_env env, unique_ptr<AlbumOr
 
     napi_value constructor;
     napi_ref constructorRef = photoAccessConstructor_;
-    CHECK_ARGS(env, napi_get_reference_value(env, constructorRef, &constructor), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_reference_value(env, constructorRef, &constructor), JS_E_INNER_FAIL,
+                         "Failed to create reference");
 
     napi_value result = nullptr;
     pOrderData_ = orderData.release();
-    CHECK_ARGS(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_E_INNER_FAIL,
+                         "Failed to create instance");
     pOrderData_ = nullptr;
     return result;
 }
@@ -123,10 +125,12 @@ void AlbumOrderNapi::SetAlbumOrderNapiProperties()
 napi_value AlbumOrderNapi::AlbumOrderNapiConstructor(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL,
+                         "Failed to get undefined value");
 
     napi_value thisVar = nullptr;
-    CHECK_ARGS(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr),
+                         JS_E_INNER_FAIL, "Failed to get callback info");
     if (thisVar == nullptr) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get cb info");
         return result;
@@ -137,8 +141,9 @@ napi_value AlbumOrderNapi::AlbumOrderNapiConstructor(napi_env env, napi_callback
     if (pOrderData_ != nullptr) {
         obj->SetAlbumOrderNapiProperties();
     }
-    CHECK_ARGS(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
-        AlbumOrderNapi::AlbumOrderNapiDestructor, nullptr, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
+        AlbumOrderNapi::AlbumOrderNapiDestructor, nullptr, nullptr), JS_E_INNER_FAIL,
+        "Failed to bind native object to JavaScript object");
     obj.release();
     return thisVar;
 }
@@ -156,22 +161,24 @@ void AlbumOrderNapi::AlbumOrderNapiDestructor(napi_env env, void *nativeObject, 
 napi_value UnwrapAlbumOrderObject(napi_env env, napi_callback_info info, AlbumOrderNapi** obj)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
 
     napi_value thisVar = nullptr;
-    CHECK_ARGS(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_E_INNER_FAIL,
+                         "Failed to get callback info");
     if (thisVar == nullptr) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get cb info");
         return result;
     }
 
-    CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_E_INNER_FAIL,
+                         "Failed to unwrap native object");
     if (obj == nullptr) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get album order napi object");
         return result;
     }
 
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -180,25 +187,28 @@ napi_value GetInt32Arg(napi_env env, napi_callback_info info, AlbumOrderNapi** o
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE];
     napi_value thisVar = nullptr;
-    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                         "Failed to get callback info");
     CHECK_COND(env, argc == ARGS_ONE, JS_E_PARAM_INVALID);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     napi_valuetype valueType = napi_undefined;
     if ((thisVar == nullptr) || (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok) || (valueType != napi_number)) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid arguments type!");
         return result;
     }
 
-    CHECK_ARGS(env, napi_get_value_int32(env, argv[PARAM0], &value), JS_E_INNER_FAIL);
-    CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_value_int32(env, argv[PARAM0], &value), JS_E_INNER_FAIL,
+                         "Failed to get int32 value");
+    CHECK_ARGS_WITH_MEG(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_E_INNER_FAIL,
+                         "Failed to unwrap native object");
     if (obj == nullptr) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get album order napi object");
         return result;
     }
 
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -208,7 +218,8 @@ napi_value AlbumOrderNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
     CHECK_NULLPTR_RET(UnwrapAlbumOrderObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetAlbumId(), &jsResult), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_create_int32(env, obj->GetAlbumId(), &jsResult), JS_E_INNER_FAIL,
+                         "Failed to get int32 value");
     return jsResult;
 }
 
@@ -220,7 +231,7 @@ napi_value AlbumOrderNapi::JSSetAlbumId(napi_env env, napi_callback_info info)
     obj->albumOrderPtr->SetAlbumId(albumId);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     return result;
 }
 
@@ -230,7 +241,8 @@ napi_value AlbumOrderNapi::JSGetAlbumOrder(napi_env env, napi_callback_info info
     CHECK_NULLPTR_RET(UnwrapAlbumOrderObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetAlbumOrder(), &jsResult), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_create_int32(env, obj->GetAlbumOrder(), &jsResult), JS_E_INNER_FAIL,
+                         "Failed to get int32 value");
     return jsResult;
 }
 
@@ -242,7 +254,7 @@ napi_value AlbumOrderNapi::JSSetAlbumOrder(napi_env env, napi_callback_info info
     obj->albumOrderPtr->SetAlbumOrder(albumOrder);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     return result;
 }
 
@@ -252,7 +264,8 @@ napi_value AlbumOrderNapi::JSGetOrderSection(napi_env env, napi_callback_info in
     CHECK_NULLPTR_RET(UnwrapAlbumOrderObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetOrderSection(), &jsResult), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_create_int32(env, obj->GetOrderSection(), &jsResult), JS_E_INNER_FAIL,
+                         "Failed to get int32 value");
     return jsResult;
 }
 
@@ -264,7 +277,7 @@ napi_value AlbumOrderNapi::JSSetOrderSection(napi_env env, napi_callback_info in
     obj->albumOrderPtr->SetOrderSection(orderSection);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     return result;
 }
 
@@ -274,7 +287,8 @@ napi_value AlbumOrderNapi::JSGetOrderType(napi_env env, napi_callback_info info)
     CHECK_NULLPTR_RET(UnwrapAlbumOrderObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetOrderType(), &jsResult), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_create_int32(env, obj->GetOrderType(), &jsResult), JS_E_INNER_FAIL,
+                                                 "Failed to get int32 value");
     return jsResult;
 }
 
@@ -286,7 +300,7 @@ napi_value AlbumOrderNapi::JSSetOrderType(napi_env env, napi_callback_info info)
     obj->albumOrderPtr->SetOrderType(orderType);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     return result;
 }
 
@@ -296,7 +310,8 @@ napi_value AlbumOrderNapi::JSGetOrderStatus(napi_env env, napi_callback_info inf
     CHECK_NULLPTR_RET(UnwrapAlbumOrderObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    CHECK_ARGS(env, napi_create_int32(env, obj->GetOrderStatus(), &jsResult), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_create_int32(env, obj->GetOrderStatus(), &jsResult), JS_E_INNER_FAIL,
+                                                "Failed to get int32 value");
     return jsResult;
 }
 
@@ -308,7 +323,7 @@ napi_value AlbumOrderNapi::JSSetOrderStatus(napi_env env, napi_callback_info inf
     obj->albumOrderPtr->SetOrderStatus(orderStatus);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL, "Failed to get undefined value");
     return result;
 }
 } // namespace OHOS::Media

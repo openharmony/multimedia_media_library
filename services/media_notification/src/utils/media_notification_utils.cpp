@@ -73,6 +73,15 @@ std::shared_ptr<MediaChangeInfo> NotificationUtils::UnmarshalInMultiMode(Parcel 
     return std::shared_ptr<MediaChangeInfo>(info);
 }
 
+std::shared_ptr<DbAvailabilityData> NotificationUtils::UnmarshalDbAvailabilityData(Parcel &parcel)
+{
+    std::shared_ptr<DbAvailabilityData> info = std::make_shared<DbAvailabilityData>();
+    if (!info->Unmarshalling(parcel)) {
+        return nullptr;
+    }
+    return info;
+}
+
 bool NotificationUtils::Marshalling(const std::shared_ptr<MediaChangeInfo> &mediaChangeInfo,
     std::vector<std::shared_ptr<Parcel>> &parcels)
 {
@@ -229,6 +238,16 @@ int32_t NotificationUtils::SendUserDefineNotification(const sptr<AAFwk::IDataAbi
     const std::shared_ptr<AAFwk::ChangeInfo> &changeInfo)
 {
     MEDIA_INFO_LOG("SendUserDefineNotification OnChangeExt");
+    CHECK_AND_RETURN_RET_LOG(dataObserver != nullptr && changeInfo != nullptr, E_ERR,
+        "dataObserver or changeInfo is nullptr");
+    dataObserver->OnChangeExt(*changeInfo);
+    return E_OK;
+}
+
+int32_t NotificationUtils::SendDbAvailabilityNotification(const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
+    const std::shared_ptr<AAFwk::ChangeInfo> &changeInfo)
+{
+    MEDIA_INFO_LOG("SendDbAvailabilityNotification OnChangeExt");
     CHECK_AND_RETURN_RET_LOG(dataObserver != nullptr && changeInfo != nullptr, E_ERR,
         "dataObserver or changeInfo is nullptr");
     dataObserver->OnChangeExt(*changeInfo);

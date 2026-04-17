@@ -171,7 +171,7 @@ std::string AlbumPluginTableEventHandler::ToString(const AlbumPlugin::AlbumPlugi
     return ss.str();
 }
 
-int32_t AlbumPluginTableEventHandler::FixMinecraftPE(NativeRdb::RdbStore &store, int32_t oldVersion, int32_t newVersion)
+int32_t AlbumPluginTableEventHandler::FixMinecraftPE(NativeRdb::RdbStore &store)
 {
     std::optional<AlbumPlugin::AlbumPluginRowData> mineCraftOp;
     this->FindMinecraftPE(mineCraftOp);
@@ -187,15 +187,6 @@ int32_t AlbumPluginTableEventHandler::FixMinecraftPE(NativeRdb::RdbStore &store,
     value.PutString(this->COLUMN_ALBUM_NAME_EN, mineCraftInfo.album_name_en);
     value.PutString(this->COLUMN_DUAL_ALBUM_NAME, mineCraftInfo.dual_album_name);
     int32_t changedRows = -1;
-    int32_t ret = store.Update(changedRows, value, predicates);
-    MEDIA_INFO_LOG("FixMinecraftPE completed, "
-        "oldVersion: %{public}d, newVersion: %{public}d, "
-        "ret: %{public}d, changedRows: %{public}d, object: %{public}s",
-        oldVersion,
-        newVersion,
-        ret,
-        changedRows,
-        this->ToString(mineCraftInfo).c_str());
-    return ret;
+    return store.Update(changedRows, value, predicates);
 }
 }  // namespace OHOS::Media

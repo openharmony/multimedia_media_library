@@ -1152,12 +1152,15 @@ static void GetContainsCompleteCallback(napi_env env, napi_status status, FetchF
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
-        CHECK_ARGS_RET_VOID(env,
-            napi_get_boolean(env, context->fetchResultIndexId != -1, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env,
+            napi_get_boolean(env, context->fetchResultIndexId != -1, &jsContext->data), JS_E_INNER_FAIL,
+            "Failed to create boolean value");
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -1178,12 +1181,15 @@ static void GetIndexCompleteCallback(napi_env env, napi_status status, FetchFile
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
-        CHECK_ARGS_RET_VOID(env,
-            napi_create_int32(env, context->fetchResultIndexId, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env,
+            napi_create_int32(env, context->fetchResultIndexId, &jsContext->data), JS_E_INNER_FAIL,
+            "Failed to get int32 value");
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -1337,9 +1343,11 @@ napi_value FetchFileResultNapi::JSContains(napi_env env, napi_callback_info info
     MediaLibraryTracer tracer;
     tracer.Start("JSContains");
 
-    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                        "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
+                        "Failed to get argument type");
     NAPI_ASSERT(env, valueType == napi_object || valueType == napi_undefined || valueType == napi_null,
         "Invalid argument type");
     napi_get_undefined(env, &result);
@@ -1386,10 +1394,12 @@ napi_value FetchFileResultNapi::JSGetObjectsByIndexSet(napi_env env, napi_callba
     MediaLibraryTracer tracer;
     tracer.Start("JSGetObjectsByIndexSet");
 
-    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                                "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
     bool isArray = false;
-    CHECK_ARGS(env, napi_is_array(env, argv[PARAM0], &isArray), JS_E_PARAM_INVALID);
+    CHECK_ARGS_WITH_MSG(env, napi_is_array(env, argv[PARAM0], &isArray), JS_E_PARAM_INVALID,
+                        "Failed to check argv[0] is array");
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
@@ -1434,9 +1444,11 @@ napi_value FetchFileResultNapi::JSGetIndex(napi_env env, napi_callback_info info
     MediaLibraryTracer tracer;
     tracer.Start("JSGetIndex");
 
-    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_E_INNER_FAIL,
+                        "Failed to get callback info");
     NAPI_ASSERT(env, argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_typeof(env, argv[PARAM0], &valueType), JS_E_INNER_FAIL,
+                        "Failed to check argument type");
     NAPI_ASSERT(env, valueType == napi_object || valueType == napi_undefined || valueType == napi_null,
         "Invalid argument type");
     napi_get_undefined(env, &result);

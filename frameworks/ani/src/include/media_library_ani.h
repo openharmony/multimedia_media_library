@@ -251,6 +251,7 @@ public:
         ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType);
     static ani_int PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_long aniTokenId,
         ani_string aniUri, ani_enum_item photoPermissionType);
+    static ani_object PhotoAccessCheckPhotoUrisReadPermission(ani_env *env, ani_object object, ani_object uris);
     static ani_int PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_string photoUri, ani_string albumUri, ani_object options);
     static ani_object PhotoAccessGetSupportedPhotoFormats(ani_env *env, ani_object object, ani_enum_item photoTypeAni);
@@ -288,6 +289,8 @@ public:
     static void PhotoAccessOffPhotoAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static void PhotoAccessOffHiddenAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
     static void PhotoAccessOffTrashedAlbumChange(ani_env *env, ani_object object, ani_fn_object callbackOff);
+    static void SetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName, ani_int mode);
+    static ani_int GetPreferredCompatibleMode(ani_env *env, ani_object object, ani_string bundleName);
     static ani_object QueryMediaDataReady(ani_env *env, ani_object object, ani_string dataKey);
     static ani_object PhotoAccessAcquireDebugDatabase(ani_env* env, ani_object object, ani_string betaIssueId,
         ani_string betaScenario);
@@ -382,6 +385,8 @@ struct MediaLibraryAsyncContext : public AniError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    std::vector<std::string> checkPhotoPermissionUris;
+    std::map<std::string, int32_t> uriPermissionStateMap;
     bool isForce = false;
     bool hiddenOnly = false;
     bool isAnalysisAlbum = false;
@@ -407,6 +412,8 @@ struct MediaLibraryAsyncContext : public AniError {
     bool boolResult = false;
     std::map<std::string, std::string> debugDatabaseMap;
     bool supportedHighResolution = false;
+    int32_t preferredCompatibleMode = 0;
+    std::vector<std::string> supportedMimeTypes;
     std::string bundleName;
 };
 } // namespace Media

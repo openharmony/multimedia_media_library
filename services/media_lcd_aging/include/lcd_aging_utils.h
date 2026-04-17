@@ -18,11 +18,24 @@
 
 #include <vector>
 
+#include "cloud_sync_common.h"
+#include "lcd_aging_file_info.h"
+#include "photos_po.h"
+
 namespace OHOS::Media {
+using namespace OHOS::Media::ORM;
+using namespace OHOS::FileManagement::CloudSync;
+
 class LcdAgingUtils {
 public:
     int32_t GetMaxThresholdOfLcd(int64_t &lcdNumber);
     int32_t GetScaleThresholdOfLcd(int64_t &lcdNumber);
+    std::vector<DentryFileInfo> ConvertAgingFileToDentryFile(const std::vector<LcdAgingFileInfo> &agingFileInfos);
+    bool HasExThumbnail(const LcdAgingFileInfo &agingFileInfo);
+
+private:
+    static int64_t maxLcdNumber_;
+    static int64_t scaleLcdNumber_;
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_LCD_AGING_UTILS_H

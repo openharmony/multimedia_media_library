@@ -24,6 +24,7 @@ ohos_unittest("medialibrary_fuse_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -38,6 +39,7 @@ ohos_unittest("medialibrary_fuse_test") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_fuse/src/media_fuse_high_daemon.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_fuse/src/media_fuse_low_daemon.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_tmp_compatible_dup_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloud_permission_check.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_fuse/src/media_fuse_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_fuse/src/media_fuse_node.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
