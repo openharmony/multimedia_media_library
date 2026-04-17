@@ -200,39 +200,6 @@ export class PhotoPickerComponent extends ViewPU {
             this.dpiFollowStrategy = SecurityDpiFollowStrategy.FOLLOW_HOST_DPI;
             console.info(`dpiFollowStrategy = ${this.dpiFollowStrategy}`);
         }
-        this.setWindowStageChangeLinstener();
-    }
-
-    setWindowStageChangeLinstener() {
-        console.log('photopickercomponent WindowStageChangeLinstener');
-        try {
-            let applicationContext = getContext(this).getApplicationContext();
-            applicationContext.on('applicationStateChange', {
-                onApplicationForeground: () => {
-                    console.log(`photopickercomponent is foreground isPickerKilled = ${this.isPickerKilled} ${this.revokeIndex}`);
-                    if (this.isPickerKilled) {
-                        this.revokeIndex++;
-                        this.isPickerKilled = false;
-                    }
-                },
-                onApplicationBackground: () => {
-                    console.log('photopickercomponent is background');
-                }
-            });
-        } catch (e) {
-            console.log(`photopickercomponent onWindowStageChangeLinstener on - failed ${JSON.stringify(e)}`);
-        }
-    }
-
-    aboutToDisappear() {
-        try {
-            let applicationContext = getContext(this).getApplicationContext();
-            applicationContext.off('applicationStateChange');
-            console.log(`photopickercomponent onWindowStageChangeLinstener off - disappear`);
-        } catch (e) {
-            // 重复解off会有异常
-            console.log(`photopickercomponent onWindowStageChangeLinstener on - failed ${JSON.stringify(e)}`);
-        }
     }
 
     updateStateVars(e) {
@@ -264,7 +231,8 @@ export class PhotoPickerComponent extends ViewPU {
  
  
     set revokeIndex(newValue) { 
-        return this.__revokeIndex.set(); 
+        console.log(`photopickercomponent set revokeIndex ${this.revokeIndex}`);
+        return this.__revokeIndex.set(newValue); 
     }
 
     onChanged() {
@@ -460,6 +428,13 @@ export class PhotoPickerComponent extends ViewPU {
         this.observeComponentCreation2(((e, o) => {
             Column.create();
             Column.width('100%');
+            Column.onVisibleAreaChange([0.0, 1.0], (isExpanding, currentRatio) => {
+                if (this.isPickerKilled && currentRatio >= 0 && isExpanding) {
+                    console.log(`photopickercomponent isRevoke revokeIndex = ${this.revokeIndex}`);
+                    this.revokeIndex++;
+                    this.isPickerKilled = false;
+                }
+            })
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f, g, y, predicate;
