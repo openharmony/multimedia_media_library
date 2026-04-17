@@ -128,7 +128,6 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     void *msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (msgLenAddr == MAP_FAILED || msgLenAddr == nullptr) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture mmap msgLenAddr failed!");
-        close(fd);
         return E_ERR;
     }
     uint32_t msgLen = *((uint32_t*)msgLenAddr);
@@ -139,14 +138,12 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     uint8_t *addr = (uint8_t*)mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (addr == MAP_FAILED || addr == nullptr) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture mmap addr failed!");
-        close(fd);
         return E_ERR;
     }
     uint32_t readoffset = UINT32_LEN;
     if (readoffset >= msgLen) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen");
         munmap(addr, msgLen);
-        close(fd);
         return E_ERR;
     }
 
@@ -154,14 +151,12 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + readoffset);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture dataSize: %{public}d", dataSize);
     if (CheckDataOverflow(readoffset, dataSize, msgLen, addr) != E_OK) {
-        close(fd);
         return E_ERR;
     }
     readoffset += UINT32_LEN;
     if (readoffset > msgLen) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture readOffset overflow msgLen");
         munmap(addr, msgLen);
-        close(fd);
         return E_ERR;
     }
 
@@ -172,7 +167,6 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     if (auxiliaryPictureSize > (msgLen - readoffset)) {
         MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture pictureSize invalid: %{public}u", auxiliaryPictureSize);
         munmap(addr, msgLen);
-        close(fd);
         return E_ERR;
     }
     readoffset += UINT32_LEN;
