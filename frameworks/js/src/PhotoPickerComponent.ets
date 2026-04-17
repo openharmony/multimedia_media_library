@@ -113,13 +113,7 @@ export struct PhotoPickerComponent {
       this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
       this.onSetPhotoBrowserItem(data);
-    } else if (data?.has('COMPLETED')) {
-      this.proxy.send({ 
-        completed: data?.get('COMPLETED'),
-        date: data?.get('COMPLETE_DATE')
-        });
-        console.info('PhotoPickerComponent onChanged: COMPLETED');
- 	  } else {
+    } else {
       this.otherOnChange(data);
     }
   }
@@ -156,6 +150,15 @@ export struct PhotoPickerComponent {
       this.onChangeItemClickResult(data)
       console.info('PhotoPickerComponent onChanged: SET_ITEM_CLICK_RESULT');
     } else {
+      this.handleAnotherOnChanges(data);
+    }
+  }
+
+  private handleAnotherOnChanges(data?: Map<string, Object>) {
+    if (data?.has('COMPLETED')) {
+      this.onComplete(data)
+      console.info('PhotoPickerComponent onChanged: COMPLETED');
+    } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
   }
@@ -173,6 +176,14 @@ export struct PhotoPickerComponent {
       this.proxy.send({ itemClickResult: itemClickResult});
       console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
     }
+  }
+
+  private onComplete(data?: Map<string, Object>) {
+    this.proxy.send({ 
+      completed: data?.get('COMPLETED'),
+      date: data?.get('COMPLETE_DATE')
+ 	  });
+    console.info('PhotoPickerComponent onChanged: COMPLETED');
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
