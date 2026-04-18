@@ -21,8 +21,10 @@
 #include <sstream>
 #include "cloud_media_define.h"
 #include "cloud_lake_info.h"
+#include "photos_po.h"
 
 namespace OHOS::Media::CloudSync {
+using namespace OHOS::Media::ORM;
 class EXPORT AssetFileNode {
 public:
     AssetFileNode() = default;
@@ -59,6 +61,7 @@ public:
     AssetFileNode fileInfo;
     AssetFileNode editedFileInfo;
     std::string cloudId;
+    std::optional<PhotosPo> localPhotosPoOp;
 
 public:  // basic functions
     std::string ToString() const;

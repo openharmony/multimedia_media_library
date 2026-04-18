@@ -29,12 +29,15 @@ ohos_unittest("media_background_task_test") {
 
   cflags = [ "-fno-access-control" ]
 
-  sources = [ 
+  sources = [
     "./src/media_burst_key_duplicate_task_test.cpp",
     "./src/media_clear_invalid_user_comment_task_test.cpp",
+    "./src/media_lcd_size_task_test.cpp",
     "./src/media_live_photo_4d_status_task_test.cpp",
     "./src/media_thumbnail_acl_task_test.cpp",
+    "./src/media_update_local_asset_size_task_test.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_lcd_size_task.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -78,6 +81,7 @@ ohos_unittest("media_background_task_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
     "player_framework:media_client",
     "preferences:native_preferences",
     "relational_store:native_rdb",

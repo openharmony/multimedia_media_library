@@ -31,6 +31,7 @@
 #include "napi/native_node_api.h"
 #include "photo_album_column.h"
 #include "rdb_store.h"
+#include "medialibrary_client_errno.h"
 
 #ifdef NAPI_ASSERT
 #undef NAPI_ASSERT
@@ -176,6 +177,14 @@
         }                                                           \
     } while (0)
 
+#define CHECK_COND_WITH_MSG(env, cond, err, msg)                                  \
+    do {                                                            \
+        if (!(cond)) {                                              \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                         \
+        }                                                           \
+    } while (0)
+
 #define RETURN_NAPI_TRUE(env)                                                 \
     do {                                                                      \
         napi_value result = nullptr;                                          \
@@ -196,6 +205,22 @@
             NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
             return nullptr;                                          \
         }                                                           \
+    } while (0)
+
+#define CHECK_ARGS_WITH_MSG(env, cond, err, msg)                 \
+    do {                                                            \
+        if ((cond) != napi_ok) {                                    \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                          \
+        }                                                           \
+    } while (0)
+
+#define CHECK_ARGS_RET_VOID_WITH_MEG(env, cond, err, msg)                 \
+    do {                                                            \
+        if ((cond) != napi_ok) {                                    \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return;                                                     \
+        }                                                               \
     } while (0)
 namespace OHOS {
 namespace Media {
@@ -472,7 +497,8 @@ public:
     EXPORT static int TransErrorCode(const std::string &Name, int error);
 
     static void HandleError(
-        napi_env env, int error, napi_value &errorObj, const std::string &Name, int32_t realErr = 0);
+        napi_env env, int error, napi_value &errorObj, const std::string &Name, int32_t realErr = 0,
+        const std::string &errMsg = "");
 
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
         const std::string errMsg);

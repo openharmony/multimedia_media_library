@@ -268,11 +268,15 @@ int32_t CloudMediaDownloadDao::UpdateTransCodeInfo(const std::string &path)
 }
 
 void CloudMediaDownloadDao::FillHdrModeInfo(NativeRdb::ValuesBucket &values,
-    const CloudMediaScanService::ScanResult &scanResult, bool isNeedUpdate)
+    const CloudMediaScanService::ScanResult &scanResult, const std::optional<PhotosPo> &localPhotosPoOp)
 {
     bool isValid = scanResult.scanSuccess;
     CHECK_AND_RETURN(isValid);
-    CHECK_AND_RETURN(isNeedUpdate);
+    isValid = localPhotosPoOp.has_value();
+    CHECK_AND_RETURN(isValid);
+    bool needUpdate = localPhotosPoOp.value().hdrMode.value_or(0) != scanResult.hdrMode;
+    CHECK_AND_PRINT_LOG(needUpdate, "no need update hdrMode");
+    CHECK_AND_RETURN(needUpdate);
     values.PutInt(PhotoColumn::PHOTO_HDR_MODE, scanResult.hdrMode);
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 }
@@ -299,6 +303,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const OnDownloadAssetData &as
     predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, assetData.path);
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    values.Put(PhotoColumn::LOCAL_ASSET_SIZE, scanResult.localAssetSize);
     if (assetData.fixFileType) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     }

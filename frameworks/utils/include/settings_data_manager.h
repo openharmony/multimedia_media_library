@@ -17,6 +17,7 @@
 #define OHOS_MEIDA_LIBRARY_SETTINGS_DATA_MANAGER_H
 
 #include <string>
+#include <optional>
 
 #include "data_ability_observer_stub.h"
 #include "safe_map.h"
@@ -52,6 +53,7 @@ const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
 class SettingsDataManager {
 public:
     EXPORT static SwitchStatus GetPhotosSyncSwitchStatus();
+    EXPORT static SwitchStatus GetPhotosSyncSwitchDeviceStatus();
     EXPORT static bool GetHdcDeviceId(std::string& deviceId);
     static AlbumUploadSwitchStatus GetAllAlbumUploadStatus();
     static int32_t UpdateOrInsertAllPhotosAlbumUpload();
@@ -61,6 +63,8 @@ private:
     static int32_t QueryParamInSettingData(const std::string &key, std::string &value);
     static int32_t UpdateParamInSettingData(const std::string &key, const std::string &value);
     static int32_t InsertParamInSettingData(const std::string &key, const std::string &value);
+    static int32_t NotifyPhotosSyncSwitchInitByUpdate();
+    static std::optional<SwitchStatus> GetPhotosSyncSwitchUserStatus();
 };
 
 } // OHOS

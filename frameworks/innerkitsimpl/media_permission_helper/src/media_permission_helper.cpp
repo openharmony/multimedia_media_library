@@ -34,6 +34,8 @@
 #include "cancel_photo_uri_permission_inner_vo.h"
 #include "grant_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
+#include "reserve_photo_uri_permission_vo.h"
+#include "resume_photo_uri_permission_vo.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -89,7 +91,7 @@ static sptr<IRemoteObject> InitToken()
     return remoteObj;
 }
 
-void MediaPermissionHelper::InitMediaPermissionHelper()
+int32_t MediaPermissionHelper::InitMediaPermissionHelper()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     int32_t activeUser = GetCurrentAccountId();
@@ -98,7 +100,7 @@ void MediaPermissionHelper::InitMediaPermissionHelper()
         auto token = InitToken();
         if (token == nullptr) {
             MEDIA_ERR_LOG("fail to get token, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
-            return;
+            return E_ERR;
         }
         Uri uri = Uri(MEDIALIBRARY_DATA_URI);
         std::string multiUri = MediaUriUtils::GetMultiUri(uri, activeUser).ToString();
@@ -106,9 +108,11 @@ void MediaPermissionHelper::InitMediaPermissionHelper()
         if (dataShareHelper_ == nullptr) {
             MEDIA_ERR_LOG(
                 "dataShareHelper Creator failed, activeUser: %{public}d, userId_: %{public}d", activeUser, userId_);
+            return E_ERR;
         }
         userId_ = activeUser;
     }
+    return E_OK;
 }
 
 bool MediaPermissionHelper::ForceReconnect()
@@ -639,5 +643,81 @@ int32_t MediaPermissionHelper::GetUrisFromFusePaths(const std::vector<std::strin
     return E_SUCCESS;
 }
 // LCOV_EXCL_STOP
+
+int32_t MediaPermissionHelper::ReservePhotoUriPermission(const bool isReservePermission,
+    const string appIdentifier, const string bundleName, const uint32_t bundleIndex,
+    uint32_t tokenId)
+{
+    MEDIA_INFO_LOG("ReservePhotoUriPermission begin, isReserve: %{public}d, appIdentifier: %{public}s, "
+        "bundleName: %{public}s, bundleIndex: %{public}u, tokenId: %{public}u",
+        isReservePermission, appIdentifier.c_str(), bundleName.c_str(), bundleIndex, tokenId);
+    
+    CHECK_AND_RETURN_RET_LOG(bundleIndex == 0, E_ERR, "bundleIndex must be 0");
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_INFO_LOG("ReservePhotoUriPermission dataShareHelper_ is nullptr");
+        ForceReconnect();
+    }
+
+    ReservePhotoUriPermissionReqBody reqBody;
+    reqBody.isReserve = isReservePermission;
+    reqBody.appIdentifier = appIdentifier;
+    reqBody.bundleName = bundleName;
+    reqBody.bundleIndex = bundleIndex;
+    reqBody.tokenId = tokenId;
+    
+    ReservePhotoUriPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+            "ReservePhotoUriPermission failed, errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("ReservePhotoUriPermission end, result: %{public}d", respBody.result);
+    return respBody.result;
+}
+
+int32_t MediaPermissionHelper::ResumePhotoUriPermission(const string appIdentifier,
+    const string bundleName, const uint32_t bundleIndex,
+    uint32_t tokenId)
+{
+    MEDIA_INFO_LOG("ResumePhotoUriPermission begin, appIdentifier: %{public}s, bundleName: %{public}s, "
+        "bundleIndex: %{public}u, tokenId: %{public}u",
+        appIdentifier.c_str(), bundleName.c_str(), bundleIndex, tokenId);
+    
+    CHECK_AND_RETURN_RET_LOG(bundleIndex == 0, E_ERR, "bundleIndex must be 0");
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_INFO_LOG("ReservePhotoUriPermission dataShareHelper_ is nullptr");
+        ForceReconnect();
+    }
+
+    ResumePhotoUriPermissionReqBody reqBody;
+    reqBody.appIdentifier = appIdentifier;
+    reqBody.bundleName = bundleName;
+    reqBody.bundleIndex = bundleIndex;
+    reqBody.tokenId = tokenId;
+    
+    ResumePhotoUriPermissionRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS) {
+        MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
+        if (ForceReconnect()) {
+            errCode =
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+        }
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+            "ResumePhotoUriPermission failed, errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("ResumePhotoUriPermission end, result: %{public}d", respBody.result);
+    return respBody.result;
+}
+
 } // namespace Media
 } // namespace OHOS

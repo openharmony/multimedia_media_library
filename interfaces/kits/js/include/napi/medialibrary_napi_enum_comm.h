@@ -49,6 +49,10 @@ const std::vector<std::string> compatibleModeEnum {
     "ORIGINAL_FORMAT_MODE", "COMPATIBLE_FORMAT_MODE"
 };
 
+const std::vector<std::string> preferredCompatibleModeEnum {
+    "DEFAULT", "CURRENT", "COMPATIBLE"
+};
+
 const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {
     "ASSETS_MODE", "ALBUMS_MODE"
 };
@@ -344,6 +348,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_ADDED_DAY",            PhotoColumn::PHOTO_DATE_ADDED_DAY),
     std::make_pair("UNIQUE_ID",                 PhotoColumn::UNIQUE_ID),
     std::make_pair("LIVEPHOTO_4D_STATUS",       PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS),
+    std::make_pair("HIDDEN_TIME",               PhotoColumn::PHOTO_HIDDEN_TIME),
+    std::make_pair("LOCAL_ASSET_SIZE",          PhotoColumn::LOCAL_ASSET_SIZE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

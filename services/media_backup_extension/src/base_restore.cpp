@@ -45,6 +45,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "media_values_bucket_utils.h"
+#include "medialibrary_notify_new.h"
 #include "settings_data_manager.h"
 
 #ifdef CLOUD_SYNC_MANAGER
@@ -84,6 +85,9 @@ static const std::string MEDIA_LIBRARY_RECOVERY_FLAG_KEY = "media_library_prefer
 
 const std::string PARAM_CLONE_SEARCH_STATUS = "persist.multimedia.media_analysis_service.clone_search_status";
 const std::string CLONE_SEARCH_INDEXING = "3";
+
+const std::string LCD_AGING_XML = "/data/storage/el2/base/preferences/lcd_aging.xml";
+const std::string LAST_LCD_AGING_END_TIME = "last_lcd_aging_end_time";
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -241,6 +245,7 @@ void BaseRestore::StartRestore(const std::string &backupRestoreDir, const std::s
     StopParameterForRestore();
     StopParameterForClone();
     SetMediaAnalysisClearDirtyDataParameter();
+    DelayLcdAgingTime();
 }
 
 int32_t BaseRestore::Init(void)
@@ -1774,6 +1779,7 @@ void BaseRestore::SetParameterForClone()
     MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable", "Database occupied by Clone application");
 }
 
 static void SetMediaLibraryRecoveryDone(bool flag)
@@ -1795,6 +1801,7 @@ void BaseRestore::StopParameterForClone()
     MEDIA_INFO_LOG("StopParameterForClone set 0");
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
+    Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
     SetMediaLibraryRecoveryDone(true);
     MEDIA_INFO_LOG("SetMediaLibraryRecoveryDone set true");
 }
@@ -2419,6 +2426,18 @@ void BaseRestore::SetCloneParameterAndStopSync()
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
+}
+
+void BaseRestore::DelayLcdAgingTime()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(LCD_AGING_XML, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
+
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    prefs->PutLong(LAST_LCD_AGING_END_TIME, currentTime);
+    prefs->FlushSync();
 }
 } // namespace Media
 } // namespace OHOS

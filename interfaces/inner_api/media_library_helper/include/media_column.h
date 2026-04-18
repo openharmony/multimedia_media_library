@@ -190,6 +190,7 @@ public:
     static const std::string UNIQUE_ID EXPORT;
     static const std::string MOVING_PHOTO_LIVEPHOTO_4D_STATUS EXPORT;
     static const std::string MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR EXPORT;
+    static const std::string LOCAL_ASSET_SIZE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -296,6 +297,9 @@ public:
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
     EXPORT static std::string CheckMetaRecoveryPhotoColumns();
+
+    // for cloud sync
+    static const std::string LCD_ASPECT_RATIO EXPORT;
 };
 
 class PhotoExtColumn {
@@ -307,6 +311,7 @@ public:
     static const std::string PHOTO_ID EXPORT;
     static const std::string THUMBNAIL_SIZE EXPORT;
     static const std::string EDITDATA_SIZE EXPORT;
+    static const std::string LCD_FILE_MODIFY_TIME EXPORT;
 };
 
 } // namespace OHOS::Media

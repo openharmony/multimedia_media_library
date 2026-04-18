@@ -1705,7 +1705,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, PhotoDayMonthYearOperation_test, TestS
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     int32_t ret = PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
     EXPECT_EQ(ret, E_OK);
-    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
+    ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(*rdbStore->GetRaw().get());
     EXPECT_EQ(ret, E_OK);
 }
 

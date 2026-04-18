@@ -64,6 +64,7 @@ struct NewJsOnChangeCallbackWrapper {
     std::map<std::string, std::shared_ptr<AccurateRefresh::PhotoAssetChangeData>> singleAssetClientChangeInfo_;
     std::map<std::string, std::shared_ptr<AccurateRefresh::AlbumChangeData>> singleAlbumClientChangeInfo_;
     PhotoChangeListenScene ChangeListenScene;
+    std::shared_ptr<Notification::DbAvailabilityData> dbAvailabilityInfo_;
 };
 
 class MediaOnNotifyNewObserver : public DataShare::DataShareObserver  {
@@ -78,6 +79,10 @@ public:
     void static OnJsCallbackEvent(std::unique_ptr<NewJsOnChangeCallbackWrapper> &jsCallback);
     void ProcessObserverBranches(NewJsOnChangeCallbackWrapper& callbackWrapper,
         Notification::NotifyUriType infoUriType);
+    bool ProcessDbAvailabilityData(NewJsOnChangeCallbackWrapper& callbackWrapper,
+        shared_ptr<MessageParcel>& parcel);
+    std::shared_ptr<MessageParcel> CreateTempParcelFromChangeInfo(
+        const DataShare::DataShareObserver::ChangeInfo &changeInfo);
 
     Notification::NotifyUriType uriType_;
     std::string uri_;

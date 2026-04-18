@@ -101,11 +101,15 @@
 #include "get_cloned_album_uris_vo.h"
 #include "acquire_debug_database_vo.h"
 #include "compatible_info_vo.h"
+#include "preferred_compatible_mode_vo.h"
+#include "transcode_compatible_info_operations.h"
+#include "media_map_const_utils.h"
 #include "release_debug_database_vo.h"
 #include "query_media_data_status_vo.h"
 #include "check_single_photo_permission_vo.h"
 #include "start_active_analysis_vo.h"
 #include "stop_active_analysis_vo.h"
+#include "check_db_availability_vo.h"
 #include "userfilemgr_uri.h"
 
 #include "parcel.h"
@@ -266,6 +270,7 @@ thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDeliveryModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sPreferredCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSourceModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
@@ -309,6 +314,10 @@ static std::string GetActiveAnalysisPromiseErrorMessage(int32_t code)
 using ClientObserverListMap = std::map<std::string, std::vector<std::shared_ptr<ClientObserver>>>;
 using GlobalObserverMap = std::map<Notification::NotifyUriType, ClientObserverListMap>;
 using ClientObserverListMapIter = ClientObserverListMap::iterator;
+
+constexpr const char *SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE = "image/heic";
+constexpr const char *SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE = "image/jpeg";
+constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 
 thread_local napi_ref MediaLibraryNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::photoAccessHelperConstructor_ = nullptr;
@@ -545,6 +554,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
             DECLARE_NAPI_FUNCTION("setAssetCompatibleCapability", PhotoAccessHelperSetFileCompatibleConfig),
             DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
+            DECLARE_NAPI_FUNCTION("setPreferredCompatibleMode", PhotoAccessHelperSetPreferredCompatibleMode),
+            DECLARE_NAPI_FUNCTION("getPreferredCompatibleMode", PhotoAccessHelperGetPreferredCompatibleMode),
+            DECLARE_NAPI_FUNCTION("onMedialibraryAvailability", AvailabilityRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offMedialibraryAvailability", AvailabilityUnregisterCallback),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -577,6 +590,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DeliveryMode", CreateDeliveryModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PreferredCompatibleMode", CreatePreferredCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
         DECLARE_NAPI_PROPERTY("CompatibleMode", CreateCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
@@ -2572,6 +2586,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathParams(context))) {
         context->error = JS_E_RELATIVEPATH;
+        context->errorMsg = "Invalid relativePath";
         return;
     }
     bool isValid = false;
@@ -3827,7 +3842,8 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
     napi_value fileResult = GetOldUriMap(env, context);
 
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to create initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(
             env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result"
@@ -3837,7 +3853,8 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
 
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
@@ -3848,14 +3865,16 @@ static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status statu
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
         napi_value mapNapiValue {nullptr};
         napi_create_map(env, &mapNapiValue);
         jsContext->data = mapNapiValue;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to initialize error field.");
         GetOldUriQueryResult(env, context, jsContext);
     }
 
@@ -4085,7 +4104,7 @@ static napi_value ParseArgsGetAssetsByOldUris(napi_env env, napi_callback_info i
     context->uris = uris;
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -7447,7 +7466,8 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
         context->argv[PARAM0], context, ASSET_FETCH_OPT), JS_E_PARAM_INVALID);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -9350,15 +9370,16 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumChangeAttributeEnum(napi_env en
     };
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_create_object(env, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_create_object(env, &result), JS_E_INNER_FAIL,
+                        "Failed to create instance");
 
     for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
-        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
-            JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_E_INNER_FAIL, "Failed to add property");
     }
 
-    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
-        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
+        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL, "Failed to create reference");
     return result;
 }
 
@@ -9395,6 +9416,11 @@ napi_value MediaLibraryNapi::CreateAuthorizationModeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateCompatibleModeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, compatibleModeEnum, sCompatibleModeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreatePreferredCompatibleModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, preferredCompatibleModeEnum, sPreferredCompatibleModeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
@@ -10305,7 +10331,8 @@ static void GetOldAlbumUriQueryResult(napi_env env, MediaLibraryAsyncContext *co
     napi_value fileResult = GetOldAlbumUriMap(env, context);
 
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(
             env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result"
@@ -10315,7 +10342,8 @@ static void GetOldAlbumUriQueryResult(napi_env env, MediaLibraryAsyncContext *co
 
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
@@ -10326,14 +10354,16 @@ static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status statu
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error == ERR_DEFAULT) {
         napi_value mapNapiValue {nullptr};
         napi_create_map(env, &mapNapiValue);
         jsContext->data = mapNapiValue;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to initialize error field");
         GetOldAlbumUriQueryResult(env, context, jsContext);
     } else {
         context->HandleError(env, jsContext->error);
@@ -10584,7 +10614,8 @@ static napi_value ParseArgsGetAlbumsByOldUris(napi_env env, napi_callback_info i
     context->albumUris = uris;
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -10708,6 +10739,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     }
     if (!CheckTitleCompatible(context)) {
         context->error = JS_E_DISPLAYNAME;
+        context->errorMsg = "Title is invalid";
         return;
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) && (!CheckRelativePathParams(context))) {
@@ -12409,6 +12441,248 @@ napi_value MediaLibraryNapi::PhotoAccessRegisterCallback(napi_env env, napi_call
         return undefinedResult;
     }
     return undefinedResult;
+}
+
+int32_t MediaLibraryNapi::OverrideExistingAvailabilityObserver(napi_env env, napi_ref ref,
+    MediaOnNotifyNewObserver& observer, Notification::NotifyUriType registerUriType)
+{
+    NAPI_INFO_LOG("Found existing availability observer, overriding...");
+    auto& clientObservers = observer.clientObservers_;
+    auto iter = clientObservers.find(registerUriType);
+
+    if (iter != clientObservers.end()) {
+        for (auto& oldObs : iter->second) {
+            if (oldObs != nullptr && oldObs->ref_ != nullptr) {
+                NAPI_INFO_LOG("Delete old napi_ref to avoid leak");
+                napi_delete_reference(env, oldObs->ref_);
+            }
+        }
+        iter->second.clear();
+    }
+
+    auto clientObserver = make_shared<ClientObserver>(registerUriType, ref);
+    clientObservers[registerUriType].push_back(clientObserver);
+    NAPI_INFO_LOG("Availability callback overridden successfully");
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::CreateAndRegisterNewAvailabilityObserver(napi_env env, napi_ref ref,
+    Notification::NotifyUriType registerUriType, std::string& registerUri, ChangeListenerNapi& listObj)
+{
+    auto observer = make_shared<MediaOnNotifyNewObserver>(registerUriType, registerUri, env);
+
+    Uri notifyUri(registerUri);
+    int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("RegisterObserverExtProvider failed, ret: %{public}d", ret);
+        return ret;
+    }
+
+    auto clientObserver = make_shared<ClientObserver>(registerUriType, ref);
+    observer->clientObservers_[registerUriType].push_back(clientObserver);
+    listObj.newObservers_.push_back(observer);
+
+    NAPI_INFO_LOG("Register availability observer success");
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::RegisterAvailabilityObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj)
+{
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::AVAILABILITY_URI;
+    std::string registerUri = RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE;
+
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); ++it) {
+        if ((*it)->uriType_ == registerUriType) {
+            return OverrideExistingAvailabilityObserver(env, ref, **it, registerUriType);
+        }
+    }
+
+    return CreateAndRegisterNewAvailabilityObserver(env, ref, registerUriType, registerUri, listObj);
+}
+
+void MediaLibraryNapi::AvailabilityRegisterExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
+    CheckDbAvailabilityReqBody reqBody;
+    reqBody.isOnlyCheckPermission = false;
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("CheckDbAvailability ret:%{public}d", result);
+
+    tracer.Finish();
+}
+
+static void AvailabilityRegisterComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "AvailabilityRegisterComplete context is null");
+
+    auto jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+
+    NAPI_INFO_LOG("Availability register complete success");
+    tracer.Finish();
+}
+
+napi_value MediaLibraryNapi::AvailabilityRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AvailabilityRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityRegisterCallback");
+
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {nullptr};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+
+    if (argc != ARGS_ONE) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "requires one parameter.");
+        return nullptr;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "callback must be a function.");
+        return nullptr;
+    }
+
+    if (g_listObj == nullptr) {
+        NAPI_ERR_LOG("g_listObj is nullptr");
+        NapiError::ThrowError(env, JS_E_INNER_FAIL , "global list object is null.");
+        return nullptr;
+    }
+
+    const int32_t refCount = 1;
+    napi_ref cbRef = nullptr;
+    if (napi_create_reference(env, argv[PARAM0], refCount, &cbRef) != napi_ok) {
+        NapiError::ThrowError(env, JS_E_INNER_FAIL , "create reference failed.");
+        return nullptr;
+    }
+
+    int32_t ret = RegisterAvailabilityObserverExecute(env, cbRef, *g_listObj);
+    if (ret != E_OK) {
+        napi_delete_reference(env, cbRef);
+        NapiError::ThrowError(env, JS_E_INNER_FAIL, "register observer failed");
+        return nullptr;
+    }
+    NAPI_INFO_LOG("registercallck success");
+    std::unique_ptr<MediaLibraryAsyncContext> context = std::make_unique<MediaLibraryAsyncContext>();
+    context->callbackRef = cbRef;
+    context->error = E_OK;
+    context->work = nullptr;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, context, "AvailabilityRegisterCallback",
+        AvailabilityRegisterExecute, AvailabilityRegisterComplete
+    );
+}
+
+napi_value MediaLibraryNapi::AvailabilityUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter AvailabilityUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("AvailabilityUnregisterCallback");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    if (g_listObj == nullptr) {
+        NAPI_INFO_LOG("g_listObj is nullptr");
+        return undefinedResult;
+    }
+
+    size_t argc = ARGS_ONE;
+    napi_value args[ARGS_ONE] = { nullptr };
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, args, thisVar);
+
+    if (argc > ARGS_ONE) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "At most 1 optional callback parameter is allowed.");
+        return undefinedResult;
+    }
+
+    if (argc == ARGS_ONE) {
+    napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, args[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Optional callback must be a function.");
+            return undefinedResult;
+        }
+    }
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_DB_AVAILABILITY);
+    CheckDbAvailabilityReqBody reqBody;
+    reqBody.isOnlyCheckPermission = true;
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("CheckDbAvailability ret:%{public}d", result);
+    if (result < 0) {
+        NAPI_ERR_LOG("CheckDbAvailability fail, result: %{public}d.", result);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "No parameters required.");
+        return undefinedResult;
+    }
+
+    int32_t ret = UnregisterAvailabilityObserverExecute(env, *g_listObj);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        return undefinedResult;
+    }
+
+    NAPI_INFO_LOG("AvailabilityUnregisterCallback success");
+    tracer.Finish();
+    return undefinedResult;
+}
+
+
+int32_t MediaLibraryNapi::UnregisterAvailabilityObserverExecute(napi_env env, ChangeListenerNapi &listObj)
+{
+    auto registerUriType = Notification::NotifyUriType::AVAILABILITY_URI;
+    std::string registerUri = RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE;
+
+    std::shared_ptr<MediaOnNotifyNewObserver> targetObserver = nullptr;
+    for (auto& obs : listObj.newObservers_) {
+        if (obs && obs->uriType_ == registerUriType) {
+            targetObserver = obs;
+            break;
+        }
+    }
+
+    if (targetObserver == nullptr) {
+        NAPI_INFO_LOG("No availability observer");
+        return E_OK;
+    }
+
+    auto& clientObserversMap = targetObserver->clientObservers_;
+    if (clientObserversMap.count(registerUriType)) {
+        auto& observers = clientObserversMap[registerUriType];
+        for (auto& co : observers) {
+            if (co && co->ref_) {
+                napi_delete_reference(env, co->ref_);
+                co->ref_ = nullptr;
+            }
+        }
+        clientObserversMap.erase(registerUriType);
+    }
+
+    int32_t ret = UserFileClient::UnregisterObserverExtProvider(Uri(registerUri), targetObserver);
+    NAPI_INFO_LOG("UnregisterObserverExtProvider ret: %{public}d", ret);
+
+    auto it = std::find(listObj.newObservers_.begin(), listObj.newObservers_.end(), targetObserver);
+    if (it != listObj.newObservers_.end()) {
+        listObj.newObservers_.erase(it);
+    }
+
+    NAPI_INFO_LOG("Availability unregister clean success");
+    return ret;
 }
 
 int32_t MediaLibraryNapi::RemoveClientObserver(napi_env env, napi_ref ref,
@@ -14207,7 +14481,8 @@ static napi_value CheckOrderStyle(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     orderStyle = static_cast<OrderStyleType>(albumOrderStyle);
     return result;
 }
@@ -14236,15 +14511,15 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
     if (context->argc == maxArgs) {
         auto status =
             MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
-        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, status, JS_E_INNER_FAIL,"Failed to get fetch option");
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
-    CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL);
+    CHECK_COND_WITH_MSG(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL, "Invalid fetch columns");
     AddNoSmartFetchColumns(context->fetchColumn);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, "Failed to create boolean value");
     return result;
 }
 
@@ -14283,14 +14558,16 @@ static void GetNapiPhotoAlbumResult(napi_env env, MediaLibraryAsyncContext *cont
 {
     napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Photo Album Result");
         return;
     }
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 }
 
 static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_status status, void *data)
@@ -14301,9 +14578,11 @@ static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_stat
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
     if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                    "Failed to initialize data field");
         context->HandleError(env, jsContext->error);
     } else {
         GetNapiPhotoAlbumResult(env, context, jsContext);
@@ -14346,7 +14625,8 @@ static napi_value AddDefaultAlbumOrderColumns(napi_env env, unique_ptr<MediaLibr
     fetchColumns.assign(validFetchColumns.begin(), validFetchColumns.end());
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value.");
     return result;
 }
 
@@ -14378,7 +14658,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
     if (context->argc == maxArgs) {
         auto status =
             MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
-        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, status, JS_E_INNER_FAIL, "Failed to get fetch option");
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
@@ -14386,7 +14666,8 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
         JS_E_PARAM_INVALID, "Failed to add default columns");
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                                "Failed to create boolean value");
     return result;
 }
 
@@ -14449,7 +14730,8 @@ static void GetAlbumOrderCallbackComplete(napi_env env, napi_status status, void
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
 
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
@@ -14525,21 +14807,23 @@ static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleT
     vector<DataShare::DataShareValuesBucket> &dataShareValuesBuckets)
 {
     bool isArray = false;
-    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_is_array(env, arg, &isArray), JS_E_INNER_FAIL, "Failed to check array type");
     CHECK_ARGS_WITH_MEG(env, isArray == true, JS_E_PARAM_INVALID, "Failed to check array type");
 
     uint32_t len = 0;
-    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_array_length(env, arg, &len), JS_E_INNER_FAIL, "Failed to get array length");
     CHECK_ARGS_WITH_MEG(env, len > 0, JS_E_PARAM_INVALID, "Failed to check array length");
 
     for (uint32_t i = 0; i < len; i++) {
         napi_value orderData = nullptr;
-        CHECK_ARGS(env, napi_get_element(env, arg, i, &orderData), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, napi_get_element(env, arg, i, &orderData), JS_E_INNER_FAIL,
+                            "Failed to get array element");
         CHECK_ARGS_WITH_MEG(env, orderData != nullptr, JS_E_PARAM_INVALID, "Failed to get album order element");
 
         AlbumOrderNapi *obj = nullptr;
         DataShareValuesBucket valuesBucket;
-        CHECK_ARGS(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MSG(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), 
+                            JS_E_INNER_FAIL, "Failed to unwrap native object");
         CHECK_ARGS_WITH_MEG(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get albumOrder napi object");
 
         if (obj->GetAlbumId() <= 0) {
@@ -14554,7 +14838,8 @@ static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleT
     }
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL, 
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -14584,7 +14869,8 @@ static napi_value ParseArgsSetPhotoAlbumOrder(napi_env env, napi_callback_info i
     CHECK_ARGS_WITH_MEG(env, context->valuesBucketArray.size() <= MAX_SET_ORDER_ARRAY_SIZE, JS_E_PARAM_INVALID,
         "Exceeded the maximum batch input quantity, can not update album order");
 
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -14801,7 +15087,8 @@ static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info
     context->valuesBucket.Put(CONST_MEDIA_DATA_BETA_SCENARIO, betaScenario);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Fail to get boolean value");
     return result;
 }
 
@@ -14870,21 +15157,25 @@ static void JSAcquireDebugDatabaseCallbackComplete(napi_env env, napi_status sta
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to get undefined value");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to get undefined value");
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
         napi_value resultMap = AcquireDebugDatabaseResultMap(env, context->debugDatabaseMap);
         if (resultMap == nullptr) {
-            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+            CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                        "Failed to get undefined value");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_E_INNER_FAIL,
                 "Failed to create js object for AcquireDebugDatabase resultMap");
             return;
         }
         jsContext->data = resultMap;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                    "Failed to get undefined value");
     }
     tracer.Finish();
     if (context->work != nullptr) {
@@ -14931,7 +15222,8 @@ static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info
     context->valuesBucket.Put(CONST_MEDIA_DATA_BETA_DEBUG_DB_FD, fileFd);
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to get boolean value");
     return result;
 }
 
@@ -15017,7 +15309,8 @@ static napi_value HandleOneArgGetAlbumByLpath(napi_env env, unique_ptr<MediaLibr
     }
     context->photoAlbumData->SetLPath(lpath);
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -15025,7 +15318,8 @@ static napi_value ParseArgsGetAlbumIdByLpath(napi_env env, napi_callback_info in
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15088,8 +15382,10 @@ static void GetAlbumIdByLpathOrBundleNameCompleteCallback(napi_env env, napi_sta
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error Field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data Field");
     if (status != napi_ok || context->error != ERR_DEFAULT) {
         NAPI_ERR_LOG("GetAlbumIdByLpath failed, status: %{public}d, error: %{public}d", status, context->error);
         context->HandleError(env, jsContext->error);
@@ -15145,7 +15441,8 @@ static napi_value HandleOneArgGetAlbumIdByBundleName(napi_env env,
     }
     context->photoAlbumData->SetAlbumName(bundle_name);
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     return result;
 }
 
@@ -15153,7 +15450,8 @@ static napi_value ParseArgsGetAlbumIdByBundleName(napi_env env, napi_callback_in
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15188,7 +15486,8 @@ static napi_value ParseArgsQueryMediaDataReady(napi_env env, napi_callback_info 
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MSG(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL,
+                        "Failed to create boolean value");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_ONE;
     napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
@@ -15207,8 +15506,10 @@ static void QueryMediaDataReadyCompleteCallback(napi_env env, napi_status status
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL,
+                                "Failed to initialize error field");
+    CHECK_ARGS_RET_VOID_WITH_MEG(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL,
+                                "Failed to initialize data field");
     if (status != napi_ok || context->error != ERR_DEFAULT) {
         NAPI_ERR_LOG("QueryMediaDataReady failed, status: %{public}d, error: %{public}d", status, context->error);
         context->HandleError(env, jsContext->error);
@@ -15266,6 +15567,233 @@ napi_value MediaLibraryNapi::QueryMediaDataReady(napi_env env, napi_callback_inf
        QueryMediaDataReadyExecute, QueryMediaDataReadyCompleteCallback);
 }
 
+static napi_value ParseArgsSetPreferredCompatibleMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_E_PARAM_INVALID);
+    CHECK_COND(env, !bundleName.empty(), JS_E_PARAM_INVALID);
+
+    int32_t preferredCompatibleMode = 0;
+    CHECK_ARGS(env, napi_get_value_int32(env, context->argv[ARGS_ONE], &preferredCompatibleMode), JS_E_PARAM_INVALID);
+    CHECK_COND(env, preferredCompatibleMode >= static_cast<int32_t>(PreferredCompatibleMode::DEFAULT) &&
+        preferredCompatibleMode <= static_cast<int32_t>(PreferredCompatibleMode::COMPATIBLE), JS_E_PARAM_INVALID);
+
+    context->bundleName = bundleName;
+    context->preferredCompatibleMode = preferredCompatibleMode;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSSetPreferredCompatibleModeExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPreferredCompatibleModeExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    SetPreferredCompatibleModeReqBody reqBody;
+    reqBody.bundleName = context->bundleName;
+    reqBody.preferredCompatibleMode = context->preferredCompatibleMode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE), reqBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(JS_E_INNER_FAIL);
+        return;
+    }
+    context->retVal = E_OK;
+}
+
+static void JSSetPreferredCompatibleModeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPreferredCompatibleModeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperSetPreferredCompatibleMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetPreferredCompatibleMode");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSetPreferredCompatibleMode(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetPreferredCompatibleMode",
+        JSSetPreferredCompatibleModeExecute, JSSetPreferredCompatibleModeCompleteCallback);
+}
+
+static napi_value ParseArgsGetPreferredCompatibleMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_E_PARAM_INVALID);
+    CHECK_COND(env, !bundleName.empty(), JS_E_PARAM_INVALID);
+    context->bundleName = bundleName;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSGetPreferredCompatibleModeExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPreferredCompatibleModeExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE), reqBody, respBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(JS_E_INNER_FAIL);
+        return;
+    }
+    context->preferredCompatibleMode = respBody.preferredCompatibleMode;
+    context->retVal = E_OK;
+}
+
+static void JSGetPreferredCompatibleModeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPreferredCompatibleModeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_create_int32(env, context->preferredCompatibleMode, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperGetPreferredCompatibleMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetPreferredCompatibleMode");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPreferredCompatibleMode(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPreferredCompatibleMode",
+        JSGetPreferredCompatibleModeExecute, JSGetPreferredCompatibleModeCompleteCallback);
+}
+
+static bool IsSupportedCompatibleMimeType(const std::string &mimeType)
+{
+    return mimeType == SUPPORTED_COMPATIBLE_HEIC_MIME_TYPE ||
+        mimeType == SUPPORTED_COMPATIBLE_JPEG_MIME_TYPE;
+}
+
+static napi_value NormalizeSupportedMimeTypes(napi_env env, const std::vector<std::string> &supportedMimeTypes,
+    std::vector<std::string> &normalizedMimeTypes)
+{
+    std::map<std::string, bool> mimeTypeMap;
+    for (const auto &mimeType : supportedMimeTypes) {
+        CHECK_ARGS_WITH_MEG(env, IsSupportedCompatibleMimeType(mimeType), JS_E_PARAM_INVALID,
+            "supportedMimeType is invalid");
+        mimeTypeMap[mimeType] = true;
+    }
+    CHECK_ARGS_WITH_MEG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
+        JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
+
+    normalizedMimeTypes.clear();
+    normalizedMimeTypes.reserve(mimeTypeMap.size());
+    for (const auto &pair : mimeTypeMap) {
+        normalizedMimeTypes.emplace_back(pair.first);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseSupportedMimeTypesFromConfig(napi_env env, napi_value configObj,
+    std::vector<std::string> &supportedMimeTypes)
+{
+    supportedMimeTypes.clear();
+    napi_value supportedMimeTypesValue = nullptr;
+    if (napi_get_named_property(env, configObj, "supportedMimeType", &supportedMimeTypesValue) != napi_ok) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
+
+    napi_valuetype supportedMimeTypesType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, supportedMimeTypesValue, &supportedMimeTypesType), JS_E_PARAM_INVALID);
+    if (supportedMimeTypesType != napi_undefined && supportedMimeTypesType != napi_null) {
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, supportedMimeTypesValue, supportedMimeTypes),
+            JS_E_PARAM_INVALID);
+        std::vector<std::string> normalizedMimeTypes;
+        CHECK_NULLPTR_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes));
+        supportedMimeTypes = std::move(normalizedMimeTypes);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -15300,7 +15828,10 @@ static napi_value ParseArgsSetFileCompatibleConfig(napi_env env, napi_callback_i
         CHECK_ARGS(env, napi_get_value_bool(env, supportedHighResolutionValue, &supportedHighResolution),
             JS_E_PARAM_INVALID);
     }
+    vector<string> supportedMimeTypes;
+    CHECK_NULLPTR_RET(ParseSupportedMimeTypesFromConfig(env, configObj, supportedMimeTypes));
     context->supportedHighResolution = supportedHighResolution;
+    context->supportedMimeTypes = supportedMimeTypes;
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -15316,6 +15847,7 @@ static void JSSetFileCompatibleConfigExecute(napi_env env, void *data)
     SetCompatibleInfoReqBody reqBody;
     reqBody.bundleName = context->bundleName;
     reqBody.supportedHighResolution = context->supportedHighResolution;
+    reqBody.supportedMimeTypes = context->supportedMimeTypes;
     int32_t ret = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO), reqBody);
     if (ret != 0) {
@@ -15407,7 +15939,9 @@ static void JSGetAssetCompatibleConfigExecute(napi_env env, void *data)
         context->SaveError(ret);
         return;
     }
+
     context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
     context->retVal = E_OK;
 }
 
@@ -15431,6 +15965,15 @@ static void JSGetAssetCompatibleConfigCompleteCallback(napi_env env, napi_status
         napi_value supportedHighResolutionValue = nullptr;
         napi_get_boolean(env, supportedHighResolution, &supportedHighResolutionValue);
         napi_set_named_property(env, configObj, "supportedHighResolution", supportedHighResolutionValue);
+
+        napi_value supportedMimeTypeValue = nullptr;
+        napi_create_array_with_length(env, context->supportedMimeTypes.size(), &supportedMimeTypeValue);
+        for (size_t i = 0; i < context->supportedMimeTypes.size(); i++) {
+            napi_value mimeTypeValue = nullptr;
+            napi_create_string_utf8(env, context->supportedMimeTypes[i].c_str(), NAPI_AUTO_LENGTH, &mimeTypeValue);
+            napi_set_element(env, supportedMimeTypeValue, i, mimeTypeValue);
+        }
+        napi_set_named_property(env, configObj, "supportedMimeType", supportedMimeTypeValue);
 
         jsContext->data = configObj;
     } else {

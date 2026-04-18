@@ -280,17 +280,17 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
     ThumbnailSourceLoading_ParseDesiredMinSide_test_001, TestSize.Level0)
 {
-    ThumbnailType type = ThumbnailType::THUMB;
+    ThumbnailSceneType type = ThumbnailSceneType::DEFAULT_SCENE;
 
     int32_t res = OHOS::Media::ParseDesiredMinSide(type);
 
-    EXPECT_EQ(res, SHORT_SIDE_THRESHOLD);
+    EXPECT_EQ(res, numeric_limits<int32_t>::max());
 }
 
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
     ThumbnailSourceLoading_ParseDesiredMinSide_test_002, TestSize.Level0)
 {
-    ThumbnailType type = ThumbnailType::MTH_ASTC;
+    ThumbnailSceneType type = ThumbnailSceneType::MTH_YEAR_ASTC_ONDEMAND;
 
     int32_t res = OHOS::Media::ParseDesiredMinSide(type);
 
@@ -300,11 +300,11 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
     ThumbnailSourceLoading_ParseDesiredMinSide_test_003, TestSize.Level0)
 {
-    ThumbnailType type = ThumbnailType::YEAR_ASTC;
+    ThumbnailSceneType type = ThumbnailSceneType::ONLY_THM_DOWNLOAD;
 
     int32_t res = OHOS::Media::ParseDesiredMinSide(type);
 
-    EXPECT_EQ(res, SHORT_SIDE_THRESHOLD);
+    EXPECT_EQ(res, DEFAULT_ORIGINAL);
 }
 
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
@@ -568,7 +568,7 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
 {
     ThumbnailData data;
     int32_t minSize = SHORT_SIDE_THRESHOLD - 1;
-    data.loaderOpts.desiredType = ThumbnailType::THUMB;
+    data.loaderOpts.thumbnailSceneType = ThumbnailSceneType::DEFAULT_SCENE;
 
     bool res = CloudThumbSource::IsSizeLargeEnough(data, minSize);
 
@@ -580,7 +580,7 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
 {
     ThumbnailData data;
     int32_t minSize = SHORT_SIDE_THRESHOLD;
-    data.loaderOpts.desiredType = ThumbnailType::THUMB;
+    data.loaderOpts.thumbnailSceneType = ThumbnailSceneType::DEFAULT_SCENE;
 
     bool res = CloudThumbSource::IsSizeLargeEnough(data, minSize);
 

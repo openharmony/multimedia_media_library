@@ -828,4 +828,32 @@ void PhotosPoWriter::SetPhotoRiskStatus(std::variant<int32_t, int64_t, double, s
     }
     this->photosPo_.photoRiskStatus = std::stoi(strRiskStatus);
 }
+
+void PhotosPoWriter::SetLcdFileSize(std::variant<int32_t, int64_t, double, std::string> &val)
+{
+    bool errConn = !std::holds_alternative<int32_t>(val);
+    CHECK_AND_RETURN(!errConn);
+    this->photosPo_.lcdFileSize = std::get<int32_t>(val);
+}
+
+bool PhotosPoWriter::GetLcdFileSize(std::string &val)
+{
+    CHECK_AND_RETURN_RET(photosPo_.lcdFileSize.has_value(), false);
+    val = std::to_string(this->photosPo_.lcdFileSize.value());
+    return true;
+}
+
+void PhotosPoWriter::SetLocalAssetSize(std::variant<int32_t, int64_t, double, std::string> &val)
+{
+    bool errConn = !std::holds_alternative<int64_t>(val);
+    CHECK_AND_RETURN(!errConn);
+    this->photosPo_.localAssetSize = std::get<int64_t>(val);
+}
+
+bool PhotosPoWriter::GetLocalAssetSize(std::string &val)
+{
+    CHECK_AND_RETURN_RET(photosPo_.localAssetSize.has_value(), false);
+    val = std::to_string(this->photosPo_.localAssetSize.value());
+    return true;
+}
 }  // namespace OHOS::Media::ORM

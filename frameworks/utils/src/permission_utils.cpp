@@ -48,6 +48,7 @@ const int32_t HDC_SHELL_UID = 2000;
 std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
+std::unordered_set<uint64_t> PermissionUtils::systemAppCache_ = {};
 
 vector<AddPermParamInfo> PermissionUtils::infos_ {};
 vector<OpenPermissionInfo> PermissionUtils::pendingOpenPermissionInfos_ {};
@@ -664,6 +665,15 @@ bool PermissionUtils::CheckPhotoCallerPermissionNoRecord(const vector<string> &p
     return true;
 }
 
+bool PermissionUtils::CheckCloudPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    auto ret = AccessTokenKit::VerifyAccessToken(tokenCaller, CLOUD_READ_ALL_PHOTO_PERMISSION);
+    CHECK_AND_RETURN_RET(ret != PermissionState::PERMISSION_GRANTED, false);
+    ret = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_CLOUD_IMAGEVIDEO);
+    return ret != PermissionState::PERMISSION_GRANTED;
+}
+
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
     MediaLibraryTracer tracer;
@@ -741,10 +751,21 @@ bool PermissionUtils::IsBetaVersion()
     return versionType == "beta";
 }
 
+bool PermissionUtils::IsSystemAppBycache(const uint64_t tokenId)
+{
+    if (systemAppCache_.find(tokenId) != systemAppCache_.end()) {
+        return true;
+    } else if (TokenIdKit::IsSystemAppByFullTokenID(tokenId)) {
+        systemAppCache_.insert(tokenId);
+        return true;
+    }
+    return false;
+}
+
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-    return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    return IsSystemAppBycache(tokenId);
 }
 
 bool PermissionUtils::CheckIsSystemAppByUid()

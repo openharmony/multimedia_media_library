@@ -29,9 +29,11 @@
 #endif
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
+#include "media_update_local_asset_size_task.h"
 #include "media_update_moving_photo_duration_task.h"
 #include "media_clean_all_dirty_files_task.h"
 #include "media_burst_key_duplicate_task.h"
+#include "media_lcd_size_task.h"
 
 namespace OHOS::Media::Background {
 MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
@@ -45,13 +47,14 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
         std::make_shared<MediaClearInvalidUserCommentTask>(),
         std::make_shared<MediaDeletedFileTask>(),
         std::make_shared<MediaThumbnailAclTask>(),
+        std::make_shared<MediaLcdSizeTask>(),
         #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
         std::make_shared<MediaCriticalLabelTask>(),
         #endif
         std::make_shared<MediaLivePhoto4dStatusTask>(),
         std::make_shared<MediaUpdateMovingPhotoDurationTask>(),
         std::make_shared<MediaBurstKeyDuplicateTask>(),
-        std::make_shared<MediaCleanAllDirtyFilesTask>(), // should be last task
+        std::make_shared<MediaUpdateLocalAssetSizeTask>(),
     };
 }
 

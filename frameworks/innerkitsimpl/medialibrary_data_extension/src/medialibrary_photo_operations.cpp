@@ -4945,6 +4945,29 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
         "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
 }
 
+void MediaLibraryPhotoOperations::StoreThumbnailSizeAndTime(const string& photoId, const string& photoPath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Medialibrary rdbStore is nullptr!");
+
+    string thumbnailDir {photoPath};
+    CHECK_AND_RETURN_LOG(ConvertPhotoPathToThumbnailDirPath(thumbnailDir),
+        "Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
+    uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    string sql = "INSERT INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+        PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE + ", " +
+        PhotoExtColumn::LCD_FILE_MODIFY_TIME +
+        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ", " +
+        to_string(currentTime) + ")" +
+        " ON CONFLICT(" + PhotoExtColumn::PHOTO_ID + ")" + " DO UPDATE SET " +
+        PhotoExtColumn::THUMBNAIL_SIZE + " = " + to_string(photoThumbnailSize) + ", " +
+        PhotoExtColumn::LCD_FILE_MODIFY_TIME + " = " + to_string(currentTime);
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
+}
+
 bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -6234,6 +6257,29 @@ int32_t MediaLibraryPhotoOperations::ScanExistFileRecord(int32_t fileId, const s
 {
     ScanFile(path, false, true, true);
     return E_OK;
+}
+static void HandleThumbFiles(AsyncTaskData *data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "data is nullptr");
+    auto *taskData = static_cast<DownloadThumbData *>(data);
+    for (const auto &downloadThumbInfo : taskData->downloadThumbInfos_) {
+        if (downloadThumbInfo.isDownloadLcd) {
+            MediaLibraryPhotoOperations::StoreThumbnailSizeAndTime(downloadThumbInfo.fileId, downloadThumbInfo.path);
+            continue;
+        }
+        MediaLibraryPhotoOperations::StoreThumbnailSize(downloadThumbInfo.fileId, downloadThumbInfo.path);
+    }
+}
+
+void MediaLibraryPhotoOperations::StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos)
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "failed to get asyncWorker");
+    auto *taskData = new (std::nothrow) DownloadThumbData(downloadThumbInfos);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "failed to alloc async data forDownloadThumbData");
+    auto thumbFilesTask = make_shared<MediaLibraryAsyncTask>(HandleThumbFiles, taskData);
+    CHECK_AND_RETURN_LOG(thumbFilesTask != nullptr, "Failed to create async task");
+    asyncWorker->AddTask(thumbFilesTask, true);
 }
 } // namespace Media
 } // namespace OHOS

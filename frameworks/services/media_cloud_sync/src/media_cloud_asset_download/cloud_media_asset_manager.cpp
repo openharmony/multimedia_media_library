@@ -16,7 +16,10 @@
 #define MLOG_TAG "CloudMediaAssetManager"
 
 #include "cloud_media_asset_manager.h"
+
 #include <cinttypes>
+#include <thread>
+
 #include "analysis_album_accurate_refresh.h"
 #include "album_accurate_refresh.h"
 #include "asset_accurate_refresh.h"
@@ -438,7 +441,7 @@ bool CloudMediaAssetManager::ProcessDeleteBatch(const std::vector<std::string> &
     return true;
 }
 
-void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data)
+void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation()
 {
     std::lock_guard<std::mutex> lock(deleteMutex_);
     MEDIA_INFO_LOG("enter DeleteAllCloudMediaAssetsOperation");
@@ -480,14 +483,8 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
 
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
 {
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
-
-    shared_ptr<MediaLibraryAsyncTask> deleteAsyncTask =
-        make_shared<MediaLibraryAsyncTask>(DeleteAllCloudMediaAssetsOperation, nullptr);
-    CHECK_AND_RETURN_LOG(deleteAsyncTask != nullptr, "Can not get deleteAsyncTask");
-
-    asyncWorker->AddTask(deleteAsyncTask, true);
+    std::thread deleteThread(DeleteAllCloudMediaAssetsOperation);
+    deleteThread.detach();
 }
 
 bool CloudMediaAssetManager::HasDataForUpdate(CloudMediaRetainType retainType,

@@ -142,6 +142,12 @@ export namespace photoAccessHelper {
     COMPATIBLE_FORMAT_MODE = 1
   }
 
+  export enum PreferredCompatibleMode {
+    DEFAULT = 0,
+    CURRENT = 1,
+    COMPATIBLE = 2
+  }
+
   export interface MediaAssetProgressHandler {
     onProgress(progress: int): void;
   }
@@ -1598,6 +1604,7 @@ export namespace photoAccessHelper {
     DATE_ADDED_YEAR = 'date_added_year',
     DATE_ADDED_MONTH = 'date_added_month',
     DATE_ADDED_DAY = 'date_added_day',
+    HIDDEN_TIME = "hidden_time",
   }
 
   export enum AlbumKeys {
@@ -1922,8 +1929,6 @@ export namespace photoAccessHelper {
 
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let blockQueue: containers.BlockingQueue<Array<T> | MediaLibraryAniError> =
-          new containers.ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
         let cb = (): Array<T> | MediaLibraryAniError => {
         let result: Array<T> | MediaLibraryAniError;
           try {
@@ -1931,7 +1936,6 @@ export namespace photoAccessHelper {
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
-          blockQueue.push(result);
           return result;
         };
         taskpool.execute(cb).then((ret: Any): void => {
@@ -1946,7 +1950,6 @@ export namespace photoAccessHelper {
             }
           }
         });
-        blockQueue.pop();
       });
     }
 
@@ -2510,6 +2513,8 @@ export namespace photoAccessHelper {
     getPhotoAlbums(options?: FetchOptions): Promise<FetchResult<Album>>;
     getPhotoAlbumOrder(orderStyle: int, options?: FetchOptions): Promise<FetchResult<AlbumOrder>>;
     setPhotoAlbumOrder(orderStyle: int, albumOrders: Array<AlbumOrder>): Promise<void>;
+    setPreferredCompatibleMode(bundleName: string, config: PreferredCompatibleMode): Promise<void>;
+    getPreferredCompatibleMode(bundleName: string): Promise<PreferredCompatibleMode>;
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
     acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
     releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
@@ -2681,8 +2686,6 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>(
         (resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let blockQueue: containers.BlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError> =
-          new containers.ArrayBlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError>(2);
         let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
           let result: FetchResult<PhotoAsset> | MediaLibraryAniError;
           try {
@@ -2690,7 +2693,6 @@ export namespace photoAccessHelper {
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
-          blockQueue.push(result);
           return result;
         };
 
@@ -2706,7 +2708,6 @@ export namespace photoAccessHelper {
             }
           }
         });
-        blockQueue.pop();
       });
     }
 
@@ -3740,6 +3741,54 @@ export namespace photoAccessHelper {
       });
     }
 
+    setPreferredCompatibleMode(bundleName: string, config: PreferredCompatibleMode): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.setPreferredCompatibleModeInner(bundleName, config);
+            return undefined;
+          } catch (e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code as int, err.message));
+          }
+        });
+      });
+    }
+
+    getPreferredCompatibleMode(bundleName: string): Promise<PreferredCompatibleMode> {
+      return new Promise<PreferredCompatibleMode>((resolve: (v: PreferredCompatibleMode) => void,
+        reject: RejectString) => {
+        let cb = (): PreferredCompatibleMode | MediaLibraryAniError => {
+          let result: PreferredCompatibleMode | MediaLibraryAniError;
+          try {
+            result = this.getPreferredCompatibleModeInner(bundleName);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as PreferredCompatibleMode);
+            }
+          }
+        });
+      });
+    }
+
     isMediaDataReady(mediaDataKey: string): Promise<boolean> {
       return new Promise<boolean>((resolve: (v: boolean) => void, reject: RejectString) => {
         let cb = (): boolean | MediaLibraryAniError => {
@@ -3894,6 +3943,8 @@ export namespace photoAccessHelper {
     native onTrashedAlbumChange(callback: Callback<AlbumChangeInfos>): void;
     native offTrashedAlbumChange(callback?: Callback<AlbumChangeInfos>): void;
     native getPhotoAlbumsInner(options?: FetchOptions): FetchResult<Album>;
+    native setPreferredCompatibleModeInner(bundleName: string, config: PreferredCompatibleMode): void;
+    native getPreferredCompatibleModeInner(bundleName: string): PreferredCompatibleMode;
     native getPhotoAlbumsOrderInner(orderStyle: int, options?: FetchOptions): FetchResult<AlbumOrder>;
     native setPhotoAlbumsOrderInner(orderStyle: int, albumOrders: Array<AlbumOrder>): void;
     native isMediaDataReadyInner(mediaDataKey: string): boolean;
@@ -3904,11 +3955,13 @@ export namespace photoAccessHelper {
 
   export interface AssetCompatibleAbility {
     supportedHighResolution: boolean;
+    supportedMimeType?: Array<string>;
   }
 
   class AssetCompatibleAbilityHandle implements AssetCompatibleAbility {
     constructor() {}
     supportedHighResolution: boolean;
+    supportedMimeType?: Array<string>;
   }
 
   export interface GalleryFormInfo {

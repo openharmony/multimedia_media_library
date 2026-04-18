@@ -23,10 +23,15 @@
 #include "nlohmann/json.hpp"
 #include "bundle_mgr_interface.h"
 #include "common_event_manager.h"
+#include "highpixel_bundle_info_cache.h"
 
 namespace OHOS {
 namespace Media {
-
+enum class TranscodeMode {
+    DEFAULT = 0,
+    CURRENT = 1,
+    COMPATIBLE = 2,
+};
 #define EXPORT __attribute__ ((visibility ("default")))
 class HeifTranscodingCheckUtils {
 public:
@@ -36,20 +41,35 @@ public:
     EXPORT HeifTranscodingCheckUtils& operator=(HeifTranscodingCheckUtils&&) = delete;
     EXPORT static int32_t InitCheckList();
     EXPORT static bool CanSupportedCompatibleDuplicate(const std::string &bundleName);
+    EXPORT static bool CanSupportedHighPixelPicture(const std::string &bundleName, const HighPixelType &type);
     EXPORT static void UnsubscribeCotaUpdatedEvent();
     EXPORT static void ClearBundleInfoInCache();
+    EXPORT static TranscodeMode CheckTranscodeMode(const std::string &bundleName,
+        bool isHighPixel, bool isHeifFile);
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
     static int32_t ParseWhiteList(const nlohmann::json &checkListJson);
     static int32_t ParseDenyList(const nlohmann::json &checkListJson);
+    static int32_t ParseHighPixelCheckList(const nlohmann::json &checkListJson, const std::string &path);
+    static int32_t ParsePixelWhiteListFromFile();
     static int32_t ReadCheckList();
+    static bool CheckHighPixelWhiteList(const std::string &bundleName,
+        const HighPixelType &pixelType, const std::unordered_map<std::string, std::string>* whiteList);
+    static bool CheckHighPixelBlackList(const std::string &bundleName,
+        const HighPixelType &pixelType, const std::unordered_map<std::string, std::string>* denyList);
     static void ClearCheckList();
     static int32_t SubscribeCotaUpdatedEvent();
     static bool isUseWhiteList_;
+    static bool isUseWhiteList50_;
+    static bool isUseWhiteList200_;
     // key: bundleName, value: version
     static std::unordered_map<std::string, std::string> whiteList_;
     // key: bundleName
     static std::unordered_set<std::string> denyList_;
+    static std::unordered_map<std::string, std::string> whiteList50_;
+    static std::unordered_map<std::string, std::string> denyList50_;
+    static std::unordered_map<std::string, std::string> whiteList200_;
+    static std::unordered_map<std::string, std::string> denyList200_;
     static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex bundleMgrMutex_;
     static std::shared_ptr<EventFwk::CommonEventSubscriber> cotaUpdateSubscriber_;

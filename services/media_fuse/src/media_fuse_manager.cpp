@@ -24,6 +24,7 @@
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
+#include "media_cloud_permission_check.h"
 #include "media_fuse_high_daemon.h"
 #include "media_fuse_hdc_operations.h"
 #include "media_log.h"
@@ -197,6 +198,7 @@ void MediaFuseManager::Start()
 void MediaFuseManager::Stop()
 {
     UMountFuse();
+    fuseHighDaemon_ = nullptr;
     MEDIA_INFO_LOG("Stop finished successfully");
 }
 
@@ -355,6 +357,156 @@ int32_t MediaFuseManager::DoMedialibraryReadPermission(const string &fileId, con
     return permGranted;
 }
 
+static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, std::string &mimeType, const string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_MIME_TYPE);
+    columns.push_back(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    int32_t numRows = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rslt");
+        return E_ERR;
+    }
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
+        MEDIA_ERR_LOG("Failed to get filePath");
+        return E_ERR;
+    }
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        mimeType = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_MIME_TYPE);
+        compatibleMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+    }
+    return E_SUCCESS;
+}
+
+static bool IsHighPixelPicture(const string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    vector<string> columns;
+    columns.push_back(PhotoColumn::PHOTO_WIDTH);
+    columns.push_back(PhotoColumn::PHOTO_HEIGHT);
+
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    int32_t numRows = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get result");
+        return false;
+    }
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if (ret != NativeRdb::E_OK || numRows <= 0) {
+        MEDIA_ERR_LOG("Failed to get numRows");
+        return false;
+    }
+    int32_t width = 0;
+    int32_t height = 0;
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        width = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_WIDTH);
+        height = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_HEIGHT);
+    }
+    if (width * height >= HIGH_PIXEL_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static bool IsSupportHighResolution(const string &bundleName)
+{
+    CompatibleInfo compatibleInfo;
+    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+    if (compatibleInfo.highResolution) {
+        return true;
+    }
+    return false;
+}
+
+static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
+    const string &bundleName)
+{
+    AccessTokenID tokenId;
+    PermissionUtils::GetTokenCallerForUid(uid, tokenId);
+    bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    if (isHighPixel && !isSystemApp) {
+        uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
+        if (IsSupportHighResolution(bundleName)) {
+            return false;
+        }
+        if (HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200)) {
+            return false;
+        }
+        MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
+        return true;
+    }
+    return false;
+}
+
+static void SetTranscodeType(bool isHighPixel, bool isHeif, TranscodeType& transcodeType)
+{
+    if (isHeif) {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
+            return;
+        }
+        transcodeType = TranscodeType::HEIF;
+    } else {
+        if (isHighPixel) {
+            transcodeType = TranscodeType::HIGH_PIXEL;
+            return;
+        }
+        transcodeType = TranscodeType::DEFAULT;
+    }
+}
+
+static int32_t GetTranscodeUri(string &filePath, const string &fileId, const string &mode,
+    const int uid, TranscodeType& transcodeType)
+{
+    string bundleName;
+    PermissionUtils::GetClientBundle(uid, bundleName);
+    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
+        "mode is not read only, filePath: %{private}s", filePath.c_str());
+    int32_t compatibleMode = 0;
+    std::string mimeType("");
+    CHECK_AND_RETURN_RET_LOG(GetCompatibleModeFromFileId(compatibleMode, mimeType, fileId) == E_OK, E_INNER_FAIL,
+        "Get compatible mode failed, fileId: %{public}s", fileId.c_str());
+    bool isHighPixel = IsHighPixelPicture(fileId);
+    bool isHeif = (mimeType == "image/heif" || mimeType == "image/heic");
+    CHECK_AND_RETURN_RET_INFO_LOG(isHighPixel || isHeif, E_INNER_FAIL, "[transcode] not high, not heif");
+    CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
+        "Is not have transcode file, filePath: %{private}s", filePath.c_str());
+    string path = MediaEditUtils::GetEditDataDir(filePath);
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
+        "Get edit data dir path failed, filePath: %{private}s", filePath.c_str());
+    MEDIA_INFO_LOG("GetTranscodeUri path: %{private}s", path.c_str());
+    string tempPath = path + "/transcode.jpg";
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((tempPath)), E_INNER_FAIL, "transcode.jpg is not exist");
+
+    auto ret = HeifTranscodingCheckUtils::CheckTranscodeMode(bundleName, isHighPixel, isHeif);
+    CHECK_AND_RETURN_RET_INFO_LOG(ret != TranscodeMode::CURRENT,
+        E_INNER_FAIL, "CheckTranscodeMode is CURRENT, bundleName: %{public}s", bundleName.c_str());
+    if (ret == TranscodeMode::COMPATIBLE) {
+        MEDIA_INFO_LOG("CheckTranscodeMode is COMPATIBLE, bundleName: %{public}s", bundleName.c_str());
+        filePath = tempPath;
+        SetTranscodeType(isHighPixel, isHeif, transcodeType);
+        return E_OK;
+    }
+
+    if (!NeedTranscodeHighPixelPicture(isHighPixel, uid, bundleName)) {
+        if (!isHeif) {
+            MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
+            return E_INNER_FAIL;
+        }
+        CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
+            "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
+    }
+    filePath = tempPath;
+    SetTranscodeType(isHighPixel, isHeif, transcodeType);
+    return E_OK;
+}
+
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
@@ -387,6 +539,8 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
         int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
         CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
+        TranscodeType type;
+        GetTranscodeUri(target, fileId, MEDIA_FILEMODE_READONLY, ctx->uid, type);
         ret = lstat(target.c_str(), stbuf);
         if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
             if (accesstime > MILLISECONDS_THRESHOLD) {
@@ -408,24 +562,37 @@ int32_t MediafusePermCheckInfo::WrCheckPermission(const string &filePath, const 
     const uid_t &uid, AccessTokenID &tokenCaller, bool isNeedRecord)
 {
     vector<string> perms;
+    bool containsRead = false;
     if (mode.find("r") != string::npos) {
         perms.push_back(PERM_READ_IMAGEVIDEO);
+        containsRead = true;
     }
     if (mode.find("w") != string::npos) {
         perms.push_back(PERM_WRITE_IMAGEVIDEO);
     }
     if (!isNeedRecord) {
-        return PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms,
-            uid, tokenCaller)? E_SUCCESS : E_PERMISSION_DENIED;
+        if (!PermissionUtils::CheckPhotoCallerPermissionNoRecord(perms, uid, tokenCaller)) {
+            return E_PERMISSION_DENIED;
+        }
+        if (containsRead) {
+            return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+        }
+        return E_SUCCESS;
     }
+
     OpenDataInfo openData;
     openData.uri = openUri_;
     openData.uid = uid;
     openData.userId = uid / PermissionUtils::BASE_USER_RANGE;
     openData.type = "open";
     openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    return PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData) ?
-        E_SUCCESS : E_PERMISSION_DENIED;
+    if (!PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller, openData)) {
+        return E_PERMISSION_DENIED;
+    }
+    if (containsRead) {
+        return CloudReadPermissionCheck::CheckPureCloudAssets(fileId_);
+    }
+    return E_SUCCESS;
 }
  
 void MediafusePermCheckInfo::SetOpenUri(const std::string &openUri)
@@ -508,139 +675,6 @@ bool MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller, bool isNeedR
     return rslt;
 }
 
-static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, const string &fileId)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
-
-    vector<string> columns;
-    columns.push_back(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    int32_t numRows = 0;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rslt");
-        return E_ERR;
-    }
-    int32_t ret = resultSet->GetRowCount(numRows);
-    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
-        MEDIA_ERR_LOG("Failed to get filePath");
-        return E_ERR;
-    }
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        compatibleMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
-    }
-    return E_SUCCESS;
-}
-
-static bool IsHighPixelPicture(const string &fileId)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    vector<string> columns;
-    columns.push_back(PhotoColumn::PHOTO_WIDTH);
-    columns.push_back(PhotoColumn::PHOTO_HEIGHT);
-
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    int32_t numRows = 0;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get result");
-        return false;
-    }
-    int32_t ret = resultSet->GetRowCount(numRows);
-    if (ret != NativeRdb::E_OK || numRows <= 0) {
-        MEDIA_ERR_LOG("Failed to get numRows");
-        return false;
-    }
-    int32_t width = 0;
-    int32_t height = 0;
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        width = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_WIDTH);
-        height = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_HEIGHT);
-    }
-    if (width * height >= HIGH_PIXEL_SIZE) {
-        return true;
-    }
-    return false;
-}
-
-static bool IsSupportHighResolution(const string &bundleName)
-{
-    CompatibleInfo compatibleInfo;
-    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
-    if (compatibleInfo.highResolution) {
-        return true;
-    }
-    return false;
-}
-
-static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
-    const string &bundleName)
-{
-    AccessTokenID tokenId;
-    PermissionUtils::GetTokenCallerForUid(uid, tokenId);
-    bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
-    if (isHighPixel && !isSystemApp) {
-        uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-        if (IsSupportHighResolution(bundleName)) {
-            return false;
-        }
-        MEDIA_INFO_LOG("NeedTranscodeHighPixelPicture need transcode");
-        return true;
-    }
-    return false;
-}
-
-static void SetTranscodeType(bool isHighPixel, bool isHeif, TranscodeType& transcodeType)
-{
-    if (isHeif) {
-        if (isHighPixel) {
-            transcodeType = TranscodeType::HIGH_PIXEL_HEIF;
-            return;
-        }
-        transcodeType = TranscodeType::HEIF;
-    } else {
-        if (isHighPixel) {
-            transcodeType = TranscodeType::HIGH_PIXEL;
-            return;
-        }
-        transcodeType = TranscodeType::DEFAULT;
-    }
-}
-
-static int32_t GetTranscodeUri(string &filePath, const string &fileId, const string &mode,
-    const int uid, TranscodeType& transcodeType)
-{
-    string bundleName;
-    PermissionUtils::GetClientBundle(uid, bundleName);
-    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
-        "mode is not read only, filePath: %{private}s", filePath.c_str());
-    int32_t compatibleMode = 0;
-    GetCompatibleModeFromFileId(compatibleMode, fileId);
-    CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
-        "Is not have transcode file, filePath: %{private}s", filePath.c_str());
-    string path = MediaEditUtils::GetEditDataDir(filePath);
-    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
-        "Get edit data dir path failed, filePath: %{private}s", filePath.c_str());
-    MEDIA_INFO_LOG("GetTranscodeUri path: %{private}s", path.c_str());
-    string tempPath = path + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((tempPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-
-    bool isHighPixel = IsHighPixelPicture(fileId);
-    bool isHeif = (MediaFileUtils::GetExtensionFromPath(filePath) == "heif" ||
-        MediaFileUtils::GetExtensionFromPath(filePath) == "heic");
-    if (!NeedTranscodeHighPixelPicture(isHighPixel, uid, bundleName)) {
-        if (!isHeif) {
-            MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
-            return E_INNER_FAIL;
-        }
-        CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
-            "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
-    }
-    filePath = tempPath;
-    SetTranscodeType(isHighPixel, isHeif, transcodeType);
-    return E_OK;
-}
-
 static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode,
     const string &uri)
 {
@@ -680,7 +714,8 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
 static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
 {
     int32_t compatibleMode = 0;
-    if (GetCompatibleModeFromFileId(compatibleMode, fileId) != E_SUCCESS) {
+    std::string mimeType("");
+    if (GetCompatibleModeFromFileId(compatibleMode, mimeType, fileId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
         return E_ERR;
     }

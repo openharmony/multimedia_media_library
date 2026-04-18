@@ -107,6 +107,11 @@ constexpr int32_t NOT_HIDDEN = 0;
 constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 
+const int32_t HIGH_PIXEL_START_SIZE = 6 * 1024 * 8 * 1024;
+const int32_t HIGH_PIXEL_STOP_SIZE = 4 * 1024 * 6 * 1024;
+const double HIGH_PIXEL_RESIZE_SCALE = 1.4;
+const int32_t HIGH_PIXEL_SCALE = 2;
+
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
@@ -1285,22 +1290,26 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Cannnot modify displayName for burst photos.";
             return false;
         }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
             if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         } else {
             if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
+                context->errorMsg = "Invalid displayName.";
                 return false;
             }
         }
     } else {
         if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
             context->error = JS_E_DISPLAYNAME;
+            context->errorMsg = "Title is invalid.";
             return false;
         }
     }
@@ -3089,6 +3098,7 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_DATE_ADDED_DAY,
         PhotoColumn::UNIQUE_ID,
         PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
+        PhotoColumn::PHOTO_HIDDEN_TIME,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -3098,11 +3108,41 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
     return E_SUCCESS;
 }
 
+static bool IsHighPixelPicture(int32_t width, int32_t height)
+{
+    if (width * height >= HIGH_PIXEL_START_SIZE) {
+        return true;
+    }
+    return false;
+}
+
+static bool GetDesireSize(int32_t &width, int32_t &height)
+{
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+
+    while (IsHighPixelPicture(width, height)) {
+        width /= HIGH_PIXEL_SCALE;
+        height /= HIGH_PIXEL_SCALE;
+    }
+
+    if (width * height > HIGH_PIXEL_STOP_SIZE) {
+        width /= HIGH_PIXEL_RESIZE_SCALE;
+        height /= HIGH_PIXEL_RESIZE_SCALE;
+    }
+    
+    return true;
+}
+
 bool FileAssetNapi::IsSpecialKey(const string &key)
 {
     static const set<string> SPECIAL_KEY = {
         PENDING_STATUS,
         PhotoColumn::PHOTO_EXIF_ROTATE,
+        PhotoColumn::PHOTO_WIDTH,
+        PhotoColumn::PHOTO_HEIGHT,
+        PhotoColumn::MEDIA_SIZE
     };
 
     if (SPECIAL_KEY.find(key) != SPECIAL_KEY.end()) {
@@ -3129,6 +3169,31 @@ napi_value FileAssetNapi::HandleGettingSpecialKey(napi_env env, const string &ke
         int32_t value = fileAssetPtr->GetVideoMode();
         int32_t videoMode = value == -1 ? static_cast<int32_t>(VideoMode::NOT_LOG_VIDEO) : value;
         napi_create_int32(env, videoMode, &jsResult);
+    } else if (key == PhotoColumn::PHOTO_WIDTH) {
+        int32_t width = fileAssetPtr->GetWidth();
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+            int32_t height = fileAssetPtr->GetHeight();
+            GetDesireSize(width, height);
+            napi_create_int32(env, width, &jsResult);
+        } else {
+            napi_create_int32(env, width, &jsResult);
+        }
+    } else if (key == PhotoColumn::PHOTO_HEIGHT) {
+        int32_t height = fileAssetPtr->GetHeight();
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+            int32_t width = fileAssetPtr->GetWidth();
+            GetDesireSize(width, height);
+            napi_create_int32(env, height, &jsResult);
+        } else {
+            napi_create_int32(env, height, &jsResult);
+        }
+    } else if (key == PhotoColumn::MEDIA_SIZE) {
+        if (fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE) != 0) {
+            napi_create_int64(env,
+                fileAssetPtr->GetInt64Member(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE), &jsResult);
+        } else {
+            napi_create_int64(env, fileAssetPtr->GetSize(), &jsResult);
+        }
     }
 
     return jsResult;
