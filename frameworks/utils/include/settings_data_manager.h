@@ -55,6 +55,7 @@ public:
     EXPORT static bool GetHdcDeviceId(std::string& deviceId);
     static AlbumUploadSwitchStatus GetAllAlbumUploadStatus();
     static int32_t UpdateOrInsertAllPhotosAlbumUpload();
+    EXPORT static int32_t UpdateOrInsertCloneSearchStatus();
 
 private:
     static int32_t QueryParamInSettingData(const std::string &key, std::string &value);
