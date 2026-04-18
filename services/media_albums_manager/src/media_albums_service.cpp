@@ -998,4 +998,15 @@ void MediaAlbumsService::ReportFirstDbStatus()
         Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
     }
 }
+
+void MediaAlbumsService::ReportCloneDbStatus()
+{
+    std::string cloneFlagStr = OHOS::system::GetParameter("multimedia.medialibrary.cloneFlag", "0");
+    if (cloneFlagStr != "0") {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("unavailable",
+            "Database occupied by Clone application");
+    } else {
+        Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
+    }
+}
 } // namespace OHOS::Media
