@@ -43,8 +43,12 @@ inline static const std::string PHOTOS_SYNC_SWITCH_USER_KEY = "photos_sync_optio
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_USER = "photos_all_album_upload_user";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD = "photos_all_album_upload";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_OFF = "0";
+
 static constexpr int32_t BASE_USER_RANGE = 200000;
 constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
+
+inline static const std::string CLONE_SEARCH_STATUS = "clone_search_status";
+inline static const std::string CLONE_SEARCH_INDEXING = "3";
 
 class MediaSettingDataHelper {
 public:
@@ -397,5 +401,15 @@ int32_t SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload()
     }
     MEDIA_WARN_LOG("insert album upload user key failed, fallback to device key, ret: %{public}d", insertRet);
     return InsertParamInDeviceSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+}
+
+int32_t SettingsDataManager::UpdateOrInsertCloneSearchStatus()
+{
+    std::string values;
+    auto ret = QueryParamInSettingData(CLONE_SEARCH_STATUS, values);
+    if (ret != E_OK) {
+        return InsertParamInSettingData(CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
+    }
+    return UpdateParamInSettingData(CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
 }
 }
