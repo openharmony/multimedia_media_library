@@ -120,6 +120,7 @@ static const std::map<std::string, DataType> PHOTOS_COLUMNS = {
     {PhotoColumn::UNIQUE_ID, DataType::STRING},
     {PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, DataType::INT},
     {PhotoColumn::PHOTO_RISK_STATUS, DataType::INT},
+    {PhotoColumn::LOCAL_ASSET_SIZE, DataType::LONG},
 };
 
 static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {

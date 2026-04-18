@@ -19,6 +19,7 @@
 
 #include <cstdlib>
 
+#include "media_cloud_permission_check.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_bundle_manager.h"
@@ -401,7 +402,13 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
         openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
         openData.type = "open";
         openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-        return PermissionUtils::CheckPhotoCallerPermission(perms, openData)? E_SUCCESS : E_PERMISSION_DENIED;
+        if (!PermissionUtils::CheckPhotoCallerPermission(perms, openData)) {
+            return E_PERMISSION_DENIED;
+        }
+        if (containsRead) {
+            return CloudReadPermissionCheck::CheckPureCloudAssets(cmd.GetOprnFileId());
+        }
+        return E_SUCCESS;
     }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :

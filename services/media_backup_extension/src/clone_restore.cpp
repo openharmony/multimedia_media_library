@@ -592,6 +592,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     StopParameterForClone();
     SetMediaAnalysisClearDirtyDataParameter();
     CloseAllKvStore();
+    DelayLcdAgingTime();
     MEDIA_INFO_LOG("End clone restore");
 }
 

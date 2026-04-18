@@ -74,6 +74,7 @@ private:
     bool OriginSourceExist(std::string &path);
     bool DealWithZeroSizeFile(std::string &path);
     bool IsZeroSizeFile(std::string &path);
+    bool Is4WeekAgoFile(std::string &path);
     bool ThumbnailSourceExist(std::string &path);
 
     void HandleBothExistStrategy(DirtyFileInfo &dirtyFileInfo);

@@ -67,8 +67,7 @@ public:
     int32_t CheckPhotoUriPermissionInner(MediaLibraryCommand &cmd, const DataShare::DataSharePredicates &predicates,
         const std::vector<std::string> &columns, std::vector<std::string> &outFileIds,
         std::vector<int32_t> &permissionTypes);
-    int32_t QueryPhotoAssetsReadState(const std::vector<std::string> &fileIds,
-        std::map<std::string, PhotoAssetReadState> &assetStateMap);
+    int32_t QueryPhotoAssetsReadState(const std::vector<std::string> &fileIds, std::vector<std::string> &validFileIds);
     int32_t GrantPhotoUrisPermissionInner(
         MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values);
     int32_t UpdateTmpCompatibleDup(int32_t fileId, size_t size, bool validate = true);

@@ -43,6 +43,7 @@ public:
     static const std::string USER_CLIENT_CHANGE EXPORT;
     static const std::string ANALYSIS_PHOTO_CHANGE EXPORT;
     static const std::string ANALYSIS_ALBUM_CHANGE EXPORT;
+    static const std::string MEDIALIBRARY_AVAILABILITY_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
@@ -63,6 +64,9 @@ public:
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_USER_DEFINE_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_USER_DEFINE_URI_MAP;
 
+    static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_AVAILABILITY_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, std::string> REGISTER_AVAILABILITY_URI_MAP;
+
     static int32_t GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
     static int32_t GetUserDefineNotifyTypeAndUri(const Notification::NotifyUriType type,
@@ -75,6 +79,9 @@ public:
     static int32_t GetSingleNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, string &uri);
 
+    static int32_t GetAvailabilityNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, std::string &uri);
+
     static napi_status SetValueInt32(const napi_env& env, const char* name, const int32_t intValue, napi_value& result);
     static napi_status SetValueInt64(const napi_env& env, const char* name, const int64_t intValue, napi_value& result);
     static napi_status SetValueString(const napi_env& env, const char* name, const std::string& stringValue,
@@ -83,14 +90,17 @@ public:
     static napi_status SetValueNull(const napi_env& env, const char* name, napi_value& result);
 
     static napi_value BuildPhotoAssetChangeInfo(napi_env env,
-        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo);
+        const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoAssetChangeData(napi_env env,
-        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData);
+        const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoNapiArray(napi_env env,
         const std::vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>>
-        &changeInfos);
+        &changeInfos, Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildPhotoAssetChangeInfos(napi_env env,
-        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+        const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo,
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::ANY);
     static napi_value BuildAlbumChangeInfosArray(napi_env env,
         const std::vector<std::shared_ptr<AccurateRefresh::AlbumChangeInfo>> &albumChangeInfos);
 

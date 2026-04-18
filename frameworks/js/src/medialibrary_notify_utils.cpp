@@ -40,6 +40,7 @@ const std::string RegisterNotifyType::SINGLE_PHOTO_ALBUM_CHANGE = "singlePhotoAl
 const std::string RegisterNotifyType::ANALYSIS_PHOTO_CHANGE = "analysisPhotoChange";
 const std::string RegisterNotifyType::ANALYSIS_ALBUM_CHANGE = "analysisAlbumChange";
 const std::string RegisterNotifyType::USER_CLIENT_CHANGE = "userDefineChange";
+const std::string RegisterNotifyType::MEDIALIBRARY_AVAILABILITY_CHANGE = "medialibraryAvailabilityChange";
 
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
     MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {
@@ -367,7 +368,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfosArray(napi_env env,
 }
 
 napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
-    const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo)
+    const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo, Notification::NotifyUriType uriType)
 {
     if (photoAssetChangeInfo.fileId_ == AccurateRefresh::INVALID_INT32_VALUE) {
         return nullptr;
@@ -391,10 +392,15 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     SetValueInt64(env, "dateTrashedMs", photoAssetChangeInfo.dateTrashedMs_, result);
     SetValueInt64(env, "dateAddedMs", photoAssetChangeInfo.dateAddedMs_, result);
     SetValueInt64(env, "dateTakenMs", photoAssetChangeInfo.dateTakenMs_, result);
+    SetValueInt64(env, "dateModifiedMs", photoAssetChangeInfo.dateModifiedMs_, result);
     SetValueInt32(env, "position", photoAssetChangeInfo.position_, result);
     SetValueString(env, "displayName", photoAssetChangeInfo.displayName_, result);
     SetValueInt64(env, "size", photoAssetChangeInfo.size_, result);
     SetValueInt64(env, "livephoto4dStatus", photoAssetChangeInfo.livephoto4dStatus_, result);
+
+    if (uriType == Notification::NotifyUriType::HIDDEN_PHOTO_URI) {
+        SetValueInt64(env, "hiddenTime", photoAssetChangeInfo.hiddenTime_, result);
+    }
 
     {
         napi_value albumArray = BuildAlbumChangeInfosArray(env, photoAssetChangeInfo.albumChangeInfos_);
@@ -409,13 +415,13 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
 }
 
 napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeData(napi_env env,
-    const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData)
+    const AccurateRefresh::PhotoAssetChangeData &photoAssetChangeData, Notification::NotifyUriType uriType)
 {
     napi_value result = nullptr;
     napi_create_object(env, &result);
     napi_status status = napi_ok;
 
-    napi_value assetBeforeChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoBeforeChange_);
+    napi_value assetBeforeChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoBeforeChange_, uriType);
     if (assetBeforeChangeValue == nullptr) {
         SetValueNull(env, "assetBeforeChange", result);
     } else {
@@ -425,7 +431,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeData(napi_env env,
         }
     }
 
-    napi_value assetAfterChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoAfterChange_);
+    napi_value assetAfterChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoAfterChange_, uriType);
     if (assetAfterChangeValue == nullptr) {
         SetValueNull(env, "assetAfterChange", result);
     } else {
@@ -462,7 +468,8 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeData(napi_env env,
 }
 
 napi_value MediaLibraryNotifyUtils::BuildPhotoNapiArray(napi_env env,
-    const vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>> &changeInfos)
+    const vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>> &changeInfos,
+    Notification::NotifyUriType uriType)
 {
     MediaLibraryTracer tracer;
     tracer.Start("BuildPhotoNapiArray");
@@ -476,7 +483,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoNapiArray(napi_env env,
     size_t resultIndex = 0;
     for (const auto &changeInfo : changeInfos) {
         if (const auto changeInfoPtr = std::get_if<AccurateRefresh::PhotoAssetChangeData>(&changeInfo)) {
-            napi_value assetValue = BuildPhotoAssetChangeData(env, *changeInfoPtr);
+            napi_value assetValue = BuildPhotoAssetChangeData(env, *changeInfoPtr, uriType);
             if ((assetValue == nullptr) || (napi_set_element(env, result, resultIndex++, assetValue) != napi_ok)) {
                 NAPI_ERR_LOG("failed to add element");
                 return tmpValue;
@@ -490,7 +497,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoNapiArray(napi_env env,
 }
 
 napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(napi_env env,
-    const shared_ptr<Notification::MediaChangeInfo> &changeInfo)
+    const shared_ptr<Notification::MediaChangeInfo> &changeInfo, Notification::NotifyUriType uriType)
 {
     MediaLibraryTracer tracer;
     tracer.Start("BuildPhotoAssetChangeInfos");
@@ -508,7 +515,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(napi_env env,
         return nullptr;
     }
 
-    napi_value assetResults = BuildPhotoNapiArray(env, changeInfo->changeInfos);
+    napi_value assetResults = BuildPhotoNapiArray(env, changeInfo->changeInfos, uriType);
     if (assetResults == nullptr) {
         NAPI_ERR_LOG("Failed to build assetResults");
         return nullptr;
@@ -555,6 +562,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
     SetValueInt32(env, "orderSection", albumChangeInfo.orderSection_, result);
     SetValueInt32(env, "albumOrder", albumChangeInfo.albumsOrder_, result);
+    SetValueString(env, "lpath", albumChangeInfo.lpath_, result);
     if (!(albumChangeInfo.albumSubType_ >= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_START) &&
         albumChangeInfo.albumSubType_ <= static_cast<int32_t>(PhotoAlbumSubType::ANALYSIS_END))) {
         SetValueBool(env, "hidden", static_cast<bool>(albumChangeInfo.hidden_), result);

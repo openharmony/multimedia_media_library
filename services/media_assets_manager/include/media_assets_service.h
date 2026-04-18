@@ -83,7 +83,10 @@
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
 #include "transcode_compatible_info_operations.h"
+#include "preferred_compatible_mode_vo.h"
 #include "compatible_info_vo.h"
+#include "reserve_photo_uri_permission_vo.h"
+#include "resume_photo_uri_permission_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -202,6 +205,8 @@ public:
     int32_t OpenAssetCompress(const OpenAssetCompressDto &dto, OpenAssetCompressRespBody &respBody);
     int32_t NotifyAssetSended(const std::string &uri);
     int32_t GetAssetCompressVersion(int32_t &version);
+    int32_t SetPreferredCompatibleMode(const std::string &bundleName, int32_t preferredCompatibleMode);
+    int32_t GetPreferredCompatibleMode(const std::string &bundleName, int32_t &preferredCompatibleMode);
     int32_t GetCompressAssetSize(const std::vector<std::string> &uris, GetCompressAssetSizeRespBody &respBody);
     int32_t QueryMediaDataStatus(const std::string &dataKey, bool &result);
     int32_t CheckSinglePhotoPermission(const std::string &fileId, int32_t registerType);
@@ -211,6 +216,10 @@ public:
     int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
     int32_t SetCompatibleInfo(CompatibleInfo &compatibleInfo);
     int32_t GetCompatibleInfo(const std::string &bundleName, GetCompatibleInfoRespBody &respBody);
+    int32_t ReservePhotoUriPermission(const ReservePhotoUriPermissionReqBody &reqBody,
+        ReservePhotoUriPermissionRespBody &respBody);
+    int32_t ResumePhotoUriPermission(const ResumePhotoUriPermissionReqBody &reqBody,
+        ResumePhotoUriPermissionRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

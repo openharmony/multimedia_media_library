@@ -45,6 +45,8 @@
 #include "cancel_photo_uri_permission_vo.h"
 #include "cancel_photo_uri_permission_inner_vo.h"
 #include "check_photo_uri_permission_inner_vo.h"
+#include "reserve_photo_uri_permission_vo.h"
+#include "resume_photo_uri_permission_vo.h"
 #include "start_asset_change_scan_vo.h"
 #include "start_asset_change_scan_dto.h"
 #include "start_thumbnail_creation_task_vo.h"
@@ -87,6 +89,7 @@
 #include "get_edit_data_dto.h"
 #include "get_cloud_enhancement_pair_dto.h"
 #include "permission_utils.h"
+#include "media_cloud_permission_check.h"
 #include "media_app_uri_permission_column.h"
 #include "cancel_request_vo.h"
 #include "start_batch_download_cloud_resources_vo.h"
@@ -109,9 +112,11 @@
 #include "query_media_data_status_vo.h"
 #include "check_single_photo_permission_vo.h"
 #include "media_change_info.h"
+#include "ipc_skeleton.h"
 
 namespace OHOS::Media {
 using namespace std;
+using namespace OHOS::Security::AccessToken;
 using namespace Notification;
 static const size_t FACARD_MAX_REGISTER_OBSERVER = 500;
 
@@ -327,6 +332,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION),
         &MediaAssetsControllerService::GrantPhotoUriPermissionInner
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION),
+        &MediaAssetsControllerService::ReservePhotoUriPermission
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION),
+        &MediaAssetsControllerService::ResumePhotoUriPermission
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION),
@@ -623,6 +636,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_LIVEPHOTO_4D_STATUS),
         &MediaAssetsControllerService::SetLivePhoto4dStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::SetPreferredCompatibleMode
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PREFERRED_COMPATIBLE_MODE),
+        &MediaAssetsControllerService::GetPreferredCompatibleMode
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_COMPATIBLE_INFO),
@@ -1332,7 +1353,7 @@ int32_t MediaAssetsControllerService::GetAssets(
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1340,7 +1361,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_PERMISSION_DB_BYPASS;
     } else if (context.GetByPassCode() == E_DOUBLE_CHECK) {
-        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1348,7 +1369,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_INFO_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
 
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
@@ -1380,7 +1401,7 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1388,7 +1409,7 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_PERMISSION_DB_BYPASS;
     } else if (context.GetByPassCode() == E_DOUBLE_CHECK) {
-        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1396,8 +1417,9 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_DOUBLE_CHECK;
     } else {
-        MEDIA_DEBUG_LOG("GetAssets by read permission");
+        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
     }
+
     dto.predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto, passCode);
     if (resultSet == nullptr) {
@@ -3071,6 +3093,43 @@ int32_t MediaAssetsControllerService::SetLivePhoto4dStatus(MessageParcel &data, 
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
+int32_t MediaAssetsControllerService::SetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode start");
+    SetPreferredCompatibleModeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().SetPreferredCompatibleMode(
+        reqBody.bundleName, reqBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::SetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode start");
+    GetPreferredCompatibleModeReqBody reqBody;
+    GetPreferredCompatibleModeRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPreferredCompatibleMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetPreferredCompatibleMode(
+        reqBody.bundleName, respBody.preferredCompatibleMode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::GetPreferredCompatibleMode fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
 int32_t MediaAssetsControllerService::SetCompatibleInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("MediaAssetsControllerService::SetCompatibleInfo start");
@@ -3107,6 +3166,44 @@ int32_t MediaAssetsControllerService::GetCompatibleInfo(MessageParcel &data, Mes
         MEDIA_ERR_LOG("MediaAssetsControllerService::GetCompatibleInfo fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
     }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::ReservePhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ReservePhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESERVE_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ReservePhotoUriPermissionReqBody reqBody;
+    ReservePhotoUriPermissionRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ReservePhotoUriPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().ReservePhotoUriPermission(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::ResumePhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ResumePhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RESUME_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ResumePhotoUriPermissionReqBody reqBody;
+    ResumePhotoUriPermissionRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ResumePhotoUriPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().ResumePhotoUriPermission(reqBody, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

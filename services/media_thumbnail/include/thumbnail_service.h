@@ -89,6 +89,8 @@ public:
     EXPORT int32_t FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId,
         bool needDeleteFromVisionTables = true);
     EXPORT int32_t CreateAstcOnlyDownloadThm(const std::string &id, bool isCloudInsertTaskPriorityHigh);
+    EXPORT int32_t RegenerateAstcBackground();
+    EXPORT int32_t SyncRegenerateAstcWithLocal(const std::string &id);
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

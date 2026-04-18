@@ -140,14 +140,11 @@ const std::string UPDATE_DAY_MONTH_YEAR = ""
     "WHERE"
     "  file_id IN ( ";
 // LCOV_EXCL_START
-int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
+int32_t PhotoDayMonthYearOperation::UpdatePhotosDateUpgrade(NativeRdb::RdbStore &rdbStore)
 {
     MEDIA_INFO_LOG("update photos date start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
-    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
-        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-    auto resultSet = rdbStore->QueryByStep(QUERY_NEED_UPDATE_FILE_IDS);
+    auto resultSet = rdbStore.QueryByStep(QUERY_NEED_UPDATE_FILE_IDS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "query photos by step failed");
 
     std::vector<std::string> needUpdateFileIds;
@@ -173,7 +170,7 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<Media
         updateSql << " );";
         int64_t batchStart = MediaFileUtils::UTCTimeMilliSeconds();
         int64_t changedRowCount = 0;
-        auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
+        auto errCode = rdbStore.ExecuteForChangedRowCount(changedRowCount, updateSql.str());
         if (errCode != NativeRdb::E_OK) {
             ret = errCode;
             MEDIA_ERR_LOG("update photos date failed, errCode: %{public}d, batchStart: %{public}" PRId64
@@ -201,7 +198,19 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(const std::shared_ptr
     CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
-    auto ret = UpdatePhotosDate(rdbStore);
+    auto ret = UpdatePhotosDateUpgrade(*rdbStore->GetRaw().get());
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update day month year failed, ret=%{public}d", ret);
+    MEDIA_INFO_LOG("update phots date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
+        (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
+    return NativeRdb::E_OK;
+}
+
+int32_t PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(NativeRdb::RdbStore &rdbStore)
+{
+    MEDIA_INFO_LOG("update phots date start");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+
+    auto ret = UpdatePhotosDateUpgrade(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update day month year failed, ret=%{public}d", ret);
     MEDIA_INFO_LOG("update phots date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
         (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
@@ -246,30 +255,27 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(NativeRdb::RdbStore &rdbSto
     return NativeRdb::E_OK;
 }
 
-int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
+int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(RdbStore& rdbStore)
 {
     MEDIA_INFO_LOG("update photos date idx start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
-    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
-        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
-    auto ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_DAY_INDEX);
+    auto ret = rdbStore.ExecuteSql(PhotoUpgrade::DROP_SCHPT_DAY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_day failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_DAY_INDEX);
+    ret = rdbStore.ExecuteSql(PhotoUpgrade::CREATE_SCHPT_DAY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_day failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_MONTH_COUNT_READY_INDEX);
+    ret = rdbStore.ExecuteSql(PhotoUpgrade::DROP_SCHPT_MONTH_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_month failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_MONTH_COUNT_READY_INDEX);
+    ret = rdbStore.ExecuteSql(PhotoUpgrade::CREATE_SCHPT_MONTH_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_month failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoUpgrade::DROP_SCHPT_YEAR_COUNT_READY_INDEX);
+    ret = rdbStore.ExecuteSql(PhotoUpgrade::DROP_SCHPT_YEAR_COUNT_READY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_year failed, ret=%{public}d", ret);
 
-    ret = rdbStore->ExecuteSql(PhotoUpgrade::CREATE_SCHPT_YEAR_COUNT_READY_INDEX);
+    ret = rdbStore.ExecuteSql(PhotoUpgrade::CREATE_SCHPT_YEAR_COUNT_READY_INDEX);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "create idx date_year failed, ret=%{public}d", ret);
 
     MEDIA_INFO_LOG("update photos date idx end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,

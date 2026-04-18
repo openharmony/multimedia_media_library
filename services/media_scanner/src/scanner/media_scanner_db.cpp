@@ -313,6 +313,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     values.PutLong(MediaColumn::MEDIA_SIZE, metadata.GetFileSize());
+    if (metadata.GetLocalAssetSize() != 0) {
+        values.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, metadata.GetLocalAssetSize());
+    }
     if (metadata.GetFileDateModified() != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
     }

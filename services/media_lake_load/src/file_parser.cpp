@@ -230,6 +230,7 @@ void FileParser::ParseFileInfo()
     fileInfo_.displayName = ExtractFileName(path_);
     fileInfo_.fileType = MediaFileUtils::GetMediaType(fileInfo_.displayName);
     fileInfo_.fileSize = statInfo.st_size;
+    fileInfo_.localAssetSize = statInfo.st_size;
     fileInfo_.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
     fileInfo_.filePath = path_;
     fileInfo_.title = LakeFileUtils::GetFileTitle(fileInfo_.displayName);
@@ -560,6 +561,8 @@ NativeRdb::ValuesBucket FileParser::GetAssetCommonValues()
     values.Put(PhotoColumn::PHOTO_FILE_INODE, fileInfo_.inode);
     values.Put(PhotoColumn::PHOTO_STORAGE_PATH, fileInfo_.filePath);
     values.Put(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileInfo_.fileSourceType);
+
+    values.Put(PhotoColumn::LOCAL_ASSET_SIZE, fileInfo_.localAssetSize);
 
     SetAssetAlbumValues(values);
     SetAssetCloudEnhancementValues(values);

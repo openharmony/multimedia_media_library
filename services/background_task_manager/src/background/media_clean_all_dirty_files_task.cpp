@@ -65,6 +65,8 @@ const std::string EDITDATA_CAMERA_FILE_NAME = "editdata_camera";
 const std::string EDITDATA_TRANSCODE_FILE_NAME = "transcode";
 const std::string EXTRADATA_FILE_NAME = "extraData";
 const std::string SOURCE_FILE_PREFIX_NAME = "source";
+const std::string TEMP_FILE_PREFIX_NAME = "temp_";
+const std::string TEMP_FILE_SUBFIX_NAME = "_tmp.";
 const std::string SOURCE_FILE_VIDEO_NAME = "source.mp4";
 const std::string MOVING_PHOTO_SUFFIX = ".mp4";
 
@@ -86,6 +88,11 @@ const std::string SPECIAL_EDIT_APP_ID = "com.hmos.photos";
 static bool Starts_With(const std::string& str, const std::string& prefix)
 {
     return str.rfind(prefix, 0) == 0;  // 从位置 0 开始查找
+}
+
+static bool Contain_With(const std::string& str, const std::string& subfix)
+{
+    return str.find(subfix) != std::string::npos;
 }
 
 static std::vector<int32_t> ConvertBucketNameVector(const std::vector<std::string> &vecStr)
@@ -297,13 +304,29 @@ bool MediaCleanAllDirtyFilesTask::DealWithZeroSizeFile(std::string &path)
     uint64_t currentTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
     uint64_t addTime = currentTime;
     if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size == 0) {
-        uint64_t interval = currentTime - addTime;
+        uint64_t interval = (currentTime > addTime) ? (currentTime - addTime) : 0;
         if (interval > FOUR_WEEK) {
             MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64,
                 interval);
             MediaFileUtils::DeleteFileWithRetry(path);
             MEDIA_WARN_LOG("DirtyMediaHandler DealWithZeroSizeFile File: %{public}s",
                 MediaFileUtils::DesensitizePath(path).c_str());
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MediaCleanAllDirtyFilesTask::Is4WeekAgoFile(std::string &path)
+{
+    size_t size = 0;
+    uint64_t currentTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
+    uint64_t addTime = currentTime;
+    if (MediaFileUtils::GetFileSizeAndTime(path, size, addTime) && size != 0) {
+        uint64_t interval = (currentTime > addTime) ? (currentTime - addTime) : 0;
+        if (interval > FOUR_WEEK) {
+            MEDIA_INFO_LOG("DirtyMediaHandler DealWithZeroSizeFile Interval: %{public}" PRId64 " File: %{public}s",
+                interval, MediaFileUtils::DesensitizePath(path).c_str());
             return true;
         }
     }
@@ -730,6 +753,12 @@ bool MediaCleanAllDirtyFilesTask::HandleOriginFileNotExistAddToTable(int32_t cur
     MediaType mediaType = MediaFileUtils::GetMediaType(fileName);
     CHECK_AND_RETURN_RET_LOG(!IsZeroSizeFile(path), true, "OriginFileNotExistAddToTable %{public}s file size is 0",
         MediaFileUtils::DesensitizePath(path).c_str()); // 0kb 跳过
+    CHECK_AND_RETURN_RET_LOG(Is4WeekAgoFile(path), true, "OriginFileNotExistAddToTable %{public}s skip file in 4 week",
+        MediaFileUtils::DesensitizePath(path).c_str()); // 判断是否4周前的文件 不是的话 不需要恢复逻辑 有temp文件
+    CHECK_AND_RETURN_RET_LOG(!Starts_With(fileName, TEMP_FILE_PREFIX_NAME), true,
+        "OriginFileNotExistAddToTable %{public}s skip temp file", MediaFileUtils::DesensitizePath(path).c_str());
+    CHECK_AND_RETURN_RET_LOG(!Contain_With(fileName, TEMP_FILE_SUBFIX_NAME), true,
+        "OriginFileNotExistAddToTable %{public}s skip end temp file", MediaFileUtils::DesensitizePath(path).c_str());
     if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
         if (!ExistPhotoPathInDB(path)) {
             // 扫描原图填充元数据 元数据不存在 insert 如果是动图 跳过视频处理, 因视频处理在数据库需反查模糊匹配 不精准

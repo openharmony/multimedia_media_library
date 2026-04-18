@@ -127,6 +127,7 @@ private:
             {&PhotosPoWriter::GetSouthDeviceType, &PhotosPoWriter::SetSouthDeviceType}},
         {PhotoColumn::UNIQUE_ID, {&PhotosPoWriter::GetUniqueId, &PhotosPoWriter::SetUniqueId}},
         {PhotoColumn::PHOTO_RISK_STATUS, {&PhotosPoWriter::GetPhotoRiskStatus, &PhotosPoWriter::SetPhotoRiskStatus}},
+        {PhotoColumn::LOCAL_ASSET_SIZE, {&PhotosPoWriter::GetLocalAssetSize, &PhotosPoWriter::SetLocalAssetSize}},
     };
     const std::map<std::string, GetSetNode> EXTRA_HANDLERS = {
         {"album_cloud_id", {&PhotosPoWriter::GetAlbumCloudId, &PhotosPoWriter::SetAlbumCloudId}},
@@ -258,6 +259,10 @@ private:
     void SetUniqueId(std::variant<int32_t, int64_t, double, std::string> &val);
     bool GetPhotoRiskStatus(std::string &val);
     void SetPhotoRiskStatus(std::variant<int32_t, int64_t, double, std::string> &val);
+    void SetLcdFileSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLcdFileSize(std::string &val);
+    void SetLocalAssetSize(std::variant<int32_t, int64_t, double, std::string> &val);
+    bool GetLocalAssetSize(std::string &val);
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTOS_PO_WRITER_H

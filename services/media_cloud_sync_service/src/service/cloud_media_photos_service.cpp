@@ -60,6 +60,8 @@
 #include "thumbnail_service.h"
 #include "parameters.h"
 #include "cloud_file_error.h"
+#include "medialibrary_related_system_state_manager.h"
+#include "lcd_aging_task_priority_manager.h"
 
 // LCOV_EXCL_START
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
@@ -1180,6 +1182,7 @@ int32_t CloudMediaPhotosService::OnStartSync()
 
     CloudMediaDfxService::SyncStart("", 1);
     MediaGallerySyncNotify::GetInstance().NotifyProgressBegin();
+    LcdAgingTaskPriorityManager::GetInstance().RegisterHighPriorityTask(HighPriorityTaskType::CLOUD_PULL);
     return this->photosDao_.ClearPhotoFailedRecords();
 }
 
@@ -1192,6 +1195,7 @@ int32_t CloudMediaPhotosService::OnCompleteSync()
 
 int32_t CloudMediaPhotosService::OnCompletePull(const MediaOperateResult &optRet)
 {
+    LcdAgingTaskPriorityManager::GetInstance().UnregisterHighPriorityTask(HighPriorityTaskType::CLOUD_PULL);
     const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status";
     auto cloudSyncStatus = system::GetIntParameter(CLOUDSYNC_SWITCH_STATUS_KEY, 0);
 

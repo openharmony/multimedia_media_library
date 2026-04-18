@@ -289,6 +289,7 @@ private:
     EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
     EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
+    EXPORT static napi_value CreatePreferredCompatibleModeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoRiskStatusEnum(napi_env env);
     EXPORT static napi_value CreateAppLinkStateEnum(napi_env env);
     EXPORT static napi_value CreateLivePhoto4dStatusEnum(napi_env env);
@@ -387,6 +388,8 @@ private:
     EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetAlbumIdByLpath(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetAlbumIdByBundleName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetPreferredCompatibleMode(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetPreferredCompatibleMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetFileCompatibleConfig(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetAssetCompatibleConfig(napi_env env, napi_callback_info info);
     
@@ -402,6 +405,8 @@ private:
     EXPORT static napi_value SinglePhotoAlbumUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value AnalysisPhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value AnalysisAlbumAccessUnregisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AvailabilityRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AvailabilityUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value QueryMediaDataReady(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
@@ -478,7 +483,13 @@ private:
         Notification::NotifyUriType uriType);
     static void UnregisterAnalysisAccessCallbackInternal(napi_env env, napi_callback_info info,
         Notification::NotifyUriType uriType);
-
+    static int32_t RegisterAvailabilityObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj);
+    static int32_t CreateAndRegisterNewAvailabilityObserver(napi_env env, napi_ref ref,
+        Notification::NotifyUriType registerUriType, std::string& registerUri, ChangeListenerNapi& listObj);
+    static int32_t OverrideExistingAvailabilityObserver(napi_env env, napi_ref ref, MediaOnNotifyNewObserver& observer,
+        Notification::NotifyUriType registerUriType);
+    static int32_t UnregisterAvailabilityObserverExecute(napi_env env, ChangeListenerNapi &listObj);
+    static void AvailabilityRegisterExecute(napi_env env, void *data);
     napi_env env_;
     int32_t userId_ = -1;
 
@@ -515,6 +526,7 @@ private:
     static thread_local napi_ref sDeliveryModeEnumRef_;
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sCompatibleModeEnumRef_;
+    static thread_local napi_ref sPreferredCompatibleModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sHighlightAlbumChangeAttributeEnumRef_;
@@ -651,6 +663,8 @@ struct MediaLibraryAsyncContext : public NapiError {
         PHOTO_ACCESS_HELPER,
         REGISTER_CHANGE
     } eventType;
+    int32_t preferredCompatibleMode = 0;
+    std::vector<std::string> supportedMimeTypes;
     int32_t photoIndex = -1;
     std::string strParam;
     bool boolResult = false;
@@ -662,6 +676,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> checkPhotoPermissionUris;
     mutable std::mutex uriPermissionStateMapMutex;
     std::unordered_map<std::string, int32_t> uriPermissionStateMap;
+    ChangeListenerNapi* availabilityListObj = nullptr;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

@@ -53,7 +53,7 @@ private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
     int32_t GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId);
     void FillHdrModeInfo(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult,
-        bool isNeedUpdate);
+        const std::optional<PhotosPo> &localPhotosPoOp);
     void FillScanedSubtypeInfo(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult,
         bool isNeedUpdate);
     void FillScanedHeightWidth(NativeRdb::ValuesBucket &values, const CloudMediaScanService::ScanResult &scanResult);

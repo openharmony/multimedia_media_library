@@ -56,6 +56,7 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
   ]
 
   if (media_library_feature_cloud_enhancement) {

@@ -903,6 +903,16 @@ int64_t FileAsset::GetChangeTime() const
     return GetInt64Member(PhotoColumn::PHOTO_CHANGE_TIME);
 }
 
+int64_t FileAsset::GetHiddenTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_HIDDEN_TIME);
+}
+
+void FileAsset::SetHiddenTime(int64_t hiddenTime)
+{
+    member_[PhotoColumn::PHOTO_HIDDEN_TIME] = hiddenTime;
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
     lock_guard<mutex> lock(resultTypeMapMutex_);
@@ -1012,6 +1022,17 @@ void FileAsset::SetUniqueId(const string &uniqueId)
 const string FileAsset::GetUniqueId() const
 {
     return GetStrMember(PhotoColumn::UNIQUE_ID);
+}
+
+int64_t FileAsset::GetLocalAssetSize() const
+{
+    return GetInt64Member(PhotoColumn::LOCAL_ASSET_SIZE);
+}
+
+void FileAsset::SetLocalAssetSize(int64_t localAssetSize)
+{
+    std::unique_lock<std::shared_mutex> sharedLock(memberMapMutex_);
+    member_[PhotoColumn::LOCAL_ASSET_SIZE] = localAssetSize;
 }
 }  // namespace Media
 }  // namespace OHOS

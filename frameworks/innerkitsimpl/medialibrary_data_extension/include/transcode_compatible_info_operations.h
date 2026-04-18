@@ -29,16 +29,27 @@
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+enum class PreferredCompatibleMode {
+    DEFAULT = 0,
+    CURRENT = 1,
+    COMPATIBLE = 2,
+};
+
 struct CompatibleInfo {
     std::string bundleName;
     bool highResolution = false;
     std::vector<std::string> encodings;
+    PreferredCompatibleMode preferredCompatibleMode = PreferredCompatibleMode::DEFAULT;
 };
 
 class TranscodeCompatibleInfoOperation {
 public:
     static int32_t InsertCompatibleInfo(CompatibleInfo& compatibleInfo);
     static int32_t UpdataCompatibleInfo(CompatibleInfo& compatibleInfo);
+    static int32_t UpsertCompatibleInfo(const std::string &bundleName, bool highResolution,
+        const std::vector<std::string> &encodings);
+    static int32_t UpsertPreferredCompatibleMode(const std::string &bundleName,
+        PreferredCompatibleMode preferredCompatibleMode);
     static int32_t DeleteCompatibleInfo(const std::string &bundleName);
     static int32_t QueryCompatibleInfo(const std::string &bundleName, CompatibleInfo& compatibleInfo);
 private:
@@ -46,6 +57,7 @@ private:
     static std::vector<std::string> StringToVector(const std::string &str);
 
     static const std::string ENCODINGS_SEPARATOR;
+    static std::unordered_map<std::string, CompatibleInfo> compatibleInfoCache_;
 };
 }
 #endif

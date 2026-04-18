@@ -172,7 +172,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetScalarFunction("photo_album_notify_func", ARG_COUNT, PhotoAlbumNotifyFunc);
     config.SetCollatorLocales("zh_CN");
 
-    MediaLibraryDataCallBack rdbDataCallBack;
+    MediaLibraryAssetCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr || errCode != NativeRdb::E_OK) {
         MEDIA_WARN_LOG("Failed to get visitor RdbStore, errCode: %{public}d", errCode);
@@ -463,12 +463,12 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
     return NativeRdb::E_OK;
 }
 
-int32_t MediaLibraryDataCallBack::OnCreate(NativeRdb::RdbStore& rdbStore)
+int32_t MediaLibraryAssetCallBack::OnCreate(NativeRdb::RdbStore& rdbStore)
 {
     return 0;
 }
 
-int32_t MediaLibraryDataCallBack::OnUpgrade(NativeRdb::RdbStore& rdbStore, int32_t oldVersion, int32_t newVersion)
+int32_t MediaLibraryAssetCallBack::OnUpgrade(NativeRdb::RdbStore& rdbStore, int32_t oldVersion, int32_t newVersion)
 {
     return 0;
 }

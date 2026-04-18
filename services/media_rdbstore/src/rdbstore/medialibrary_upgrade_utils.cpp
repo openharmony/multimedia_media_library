@@ -93,17 +93,21 @@ static unordered_map<int32_t, string> UPGRADE_VALUE_MAP = {
     { VERSION_UPDATE_TAB_COMPATIBLE_INFO, "VERSION_UPDATE_TAB_COMPATIBLE_INFO"},
     { VERSION_ADD_WATERMARK_TABLE, "VERSION_ADD_WATERMARK_TABLE" },
     { VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, "VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM"},
+    { VERSION_ADD_PREFERRED_COMPATIBLE_MODE, "VERSION_ADD_PREFERRED_COMPATIBLE_MODE" },
+    { VERSION_ADD_LCD_AGING, "VERSION_ADD_LCD_AGING" },
+    { VERSION_ADD_PERSIST_PERMISSION_TABLE, "VERSION_ADD_PERSIST_PERMISSION_TABLE" },
+    { VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN, "VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN" },
 };
 static vector<string> UPGRADE_DFX_MESSAGES;
 
-bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
+bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync, const string& path)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
         return false;
     }
     int32_t errCode = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(path, errCode);
     MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
     CHECK_AND_RETURN_RET_WARN_LOG(prefs != nullptr, false, "prefs is nullptr");
 
@@ -119,7 +123,7 @@ bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
         (upgradeStatus == UPGRADE_STATUS::ASYNC || upgradeStatus == UPGRADE_STATUS::ALL);
 }
 
-void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
+void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync, const string& path)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
         MEDIA_INFO_LOG("upgrade map value not exist, version: %{public}d", version);
@@ -127,7 +131,7 @@ void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
     }
     int32_t errCode = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+        NativePreferences::PreferencesHelper::GetPreferences(path, errCode);
     MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
     CHECK_AND_RETURN_LOG(prefs != nullptr, "prefs is nullptr");
 
@@ -148,7 +152,7 @@ void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
             nextStatus = isSync ? UPGRADE_STATUS::ALL : UPGRADE_STATUS::ASYNC;
             break;
         case UPGRADE_STATUS::ALL:
-            nextStatus = isSync ? UPGRADE_STATUS::ALL : UPGRADE_STATUS::ALL;
+            nextStatus = UPGRADE_STATUS::ALL;
             break;
         default:
             break;
