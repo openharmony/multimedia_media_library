@@ -45,6 +45,8 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "./medialibrarycloudmediaservice_fuzzer.cpp",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   deps = [
     "${MEDIALIB_CLOUD_SYNC_CLIENT}:media_library_cloud_sync",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

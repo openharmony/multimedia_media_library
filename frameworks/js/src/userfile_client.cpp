@@ -25,6 +25,7 @@
 #include "media_file_utils.h"
 #include "safe_map.h"
 
+// LCOV_EXCL_START
 using namespace std;
 using namespace OHOS::DataShare;
 using namespace OHOS::AppExecFwk;
@@ -511,3 +512,4 @@ int32_t UserFileClient::UnregisterObserverExtProvider(const Uri &uri,
 }
 }
 }
+// LCOV_EXCL_STOP
