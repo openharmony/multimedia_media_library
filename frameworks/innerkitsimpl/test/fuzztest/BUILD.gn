@@ -138,6 +138,7 @@ group("media_library_fuzztest") {
       "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
       "medialibrarymediaalbumscontrollerservice2_fuzzer:MediaLibraryMediaAlbumsControllerService2FuzzTest",
       "medialibrarymediaalbumscontrollerservice3_fuzzer:MediaLibraryMediaAlbumsControllerService3FuzzTest",
+      "medialibrarymediaalbumscontrollerservice4_fuzzer:MediaLibraryMediaAlbumsControllerService4FuzzTest",
       "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
       "medialibrarymediaassetscontrollerservice2_fuzzer:MediaLibraryMediaAssetsControllerService2FuzzTest",
       "medialibrarymediaassetscontrollerservice3_fuzzer:MediaLibraryMediaAssetsControllerService3FuzzTest",
