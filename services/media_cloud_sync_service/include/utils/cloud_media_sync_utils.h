@@ -66,6 +66,7 @@ public:
     static bool IsGraffiti(const PhotosPo &photosPo);
     static bool IsLivePhoto(const PhotosPo &photosPo);
     static bool IsUserAlbumPath(const std::string &lpath);
+    static bool IsFileManagerAlbumPath(const std::string &lpath);
     static bool CanUpdateExifRotateOnly(int32_t mediaType, int32_t oldExifRotate, int32_t newExifRotate);
     static bool IsCloudEnhancementSupported();
     static void SyncDealWithCompositePhoto(const std::string &assetDataPath, int32_t photoId);

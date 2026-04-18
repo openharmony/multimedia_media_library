@@ -118,6 +118,18 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_HandleLPathAndAlbumTyp
     std::cout << "ret2: " << ret2 << std::endl;
 }
 
+HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_HandleLPathAndAlbumType_Test_003, TestSize.Level1)
+{
+    CloudMediaAlbumDao albumDao;
+    PhotoAlbumDto record;
+    record.lPath = "/FromDocs/Documents";
+    record.albumType = static_cast<int32_t>(PhotoAlbumType::INVALID);
+    int32_t ret = albumDao.HandleLPathAndAlbumType(record);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(record.albumType, PhotoAlbumType::SOURCE);
+    EXPECT_EQ(record.albumSubType, PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER);
+}
+
 HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriCondition_Test_001, TestSize.Level1)
 {
     CloudMediaAlbumDao albumDao;
