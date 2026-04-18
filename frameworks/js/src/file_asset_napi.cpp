@@ -5419,8 +5419,12 @@ static void GetPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, std::to_string(fileId) },
+        { URI_TYPE, TYPE_PHOTOS },
+    };
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody, respBody);
     NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (respBody.resultSet == nullptr || respBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Query failed");

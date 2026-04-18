@@ -2166,7 +2166,7 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
 
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution =
-        compatibleInfo.highResolution ? compatibleInfo.highResolution :
+        compatibleInfo.highResolution != -1 ? compatibleInfo.highResolution :
         HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200);
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
