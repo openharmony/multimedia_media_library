@@ -629,7 +629,7 @@ bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundl
             MEDIA_DEBUG_LOG("Bundle %{public}s include version all", bundleName.c_str());
             return false;
         }
-        if (it->second == "0" !CompareVersion(bundleInfo.versionName, it->second)) {
+        if (it->second == "0" || !CompareVersion(bundleInfo.versionName, it->second)) {
             HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
             MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
                 "than %{public}d pixel deny list version %{public}s",
