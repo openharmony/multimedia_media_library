@@ -45,6 +45,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "media_values_bucket_utils.h"
+#include "settings_data_manager.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -1586,6 +1587,9 @@ static void SetUpdateSearchIndexForClone()
     bool retFlag = system::SetParameter(PARAM_CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set %{public}s to %{public}s",
         PARAM_CLONE_SEARCH_STATUS.c_str(), CLONE_SEARCH_INDEXING.c_str());
+    int32_t ret = SettingsDataManager::UpdateOrInsertCloneSearchStatus();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to set clone_search_status to %{public}s",
+        CLONE_SEARCH_INDEXING.c_str());
 }
 
 void BaseRestore::StartRestoreEx(const std::string &backupRestoreDir, const std::string &upgradePath,

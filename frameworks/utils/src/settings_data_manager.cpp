@@ -35,6 +35,8 @@ inline static const std::string SETTING_DATA_COMMON_URI =
 inline static const std::string PHOTOS_SYNC_SWITCH_KEY = "photos_sync_options";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD = "photos_all_album_upload";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_OFF = "0";
+inline static const std::string CLONE_SEARCH_STATUS = "clone_search_status";
+inline static const std::string CLONE_SEARCH_INDEXING = "3";
 
 class MediaSettingDataHelper {
 public:
@@ -215,5 +217,15 @@ int32_t SettingsDataManager::UpdateOrInsertAllPhotosAlbumUpload()
         return UpdateParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
     }
     return InsertParamInSettingData(ALL_PHOTOS_ALBUM_UPLOAD, ALL_PHOTOS_ALBUM_UPLOAD_OFF);
+}
+
+int32_t SettingsDataManager::UpdateOrInsertCloneSearchStatus()
+{
+    std::string values;
+    auto ret = QueryParamInSettingData(CLONE_SEARCH_STATUS, values);
+    if (ret != E_OK) {
+        return InsertParamInSettingData(CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
+    }
+    return UpdateParamInSettingData(CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
 }
 }
