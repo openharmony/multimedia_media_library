@@ -344,9 +344,6 @@ bool CompareVersion(const std::string& v1, const std::string& v2)
 {
     std::vector<int> parts1 = SplitVersion(v1);
     std::vector<int> parts2 = SplitVersion(v2);
-    if (parts1.size() == 1 && parts1[0] == 0) {
-        return true;
-    }
 
     size_t n = std::max(parts1.size(), parts2.size());
     parts1.resize(n, 0);
@@ -632,7 +629,7 @@ bool HeifTranscodingCheckUtils::CheckHighPixelBlackList(const std::string &bundl
             MEDIA_DEBUG_LOG("Bundle %{public}s include version all", bundleName.c_str());
             return false;
         }
-        if (!CompareVersion(bundleInfo.versionName, it->second)) {
+        if (it->second == "0" !CompareVersion(bundleInfo.versionName, it->second)) {
             HighPixelBundleInfoCache::InsertBundleCacheInfo(bundleName, false, pixelType);
             MEDIA_DEBUG_LOG("Bundle %{public}s version %{public}s is less "
                 "than %{public}d pixel deny list version %{public}s",
