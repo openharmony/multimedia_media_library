@@ -716,6 +716,19 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     return napi_ok;
 }
 
+template <class AsyncContext>
+void MediaLibraryNapiUtils::DeleteAsyncContextWithRef(napi_env env, AsyncContext &context)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("AsyncContext is nullptr");
+        return;
+    }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
+}
+
 template <>
 napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext,
@@ -2836,5 +2849,17 @@ template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<Mov
 
 template napi_status MediaLibraryNapiUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context, const FetchOptionType &fetchOptType);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAlbumChangeRequestAsyncContext*>(
+    napi_env env, MediaAlbumChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAssetChangeRequestAsyncContext*>(
+    napi_env env, MediaAssetChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAssetsChangeRequestAsyncContext*>(
+    napi_env env, MediaAssetsChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<PhotoAlbumNapiAsyncContext*>(
+    napi_env env, PhotoAlbumNapiAsyncContext*& context);
 } // namespace Media
 } // namespace OHOS

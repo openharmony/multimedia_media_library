@@ -412,6 +412,7 @@ static void ApplyAssetsChangeRequestCompleteCallback(napi_env env, napi_status s
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(
             env, context->deferred, context->callbackRef, context->work, *jsContext);
     }
+    MediaLibraryNapiUtils::DeleteAsyncContextWithRef(env, context);
     delete context;
 }
 
@@ -424,7 +425,8 @@ napi_value MediaAssetsChangeRequestNapi::ApplyChanges(napi_env env, napi_callbac
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
-
+    CHECK_COND_WITH_MESSAGE(env, napi_create_reference(env, asyncContext->argv[PARAM0], NAPI_INIT_REF_COUNT,
+        &asyncContext->objectInfoRef) == napi_ok, "Failed to create objectInfo reference");
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check assets change request operations");
     asyncContext->assetsChangeOperations = assetsChangeOperations_;
     assetsChangeOperations_.clear();
