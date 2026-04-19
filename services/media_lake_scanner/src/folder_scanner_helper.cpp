@@ -146,7 +146,7 @@ void FolderScannerHelper::InitFolderInfo()
     if (stat(storagePath_.c_str(), &dirStat) == 0) {
         struct timespec ctim = dirStat.st_ctim;
         folderDateModified_ = ctim.tv_sec * MILLISECOND_PER_SECOND + ctim.tv_nsec / MICROSECOND_PER_SECOND;
-        MEDIA_INFO_LOG("folder modified: %{public}" , folderDateModified_);
+        MEDIA_INFO_LOG("folder modified: %{public}" PRId64 "", folderDateModified_);
     } else {
         MEDIA_INFO_LOG("get folder stat error");
     }
