@@ -118,7 +118,7 @@ static int32_t HandleSameNameRename(const int32_t fileId, const std::string targ
     }
     CHECK_AND_RETURN_RET_LOG(dotPos > slashPos,
         E_ERR,
-        "targetPath format error %{public}s, slash: %{public}zu, dot: %{public}u",
+        "targetPath format error %{public}s, slash: %{public}zu, dot: %{public}zu",
         DfxUtils::GetSafePath(targetPath).c_str(),
         dotPos,
         slashPos);
