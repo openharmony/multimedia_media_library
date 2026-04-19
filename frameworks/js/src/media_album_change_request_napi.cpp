@@ -2418,6 +2418,7 @@ static void ApplyAlbumChangeRequestCompleteCallback(napi_env env, napi_status st
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(
             env, context->deferred, context->callbackRef, context->work, *jsContext);
     }
+    MediaLibraryNapiUtils::DeleteAsyncContextWithRef(env, context);
     delete context;
 }
 
@@ -2445,6 +2446,8 @@ napi_value MediaAlbumChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
+    CHECK_COND_WITH_MESSAGE(env, napi_create_reference(env, asyncContext->argv[PARAM0], NAPI_INIT_REF_COUNT,
+        &asyncContext->objectInfoRef) == napi_ok, "Failed to create objectInfo reference");
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check album change request operations");
     asyncContext->albumChangeOperations = albumChangeOperations_;
     albumChangeOperations_.clear();

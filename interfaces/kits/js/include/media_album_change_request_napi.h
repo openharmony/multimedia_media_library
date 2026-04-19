@@ -174,6 +174,7 @@ struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
+    napi_ref objectInfoRef;
     MediaAlbumChangeRequestNapi* objectInfo;
     std::vector<AlbumChangeOperation> albumChangeOperations;
     DataShare::DataSharePredicates predicates;
