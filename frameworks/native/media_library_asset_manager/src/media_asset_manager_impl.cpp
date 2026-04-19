@@ -819,7 +819,7 @@ bool MediaAssetManagerImpl::NotifyDataPreparedWithoutRegister(
 
 void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
-    auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
+    auto dataObserver = std::make_shared<MultiStagesTaskObserver>();
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->requestUri);
     if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
         sDataShareHelper_->RegisterObserverExt(Uri(uriLocal),
@@ -849,12 +849,6 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
 {
     if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_UPDATE)) {
         MEDIA_DEBUG_LOG("Ignore notify change, type: %{public}d", changeInfo.changeType_);
-        return;
-    }
-    std::string photoId = "";
-    if (MediaAssetManagerImpl::QueryPhotoStatus(fileId_, photoId) !=
-        MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
-        MEDIA_ERR_LOG("Requested data not prepared");
         return;
     }
 
