@@ -31,6 +31,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::CloudSync;
 const int32_t FILEID = 1;
 const int32_t NUM_BYTES = 1;
+const int32_t VECTOR_SIZE = 5;
 static const int32_t MXA_CLEAN_TYPE = 1;
 static const int32_t MIN_PHOTO_POSITION_TYPE = -1;
 static const int32_t MAX_PHOTO_POSITION_TYPE = 3;
@@ -166,7 +167,7 @@ static void HandleRecordFuzzer()
     std::map<string, CloudMediaPullDataDto> cloudIdRelativeMap = { {"default-album-2", CloudMediaPullDataDto()} };
     vector<PhotosDto> newData;
     vector<PhotosDto> fdirtyData;
-    vector<int32_t> stats(5, 0);
+    vector<int32_t> stats(VECTOR_SIZE, 0);
     vector<string> failedRecords;
     service.HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
 
