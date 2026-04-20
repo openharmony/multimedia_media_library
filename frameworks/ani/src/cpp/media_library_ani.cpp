@@ -6081,6 +6081,8 @@ static ani_status NormalizeSupportedMimeTypes(ani_env *env, const vector<string>
     }
     CHECK_ARGS_WITH_RET_MSG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
         JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeTypes exceeds max size");
+    CHECK_ARGS_WITH_RET_MSG(env, !mimeTypeMap.empty(),
+        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeType cannot be empty");
     normalizedMimeTypes.clear();
     normalizedMimeTypes.reserve(mimeTypeMap.size());
     for (const auto &pair : mimeTypeMap) {
@@ -6093,9 +6095,13 @@ static ani_status ParseSupportedMimeTypesFromConfig(ani_env *env, ani_object con
 {
     ani_object propertyValue;
     ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedMimeType", propertyValue);
-    if (ret != ANI_OK || propertyValue == nullptr || MediaLibraryAniUtils::IsUndefined(env, propertyValue)) {
+    if (ret != ANI_OK) {
         return ANI_OK;
     }
+
+    CHECK_ARGS_WITH_RET_MSG(env,
+        propertyValue != nullptr && MediaLibraryAniUtils::IsUndefined(env, propertyValue) != ANI_TRUE,
+        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeType cannot be null or undefined");
 
     ret = MediaLibraryAniUtils::GetStringArray(env, propertyValue, supportedMimeTypes);
     CHECK_STATUS_RET(ret, "GetStringArray supportedMimeTypes fail");
