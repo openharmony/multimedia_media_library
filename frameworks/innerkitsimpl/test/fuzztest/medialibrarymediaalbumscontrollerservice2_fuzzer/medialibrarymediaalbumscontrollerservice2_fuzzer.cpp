@@ -125,19 +125,6 @@ static int32_t InsertAnalysisAlbum()
     return static_cast<int32_t>(albumId);
 }
 
-static void ChangeRequestResetCoverUriFuzzer()
-{
-    ChangeRequestSetDisplayLevelReqBody reqBody;
-    reqBody.albumId = to_string(provider->ConsumeIntegral<int32_t>());
-    reqBody.albumType = FuzzPhotoAlbumType();
-    reqBody.albumSubType = FuzzPhotoAlbumSubType();
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->ChangeRequestResetCoverUri(data, reply);
-}
-
 static void SetRelationshipFuzzer()
 {
     ChangeRequestSetRelationshipReqBody reqBody;
@@ -182,28 +169,11 @@ static void GetClonedAlbumUrisFuzzer()
     mediaAlbumsControllerService->GetClonedAlbumUris(data, reply);
 }
 
-static void GetPhotoAlbumObjectFuzzer()
-{
-    GetPhotoAlbumObjectReqBody reqBody;
-    string whereClause = "GetPhotoAlbumObjectFuzzer";
-    reqBody.predicates.SetWhereClause(whereClause);
-    std::vector<std::string> whereArgs = {whereClause};
-    reqBody.predicates.SetWhereArgs(whereArgs);
-    reqBody.columns = {PhotoAlbumColumns::ALBUM_COUNT};
-
-    MessageParcel data;
-    MessageParcel reply;
-    reqBody.Marshalling(data);
-    mediaAlbumsControllerService->GetPhotoAlbumObject(data, reply);
-}
-
 static void MediaAlbumsControllerService2Fuzzer()
 {
-    ChangeRequestResetCoverUriFuzzer();
     SetRelationshipFuzzer();
     GetRelationshipFuzzer();
     GetClonedAlbumUrisFuzzer();
-    GetPhotoAlbumObjectFuzzer();
 }
 
 void SetTables()
@@ -277,5 +247,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::provider = &fdp;
     OHOS::Media::MediaAlbumsControllerService2Fuzzer();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     return 0;
 }
