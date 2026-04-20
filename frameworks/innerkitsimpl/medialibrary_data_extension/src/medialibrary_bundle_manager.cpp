@@ -58,7 +58,7 @@ void MediaLibraryBundleManager::GetBundleNameByUID(const int32_t uid, string &bu
     }
 }
 
-void MediaLibraryBundleManager::GetBundleNameByTokenId(const int64_t tokenId, string &bundleName)
+void MediaLibraryBundleManager::GetBundleNameByTokenId(const uint64_t tokenId, string &bundleName)
 {
     auto it = tokenIdToBundleNameCache_.find(tokenId);
     if (it != tokenIdToBundleNameCache_.end()) {
