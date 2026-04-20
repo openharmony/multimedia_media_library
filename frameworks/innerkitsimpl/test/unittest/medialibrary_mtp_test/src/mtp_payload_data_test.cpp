@@ -75,7 +75,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_001, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectPropValueData getObjectPropValueDataOne(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getObjectPropValueDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_FAIL);
     auto mtpStorageManager = MtpStorageManager::GetInstance();
@@ -86,10 +86,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_001, TestSize.Lev
     context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
     ret = getObjectPropValueData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_SMALL; i++) {
-        buffer.push_back(0);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getObjectPropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -266,9 +263,9 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_002, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getNumObjectsData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     GetNumObjectsData getNumObjectsDataOne;
     ret = getNumObjectsDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_CONTEXT_IS_NULL);
@@ -277,9 +274,6 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_002, TestSize.Lev
     auto storage = make_shared<Storage>();
     EXPECT_NE(storage, nullptr);
     mtpStorageManager->AddStorage(storage);
-    for (int i = 0; i < COUNT_NUM_SMALL; i++) {
-        buffer.push_back(0);
-    }
     ret = getNumObjectsData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -289,10 +283,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_003, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
-    vector<uint8_t> buffer;
-    for (int i = 0; i < COUNT_NUM_SMALL; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b01);
     int ret = getNumObjectsData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_STORAGE_ID);
 }
@@ -335,16 +326,13 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_004, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectReferencesData getObjectReferencesDataOne(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getObjectReferencesDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_SESSION_NOT_OPEN);
     context = make_shared<MtpOperationContext>();
     GetObjectReferencesData getObjectReferencesData(context);
     ret = getObjectReferencesData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
-    for (int i = 0; i < COUNT_NUM_SMALL; i++) {
-        buffer.push_back(0);
-    }
     ret = getObjectReferencesData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -410,7 +398,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_005, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectReferencesData setObjectReferencesData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = setObjectReferencesData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
 }
@@ -420,17 +408,14 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_006, TestSize.Lev
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
     SetObjectReferencesData setObjectReferencesData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     auto mtpStorageManager = MtpStorageManager::GetInstance();
     EXPECT_NE(mtpStorageManager, nullptr);
     auto storage = make_shared<Storage>();
     EXPECT_NE(storage, nullptr);
     mtpStorageManager->AddStorage(storage);
     int ret = setObjectReferencesData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = setObjectReferencesData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -472,7 +457,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_012, TestSize.Leve
 
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_007, TestSize.Level1)
 {
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     CopyObjectData copyObjectDataOne;
     int ret = copyObjectDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_CONTEXT_IS_NULL);
@@ -485,9 +470,6 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_007, TestSize.Lev
     mtpStorageManager->AddStorage(storage);
     ret = copyObjectData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
     ret = copyObjectData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -521,10 +503,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_008, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropValueData getDevicePropValueData(context);
-    vector<uint8_t> buffer;
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getDevicePropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     GetDevicePropValueData getDevicePropValueDataOne;
@@ -596,7 +575,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_009, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     RespCommonData respCommonData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = respCommonData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -659,7 +638,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_010, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context;
     GetPartialObjectData getPartialObjectDataOne(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getPartialObjectDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
     context = make_shared<MtpOperationContext>();
@@ -670,10 +649,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_010, TestSize.Lev
     EXPECT_NE(storage, nullptr);
     mtpStorageManager->AddStorage(storage);
     ret = getPartialObjectData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getPartialObjectData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -709,15 +685,12 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_011, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetDevicePropValueData setDevicePropValueData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = setDevicePropValueData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     SetDevicePropValueData setDevicePropValueDataOne;
     ret = setDevicePropValueDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
     ret = setDevicePropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -727,10 +700,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_012, TestSize.Lev
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->indata = true;
     SetDevicePropValueData setDevicePropValueData(context);
-    vector<uint8_t> buffer;
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = setDevicePropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -753,10 +723,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_012, TestS
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_paserPropValue_test_001, TestSize.Level1)
 {
     SetDevicePropValueData setDevicePropValueData;
-    vector<uint8_t> buffer;
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     size_t offset = 10;
     setDevicePropValueData.PaserPropValue(buffer, offset, MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE);
     EXPECT_GT(buffer.size(), MTP_SUCCESS);
@@ -769,17 +736,20 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_013, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = sendObjectInfoData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     SendObjectInfoData sendObjectInfoDataOne;
     ret = sendObjectInfoDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    auto mtpStorageManager = MtpStorageManager::GetInstance();
+    EXPECT_NE(mtpStorageManager, nullptr);
+    auto storage = make_shared<Storage>();
+    EXPECT_NE(storage, nullptr);
+    mtpStorageManager->AddStorage(storage);
     ret = sendObjectInfoData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
+    mtpStorageManager->RemoveStorage(storage);
 }
 
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_014, TestSize.Level1)
@@ -787,8 +757,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_014, TestSize.Lev
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->indata = true;
     SendObjectInfoData sendObjectInfoData(context);
-    vector<uint8_t> buffer;
-    buffer.push_back(COUNT_NUM_SMALL);
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = sendObjectInfoData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
@@ -821,14 +790,11 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserData_test_001, TestSize
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     size_t offset = 1;
     buffer.push_back(COUNT_NUM_SMALL);
     int ret = sendObjectInfoData.ParserData(buffer, offset);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
-    for (size_t i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
     ret = sendObjectInfoData.ParserData(buffer, offset);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
@@ -1101,7 +1067,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_017, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectPropListData getObjectPropListDataOne(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG + sizeof(uint32_t), 0b00);
     int ret = getObjectPropListDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_FAIL);
     context = make_shared<MtpOperationContext>();
@@ -1112,10 +1078,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_017, TestSize.Lev
     EXPECT_NE(storage, nullptr);
     mtpStorageManager->AddStorage(storage);
     ret = getObjectPropListData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getObjectPropListData.Parser(buffer, 40);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -1323,11 +1286,10 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_022, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropDescData getDevicePropDescData(context);
-    vector<uint8_t> buffer;
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getDevicePropDescData.Parser(buffer, 0);
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
+    ret = getDevicePropDescData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     GetDevicePropDescData getDevicePropDescDataOne;
     ret = getDevicePropDescDataOne.Parser(buffer, 0);
@@ -1361,7 +1323,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_023, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectData getObjectData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     GetObjectData getObjectDataOne;
     int ret = getObjectDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
@@ -1371,10 +1333,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_023, TestSize.Lev
     EXPECT_NE(storage, nullptr);
     mtpStorageManager->AddStorage(storage);
     ret = getObjectData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getObjectData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -1519,17 +1478,14 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectInfo_test_021, TestS
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_026, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     GetObjectPropDescData getObjectPropDescDataOne(context);
     int ret = getObjectPropDescDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_FAIL);
     context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
     ret = getObjectPropDescData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getObjectPropDescData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -1662,16 +1618,13 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_027, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropsSupportedData getObjectPropsSupportedData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = getObjectPropsSupportedData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
     context->sessionOpen = true;
     GetObjectPropsSupportedData getObjectPropsSupportedDataOne(context);
     ret = getObjectPropsSupportedDataOne.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = getObjectPropsSupportedData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
@@ -1815,7 +1768,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_031, TestSize.Lev
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     MoveObjectData moveObjectData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     auto mtpStorageManager = MtpStorageManager::GetInstance();
     EXPECT_NE(mtpStorageManager, nullptr);
     auto storage = make_shared<Storage>();
@@ -1823,9 +1776,6 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_031, TestSize.Lev
     mtpStorageManager->AddStorage(storage);
     int ret = moveObjectData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
     ret = moveObjectData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);
@@ -1879,14 +1829,11 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_033, TestSize.Lev
     OpenSessionData OpenSessionDataOne(context);
     context = make_shared<MtpOperationContext>();
     OpenSessionData OpenSessionData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(COUNT_NUM_BIG, 0b00);
     int ret = OpenSessionData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_FAIL);
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = OpenSessionDataOne.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_FAIL);
-    for (int i = 0; i < COUNT_NUM_BIG; i++) {
-        buffer.push_back(COUNT_NUM_SMALL);
-    }
     ret = OpenSessionData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
