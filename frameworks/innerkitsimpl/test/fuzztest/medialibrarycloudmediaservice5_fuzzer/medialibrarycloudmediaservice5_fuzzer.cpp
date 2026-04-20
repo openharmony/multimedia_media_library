@@ -30,6 +30,7 @@ using namespace std;
 using namespace OHOS::Media::CloudSync;
 static const int32_t NUM_BYTES = 1;
 static const int32_t INDEX = 1;
+static const int32_t VECTOR_SIZE = 5;
 static const int32_t MXA_CLEAN_TYPE = 1;
 static const int32_t MAX_DIRTY_TYPE = 8;
 static const int32_t MIN_PHOTO_POSITION_TYPE = -1;
@@ -185,7 +186,7 @@ static void PullDeleteFuzzer()
     std::string cloudId = "cloud_id";
     std::set<string> refreshAlbums;
     vector<PhotosDto> fdirtyData;
-    vector<int32_t> stats(5, 0);
+    vector<int32_t> stats(VECTOR_SIZE, 0);
 
     CloudMediaPullDataDto data;
     data.localPosition = provider->ConsumeIntegral<int32_t>();
