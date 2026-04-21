@@ -20,6 +20,7 @@
 #include <mutex>
 
 #include "lcd_aging_dao.h"
+#include "thumbnail_data.h"
 
 namespace OHOS::Media {
 class LcdAgingManager {

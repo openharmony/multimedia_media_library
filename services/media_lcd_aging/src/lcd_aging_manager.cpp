@@ -33,6 +33,9 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "thumbnail_service.h"
+#include "thumbnail_generate_worker.h"
+#include "ithumbnail_helper.h"
+#include "thumbnail_source_loading.h"
 #include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {
