@@ -17,9 +17,11 @@
 
 #include "medialibrary_album_operations.h"
 
+#include <climits>
 #include <filesystem>
 
 #include "album_plugin_config.h"
+#include "analysis_album_attribute_const.h"
 #include "dfx_utils.h"
 #include "media_analysis_helper.h"
 #include "medialibrary_album_fusion_utils.h"
@@ -43,11 +45,14 @@
 #include "medialibrary_formmap_operations.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
+#include "vision_portrait_nickname_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"
 #include "asset_accurate_refresh.h"
+#include "portrait_nickname_merge_plan.h"
+#include "portrait_nickname_service.h"
 #include "refresh_business_name.h"
 #include "parameters.h"
 #include "media_album_order_back.h"
@@ -2943,20 +2948,22 @@ bool MediaLibraryAlbumOperations::IsOnlyPortraitOrPetAlbumMerge(const vector<Mer
     return false;
 }
 
+static int32_t GetMergeAlbumId(const NativeRdb::ValuesBucket &values, const string &columnName, int32_t &albumId,
+    const char *errorLog)
+{
+    int err = GetIntVal(values, columnName, albumId);
+    CHECK_AND_RETURN_RET_LOG(err >= 0 && albumId > 0, E_INVALID_VALUES, "%{public}s", errorLog);
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumOperations::MergeAlbums(const NativeRdb::ValuesBucket &values)
 {
-    int32_t currentAlbumId;
-    int32_t targetAlbumId;
-    int err = GetIntVal(values, ALBUM_ID, currentAlbumId);
-    if (err < 0 || currentAlbumId <= 0) {
-        MEDIA_ERR_LOG("invalid album id");
-        return E_INVALID_VALUES;
-    }
-    err = GetIntVal(values, TARGET_ALBUM_ID, targetAlbumId);
-    if (err < 0 || targetAlbumId <= 0) {
-        MEDIA_ERR_LOG("invalid target album id");
-        return E_INVALID_VALUES;
-    }
+    int32_t currentAlbumId = 0;
+    int32_t targetAlbumId = 0;
+    int err = GetMergeAlbumId(values, ALBUM_ID, currentAlbumId, "invalid album id");
+    CHECK_AND_RETURN_RET(err == E_OK, err);
+    err = GetMergeAlbumId(values, TARGET_ALBUM_ID, targetAlbumId, "invalid target album id");
+    CHECK_AND_RETURN_RET(err == E_OK, err);
     if (currentAlbumId == targetAlbumId) { // same album, no need to merge
         MEDIA_WARN_LOG("Ignore invalid portrait album merge request, "
             "current album id and target album id are the same");
@@ -2979,9 +2986,18 @@ int32_t MediaLibraryAlbumOperations::MergeAlbums(const NativeRdb::ValuesBucket &
     }
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
     MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    PortraitNickNameMergePlan nickNameMergePlan;
+    err = PortraitNickNameService::PrepareMergePlan(mergeAlbumInfo, rdbStore, nickNameMergePlan);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PreparePortraitNickNameMergePlan failed, err %{public}d", err);
+
     MergeAlbumInfo updateAlbumInfo;
     err = UpdateMergeAlbumsInfo(mergeAlbumInfo, updateAlbumInfo);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "MergeAlbum failed, err %{public}d", err);
+    err = PortraitNickNameService::ApplyMergePlan(nickNameMergePlan, rdbStore);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "ApplyPortraitNickNameMergePlan failed, err %{public}d", err);
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
     err = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "MergeGroupAlbum failed, err %{public}d", err);
@@ -3679,6 +3695,14 @@ int32_t MediaLibraryAlbumOperations::SetCoverUri(const ValuesBucket &values, con
         NotifyPortraitAlbum(changeAlbumIds);
     }
     return err;
+}
+
+int32_t MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(
+    const string &albumId, const string &operation, const vector<string> &nickNames)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    return PortraitNickNameService::Operate(albumId, operation, nickNames, rdbStore);
 }
 
 static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
