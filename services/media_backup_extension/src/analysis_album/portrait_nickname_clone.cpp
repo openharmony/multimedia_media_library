@@ -53,6 +53,7 @@ bool PortraitNickNameClone::Clone()
         }
         oldAlbumIds.push_back(oldAlbumId);
     }
+    std::sort(oldAlbumIds.begin(), oldAlbumIds.end());
     if (oldAlbumIds.empty()) {
         totalTimeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start;
         MEDIA_INFO_LOG("analysisAlbumIdMap_ has no valid album mapping, skip portrait nickname clone");
@@ -128,7 +129,8 @@ std::vector<PortraitNickNameRecord> PortraitNickNameClone::QueryPortraitNickName
     const std::string& albumIdClause) const
 {
     std::vector<PortraitNickNameRecord> records;
-    std::string querySql = "SELECT album_id, nick_name FROM tab_analysis_nick_name WHERE album_id IN " + albumIdClause;
+    std::string querySql = "SELECT album_id, nick_name FROM tab_analysis_nick_name WHERE album_id IN " +
+        albumIdClause + " ORDER BY album_id, rowid";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(sourceRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, records, "Query result for portrait nickname is null");
 
@@ -159,6 +161,13 @@ void PortraitNickNameClone::RemapAlbumIds(std::vector<PortraitNickNameRecord>& r
         return record.nickName.empty();
     });
     records.erase(newEnd, records.end());
+    std::stable_sort(records.begin(), records.end(), [](const PortraitNickNameRecord& lhs,
+        const PortraitNickNameRecord& rhs) {
+        if (lhs.albumId != rhs.albumId) {
+            return lhs.albumId < rhs.albumId;
+        }
+        return lhs.nickName < rhs.nickName;
+    });
 }
 
 void PortraitNickNameClone::BatchInsertPortraitNickNameRecords(const std::vector<PortraitNickNameRecord>& records)
