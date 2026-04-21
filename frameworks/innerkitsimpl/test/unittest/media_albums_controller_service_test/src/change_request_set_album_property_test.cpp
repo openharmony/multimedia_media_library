@@ -675,8 +675,26 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_E
     reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
     reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
 
-    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OK);
     MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyNickName_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyValues_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyValues_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_empty_values");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = {};
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyValues_001");
 }
 
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001, TestSize.Level0)

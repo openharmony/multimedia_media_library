@@ -131,7 +131,7 @@ int32_t PortraitNickNameRepository::QueryNickNames(const std::vector<std::string
         }
         bindArgs.emplace_back(albumIds[i]);
     }
-    sql += ")";
+    sql += ") ORDER BY album_id, nick_name";
     auto resultSet = rdbStore_->QuerySql(sql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "query portrait nicknames failed");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {

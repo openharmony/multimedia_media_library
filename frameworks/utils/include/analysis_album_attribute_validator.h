@@ -42,7 +42,7 @@ inline bool IsValidAnalysisAlbumValue(const std::string &value, const AnalysisAl
 
 inline bool IsValidAnalysisAlbumValues(const std::vector<std::string> &values, const AnalysisAlbumAttributeSpec &spec)
 {
-    return values.size() <= spec.maxValueCount && std::all_of(values.begin(), values.end(),
+    return !values.empty() && values.size() <= spec.maxValueCount && std::all_of(values.begin(), values.end(),
         [&spec](const std::string &value) {
             return IsValidAnalysisAlbumValue(value, spec);
         });

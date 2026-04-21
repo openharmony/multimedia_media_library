@@ -39,7 +39,7 @@ inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_NICK_NAME_SPEC = {
     true,
     ANALYSIS_ALBUM_MAX_OPERATION_VALUES,
     ANALYSIS_ALBUM_MAX_VALUE_LENGTH,
-    false,
+    true,
     true,
 };
 
