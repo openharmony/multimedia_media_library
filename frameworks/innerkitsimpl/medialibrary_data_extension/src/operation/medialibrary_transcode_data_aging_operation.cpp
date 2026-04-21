@@ -242,21 +242,16 @@ static bool IsHighPixelPicture(int32_t width, int32_t height)
     return false;
 }
 
-static bool IsSupportHighResolution(const string& bundleName)
-{
-    CompatibleInfo compatibleInfo;
-    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
-    if (compatibleInfo.highResolution) {
-        return true;
-    }
-    return false;
-}
-
 static bool NeedTranscodeHighPixelPicture(int32_t width, int32_t height)
 {
-    if (IsHighPixelPicture(width, height) && !PermissionUtils::IsSystemApp()) {
+    if (IsHighPixelPicture(width, height)) {
         string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-        if (IsSupportHighResolution(clientBundle)) {
+        CompatibleInfo compatibleInfo;
+        auto ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(clientBundle, compatibleInfo);
+        if (ret == E_OK && compatibleInfo.highResolution != -1) {
+            return compatibleInfo.highResolution == 0;
+        }
+        if (PermissionUtils::IsSystemApp()) {
             return false;
         }
         if (HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(clientBundle, HighPixelType::PIXEL_200)) {
