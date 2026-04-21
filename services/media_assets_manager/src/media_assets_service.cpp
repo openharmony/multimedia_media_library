@@ -2163,6 +2163,8 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
     for (const auto &pair : mimeTypeMap) {
         normalizedMimeTypes.emplace_back(pair.first);
     }
+    CHECK_AND_EXECUTE(!normalizedMimeTypes.empty(), normalizedMimeTypes.emplace_back(
+        HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName) ? JPEG_MIME_TYPE : HEIC_MIME_TYPE));
 
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution =
