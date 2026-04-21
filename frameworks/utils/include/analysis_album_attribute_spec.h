@@ -16,7 +16,6 @@
 #ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_SPEC_H
 #define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_SPEC_H
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -26,21 +25,11 @@ namespace OHOS::Media {
 struct AnalysisAlbumAttributeSpec {
     std::string attr;
     std::vector<std::string> supportedTypes;
-    bool enabled;
-    size_t maxValueCount;
-    size_t maxValueLength;
-    bool allowEmptyValue;
-    bool portraitOnly;
 };
 
 inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_NICK_NAME_SPEC = {
     ANALYSIS_ALBUM_ATTR_NICK_NAME,
     { ANALYSIS_ALBUM_OP_ADD, ANALYSIS_ALBUM_OP_REMOVE },
-    true,
-    ANALYSIS_ALBUM_MAX_OPERATION_VALUES,
-    ANALYSIS_ALBUM_MAX_VALUE_LENGTH,
-    true,
-    true,
 };
 
 inline const AnalysisAlbumAttributeSpec *FindAnalysisAlbumAttributeSpec(const std::string &attr)
