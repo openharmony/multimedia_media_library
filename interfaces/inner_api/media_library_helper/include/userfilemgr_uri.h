@@ -237,6 +237,7 @@ namespace Media {
 #define CONST_PAH_ANA_MAP "phaccess_ana_map_operation"
 #define CONST_PAH_ANA_CV "phaccess_ana_cv_operation"
 #define CONST_PAH_ANA_V_CV "phaccess_ana_v_cv_operation"
+#define CONST_PAH_TAB_PHOTOS_EXT_OPERATE "phaccess_tab_photos_ext_operation"
 #define CONST_PAH_ANA_OCR "phaccess_ana_ocr_operation"
 #define CONST_PAH_ANA_ATTS "phaccess_ana_atts_operation"
 #define CONST_PAH_ANA_VIDEO_ATTS "phaccess_ana_video_atts_operation"

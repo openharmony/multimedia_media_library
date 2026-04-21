@@ -33,6 +33,9 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/service",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/utils",
+    "${MEDIALIB_BUSINESS_PATH}/media_lcd_aging/include",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/include/background",
   ]
 
   cflags = [
@@ -64,6 +67,8 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/query_result_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_highlight_album_info_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_related_system_state_manager.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_merge_plan.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_relation_resolver.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_repository.cpp",
@@ -74,6 +79,8 @@ ohos_unittest("media_analysis_data_service_test") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/active_analysis_manager_test.cpp",
     "./src/media_analysis_data_service_test.cpp",
+    "./src/analysis_lcd_aging_dao_test.cpp",
+    "./src/lcd_download_operation_test.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_album_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_vision_operations.cpp",
@@ -83,6 +90,14 @@ ohos_unittest("media_analysis_data_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_watermark_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_video_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_search_operations.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_lcd_aging_dao.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/lcd_download_operation.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/analysis_lcd_download_callback.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/analysis_net_connect_observer.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_lcd_aging/src/lcd_aging_manager.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_lcd_aging/src/lcd_aging_dao.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_lcd_aging/src/lcd_aging_utils.cpp",
   ]
 
   deps = [
@@ -108,6 +123,7 @@ ohos_unittest("media_analysis_data_service_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
@@ -120,6 +136,8 @@ ohos_unittest("media_analysis_data_service_test") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "ffrt:libffrt",
+    "preferences:native_preferences",
+    "netmanager_base:net_conn_manager_if",
   ]
 
   defines = []

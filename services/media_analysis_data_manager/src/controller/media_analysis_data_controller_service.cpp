@@ -50,6 +50,9 @@
 #include "change_request_dismiss_vo.h"
 #include "medialibrary_data_manager_utils.h"
 #include "change_request_set_default_cover_uri_vo.h"
+#include "prepare_lcd_vo.h"
+#include "remove_cloud_lcd_vo.h"
+#include "lcd_aging_task_priority_manager.h"
  
 namespace OHOS::Media::AnalysisData {
 using namespace std;
@@ -614,5 +617,65 @@ int32_t MediaAnalysisDataControllerService::CreateAnalysisAlbum(MessageParcel &d
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAnalysisDataControllerService::PrepareLcd(MessageParcel &data, MessageParcel &reply)
+{
+    PrepareLcdReqBody reqBody;
+    PrepareLcdRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("PrepareLcd Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    const std::vector<int64_t> fileIds = reqBody.fileIds;
+    const uint32_t netBearerBitmap = reqBody.netBearerBitmap;
+    MEDIA_INFO_LOG("PrepareLcd: fileIds.size()=%{public}zu, netBearerBitmap=%{public}u",
+        fileIds.size(), netBearerBitmap);
+    if (fileIds.empty()) {
+        MEDIA_ERR_LOG("PrepareLcd failed: fileIds is empty");
+        return E_ERR;
+    }
+    const int32_t MAX_BATCH_SIZE = 500;
+    if (fileIds.size() > static_cast<size_t>(MAX_BATCH_SIZE)) {
+        MEDIA_ERR_LOG("PrepareLcd failed: fileIds.size()=%{public}zu exceeds max batch size=%{public}d",
+                      fileIds.size(), MAX_BATCH_SIZE);
+        return E_ERR;
+    }
+    LcdAgingTaskPriorityManager::GetInstance().RegisterHighPriorityTask(HighPriorityTaskType::ANALYSIS_DOWNLOAD);
+    std::unordered_map<uint64_t, int32_t> results;
+    ret = MediaAnalysisDataService::GetInstance().PrepareLcd(
+        fileIds, netBearerBitmap, results);
+    respBody.ret = ret;
+    respBody.results = results;
+    MEDIA_INFO_LOG("PrepareLcd result: %{public}d, results.size()=%{public}zu",
+        ret, results.size());
+    LcdAgingTaskPriorityManager::GetInstance().UnregisterHighPriorityTask(HighPriorityTaskType::ANALYSIS_DOWNLOAD);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAnalysisDataControllerService::RemoveCloudLcd(MessageParcel &data, MessageParcel &reply)
+{
+    RemoveCloudLcdReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("RemoveCloudLcd Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    const std::vector<int64_t> fileIds = reqBody.fileIds;
+    if (fileIds.empty()) {
+        MEDIA_ERR_LOG("RemoveCloudLcd failed: fileIds is empty");
+        return E_ERR;
+    }
+    const int32_t MAX_BATCH_SIZE = 500;
+    if (fileIds.size() > static_cast<size_t>(MAX_BATCH_SIZE)) {
+        MEDIA_ERR_LOG("RemoveCloudLcd failed: fileIds.size()=%{public}zu exceeds max batch size=%{public}d",
+                      fileIds.size(), MAX_BATCH_SIZE);
+        return E_ERR;
+    }
+    ret = MediaAnalysisDataService::GetInstance().RemoveCloudLcd(fileIds);
+
+    MEDIA_INFO_LOG("RemoveCloudLcd result: %{public}d", ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media::AnalysisData
