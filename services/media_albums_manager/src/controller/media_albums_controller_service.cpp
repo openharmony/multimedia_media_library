@@ -18,6 +18,7 @@
 #include "media_albums_controller_service.h"
 #include "media_albums_service.h"
 
+#include "analysis_album_attribute_const.h"
 #include "media_log.h"
 #include "parameter_utils.h"
 #include "delete_albums_vo.h"
@@ -26,7 +27,9 @@
 #include "photo_album.h"
 #include "photo_album_column.h"
 #include "change_request_set_album_name_vo.h"
+#include "change_request_operate_album_attribute_vo.h"
 #include "change_request_set_cover_uri_vo.h"
+#include "change_request_operate_album_attribute_dto.h"
 #include "change_request_set_album_name_dto.h"
 #include "medialibrary_data_manager_utils.h"
 #include "change_request_add_assets_vo.h"
@@ -68,6 +71,7 @@
 #include "check_db_availability_vo.h"
 #include "media_change_info.h"
 #include "notify_register_permission.h"
+#include "medialibrary_client_errno.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -103,6 +107,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME),
         &MediaAlbumsControllerService::ChangeRequestSetAlbumName
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE),
+        &MediaAlbumsControllerService::ChangeRequestOperateAlbumAttribute
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI),
@@ -339,6 +347,35 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
     dto.albumName = reqBody.albumName;
     dto.albumId = reqBody.albumId;
     ret = MediaAlbumsService::GetInstance().ChangeRequestSetAlbumName(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+static int32_t CheckAlbumAttributeRequest(const ChangeRequestOperateAlbumAttributeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId),
+        E_INVALID_VALUES,
+        "invalid albumId: %{public}s", reqBody.albumId.c_str());
+    return E_OK;
+}
+
+int32_t MediaAlbumsControllerService::ChangeRequestOperateAlbumAttribute(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "ChangeRequestOperateAlbumAttribute Read Request Error");
+    ret = CheckAlbumAttributeRequest(reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "ChangeRequestOperateAlbumAttribute params is invalid");
+    ret = CheckOperateAttributeThumbDbPermission(JS_INNER_FAIL);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "ChangeRequestOperateAlbumAttribute permission denied");
+    ChangeRequestOperateAlbumAttributeDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().ChangeRequestOperateAlbumAttribute(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -885,7 +922,7 @@ int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, M
         ->Or()
         ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(PhotoAlbumType::SOURCE))
         ->EndWrap();
-    
+
     QueryAlbumsDto dto;
     dto.columns = { PhotoAlbumColumns::ALBUM_LPATH };
     dto.predicates = predicates;
@@ -899,7 +936,7 @@ int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, M
         "GetAlbumsLpathByIds query failed");
     CHECK_AND_RETURN_RET_LOG(dto.resultSet->GetString(0, respBody.lpath) == NativeRdb::E_OK, E_FAIL,
         "GetAlbumsLpathByIds cannot get lpath");
-    
+
     MEDIA_DEBUG_LOG("MediaAlbumsControllerService::GetAlbumsLpathByIds End. lpath: %{public}s",
         respBody.lpath.c_str());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
@@ -944,20 +981,20 @@ int32_t MediaAlbumsControllerService::AlbumGetSelectAssets(MessageParcel &data, 
         MEDIA_ERR_LOG("Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
- 
+
     ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CheckWhereClause fialed");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    
+
     AlbumGetSelectedAssetsDto dto = AlbumGetSelectedAssetsDto::Create(reqBody);
     auto resultSet = MediaAlbumsService::GetInstance().AlbumGetSelectedAssets(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
     }
-    
+
     AlbumGetSelectedAssetsRespBody respBody;
     respBody.resultSet = resultSet;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
@@ -974,7 +1011,7 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetUploadStatus(MessageParcel
         MEDIA_ERR_LOG("ChangeRequestSetUploadStatusReqBody Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
- 
+
     ChangeRequestSetUploadStatusDto dto;
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().ChangeRequestSetUploadStatus(dto);
