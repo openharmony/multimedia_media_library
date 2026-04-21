@@ -759,11 +759,10 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
 
     string clientBundle;
     MediaLibraryBundleManager::GetInstance()->GetBundleNameByTokenId(dto.tokenId, clientBundle);
-    MEDIA_ERR_LOG("clientBundle %{public}s", clientBundle.c_str());
-    if (!PermissionUtils::IsSystemAppBycache(dto.tokenId) &&
+    if (!dto.columns.empty() && !PermissionUtils::IsSystemAppBycache(dto.tokenId) &&
         !HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(clientBundle, HighPixelType::PIXEL_200) &&
         !IsSupportHighResolution(clientBundle)) {
-        MEDIA_ERR_LOG("CanSupportedHighPixelPicture");
+        MEDIA_INFO_LOG("CanSupportedHighPixelPicture");
         dto.columns.push_back(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE);
     }
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, dto.columns);
@@ -2168,8 +2167,8 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
 
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution =
-        compatibleInfo.highResolution ? compatibleInfo.highResolution :
-        HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200);
+        compatibleInfo.highResolution != -1 ? compatibleInfo.highResolution : (PermissionUtils::IsSystemApp() ? true :
+        HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200));
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }

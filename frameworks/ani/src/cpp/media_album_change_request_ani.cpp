@@ -14,20 +14,29 @@
  */
 
 #include "media_album_change_request_ani.h"
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <sstream>
+#include "ipc_skeleton.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "result_set_utils.h"
 #include "ani_class_name.h"
+#include "analysis_album_attribute_const.h"
+#include "analysis_album_operation_data_utils.h"
+#include "analysis_album_attribute_request_utils.h"
 #include "medialibrary_ani_utils.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "permission_utils.h"
 #include "userfile_client.h"
 #include "photo_album_ani.h"
 #include "vision_photo_map_column.h"
 #include "album_operation_uri.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
+#include "change_request_operate_album_attribute_vo.h"
 #include "delete_albums_vo.h"
 #include "change_request_set_album_name_vo.h"
 #include "change_request_set_cover_uri_vo.h"
@@ -49,6 +58,32 @@ namespace OHOS::Media {
 static const int32_t VALUE_IS_ME = 1;
 static const int32_t VALUE_IS_REMOVED = 1;
 static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
+
+static bool CheckAniCallerPermission(const std::string &permission)
+{
+    OHOS::Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (result != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        ANI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool CheckOperateAttributePermissionForCall(ani_env *env)
+{
+    CHECK_COND_RET(env != nullptr, false, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return false;
+    }
+    if (!CheckAniCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB)) {
+        AniError::ThrowError(env, E_PERMISSION_DENIED,
+            "Permission denied : ohos.permission.ACCESS_MEDIALIB_THUMB_DB required.");
+        return false;
+    }
+    return true;
+}
 
 ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
 {
@@ -81,6 +116,7 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ani_native_function {"setIsMe", nullptr, reinterpret_cast<void *>(SetIsMe)},
         ani_native_function {"dismiss", nullptr, reinterpret_cast<void *>(Dismiss)},
         ani_native_function {"resetCoverUri", nullptr, reinterpret_cast<void *>(ResetCoverUri)},
+        ani_native_function {"operateAttribute", nullptr, reinterpret_cast<void *>(OperateAttribute)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
@@ -366,6 +402,56 @@ ani_status MediaAlbumChangeRequestAni::SetDefaultCoverUri(ani_env *env, ani_obje
     
     photoAlbum->SetCoverUri(coverUriStr);
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DEFAULT_COVER_URI);
+    return ANI_OK;
+}
+
+void MediaAlbumChangeRequestAni::SetNickNameOperationData(const string &type, const vector<string> &values)
+{
+    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(analysisAlbumOperationData_, albumChangeOperations_,
+        type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
+}
+
+ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object object, ani_object operation)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!CheckOperateAttributePermissionForCall(env)) {
+        return ANI_ERROR;
+    }
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
+    aniContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
+
+    auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    if (!IsPortraitAlbumAttributeTarget(photoAlbum)) {
+        AniError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Only portrait album can operate attribute");
+        return ANI_ERROR;
+    }
+
+    AnalysisAlbumOperation analysisOperation;
+    auto parseStringProperty = [env, operation](const string &propertyName, string &propertyValue) {
+        return MediaLibraryAniUtils::GetProperty(env, operation, propertyName, propertyValue) == ANI_OK;
+    };
+    auto parseArrayProperty = [env, operation](const string &propertyName, vector<string> &propertyValues) {
+        return MediaLibraryAniUtils::GetArrayProperty(env, operation, propertyName, propertyValues) == ANI_OK;
+    };
+    CHECK_ARGS_WITH_RET_MSG(env, ParseAnalysisAlbumOperation(parseStringProperty, parseArrayProperty,
+        analysisOperation), JS_E_PARAM_INVALID, ANI_ERROR, "Invalid analysis album operation");
+    if (!CheckAnalysisAlbumOperationOrThrow(analysisOperation,
+        [env]() {
+            AniError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid analysis album operation");
+        },
+        [env]() {
+            AniError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Unsupported analysis album operation");
+        })) {
+        return ANI_ERROR;
+    }
+    if (!analysisOperation.HasValues()) {
+        return ANI_OK;
+    }
+
+    aniContext->objectInfo->SetNickNameOperationData(analysisOperation.type, analysisOperation.values);
     return ANI_OK;
 }
 
@@ -966,6 +1052,16 @@ void MediaAlbumChangeRequestAni::ClearDismissAssetArray()
     dismissAssets_.clear();
 }
 
+void MediaAlbumChangeRequestAni::ClearAddNickNames()
+{
+    analysisAlbumOperationData_.addNickNames.clear();
+}
+
+void MediaAlbumChangeRequestAni::ClearRemoveNickNames()
+{
+    analysisAlbumOperationData_.removeNickNames.clear();
+}
+
 void MediaAlbumChangeRequestAni::ClearMoveMap()
 {
     moveMap_.clear();
@@ -994,6 +1090,16 @@ vector<string> MediaAlbumChangeRequestAni::GetDeleteAssetArray() const
 vector<string> MediaAlbumChangeRequestAni::GetDismissAssetArray() const
 {
     return dismissAssets_;
+}
+
+vector<string> MediaAlbumChangeRequestAni::GetAddNickNames() const
+{
+    return analysisAlbumOperationData_.addNickNames;
+}
+
+vector<string> MediaAlbumChangeRequestAni::GetRemoveNickNames() const
+{
+    return analysisAlbumOperationData_.removeNickNames;
 }
 
 map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChangeRequestAni::GetMoveMap() const
@@ -1493,6 +1599,44 @@ static bool SetAlbumNameExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
+static bool ExecuteNickNameOperation(MediaAlbumChangeRequestContext& context, const string &operationType,
+    const vector<string> &nickNames)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+
+    AnalysisAlbumOperation operation { ANALYSIS_ALBUM_ATTR_NICK_NAME, operationType, nickNames };
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    CHECK_COND_RET(PrepareAnalysisAlbumOperationReqBody(photoAlbum, operation, reqBody), false,
+        "failed to prepare nick name operation request");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        ANI_ERR_LOG("Failed to execute nick name operation, type: %{public}s, err: %{public}d",
+            operationType.c_str(), changedRows);
+        return false;
+    }
+    return true;
+}
+
+static bool AddNickNameExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
+}
+
+static bool RemoveNickNameExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+}
+
 static bool SetCoverUriExecute(MediaAlbumChangeRequestContext& context)
 {
     auto changeRequest = context.objectInfo;
@@ -1605,6 +1749,8 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::SET_COVER_URI, SetCoverUriExecute },
     { AlbumChangeOperation::SET_DISPLAY_LEVEL, SetDisplayLevelExecute },
     { AlbumChangeOperation::SET_IS_ME, SetIsMeExecute },
+    { AlbumChangeOperation::ADD_NICK_NAME, AddNickNameExecute },
+    { AlbumChangeOperation::REMOVE_NICK_NAME, RemoveNickNameExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
 };
@@ -1708,6 +1854,8 @@ static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeReque
         } else if (changeOperation == AlbumChangeOperation::SET_ALBUM_NAME ||
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
+                   changeOperation == AlbumChangeOperation::ADD_NICK_NAME ||
+                   changeOperation == AlbumChangeOperation::REMOVE_NICK_NAME ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
                    changeOperation == AlbumChangeOperation::RESET_COVER_URI) {

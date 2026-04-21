@@ -3215,6 +3215,7 @@ static void ApplyAssetChangeRequestCompleteCallback(napi_env env, napi_status st
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(
             env, context->deferred, context->callbackRef, context->work, *jsContext);
     }
+    MediaLibraryNapiUtils::DeleteAsyncContextWithRef(env, context);
     delete context;
 }
 
@@ -3228,7 +3229,8 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
-
+    CHECK_COND_WITH_MESSAGE(env, napi_create_reference(env, asyncContext->argv[PARAM0], NAPI_INIT_REF_COUNT,
+        &asyncContext->objectInfoRef) == napi_ok, "Failed to create objectInfo reference");
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check asset change request operations");
     CHECK_COND_WITH_MESSAGE(env, CheckSetLivePhoto4dStatus(env, asyncContext),
         "livePhoto4d:Failed to check asset set live photo 4d status request operations");

@@ -330,6 +330,8 @@ thread_local napi_ref MediaLibraryNapi::sAlbumType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAlbumAttributeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAlbumOperationTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAnalysisType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
@@ -585,6 +587,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
+        DECLARE_NAPI_PROPERTY("AlbumAttribute", CreateAlbumAttributeEnum(env)),
+        DECLARE_NAPI_PROPERTY("AlbumOperationType", CreateAlbumOperationTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
@@ -9386,6 +9390,16 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumChangeAttributeEnum(napi_env en
 napi_value MediaLibraryNapi::CreateDefaultChangeUriEnum(napi_env env)
 {
     return CreateStringEnumProperty(env, DEFAULT_URI_ENUM_PROPERTIES, sDefaultChangeUriRef_);
+}
+
+napi_value MediaLibraryNapi::CreateAlbumAttributeEnum(napi_env env)
+{
+    return CreateStringEnumProperty(env, ALBUM_ATTRIBUTE_ENUM_PROPERTIES, sAlbumAttributeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateAlbumOperationTypeEnum(napi_env env)
+{
+    return CreateStringEnumProperty(env, ALBUM_OPERATION_TYPE_ENUM_PROPERTIES, sAlbumOperationTypeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)

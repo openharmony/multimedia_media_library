@@ -263,7 +263,7 @@ int32_t TranscodeCompatibleInfoOperation::QueryCompatibleInfo(
     resultSet->GetColumnIndex(TabCompatibleInfoColumn::HIGH_RESOLUTION, index);
     int32_t highResolution;
     resultSet->GetInt(index, highResolution);
-    compatibleInfo.highResolution = highResolution == 1;
+    compatibleInfo.highResolution = highResolution;
 
     resultSet->GetColumnIndex(TabCompatibleInfoColumn::ENCODINGS, index);
     string encodingsStr;

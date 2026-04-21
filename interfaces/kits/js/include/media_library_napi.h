@@ -413,6 +413,8 @@ private:
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
     EXPORT static napi_value CreateNotifyTypeEnum(napi_env env);
     EXPORT static napi_value CreateDefaultChangeUriEnum(napi_env env);
+    EXPORT static napi_value CreateAlbumAttributeEnum(napi_env env);
+    EXPORT static napi_value CreateAlbumOperationTypeEnum(napi_env env);
     EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
@@ -520,6 +522,8 @@ private:
     static thread_local napi_ref sDynamicRangeType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
+    static thread_local napi_ref sAlbumAttributeEnumRef_;
+    static thread_local napi_ref sAlbumOperationTypeEnumRef_;
     static thread_local napi_ref sAnalysisType_;
     static thread_local napi_ref sRequestPhotoTypeEnumRef_;
     static thread_local napi_ref sResourceTypeEnumRef_;

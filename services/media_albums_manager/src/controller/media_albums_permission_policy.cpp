@@ -22,6 +22,7 @@
 #include "media_albums_controller_service.h"
 #include "media_permission_policy_type.h"
 #include "medialibrary_business_code.h"
+#include "permission_utils.h"
 
 using namespace std;
 
@@ -42,6 +43,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE),
+        {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_REMOVE_ASSETS), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MOVE_ASSETS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
@@ -102,6 +105,13 @@ int32_t MediaAlbumsControllerService::GetPermissionPolicy(
         return E_SUCCESS;
     }
     return E_FAIL;
+}
+
+int32_t MediaAlbumsControllerService::CheckOperateAttributeThumbDbPermission(int32_t deniedCode)
+{
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::CheckCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB), deniedCode,
+        "operate album attribute thumb db permission denied");
+    return E_OK;
 }
 
 } // namespace OHOS::Media

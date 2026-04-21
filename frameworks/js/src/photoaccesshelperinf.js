@@ -395,9 +395,13 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
   }
 }
 
-function showSingleAssetCreationDialogEx(srcFileUri, photoCreationConfigs, isImageFullyDisplayed) {
+async function showSingleAssetCreationDialogEx(srcFileUri, photoCreationConfigs, isImageFullyDisplayed) {
   const displayFlag = isImageFullyDisplayed !== undefined ? isImageFullyDisplayed : false;
-  return showAssetsCreationDialog([srcFileUri], [photoCreationConfigs], displayFlag);
+  const uris = await showAssetsCreationDialog([srcFileUri], [photoCreationConfigs], displayFlag);
+  if (!uris || uris.length === 0) {
+    return undefined;
+  }
+  return uris[0];
 }
 
 function showAssetsCreationDialogEx(srcFileUri, photoCreationConfigs) {
@@ -1463,6 +1467,8 @@ export default {
   HideSensitiveType: photoAccessHelper.HideSensitiveType,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
+  AlbumAttribute: photoAccessHelper.AlbumAttribute,
+  AlbumOperationType: photoAccessHelper.AlbumOperationType,
   HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
   AnalysisType: photoAccessHelper.AnalysisType,
   HighlightAlbumInfoType: photoAccessHelper.HighlightAlbumInfoType,
