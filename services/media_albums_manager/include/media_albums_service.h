@@ -20,6 +20,7 @@
 #include <string>
 
 #include "media_albums_rdb_operations.h"
+#include "change_request_operate_album_attribute_dto.h"
 #include "change_request_set_album_name_dto.h"
 #include "change_request_set_cover_uri_dto.h"
 #include "set_highlight_user_action_data_dto.h"
@@ -64,6 +65,7 @@ public:
     int32_t DeletePhotoAlbums(const std::vector<std::string> &albumIds);
     int32_t CreatePhotoAlbum(const std::string& albumName);
     int32_t ChangeRequestSetAlbumName(const ChangeRequestSetAlbumNameDto& dto);
+    int32_t ChangeRequestOperateAlbumAttribute(const ChangeRequestOperateAlbumAttributeDto &dto);
     int32_t ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto);
     int32_t ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubtype);
     int32_t AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode);

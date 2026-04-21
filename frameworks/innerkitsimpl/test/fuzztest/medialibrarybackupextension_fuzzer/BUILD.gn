@@ -56,6 +56,7 @@ ohos_fuzztest("MediaLibraryBackupExtensionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/classify/classify_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/ocr/ocr_restore.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_data.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/portrait_nickname_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/video_ringtone_processor/video_ringtone_processor.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_backup_extension/src/upgrade_restore.cpp",
