@@ -29,9 +29,11 @@
 #include "result_set_utils.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
+#include "vision_portrait_nickname_column.h"
 #include "album_operation_uri.h"
 #include "asset_accurate_refresh.h"
 #include "media_upgrade.h"
+#include "analysis_album_operation_data_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -44,9 +46,21 @@ constexpr int32_t FALSE_DISPLAY_LEVEL_VALUE = -1;
 constexpr int32_t FALSE_ALBUM_ID = -2;
 constexpr int32_t TRUE_ALBUM_ID = 1;
 constexpr int32_t TURE_ALBUM_ID_TWO = 2;
+constexpr int32_t TRUE_ALBUM_ID_THREE = 3;
+constexpr int32_t TRUE_ALBUM_ID_FOUR = 4;
 constexpr int32_t PIC_COUNT = 20;
 constexpr int32_t ALBUM_CUR_COUNT = 10;
 constexpr int32_t ALBUM_TARGET_COUNT = 10;
+constexpr int32_t MERGED_GROUP_COMMON_COUNT = 5;
+constexpr int32_t MERGED_GROUP_LAST_COUNT = 4;
+constexpr int32_t FIRST_ALBUM_START_ASSET_ID = 1;
+constexpr int32_t FIRST_ALBUM_END_ASSET_ID = 5;
+constexpr int32_t SECOND_ALBUM_START_ASSET_ID = 6;
+constexpr int32_t SECOND_ALBUM_END_ASSET_ID = 10;
+constexpr int32_t THIRD_ALBUM_START_ASSET_ID = 11;
+constexpr int32_t THIRD_ALBUM_END_ASSET_ID = 15;
+constexpr int32_t FOURTH_ALBUM_START_ASSET_ID = 16;
+constexpr int32_t FOURTH_ALBUM_END_ASSET_ID = 19;
 constexpr int32_t IS_ME_VALUE = 1;
 constexpr int32_t RANK_ONE = 1;
 constexpr int32_t RANK_TWO = 2;
@@ -65,12 +79,23 @@ struct AlbumColumn {
     string albumName;
 };
 
+enum class TestNickNameChangeOperation {
+    ADD,
+    REMOVE,
+};
+
+struct TestNickNameOperationData {
+    vector<string> addNickNames;
+    vector<string> removeNickNames;
+};
+
 void CleanTestTables()
 {
     vector<string> dropTableList = {
         PhotoColumn::PHOTOS_TABLE,
         ANALYSIS_ALBUM_TABLE,
         ANALYSIS_PHOTO_MAP_TABLE,
+        ANALYSIS_NICK_NAME_TABLE,
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -89,6 +114,8 @@ void SetTables()
         PhotoUpgrade::CREATE_PHOTO_TABLE,
         CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
         CREATE_ANALYSIS_ALBUM_MAP,
+        CREATE_ANALYSIS_NICK_NAME_TABLE,
+        CREATE_ANALYSIS_NICK_NAME_UNIQUE_INDEX,
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
@@ -594,6 +621,95 @@ void InsertMergeTestData(AlbumColumn &curColumn, AlbumColumn &targetColumn)
     }
 }
 
+void InsertAlbumMapRangeTestData(int32_t albumId, int32_t startAssetId, int32_t endAssetId)
+{
+    for (int32_t assetId = startAssetId; assetId <= endAssetId; assetId++) {
+        InsertAlbumMapTestData(albumId, assetId);
+    }
+}
+
+void InsertPortraitNickNameTestData(int32_t albumId, const vector<string> &nickNames)
+{
+    string sql = string("INSERT INTO ") + ANALYSIS_NICK_NAME_TABLE + " (" + ALBUM_ID + ", " + NICK_NAME + ") VALUES ";
+    vector<NativeRdb::ValueObject> bindArgs;
+    for (size_t i = 0; i < nickNames.size(); i++) {
+        sql += "(?, ?)";
+        if (i + 1 < nickNames.size()) {
+            sql += ", ";
+        }
+        bindArgs.emplace_back(to_string(albumId));
+        bindArgs.emplace_back(nickNames[i]);
+    }
+    EXPECT_EQ(g_rdbStore->ExecuteSql(sql, bindArgs), NativeRdb::E_OK);
+}
+
+vector<string> QueryPortraitNickNames(int32_t albumId)
+{
+    string sql = string("SELECT ") + NICK_NAME + " FROM " + ANALYSIS_NICK_NAME_TABLE + " WHERE " + ALBUM_ID +
+        " = ? ORDER BY " + NICK_NAME;
+    vector<string> bindArgs = { to_string(albumId) };
+    vector<string> nickNames;
+    auto resultSet = g_rdbStore->QuerySql(sql, bindArgs);
+    EXPECT_NE(resultSet, nullptr);
+    while (resultSet != nullptr && resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        nickNames.emplace_back(GetStringVal(NICK_NAME, resultSet));
+    }
+    return nickNames;
+}
+
+vector<string> GeneratePortraitNickNames(int32_t startIndex, int32_t count)
+{
+    vector<string> nickNames;
+    nickNames.reserve(count);
+    for (int32_t index = 0; index < count; index++) {
+        nickNames.emplace_back("nick_" + to_string(startIndex + index));
+    }
+    return nickNames;
+}
+
+AlbumColumn BuildPortraitAlbumColumn(int32_t albumId, int32_t count)
+{
+    AlbumColumn column = {};
+    column.coverUri = "file://media/Photo/" + to_string(albumId) + "/3/3.jpg";
+    column.count = count;
+    column.tagId = to_string(albumId);
+    return column;
+}
+
+void InsertFourPortraitAlbums()
+{
+    AlbumColumn firstColumn = BuildPortraitAlbumColumn(TRUE_ALBUM_ID, MERGED_GROUP_COMMON_COUNT);
+    AlbumColumn secondColumn = BuildPortraitAlbumColumn(TURE_ALBUM_ID_TWO, MERGED_GROUP_COMMON_COUNT);
+    AlbumColumn thirdColumn = BuildPortraitAlbumColumn(TRUE_ALBUM_ID_THREE, MERGED_GROUP_COMMON_COUNT);
+    AlbumColumn fourthColumn = BuildPortraitAlbumColumn(TRUE_ALBUM_ID_FOUR, MERGED_GROUP_LAST_COUNT);
+    InsertAlbumTestData(firstColumn);
+    InsertAlbumMapRangeTestData(TRUE_ALBUM_ID, FIRST_ALBUM_START_ASSET_ID, FIRST_ALBUM_END_ASSET_ID);
+    InsertAlbumTestData(secondColumn);
+    InsertAlbumMapRangeTestData(TURE_ALBUM_ID_TWO, SECOND_ALBUM_START_ASSET_ID, SECOND_ALBUM_END_ASSET_ID);
+    InsertAlbumTestData(thirdColumn);
+    InsertAlbumMapRangeTestData(TRUE_ALBUM_ID_THREE, THIRD_ALBUM_START_ASSET_ID, THIRD_ALBUM_END_ASSET_ID);
+    InsertAlbumTestData(fourthColumn);
+    InsertAlbumMapRangeTestData(TRUE_ALBUM_ID_FOUR, FOURTH_ALBUM_START_ASSET_ID, FOURTH_ALBUM_END_ASSET_ID);
+}
+
+void MergePortraitAlbumsForTest(int32_t albumId, int32_t targetAlbumId,
+    DataShare::DataSharePredicates &predicates)
+{
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, albumId);
+    values.Put(TARGET_ALBUM_ID, targetAlbumId);
+    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(OperationType::PORTRAIT_MERGE_ALBUM,
+        values, predicates), E_OK);
+}
+
+void ExpectMergedGroupNickNames(const vector<string> &nickNames)
+{
+    EXPECT_EQ(QueryPortraitNickNames(TRUE_ALBUM_ID), nickNames);
+    EXPECT_TRUE(QueryPortraitNickNames(TURE_ALBUM_ID_TWO).empty());
+    EXPECT_TRUE(QueryPortraitNickNames(TRUE_ALBUM_ID_THREE).empty());
+    EXPECT_TRUE(QueryPortraitNickNames(TRUE_ALBUM_ID_FOUR).empty());
+}
+
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_00, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_00::Start");
@@ -614,6 +730,241 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_0
     DataShare::DataSharePredicates predicates;
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates), E_OK);
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_00 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_MergePortraitNickNamesByMinAlbumId_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesByMinAlbumId_001::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/3/3.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.tagId = "1";
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/3/3.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "2";
+    InsertMergeTestData(curColumn, targetColumn);
+    InsertPortraitNickNameTestData(TURE_ALBUM_ID_TWO, { "nick_b", "nick_a" });
+    InsertPortraitNickNameTestData(TRUE_ALBUM_ID, { "nick_a" });
+
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TURE_ALBUM_ID_TWO);
+    values.Put(TARGET_ALBUM_ID, TRUE_ALBUM_ID);
+    DataShare::DataSharePredicates predicates;
+    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(OperationType::PORTRAIT_MERGE_ALBUM,
+        values, predicates), E_OK);
+
+    vector<string> retainedNickNames = QueryPortraitNickNames(TRUE_ALBUM_ID);
+    vector<string> removedNickNames = QueryPortraitNickNames(TURE_ALBUM_ID_TWO);
+    EXPECT_EQ(retainedNickNames, (vector<string>{ "nick_a", "nick_b" }));
+    EXPECT_TRUE(removedNickNames.empty());
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesByMinAlbumId_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, AddPortraitNickName_UseMinAlbumIdInMergedAlbums_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("AddPortraitNickName_UseMinAlbumIdInMergedAlbums_001::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/3/3.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.tagId = "1";
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/3/3.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "2";
+    InsertMergeTestData(curColumn, targetColumn);
+
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TURE_ALBUM_ID_TWO);
+    values.Put(TARGET_ALBUM_ID, TRUE_ALBUM_ID);
+    DataShare::DataSharePredicates predicates;
+    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(OperationType::PORTRAIT_MERGE_ALBUM,
+        values, predicates), E_OK);
+
+    EXPECT_EQ(MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(to_string(TURE_ALBUM_ID_TWO), "add",
+        { "nick_c" }), E_OK);
+    vector<string> retainedNickNames = QueryPortraitNickNames(TRUE_ALBUM_ID);
+    vector<string> removedNickNames = QueryPortraitNickNames(TURE_ALBUM_ID_TWO);
+    EXPECT_EQ(retainedNickNames, (vector<string>{ "nick_c" }));
+    EXPECT_TRUE(removedNickNames.empty());
+    MEDIA_INFO_LOG("AddPortraitNickName_UseMinAlbumIdInMergedAlbums_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_MergePortraitNickNamesUseMinAlbumIdAcrossMergedGroups_001,
+    TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesUseMinAlbumIdAcrossMergedGroups_001::Start");
+    CreatTestImage();
+    InsertFourPortraitAlbums();
+    DataShare::DataSharePredicates predicates;
+    MergePortraitAlbumsForTest(1, 2, predicates);
+    MergePortraitAlbumsForTest(3, 4, predicates);
+
+    InsertPortraitNickNameTestData(1, { "nick_a" });
+    InsertPortraitNickNameTestData(2, { "nick_b" });
+    InsertPortraitNickNameTestData(3, { "nick_c" });
+    InsertPortraitNickNameTestData(4, { "nick_d" });
+
+    MergePortraitAlbumsForTest(2, 4, predicates);
+
+    ExpectMergedGroupNickNames({ "nick_a", "nick_b", "nick_c", "nick_d" });
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesUseMinAlbumIdAcrossMergedGroups_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_MergePortraitNickNamesDedupAcrossMergedGroups_001,
+    TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesDedupAcrossMergedGroups_001::Start");
+    CreatTestImage();
+    InsertFourPortraitAlbums();
+    DataShare::DataSharePredicates predicates;
+    MergePortraitAlbumsForTest(1, 2, predicates);
+    MergePortraitAlbumsForTest(3, 4, predicates);
+
+    InsertPortraitNickNameTestData(1, { "nick_a", "nick_shared" });
+    InsertPortraitNickNameTestData(2, { "nick_b" });
+    InsertPortraitNickNameTestData(3, { "nick_c", "nick_shared" });
+    InsertPortraitNickNameTestData(4, { "nick_a", "nick_d" });
+
+    MergePortraitAlbumsForTest(2, 4, predicates);
+
+    ExpectMergedGroupNickNames({ "nick_a", "nick_b", "nick_c", "nick_d", "nick_shared" });
+    MEDIA_INFO_LOG("MergeAlbum_MergePortraitNickNamesDedupAcrossMergedGroups_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, RemovePortraitNickName_RemoveAcrossMergedAlbums_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("RemovePortraitNickName_RemoveAcrossMergedAlbums_001::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/3/3.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.tagId = "1";
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/3/3.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "2";
+    InsertMergeTestData(curColumn, targetColumn);
+    InsertPortraitNickNameTestData(TRUE_ALBUM_ID, { "nick_a" });
+    InsertPortraitNickNameTestData(TURE_ALBUM_ID_TWO, { "nick_b" });
+
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TURE_ALBUM_ID_TWO);
+    values.Put(TARGET_ALBUM_ID, TRUE_ALBUM_ID);
+    DataShare::DataSharePredicates predicates;
+    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(OperationType::PORTRAIT_MERGE_ALBUM,
+        values, predicates), E_OK);
+
+    EXPECT_EQ(MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(to_string(TURE_ALBUM_ID_TWO), "remove",
+        { "nick_a", "nick_b" }), E_OK);
+    EXPECT_TRUE(QueryPortraitNickNames(TRUE_ALBUM_ID).empty());
+    EXPECT_TRUE(QueryPortraitNickNames(TURE_ALBUM_ID_TWO).empty());
+    MEDIA_INFO_LOG("RemovePortraitNickName_RemoveAcrossMergedAlbums_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, AddPortraitNickName_FailWhenMergedAlbumNickNameExceedsLimit_001,
+    TestSize.Level1)
+{
+    MEDIA_INFO_LOG("AddPortraitNickName_FailWhenMergedAlbumNickNameExceedsLimit_001::Start");
+    CreatTestImage();
+    AlbumColumn curColumn;
+    curColumn.coverUri = "file://media/Photo/2/3/3.jpg";
+    curColumn.count = ALBUM_CUR_COUNT;
+    curColumn.tagId = "1";
+    AlbumColumn targetColumn;
+    targetColumn.coverUri = "file://media/Photo/11/3/3.jpg";
+    targetColumn.count = ALBUM_TARGET_COUNT;
+    targetColumn.tagId = "2";
+    InsertMergeTestData(curColumn, targetColumn);
+    InsertPortraitNickNameTestData(TRUE_ALBUM_ID, GeneratePortraitNickNames(0, 60));
+    InsertPortraitNickNameTestData(TURE_ALBUM_ID_TWO, GeneratePortraitNickNames(60, 60));
+
+    NativeRdb::ValuesBucket values;
+    values.Put(ALBUM_ID, TURE_ALBUM_ID_TWO);
+    values.Put(TARGET_ALBUM_ID, TRUE_ALBUM_ID);
+    DataShare::DataSharePredicates predicates;
+    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(OperationType::PORTRAIT_MERGE_ALBUM,
+        values, predicates), E_OK);
+
+    vector<string> retainedNickNames = QueryPortraitNickNames(TRUE_ALBUM_ID);
+    EXPECT_EQ(retainedNickNames.size(), 120);
+    EXPECT_EQ(MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(to_string(TURE_ALBUM_ID_TWO), "add",
+        { "nick_over_limit" }), E_OPERATION_NOT_SUPPORT);
+    EXPECT_EQ(QueryPortraitNickNames(TRUE_ALBUM_ID).size(), retainedNickNames.size());
+    EXPECT_TRUE(QueryPortraitNickNames(TURE_ALBUM_ID_TWO).empty());
+    MEDIA_INFO_LOG("AddPortraitNickName_FailWhenMergedAlbumNickNameExceedsLimit_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, AddPortraitNickName_FallbackToCurrentAlbumWhenGroupTagEmpty_001,
+    TestSize.Level1)
+{
+    MEDIA_INFO_LOG("AddPortraitNickName_FallbackToCurrentAlbumWhenGroupTagEmpty_001::Start");
+    CreatTestImage();
+    InsertAlbumTestData("file://media/Photo/2/3/3.jpg", 0, "");
+
+    EXPECT_EQ(MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(to_string(TRUE_ALBUM_ID), "add",
+        { "nick_a" }), E_OK);
+    EXPECT_EQ(QueryPortraitNickNames(TRUE_ALBUM_ID), (vector<string>{ "nick_a" }));
+    MEDIA_INFO_LOG("AddPortraitNickName_FallbackToCurrentAlbumWhenGroupTagEmpty_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, NickNameOperationData_KeepIndependentNetState_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("NickNameOperationData_KeepIndependentNetState_001::Start");
+    TestNickNameOperationData operationData;
+    vector<TestNickNameChangeOperation> operations;
+
+    AnalysisAlbumOperationDataUtils::UpdateAddNickNameOperationData(operationData, operations,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_a" });
+    AnalysisAlbumOperationDataUtils::UpdateRemoveNickNameOperationData(operationData, operations,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_b" });
+    AnalysisAlbumOperationDataUtils::UpdateAddNickNameOperationData(operationData, operations,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_c" });
+
+    EXPECT_EQ(operationData.addNickNames, (vector<string>{ "nick_a", "nick_c" }));
+    EXPECT_EQ(operationData.removeNickNames, (vector<string>{ "nick_b" }));
+    EXPECT_EQ(operations, (vector<TestNickNameChangeOperation> {
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE }));
+    MEDIA_INFO_LOG("NickNameOperationData_KeepIndependentNetState_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, NickNameOperationData_UseLatestStateForSameNickName_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("NickNameOperationData_UseLatestStateForSameNickName_001::Start");
+    TestNickNameOperationData operationData;
+    vector<TestNickNameChangeOperation> operations;
+
+    AnalysisAlbumOperationDataUtils::UpdateRemoveNickNameOperationData(operationData, operations,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_a" });
+    AnalysisAlbumOperationDataUtils::UpdateAddNickNameOperationData(operationData, operations,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_a" });
+
+    EXPECT_EQ(operationData.addNickNames, (vector<string>{ "nick_a" }));
+    EXPECT_TRUE(operationData.removeNickNames.empty());
+    EXPECT_EQ(operations, (vector<TestNickNameChangeOperation> { TestNickNameChangeOperation::ADD }));
+    MEDIA_INFO_LOG("NickNameOperationData_UseLatestStateForSameNickName_001::End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, NickNameOperationData_SetOperationDataFollowNetState_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("NickNameOperationData_SetOperationDataFollowNetState_001::Start");
+    TestNickNameOperationData operationData;
+    vector<TestNickNameChangeOperation> operations;
+
+    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(operationData, operations, ANALYSIS_ALBUM_OP_ADD,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_a", "nick_b" });
+    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(operationData, operations, ANALYSIS_ALBUM_OP_REMOVE,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_a", "nick_c" });
+    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(operationData, operations, ANALYSIS_ALBUM_OP_ADD,
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE, { "nick_c" });
+
+    EXPECT_EQ(operationData.addNickNames, (vector<string>{ "nick_b", "nick_c" }));
+    EXPECT_EQ(operationData.removeNickNames, (vector<string>{ "nick_a" }));
+    EXPECT_EQ(operations, (vector<TestNickNameChangeOperation> {
+        TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE }));
+    MEDIA_INFO_LOG("NickNameOperationData_SetOperationDataFollowNetState_001::End");
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_01, TestSize.Level1)

@@ -4455,6 +4455,8 @@ export namespace photoAccessHelper {
 
     native removeAssets(assets: Array<PhotoAsset>): void;
 
+    native operateAttribute(operation: AlbumOperation): void;
+
     private create(context: long): void {
       if (this.nativeHandle == 0) {
         this.nativeHandle = context;
@@ -4479,6 +4481,22 @@ export namespace photoAccessHelper {
 
     native setOrderPosition(assets: Array<PhotoAsset>, position: Array<int>): void;
     native setDefaultCoverUri(uri: string): void;
+  }
+
+  export interface AlbumOperation {
+    attr: AlbumAttribute;
+    type: AlbumOperationType;
+    values: Array<string>;
+  }
+
+  export enum AlbumAttribute {
+    NICK_NAME_ATTR = "nickname",
+  }
+
+  export enum AlbumOperationType {
+    ADD = "add",
+    REMOVE = "remove",
+    UPDATE = "update",
   }
 
   export interface SharedPhotoAsset {

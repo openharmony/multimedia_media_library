@@ -1,0 +1,73 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define MLOG_TAG "AlbumAttrDispatcher"
+
+#include "analysis_album_attribute_dispatcher.h"
+
+#include "analysis_album_attribute_validator.h"
+#include "portrait_nickname_handler.h"
+#include "media_log.h"
+
+namespace OHOS::Media {
+namespace {
+using ValidateTargetFunc = int32_t (*)(const std::shared_ptr<PhotoAlbum> &photoAlbum);
+using ExecuteFunc = int32_t (*)(const std::shared_ptr<PhotoAlbum> &photoAlbum,
+    const AnalysisAlbumOperation &operation);
+
+struct AnalysisAlbumAttributeHandlerEntry {
+    const AnalysisAlbumAttributeSpec *spec;
+    ValidateTargetFunc validateTarget;
+    ExecuteFunc execute;
+};
+
+const AnalysisAlbumAttributeHandlerEntry PORTRAIT_NICK_NAME_HANDLER = {
+    &ANALYSIS_ALBUM_NICK_NAME_SPEC,
+    PortraitNickNameHandler::ValidateTarget,
+    PortraitNickNameHandler::Execute,
+};
+
+const AnalysisAlbumAttributeHandlerEntry *ResolveHandler(const std::string &attr)
+{
+    if (attr == PORTRAIT_NICK_NAME_HANDLER.spec->attr) {
+        return &PORTRAIT_NICK_NAME_HANDLER;
+    }
+    return nullptr;
+}
+} // namespace
+
+int32_t AnalysisAlbumAttributeDispatcher::Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
+    const AnalysisAlbumOperation &operation)
+{
+    CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "photoAlbum is nullptr");
+    int32_t checkResult = ValidateAnalysisAlbumOperationProtocol(operation.attr, operation.type, operation.values);
+    CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
+        "invalid analysis album operation protocol, attr: %{public}s, type: %{public}s",
+        operation.attr.c_str(), operation.type.c_str());
+    checkResult = CheckAnalysisAlbumOperationSupport(operation.attr, operation.type);
+    CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
+        "unsupported analysis album operation, attr: %{public}s, type: %{public}s",
+        operation.attr.c_str(), operation.type.c_str());
+
+    const auto *handler = ResolveHandler(operation.attr);
+    CHECK_AND_RETURN_RET_LOG(handler != nullptr, E_OPERATION_NOT_SUPPORT,
+        "no handler for analysis album attribute: %{public}s", operation.attr.c_str());
+    checkResult = handler->validateTarget(photoAlbum);
+    CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
+        "analysis album attribute target validation failed, attr: %{public}s, albumId: %{public}d",
+        operation.attr.c_str(), photoAlbum->GetAlbumId());
+    return handler->execute(photoAlbum, operation);
+}
+} // namespace OHOS::Media

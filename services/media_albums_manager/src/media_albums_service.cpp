@@ -18,7 +18,8 @@
 #include "media_albums_service.h"
 
 #include <string>
-
+#include "analysis_album_attribute_dispatcher.h"
+#include "analysis_album_attribute_request_utils.h"
 #include "medialibrary_album_operations.h"
 #include "media_albums_rdb_operations.h"
 #include "media_log.h"
@@ -36,6 +37,7 @@
 #include "medialibrary_common_utils.h"
 #include "medialibrary_business_code.h"
 #include "medialibrary_client_errno.h"
+#include "medialibrary_data_manager_utils.h"
 #include "rdb_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "photo_map_column.h"
@@ -60,6 +62,16 @@ using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
+static std::shared_ptr<PhotoAlbum> BuildAnalysisAlbumTarget(const ChangeRequestOperateAlbumAttributeDto &dto)
+{
+    CHECK_AND_RETURN_RET_LOG(!dto.albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(dto.albumId), nullptr,
+        "invalid albumId: %{public}s", dto.albumId.c_str());
+    auto photoAlbum = std::make_shared<PhotoAlbum>();
+    photoAlbum->SetAlbumId(std::atoi(dto.albumId.c_str()));
+    photoAlbum->SetPhotoAlbumType(static_cast<PhotoAlbumType>(dto.albumType));
+    photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(dto.albumSubType));
+    return photoAlbum;
+}
 
 MediaAlbumsService &MediaAlbumsService::GetInstance()
 {
@@ -138,6 +150,14 @@ int32_t MediaAlbumsService::ChangeRequestSetAlbumName(const ChangeRequestSetAlbu
             break;
     }
     return RenameUserAlbum(dto.albumId, dto.albumName);
+}
+
+int32_t MediaAlbumsService::ChangeRequestOperateAlbumAttribute(const ChangeRequestOperateAlbumAttributeDto &dto)
+{
+    auto photoAlbum = BuildAnalysisAlbumTarget(dto);
+    CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "failed to build analysis album target");
+    AnalysisAlbumOperation operation { dto.attr, dto.type, dto.values };
+    return AnalysisAlbumAttributeDispatcher::Execute(photoAlbum, operation);
 }
 
 int32_t MediaAlbumsService::SetPortraitCoverUri(const ChangeRequestSetCoverUriDto& dto)
@@ -1009,4 +1029,5 @@ void MediaAlbumsService::ReportCloneDbStatus()
         Notification::MediaLibraryNotifyNew::AddDbAvailabilityItem("available", "");
     }
 }
+
 } // namespace OHOS::Media

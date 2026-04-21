@@ -716,6 +716,19 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     return napi_ok;
 }
 
+template <class AsyncContext>
+void MediaLibraryNapiUtils::DeleteAsyncContextWithRef(napi_env env, AsyncContext &context)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("AsyncContext is nullptr");
+        return;
+    }
+    if (context->objectInfoRef != nullptr) {
+        napi_delete_reference(env, context->objectInfoRef);
+        context->objectInfoRef = nullptr;
+    }
+}
+
 template <>
 napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext,
@@ -938,6 +951,32 @@ void MediaLibraryNapiUtils::AppendFetchOptionSelection(string &selection, const 
     }
 }
 
+static int32_t TransCommonErrorCode(int error)
+{
+    switch (error) {
+        case -E_CHECK_SYSTEMAPP_FAIL:
+            return E_CHECK_SYSTEMAPP_FAIL;
+
+        case E_PARAM_CONVERT_FORMAT:
+        case E_ACQ_BETA_TASK_FAIL:
+        case E_MAX_ON_SINGLE_NUM:
+            return JS_E_PARAM_INVALID;
+
+        case E_INNER_CONVERT_FORMAT:
+        case E_INNER_FAIL:
+        case E_OPR_DEBUG_DB_FAIL:
+        case E_BACK_UP_DB_FAIL:
+            return JS_E_INNER_FAIL;
+
+        case E_BETA_VERSION_FAIL:
+        case E_OPERATION_NOT_SUPPORT:
+            return JS_E_OPR_TYPE_NOT_SUPPORT;
+
+        default:
+            return JS_INNER_FAIL;
+    }
+}
+
 int MediaLibraryNapiUtils::TransErrorCode(const string &Name, shared_ptr<DataShare::DataShareResultSet> resultSet)
 {
     NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());
@@ -952,28 +991,12 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 {
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
-    static const unordered_set<int32_t> innerFailErrorSet = {
-        E_INNER_CONVERT_FORMAT,
-        E_INNER_FAIL,
-        E_OPR_DEBUG_DB_FAIL,
-        E_BACK_UP_DB_FAIL
-    };
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        if (error == -E_CHECK_SYSTEMAPP_FAIL) {
-            error = E_CHECK_SYSTEMAPP_FAIL;
-        } else if (error == E_PARAM_CONVERT_FORMAT || error == E_ACQ_BETA_TASK_FAIL || error == E_MAX_ON_SINGLE_NUM) {
-            error = JS_E_PARAM_INVALID;
-        } else if (innerFailErrorSet.find(error) != innerFailErrorSet.end()) {
-            error = JS_E_INNER_FAIL;
-        } else if (error == E_BETA_VERSION_FAIL) {
-            error = JS_E_OPR_TYPE_NOT_SUPPORT;
-        } else {
-            error = JS_INNER_FAIL;
-        }
+        return TransCommonErrorCode(error);
     } else if (error == E_PERMISSION_DENIED) {
-        error = OHOS_PERMISSION_DENIED_CODE;
+        return OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
-        error = trans2JsError.at(error);
+        return trans2JsError.at(error);
     }
     return error;
 }
@@ -2836,5 +2859,17 @@ template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<Mov
 
 template napi_status MediaLibraryNapiUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context, const FetchOptionType &fetchOptType);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAlbumChangeRequestAsyncContext*>(
+    napi_env env, MediaAlbumChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAssetChangeRequestAsyncContext*>(
+    napi_env env, MediaAssetChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<MediaAssetsChangeRequestAsyncContext*>(
+    napi_env env, MediaAssetsChangeRequestAsyncContext*& context);
+
+template void MediaLibraryNapiUtils::DeleteAsyncContextWithRef<PhotoAlbumNapiAsyncContext*>(
+    napi_env env, PhotoAlbumNapiAsyncContext*& context);
 } // namespace Media
 } // namespace OHOS

@@ -1914,7 +1914,7 @@ int MediaLibraryAniUtils::TransErrorCode(const string &Name, int error)
             error = JS_E_PARAM_INVALID;
         } else if (innerFailErrorSet.find(error) != innerFailErrorSet.end()) {
             error = JS_E_INNER_FAIL;
-        } else if (error == E_BETA_VERSION_FAIL) {
+        } else if (error == E_BETA_VERSION_FAIL || error == E_OPERATION_NOT_SUPPORT) {
             error = JS_E_OPR_TYPE_NOT_SUPPORT;
         } else {
             error = JS_INNER_FAIL;

@@ -414,25 +414,19 @@ static bool IsHighPixelPicture(const string &fileId)
     return false;
 }
 
-static bool IsSupportHighResolution(const string &bundleName)
-{
-    CompatibleInfo compatibleInfo;
-    TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
-    if (compatibleInfo.highResolution) {
-        return true;
-    }
-    return false;
-}
-
 static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
     const string &bundleName)
 {
-    AccessTokenID tokenId;
-    PermissionUtils::GetTokenCallerForUid(uid, tokenId);
-    bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
-    if (isHighPixel && !isSystemApp) {
-        uint32_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-        if (IsSupportHighResolution(bundleName)) {
+    if (isHighPixel) {
+        CompatibleInfo compatibleInfo;
+        auto ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
+        if (ret == E_OK && compatibleInfo.highResolution != -1) {
+            return compatibleInfo.highResolution == 0;
+        }
+        AccessTokenID tokenId;
+        PermissionUtils::GetTokenCallerForUid(uid, tokenId);
+        bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+        if (isSystemApp) {
             return false;
         }
         if (HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200)) {
