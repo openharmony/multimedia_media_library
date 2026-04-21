@@ -69,8 +69,6 @@
 #include "lake_file_operations.h"
 #include "medialibrary_db_const.h"
 #include "media_edit_utils.h"
-#include "medialibrary_event_db_operations.h"
-#include "media_operation_log_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1169,16 +1167,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     HandleDateAdded(nowTime,
         cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO ? MEDIA_TYPE_PHOTO : MEDIA_TYPE_DEFAULT,
         assetInfo);
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        assetInfo.PutString(PhotoColumn::UNIQUE_ID, MedialibraryEventDbOperations::GenerateUuid());
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE &&
+        (fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
+         fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        assetInfo.PutString(PhotoColumn::UNIQUE_ID, MediaFileUtils::GenerateUUID());
     }
-#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-        if (fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
-            fileAsset.GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) {
-            std::string uuid = MedialibraryEventDbOperations::GenerateUuid();
-            assetInfo.PutString(PhotoColumn::UNIQUE_ID, uuid);
-        }
-#endif
     cmd.SetValueBucket(assetInfo);
 }
 

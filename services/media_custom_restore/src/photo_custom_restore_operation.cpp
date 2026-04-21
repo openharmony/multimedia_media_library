@@ -878,6 +878,11 @@ int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTa
     int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
     int32_t albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     resultSet->Close();
+    std::string updateQuerySql = "UPDATE PhotoAlbum SET unique_id = '" + MediaFileUtils::GenerateUUID() + "' "
+        + " WHERE album_id = " + std::to_string(albumId) + " AND (unique_id IS NULL OR unique_id = '')" +
+        " AND (" + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+        " AND " + PhotoAlbumColumns::ALBUM_NAME + " != '.hiddenAlbum'" + " )";
+    rdbStore->ExecuteSql(updateQuerySql);
     restoreTaskInfo.firstFileId = fileId;
     string extrUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.filePath);
     restoreTaskInfo.firstFileUri = MediaFileUtils::GetUriByExtrConditions(
@@ -1041,6 +1046,15 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(const unordered_map<st
         if (!IsDuplication(restoreTaskInfo, fileInfo)) {
             values.push_back(value);
             insertFiles.push_back(fileInfo);
+        } else {
+            std::string querySql = "UPDATE Photos SET unique_id = ? WHERE data = ? AND \
+            (unique_id IS NULL OR unique_id = '' OR unique_id = '-1') AND (media_type = ? OR media_type = ?)";
+            std::vector<NativeRdb::ValueObject> params = {MediaFileUtils::GenerateUUID(), fileInfo.filePath,
+                MediaType::MEDIA_TYPE_IMAGE, MediaType::MEDIA_TYPE_VIDEO};
+            auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+            if (rdbStore != nullptr && rdbStore->ExecuteSql(querySql, params) != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("Update failed for path:%{public}s.", fileInfo.filePath.c_str());
+            }
         }
     }
     sameFileNum = static_cast<int32_t>(restoreFiles.size() - insertFiles.size());
@@ -1285,6 +1299,9 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(const unorde
     value.PutString(MediaColumn::MEDIA_FILE_PATH, fileInfo.filePath);
     value.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     value.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE || fileInfo.mediaType == MediaType::MEDIA_TYPE_VIDEO) {
+        value.PutString(PhotoColumn::UNIQUE_ID, MediaFileUtils::GenerateUUID());
+    }
     fileInfo.subtype = fileInfo.isLivePhoto ? static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)
                                            : static_cast<int32_t>(PhotoSubType::DEFAULT);
     value.PutString(MediaColumn::MEDIA_PACKAGE_NAME, restoreTaskInfo.packageName);

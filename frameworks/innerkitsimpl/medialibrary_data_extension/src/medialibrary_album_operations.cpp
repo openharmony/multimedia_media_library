@@ -342,6 +342,7 @@ void MediaLibraryAlbumOperations::PutGeneralPhotoAlbumValues(const string &album
 {
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lpath);
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, MediaFileUtils::GenerateUUID());
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoAlbumColumns::CHANGE_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1); // local album is 1.
@@ -1896,6 +1897,7 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, MediaFileUtils::GenerateUUID());
     values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());

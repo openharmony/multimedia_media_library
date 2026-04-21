@@ -1059,6 +1059,34 @@ void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
     }
 }
 
+void MedialibrarySubscriber::DoFillUUIDOfPhotoAndAlbums()
+{
+    MEDIA_INFO_LOG("Begin DoFillUUIDOfPhotoAndAlbums");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore");
+
+    const std::string FILL_PHOTOS_UUID = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET " + PhotoColumn::UNIQUE_ID + " = " + SQL_GENERATE_UUID +
+        " WHERE (" + PhotoColumn::UNIQUE_ID + " IS NULL OR " +
+        PhotoColumn::UNIQUE_ID + " = '' OR " + PhotoColumn::UNIQUE_ID + " = '-1'" +") " +
+        "AND (media_type = " + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + " OR media_type = " +
+        std::to_string(MediaType::MEDIA_TYPE_VIDEO) + ")";
+    int32_t ret = rdbStore->ExecuteSql(FILL_PHOTOS_UUID);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Can not fill Photos UUID, ret = %{public}d", ret);
+
+    const std::string FILL_PHOTO_ALBUM_UUID = "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::UNIQUE_ID + " = " + SQL_GENERATE_UUID +
+        " WHERE (" + PhotoAlbumColumns::UNIQUE_ID + " IS NULL OR " + PhotoAlbumColumns::UNIQUE_ID + " = '') AND ((" +
+        PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::USER) + " AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::USER_GENERIC) + " ) OR (" +
+        PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) + " AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+        " AND " + PhotoAlbumColumns::ALBUM_NAME + " != '.hiddenAlbum'" + " ))";
+    ret = rdbStore->ExecuteSql(FILL_PHOTO_ALBUM_UUID);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Can not fill PhotoAlbum UUID, ret = %{public}d", ret);
+    return;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
@@ -1126,6 +1154,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 {
     PhotoDayMonthYearOperation::UpdatePhotoDateAddedDateInfo();
     MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
+    DoFillUUIDOfPhotoAndAlbums();
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     HeightWidthCorrectOperation::UpdateHeightAndWidth();
