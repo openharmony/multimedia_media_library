@@ -989,20 +989,24 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 }
 
 void MediaLibraryNapiUtils::HandleError(
-    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr)
+    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr,
+    const string &errorMsg)
 {
     if (error == ERR_DEFAULT) {
         return;
     }
 
-    string errMsg = "System inner fail";
+    string errMsg = errorMsg;
     int originalError = error;
-    if (jsErrMap.count(error) > 0) {
-        errMsg = jsErrMap.at(error);
-    } else {
-        error = JS_INNER_FAIL;
-        if (realErr != 0 && jsErrMap.count(realErr) > 0) {
-            errMsg = jsErrMap.at(realErr);
+    if (errMsg.empty()) {
+        errMsg = "System inner fail";
+        if (jsErrMap.count(error) > 0) {
+            errMsg = jsErrMap.at(error);
+        } else {
+            error = JS_INNER_FAIL;
+            if (realErr != 0 && jsErrMap.count(realErr) > 0) {
+                errMsg = jsErrMap.at(realErr);
+            }
         }
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
