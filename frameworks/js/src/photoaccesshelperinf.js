@@ -398,6 +398,7 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
 async function showSingleAssetCreationDialogEx(srcFileUri, photoCreationConfigs, isImageFullyDisplayed) {
   const displayFlag = isImageFullyDisplayed !== undefined ? isImageFullyDisplayed : false;
   const uris = await showAssetsCreationDialog([srcFileUri], [photoCreationConfigs], displayFlag);
+  if (!uris || uris.length === 0) return undefined;
   return uris[0];
 }
 
