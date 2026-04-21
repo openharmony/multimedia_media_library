@@ -272,6 +272,7 @@ config("media_data_extension_public_config") {
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dto",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/dao",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/service",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/utils",
     ]
     include_dirs += include_media_analysis_data_server
   }
@@ -542,6 +543,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/repair_future_date_task.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/media_hidden_and_recycle_task.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/repair_video_dirty_and_quality_task.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/lcd_download_task.cpp",
   ]
 
   media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
@@ -745,6 +747,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_merge_album_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/change_request_place_before_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_highlight_album_info_vo.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/remove_cloud_lcd_vo.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/prepare_lcd_vo.cpp",
   ]
 
   media_permission_check_source = [
@@ -1131,6 +1135,7 @@ ohos_shared_library("medialibrary_data_extension") {
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_vision_operations.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_analysis_album_operations.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_analysis_default_cover_uri_operations.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_lcd_aging_dao.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/controller/media_analysis_data_policy.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/controller/media_analysis_data_controller_service.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/service/active_analysis_manager.cpp",
@@ -1139,6 +1144,9 @@ ohos_shared_library("medialibrary_data_extension") {
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dto/change_request_set_order_position_dto.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dto/create_analysis_album_dto.cpp",
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dto/get_order_position_dto.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/analysis_net_connect_observer.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/lcd_download_operation.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/utils/analysis_lcd_download_callback.cpp",
     ]
     sources += media_analysis_data_server_source
   }

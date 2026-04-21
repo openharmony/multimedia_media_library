@@ -21,6 +21,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "parameters.h"
 #include "result_set_utils.h"
+#include "lcd_download_operation.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +46,12 @@ void CloudSyncSwitchObserver::HandleIndex()
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(SYNC_INTERVAL));
     lock_guard<mutex> lock(syncMutex_);
+
+    if (LcdDownloadOperation::GetInstance()->GetLcdDownloadStatus() == LcdDownloadStatus::DOWNLOADING) {
+        MEDIA_INFO_LOG("Cloud sync switch changed, stop LCD download task");
+        LcdDownloadOperation::GetInstance()->CancelDownload();
+    }
+
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(uniStore != nullptr, "uniStore is nullptr!");
 
