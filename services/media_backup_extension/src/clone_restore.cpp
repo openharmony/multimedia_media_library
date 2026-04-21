@@ -147,6 +147,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
             PhotoColumn::PHOTO_FILE_INODE, PhotoColumn::PHOTO_STORAGE_PATH,
             PhotoColumn::PHOTO_FILE_SOURCE_TYPE, // east lake related
+            PhotoColumn::UNIQUE_ID,
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -155,6 +156,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoAlbumColumns::ALBUM_VIDEO_COUNT, // updated by album udpate
             PhotoAlbumColumns::ALBUM_DIRTY, PhotoAlbumColumns::ALBUM_CLOUD_ID, // cloud related
             PhotoAlbumColumns::ALBUM_ORDER, // created by trigger
+            PhotoAlbumColumns::UNIQUE_ID,
         }},
     { ANALYSIS_ALBUM_TABLE,
         {
@@ -1083,6 +1085,31 @@ void CloneRestore::UpdatePackageNameForSamePhotos(vector<FileInfo> &fileInfos)
     }
 }
 
+void CloneRestore::PrevailUUIDForSamePhotos(vector<FileInfo> &fileInfos)
+{
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew) {
+            continue;
+        }
+
+        if (fileInfo.uuid.empty()) {
+            fileInfo.uuid = MediaFileUtils::GenerateUUID();
+        }
+
+        std::string querySql = "UPDATE Photos SET unique_id = ? WHERE file_id = ? \
+            AND (unique_id IS NULL OR unique_id = '' OR unique_id = '-1') \
+            AND (media_type = ? OR media_type = ?)";
+        std::vector<NativeRdb::ValueObject> params = {fileInfo.uuid, fileInfo.fileIdNew,
+            MediaType::MEDIA_TYPE_IMAGE, MediaType::MEDIA_TYPE_VIDEO};
+        auto ret = mediaLibraryRdb_->ExecuteSql(querySql, params);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Update failed for file_id: %{public}d, error: %{public}d",
+                fileInfo.fileIdNew, ret);
+            continue;
+        }
+    }
+}
+
 int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
@@ -1091,6 +1118,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
     UpdateRiskStatusForSamePhotos(fileInfos);
     UpdatePackageNameForSamePhotos(fileInfos);
+    PrevailUUIDForSamePhotos(fileInfos);
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
@@ -1280,6 +1308,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
         albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
         albumInfo.uploadStatus = GetInt32Val(PhotoAlbumColumns::UPLOAD_STATUS, resultSet);
+        albumInfo.uuid = GetStringVal(PhotoAlbumColumns::UNIQUE_ID, resultSet);
     }
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -1715,6 +1744,10 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
+    if (fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE || fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        values.PutString(PhotoColumn::UNIQUE_ID,
+            (fileInfo.uuid == "" || fileInfo.uuid == "-1") ? MediaFileUtils::GenerateUUID() : fileInfo.uuid);
+    }
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     // [time info]date_added, date_modified, date_taken, detail_time, date_year, date_month, date_day
     SetTimeInfo(fileInfo, values);
@@ -1935,6 +1968,14 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
             (albumInfo.dateModified ? albumInfo.dateModified : MediaFileUtils::UTCTimeMilliSeconds()));
         values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, this->photoAlbumClone_.FindUploadStatus(albumInfo));
+        if (((albumInfo.albumType == PhotoAlbumType::USER &&
+                albumInfo.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+             (albumInfo.albumType == PhotoAlbumType::SOURCE &&
+                albumInfo.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC)) &&
+            (albumInfo.albumName != ".hiddenAlbum")) {
+            values.PutString(PhotoAlbumColumns::UNIQUE_ID,
+                albumInfo.uuid == "" ? MediaFileUtils::GenerateUUID() : albumInfo.uuid);
+        }
     }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
@@ -1975,7 +2016,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
-void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName)
+void CloneRestore::UpdateAlbumOrderColumns(AlbumInfo &albumInfo, const string &tableName)
 {
     CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "rdbStore is null");
@@ -1983,8 +2024,32 @@ void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const str
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
     predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumInfo.albumIdNew);
+    std::string sql = "SELECT unique_id FROM " + PhotoAlbumColumns::TABLE +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumInfo.albumIdNew);
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, sql, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("The album does not exist or unique_id column not exist");
+    }
+
+    if (resultSet != nullptr) {
+        std::string newDeviceUUID = get<std::string>(ResultSetUtils::GetValFromColumn(
+            PhotoAlbumColumns::UNIQUE_ID, resultSet, TYPE_STRING));
+        resultSet->Close();
+        if (!newDeviceUUID.empty()) {
+            albumInfo.uuid = newDeviceUUID;
+        } else {
+            if (albumInfo.uuid.empty() && ((albumInfo.albumType == PhotoAlbumType::USER &&
+                albumInfo.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+                (albumInfo.albumType == PhotoAlbumType::SOURCE &&
+                    albumInfo.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC &&
+                    albumInfo.albumName != ".hiddenAlbum"))) {
+                albumInfo.uuid = MediaFileUtils::GenerateUUID();
+            }
+        }
+    }
 
     NativeRdb::ValuesBucket values;
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, albumInfo.uuid);
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (const auto &columns : PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP) {
         for (const auto &columnName : columns.second) {
@@ -2565,6 +2630,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.title = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
+    fileInfo.uuid = GetStringVal(PhotoColumn::UNIQUE_ID, resultSet);
     fileInfo.oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
         ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "", BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));

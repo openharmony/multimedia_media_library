@@ -50,6 +50,15 @@ enum class StatusEventType {
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive";
 static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "/cloud_sp?key=useMobileNetworkData";
 
+static const std::string SQL_GENERATE_UUID = "(lower(hex(randomblob(4) ) ) || \
+    '-' || lower(hex(randomblob(2))) || '-4' || \
+    substr(lower(hex(randomblob(2))), 2) || '-' || \
+    substr('89ab', abs(random()) % 4 + 1, 1) || \
+    substr(lower(hex(randomblob(2))), 2) || '-' || \
+    lower(hex(randomblob(6))))";
+
+class MedialibrarySubscriber;
+
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
     class DelayTask {
@@ -146,6 +155,7 @@ private:
     bool UpdateCheckCriticalTypeStatus();
 #endif
     void UpdateMediaInLakeCheckStatus();
+    void DoFillUUIDOfPhotoAndAlbums();
     void CheckHalfDayMissions();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     void UpdateBackgroundTimer();

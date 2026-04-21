@@ -320,6 +320,9 @@ public:
     EXPORT FetchResult<FileAsset> GetAssets(const PhotoAlbum &album, const std::vector<std::string> &fetchColumns,
        const DataShare::DataSharePredicates *predicate);
 
+    EXPORT FetchResult<FileAsset> GetAssets(const std::vector<std::string> &fetchColumns,
+       const DataShare::DataSharePredicates *predicate);
+
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

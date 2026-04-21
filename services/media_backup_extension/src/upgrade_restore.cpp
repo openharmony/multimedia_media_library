@@ -999,6 +999,9 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.storyIds = GetStringVal("story_id", resultSet);
     info.portraitIds = GetStringVal("portrait_id", resultSet);
     info.storyChosen = GetInt32Val("story_chosen", resultSet);
+    std::string resultUniqueId = GetStringVal("unique_id", resultSet);
+    info.uuid = (resultUniqueId == "" || resultUniqueId == "-1") ?
+        MediaFileUtils::GenerateUUID() : resultUniqueId;
     return isSuccess;
 }
 
@@ -1027,6 +1030,9 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    if (fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE || fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        values.PutString(PhotoColumn::UNIQUE_ID, MediaFileUtils::GenerateUUID());
+    }
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.firstUpdateTime != 0) {
