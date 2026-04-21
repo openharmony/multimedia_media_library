@@ -57,6 +57,7 @@ private:
     bool IsLcdAgingStatusOn();
     bool IsAgingPeriodSatisfied();
     bool IsAgingThresholdSatisfied();
+    ThumbnailData ConvertLcdAgingFileInfoToThumbnailData(const LcdAgingFileInfo &agingFileInfo);
 
 private:
     LcdAgingDao lcdAgingDao_;
