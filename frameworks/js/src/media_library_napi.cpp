@@ -15756,6 +15756,8 @@ static napi_value NormalizeSupportedMimeTypes(napi_env env, const std::vector<st
     }
     CHECK_ARGS_WITH_MEG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
         JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
+    CHECK_ARGS_WITH_MEG(env, !mimeTypeMap.empty(), JS_E_PARAM_INVALID,
+        "supportedMimeType cannot be empty");
 
     normalizedMimeTypes.clear();
     normalizedMimeTypes.reserve(mimeTypeMap.size());
@@ -15772,22 +15774,30 @@ static napi_value ParseSupportedMimeTypesFromConfig(napi_env env, napi_value con
     std::vector<std::string> &supportedMimeTypes)
 {
     supportedMimeTypes.clear();
-    napi_value supportedMimeTypesValue = nullptr;
-    if (napi_get_named_property(env, configObj, "supportedMimeType", &supportedMimeTypesValue) != napi_ok) {
+    bool hasSupportedMimeType = false;
+    CHECK_ARGS(env, napi_has_named_property(env, configObj, "supportedMimeType", &hasSupportedMimeType),
+        JS_E_PARAM_INVALID);
+    if (!hasSupportedMimeType) {
         napi_value result = nullptr;
+        NAPI_INFO_LOG("ParseSupportedMimeTypesFromConfig: supportedMimeType property not found, use default value");
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
     }
 
+    napi_value supportedMimeTypesValue = nullptr;
+    CHECK_ARGS(env, napi_get_named_property(env, configObj, "supportedMimeType", &supportedMimeTypesValue),
+        JS_INNER_FAIL);
+
     napi_valuetype supportedMimeTypesType = napi_undefined;
     CHECK_ARGS(env, napi_typeof(env, supportedMimeTypesValue, &supportedMimeTypesType), JS_E_PARAM_INVALID);
-    if (supportedMimeTypesType != napi_undefined && supportedMimeTypesType != napi_null) {
-        CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, supportedMimeTypesValue, supportedMimeTypes),
-            JS_E_PARAM_INVALID);
-        std::vector<std::string> normalizedMimeTypes;
-        CHECK_NULLPTR_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes));
-        supportedMimeTypes = std::move(normalizedMimeTypes);
-    }
+    CHECK_ARGS_WITH_MEG(env,
+        supportedMimeTypesType == napi_object,
+        JS_E_PARAM_INVALID, "supportedMimeType must be an array");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, supportedMimeTypesValue, supportedMimeTypes),
+        JS_E_PARAM_INVALID);
+    std::vector<std::string> normalizedMimeTypes;
+    CHECK_NULLPTR_RET(NormalizeSupportedMimeTypes(env, supportedMimeTypes, normalizedMimeTypes));
+    supportedMimeTypes = std::move(normalizedMimeTypes);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
