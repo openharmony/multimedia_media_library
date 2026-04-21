@@ -37,12 +37,13 @@ inline bool IsValidAnalysisAlbumOperationType(const std::string &type)
 
 inline bool IsValidAnalysisAlbumValue(const std::string &value, const AnalysisAlbumAttributeSpec &spec)
 {
-    return value.size() <= spec.maxValueLength && (spec.allowEmptyValue || !value.empty());
+    return value.size() <= ANALYSIS_ALBUM_MAX_VALUE_LENGTH;
 }
 
 inline bool IsValidAnalysisAlbumValues(const std::vector<std::string> &values, const AnalysisAlbumAttributeSpec &spec)
 {
-    return !values.empty() && values.size() <= spec.maxValueCount && std::all_of(values.begin(), values.end(),
+    return !values.empty() && values.size() <= ANALYSIS_ALBUM_MAX_OPERATION_VALUES &&
+        std::all_of(values.begin(), values.end(),
         [&spec](const std::string &value) {
             return IsValidAnalysisAlbumValue(value, spec);
         });
@@ -69,7 +70,7 @@ inline int32_t CheckAnalysisAlbumOperationSupport(const std::string &attr, const
     if (spec == nullptr) {
         return E_INVALID_VALUES;
     }
-    if (spec->enabled && IsSupportedAnalysisAlbumOperationType(*spec, type)) {
+    if (IsSupportedAnalysisAlbumOperationType(*spec, type)) {
         return E_OK;
     }
     return E_OPERATION_NOT_SUPPORT;
