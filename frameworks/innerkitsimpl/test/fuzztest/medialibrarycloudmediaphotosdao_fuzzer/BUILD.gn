@@ -54,6 +54,12 @@ ohos_fuzztest("MediaLibraryCloudMediaPhotosDaoFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/zip_util.cpp",
     "${MEDIALIB_TEST_PATH}/fuzztest/common/src/medialibrary_rdbstore_utils_fuzzer.cpp",
     "./medialibrarycloudmediaphotosdao_fuzzer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_related_system_state_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_analysis_data_manager/src/utils/analysis_lcd_download_callback.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_analysis_data_manager/src/utils/analysis_net_connect_observer.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_analysis_data_manager/src/utils/lcd_download_operation.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_analysis_data_manager/src/dao/analysis_lcd_aging_dao.cpp",
   ]
 
   deps = [
@@ -97,5 +103,6 @@ ohos_fuzztest("MediaLibraryCloudMediaPhotosDaoFuzzTest") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "dfs_service:cloudfile_kit",
+    "netmanager_base:net_conn_manager_if",
   ]
 }

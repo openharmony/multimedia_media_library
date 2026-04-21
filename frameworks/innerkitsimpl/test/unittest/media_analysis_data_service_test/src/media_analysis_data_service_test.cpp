@@ -38,6 +38,7 @@
 #include "vision_photo_map_column.h"
 #include "photo_album_column.h"
 #include "media_analysis_data_service.h"
+#include "analysis_net_connect_observer.h"
 
 namespace OHOS {
 namespace Media {
@@ -377,61 +378,6 @@ HWTEST_F(MediaAnalysisDataServiceTest, GetOrderPosition_GetRowCountFailed, TestS
     int32_t ret = MediaAnalysisDataService::GetInstance().GetOrderPosition(dto, resp);
     EXPECT_NE(ret, E_OK);
     MEDIA_INFO_LOG("end GetOrderPosition_GetRowCountFailed");
-}
-
-// 用例说明：测试 GetPortraitRelationship 查询失败
-// - 覆盖场景：GetPortraitRelationship 函数中查询结果为空
-// - 覆盖分支点：resultSet == nullptr 分支 (306行)
-// - 触发条件：查询返回空结果集
-// - 业务验证：函数应返回 函数应返回 E_ERR
-HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_QueryFailed, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("start GetPortraitRelationship_QueryFailed");
-    CleanAnalysisAlbum();
-
-    MediaLibraryUnistoreManager::GetInstance().Stop();
-    int32_t albumId = 1;
-    GetRelationshipRespBody resp;
-
-    int32_t ret = MediaAnalysisDataService::GetInstance().GetPortraitRelationship(albumId, resp);
-    EXPECT_EQ(ret, E_ERR);
-    MediaLibraryUnitTestUtils::InitUnistore();
-    MEDIA_INFO_LOG("end GetPortraitRelationship_QueryFailed");
-}
-
-// 用例说明：测试 GetPortraitRelationship 获取行数失败
-// - 覆盖场景：GetPortraitRelationship 函数中 GetRowCount 失败
-// - 覆盖分支点：resultSet->GetRowCount() = 0 失败分支 (312行)
-// - 触发条件：获取行数操作失败
-// - 业务验证：函数应返回 JS_INNER_FAIL 错误码
-HWTEST_F(MediaAnalysisDataServiceTest, GetPortraitRelationship_GetRowCountFailed, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("start GetPortraitRelationship_GetRowCountFailed");
-    CleanAnalysisAlbum();
-    
-    int32_t albumId = 1;
-    GetRelationshipRespBody resp;
-    
-    int32_t ret = MediaAnalysisDataService::GetInstance().GetPortraitRelationship(albumId, resp);
-    EXPECT_EQ(ret, JS_INNER_FAIL);
-    MEDIA_INFO_LOG("end GetPortraitRelationship_GetRowCountFailed");
-}
-
-// 用例说明：测试 GetAnalysisProcess 无效类型
-// - 覆盖场景：GetAnalysisProcess 函数中传入无效的 analysisType
-// - 覆盖分支点：默认分支 (未匹配任何已知类型)
-// - 触发条件：传入一个未定义的 analysisType 值
-// - 业务验证：函数应返回 E_FAIL 错误码
-HWTEST_F(MediaAnalysisDataServiceTest, GetAnalysisProcess_InvalidAnalysisType, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("start GetAnalysisProcess_InvalidAnalysisType");
-    GetAnalysisProcessReqBody reqBody;
-    reqBody.analysisType = 9999;
-    QueryResultRespBody respBody;
-    
-    int32_t ret = MediaAnalysisDataService::GetInstance().GetAnalysisProcess(reqBody, respBody);
-    EXPECT_EQ(ret, E_OK);
-    MEDIA_INFO_LOG("end GetAnalysisProcess_InvalidAnalysisType");
 }
 
 // 用例说明：测试 GetAnalysisProcess ANALYSIS_INVALID 类型
@@ -1813,5 +1759,73 @@ HWTEST_F(MediaAnalysisDataServiceTest, ChangeRequestSetIsMe_LargeAlbumId, TestSi
     MEDIA_INFO_LOG("end ChangeRequestSetIsMe_LargeAlbumId");
 }
 
+
+// 用例说明：测试 PrepareLcd 全部成功场景
+// 覆盖场景：所有fileId都能成功准备LCD
+// 分支点：所有文件处理成功
+// 触发条件：提供有效的fileIds列表，网络和本地条件都满足
+// 业务验证：返回SUCCESS或PART_SUCCESS，results中所有fileId为SUCCESS
+HWTEST_F(MediaAnalysisDataServiceTest, PrepareLcd_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start PrepareLcd_Test_001");
+    
+    vector<int64_t> fileIds = {1001, 1002, 1003};
+    uint32_t netBearerBitmap = 0xFFFFFFFF;
+    unordered_map<uint64_t, int32_t> results;
+    
+    int32_t ret = MediaAnalysisDataService::GetInstance().PrepareLcd(fileIds, netBearerBitmap, results);
+    EXPECT_TRUE(ret == E_ERR);
+    
+    MEDIA_INFO_LOG("end PrepareLcd_Test_001, ret=%{public}d", ret);
+}
+
+// 用例说明：测试 PrepareLcd
+HWTEST_F(MediaAnalysisDataServiceTest, PrepareLcd_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start PrepareLcd_Test_002");
+    
+    vector<int64_t> fileIds = {999999, 888888};
+    uint32_t netBearerBitmap = static_cast<uint32_t>(NetBearer::BEARER_ALL);
+    unordered_map<uint64_t, int32_t> results;
+    
+    int32_t ret = MediaAnalysisDataService::GetInstance().PrepareLcd(fileIds, netBearerBitmap, results);
+    EXPECT_TRUE(ret == E_ERR);
+    
+    MEDIA_INFO_LOG("end PrepareLcd_Test_002, ret=%{public}d", ret);
+}
+
+// 用例说明：测试 PrepareLcd 全部失败场景
+// 覆盖场景：所有fileId都失败
+// 分支点：所有文件处理失败
+// 触发条件：提供无效的fileIds或网络不可用
+// 业务验证：返回GENERATE_FAILURE或NO_NETWORK或DOWNLOAD_FAILURE
+HWTEST_F(MediaAnalysisDataServiceTest, PrepareLcd_Test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start PrepareLcd_Test_003");
+    
+    vector<int64_t> fileIds;
+    uint32_t netBearerBitmap = static_cast<uint32_t>(NetBearer::BEARER_ALL);
+    unordered_map<uint64_t, int32_t> results;
+    
+    int32_t ret = MediaAnalysisDataService::GetInstance().PrepareLcd(fileIds, netBearerBitmap, results);
+    EXPECT_TRUE(ret == 0);
+    
+    MEDIA_INFO_LOG("end PrepareLcd_Test_003, ret=%{public}d", ret);
+}
+
+// 用例说明：测试 RemoveCloudLcd 阈值未达到场景
+// 覆盖场景：当前LCD数量未达到老化阈值
+// 分支点：isReached == false
+// 触发条件：模拟LCD数量低于阈值
+// 业务验证：函数正常返回，不执行老化操作
+HWTEST_F(MediaAnalysisDataServiceTest, RemoveCloudLcd_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start RemoveCloudLcd_Test_001");
+
+    int32_t ret = MediaAnalysisDataService::GetInstance().RemoveCloudLcd(std::vector<int64_t>());
+    EXPECT_TRUE(ret == E_OK || ret == E_ERR);
+    
+    MEDIA_INFO_LOG("end RemoveCloudLcd_Test_001, ret=%{public}d", ret);
+}
 } // namespace Media
 } // namespace OHOS

@@ -1780,6 +1780,9 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_BACKUP_POSTPROCESS:
             return RestoreInvalidHDCCloudDataPos();
             break;
+        case OperationObject::TAB_PHOTOS_EXT_OPERATE:
+            return UpdateTabPhotosExt(cmd, value, predicates);
+            break;
         default:
             break;
     }
@@ -1802,6 +1805,19 @@ static void RestoreInvalidatedPos(AsyncTaskData *data)
     CHECK_AND_RETURN_LOG(rdbStore->Update(changedRows, values, predicates) == NativeRdb::E_OK,
         "fail to update invalid pos");
     MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos, %{public}d rows updated", changedRows);
+}
+
+int32_t MediaLibraryDataManager::UpdateTabPhotosExt(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateTabPhotosExt Failed to get rdbStore.");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, value, rdbPredicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateTabPhotosExt, ret: %{public}d", ret);
+    MEDIA_INFO_LOG("UpdateTabPhotosExt Check updateRows: %{public}d.", changedRows);
+    return changedRows;
 }
 
 int32_t MediaLibraryDataManager::RestoreInvalidHDCCloudDataPos()
@@ -2540,6 +2556,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::USER_PHOTOGRAPHY:
         case OperationObject::ANALYSIS_PROGRESS:
         case OperationObject::APP_URI_PERMISSION_INNER:
+        case OperationObject::TAB_PHOTOS_EXT_OPERATE:
             return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
                 columns);
         case OperationObject::SEARCH_TOTAL:

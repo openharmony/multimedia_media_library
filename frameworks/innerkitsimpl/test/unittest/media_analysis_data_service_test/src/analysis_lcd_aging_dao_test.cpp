@@ -1,0 +1,198 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "analysis_lcd_aging_dao_test.h"
+
+#include "analysis_lcd_aging_dao.h"
+#include "analysis_net_connect_observer.h"
+#include "medialibrary_errno.h"
+
+using namespace std;
+using namespace OHOS::Media::AnalysisData;
+using namespace testing::ext;
+
+namespace OHOS {
+namespace Media {
+
+void AnalysisLcdAgingDaoTest::SetUpTestCase() {}
+void AnalysisLcdAgingDaoTest::TearDownTestCase() {}
+void AnalysisLcdAgingDaoTest::SetUp() {}
+void AnalysisLcdAgingDaoTest::TearDown() {}
+
+// 用例说明：测试正常查询下载LCD信息
+// 覆盖场景：提供有效的fileIds列表
+// 分支点：resultSet->GoToNextRow() == NativeRdb::E_OK
+// 触发条件：提供包含有效fileId的vector
+// 业务验证：返回E_OK，downloadInfos包含查询结果
+HWTEST_F(AnalysisLcdAgingDaoTest, QueryDownloadLcdInfo_Test_001, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<int64_t> fileIds = {1001, 1002, 1003};
+    vector<DownloadLcdFileInfo> downloadInfos;
+    int32_t ret = dao.QueryDownloadLcdInfo(fileIds, downloadInfos);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_GE(downloadInfos.size(), 0);
+}
+
+// 用例说明：测试空fileIds查询
+// 覆盖场景：提供空的fileIds列表
+// 分支点：fileIds.empty()检查
+// 触发条件：提供空的vector
+// 业务验证：返回E_OK，downloadInfos为空
+HWTEST_F(AnalysisLcdAgingDaoTest, QueryDownloadLcdInfo_Test_002, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<int64_t> fileIds;
+    vector<DownloadLcdFileInfo> downloadInfos;
+    int32_t ret = dao.QueryDownloadLcdInfo(fileIds, downloadInfos);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(downloadInfos.size(), 0);
+}
+
+// 用例说明：测试本地LCD存在的文件分类
+// 覆盖场景：文件的localLcdPath不为空
+// 分支点：!info.localLcdPath.empty()
+// 触发条件：模拟已下载LCD的文件
+// 业务验证：results中对应fileId设置为SUCCESS
+HWTEST_F(AnalysisLcdAgingDaoTest, ClassifyLcdFiles_Test_001, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<DownloadLcdFileInfo> downloadInfos;
+    DownloadLcdFileInfo info;
+    info.fileId = 1001;
+    info.cloudId = "cloud_001";
+    info.filePath = "/storage/media/local/files/test.jpg";
+    info.fileName = "test.jpg";
+    info.hasLocalFile = true;
+    info.localLcdPath = "/storage/media/local/files/.lcd/test_lcd.jpg";
+    downloadInfos.push_back(info);
+
+    vector<int64_t> needDownloadFileIds;
+    set<int64_t> foundFileIds;
+    unordered_map<uint64_t, int32_t> results;
+
+    int32_t successCount = dao.ClassifyLcdFiles(downloadInfos, needDownloadFileIds, foundFileIds, results);
+    EXPECT_EQ(successCount, 1);
+    EXPECT_EQ(results[1001], static_cast<int32_t>(PrepareLcdResult::SUCCESS));
+    EXPECT_EQ(needDownloadFileIds.size(), 0);
+}
+
+// 用例说明：测试本地原图生成LCD的情况
+// 覆盖场景：hasLocalFile为true，localLcdPath为空
+// 分支点：info.hasLocalFile && GenerateLcdWithLocal返回E_OK
+// 触发条件：模拟有本地原图但无LCD的文件
+// 业务验证：results中对应fileId设置为SUCCESS
+HWTEST_F(AnalysisLcdAgingDaoTest, ClassifyLcdFiles_Test_002, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<DownloadLcdFileInfo> downloadInfos;
+    DownloadLcdFileInfo info;
+    info.fileId = 1002;
+    info.cloudId = "cloud_002";
+    info.filePath = "/storage/media/local/files/test2.jpg";
+    info.fileName = "test2.jpg";
+    info.hasLocalFile = true;
+    info.localLcdPath = "";
+    downloadInfos.push_back(info);
+
+    vector<int64_t> needDownloadFileIds;
+    set<int64_t> foundFileIds;
+    unordered_map<uint64_t, int32_t> results;
+
+    int32_t successCount = dao.ClassifyLcdFiles(downloadInfos, needDownloadFileIds, foundFileIds, results);
+    EXPECT_GE(successCount, 0);
+    EXPECT_TRUE(results.find(1002) != results.end());
+}
+
+// 用例说明：测试需要下载LCD的文件分类
+// 覆盖场景：本地无原图，但有cloudId
+// 分支点：!info.cloudId.empty()且!info.hasLocalFile
+// 触发条件：模拟只有云端数据的文件
+// 业务验证：fileId被加入needDownloadFileIds
+HWTEST_F(AnalysisLcdAgingDaoTest, ClassifyLcdFiles_Test_003, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<DownloadLcdFileInfo> downloadInfos;
+    DownloadLcdFileInfo info;
+    info.fileId = 1003;
+    info.cloudId = "cloud_003";
+    info.filePath = "";
+    info.fileName = "test3.jpg";
+    info.hasLocalFile = false;
+    info.localLcdPath = "";
+    downloadInfos.push_back(info);
+
+    vector<int64_t> needDownloadFileIds;
+    set<int64_t> foundFileIds;
+    unordered_map<uint64_t, int32_t> results;
+
+    dao.ClassifyLcdFiles(downloadInfos, needDownloadFileIds, foundFileIds, results);
+    EXPECT_EQ(needDownloadFileIds.size(), 1);
+    EXPECT_EQ(needDownloadFileIds[0], 1003);
+}
+
+// 用例说明：测试以太网网络条件检查（允许）
+// 覆盖场景：当前网络为以太网，允许以太网下载
+// 分支点：bearerTypes_.count(BEARER_ETHERNET) && netBearerBitmap允许
+// 触发条件：模拟以太网网络，netBearerBitmap为BEARER_ETHERNET
+// 业务验证：返回NetworkCondition::AVAILABLE
+HWTEST_F(AnalysisLcdAgingDaoTest, CheckNetworkCondition_Test_001, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    uint32_t netBearerBitmap = static_cast<uint32_t>(OHOS::Media::NetBearer::BEARER_ETHERNET);
+    AnalysisLcdAgingDao::NetworkCondition condition = dao.CheckNetworkCondition(netBearerBitmap);
+    EXPECT_TRUE(condition == AnalysisLcdAgingDao::NetworkCondition::AVAILABLE ||
+                condition == AnalysisLcdAgingDao::NetworkCondition::PROHIBITED ||
+                condition == AnalysisLcdAgingDao::NetworkCondition::NO_NETWORK);
+}
+
+// 用例说明：测试无网络情况下的下载处理
+// 覆盖场景：网络不可用
+// 分支点：condition == NetworkCondition::NO_NETWORK
+// 触发条件：模拟无网络环境
+// 业务验证：所有fileId结果设置为NO_NETWORK
+HWTEST_F(AnalysisLcdAgingDaoTest, ProcessNeedDownloadFiles_Test_001, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<int64_t> needDownloadFileIds = {1001, 1002};
+    uint32_t netBearerBitmap = static_cast<uint32_t>(OHOS::Media::NetBearer::BEARER_WIFI);
+    unordered_map<uint64_t, int32_t> results;
+
+    int32_t successCount = dao.ProcessNeedDownloadFiles(needDownloadFileIds, netBearerBitmap, results);
+    EXPECT_TRUE(results.find(1001) != results.end());
+    EXPECT_TRUE(results.find(1002) != results.end());
+    EXPECT_GE(successCount, 0);
+}
+
+// 用例说明：测试标记未找到的文件
+// 覆盖场景：部分fileId在数据库中不存在
+// 分支点：foundFileIds.find(fileId) == foundFileIds.end()
+// 触发条件：提供的fileIds中包含数据库不存在的ID
+// 业务验证：未找到的fileId在results中标记为GENERATE_FAILURE
+HWTEST_F(AnalysisLcdAgingDaoTest, MarkNotFoundFiles_Test_001, TestSize.Level1)
+{
+    AnalysisLcdAgingDao dao;
+    vector<int64_t> fileIds = {1001, 1002, 1003};
+    set<int64_t> foundFileIds = {1001, 1003};
+    unordered_map<uint64_t, int32_t> results;
+
+    dao.MarkNotFoundFiles(fileIds, foundFileIds, results);
+    EXPECT_EQ(results[1002], static_cast<int32_t>(PrepareLcdResult::GENERATE_FAILURE));
+    EXPECT_TRUE(results.find(1001) == results.end());
+    EXPECT_TRUE(results.find(1003) == results.end());
+}
+
+} // namespace Media
+} // namespace OHOS

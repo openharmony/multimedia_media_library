@@ -134,6 +134,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_BACKUP_POSTPROCESS,
     OperationObject::VISION_ANALYSIS,
     OperationObject::VISION_WATERMARK,
+    OperationObject::TAB_PHOTOS_EXT_OPERATE,
 };
 constexpr int64_t MAX_EXECUTE_TIME = 200;
 

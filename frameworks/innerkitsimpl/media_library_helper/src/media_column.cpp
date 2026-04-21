@@ -327,6 +327,9 @@ const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
 const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
 const std::string PhotoExtColumn::EDITDATA_SIZE = "editdata_size";
 const std::string PhotoExtColumn::LCD_FILE_MODIFY_TIME = "lcd_file_modify_time";
+const std::string PhotoExtColumn::LCD_USING_STATUS = "lcd_using_status";
+const std::string PhotoExtColumn::LCD_DOWNLOAD_RETRY_COUNTS = "lcd_download_retry_counts";
+const std::string PhotoExtColumn::LCD_DOWNLOAD_RETRY_TIME = "lcd_download_retry_time";
 
 }  // namespace Media
 }  // namespace OHOS

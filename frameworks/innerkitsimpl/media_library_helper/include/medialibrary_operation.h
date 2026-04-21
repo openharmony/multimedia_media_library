@@ -129,6 +129,7 @@ enum class EXPORT OperationObject : uint32_t {
     VISION_ANALYSIS,
     VISION_ANALYSIS_VIDEO,
     TAB_OPERATION_LOG,
+    TAB_PHOTOS_EXT_OPERATE,
 };
 
 enum class EXPORT OperationType : uint32_t {

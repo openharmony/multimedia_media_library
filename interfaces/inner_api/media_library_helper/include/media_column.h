@@ -312,6 +312,9 @@ public:
     static const std::string THUMBNAIL_SIZE EXPORT;
     static const std::string EDITDATA_SIZE EXPORT;
     static const std::string LCD_FILE_MODIFY_TIME EXPORT;
+    static const std::string LCD_USING_STATUS EXPORT;
+    static const std::string LCD_DOWNLOAD_RETRY_COUNTS EXPORT;
+    static const std::string LCD_DOWNLOAD_RETRY_TIME EXPORT;
 };
 
 } // namespace OHOS::Media

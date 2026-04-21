@@ -33,6 +33,10 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "thumbnail_service.h"
+#include "thumbnail_generate_worker.h"
+#include "ithumbnail_helper.h"
+#include "thumbnail_source_loading.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {
 const std::string LCD_AGING_XML = "/data/storage/el2/base/preferences/lcd_aging.xml";
@@ -383,5 +387,44 @@ bool LcdAgingManager::IsAgingThresholdSatisfied()
     MEDIA_INFO_LOG("aging threshold satisfied, currentLcdNumber: %{public}" PRId64 ", maxLcdNumber: %{public}" PRId64,
         currentLcdNumber, maxLcdNumber);
     return true;
+}
+
+int32_t LcdAgingManager::GenerateLcdWithLocal(const LcdAgingFileInfo &agingFileInfo)
+{
+    ThumbnailData thumbnailData = ConvertLcdAgingFileInfoToThumbnailData(agingFileInfo);
+    auto createLcdBackgroundTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "CreateLcd failed, data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+        IThumbnailHelper::CreateLcd(data);
+    };
+    thumbnailData.genThumbScene = GenThumbScene::NO_LCD_AND_GEN_IT_BACKGROUND;
+    ThumbRdbOpt opts;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    opts.store = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    opts.row = thumbnailData.id;
+    IThumbnailHelper::AddThumbnailGenerateTask(createLcdBackgroundTask,
+        opts, thumbnailData, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
+ThumbnailData LcdAgingManager::ConvertLcdAgingFileInfoToThumbnailData
+    (const LcdAgingFileInfo &agingFileInfo)
+{
+    ThumbnailData thumbnailData;
+    thumbnailData.id = std::to_string(agingFileInfo.fileId);
+    thumbnailData.path = agingFileInfo.path;
+    thumbnailData.mediaType = agingFileInfo.mediaType;
+    thumbnailData.orientation = agingFileInfo.orientation;
+    thumbnailData.exifRotate = agingFileInfo.exifRotate;
+    thumbnailData.thumbnailReady = agingFileInfo.thumbnailReady;
+    thumbnailData.dateModified = std::to_string(agingFileInfo.dateModified);
+    thumbnailData.isLocalFile = true;
+    return thumbnailData;
+}
+
+std::mutex& LcdAgingManager::GetLcdOperationMutex()
+{
+    return lcdOperationMutex_;
 }
 }  // namespace OHOS::Media

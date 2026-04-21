@@ -103,6 +103,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CONST_TAB_OPERATION_LOG, OperationObject::TAB_OPERATION_LOG },
 
         // use in Vision
+        { CONST_PAH_TAB_PHOTOS_EXT_OPERATE, OperationObject::TAB_PHOTOS_EXT_OPERATE },
         { CONST_PAH_ANA_CV, OperationObject::VISION_ANALYSIS },
         { CONST_PAH_ANA_V_CV, OperationObject::VISION_ANALYSIS_VIDEO },
         { CONST_PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -255,6 +256,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
             { { OperationType::UNKNOWN_TYPE, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE } } },
         { OperationObject::TAB_OPERATION_LOG,
  	        { { OperationType::UNKNOWN_TYPE, TabOperationLogColumn::TABLE } }},
+        { OperationObject::TAB_PHOTOS_EXT_OPERATE,
+            { { OperationType::UNKNOWN_TYPE, PhotoExtColumn::PHOTOS_EXT_TABLE } } },
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },

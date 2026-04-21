@@ -144,6 +144,8 @@ public:
         int32_t &fd);
     EXPORT static int32_t NotifyAssetSended(const std::string &uri);
     EXPORT static int32_t GetAssetCompressVersion();
+    EXPORT int32_t UpdateTabPhotosExt(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+                const DataShare::DataSharePredicates &predicates);
 
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     using GetInstanceNewFunc = WatchSystemService::CloudAuditImpl *(*)(void);
