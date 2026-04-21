@@ -61,6 +61,25 @@
 #include "medialibrary_notify.h"
 #include "photo_map_operations.h"
 
+#include "analysis_net_connect_observer.h"
+#include "prepare_lcd_vo.h"
+#include "analysis_lcd_aging_dao.h"
+#include "lcd_download_operation.h"
+#include "thumbnail_file_utils.h"
+#include "thumbnail_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "lcd_aging_dao.h"
+#include "lcd_aging_utils.h"
+#include "lcd_aging_manager.h"
+#include "lcd_aging_file_info.h"
+#include "photos_po.h"
+#include "photo_file_utils.h"
+#include "medialibrary_photo_operations.h"
+#include "media_file_utils.h"
+#include "photo_owner_album_id_operation.h"
+#include "media_log.h"
+#include "analysis_lcd_aging_dao.h"
+
  
 namespace OHOS::Media::AnalysisData {
 using namespace std;
@@ -618,6 +637,66 @@ int32_t MediaAnalysisDataService::CreateAnalysisAlbum(CreateAnalysisAlbumDto &dt
     auto rowId = MediaLibraryAnalysisAlbumOperations::CreatePortraitAlbum(albumName);
     CHECK_AND_RETURN_RET_LOG(rowId > 0, E_INNER_FAIL, "Failed to createportraitalbum");
     respBody.albumId = rowId;
+    return E_OK;
+}
+
+int32_t MediaAnalysisDataService::PrepareLcd(const std::vector<int64_t> &fileIds,
+    uint32_t netBearerBitmap, std::unordered_map<uint64_t, int32_t> &results)
+{
+    MEDIA_INFO_LOG("PrepareLcd called, fileIds.size()=%{public}zu, netBearerBitmap=%{public}u",
+        fileIds.size(), netBearerBitmap);
+    std::lock_guard<std::mutex> lock(LcdAgingManager::GetInstance().GetLcdOperationMutex());
+
+    std::vector<AnalysisData::DownloadLcdFileInfo> downloadInfos;
+    int32_t ret = this->lcdAgingDao_.QueryDownloadLcdInfo(fileIds, downloadInfos);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("PrepareLcd failed: query download info error=%{public}d", ret);
+        for (auto fileId : fileIds) {
+            results[fileId] = static_cast<int32_t>(PrepareLcdResult::GENERATE_FAILURE);
+        }
+        return E_ERR;
+    }
+    std::vector<int64_t> needDownloadFileIds;
+    std::set<int64_t> foundFileIds;
+    int32_t successCount =
+        this->lcdAgingDao_.ClassifyLcdFiles(downloadInfos, needDownloadFileIds, foundFileIds, results);
+
+    this->lcdAgingDao_.MarkNotFoundFiles(fileIds, foundFileIds, results);
+    if (!needDownloadFileIds.empty()) {
+        successCount += this->lcdAgingDao_.ProcessNeedDownloadFiles(needDownloadFileIds, netBearerBitmap, results);
+    }
+    if (successCount == static_cast<int32_t>(fileIds.size())) {
+        return 0;
+    } else if (successCount > 0) {
+        return 1;
+    }
+    return E_ERR;
+}
+
+int32_t MediaAnalysisDataService::RemoveCloudLcd(const std::vector<int64_t> &fileIds)
+{
+    MEDIA_INFO_LOG("Enter RemoveCloudLcd, fileIds.size()=%{public}zu", fileIds.size());
+    std::lock_guard<std::mutex> lock(LcdAgingManager::GetInstance().GetLcdOperationMutex());
+
+    bool isThresholdReached = false;
+    int32_t ret = this->lcdAgingDao_.IsAgingThresholdReached(isThresholdReached);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "RemoveCloudLcd: Failed to check aging threshold");
+    if (!isThresholdReached) {
+        MEDIA_INFO_LOG("RemoveCloudLcd: aging threshold not reached");
+        return E_OK;
+    }
+    std::vector<PhotosPo> lcdAgingPoList;
+    ret = this->lcdAgingDao_.QueryAgingLcdDataByFileIds(fileIds, lcdAgingPoList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "RemoveCloudLcd: Failed to query aging LCD data");
+
+    if (lcdAgingPoList.empty()) {
+        MEDIA_INFO_LOG("RemoveCloudLcd: no Remove Cloud LCD data found");
+        return E_OK;
+    }
+    int64_t agingSuccessSize = 0;
+    ret = LcdAgingManager::GetInstance().DoBatchAgingLcdFile(lcdAgingPoList, agingSuccessSize);
+    LcdAgingManager::GetInstance().ClearNotAgingFileIds();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "RemoveCloudLcd: Failed to do batch aging LCD");
     return E_OK;
 }
 } // namespace OHOS::Media::AnalysisData

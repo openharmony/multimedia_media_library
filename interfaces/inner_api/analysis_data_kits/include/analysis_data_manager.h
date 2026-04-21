@@ -34,6 +34,9 @@ public:
 
     AnalysisDataManager(const AnalysisDataManager&) = delete;
     AnalysisDataManager& operator=(const AnalysisDataManager&) = delete;
+    int32_t PrepareLcd(const std::vector<int64_t> &fileIds, uint32_t netBearerBitmap,
+        std::unordered_map<uint64_t, int32_t> &results);
+    int32_t RemoveCloudLcd(const std::vector<int64_t> &fileIds);
 
 private:
     AnalysisDataManager();

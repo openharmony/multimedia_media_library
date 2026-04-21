@@ -29,6 +29,9 @@ public:
     int32_t BatchAgingLcdFileTask();
     void DelayLcdAgingTime();
     void ClearNotAgingFileIds();
+    std::mutex& GetLcdOperationMutex();
+    int32_t DoBatchAgingLcdFile(const std::vector<PhotosPo> &lcdAgingPoList, int64_t &agingSuccessSize);
+    int32_t GenerateLcdWithLocal(const LcdAgingFileInfo &agingFileInfo);
 
 private:
     LcdAgingManager() {}
@@ -37,8 +40,6 @@ private:
     const LcdAgingManager &operator=(const LcdAgingManager &manager) = delete;
 
     using BatchAgingLcdFileFunc = int32_t (LcdAgingManager::*)(const int32_t size, int64_t &agingSuccessSize);
-    
-    int32_t DoBatchAgingLcdFile(const std::vector<PhotosPo> &lcdAgingPoList, int64_t &agingSuccessSize);
     int32_t BatchAgingLcdFileTrashed(const int32_t size, int64_t &agingSuccessSize);
     int32_t BatchAgingLcdFileNotTrashed(const int32_t size, int64_t &agingSuccessSize);
     std::vector<std::string> GetFileIdFromAgingFiles(const std::vector<LcdAgingFileInfo> &agingFileInfos);

@@ -89,6 +89,7 @@
 #include "power_mode_info.h"
 #include "lcd_aging_manager.h"
 #include "lcd_aging_worker.h"
+#include "lcd_download_task.h"
 
 using namespace OHOS::AAFwk;
 using namespace OHOS::NetManagerStandard;
@@ -1064,6 +1065,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CHECK_AND_RETURN_LOG(!cond, "The conditions for DoBackgroundOperation are not met, will return.");
     PeriodicAnalyzePhotosData();
     LcdAgingManager::GetInstance().ReadyAgingLcd();
+    Background::LcdDownloadTask::HandleLcdDownload();
 #ifdef META_RECOVERY_SUPPORT
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();

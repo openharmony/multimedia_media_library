@@ -18,6 +18,9 @@
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "user_inner_ipc_client.h"
+#include "prepare_lcd_vo.h"
+#include "remove_cloud_lcd_vo.h"
+#include "medialibrary_business_code.h"
 
 using namespace std;
 
@@ -51,6 +54,46 @@ sptr<IRemoteObject> AnalysisDataManager::InitToken()
     auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
     CHECK_AND_RETURN_RET_LOG(remoteObj != nullptr, nullptr, "GetSystemAbility Service failed.");
     return remoteObj;
+}
+
+int32_t AnalysisDataManager::PrepareLcd(const std::vector<int64_t> &fileIds, uint32_t netBearerBitmap,
+                                        std::unordered_map<uint64_t, int32_t> &results)
+{
+    MEDIA_INFO_LOG("PrepareLcd called, fileIds.size()=%{public}zu, netBearerBitmap=%{public}u", fileIds.size(),
+                   netBearerBitmap);
+    PrepareLcdReqBody reqBody;
+    PrepareLcdRespBody respBody;
+    reqBody.fileIds = fileIds;
+    reqBody.netBearerBitmap = netBearerBitmap;
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PREPARE_LCD);
+    int32_t ret = IPC::UserInnerIPCClient()
+                      .SetDataShareHelper(sDataShareHelper_)
+                      .Post(operationCode, reqBody, respBody);
+    if (ret == E_OK) {
+        results = respBody.results;
+        MEDIA_INFO_LOG("PrepareLcd success, ret=%{public}d, results.size()=%{public}zu", respBody.ret, results.size());
+        ret = respBody.ret;
+    } else {
+        MEDIA_ERR_LOG("PrepareLcd failed, ret=%{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t AnalysisDataManager::RemoveCloudLcd(const std::vector<int64_t> &fileIds)
+{
+    MEDIA_INFO_LOG("RemoveCloudLcd called, fileIds.size()=%{public}zu", fileIds.size());
+    RemoveCloudLcdReqBody reqBody;
+    reqBody.fileIds = fileIds;
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_REMOVE_CLOUD_LCD);
+    int32_t ret = IPC::UserInnerIPCClient()
+                      .SetDataShareHelper(sDataShareHelper_)
+                      .Post(operationCode, reqBody);
+    if (ret == E_OK) {
+        MEDIA_INFO_LOG("RemoveCloudLcd success, ret=%{public}d", ret);
+    } else {
+        MEDIA_ERR_LOG("RemoveCloudLcd failed, ret=%{public}d", ret);
+    }
+    return ret;
 }
 }
 }

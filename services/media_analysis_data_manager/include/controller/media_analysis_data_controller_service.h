@@ -56,6 +56,8 @@ public:
     int32_t ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetDefaultCoverUri(MessageParcel &data, MessageParcel &reply);
     int32_t CreateAnalysisAlbum(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t PrepareLcd(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t RemoveCloudLcd(MessageParcel &data, MessageParcel &reply);
 
 private:
     int32_t GetPermissionPolicy(
@@ -153,6 +155,14 @@ private:
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM),
             &MediaAnalysisDataControllerService::CreateAnalysisAlbum
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PREPARE_LCD),
+            &MediaAnalysisDataControllerService::PrepareLcd
+        },
+        {
+            static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_REMOVE_CLOUD_LCD),
+            &MediaAnalysisDataControllerService::RemoveCloudLcd
         },
     };
 };

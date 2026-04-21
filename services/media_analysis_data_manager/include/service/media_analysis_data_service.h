@@ -40,6 +40,7 @@
 #include "change_request_place_before_dto.h"
 #include "change_request_set_default_cover_uri_dto.h"
 #include "create_analysis_album_dto.h"
+#include "analysis_lcd_aging_dao.h"
  
 namespace OHOS::Media::AnalysisData {
 class MediaAnalysisDataService {
@@ -71,10 +72,14 @@ public:
     int32_t ChangeRequestDismiss(int32_t albumId);
     int32_t ChangeRequestSetDefaultCoverUri(const ChangeRequestSetDefaultCoverUriDto& dto);
     int32_t CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody);
+    int32_t PrepareLcd(const std::vector<int64_t> &fileIds, uint32_t netBearerBitmap,
+        std::unordered_map<uint64_t, int32_t> &results);
+    int32_t RemoveCloudLcd(const std::vector<int64_t> &fileIds);
 
 private:
     MediaAnalysisDataService() = default;
     AnalysisDataAlbumDao albumDao_;
+    AnalysisLcdAgingDao lcdAgingDao_;
 };
 } // namespace OHOS::Media::AnalysisData
 #endif  // MEDIA_ANALYSIS_DATA_SERVICE_H
