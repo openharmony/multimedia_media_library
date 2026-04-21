@@ -1463,6 +1463,8 @@ export default {
   HideSensitiveType: photoAccessHelper.HideSensitiveType,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
+  AlbumAttribute: photoAccessHelper.AlbumAttribute,
+  AlbumOperationType: photoAccessHelper.AlbumOperationType,
   HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
   AnalysisType: photoAccessHelper.AnalysisType,
   HighlightAlbumInfoType: photoAccessHelper.HighlightAlbumInfoType,

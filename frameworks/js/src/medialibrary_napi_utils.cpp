@@ -938,6 +938,32 @@ void MediaLibraryNapiUtils::AppendFetchOptionSelection(string &selection, const 
     }
 }
 
+static int32_t TransCommonErrorCode(int error)
+{
+    switch (error) {
+        case -E_CHECK_SYSTEMAPP_FAIL:
+            return E_CHECK_SYSTEMAPP_FAIL;
+
+        case E_PARAM_CONVERT_FORMAT:
+        case E_ACQ_BETA_TASK_FAIL:
+        case E_MAX_ON_SINGLE_NUM:
+            return JS_E_PARAM_INVALID;
+
+        case E_INNER_CONVERT_FORMAT:
+        case E_INNER_FAIL:
+        case E_OPR_DEBUG_DB_FAIL:
+        case E_BACK_UP_DB_FAIL:
+            return JS_E_INNER_FAIL;
+
+        case E_BETA_VERSION_FAIL:
+        case E_OPERATION_NOT_SUPPORT:
+            return JS_E_OPR_TYPE_NOT_SUPPORT;
+
+        default:
+            return JS_INNER_FAIL;
+    }
+}
+
 int MediaLibraryNapiUtils::TransErrorCode(const string &Name, shared_ptr<DataShare::DataShareResultSet> resultSet)
 {
     NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());
@@ -952,51 +978,31 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 {
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
-    static const unordered_set<int32_t> innerFailErrorSet = {
-        E_INNER_CONVERT_FORMAT,
-        E_INNER_FAIL,
-        E_OPR_DEBUG_DB_FAIL,
-        E_BACK_UP_DB_FAIL
-    };
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        if (error == -E_CHECK_SYSTEMAPP_FAIL) {
-            error = E_CHECK_SYSTEMAPP_FAIL;
-        } else if (error == E_PARAM_CONVERT_FORMAT || error == E_ACQ_BETA_TASK_FAIL || error == E_MAX_ON_SINGLE_NUM) {
-            error = JS_E_PARAM_INVALID;
-        } else if (innerFailErrorSet.find(error) != innerFailErrorSet.end()) {
-            error = JS_E_INNER_FAIL;
-        } else if (error == E_BETA_VERSION_FAIL) {
-            error = JS_E_OPR_TYPE_NOT_SUPPORT;
-        } else {
-            error = JS_INNER_FAIL;
-        }
+        return TransCommonErrorCode(error);
     } else if (error == E_PERMISSION_DENIED) {
-        error = OHOS_PERMISSION_DENIED_CODE;
+        return OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
-        error = trans2JsError.at(error);
+        return trans2JsError.at(error);
     }
     return error;
 }
 
 void MediaLibraryNapiUtils::HandleError(
-    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr,
-    const string &errorMsg)
+    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr)
 {
     if (error == ERR_DEFAULT) {
         return;
     }
 
-    string errMsg = errorMsg;
+    string errMsg = "System inner fail";
     int originalError = error;
-    if (errMsg.empty()) {
-        errMsg = "System inner fail";
-        if (jsErrMap.count(error) > 0) {
-            errMsg = jsErrMap.at(error);
-        } else {
-            error = JS_INNER_FAIL;
-            if (realErr != 0 && jsErrMap.count(realErr) > 0) {
-                errMsg = jsErrMap.at(realErr);
-            }
+    if (jsErrMap.count(error) > 0) {
+        errMsg = jsErrMap.at(error);
+    } else {
+        error = JS_INNER_FAIL;
+        if (realErr != 0 && jsErrMap.count(realErr) > 0) {
+            errMsg = jsErrMap.at(realErr);
         }
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);

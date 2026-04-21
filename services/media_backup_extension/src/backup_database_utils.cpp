@@ -798,6 +798,19 @@ int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rd
     return ExecSqlWithRetry([&]() { return rdbStore->BatchInsert(rowNum, tableName, value); });
 }
 
+int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum,
+    NativeRdb::ConflictResolution conflictResolution)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    return ExecSqlWithRetry([&]() {
+        auto [errCode, insertedNum] = rdbStore->BatchInsert(tableName, NativeRdb::ValuesBuckets(value),
+            conflictResolution);
+        rowNum = insertedNum;
+        return errCode;
+    });
+}
+
 void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<FileIdPair>& fileIdPair)
 {

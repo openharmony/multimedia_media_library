@@ -88,6 +88,7 @@ constexpr int32_t E_INIT_FAIL =             MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 5
 constexpr int32_t E_DOUBLE_CHECK =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 52);
 constexpr int32_t E_MAX_ON_SINGLE_NUM =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 53);
 constexpr int32_t E_NO_QUERY_DATA     =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 54);
+constexpr int32_t E_OPERATION_NOT_SUPPORT = MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 55);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

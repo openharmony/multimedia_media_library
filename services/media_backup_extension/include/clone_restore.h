@@ -35,6 +35,7 @@
 #include "photos_clone.h"
 #include "clone_restore_highlight.h"
 #include "clone_restore_geo_dictionary.h"
+#include "portrait_nickname_clone.h"
 #include "search_index_clone.h"
 #include "video_face_clone.h"
 #include "beauty_score_clone.h"
@@ -219,6 +220,7 @@ private:
     void RestoreAnalysisData();
     void RestoreAssetMapData();
     void RestoreSearchIndexData();
+    void RestorePortraitNickNameData();
     void RestoreAnalysisClassify();
     void RestoreAnalysisPortrait();
     void RestoreAnalysisPet();

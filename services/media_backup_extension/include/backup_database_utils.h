@@ -130,6 +130,9 @@ public:
         const std::vector<std::string> &inColumn);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
+    static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
+        std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum,
+        NativeRdb::ConflictResolution conflictResolution);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
         const std::string &dbTag = "");
     static int32_t QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);

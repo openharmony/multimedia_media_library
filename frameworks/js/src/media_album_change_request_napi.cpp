@@ -17,16 +17,21 @@
 
 #include "media_album_change_request_napi.h"
 
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>
 
+#include "accesstoken_kit.h"
 #include "file_asset_napi.h"
+#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "analysis_album_operation_data_utils.h"
+#include "permission_utils.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
@@ -38,6 +43,8 @@
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "delete_albums_vo.h"
+#include "analysis_album_attribute_const.h"
+#include "change_request_operate_album_attribute_vo.h"
 #include "change_request_set_album_name_vo.h"
 #include "change_request_set_cover_uri_vo.h"
 #include "change_request_set_default_cover_uri_vo.h"
@@ -57,9 +64,11 @@
 #include "change_request_set_relationship_vo.h"
 #include "change_request_set_highlight_attribute_vo.h"
 #include "create_analysis_album_vo.h"
+#include "analysis_album_attribute_request_utils.h"
 #include "media_change_request_utils.h"
 
 using namespace std;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS::Media {
 static const string MEDIA_ALBUM_CHANGE_REQUEST_CLASS = "MediaAlbumChangeRequest";
@@ -104,6 +113,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
+            DECLARE_NAPI_FUNCTION("operateAttribute", JSOperateAttribute),
             DECLARE_NAPI_STATIC_FUNCTION("setUploadStatus", JSSetUploadStatus),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -320,9 +330,54 @@ void MediaAlbumChangeRequestNapi::ClearDismissAssetArray()
     dismissAssets_.clear();
 }
 
+void MediaAlbumChangeRequestNapi::ClearAddNickNames()
+{
+    analysisAlbumOperationData_.addNickNames.clear();
+}
+
+void MediaAlbumChangeRequestNapi::ClearRemoveNickNames()
+{
+    analysisAlbumOperationData_.removeNickNames.clear();
+}
+
 void MediaAlbumChangeRequestNapi::ClearMoveMap()
 {
     moveMap_.clear();
+}
+
+std::vector<std::string> MediaAlbumChangeRequestNapi::GetAddNickNames() const
+{
+    return analysisAlbumOperationData_.addNickNames;
+}
+
+std::vector<std::string> MediaAlbumChangeRequestNapi::GetRemoveNickNames() const
+{
+    return analysisAlbumOperationData_.removeNickNames;
+}
+
+static bool CheckAlbumChangeRequestCallerPermission(const std::string &permission)
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (result != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool CheckOperateAttributePermissionForCall(napi_env env)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return false;
+    }
+    if (!CheckAlbumChangeRequestCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB)) {
+        NapiError::ThrowError(env, E_PERMISSION_DENIED,
+            "Permission denied : ohos.permission.ACCESS_MEDIALIB_THUMB_DB required.");
+        return false;
+    }
+    return true;
 }
 
 const std::unordered_set<AlbumChangeOperation> VALID_CREATE_OPERATIONS = {
@@ -1282,6 +1337,68 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
+void MediaAlbumChangeRequestNapi::SetNickNameOperationData(const string &type, const vector<string> &values)
+{
+    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(analysisAlbumOperationData_, albumChangeOperations_,
+        type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
+}
+
+static bool ParseAnalysisAlbumOperation(napi_env env, napi_value arg, AnalysisAlbumOperation &operation)
+{
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS_BASE(env, napi_typeof(env, arg, &valueType), JS_ERR_PARAMETER_INVALID, false);
+    CHECK_COND_RET(valueType == napi_object, false, "Invalid argument type");
+    auto parseStringProperty = [env, arg](const string &propertyName, string &propertyValue) {
+        napi_value value = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, propertyName.c_str());
+        CHECK_COND_RET(value != nullptr, false, "%{public}s is invalid", propertyName.c_str());
+        CHECK_ARGS_BASE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, value, propertyValue),
+            JS_ERR_PARAMETER_INVALID, false);
+        return true;
+    };
+    auto parseArrayProperty = [env, arg](const string &propertyName, vector<string> &propertyValues) {
+        napi_value value = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg, propertyName.c_str());
+        CHECK_COND_RET(value != nullptr, false, "%{public}s is invalid", propertyName.c_str());
+        CHECK_ARGS_BASE(env, MediaLibraryNapiUtils::GetStringArray(env, value, propertyValues),
+            JS_ERR_PARAMETER_INVALID, false);
+        return true;
+    };
+    return ParseAnalysisAlbumOperation(parseStringProperty, parseArrayProperty, operation);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_callback_info info)
+{
+    if (!CheckOperateAttributePermissionForCall(env)) {
+        return nullptr;
+    }
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
+        env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok, "Failed to get object info");
+
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env, IsPortraitAlbumAttributeTarget(photoAlbum), E_OPERATION_NOT_SUPPORT,
+        "Only portrait album can operate attribute");
+
+    AnalysisAlbumOperation operation;
+    CHECK_COND_WITH_ERR_MESSAGE(env, ParseAnalysisAlbumOperation(env, asyncContext->argv[ARGS_ZERO], operation),
+        JS_E_PARAM_INVALID, "Failed to parse analysis album operation");
+    if (!CheckAnalysisAlbumOperationOrThrow(operation,
+        [env]() {
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid analysis album operation");
+        },
+        [env]() {
+            NapiError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Unsupported analysis album operation");
+        })) {
+        return nullptr;
+    }
+    if (!operation.HasValues()) {
+        RETURN_NAPI_UNDEFINED(env);
+    }
+
+    asyncContext->objectInfo->SetNickNameOperationData(operation.type, operation.values);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -2092,6 +2209,44 @@ static bool SetAlbumNameExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool ExecuteNickNameOperation(MediaAlbumChangeRequestAsyncContext& context, const string &operationType,
+    const vector<string> &nickNames)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+
+    AnalysisAlbumOperation operation { ANALYSIS_ALBUM_ATTR_NICK_NAME, operationType, nickNames };
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    CHECK_COND_RET(PrepareAnalysisAlbumOperationReqBody(photoAlbum, operation, reqBody), false,
+        "failed to prepare nick name operation request");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        NAPI_ERR_LOG("Failed to execute nick name operation, type: %{public}s, err: %{public}d",
+            operationType.c_str(), changedRows);
+        context.SaveError(changedRows);
+        return false;
+    }
+    return true;
+}
+
+static bool AddNickNameExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
+}
+
+static bool RemoveNickNameExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+}
+
 static bool SetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2283,6 +2438,8 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::SET_DEFAULT_COVER_URI, SetDefaultCoverUriExecute },
     { AlbumChangeOperation::SET_DISPLAY_LEVEL, SetDisplayLevelExecute },
     { AlbumChangeOperation::SET_IS_ME, SetIsMeExecute },
+    { AlbumChangeOperation::ADD_NICK_NAME, AddNickNameExecute },
+    { AlbumChangeOperation::REMOVE_NICK_NAME, RemoveNickNameExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
 };
@@ -2379,6 +2536,8 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_DEFAULT_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
+                   changeOperation == AlbumChangeOperation::ADD_NICK_NAME ||
+                   changeOperation == AlbumChangeOperation::REMOVE_NICK_NAME ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
                    changeOperation == AlbumChangeOperation::RESET_COVER_URI) {

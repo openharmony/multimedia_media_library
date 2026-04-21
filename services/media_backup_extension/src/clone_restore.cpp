@@ -2398,6 +2398,7 @@ void CloneRestore::RestoreAnalysisData()
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
     PopulateAnalysisAlbumIdMap();
+    RestorePortraitNickNameData();
     PopulateSystemAlbumIdMap();
     RestoreTabOldAlbumsData();
     RestoreWatermarkData();
@@ -2413,6 +2414,16 @@ void CloneRestore::RestoreSearchIndexData()
 {
     SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
     searchIndexClone.Clone();
+}
+
+void CloneRestore::RestorePortraitNickNameData()
+{
+    auto albumIdMapIt = tableAlbumIdMap_.find(ANALYSIS_ALBUM_TABLE);
+    CHECK_AND_RETURN_LOG(albumIdMapIt != tableAlbumIdMap_.end(),
+        "analysis album map not found, skip portrait nickname clone");
+    PortraitNickNameClone portraitNickNameClone(mediaRdb_, mediaLibraryRdb_, albumIdMapIt->second,
+        IsCloudRestoreSatisfied());
+    portraitNickNameClone.Clone();
 }
 
 void CloneRestore::RestoreBeautyScoreData()
