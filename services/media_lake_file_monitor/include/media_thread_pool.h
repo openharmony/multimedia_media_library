@@ -57,7 +57,7 @@ public:
             threads.emplace_back(threadPoolName_ + std::to_string(threadIndex_++),
                 [poolInfo = poolInfo_]() { LoopForEver(poolInfo); });
         }
-        MEDIA_INFO_LOG("ThreadPool(%{public}s) construct(enter), mix(%{public}u)/max(%{public}u).",
+        MEDIA_INFO_LOG("ThreadPool(%{public}s) construct(enter), mix(%{public}zu)/max(%{public}zu).",
             threadPoolName_.c_str(), minThreads_, maxThreads_);
     }
 
