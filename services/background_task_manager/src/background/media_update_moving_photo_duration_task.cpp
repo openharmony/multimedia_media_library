@@ -88,7 +88,7 @@ bool MediaUpdateMovingPhotoDurationTask::ParseUpdateFilesList(std::shared_ptr<Na
 
 bool MediaUpdateMovingPhotoDurationTask::ProcessDuration(const std::vector<UpdateDurationFileInfo> &updateFilesList)
 {
-    MEDIA_INFO_LOG("UpdateMovingPhotoDuration process duration start, num: %{public}d", updateFilesList.size());
+    MEDIA_INFO_LOG("UpdateMovingPhotoDuration process duration start, num: %{public}zu", updateFilesList.size());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr!");
 

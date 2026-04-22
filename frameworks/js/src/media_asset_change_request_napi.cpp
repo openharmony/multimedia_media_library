@@ -109,7 +109,7 @@ int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_
     }
 
     if (static_cast<size_t>(mem->GetSize()) < length) {
-        NAPI_ERR_LOG("mem buffer size %{public}zu is less than required %{public}u", mem->GetSize(), length);
+        NAPI_ERR_LOG("mem buffer size %{public}d is less than required %{public}u", mem->GetSize(), length);
         return SOURCE_ERROR_IO;
     }
 
