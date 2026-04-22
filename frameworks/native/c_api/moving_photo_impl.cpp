@@ -204,7 +204,7 @@ int32_t MovingPhotoImpl::OpenReadOnlyFile(const std::string& uri, bool isReadIma
             return E_ERR;
         }
         if (uris.size() < MOVING_PHOTO_URIS_SIZE) {
-            MEDIA_ERR_LOG("Failed to check uris size, size = %{public}d", uris.size());
+            MEDIA_ERR_LOG("Failed to check uris size, size = %{public}zu", uris.size());
             return E_ERR;
         }
         curUri = uris[isReadImage ? MOVING_PHOTO_IMAGE_POS : MOVING_PHOTO_VIDEO_POS];
