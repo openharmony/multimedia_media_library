@@ -76,7 +76,7 @@ static void MadviseMemoryCheck()
             "libarkweb_engine.so",
         };
         MadviseUtils::MadviseMultipleLibraries(MADVISE_LIST);
-        MEDIA_INFO_LOG("Madvise done, currentTime:%{public}lld, lastIPCTime:%{public}lld", currentTime,
+        MEDIA_INFO_LOG("Madvise done, currentTime:%{public}" PRId64 ", lastIPCTime:%{public}" PRId64, currentTime,
             lastIPCTime);
         DfxManager::GetInstance()->SetMemoryRelease(true);
     }

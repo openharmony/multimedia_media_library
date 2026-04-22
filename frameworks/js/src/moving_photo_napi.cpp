@@ -892,12 +892,12 @@ static int32_t AllocateAndConvertResource(int32_t fd, size_t fileSize, MovingPho
 {
     uint32_t MAX_ALLOWED_SIZE = 500 * 1024 * 1024;
     if (fileSize <= 0 || fileSize > MAX_ALLOWED_SIZE) {
-        NAPI_ERR_LOG("Invalid file size: %{public}d", fileSize);
+        NAPI_ERR_LOG("Invalid file size: %{public}zu", fileSize);
         return E_ERR;
     }
     context->arrayBufferData = malloc(fileSize);
     if (!context->arrayBufferData) {
-        NAPI_ERR_LOG("Failed to allocate memory for resource, size: %{public}d", fileSize);
+        NAPI_ERR_LOG("Failed to allocate memory for resource, size: %{public}zu", fileSize);
         return E_ERR;
     }
 

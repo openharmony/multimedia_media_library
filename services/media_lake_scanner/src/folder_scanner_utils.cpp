@@ -45,7 +45,7 @@ int32_t FolderScannerUtils::BatchInsertAssets(const std::string &tableName,
     int32_t ret = assetRefresh->BatchInsert(changeRows, tableName, values, rdbError,
         NativeRdb::ConflictResolution::ON_CONFLICT_REPLACE);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ERR_FAIL,
-        "Batch insert assets fail, ret = %{public}d, changeRows = %{public}lld, tableName: %{public}s",
+        "Batch insert assets fail, ret = %{public}d, changeRows = [%{public}" PRId64 "], tableName: %{public}s",
         ret, changeRows, tableName.c_str());
     assetRefresh->RefreshAlbum();
     return ERR_SUCCESS;
