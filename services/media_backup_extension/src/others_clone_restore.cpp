@@ -1177,9 +1177,6 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
 
     if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
         const std::string filePath = fileInfo.filePath;
-        if (filePath.find(I_PHONE_DYNAMIC_IMAGE) == string::npos) {
-            return false;
-        }
         if (filePath.find(OTHER_DYNAMIC_VIDEO) != string::npos) {
             fileInfo.otherSubtype = OTHER_DYNAMIC_VIDEO_TYPE;
             return true;
