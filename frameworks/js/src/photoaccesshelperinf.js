@@ -1146,6 +1146,8 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.autoPlayScenes = parseAutoPlayScenes(option.autoPlayScenes);
     config.parameters.gridPinchMode = option.gridPinchMode;
     config.parameters.showDateOnScrollbar = option.showDateOnScrollbar;
+    config.parameters.isSelectionNumberVisible = option.isSelectionNumberVisible;
+    config.parameters.isSelectionOrderAdjustable = option.isSelectionOrderAdjustable;
   }
 
   return config;
@@ -1373,6 +1375,8 @@ function PhotoSelectOptions() {
   this.userId = -1;
   this.isDestroyedWithNavigation = false;
   this.isReturnToPhotoBrowserEnabled = false;
+  this.isSelectionNumberVisible = false;
+  this.isSelectionOrderAdjustable = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates, gridLevel) {
