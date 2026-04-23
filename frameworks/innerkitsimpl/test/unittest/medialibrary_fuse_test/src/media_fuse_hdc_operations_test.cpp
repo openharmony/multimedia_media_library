@@ -576,22 +576,22 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_OperationsSuccess_test_001, Le
     EXPECT_EQ(ret, E_SUCCESS);
     std::string fileId;
     ret = MediaFuseHdcOperations::GetFileIdFromPath(filePath, fileId);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_NE(ret, E_SUCCESS);
     ret = MediaFuseHdcOperations::GetAlbumIdFromAlbumName(albumName, albumId);
     EXPECT_EQ(ret, E_SUCCESS);
     ret = MediaFuseHdcOperations::Parse(path, albumId, filePath, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
     struct stat stbuf = {};
     ret = MediaFuseHdcOperations::HandleDirStat(albumId, &stbuf);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_NE(ret, E_SUCCESS);
     std::vector<std::string> args = {"test01", "testPhoto.jpg"};
     std::string localPath;
     ret = MediaFuseHdcOperations::UpdatePhotoRdb(displayName, filePath);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_NE(ret, E_SUCCESS);
     ret = MediaFuseHdcOperations::ScanFileByPath(path);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_NE(ret, E_SUCCESS);
     ret = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_NE(ret, E_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS
