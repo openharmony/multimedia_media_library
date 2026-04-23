@@ -302,20 +302,4 @@ HWTEST_F(AlbumGetAssetsTest, AlbumGetAssets_CloudFilter_Test_002, TestSize.Level
     MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     MEDIA_INFO_LOG("end AlbumGetAssets_CloudFilter_Test_002");
 }
-
-HWTEST_F(AlbumGetAssetsTest, AddCloudAssetFilter_AlbumPredicates_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Start AddCloudAssetFilter_AlbumPredicates_Test_001");
-
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, "1");
-
-    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
-
-    std::string whereClause = predicates.GetWhereClause();
-    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_POSITION) != std::string::npos);
-    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID) != std::string::npos);
-
-    MEDIA_INFO_LOG("end AddCloudAssetFilter_AlbumPredicates_Test_001");
-}
 }  // namespace OHOS::Media

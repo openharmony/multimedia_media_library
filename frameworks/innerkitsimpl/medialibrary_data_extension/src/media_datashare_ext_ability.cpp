@@ -23,6 +23,7 @@
 #include "dataobs_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "media_app_uri_permission_column.h"
+#include "media_cloud_permission_check.h"
 #include "media_datashare_stub_impl.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_appstate_observer.h"
@@ -434,12 +435,17 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     openData.userId = callingUid / PermissionUtils::BASE_USER_RANGE;
     openData.type = "open";
     openData.timestamp = MediaFileUtils::UTCTimeMilliSeconds();
-    CHECK_AND_RETURN_RET(!cond,
-        PermissionUtils::CheckPhotoCallerPermission(perms, openData)? E_SUCCESS : E_PERMISSION_DENIED);
-
+    if (cond) {
+        int32_t err = PermissionUtils::CheckPhotoCallerPermission(perms, openData) ? E_SUCCESS : E_PERMISSION_DENIED;
+        if (err == E_SUCCESS && containsRead) {
+            err = CloudReadPermissionCheck::CheckPureCloudAssets(cmd.GetOprnFileId());
+        }
+        return err;
+    }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
         (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
+
     CHECK_AND_RETURN_RET(err != E_SUCCESS, E_SUCCESS);
     // Try to check deprecated permissions
     perms.clear();

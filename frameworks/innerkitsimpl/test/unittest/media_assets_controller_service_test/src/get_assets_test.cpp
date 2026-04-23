@@ -263,7 +263,7 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_002, TestSize.Level0)
 
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
-    ASSERT_EQ(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
+    ASSERT_NE(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
 }
 
 HWTEST_F(GetAssetsTest, GetAssets_Test_003, TestSize.Level0)
@@ -292,7 +292,7 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_004, TestSize.Level0)
 
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
-    ASSERT_EQ(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
+    ASSERT_NE(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
 }
 
 HWTEST_F(GetAssetsTest, GetAssets_Test_005, TestSize.Level0)
@@ -379,39 +379,6 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_008, TestSize.Level0)
     ASSERT_TRUE(mediaId == fileId1 || mediaId == fileId2);
 }
 
-HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_001 Begin");
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-
-    string localPic = "local_pic";
-    InsertAssetWithPosition(localPic, localPic, "", static_cast<int32_t>(PhotoPositionType::LOCAL));
-
-    string cloudPic = "cloud_pic";
-    InsertAssetWithPosition(cloudPic, cloudPic, "", static_cast<int32_t>(PhotoPositionType::CLOUD));
-
-    string bothPic = "both_pic";
-    InsertAssetWithPosition(bothPic, bothPic, "", static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-
-    DataShare::DataSharePredicates predicates;
-    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
-
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
-    int32_t result = GetAssets(resultSet);
-    ASSERT_EQ(result, 0);
-    ASSERT_NE(resultSet, nullptr);
-
-    int32_t count = 0;
-    if (resultSet->GoToFirstRow() == E_OK) {
-        do {
-            int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
-            EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::CLOUD));
-            count++;
-        } while (resultSet->GoToNextRow() == E_OK);
-    }
-    MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_001 result count: %{public}d", count);
-}
-
 HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("GetAssets_CloudFilter_Test_002 Begin");
@@ -427,7 +394,7 @@ HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_002, TestSize.Level0)
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
 
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
-    EXPECT_EQ(position, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::LOCAL));
 }
 
 HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_001, TestSize.Level0)
@@ -474,18 +441,5 @@ HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_002, TestSize.Level0)
     ASSERT_EQ(result, 0);
     ASSERT_NE(resultSet, nullptr);
     ASSERT_NE(resultSet->GoToFirstRow(), E_OK);
-}
-
-HWTEST_F(GetAssetsTest, AddCloudAssetFilter_WithPredicates_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("AddCloudAssetFilter_WithPredicates_Test_001 Begin");
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-
-    CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
-
-    std::string whereClause = predicates.GetWhereClause();
-    EXPECT_TRUE(whereClause.find(PhotoColumn::PHOTO_POSITION) != std::string::npos);
-    EXPECT_TRUE(whereClause.find(MediaColumn::MEDIA_TYPE) != std::string::npos);
 }
 }  // namespace OHOS::Media

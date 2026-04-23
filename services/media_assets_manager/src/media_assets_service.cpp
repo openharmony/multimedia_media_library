@@ -40,6 +40,7 @@
 #include "medialibrary_data_manager.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "media_cloud_permission_check.h"
 #include "duplicate_photo_operation.h"
 #include "medialibrary_common_utils.h"
 #include "photo_map_column.h"
@@ -754,7 +755,9 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
     // MEDIALIBRARY_TABLE just for RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     MediaLibraryRdbUtils::BuildDoubleCheckPredicates(rdbPredicate, static_cast<uint32_t>(dto.tokenId), passCode);
-
+    if (passCode == E_READ_CLOUD_PERMISSION_CHECK) {
+        CloudReadPermissionCheck::AddCloudAssetFilter(rdbPredicate);
+    }
     MediaLibraryRdbUtils::AddQueryIndex(rdbPredicate, dto.columns);
 
     string clientBundle;
