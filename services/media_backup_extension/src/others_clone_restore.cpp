@@ -1159,6 +1159,22 @@ size_t GetIosMovingPhotoSize(const std::string iosMovingPhotoImagePath)
     return (videoSize == 0) ? 0 : imageSize + videoSize + EXTRADATA_LEN;
 }
 
+size_t GetOtherDynamicMovingPhotoSize(const std::string imagePath)
+{
+    size_t destPos = imagePath.find_last_of(".");
+    CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, 0, "imagePath not contain '.'");
+    std::string videoPath = imagePath.substr(0, destPos) + ".mp4";
+    size_t imageSize = 0;
+    size_t videoSize = 0;
+    (void)MediaFileUtils::GetFileSize(imagePath, imageSize);
+    (void)MediaFileUtils::GetFileSize(videoPath, videoSize);
+    if (videoSize == 0) {
+        videoPath = imagePath.substr(0, destPos) + ".MP4";
+        (void)MediaFileUtils::GetFileSize(videoPath, videoSize);
+    }
+    return (videoSize == 0) ? 0 : imageSize + videoSize + EXTRADATA_LEN;
+}
+
 bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t sceneCode)
 {
     if (sceneCode == I_PHONE_CLONE_RESTORE) {
@@ -1183,6 +1199,7 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
         }
         if (filePath.find(OTHER_DYNAMIC_IMAGE) != string::npos) {
             fileInfo.subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+            fileInfo.fileSize = static_cast<int64_t>(GetOtherDynamicMovingPhotoSize(fileInfo.filePath));
         }
         return false;
     }

@@ -61,7 +61,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+const int32_t OTHER_DYNAMIC_VIDEO_TYPE = 14;
 void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Start Init");
