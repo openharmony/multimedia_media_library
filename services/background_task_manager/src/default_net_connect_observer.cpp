@@ -47,7 +47,6 @@ int32_t DefaultNetConnectObserver::NetCapabilitiesChange(sptr<NetHandle> &netHan
         MEDIA_INFO_LOG("DefaultNetConnectObserver cellular connected");
         MedialibraryRelatedSystemStateManager::GetInstance()->SetCellularNetConnected(true);
         SetNetConnStatus(DefaultNetConnStatus::CELLULAR_CONNECTED);
-        BackgroundCloudBatchSelectedFileProcessor::TriggerSwitchCellCheck();
     } else {
         MEDIA_INFO_LOG("DefaultNetConnectObserver other net connected");
         SetNetConnStatus(DefaultNetConnStatus::NO_NETWORK);

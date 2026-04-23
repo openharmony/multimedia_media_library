@@ -92,6 +92,7 @@ uint32_t BackgroundCloudBatchSelectedFileProcessor::batchDownloadResourcesStartT
 std::unordered_map<int64_t, BackgroundCloudBatchSelectedFileProcessor::InDownloadingFileInfo>
    BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_;
 std::mutex BackgroundCloudBatchSelectedFileProcessor::downloadResultMutex_;
+std::mutex BackgroundCloudBatchSelectedFileProcessor::stopProcessConditionMutex_;
 std::mutex BackgroundCloudBatchSelectedFileProcessor::mutexRunningStatus_;
 std::mutex BackgroundCloudBatchSelectedFileProcessor::autoActionMutex_;
 std::unordered_map<std::string, BackgroundCloudBatchSelectedFileProcessor::BatchDownloadStatus>
@@ -100,6 +101,7 @@ std::unordered_map<std::string, int32_t> BackgroundCloudBatchSelectedFileProcess
 std::atomic<bool> BackgroundCloudBatchSelectedFileProcessor::batchDownloadTaskAdded_ = true; // 初值true被杀后能自动恢复
 std::atomic<bool> BackgroundCloudBatchSelectedFileProcessor::downloadLatestFinished_ = false; // 通知栏判断
 std::atomic<bool> BackgroundCloudBatchSelectedFileProcessor::batchDownloadProcessRunningStatus_{false};
+std::atomic<bool> BackgroundCloudBatchSelectedFileProcessor::autoResumeCheckRunning_{false};
 int32_t BackgroundCloudBatchSelectedFileProcessor::batchDownloadQueueLimitNum_ = batchDownloadQueueLimitNumHigh;
 // LCOV_EXCL_START
 
@@ -1369,6 +1371,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheckForWlan
 
 bool BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck()
 {
+    unique_lock<std::mutex> lock(stopProcessConditionMutex_);
     int32_t num = QueryUnFinishTasksNum();
     if (num == 0) {
         MEDIA_INFO_LOG("BatchSelectFileDownload no task to stop");
@@ -1692,6 +1695,12 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadReso
 
 void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck()
 {
+    // 避免重复执行
+    if (autoResumeCheckRunning_.exchange(true)) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload AutoResumeCheck already running, skip");
+        return;
+    }
+
     MEDIA_DEBUG_LOG("BatchSelectFileDownload Timely check downloading: %{public}d",
         BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
     if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
@@ -1707,33 +1716,9 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadRe
     } else {
         MEDIA_INFO_LOG("BatchSelectFileDownload Timely Check AutoResume Processor with task running ext");
     }
-}
 
-bool BackgroundCloudBatchSelectedFileProcessor::TriggerNetLimitCheck()
-{
-    int32_t num = QueryBatchSelectedResourceFilesNum();
-    if (num == 0) {
-        MEDIA_INFO_LOG("BatchSelectFileDownload no task to stop");
-        return false;
-    }
-    
-    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT;
-    MEDIA_INFO_LOG("BatchSelectFileDownload TriggerNetLimitCheck: stop downloading");
-    AutoStopAction(autoPauseReason);
-    return true;
-}
-
-void BackgroundCloudBatchSelectedFileProcessor::TriggerSwitchCellCheck()
-{
-    if (CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-        BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
-    } else {
-        if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
-            MEDIA_INFO_LOG("BatchSelectFileDownload COMMON_EVENT_WIFI_CONN_STATE Change");
-            BackgroundCloudBatchSelectedFileProcessor::TriggerNetLimitCheck();
-            // BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
-        }
-    }
+    // 清除执行标识
+    autoResumeCheckRunning_.store(false);
 }
 
 // 自动恢复使用
