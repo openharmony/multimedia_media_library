@@ -355,6 +355,21 @@ std::vector<std::string> MediaAlbumChangeRequestNapi::GetRemoveNickNames() const
     return analysisAlbumOperationData_.removeNickNames;
 }
 
+std::string MediaAlbumChangeRequestNapi::GetOperationDataAttr() const
+{
+    return analysisAlbumOperationData_.attr;
+}
+
+std::string MediaAlbumChangeRequestNapi::GetOperationDataType() const
+{
+    return analysisAlbumOperationData_.type;
+}
+
+std::vector<std::string> MediaAlbumChangeRequestNapi::GetOperationDataValues() const
+{
+    return analysisAlbumOperationData_.values;
+}
+
 static bool CheckAlbumChangeRequestCallerPermission(const std::string &permission)
 {
     AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
@@ -1304,8 +1319,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismiss(napi_env env, napi_callback_in
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only group photo can be dismissed");
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only group photo and portrait album can be dismissed");
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS);
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -1341,6 +1357,14 @@ void MediaAlbumChangeRequestNapi::SetNickNameOperationData(const string &type, c
 {
     AnalysisAlbumOperationDataUtils::SetNickNameOperationData(analysisAlbumOperationData_, albumChangeOperations_,
         type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
+}
+
+void MediaAlbumChangeRequestNapi::SetIsRemovedOperationData(AnalysisAlbumOperation &operation)
+{
+    analysisAlbumOperationData_.attr = operation.attr;
+    analysisAlbumOperationData_.type = operation.type;
+    analysisAlbumOperationData_.values = operation.values;
+    albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_IS_REMOVED);
 }
 
 static bool ParseAnalysisAlbumOperation(napi_env env, napi_value arg, AnalysisAlbumOperation &operation)
@@ -1395,7 +1419,14 @@ napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_ca
         RETURN_NAPI_UNDEFINED(env);
     }
 
-    asyncContext->objectInfo->SetNickNameOperationData(operation.type, operation.values);
+    if (operation.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
+        asyncContext->objectInfo->SetNickNameOperationData(operation.type, operation.values);
+    } else if (operation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
+        asyncContext->objectInfo->SetIsRemovedOperationData(operation);
+    } else {
+        NAPI_WARN_LOG("Unknown operation attr.");
+    }
+
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -2209,24 +2240,24 @@ static bool SetAlbumNameExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
-static bool ExecuteNickNameOperation(MediaAlbumChangeRequestAsyncContext& context, const string &operationType,
-    const vector<string> &nickNames)
+static bool ExecuteOperateAttributeOperation(MediaAlbumChangeRequestAsyncContext& context,
+    const string &attr, const string &operationType, const vector<string> &values)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
 
-    AnalysisAlbumOperation operation { ANALYSIS_ALBUM_ATTR_NICK_NAME, operationType, nickNames };
+    AnalysisAlbumOperation operation { attr, operationType, values };
     ChangeRequestOperateAlbumAttributeReqBody reqBody;
     CHECK_COND_RET(PrepareAnalysisAlbumOperationReqBody(photoAlbum, operation, reqBody), false,
-        "failed to prepare nick name operation request");
+        "failed to prepare operate attribute operation request");
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE);
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
-        NAPI_ERR_LOG("Failed to execute nick name operation, type: %{public}s, err: %{public}d",
-            operationType.c_str(), changedRows);
+        NAPI_ERR_LOG("Failed to execute operate attribute operation, attr: %{public}s type: %{public}s, "
+            "err: %{public}d", attr.c_str(), operationType.c_str(), changedRows);
         context.SaveError(changedRows);
         return false;
     }
@@ -2237,14 +2268,24 @@ static bool AddNickNameExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
-    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
+    return ExecuteOperateAttributeOperation(context, ANALYSIS_ALBUM_ATTR_NICK_NAME,
+        ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
 }
 
 static bool RemoveNickNameExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
-    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+    return ExecuteOperateAttributeOperation(context, ANALYSIS_ALBUM_ATTR_NICK_NAME,
+        ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+}
+
+static bool UpdateIsRemovedExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteOperateAttributeOperation(context, changeRequest->GetOperationDataAttr(),
+        changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
 }
 
 static bool SetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
@@ -2442,6 +2483,7 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::REMOVE_NICK_NAME, RemoveNickNameExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
+    { AlbumChangeOperation::UPDATE_IS_REMOVED, UpdateIsRemovedExecute },
 };
 
 static bool SetAlbumPropertyExecute(
@@ -2538,6 +2580,7 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
                    changeOperation == AlbumChangeOperation::ADD_NICK_NAME ||
                    changeOperation == AlbumChangeOperation::REMOVE_NICK_NAME ||
+                   changeOperation == AlbumChangeOperation::UPDATE_IS_REMOVED ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
                    changeOperation == AlbumChangeOperation::RESET_COVER_URI) {

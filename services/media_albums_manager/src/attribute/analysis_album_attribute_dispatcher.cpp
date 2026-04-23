@@ -19,6 +19,7 @@
 
 #include "analysis_album_attribute_validator.h"
 #include "portrait_nickname_handler.h"
+#include "portrait_is_removed_handler.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -39,10 +40,18 @@ const AnalysisAlbumAttributeHandlerEntry PORTRAIT_NICK_NAME_HANDLER = {
     PortraitNickNameHandler::Execute,
 };
 
+const AnalysisAlbumAttributeHandlerEntry PORTRAIT_IS_REMOVED_HANDLER = {
+    &ANALYSIS_ALBUM_IS_REMOVED_SPEC,
+    PortraitIsRemovedHandler::ValidateTarget,
+    PortraitIsRemovedHandler::Execute,
+};
+
 const AnalysisAlbumAttributeHandlerEntry *ResolveHandler(const std::string &attr)
 {
     if (attr == PORTRAIT_NICK_NAME_HANDLER.spec->attr) {
         return &PORTRAIT_NICK_NAME_HANDLER;
+    } else if (attr == PORTRAIT_IS_REMOVED_HANDLER.spec->attr) {
+        return &PORTRAIT_IS_REMOVED_HANDLER;
     }
     return nullptr;
 }
@@ -56,7 +65,7 @@ int32_t AnalysisAlbumAttributeDispatcher::Execute(const std::shared_ptr<PhotoAlb
     CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
         "invalid analysis album operation protocol, attr: %{public}s, type: %{public}s",
         operation.attr.c_str(), operation.type.c_str());
-    checkResult = CheckAnalysisAlbumOperationSupport(operation.attr, operation.type);
+    checkResult = CheckAnalysisAlbumOperationSupport(operation.attr, operation.type, operation.values);
     CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
         "unsupported analysis album operation, attr: %{public}s, type: %{public}s",
         operation.attr.c_str(), operation.type.c_str());

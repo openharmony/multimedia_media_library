@@ -4491,6 +4491,7 @@ export namespace photoAccessHelper {
 
   export enum AlbumAttribute {
     NICK_NAME_ATTR = "nickname",
+    IS_REMOVED_ATTR = "is_removed",
   }
 
   export enum AlbumOperationType {
