@@ -558,13 +558,12 @@ int32_t MediaAnalysisDataControllerService::ChangeRequestDismiss(MessageParcel &
     PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
     PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
     int32_t albumId = atoi(reqBody.albumId.c_str());
-    bool cond = PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype);
-    if (!cond) {
-        MEDIA_ERR_LOG("params is invalid");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-    }
+    bool cond = PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    CHECK_AND_RETURN_RET_LOG(cond, IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES),
+        "params is invalid");
 
-    ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId, albumSubtype);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

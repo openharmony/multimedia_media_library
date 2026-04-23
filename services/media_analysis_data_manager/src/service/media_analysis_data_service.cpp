@@ -613,12 +613,16 @@ int32_t MediaAnalysisDataService::PlaceBefore(ChangeRequestPlaceBeforeDto &place
     return MediaLibraryAlbumOperations::OrderSingleAlbum(value);
 }
 
-int32_t MediaAnalysisDataService::ChangeRequestDismiss(int32_t albumId)
+int32_t MediaAnalysisDataService::ChangeRequestDismiss(int32_t albumId, PhotoAlbumSubType albumSubtype)
 {
     NativeRdb::ValuesBucket values;
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    return MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(albumSubtype == PhotoAlbumSubType::GROUP_PHOTO ||
+        albumSubtype == PhotoAlbumSubType::PORTRAIT, E_INVALID_VALUES, "album subtype is invalid");
+    return albumSubtype == PhotoAlbumSubType::GROUP_PHOTO ?
+        MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(values, predicates) :
+        MediaLibraryAnalysisAlbumOperations::SetPortraitAlbumIsRemoved(to_string(albumId), "1");
 }
 
 int32_t MediaAnalysisDataService::ChangeRequestSetDefaultCoverUri(const ChangeRequestSetDefaultCoverUriDto& dto)

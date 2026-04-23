@@ -54,6 +54,21 @@ inline bool IsSupportedAnalysisAlbumOperationType(const AnalysisAlbumAttributeSp
     return std::find(spec.supportedTypes.begin(), spec.supportedTypes.end(), type) != spec.supportedTypes.end();
 }
 
+inline bool IsSupportedAnalysisAlbumOperationValue(const AnalysisAlbumAttributeSpec &spec, const std::string &value)
+{
+    return std::find(spec.supportedValues.begin(), spec.supportedValues.end(), value) != spec.supportedValues.end();
+}
+
+inline bool IsSupportedAnalysisAlbumOperationValues(const AnalysisAlbumAttributeSpec &spec,
+    const std::vector<std::string> &values)
+{
+    return values.size() <= spec.maxValueCount && (!spec.isSpecialValue ||
+        std::all_of(values.begin(), values.end(),
+        [&spec](const std::string &value) {
+            return IsSupportedAnalysisAlbumOperationValue(spec, value);
+        }));
+}
+
 inline int32_t ValidateAnalysisAlbumOperationProtocol(const std::string &attr, const std::string &type,
     const std::vector<std::string> &values)
 {
@@ -64,16 +79,18 @@ inline int32_t ValidateAnalysisAlbumOperationProtocol(const std::string &attr, c
     return E_OK;
 }
 
-inline int32_t CheckAnalysisAlbumOperationSupport(const std::string &attr, const std::string &type)
+inline int32_t CheckAnalysisAlbumOperationSupport(const std::string &attr, const std::string &type,
+    const std::vector<std::string> &values)
 {
     const AnalysisAlbumAttributeSpec *spec = FindAnalysisAlbumAttributeSpec(attr);
     if (spec == nullptr) {
         return E_INVALID_VALUES;
     }
-    if (IsSupportedAnalysisAlbumOperationType(*spec, type)) {
-        return E_OK;
+    if (!IsSupportedAnalysisAlbumOperationType(*spec, type) ||
+        !IsSupportedAnalysisAlbumOperationValues(*spec, values)) {
+        return E_OPERATION_NOT_SUPPORT;
     }
-    return E_OPERATION_NOT_SUPPORT;
+    return E_OK;
 }
 
 inline int32_t CheckAnalysisAlbumOperation(const std::string &attr, const std::string &type,
@@ -83,7 +100,7 @@ inline int32_t CheckAnalysisAlbumOperation(const std::string &attr, const std::s
     if (checkResult != E_OK) {
         return checkResult;
     }
-    return CheckAnalysisAlbumOperationSupport(attr, type);
+    return CheckAnalysisAlbumOperationSupport(attr, type, values);
 }
 } // namespace OHOS::Media
 

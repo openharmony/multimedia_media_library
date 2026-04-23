@@ -13,16 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_CONST_H
-#define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_CONST_H
+#ifndef OHOS_MEDIA_PORTRAIT_IS_REMOVED_SERVICE_H
+#define OHOS_MEDIA_PORTRAIT_IS_REMOVED_SERVICE_H
 
-#define ANALYSIS_ALBUM_ATTR_NICK_NAME "nickname"
-#define ANALYSIS_ALBUM_ATTR_IS_REMOVED "is_removed"
-#define ANALYSIS_ALBUM_OP_ADD "add"
-#define ANALYSIS_ALBUM_OP_REMOVE "remove"
-#define ANALYSIS_ALBUM_OP_UPDATE "update"
-#define ANALYSIS_ALBUM_MAX_OPERATION_VALUES 20
-#define ANALYSIS_ALBUM_MAX_VALUE_LENGTH 500
-#define ANALYSIS_ALBUM_MAX_NICK_NAME_COUNT 100
+#include <memory>
+#include <string>
+#include <vector>
 
-#endif // OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_CONST_H
+#include "medialibrary_rdbstore.h"
+
+namespace OHOS::Media {
+struct MergeAlbumInfo;
+
+class PortraitIsRemovedService {
+public:
+    static int32_t Operate(const std::string &albumId, const std::string &value,
+        const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+};
+} // namespace OHOS::Media
+
+#endif // OHOS_MEDIA_PORTRAIT_IS_REMOVED_SERVICE_H

@@ -785,7 +785,8 @@ HWTEST_F(MediaAnalysisDataServiceTest, ChangeRequestDismiss_NormalFlow, TestSize
     MEDIA_INFO_LOG("start ChangeRequestDismiss_NormalFlow");
     int32_t albumId = 1;
     
-    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId,
+        PhotoAlbumSubType::GROUP_PHOTO);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end ChangeRequestDismiss_NormalFlow");
 }
@@ -1423,7 +1424,8 @@ HWTEST_F(MediaAnalysisDataServiceTest, ChangeRequestDismiss_NegativeAlbumId, Tes
     MEDIA_INFO_LOG("start ChangeRequestDismiss_NegativeAlbumId");
     int32_t albumId = -1;
     
-    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId,
+        PhotoAlbumSubType::GROUP_PHOTO);
     EXPECT_EQ(ret, E_INVALID_VALUES);
     MEDIA_INFO_LOG("end ChangeRequestDismiss_NegativeAlbumId");
 }
@@ -1438,7 +1440,8 @@ HWTEST_F(MediaAnalysisDataServiceTest, ChangeRequestDismiss_ZeroAlbumId, TestSiz
     MEDIA_INFO_LOG("start ChangeRequestDismiss_ZeroAlbumId");
     int32_t albumId = 0;
     
-    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId,
+        PhotoAlbumSubType::GROUP_PHOTO);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end ChangeRequestDismiss_ZeroAlbumId");
 }
@@ -1453,7 +1456,8 @@ HWTEST_F(MediaAnalysisDataServiceTest, ChangeRequestDismiss_LargeAlbumId, TestSi
     MEDIA_INFO_LOG("start ChangeRequestDismiss_LargeAlbumId");
     int32_t albumId = 999999;
     
-    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId);
+    int32_t ret = MediaAnalysisDataService::GetInstance().ChangeRequestDismiss(albumId,
+        PhotoAlbumSubType::GROUP_PHOTO);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end ChangeRequestDismiss_LargeAlbumId");
 }
