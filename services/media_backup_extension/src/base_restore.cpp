@@ -919,81 +919,110 @@ static bool SaveIosExtraData(const FileInfo &fileInfo, std::string movingPhotoVi
     return true;
 }
 
+static bool MoveFileAndUpdateTime(const std::string &srcPath, const std::string &destPath,
+    int64_t dateModified, int32_t sceneCode)
+{
+    int32_t errCode = BackupFileUtils::MoveFile(srcPath, destPath, sceneCode);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
+        "MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
+        BackupFileUtils::GarbleFilePath(srcPath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(destPath, sceneCode).c_str(), errCode, errno);
+    MediaFileUtils::UpdateModifyTimeInMsec(destPath, dateModified);
+    return true;
+}
+
+static bool ReplaceExtension(const std::string &path, const std::string &newExt, std::string &result)
+{
+    size_t pos = path.find_last_of(".");
+    CHECK_AND_RETURN_RET_LOG(pos != std::string::npos, false, "%{public}s not contain '.'",
+        BackupFileUtils::GarbleFilePath(path, 0).c_str());
+    result = path.substr(0, pos) + newExt;
+    return true;
+}
+
+static bool HandleIphoneCloneMovingPhoto(const FileInfo &fileInfo, const std::string &localPath,
+    int32_t sceneCode)
+{
+    string movSrcPath;
+    CHECK_AND_RETURN_RET_LOG(ReplaceExtension(fileInfo.filePath, ".MOV", movSrcPath), false, "");
+
+    string movTargetPath;
+    CHECK_AND_RETURN_RET_LOG(ReplaceExtension(localPath, ".mp4", movTargetPath), false, "");
+
+    CHECK_AND_RETURN_RET_LOG(MoveFileAndUpdateTime(movSrcPath, movTargetPath,
+        fileInfo.dateModified, sceneCode), false,
+        "Move moving photo video failed, src:%{public}s, dest:%{public}s",
+        BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str());
+
+    CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
+        "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
+        BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str());
+    return true;
+}
+
+static bool HandleOtherDynamicMovingPhoto(const FileInfo &fileInfo, const std::string &localPath,
+    int32_t sceneCode)
+{
+    string mp4SrcPath;
+    CHECK_AND_RETURN_RET_LOG(ReplaceExtension(fileInfo.filePath, ".mp4", mp4SrcPath), false, "");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(mp4SrcPath), false,
+        "Dynamic video does not exist, src:%{public}s",
+        BackupFileUtils::GarbleFilePath(mp4SrcPath, sceneCode).c_str());
+
+    string mp4TargetPath;
+    CHECK_AND_RETURN_RET_LOG(ReplaceExtension(localPath, ".mp4", mp4TargetPath), false, "");
+
+    CHECK_AND_RETURN_RET_LOG(MoveFileAndUpdateTime(mp4SrcPath, mp4TargetPath,
+        fileInfo.dateModified, sceneCode), false,
+        "Move other dynamic moving photo video failed, src:%{public}s, dest:%{public}s",
+        BackupFileUtils::GarbleFilePath(mp4SrcPath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(mp4TargetPath, sceneCode).c_str());
+
+    CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, mp4TargetPath, sceneCode), false,
+        "Save the extraData for other dynamic moving photo failed, src:%{public}s, dest:%{public}s",
+        BackupFileUtils::GarbleFilePath(mp4SrcPath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(mp4TargetPath, sceneCode).c_str());
+    return true;
+}
+
+static bool HandleLivePhoto(const FileInfo &fileInfo, const std::string &localPath, int32_t sceneCode)
+{
+    string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
+    string localVideoPath = tmpVideoPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
+    int32_t errCode = BackupFileUtils::MoveFile(fileInfo.movingPhotoVideoPath, localVideoPath, sceneCode);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG(
+            "MoveFile failed for mov video, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
+            BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(localVideoPath, sceneCode).c_str(), errCode, errno);
+        (void)MediaFileUtils::DeleteFile(localPath);
+        return false;
+    }
+    MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
+    return MoveExtraData(fileInfo, sceneCode);
+}
+
 static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
 {
     string tmpPath = fileInfo.cloudPath;
     string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-    int32_t errCode = BackupFileUtils::MoveFile(fileInfo.filePath, localPath, sceneCode);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
-        "MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
-        BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
-        BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
-    MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
+    CHECK_AND_RETURN_RET_LOG(MoveFileAndUpdateTime(fileInfo.filePath, localPath,
+        fileInfo.dateModified, sceneCode), false, "");
 
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        size_t destPos = fileInfo.filePath.find_last_of(".");
-        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "fileInfo.filePath not contain '.'");
-        string movSrcPath = fileInfo.filePath.substr(0, destPos) + ".MOV";
-
-        destPos = localPath.find_last_of(".");
-        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "localPath not contain '.'");
-        string movTargetPath = localPath.substr(0, destPos) + ".mp4";
-        
-        errCode = BackupFileUtils::MoveFile(movSrcPath, movTargetPath, sceneCode);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
-            "Move moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
-            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
-        MediaFileUtils::UpdateModifyTimeInMsec(movTargetPath, fileInfo.dateModified);
-
-        CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
-            "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
-            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str());
-        return true;
+        return HandleIphoneCloneMovingPhoto(fileInfo, localPath, sceneCode);
     }
 
     bool isOtherDynamicMovingPhoto = (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) &&
-        (sceneCode == OTHERS_PHONE_CLONE_RESTORE || sceneCode == LITE_PHONE_CLONE_RESTORE) &&
-        (fileInfo.filePath.find(DYNAMIC_PHOTO_TAG) != std::string::npos);
+        (sceneCode == OTHERS_PHONE_CLONE_RESTORE && (fileInfo.filePath.find(DYNAMIC_PHOTO_TAG) != std::string::npos));
     if (isOtherDynamicMovingPhoto) {
-        size_t destPos = fileInfo.filePath.find_last_of(".");
-        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "fileInfo.filePath not contain '.'");
-        string mp4SrcPath = fileInfo.filePath.substr(0, destPos) + ".mp4";
-        if (!MediaFileUtils::IsFileExists(mp4SrcPath)) {
-            mp4SrcPath = fileInfo.filePath.substr(0, destPos) + ".MP4";
-        }
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(mp4SrcPath), false,
-            "Dynamic video does not exist, src:%{public}s",
-            BackupFileUtils::GarbleFilePath(mp4SrcPath, sceneCode).c_str());
-
-        destPos = localPath.find_last_of(".");
-        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "localPath not contain '.'");
-        string mp4TargetPath = localPath.substr(0, destPos) + ".mp4";
-        errCode = BackupFileUtils::MoveFile(mp4SrcPath, mp4TargetPath, sceneCode);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
-            "Move other dynamic moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d,"
-            " errno:%{public}d",
-            BackupFileUtils::GarbleFilePath(mp4SrcPath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(mp4TargetPath, sceneCode).c_str(), errCode, errno);
-        MediaFileUtils::UpdateModifyTimeInMsec(mp4TargetPath, fileInfo.dateModified);
-        return true;
+        return HandleOtherDynamicMovingPhoto(fileInfo, localPath, sceneCode);
     }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
-        string localVideoPath = tmpVideoPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        errCode = BackupFileUtils::MoveFile(fileInfo.movingPhotoVideoPath, localVideoPath, sceneCode);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG(
-                "MoveFile failed for mov video, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
-                BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(),
-                BackupFileUtils::GarbleFilePath(localVideoPath, sceneCode).c_str(), errCode, errno);
-            (void)MediaFileUtils::DeleteFile(localPath);
-            return false;
-        }
-        MediaFileUtils::UpdateModifyTimeInMsec(localVideoPath, fileInfo.dateModified);
-        return MoveExtraData(fileInfo, sceneCode);
+        return HandleLivePhoto(fileInfo, localPath, sceneCode);
     }
     return true;
 }
