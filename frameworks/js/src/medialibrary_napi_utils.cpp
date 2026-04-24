@@ -1568,7 +1568,7 @@ string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataS
         }
         jsonArray.push_back(jsonObject);
     }
-    return jsonArray.dump();
+    return jsonArray.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 string MediaLibraryNapiUtils::ParseColumnNeedCompatible(shared_ptr<DataShare::DataShareResultSet> resultSet,
