@@ -76,8 +76,6 @@ public:
         std::vector<std::string> &fileIdList);
     EXPORT static bool StopProcessConditionCheckForWlanDisconnect();
     EXPORT static bool CanAutoRestoreNetPolicyTaskCondition();
-    EXPORT static void TriggerSwitchCellCheck();
-    EXPORT static bool TriggerNetLimitCheck();
 
     enum BatchDownloadStatus : int32_t {
         INIT = 0,
@@ -191,10 +189,11 @@ private:
     EXPORT static std::unordered_map<std::string, int32_t> downloadFileIdAndCount_;
     // DownloadId-Info 记录在运行任务 即时清理
     EXPORT static std::unordered_map<int64_t, InDownloadingFileInfo> currentDownloadIdFileInfoMap_;
-    
+    static std::mutex stopProcessConditionMutex_;
     static std::atomic<bool> batchDownloadTaskAdded_;
     static std::atomic<bool> downloadLatestFinished_;
     static std::atomic<bool> batchDownloadProcessRunningStatus_;
+    static std::atomic<bool> autoResumeCheckRunning_;
 };
 } // namespace Media
 } // namespace OHOS

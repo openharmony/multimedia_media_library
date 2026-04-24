@@ -50,6 +50,7 @@ public:
     EXPORT static ani_status InitAniAlbumOrderOperator(ani_env *env, AniAlbumOrderOperator &albumOrderOperator);
 
     std::shared_ptr<AlbumOrder> GetAlbumOrderInstance() const;
+    int32_t GetOrderAlbumId() const;
 
 private:
     EXPORT void SetAlbumOrderAniProperties();

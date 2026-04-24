@@ -118,7 +118,7 @@ static int32_t HandleSameNameRename(const int32_t fileId, const std::string targ
     }
     CHECK_AND_RETURN_RET_LOG(dotPos > slashPos,
         E_ERR,
-        "targetPath format error %{public}s, slash: %{public}u, dot: %{public}u",
+        "targetPath format error %{public}s, slash: %{public}zu, dot: %{public}zu",
         DfxUtils::GetSafePath(targetPath).c_str(),
         dotPos,
         slashPos);
@@ -301,7 +301,7 @@ std::vector<MoveAssetsToLakeUpdateData> LakeFileOperations::GetInnerLakeAssets(
     const std::vector<std::string> &ids)
 {
     std::vector<MoveAssetsToLakeUpdateData> innerLakeAssets;
-    MEDIA_INFO_LOG("GetInnerLakeAssetsIds START %{public}u", ids.size());
+    MEDIA_INFO_LOG("GetInnerLakeAssetsIds START %{public}zu", ids.size());
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), innerLakeAssets, "move lake assets ids is empty");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(MediaColumn::MEDIA_ID, ids);
@@ -400,7 +400,7 @@ int32_t LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(
 
 int32_t LakeFileOperations::MoveAssetsToLake(AccurateRefreshBase &refresh, const std::vector<std::string> &ids)
 {
-    MEDIA_INFO_LOG("MoveAssetsToLake enter %{public}u", ids.size());
+    MEDIA_INFO_LOG("MoveAssetsToLake enter %{public}zu", ids.size());
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), E_INVALID_ARGUMENTS, "move asset param error");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(MediaColumn::MEDIA_ID, ids);
@@ -465,7 +465,7 @@ int32_t LakeFileOperations::MoveAssetsFromLake(const std::vector<std::string> &i
 {
     MediaLibraryTracer tracer;
     tracer.Start("LakeFileOperations::MoveAssetsFromLake");
-    MEDIA_INFO_LOG("MoveAssetsFromLake enter %{public}u", ids.size());
+    MEDIA_INFO_LOG("MoveAssetsFromLake enter %{public}zu", ids.size());
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), E_INVALID_ARGUMENTS, "move asset param error");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(MediaColumn::MEDIA_ID, ids);
@@ -519,7 +519,7 @@ static bool IsLakeModify(const std::string& editPath, int64_t editTime)
     }
 
     // 1000ms 5000ms
-    MEDIA_INFO_LOG("RealEditTime:%{public}lld, editTime:%{public}lld", realEditTime, editTime);
+    MEDIA_INFO_LOG("RealEditTime:[%{public}" PRId64 "], editTime:[%{public}" PRId64 "]", realEditTime, editTime);
     const int MILLISECONDS_PER_SECOND = 1000;
     const int FIVE_SECONDS_IN_MILLISECONDS = 5000;
     if (realEditTime - editTime * MILLISECONDS_PER_SECOND >= FIVE_SECONDS_IN_MILLISECONDS) {

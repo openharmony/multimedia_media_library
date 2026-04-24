@@ -40,6 +40,7 @@
 #include "create_asset_vo.h"
 #include "change_request_dismiss_vo.h"
 #include "change_request_set_album_name_vo.h"
+#include "change_request_operate_album_attribute_vo.h"
 #include "change_request_set_cover_uri_vo.h"
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
@@ -47,6 +48,7 @@
 #include "set_subtitle_vo.h"
 #include "set_highlight_user_action_data_vo.h"
 #include "media_upgrade.h"
+#include "analysis_album_attribute_const.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -190,6 +192,26 @@ static int32_t ServicePublicCreateAsset(const std::string &ext, const std::strin
     }
 
     return respVo.GetBody().fileId;
+}
+
+static int32_t ServiceOperateAlbumAttribute(const ChangeRequestOperateAlbumAttributeReqBody &reqBody)
+{
+    MessageParcel data;
+    if (!reqBody.Marshalling(data)) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+        return -1;
+    }
+
+    MessageParcel reply;
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->ChangeRequestOperateAlbumAttribute(data, reply);
+
+    IPC::MediaRespVo<MediaEmptyObjVo> respVo;
+    if (!respVo.Unmarshalling(reply)) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
+        return -1;
+    }
+    return respVo.GetErrCode();
 }
 
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_001, TestSize.Level0)
@@ -583,5 +605,131 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_010, TestSize.
     EXPECT_EQ(errCode, E_OK);
 
     MEDIA_INFO_LOG("End SetAlbumProperty_Test_010");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_InvalidAttr_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_InvalidAttr_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_invalid_attr");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = "invalid_attr";
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { "nick_a" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_InvalidAttr_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_UnsupportedType_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_UnsupportedType_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_unsupported_type");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = { "nick_a" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OPERATION_NOT_SUPPORT);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_UnsupportedType_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_NonPortraitAlbum_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_NonPortraitAlbum_001");
+    int32_t albumId = CreateGroupAlbum("group_album_not_supported");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { "nick_a" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::GROUP_PHOTO);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OPERATION_NOT_SUPPORT);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_NonPortraitAlbum_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyNickName_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyNickName_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_empty_nick_name");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { "" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OK);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyNickName_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyValues_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyValues_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_empty_values");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = {};
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyValues_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_values_exceed_limit");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values.assign(ANALYSIS_ALBUM_MAX_OPERATION_VALUES + 1, "nick_limit");
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_NickNameTooLong_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_NickNameTooLong_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_nick_name_too_long");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { string(ANALYSIS_ALBUM_MAX_VALUE_LENGTH + 1, 'n') };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_NickNameTooLong_001");
 }
 }  // namespace OHOS::Media

@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "analysis_album_operation_data_utils.h"
 #include "ani_error.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
@@ -55,6 +56,8 @@ enum class AlbumChangeOperation {
     DELETE_ASSETS_WITH_URI,
     RESET_COVER_URI,
     SMART_MOVE_ASSET,
+    ADD_NICK_NAME,
+    REMOVE_NICK_NAME,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -92,7 +95,12 @@ public:
     void ClearRecoverAssetArray();
     void ClearDeleteAssetArray();
     void ClearDismissAssetArray();
+    void ClearAddNickNames();
+    void ClearRemoveNickNames();
     void ClearMoveMap();
+    std::vector<std::string> GetAddNickNames() const;
+    std::vector<std::string> GetRemoveNickNames() const;
+    void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     static ani_object GetAlbum(ani_env *env, ani_object object);
     static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,
         ani_string aniName);
@@ -108,6 +116,7 @@ public:
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);
     static ani_status SetCoverUri(ani_env *env, ani_object object, ani_string coverUri);
     static ani_status SetDefaultCoverUri(ani_env *env, ani_object object, ani_string coverUri);
+    static ani_status OperateAttribute(ani_env *env, ani_object object, ani_object operation);
     static ani_status SetIsMe(ani_env *env, ani_object object);
     static ani_status Dismiss(ani_env *env, ani_object object);
     static ani_status ResetCoverUri(ani_env *env, ani_object object);
@@ -137,6 +146,7 @@ private:
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
+    AnalysisAlbumOperationData analysisAlbumOperationData_;
     int32_t userId_;
 };
 

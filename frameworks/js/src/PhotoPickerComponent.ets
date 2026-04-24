@@ -150,6 +150,15 @@ export struct PhotoPickerComponent {
       this.onChangeItemClickResult(data)
       console.info('PhotoPickerComponent onChanged: SET_ITEM_CLICK_RESULT');
     } else {
+      this.handleAnotherOnChanges(data);
+    }
+  }
+
+  private handleAnotherOnChanges(data?: Map<string, Object>) {
+    if (data?.has('COMPLETED')) {
+      this.onComplete(data)
+      console.info('PhotoPickerComponent onChanged: COMPLETED');
+    } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
   }
@@ -167,6 +176,14 @@ export struct PhotoPickerComponent {
       this.proxy.send({ itemClickResult: itemClickResult});
       console.info(`PhotoPickerComponent send itemClickResult ${itemClickResult.length}`);
     }
+  }
+
+  private onComplete(data?: Map<string, Object>) {
+    this.proxy.send({ 
+      completed: data?.get('COMPLETED'),
+      date: data?.get('COMPLETE_DATE')
+ 	  });
+    console.info('PhotoPickerComponent onChanged: COMPLETED');
   }
 
   private onUpdateConfig(data?: Map<string, Object>) {
@@ -333,7 +350,8 @@ export struct PhotoPickerComponent {
             gridPinchMode: this.pickerOptions?.gridPinchMode,
             globalMovingPhotoState: this.pickerOptions?.globalMovingPhotoState,
             showDateOnScrollbar: this.pickerOptions?.showDateOnScrollbar,
-            backgroundOpacity: this.pickerOptions?.backgroundOpacity
+            backgroundOpacity: this.pickerOptions?.backgroundOpacity,
+            contextRecoveryInfo: this.pickerOptions?.contextRecoveryInfo
           }
         },
         {
@@ -412,6 +430,8 @@ export struct PhotoPickerComponent {
       this.handleCreateCallback(wantParam);
     } else if (dataType === 'saveCallback') {
       this.handleSaveCallback(wantParam);
+    } else if (dataType === 'completed') {
+      this.handleCompletedCallback(wantParam);
     } else if (dataType === 'onBadgeConfigSend') {
       this.handleBadgeConfigSend(wantParam)
       console.info('PhotoPickerComponent onReceive: onBadgeConfigSend');
@@ -676,6 +696,13 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: handleSaveCallback');
   }
 
+  private handleCompletedCallback(wantParam: Record<string, Object>): void {
+ 	  this.pickerController.actionCompleteCallback(wantParam['date'] as number,
+ 	    { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['message'] as string },
+ 	    wantParam['data'] as Array<string>, 'data': wantParam['data']);
+ 	  console.info('PhotoPickerComponent onReceive: handleCompletedCallback');
+ 	}
+
   private parseAutoPlayScenes(autoPlayScenes?: Array<photoAccessHelper.AutoPlayScene>): Array<photoAccessHelper.AutoPlayScene> | undefined {
     if (!autoPlayScenes) {
       return undefined;
@@ -879,6 +906,8 @@ export class PickerController {
   saveCallbackPromises: Map<number, Object> = new Map<number, Object>();
   isPhotoBrowserShow: boolean = false;
   isMovingPhotoBadgeShownValid: boolean = false;
+  completedPromises: Map<number, Object> = new Map<number, Object>();
+
   setData(type: DataType, data: Object) {
     if (data === undefined) {
       return;
@@ -965,6 +994,19 @@ export class PickerController {
       this.data = new Map([['SET_MAX_SELECT_COUNT', maxSelected]]);
       console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(maxSelected));
     }
+  }
+  
+  async completed(): Promise<CompletedResult> {
+      return new Promise<CompletedResult>((resolve: (result: CompletedResult) => void, 
+                                           reject: (reason: Error) => void) => {
+        let date: number = Math.random();
+        this.data = new Map<string, Object>([
+          ['COMPLETED', {}], 
+          ['COMPLETE_DATE', date]
+        ]);
+        this.completedPromises.set(date, [resolve, reject]);
+        console.info('PhotoPickerComponent COMPLETED');
+      });
   }
 
   updatePickerOptions(updateConfig: UpdatablePickerConfigs): Promise<void> {
@@ -1121,6 +1163,20 @@ export class PickerController {
     }  
   }
 
+  actionCompleteCallback(date: number, err: Error, data: CompletedResult | undefined): void {
+    if (this.completedPromises.has(date)) {
+      let promiseFunc = this.completedPromises.get(date);
+      if (promiseFunc) {
+        if (data) {
+          promiseFunc[0](data);
+        } else {
+          promiseFunc[1](err);
+        }
+        this.completedPromises.delete(date);
+      }
+    }
+  }
+
   encrypt(data) {
     if (!data || data?.indexOf('file:///data/storage/') !== -1) {
       return '';
@@ -1203,6 +1259,24 @@ export class AnimatorParams {
 
 export class MaxSelected {
   data?: Map<MaxCountType, number>;
+}
+
+export declare class CompletedResult {
+  photoUris: Array<string>;
+  contextRecoveryInfo: ContextRecoveryInfo;
+  movingPhotoBadgeStates: Array<MovingPhotoBadgeStateType>;
+}
+
+export class ContextRecoveryInfo {
+  albumUri: string;
+  time: number;
+  displayName: string;
+  recommendationType: int;
+  selectedRecommendationType: int;
+  version: int;
+  gridLevel?: GridLevel;
+  sortRule?: string;
+  fileSize?: int;
 }
 
 export class SingleLineConfig {

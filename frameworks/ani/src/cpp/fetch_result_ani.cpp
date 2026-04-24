@@ -33,6 +33,9 @@ using CreateFetchFileResultSmartAlbumFn = napi_value (*)(napi_env, TransferUtils
 using GetFetchAlbumResultObjectFn = TransferUtils::TransferSharedPtr (*)(FetchFileResultNapi*);
 using GetFetchFileResultObjectFn = TransferUtils::TransferSharedPtr (*)(FetchFileResultNapi*);
 using GetFetchResTypeFn = FetchResType (*)(FetchFileResultNapi*);
+
+const uint32_t INDEXSET_MAX_SIZE = 500;
+
 ani_status FetchFileResultAni::UserFileMgrInit(ani_env *env)
 {
     return ANI_OK;
@@ -58,6 +61,10 @@ ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"getObjectByPositionSync", nullptr, reinterpret_cast<void *>(GetPositionObject)},
         ani_native_function {"getCount", nullptr, reinterpret_cast<void *>(GetCount)},
         ani_native_function {"close", nullptr, reinterpret_cast<void *>(Close)},
+        ani_native_function {"getObjectsByIndexSetSync", nullptr, reinterpret_cast<void *>(GetObjectsByIndexSet)},
+        ani_native_function {"getIndexSync", nullptr, reinterpret_cast<void *>(GetIndex)},
+        ani_native_function {"containsSync", nullptr, reinterpret_cast<void *>(Contains)},
+        ani_native_function {"getRangeObjectsSync", nullptr, reinterpret_cast<void *>(GetRangeObjects)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
@@ -1180,5 +1187,466 @@ ani_object FetchFileResultAni::TransferToStaticFetchResult(ani_env *env, [[maybe
     CHECK_COND_RET(result != nullptr, nullptr, "result is null");
     return result;
 }
+
+void GetCountFromObject(FetchFileResultAni* obj, int32_t &count)
+{
+    switch (obj->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            count = obj->GetFetchFileResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            count = obj->GetFetchAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            count = obj->GetFetchPhotoAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            count = obj->GetFetchSmartAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_CUSTOMRECORD:
+            count = obj->GetFetchCustomRecordResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUMORDER:
+            count = obj->GetFetchAlbumOrderResultObject()->GetCount();
+            break;
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            count = -1;
+            break;
+    }
+}
+
+static ani_status ProcessIndexSet(ani_env* env, void* data)
+{
+    auto* context = static_cast<FetchFileResultAniContext*>(data);
+    if (context == nullptr) {
+        ANI_ERR_LOG("context is nullptr.");
+        return ANI_ERROR;
+    }
+    if (context->objectInfo == nullptr) {
+        ANI_ERR_LOG("context->objectInfo is nullptr.");
+        return ANI_ERROR;
+    }
+    if (context->indexSet.empty()) {
+        ANI_ERR_LOG("JSGetObjectsByIndexSet indexSet is empty!");
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "indexSet is empty");
+        return ANI_ERROR;
+    }
+    if (context->indexSet.size() > INDEXSET_MAX_SIZE) {
+        ANI_ERR_LOG("JSGetObjectsByIndexSet indexSet.size exceeds INDEXSET_MAX_SIZE");
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "indexSet.size exceeds INDEXSET_MAX_SIZE");
+        return ANI_ERROR;
+    }
+    std::set<int32_t> tempIndexSet(context->indexSet.begin(), context->indexSet.end());
+    int32_t minIndex = *tempIndexSet.begin();
+    int32_t maxIndex = *tempIndexSet.rbegin();
+    int32_t total_count = 0;
+    GetCountFromObject(context->objectInfo, total_count);
+    if (minIndex < 0 || maxIndex >= total_count) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Index exceeds range of objects");
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
+static void GetAssetByIndexSetPart2(std::unique_ptr<FetchFileResultAniContext>& aniContext)
+{
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext->objectInfo, "aniContext->objectInfo is nullptr");
+    std::shared_ptr<FetchResultProperty> propertyPtr = aniContext->objectInfo->GetPropertyPtrInstance();
+    CHECK_NULL_PTR_RETURN_VOID(propertyPtr, "propertyPtr is nullptr");
+
+    ANI_INFO_LOG("fetch result type: %{public}d", propertyPtr->fetchResType_);
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_ALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchAlbumResult_, "fetchAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchAlbumResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto album = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (album != nullptr) {
+                    aniContext->fileAlbumArray.push_back(move(album));
+                }
+            }
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchPhotoAlbumResult_, "fetchPhotoAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchPhotoAlbumResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto photoAlbum = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (photoAlbum != nullptr) {
+                    aniContext->filePhotoAlbumArray.push_back(move(photoAlbum));
+                }
+            }
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchSmartAlbumResult_, "fetchSmartAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchSmartAlbumResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto smartAlbum = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (smartAlbum != nullptr) {
+                    aniContext->fileSmartAlbumArray.push_back(move(smartAlbum));
+                }
+            }
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
+static void GetAssetByIndexSet(std::unique_ptr<FetchFileResultAniContext>& aniContext)
+{
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext->objectInfo, "aniContext->objectInfo is nullptr");
+    std::shared_ptr<FetchResultProperty> propertyPtr = aniContext->objectInfo->GetPropertyPtrInstance();
+    CHECK_NULL_PTR_RETURN_VOID(propertyPtr, "propertyPtr is nullptr");
+
+    ANI_INFO_LOG("fetch result type: %{public}d", propertyPtr->fetchResType_);
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchFileResult_, "fetchFileResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchFileResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto file = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (file != nullptr) {
+                    file->SetUserId(fetchResult->GetUserId());
+                    aniContext->fileAssetArray.push_back(move(file));
+                }
+            }
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchCustomRecordResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto customRecord = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (customRecord != nullptr) {
+                    aniContext->customRecordArray.push_back(move(customRecord));
+                }
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUMORDER: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchAlbumOrderResult_, "fetchAlbumOrderResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchAlbumOrderResult_;
+            for (size_t i = 0; i < aniContext->indexSet.size(); i++) {
+                auto albumOrder = fetchResult->GetObjectAtPosition(aniContext->indexSet[i]);
+                if (albumOrder != nullptr) {
+                    aniContext->fileAlbumOrderArray.push_back(move(albumOrder));
+                }
+            }
+            break;
+        }
+        default:
+            ANI_ERR_LOG("need more check.");
+            GetAssetByIndexSetPart2(aniContext);
+            break;
+    }
+}
+
+ani_object FetchFileResultAni::GetObjectsByIndexSet(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+    ani_object indexSet)
+{
+    ani_object returnObj {};
+    std::vector<int32_t> indexSetArray;
+    CHECK_COND_RET(env != nullptr, returnObj, "env is null");
+    auto aniContext = make_unique<FetchFileResultAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, returnObj, "aniContext is nullptr");
+    aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
+    auto ret = MediaLibraryAniUtils::GetInt32Array(env, indexSet, aniContext->indexSet);
+    CHECK_COND_WITH_RET_MESSAGE(env, ret == ANI_OK, returnObj, "Failed to parse index set");
+    if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        auto status = ProcessIndexSet(env, aniContext.get());
+        CHECK_COND_WITH_RET_MESSAGE(env, status == ANI_OK, returnObj, "ProcessIndexSet failed");
+        aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
+        CHECK_COND_RET(aniContext->objectPtr, returnObj, "propertyPtr is nullptr");
+        GetAssetByIndexSet(aniContext);
+        return GetAllObjectComplete(env, aniContext);
+    } else {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetObjectsByIndexSet obj == nullptr");
+    }
+    return returnObj;
+}
+
+static ani_status GetAssetObject(ani_env *env, std::unique_ptr<FetchFileResultAniContext>& aniContext,
+    ani_object object)
+{
+    CHECK_COND_RET(aniContext, ANI_ERROR, "aniContext is nullptr");
+    CHECK_COND_RET(aniContext->objectInfo, ANI_ERROR, "aniContext->objectInfo is nullptr");
+    ANI_INFO_LOG("fetch result type: %{public}d", aniContext->objectInfo->GetFetchResType());
+    switch (aniContext->objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            aniContext->fileAssetParameter = FileAssetAni::Unwrap(env, object);
+            CHECK_COND_RET(aniContext->fileAssetParameter != nullptr, ANI_ERROR,
+                "Failed to get fileAssetParameter object");
+            aniContext->indexObjectId = aniContext->fileAssetParameter->GetFileId();
+            break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            aniContext->photoAlbumParameter = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+            CHECK_COND_RET(aniContext->photoAlbumParameter != nullptr, ANI_ERROR,
+                "Failed to get photoAlbumParameter object");
+            aniContext->indexObjectId = aniContext->photoAlbumParameter->GetAlbumId();
+            aniContext->albumType = static_cast<int32_t>(aniContext->photoAlbumParameter->GetPhotoAlbumType());
+            aniContext->albumSubType = static_cast<int32_t>(aniContext->photoAlbumParameter->GetPhotoAlbumSubType());
+            break;
+        case FetchResType::TYPE_ALBUMORDER:
+            aniContext->albumOrderParameter = AlbumOrderAni::UnwrapAlbumOrderObject(env, object);
+            CHECK_COND_RET(aniContext->albumOrderParameter != nullptr, ANI_ERROR,
+                "Failed to get albumOrderParameter object");
+            aniContext->indexObjectId = aniContext->albumOrderParameter->GetOrderAlbumId();
+            break;
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
+static void GetIndexCompleteCallback(ani_env *env, unique_ptr<FetchFileResultAniContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, errorObj);
+    }
+}
+
+ani_int FetchFileResultAni::GetIndex(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+    ani_object object)
+{
+    ANI_ERR_LOG("GetIndex Start");
+    ani_int aniInt{};
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    auto aniContext = make_unique<FetchFileResultAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is nullptr");
+    aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
+    if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        auto status = GetAssetObject(env, aniContext, object);
+        CHECK_COND_WITH_RET_MESSAGE(env, status == ANI_OK, ANI_ERROR, "ProcessIndexSet failed");
+        auto ret = MediaLibraryAniUtils::ToAniInt(env, aniContext->indexObjectId, aniInt);
+        CHECK_COND_WITH_RET_MESSAGE(env, ret == ANI_OK, ANI_ERROR, "Failed to parse index set");
+        GetIndexCompleteCallback(env, aniContext);
+        return aniInt;
+    } else {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetIndex obj == nullptr");
+    }
+    return ANI_ERROR;
+}
+
+
+int32_t GetObjectIndexById(ani_env *env, std::unique_ptr<FetchFileResultAniContext>& aniContext)
+{
+    int32_t index = -1;
+    auto objectPtr = aniContext->objectPtr;
+    CHECK_COND_RET(objectPtr != nullptr, index, "objectPtr is nullptr");
+    switch (objectPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            CHECK_COND_RET(objectPtr->fetchFileResult_, index, "fetchFileResult_ is nullptr");
+            index = objectPtr->fetchFileResult_->GetObjectIndexById(aniContext->indexObjectId);
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            CHECK_COND_RET(objectPtr->fetchAlbumResult_, index, "fetchAlbumResult_ is nullptr");
+            index = objectPtr->fetchAlbumResult_->GetObjectIndexById(aniContext->indexObjectId);
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            CHECK_COND_RET(objectPtr->fetchPhotoAlbumResult_, index, "fetchPhotoAlbumResult_ is nullptr");
+            index = objectPtr->fetchPhotoAlbumResult_->GetAlbumIndex(aniContext->indexObjectId,
+                aniContext->albumType, aniContext->albumSubType);
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            CHECK_COND_RET(objectPtr->fetchSmartAlbumResult_, index, "fetchSmartAlbumResult_ is nullptr");
+            index = objectPtr->fetchSmartAlbumResult_->GetObjectIndexById(aniContext->indexObjectId);
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_COND_RET(objectPtr->fetchCustomRecordResult_, index, "fetchCustomRecordResult_ is nullptr");
+            index = objectPtr->fetchCustomRecordResult_->GetObjectIndexById(aniContext->indexObjectId);
+            break;
+        }
+        case FetchResType::TYPE_ALBUMORDER: {
+            CHECK_COND_RET(objectPtr->fetchAlbumOrderResult_, index, "fetchAlbumOrderResult_ is nullptr");
+            index = objectPtr->fetchAlbumOrderResult_->GetObjectIndexById(aniContext->indexObjectId);
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Unsupported FetchResType");
+            break;
+    }
+    return index;
+}
+
+ani_boolean FetchFileResultAni::Contains(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+    ani_object object)
+{
+    ANI_ERR_LOG("GetIndex Start");
+    ani_boolean aniBool{};
+    CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is null");
+    auto aniContext = make_unique<FetchFileResultAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_FALSE, "aniContext is nullptr");
+    aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
+    if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        auto status = GetAssetObject(env, aniContext, object);
+        CHECK_COND_WITH_RET_MESSAGE(env, status == ANI_OK, ANI_FALSE, "ProcessIndexSet failed");
+        aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
+        CHECK_COND_WITH_RET_MESSAGE(env, aniContext->objectPtr, ANI_FALSE, "propertyPtr is nullptr");
+        aniContext->fetchResultIndexId = GetObjectIndexById(env, aniContext);
+        aniBool= aniContext->fetchResultIndexId != -1 ? ANI_TRUE : ANI_FALSE;
+        GetIndexCompleteCallback(env, aniContext);
+        return aniBool;
+    } else {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetIndex obj == nullptr");
+    }
+    return ANI_FALSE;
+}
+
+static void GetObjectsInRangePart2(std::unique_ptr<FetchFileResultAniContext>& aniContext,
+    int32_t index, int32_t offset)
+{
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext->objectInfo, "aniContext->objectInfo is nullptr");
+    auto propertyPtr = aniContext->objectInfo->GetPropertyPtrInstance();
+    CHECK_NULL_PTR_RETURN_VOID(propertyPtr, "propertyPtr is nullptr");
+    ANI_INFO_LOG("GetObjectsInRange type: %{public}d", propertyPtr->fetchResType_);
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_SMARTALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchSmartAlbumResult_, "fetchSmartAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchSmartAlbumResult_;
+            auto smartAlbum = fetchResult->GetObjectAtPosition(index);
+            while (smartAlbum != nullptr && (offset--) > 0) {
+                aniContext->fileSmartAlbumArray.emplace_back(move(smartAlbum));
+                smartAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchCustomRecordResult_;
+            auto customRecord = fetchResult->GetObjectAtPosition(index);
+            while (customRecord != nullptr && (offset--) > 0) {
+                aniContext->customRecordArray.emplace_back(move(customRecord));
+                customRecord = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUMORDER: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchAlbumOrderResult_, "fetchAlbumOrderResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchAlbumOrderResult_;
+            auto albumOrder = fetchResult->GetObjectAtPosition(index);
+            while (albumOrder != nullptr && (offset--) > 0) {
+                aniContext->fileAlbumOrderArray.emplace_back(move(albumOrder));
+                albumOrder = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
+static void GetObjectsInRange(std::unique_ptr<FetchFileResultAniContext>& aniContext, int32_t index, int32_t offset)
+{
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext->objectInfo, "aniContext->objectInfo is nullptr");
+    auto propertyPtr = aniContext->objectInfo->GetPropertyPtrInstance();
+    CHECK_NULL_PTR_RETURN_VOID(propertyPtr, "propertyPtr is nullptr");
+    ANI_INFO_LOG("GetObjectsInRange type: %{public}d", propertyPtr->fetchResType_);
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchFileResult_, "fetchFileResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchFileResult_;
+            auto file = fetchResult->GetObjectAtPosition(index);
+            while (file != nullptr && (offset--) > 0) {
+                file->SetUserId(fetchResult->GetUserId());
+                aniContext->fileAssetArray.emplace_back(move(file));
+                file = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchAlbumResult_, "fetchAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchAlbumResult_;
+            auto album = fetchResult->GetObjectAtPosition(index);
+            while (album != nullptr && (offset--) > 0) {
+                aniContext->fileAlbumArray.emplace_back(move(album));
+                album = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(propertyPtr->fetchPhotoAlbumResult_, "fetchPhotoAlbumResult_ is nullptr");
+            auto fetchResult = propertyPtr->fetchPhotoAlbumResult_;
+            auto photoAlbum = fetchResult->GetObjectAtPosition(index);
+            while (photoAlbum != nullptr && (offset--) > 0) {
+                photoAlbum->SetUserId(fetchResult->GetUserId());
+                aniContext->filePhotoAlbumArray.emplace_back(move(photoAlbum));
+                photoAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        default:
+            GetObjectsInRangePart2(aniContext, index, offset);
+            break;
+    }
+}
+
+ani_object FetchFileResultAni::GetRangeObjects(ani_env *env, ani_object fetchFileResultHandle,
+    ani_int index, ani_int offset)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetRangeObjects");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+
+    auto aniContext = make_unique<FetchFileResultAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, nullptr, "aniContext is nullptr");
+    aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
+
+    if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        int32_t totalCount = 0;
+        switch (aniContext->objectInfo->GetFetchResType()) {
+            case FetchResType::TYPE_FILE:
+                totalCount = aniContext->objectInfo->GetFetchFileResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_ALBUM:
+                totalCount = aniContext->objectInfo->GetFetchAlbumResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_PHOTOALBUM:
+                totalCount = aniContext->objectInfo->GetFetchPhotoAlbumResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_SMARTALBUM:
+                totalCount = aniContext->objectInfo->GetFetchSmartAlbumResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_CUSTOMRECORD:
+                totalCount = aniContext->objectInfo->GetFetchCustomRecordResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_ALBUMORDER:
+                totalCount = aniContext->objectInfo->GetFetchAlbumOrderResultObject()->GetCount();
+                break;
+            default:
+                AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Unsupported FetchResType");
+                return nullptr;
+        }
+        if (index < 0 || offset < 0 || index >= totalCount || (index + offset) > totalCount) {
+            AniError::ThrowError(env, JS_E_PARAM_INVALID, "Index exceeds range of objects");
+            return nullptr;
+        }
+        aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
+        CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
+        GetObjectsInRange(aniContext, index, offset);
+        return GetAllObjectComplete(env, aniContext);
+    } else {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetRangeObjects obj == nullptr");
+    }
+    return nullptr;
+}
+
 
 } // namespace OHOS::Media

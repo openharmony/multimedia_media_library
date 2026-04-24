@@ -209,6 +209,7 @@ struct MediaAssetChangeRequestAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
+    napi_ref objectInfoRef;
     MediaAssetChangeRequestNapi* objectInfo;
     std::vector<AssetChangeOperation> assetChangeOperations;
     std::vector<ResourceType> addResourceTypes;

@@ -1671,6 +1671,10 @@ export namespace photoAccessHelper {
     getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
+    getIndex(object: T): Promise<int>;
+    contains(object: T): Promise<boolean>;
+    getObjectsByIndexSet(indexSet: Array<int>): Promise<Array<T>>;
+    getRangeObjects(index: int, offset: int): Promise<T[]>;
   }
 
   class FetchResultHandle<T> implements FetchResult<T> {
@@ -1953,6 +1957,110 @@ export namespace photoAccessHelper {
       });
     }
 
+    getObjectsByIndexSet(indexSet: Array<int>): Promise<Array<T>> {
+      return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
+        let cb = (): Array<T> | MediaLibraryAniError => {
+        let result: Array<T> | MediaLibraryAniError;
+          try {
+            result = this.getObjectsByIndexSetSync(indexSet);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Array<T>);
+            }
+          }
+        });
+      });
+    }
+
+    getIndex(object: T): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
+          try {
+            result =  this.getIndexSync(object);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as int);
+            }
+          }
+        });
+      });
+    }
+
+    contains(object: T): Promise<boolean> {
+      return new Promise<boolean>((resolve: (v: boolean) => void, reject: RejectString) => {
+        let cb = (): boolean | MediaLibraryAniError => {
+          let result: boolean | MediaLibraryAniError;
+          try {
+            result =  this.containsSync(object);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as boolean);
+            }
+          }
+        });
+      });
+    }
+
+    getRangeObjects(index: int, offset: int): Promise<T[]> {
+      return new Promise<T[]>((resolve: (v: T[]) => void, reject: RejectString) => {
+        let cb = (): T[] | MediaLibraryAniError => {
+          let result: T[] | MediaLibraryAniError;
+          try {
+            result = this.getRangeObjectsSync(index, offset);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as T[]);
+            }
+          }
+        });
+      });
+    }
+
     native close(): void;
 
     native getFirstObjectSync(): T;
@@ -1960,6 +2068,10 @@ export namespace photoAccessHelper {
     native getLastObjectSync(): T;
     native getAllObjectsSync(): Array<T>;
     native getObjectByPositionSync(index: int): T;
+    native getObjectsByIndexSetSync(indexSet: Array<int>): Array<T>;
+    native getIndexSync(object: T): int;
+    native containsSync(object: T): boolean;
+    native getRangeObjectsSync(index: int, offset: int): Array<T>;
   }
 
   export enum AlbumType {
@@ -2521,6 +2633,8 @@ export namespace photoAccessHelper {
     setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void>;
     setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void>;
     getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility>;
+    getAlbumIdByLpath(lpath: string): Promise<int>;
+    getAlbumIdByBundleName(bundleName: string): Promise<int>;
   }
 
   interface AppInfo {
@@ -3883,6 +3997,58 @@ export namespace photoAccessHelper {
       });
     }
 
+    getAlbumIdByLpath(lpath: string): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
+          try {
+            result =  this.getAlbumIdByLpathInner(lpath);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as int);
+            }
+          }
+        });
+      });
+    }
+
+  getAlbumIdByBundleName(bundleName: string): Promise<int> {
+    return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+      let cb = (): int | MediaLibraryAniError => {
+        let result: int | MediaLibraryAniError;
+        try {
+          result = this.getAlbumIdByBundleNameInner(bundleName);
+        } catch(e) {
+          result = e as MediaLibraryAniError;
+        }
+        return result;
+      };
+      taskpool.execute(cb).then((ret: Any): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          reject(businessError<string>(err.code as int, err.message));
+        } else {
+          if (isNullish(ret)) {
+            reject(businessError<string>(-1, "Operation failed"));
+          } else {
+            resolve(ret as int);
+          }
+        }
+      });
+    });
+  }
+
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
       callback: AsyncCallback<void>): int;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -3951,6 +4117,8 @@ export namespace photoAccessHelper {
     native setFileCompatibleConfigSysInner(bundleName: string, config: AssetCompatibleAbility): void;
     native setFileCompatibleConfigInner(config: AssetCompatibleAbility): void;
     native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleAbility;
+    native getAlbumIdByLpathInner(lpath: string): int;
+    native getAlbumIdByBundleNameInner(bundleName: string): int;
   }
 
   export interface AssetCompatibleAbility {
@@ -4455,6 +4623,8 @@ export namespace photoAccessHelper {
 
     native removeAssets(assets: Array<PhotoAsset>): void;
 
+    native operateAttribute(operation: AlbumOperation): void;
+
     private create(context: long): void {
       if (this.nativeHandle == 0) {
         this.nativeHandle = context;
@@ -4479,6 +4649,22 @@ export namespace photoAccessHelper {
 
     native setOrderPosition(assets: Array<PhotoAsset>, position: Array<int>): void;
     native setDefaultCoverUri(uri: string): void;
+  }
+
+  export interface AlbumOperation {
+    attr: AlbumAttribute;
+    type: AlbumOperationType;
+    values: Array<string>;
+  }
+
+  export enum AlbumAttribute {
+    NICK_NAME_ATTR = "nickname",
+  }
+
+  export enum AlbumOperationType {
+    ADD = "add",
+    REMOVE = "remove",
+    UPDATE = "update",
   }
 
   export interface SharedPhotoAsset {

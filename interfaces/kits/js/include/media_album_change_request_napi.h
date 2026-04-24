@@ -17,7 +17,9 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ALBUM_CHANGE_REQUEST_NAPI_H
 
 #include <map>
+#include <vector>
 
+#include "analysis_album_operation_data_utils.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "media_change_request_napi.h"
@@ -53,6 +55,8 @@ enum class AlbumChangeOperation {
     SMART_MOVE_ASSETS,
     CREATE_ANALYSIS_ALBUM,
     SET_DEFAULT_COVER_URI,
+    ADD_NICK_NAME,
+    REMOVE_NICK_NAME,
 };
 
 enum class ParameterType {
@@ -99,8 +103,13 @@ public:
     void ClearRecoverAssetArray();
     void ClearDeleteAssetArray();
     void ClearDismissAssetArray();
+    void ClearAddNickNames();
+    void ClearRemoveNickNames();
     std::string GetRelationship() const;
     int32_t GetIsMe() const;
+    std::vector<std::string> GetAddNickNames() const;
+    std::vector<std::string> GetRemoveNickNames() const;
+    void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 
@@ -140,6 +149,7 @@ private:
     EXPORT static napi_value JSSetOrderPosition(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetUploadStatus(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHighlightAttribute(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOperateAttribute(napi_env env, napi_callback_info info);
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
     EXPORT static napi_value JSCreateAnalysisAlbumRequest(napi_env env, napi_callback_info info);
@@ -163,6 +173,7 @@ private:
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
     std::string relationship_;
+    AnalysisAlbumOperationData analysisAlbumOperationData_;
     int32_t isMe_ = 0;
     std::pair<int32_t, std::string> highlightAlbumChangeAttributePair_;
 };
@@ -174,6 +185,7 @@ struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
+    napi_ref objectInfoRef;
     MediaAlbumChangeRequestNapi* objectInfo;
     std::vector<AlbumChangeOperation> albumChangeOperations;
     DataShare::DataSharePredicates predicates;

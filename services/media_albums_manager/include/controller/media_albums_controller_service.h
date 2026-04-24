@@ -29,6 +29,7 @@ public:
     EXPORT int32_t DeletePhotoAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestOperateAlbumAttribute(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
     int32_t ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AddAssets(MessageParcel &data, MessageParcel &reply);
@@ -65,6 +66,9 @@ public:
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override;
     int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override;
+
+private:
+    static int32_t CheckOperateAttributeThumbDbPermission(int32_t deniedCode);
 };
 } // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ALBUMS_CONTROLLER_SERVICE_H

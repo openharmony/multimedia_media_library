@@ -46,6 +46,10 @@ ohos_unittest("medialibrary_photo_operations_test") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_merge_plan.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_relation_resolver.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_repository.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_service.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/display_name_info.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/height_width_correct_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_album_copy_meta_data_operation.cpp",

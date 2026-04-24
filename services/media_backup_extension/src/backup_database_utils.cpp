@@ -798,6 +798,19 @@ int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rd
     return ExecSqlWithRetry([&]() { return rdbStore->BatchInsert(rowNum, tableName, value); });
 }
 
+int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum,
+    NativeRdb::ConflictResolution conflictResolution)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    return ExecSqlWithRetry([&]() {
+        auto [errCode, insertedNum] = rdbStore->BatchInsert(tableName, NativeRdb::ValuesBuckets(value),
+            conflictResolution);
+        rowNum = insertedNum;
+        return errCode;
+    });
+}
+
 void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<FileIdPair>& fileIdPair)
 {
@@ -1082,9 +1095,33 @@ static std::string CheckSingleTableIntegrity(std::shared_ptr<NativeRdb::RdbStore
     return result;
 }
 
+static std::string CheckDualIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    const std::string querySql = "PRAGMA " + COLUMN_INTEGRITY_CHECK;
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG ("CheckDbIntegrity: Query resultSet is null or GoToFirstRow failed.");
+        return "";
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return "";
+    }
+    std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
+    resultSet->Close();
+    return result;
+}
+
 std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
                                                   const std::string &dbTag)
 {
+    if (sceneCode == UPGRADE_RESTORE_ID || sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        std::string result = CheckDualIntegrity(rdbStore);
+        MEDIA_INFO_LOG("Check db integrity final result for dual: scene=%{public}d, tag=%{public}s, result=%{public}s",
+                       sceneCode, dbTag.c_str(), result.c_str());
+        return result;
+    }
+
     if (!IsBetaVersionCheck()) {
         MEDIA_INFO_LOG("CheckDbIntegrity: Commercial version, skip integrity check, scene=%{public}d, tag=%{public}s",
                        sceneCode, dbTag.c_str());
@@ -1093,13 +1130,6 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
 
     MEDIA_INFO_LOG("CheckDbIntegrity: Beta version, start integrity check for scene=%{public}d, tag=%{public}s",
                    sceneCode, dbTag.c_str());
-
-    if (sceneCode == UPGRADE_RESTORE_ID || sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-        std::string result = CheckSingleTableIntegrity(rdbStore, GALLERY_MEDIA_TABLE_NAME);
-        MEDIA_INFO_LOG("Check db integrity final result: scene=%{public}d, tag=%{public}s, result=%{public}s",
-                       sceneCode, dbTag.c_str(), result.c_str());
-        return result;
-    }
 
     if (sceneCode != CLONE_RESTORE_ID && sceneCode != DEFAULT_RESTORE_ID) {
         MEDIA_INFO_LOG("No need to check db integrity, scene=%{public}d, tag=%{public}s", sceneCode, dbTag.c_str());
