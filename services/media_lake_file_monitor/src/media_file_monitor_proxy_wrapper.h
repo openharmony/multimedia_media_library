@@ -28,7 +28,7 @@ class MediaFileMonitorProxyWrapper {
 public:
     explicit MediaFileMonitorProxyWrapper(uint64_t type)
     {
-        MEDIA_INFO_LOG("enter file monitor proxy wrapper, care type: 0x%{public}" PRIu64 "", type);
+        MEDIA_INFO_LOG("enter file monitor proxy wrapper, care type: 0x%{public}llx", (unsigned long long)type);
         constexpr int32_t tableId = 100000; // media library proxy
         type_ = type;
         fileMonitorProxy_ = FileMonitorWrapper::GetInstance().CreateFileMonitorProxy(tableId);
