@@ -52,7 +52,7 @@ public:
     int32_t RegisterRequest(const std::shared_ptr<FileMonitorService::FileChangeCallback>& callback)
     {
         if (fileMonitorProxy_) {
-            MEDIA_INFO_LOG("file monitor proxy register, type: 0x%{public}" PRIu64 "", type_);
+            MEDIA_INFO_LOG("file monitor proxy register, type: 0x%{public}llx", (unsigned long long)type_);
             return fileMonitorProxy_->RegisteRequest(type_, callback);
         }
 
