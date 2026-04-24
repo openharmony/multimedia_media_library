@@ -21,6 +21,10 @@
 #include "ani_error.h"
 #include "fetch_result.h"
 #include "file_asset.h"
+#include "album_order_ani.h"
+#include "file_asset_ani.h"
+#include "photo_album_ani.h"
+#include "photo_asset_custom_record_ani.h"
 
 typedef struct napi_env__* napi_env;
 typedef struct napi_value__* napi_value;
@@ -54,8 +58,14 @@ public:
     static ani_object GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetLastObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_int index);
+    static ani_object GetRangeObjects(ani_env *env, ani_object fetchFileResultHandle, ani_int index, ani_int offset);
     static ani_int GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
-
+    static ani_object GetObjectsByIndexSet(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+        ani_object indexSet);
+    static ani_int GetIndex(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+        ani_object object);
+    static ani_boolean Contains(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle,
+        ani_object object);
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult);
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<AlbumOrder>> fileResult);
@@ -111,6 +121,11 @@ public:
     std::shared_ptr<FetchResultProperty> objectPtr;
     bool status;
     int32_t position;
+    int32_t indexObjectId = -1;
+    int32_t albumType = -1;
+    int32_t albumSubType = -1;
+    int32_t fetchResultIndexId = -1;
+    std::vector<int32_t> indexSet;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<AlbumAsset> albumAsset;
     std::unique_ptr<PhotoAlbum> photoAlbum;
@@ -123,6 +138,9 @@ public:
     std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
     std::vector<std::unique_ptr<PhotoAssetCustomRecord>> customRecordArray;
     std::vector<std::unique_ptr<AlbumOrder>> fileAlbumOrderArray;
+    FileAssetAni* fileAssetParameter;
+    PhotoAlbumAni* photoAlbumParameter;
+    AlbumOrderAni* albumOrderParameter;
 };
 } // namespace Media
 } // namespace OHOS

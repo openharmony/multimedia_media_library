@@ -328,6 +328,16 @@ int32_t PhotoAlbumAni::GetAlbumId() const
     return photoAlbumPtr->GetAlbumId();
 }
 
+PhotoAlbumType PhotoAlbumAni::GetPhotoAlbumType() const
+{
+    return photoAlbumPtr->GetPhotoAlbumType();
+}
+
+PhotoAlbumSubType PhotoAlbumAni::GetPhotoAlbumSubType() const
+{
+    return photoAlbumPtr->GetPhotoAlbumSubType();
+}
+
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
     DataSharePredicates &predicates, const bool hiddenOnly)
 {

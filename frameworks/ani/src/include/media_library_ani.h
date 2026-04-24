@@ -299,6 +299,8 @@ public:
     static void setFileCompatibleConfigSys(ani_env *env, ani_object object, ani_string bundleName, ani_object config);
     static void SetFileCompatibleConfig(ani_env *env, ani_object object, ani_object config);
     static ani_object GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_string bundleName);
+    static ani_int GetAlbumIdByLpath(ani_env *env, ani_object object, ani_string lpath);
+    static ani_object GetAlbumIdByBundleName(ani_env *env, ani_object object, ani_string bundleName);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
