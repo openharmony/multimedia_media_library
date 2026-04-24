@@ -145,6 +145,12 @@ std::shared_ptr<AlbumOrder> AlbumOrderAni::GetAlbumOrderInstance() const
     return albumOrderPtr;
 }
 
+int32_t AlbumOrderAni::GetOrderAlbumId() const
+{
+    CHECK_COND_RET(albumOrderPtr != nullptr, E_INVALID_ARGUMENTS, "albumOrderPtr is nullptr");
+    return albumOrderPtr->GetAlbumId();
+}
+
 void AlbumOrderAni::SetAlbumOrderAniProperties()
 {
     albumOrderPtr = shared_ptr<AlbumOrder>(pOrderData_);

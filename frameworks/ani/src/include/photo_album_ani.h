@@ -61,6 +61,8 @@ public:
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     bool GetHiddenOnly() const;
     int32_t GetAlbumId() const;
+    PhotoAlbumType GetPhotoAlbumType() const;
+    PhotoAlbumSubType GetPhotoAlbumSubType() const;
 private:
     EXPORT void SetPhotoAlbumAniProperties();
     EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt);
