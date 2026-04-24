@@ -79,6 +79,7 @@
 #include "media_values_bucket_utils.h"
 #include "media_operation_log_column.h"
 #include "media_compatible_info_column.h"
+#include "vision_portrait_nickname_column.h"
 #include "media_library_upgrade_macros.h"
 #include "medialibrary_audio_operations.h"
 #include "photo_day_month_year_operation.h"
@@ -2258,6 +2259,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_NICK_NAME_TABLE,
+    CREATE_ANALYSIS_NICK_NAME_UNIQUE_INDEX,
+    CREATE_ANALYSIS_NICK_NAME_DELETE_TRIGGER,
     CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX,
     CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
     CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX,
@@ -6472,6 +6476,21 @@ static int32_t AddLocalAssetSizeColumn(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_LOCAL_ASSET_SIZE_COLUMN, "Photos", AddLocalAssetSizeColumn);
+
+static int32_t AddPortraitNicknameTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_ANALYSIS_NICK_NAME_TABLE,
+        CREATE_ANALYSIS_NICK_NAME_UNIQUE_INDEX,
+        "DROP TRIGGER IF EXISTS portrait_nickname_delete_trigger",
+        CREATE_ANALYSIS_NICK_NAME_DELETE_TRIGGER,
+    };
+    MEDIA_INFO_LOG("add portrait nickname table starts");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_PORTRAIT_NICKNAME_TABLE);
+    MEDIA_INFO_LOG("add portrait nickname table ends");
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PORTRAIT_NICKNAME_TABLE, "Vision", AddPortraitNicknameTable);
 
 static int32_t CreatePhotosExtTable(RdbStore &store)
 {

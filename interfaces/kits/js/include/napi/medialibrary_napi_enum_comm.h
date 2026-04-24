@@ -373,6 +373,16 @@ const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTI
     std::make_pair("DEFAULT_HIDDEN_ALBUM_URI",  PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI),
 };
 
+const std::vector<std::pair<std::string, std::string>> ALBUM_ATTRIBUTE_ENUM_PROPERTIES = {
+    std::make_pair("NICK_NAME_ATTR", "nickname"),
+};
+
+const std::vector<std::pair<std::string, std::string>> ALBUM_OPERATION_TYPE_ENUM_PROPERTIES = {
+    std::make_pair("ADD", "add"),
+    std::make_pair("REMOVE", "remove"),
+    std::make_pair("UPDATE", "update"),
+};
+
 const std::map<std::string, std::pair<std::string, int32_t>> LOCATION_PARAM_MAP = {
     { START_LATITUDE, { LATITUDE, DataShare::GREATER_THAN_OR_EQUAL_TO } },
     { END_LATITUDE, { LATITUDE, DataShare::LESS_THAN } },

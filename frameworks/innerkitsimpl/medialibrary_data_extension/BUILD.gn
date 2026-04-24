@@ -142,6 +142,7 @@ config("media_data_extension_public_config") {
 
   include_media_albums_manager = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/attribute",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
@@ -225,6 +226,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/photo_album_operation",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/attribute/nickname",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_ROOT_SERVICES_PATH}/media_mtp_service/include",
@@ -653,7 +655,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_compress_asset_size_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/compatible_info_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_photo_uri_permission_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/reserve_photo_uri_permission_vo.cpp", 
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/reserve_photo_uri_permission_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -674,6 +676,8 @@ ohos_shared_library("medialibrary_data_extension") {
   media_albums_manager_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/media_albums_rdb_operations.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/media_albums_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/attribute/analysis_album_attribute_dispatcher.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/attribute/portrait_nickname_handler.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/controller/media_albums_controller_service.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/controller/media_albums_permission_policy.cpp",
   ]
@@ -682,6 +686,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_album_name_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_operate_album_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_cover_uri_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_add_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_remove_assets_vo.cpp",
@@ -712,6 +717,7 @@ ohos_shared_library("medialibrary_data_extension") {
   media_albums_manager_dto_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/set_highlight_user_action_data_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_set_album_name_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_operate_album_attribute_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_set_cover_uri_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_commit_modify_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_add_assets_dto.cpp",
@@ -905,6 +911,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_audio_operations.cpp",
     "src/medialibrary_bundle_manager.cpp",
     "src/medialibrary_command.cpp",
+    "src/attribute/nickname/portrait_nickname_merge_plan.cpp",
+    "src/attribute/nickname/portrait_nickname_relation_resolver.cpp",
+    "src/attribute/nickname/portrait_nickname_repository.cpp",
+    "src/attribute/nickname/portrait_nickname_service.cpp",
     "src/medialibrary_critical_photo_operations.cpp",
     "src/medialibrary_data_manager.cpp",
     "src/medialibrary_data_manager_utils.cpp",

@@ -37,7 +37,7 @@ enum class PreferredCompatibleMode {
 
 struct CompatibleInfo {
     std::string bundleName;
-    bool highResolution = false;
+    int32_t highResolution = -1;
     std::vector<std::string> encodings;
     PreferredCompatibleMode preferredCompatibleMode = PreferredCompatibleMode::DEFAULT;
 };

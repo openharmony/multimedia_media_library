@@ -88,6 +88,8 @@ public:
         std::shared_ptr<TransactionOperations> trans, AccurateRefresh::AlbumAccurateRefresh *albumRefresh = nullptr);
     static int32_t SetAlbumName(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
+    static int32_t OperatePortraitAlbumNickName(
+        const std::string &albumId, const std::string &operation, const std::vector<std::string> &nickNames);
     static int32_t SetHighlightAlbumName(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t HandleSetAlbumNameRequest(const NativeRdb::ValuesBucket &values,
@@ -124,7 +126,6 @@ public:
     static int32_t UpdatePhotoAlbumOrder(const vector<NativeRdb::ValuesBucket> &valuesBuckets,
         const vector<NativeRdb::RdbPredicates> &predicatesArray);
     static int32_t CreatePortraitAlbum(const string &albumName);
-
     // ReuseId: if > 0, try to reuse the deleted album id; Otherwise query for an existing id;
     // Gatekeep that no duplicate lpath will be created.
     // Returns the created album id, or negative value if failed.

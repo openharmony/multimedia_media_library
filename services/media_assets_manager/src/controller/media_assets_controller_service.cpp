@@ -1353,7 +1353,7 @@ int32_t MediaAssetsControllerService::GetAssets(
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
+        uint64_t tokenId = static_cast<uint64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1361,7 +1361,7 @@ int32_t MediaAssetsControllerService::GetAssets(
         dto.tokenId = tokenId;
         passCode = E_PERMISSION_DB_BYPASS;
     } else if (context.GetByPassCode() == E_DOUBLE_CHECK) {
-        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
+        uint64_t tokenId = static_cast<uint64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1401,7 +1401,7 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
+        uint64_t tokenId = static_cast<uint64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
@@ -1409,7 +1409,7 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
         dto.tokenId = tokenId;
         passCode = E_PERMISSION_DB_BYPASS;
     } else if (context.GetByPassCode() == E_DOUBLE_CHECK) {
-        int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
+        uint64_t tokenId = static_cast<uint64_t>(IPCSkeleton::GetCallingFullTokenID());
         if (tokenId == 0) {
             MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);

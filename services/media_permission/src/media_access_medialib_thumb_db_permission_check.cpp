@@ -19,12 +19,10 @@
 using namespace std;
 
 namespace OHOS::Media {
-const std::string ACCESS_MEDIALIB_THUMB_DB_PERMISSION = "ohos.permission.ACCESS_MEDIALIB_THUMB_DB";
-
 int32_t AccessMedialibThumbDbPermissionCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("AccessMedialibThumbDbPermissionCheck enter, API code=%{public}d", businessCode);
-    CHECK_AND_RETURN_RET_LOG(PermissionUtils::CheckCallerPermission(ACCESS_MEDIALIB_THUMB_DB_PERMISSION),
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::CheckCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB),
         E_PERMISSION_DENIED, "AccessMedialibThumbDb permission denied!");
     return E_SUCCESS;
 }

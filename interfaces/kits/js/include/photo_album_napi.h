@@ -150,8 +150,8 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
-    PhotoAlbumNapi *objectInfo;
     napi_ref objectInfoRef;
+    PhotoAlbumNapi *objectInfo;
     std::vector<FusionAssetsInfo> fusionAssetInfos;
 };
 } // namespace Media

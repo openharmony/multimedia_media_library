@@ -759,11 +759,10 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
 
     string clientBundle;
     MediaLibraryBundleManager::GetInstance()->GetBundleNameByTokenId(dto.tokenId, clientBundle);
-    MEDIA_ERR_LOG("clientBundle %{public}s", clientBundle.c_str());
-    if (!PermissionUtils::IsSystemAppBycache(dto.tokenId) &&
+    if (!dto.columns.empty() && !PermissionUtils::IsSystemAppBycache(dto.tokenId) &&
         !HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(clientBundle, HighPixelType::PIXEL_200) &&
         !IsSupportHighResolution(clientBundle)) {
-        MEDIA_ERR_LOG("CanSupportedHighPixelPicture");
+        MEDIA_INFO_LOG("CanSupportedHighPixelPicture");
         dto.columns.push_back(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE);
     }
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, dto.columns);
@@ -903,9 +902,10 @@ int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &tit
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
+    int32_t rowId = MediaLibraryPhotoOperations::Update(cmd);
+    CHECK_AND_RETURN_RET_LOG(rowId > 0, rowId, "MediaLibraryPhotoOperations::Update failed");
     UpdateExistedTasksTitle(fileId);
-    return ret;
+    return E_OK;
 }
 
 int32_t MediaAssetsService::SetAssetPending(int32_t fileId, int32_t pending)
@@ -2168,8 +2168,8 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
 
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution =
-        compatibleInfo.highResolution ? compatibleInfo.highResolution :
-        HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200);
+        compatibleInfo.highResolution != -1 ? compatibleInfo.highResolution : (PermissionUtils::IsSystemApp() ? true :
+        HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200));
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;
 }
