@@ -373,7 +373,7 @@ static bool CheckOperateAttributePermissionForCall(napi_env env)
         return false;
     }
     if (!CheckAlbumChangeRequestCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB)) {
-        NapiError::ThrowError(env, E_PERMISSION_DENIED,
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE,
             "Permission denied : ohos.permission.ACCESS_MEDIALIB_THUMB_DB required.");
         return false;
     }
