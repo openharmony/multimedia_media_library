@@ -27,7 +27,8 @@ namespace Media {
 class MediaChangeEffect {
 public:
     static int32_t TakeEffect(const string &inputPath, const string &outputPath, string &editdata, int32_t quality);
-    static int32_t TakeEffectForPicture(std::shared_ptr<Media::Picture> &inPicture, string &editdata);
+    static int32_t TakeEffectForPicture(std::shared_ptr<Media::Picture> &inPicture,
+        string &editdata, int32_t quality);
     static int32_t TakeEffectRevert(const string &inputPath, const string &outputPath, string &editdata);
 };
  
