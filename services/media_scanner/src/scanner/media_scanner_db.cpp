@@ -294,6 +294,9 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
         HandleMovingPhoto(metadata, values);
     }
+    if (metadata.GetLocalAssetSize() != 0) {
+        values.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, metadata.GetLocalAssetSize());
+    }
     MEDIA_INFO_LOG("MediaScannerDb height: %{public}d, width: %{public}d.",
         metadata.GetFileHeight(), metadata.GetFileWidth());
 }
@@ -313,9 +316,6 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     values.PutLong(MediaColumn::MEDIA_SIZE, metadata.GetFileSize());
-    if (metadata.GetLocalAssetSize() != 0) {
-        values.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, metadata.GetLocalAssetSize());
-    }
     if (metadata.GetFileDateModified() != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
     }
