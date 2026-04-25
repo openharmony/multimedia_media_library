@@ -3657,7 +3657,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
         SYSTEM_ALBUMS, shouldNotify);
 }
 
-void MediaLibraryRdbUtils::AnalyzePhotosData()
+bool MediaLibraryRdbUtils::AnalyzePhotosData()
 {
     shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "can not get rdb store, failed to analyze photos data");
@@ -3669,6 +3669,7 @@ void MediaLibraryRdbUtils::AnalyzePhotosData()
     ret = rdbStore->ExecuteSql(analyzeImageFaceSql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Failed to execute sql, analyze tab_analysis_image_face data failed");
     MEDIA_INFO_LOG("end analyze photos tab_analysis_image_face data");
+    return true;
 }
 
 int32_t MediaLibraryRdbUtils::GetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
