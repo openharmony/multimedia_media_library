@@ -717,6 +717,15 @@ void GetThumbnailPixelMapPreStep(ThumbnailData& data, ThumbRdbOpt &opts, Thumbna
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, data.id, data, err);
 }
 
+static int32_t ReopenLocalFd(const std::string &absFilePath, int32_t fd)
+{
+    close(fd);
+    fd = open(absFilePath.c_str(), O_RDONLY);
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, -errno,
+        "failed to reopen path: %{public}s", DfxUtils::GetSafePath(absFilePath).c_str());
+    return fd;
+}
+
 int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
     GetThumbnailPixelMapPreStep(data, opts, thumbType);
@@ -760,7 +769,8 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
         CacheStreamReadThumbDbStatus(opts, data, thumbType);
         ReGenerateAstc(opts, data, thumbType);
         MediaLibraryPhotoOperations::StoreThumbnailInfoAsync({ {data.id, data.path, thumbType == ThumbnailType::LCD} });
-        return fd;
+        // 流读场景，需要关闭云fd，并重新打开本地fd，防止文件stat大小与实际大小不一致
+        return ReopenLocalFd(absFilePath, fd);
     }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE &&
         !MediaLibraryBundleManager::GetInstance()->GetClientBundleName().empty()) {
