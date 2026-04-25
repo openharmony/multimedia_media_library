@@ -122,7 +122,7 @@ int32_t AnalysisLcdAgingDao::QueryAgingLcdDataByFileIds(const std::vector<int64_
             AND P.clean_flag = 0 \
             AND P.time_pending = 0 \
             AND P.is_temp = 0 \
-            AND P.position IN (2, 3) \
+            AND P.position = 2 \
             AND P.is_favorite = 0 \
             AND (P.thumb_status & 1) = 0 \
             AND AF.file_id IS NULL";
