@@ -3661,11 +3661,14 @@ bool MediaLibraryRdbUtils::AnalyzePhotosData()
 {
     shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "can not get rdb store, failed to analyze photos data");
-    const string analyzeSql = "ANALYZE " + PhotoColumn::PHOTOS_TABLE;
-    MEDIA_INFO_LOG("start analyze photos data");
-    int32_t ret = rdbStore->ExecuteSql(analyzeSql);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to execute sql, analyze photos data failed");
-    MEDIA_INFO_LOG("end analyze photos data");
+    const string analyzePhotosSql = "ANALYZE " + PhotoColumn::PHOTOS_TABLE;
+    const string analyzeImageFaceSql = "ANALYZE tab_analysis_image_face";
+    MEDIA_INFO_LOG("start analyze photos and tab_analysis_image_face data");
+    int32_t ret = rdbStore->ExecuteSql(analyzePhotosSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Failed to execute sql, analyze photos data failed");
+    ret = rdbStore->ExecuteSql(analyzeImageFaceSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Failed to execute sql, analyze tab_analysis_image_face data failed");
+    MEDIA_INFO_LOG("end analyze photos tab_analysis_image_face data");
     return true;
 }
 
