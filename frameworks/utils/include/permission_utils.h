@@ -22,6 +22,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <safe_map.h>
 
 #include "bundle_mgr_interface.h"
 #include "userfile_manager_types.h"
@@ -148,7 +149,7 @@ private:
     static std::mutex uninstallMutex_;
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
-    static std::unordered_set<uint64_t> systemAppCache_;
+    static SafeMap<uint64_t, bool> systemAppCache_;
     static void DelayTaskInit();
     static std::vector<Security::AccessToken::AddPermParamInfo> GetPermissionRecord();
     static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,
