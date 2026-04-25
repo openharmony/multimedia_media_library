@@ -1040,6 +1040,8 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
     return regex_search(str, express);
 }
 
+static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
+
 int32_t MediaFileUtils::CheckTitle(const string &title)
 {
     if (title.empty()) {
@@ -1244,13 +1246,7 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
         MEDIA_ERR_LOG("Album name string size check failed: %{public}d, size is %{public}zu", err, albumName.length());
         return err;
     }
-
-    static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(albumName, ALBUM_NAME_REGEX)) {
-        MEDIA_ERR_LOG("Failed to check album name regex: %{private}s", albumName.c_str());
-        return -EINVAL;
-    }
-    return E_OK;
+    return CheckAlbumNameCharacter(albumName);
 }
 
 int32_t MediaFileUtils::CheckAppLink(const string &link)
@@ -1278,10 +1274,13 @@ int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
     size_t size = highlightSubtitle.length();
     CHECK_AND_RETURN_RET_LOG(size <= DISPLAYNAME_MAX, -ENAMETOOLONG,
         "Highlight subtitle string size check failed: size is %{public}zu", highlightSubtitle.length());
+    return CheckAlbumNameCharacter(highlightSubtitle);
+}
 
-    static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
-    CHECK_AND_RETURN_RET_LOG(!RegexCheck(highlightSubtitle, ALBUM_NAME_REGEX), -EINVAL,
-        "Failed to check album name regex: %{private}s", highlightSubtitle.c_str());
+int32_t MediaFileUtils::CheckAlbumNameCharacter(const string &albumName)
+{
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(albumName, ALBUM_NAME_REGEX), -EINVAL,
+        "Failed to check album name regex: %{private}s", albumName.c_str());
     return E_OK;
 }
 

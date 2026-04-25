@@ -29,13 +29,17 @@
 
 #include "user_define_ipc_client.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_mock_tocken.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
+#include "permission_utils.h"
 #include "result_set_utils.h"
+#include "analysis_album_attribute_request_utils.h"
 #include "vision_db_sqls.h"
 #include "story_db_sqls.h"
 #include "vision_db_sqls_more.h"
+#include "vision_portrait_nickname_column.h"
 #include "create_album_vo.h"
 #include "create_asset_vo.h"
 #include "change_request_dismiss_vo.h"
@@ -49,12 +53,17 @@
 #include "set_highlight_user_action_data_vo.h"
 #include "media_upgrade.h"
 #include "analysis_album_attribute_const.h"
+#include "get_self_permissions.h"
+#include "medialibrary_client_errno.h"
+#include "accesstoken_kit.h"
+#include "token_setproc.h"
 
 namespace OHOS::Media {
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 using namespace IPC;
+using namespace OHOS::Security::AccessToken;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
@@ -63,6 +72,8 @@ static std::vector<std::string> createTableSqlLists = {
     PhotoUpgrade::CREATE_PHOTO_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_ANALYSIS_NICK_NAME_TABLE,
+    CREATE_ANALYSIS_NICK_NAME_UNIQUE_INDEX,
     CREATE_HIGHLIGHT_ALBUM_TABLE,
 };
 
@@ -71,12 +82,28 @@ static std::vector<std::string> testTables = {
     PhotoColumn::PHOTOS_TABLE,
     ANALYSIS_ALBUM_TABLE,
     ANALYSIS_PHOTO_MAP_TABLE,
+    ANALYSIS_NICK_NAME_TABLE,
     HIGHLIGHT_ALBUM_TABLE,
+};
+
+class SelfTokenGuard {
+public:
+    SelfTokenGuard() : tokenId_(GetSelfTokenID()) {}
+    ~SelfTokenGuard()
+    {
+        EXPECT_EQ(0, SetSelfTokenID(tokenId_));
+        EXPECT_EQ(RET_SUCCESS, AccessTokenKit::ReloadNativeTokenInfo());
+    }
+
+private:
+    uint64_t tokenId_;
 };
 
 void ChangeRequestSetAlbumPropertyTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+    EXPECT_EQ(MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(),
+        PERM_ACCESS_MEDIALIB_THUMB_DB, 0), E_OK);
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
@@ -697,6 +724,24 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_E
     MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyValues_001");
 }
 
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyValuesClient_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyValuesClient_001");
+    AnalysisAlbumOperation operation { ANALYSIS_ALBUM_ATTR_NICK_NAME, ANALYSIS_ALBUM_OP_ADD, {} };
+    int32_t errorCode = E_OK;
+    bool result = CheckAnalysisAlbumOperationOrThrow(operation,
+        [&errorCode]() {
+            errorCode = JS_E_PARAM_INVALID;
+        },
+        [&errorCode]() {
+            errorCode = E_OPERATION_NOT_SUPPORT;
+        });
+
+    EXPECT_FALSE(result);
+    EXPECT_EQ(errorCode, JS_E_PARAM_INVALID);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyValuesClient_001");
+}
+
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_ValuesExceedLimit_001");
@@ -731,5 +776,49 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_N
 
     EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
     MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_NickNameTooLong_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_InvalidNickNameCharacter_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_InvalidNickNameCharacter_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_invalid_nick_name_character");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { "nick/name" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_InvalidNickNameCharacter_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_DbPermissionDenied_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_DbPermissionDenied_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_db_permission_denied");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_NICK_NAME;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { "nick_a" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    SelfTokenGuard tokenGuard;
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("OperateAttributeDbPermissionDenied",
+        { PERM_WRITE_IMAGEVIDEO }, tokenId);
+    ASSERT_NE(tokenId, 0);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), JS_INNER_FAIL);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_DbPermissionDenied_001");
 }
 }  // namespace OHOS::Media

@@ -55,9 +55,7 @@ template<typename RequestBody>
 inline bool PrepareAnalysisAlbumOperationReqBody(const std::shared_ptr<PhotoAlbum> &photoAlbum,
     const AnalysisAlbumOperation &operation, RequestBody &reqBody)
 {
-    if (photoAlbum == nullptr || operation.values.empty()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(photoAlbum != nullptr && !operation.values.empty(), false);
     reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
     reqBody.attr = operation.attr;
     reqBody.type = operation.type;
@@ -70,6 +68,11 @@ inline bool PrepareAnalysisAlbumOperationReqBody(const std::shared_ptr<PhotoAlbu
 inline int32_t CheckAnalysisAlbumOperation(const AnalysisAlbumOperation &operation)
 {
     return CheckAnalysisAlbumOperation(operation.attr, operation.type, operation.values);
+}
+
+inline int32_t CheckAnalysisAlbumOperationWithClientNoOpGuard(const AnalysisAlbumOperation &operation)
+{
+    return CheckAnalysisAlbumOperationWithClientNoOpGuard(operation.attr, operation.type, operation.values);
 }
 
 template<typename ParseStringProperty, typename ParseArrayProperty>
@@ -85,23 +88,17 @@ template<typename ThrowInvalid, typename ThrowUnsupported>
 inline void ThrowAnalysisAlbumOperationCheckError(int32_t checkResult, ThrowInvalid throwInvalid,
     ThrowUnsupported throwUnsupported)
 {
-    if (checkResult == E_INVALID_VALUES) {
-        throwInvalid();
-        return;
-    }
-    throwUnsupported();
+    checkResult == E_INVALID_VALUES ? throwInvalid() : throwUnsupported();
 }
 
 template<typename ThrowInvalid, typename ThrowUnsupported>
 inline bool CheckAnalysisAlbumOperationOrThrow(const AnalysisAlbumOperation &operation, ThrowInvalid throwInvalid,
     ThrowUnsupported throwUnsupported)
 {
-    int32_t checkResult = CheckAnalysisAlbumOperation(operation);
-    if (checkResult == E_OK) {
-        return true;
-    }
-    ThrowAnalysisAlbumOperationCheckError(checkResult, throwInvalid, throwUnsupported);
-    return false;
+    int32_t checkResult = CheckAnalysisAlbumOperationWithClientNoOpGuard(operation);
+    CHECK_AND_RETURN_RET(checkResult == E_OK, (ThrowAnalysisAlbumOperationCheckError(checkResult,
+        throwInvalid, throwUnsupported), false));
+    return true;
 }
 
 } // namespace OHOS::Media
