@@ -2101,7 +2101,7 @@ string MediaLibraryAniUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataSh
         }
         jsonArray.push_back(jsonObject);
     }
-    return jsonArray.dump();
+    return jsonArray.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 string MediaLibraryAniUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
