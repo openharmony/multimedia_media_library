@@ -32,12 +32,16 @@ int32_t ParseInt(Effect::ErrorCode input)
 }
 #endif
 
-int32_t MediaChangeEffect::TakeEffectRevert(const string &inputPath, const string &outputPath, string &editdata)
+int32_t MediaChangeEffect::TakeEffectRevert(const string &inputPath, const string &outputPath,
+    string &editdata, int32_t quality)
 {
 #ifdef IMAGE_EFFECT_SUPPORT
     Effect::ErrorCode ret = Effect::ErrorCode::ERR_UNKNOWN;
     std::shared_ptr<Effect::ImageEffect> imageEffect = std::make_shared<Effect::ImageEffect>();
     CHECK_AND_RETURN_RET(imageEffect != nullptr, ParseInt(ret));
+
+    ret = imageEffect->SetDefaultQuality(quality);
+    CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
 
     ret = imageEffect->SetInputPath(inputPath);
     CHECK_AND_RETURN_RET(ret == Effect::ErrorCode::SUCCESS, ParseInt(ret));
