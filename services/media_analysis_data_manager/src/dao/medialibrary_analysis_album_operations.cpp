@@ -235,6 +235,11 @@ static void UpdateGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &updateA
     }
 }
 
+static bool IsValidPortraitAlbumIsRemovedValue(const string &value)
+{
+    return value == "0" || value == "1";
+}
+
 static string GetGroupPhotoAlbumSql()
 {
     string innerJoinAnalysisAlbum = "INNER JOIN " + ANALYSIS_ALBUM_TABLE + " AA ON F." +
@@ -735,6 +740,37 @@ int32_t MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(const Values
         NotifyGroupAlbum(changeAlbumIds);
     }
     return err;
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::SetPortraitAlbumIsRemoved(const string &albumId, const string &value)
+{
+    CHECK_AND_RETURN_RET_LOG(!albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(albumId),
+        E_INVALID_VALUES, "target album id not exists");
+    CHECK_AND_RETURN_RET_LOG(IsValidPortraitAlbumIsRemovedValue(value), E_INVALID_VALUES,
+        "portrait album is_removed value is invalid");
+
+    std::string queryPortraitAlbumsSql = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED +
+        ", " + ALBUM_TYPE + ", " + ALBUM_SUBTYPE + ", " + COUNT + ", " + GROUP_TAG + ", " + ALBUM_NAME +
+        " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + albumId + ") AND " + ALBUM_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT));
+    std::string updatePortraitAlbumIsRemoved = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_REMOVED +
+        " = " + value + " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + albumId + ") AND " + ALBUM_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT));
+
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    std::vector<NativeRdb::ValueObject> bindArgs;
+    int32_t ret = albumRefresh.Init(queryPortraitAlbumsSql, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SetPortraitAlbumIsRemoved init failed");
+    ret = albumRefresh.ExecuteSql(updatePortraitAlbumIsRemoved, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SetPortraitAlbumIsRemoved execute sql failed");
+    albumRefresh.Notify();
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_INNER_FAIL, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    return E_OK;
 }
 
 int32_t MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(const OperationType &opType,

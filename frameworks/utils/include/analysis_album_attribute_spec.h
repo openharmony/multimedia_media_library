@@ -25,17 +25,33 @@ namespace OHOS::Media {
 struct AnalysisAlbumAttributeSpec {
     std::string attr;
     std::vector<std::string> supportedTypes;
+    size_t maxValueCount;
+    bool isSpecialValue;
+    std::vector<std::string> supportedValues;
 };
 
 inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_NICK_NAME_SPEC = {
     ANALYSIS_ALBUM_ATTR_NICK_NAME,
     { ANALYSIS_ALBUM_OP_ADD, ANALYSIS_ALBUM_OP_REMOVE },
+    ANALYSIS_ALBUM_MAX_OPERATION_VALUES,
+    false,
+    {},
+};
+
+inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_IS_REMOVED_SPEC = {
+    ANALYSIS_ALBUM_ATTR_IS_REMOVED,
+    { ANALYSIS_ALBUM_OP_UPDATE },
+    1,
+    true,
+    { "0", "1" },
 };
 
 inline const AnalysisAlbumAttributeSpec *FindAnalysisAlbumAttributeSpec(const std::string &attr)
 {
     if (attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
         return &ANALYSIS_ALBUM_NICK_NAME_SPEC;
+    } else if (attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
+        return &ANALYSIS_ALBUM_IS_REMOVED_SPEC;
     }
     return nullptr;
 }

@@ -273,11 +273,13 @@ static int32_t AddSeed()
     if (!file) {
         MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
         delete[] seedData;
+        seedData = nullptr;
         return Media::E_ERR;
     }
     file.write(seedData, OHOS::SEED_SIZE);
     file.close();
     delete[] seedData;
+    seedData = nullptr;
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }

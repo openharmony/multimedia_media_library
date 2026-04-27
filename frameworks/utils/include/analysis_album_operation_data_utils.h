@@ -26,6 +26,9 @@ namespace OHOS::Media {
 struct AnalysisAlbumOperationData {
     std::vector<std::string> addNickNames;
     std::vector<std::string> removeNickNames;
+    std::string attr;
+    std::string type;
+    std::vector<std::string> values;
 };
 } // namespace OHOS::Media
 

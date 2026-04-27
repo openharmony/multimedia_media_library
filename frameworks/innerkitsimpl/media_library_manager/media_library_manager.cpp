@@ -152,6 +152,16 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
     return outUri;
 }
 
+std::vector<std::string> MediaLibraryManager::GetSupportedPhotoFormats(PhotoType photoType)
+{
+    int32_t mediaType = static_cast<int32_t>(photoType);
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_ERR_LOG("Invalid mediaType: %{public}d", mediaType);
+        return {};
+    }
+    return MediaFileUtils::GetAllTypes(mediaType);
+}
+
 static bool CheckUri(string &uri)
 {
     if (uri.find("../") != string::npos) {
@@ -701,11 +711,6 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
         " imageInfo size: %{public}d * %{public}d", size.width, size.height,
         imageInfo.size.width, imageInfo.size.height);
 
-    // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
-    // And then make the pixelmap subject to PurgeableManager's control.
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, imageSource, decodeOpts, size);
-#endif
     return pixelMap;
 }
 

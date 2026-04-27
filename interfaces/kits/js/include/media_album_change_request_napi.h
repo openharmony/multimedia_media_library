@@ -19,6 +19,7 @@
 #include <map>
 #include <vector>
 
+#include "analysis_album_attribute_request_utils.h"
 #include "analysis_album_operation_data_utils.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
@@ -57,6 +58,7 @@ enum class AlbumChangeOperation {
     SET_DEFAULT_COVER_URI,
     ADD_NICK_NAME,
     REMOVE_NICK_NAME,
+    UPDATE_IS_REMOVED,
 };
 
 enum class ParameterType {
@@ -109,6 +111,10 @@ public:
     int32_t GetIsMe() const;
     std::vector<std::string> GetAddNickNames() const;
     std::vector<std::string> GetRemoveNickNames() const;
+    std::string GetOperationDataAttr() const;
+    std::string GetOperationDataType() const;
+    std::vector<std::string> GetOperationDataValues() const;
+    void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
     void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;

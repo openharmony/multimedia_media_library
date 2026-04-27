@@ -20,7 +20,6 @@
 using namespace std;
 using namespace testing::ext;
 static constexpr int32_t SIZE_NUM_BIG = 30;
-static constexpr int32_t SIZE_NUM_SMALL = 16;
 
 namespace OHOS {
 namespace Media {
@@ -28,22 +27,16 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_parser_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectPropValueData setObjectPropValueData(context);
-    vector<uint8_t> buffer;
+    vector<uint8_t> buffer(SIZE_NUM_BIG, 0b00);
     auto mtpStorageManager = MtpStorageManager::GetInstance();
     auto storage = make_shared<Storage>();
     mtpStorageManager->AddStorage(storage);
     int ret = setObjectPropValueData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
-    for (int i = 0; i < SIZE_NUM_SMALL; i++)
-    {
-        buffer.push_back(0);
-    }
+    EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
     ret = setObjectPropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_OBJECTPROP_NOT_SUPPORTED_CODE);
-    buffer.push_back((uint8_t)0x02);
-    buffer.push_back((uint8_t)0xDC);
-    buffer.push_back(0);
-    buffer.push_back(0);
+    buffer.at(MTP_CONTAINER_HEADER_SIZE + sizeof(uint32_t)) = static_cast<uint8_t>(0x02);
+    buffer.at(MTP_CONTAINER_HEADER_SIZE + sizeof(uint32_t) + sizeof(uint8_t)) = static_cast<uint8_t>(0xDC);
     ret = setObjectPropValueData.Parser(buffer, 24);
     EXPECT_EQ(ret, MTP_SUCCESS);
     mtpStorageManager->RemoveStorage(storage);

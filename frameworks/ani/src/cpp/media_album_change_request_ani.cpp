@@ -411,6 +411,16 @@ void MediaAlbumChangeRequestAni::SetNickNameOperationData(const string &type, co
         type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
 }
 
+void MediaAlbumChangeRequestAni::SetIsRemovedOperationData(AnalysisAlbumOperation &operation)
+{
+    analysisAlbumOperationData_.attr = operation.attr;
+    analysisAlbumOperationData_.type = operation.type;
+    analysisAlbumOperationData_.values = operation.values;
+    AnalysisAlbumOperationDataUtils::RemoveChangeOperation(albumChangeOperations_,
+        AlbumChangeOperation::UPDATE_IS_REMOVED);
+    albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_IS_REMOVED);
+}
+
 ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object object, ani_object operation)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
@@ -451,7 +461,13 @@ ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object
         return ANI_OK;
     }
 
-    aniContext->objectInfo->SetNickNameOperationData(analysisOperation.type, analysisOperation.values);
+    if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
+        aniContext->objectInfo->SetNickNameOperationData(analysisOperation.type, analysisOperation.values);
+    } else if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
+        aniContext->objectInfo->SetIsRemovedOperationData(analysisOperation);
+    } else {
+        ANI_ERR_LOG("Unsupported operateAttribute attr: %{public}s", analysisOperation.attr.c_str());
+    }
     return ANI_OK;
 }
 
@@ -1102,6 +1118,21 @@ vector<string> MediaAlbumChangeRequestAni::GetRemoveNickNames() const
     return analysisAlbumOperationData_.removeNickNames;
 }
 
+string MediaAlbumChangeRequestAni::GetOperationDataAttr() const
+{
+    return analysisAlbumOperationData_.attr;
+}
+
+string MediaAlbumChangeRequestAni::GetOperationDataType() const
+{
+    return analysisAlbumOperationData_.type;
+}
+
+vector<string> MediaAlbumChangeRequestAni::GetOperationDataValues() const
+{
+    return analysisAlbumOperationData_.values;
+}
+
 map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChangeRequestAni::GetMoveMap() const
 {
     return moveMap_;
@@ -1599,25 +1630,25 @@ static bool SetAlbumNameExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
-static bool ExecuteNickNameOperation(MediaAlbumChangeRequestContext& context, const string &operationType,
-    const vector<string> &nickNames)
+static bool ExecuteOperateAttributeOperation(MediaAlbumChangeRequestContext& context,
+    const string &attr, const string &operationType, const vector<string> &values)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
 
-    AnalysisAlbumOperation operation { ANALYSIS_ALBUM_ATTR_NICK_NAME, operationType, nickNames };
+    AnalysisAlbumOperation operation { attr, operationType, values };
     ChangeRequestOperateAlbumAttributeReqBody reqBody;
     CHECK_COND_RET(PrepareAnalysisAlbumOperationReqBody(photoAlbum, operation, reqBody), false,
-        "failed to prepare nick name operation request");
+        "failed to prepare operate attribute operation request");
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_OPERATE_ALBUM_ATTRIBUTE);
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
-        ANI_ERR_LOG("Failed to execute nick name operation, type: %{public}s, err: %{public}d",
-            operationType.c_str(), changedRows);
+        ANI_ERR_LOG("Failed to execute operate attribute operation, attr: %{public}s type: %{public}s, err: "
+            "%{public}d", attr.c_str(), operationType.c_str(), changedRows);
         return false;
     }
     return true;
@@ -1627,14 +1658,24 @@ static bool AddNickNameExecute(MediaAlbumChangeRequestContext& context)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
-    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
+    return ExecuteOperateAttributeOperation(context, ANALYSIS_ALBUM_ATTR_NICK_NAME,
+        ANALYSIS_ALBUM_OP_ADD, changeRequest->GetAddNickNames());
 }
 
 static bool RemoveNickNameExecute(MediaAlbumChangeRequestContext& context)
 {
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
-    return ExecuteNickNameOperation(context, ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+    return ExecuteOperateAttributeOperation(context, ANALYSIS_ALBUM_ATTR_NICK_NAME,
+        ANALYSIS_ALBUM_OP_REMOVE, changeRequest->GetRemoveNickNames());
+}
+
+static bool UpdateIsRemovedExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteOperateAttributeOperation(context, changeRequest->GetOperationDataAttr(),
+        changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
 }
 
 static bool SetCoverUriExecute(MediaAlbumChangeRequestContext& context)
@@ -1751,6 +1792,7 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::SET_IS_ME, SetIsMeExecute },
     { AlbumChangeOperation::ADD_NICK_NAME, AddNickNameExecute },
     { AlbumChangeOperation::REMOVE_NICK_NAME, RemoveNickNameExecute },
+    { AlbumChangeOperation::UPDATE_IS_REMOVED, UpdateIsRemovedExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
 };
@@ -1856,6 +1898,7 @@ static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeReque
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
                    changeOperation == AlbumChangeOperation::ADD_NICK_NAME ||
                    changeOperation == AlbumChangeOperation::REMOVE_NICK_NAME ||
+                   changeOperation == AlbumChangeOperation::UPDATE_IS_REMOVED ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
                    changeOperation == AlbumChangeOperation::RESET_COVER_URI) {

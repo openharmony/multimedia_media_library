@@ -49,7 +49,6 @@
 #include "query_albums_vo.h"
 #include "query_albums_dto.h"
 #include "permission_common.h"
-#include "media_cloud_permission_check.h"
 #include "get_albums_by_ids_vo.h"
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
@@ -809,6 +808,7 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     AlbumGetAssetsDto dto = AlbumGetAssetsDto::Create(reqBody);
+    int32_t passCode = E_SUCCESS;
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
         string clientAppId = GetClientAppId();
         if (clientAppId.empty()) {
@@ -817,10 +817,11 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
         }
         dto.predicates.And()->EqualTo("owner_appid", clientAppId);
     } else {
-        CloudReadPermissionCheck::AddCloudAssetFilter(dto.predicates);
+        MEDIA_DEBUG_LOG("AlbumGetAssets by read permission");
+        passCode = E_READ_CLOUD_PERMISSION_CHECK;
     }
 
-    auto resultSet = MediaAlbumsService::GetInstance().AlbumGetAssets(dto);
+    auto resultSet = MediaAlbumsService::GetInstance().AlbumGetAssets(dto, passCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);

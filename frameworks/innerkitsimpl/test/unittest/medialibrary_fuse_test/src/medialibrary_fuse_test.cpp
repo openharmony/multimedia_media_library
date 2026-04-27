@@ -1154,9 +1154,8 @@ HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_001, TestSize.Le
 
     int resultFd = -1;
     int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
-    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_001 doOpenErr: %{public}d", doOpenErr);
+    EXPECT_NE(doOpenErr, E_OK);
 
-    SetTables();
     MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_001");
 }
 
@@ -1180,9 +1179,8 @@ HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_002, TestSize.Le
 
     int resultFd = -1;
     int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
-    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_002 doOpenErr: %{public}d", doOpenErr);
+    EXPECT_NE(doOpenErr, E_OK);
 
-    SetTables();
     MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_002");
 }
 
@@ -1206,9 +1204,8 @@ HWTEST_F(MediaLibraryFuseTest, FUSE_CloudAssetWithPosition_Test_003, TestSize.Le
 
     int resultFd = -1;
     int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
-    MEDIA_INFO_LOG("FUSE_CloudAssetWithPosition_Test_003 doOpenErr: %{public}d", doOpenErr);
+    EXPECT_NE(doOpenErr, E_OK);
 
-    SetTables();
     MEDIA_INFO_LOG("End FUSE_CloudAssetWithPosition_Test_003");
 }
 
@@ -1220,7 +1217,7 @@ HWTEST_F(MediaLibraryFuseTest, FUSE_CheckCloudPermission_Test_001, TestSize.Leve
     fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = true;
 
     bool result = PermissionUtils::CheckCloudPermission();
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
 
     MEDIA_INFO_LOG("End FUSE_CheckCloudPermission_Test_001");
 }

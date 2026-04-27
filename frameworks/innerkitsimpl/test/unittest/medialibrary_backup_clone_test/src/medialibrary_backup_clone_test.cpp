@@ -61,7 +61,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
+const int32_t OTHER_DYNAMIC_VIDEO_TYPE = 14;
 void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Start Init");
@@ -2766,6 +2766,30 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.MOV";
     othersClone->IsIosMovingPhotoVideo(fileInfo, I_PHONE_CLONE_RESTORE);
     EXPECT_EQ(fileInfo.otherSubtype, I_PHONE_DYNAMIC_VIDEO_TYPE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_004");
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.jpg";
+    bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
+    EXPECT_FALSE(isDynamicVideo);
+    EXPECT_EQ(fileInfo.subtype, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005");
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.mp4";
+    bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
+    EXPECT_TRUE(isDynamicVideo);
+    EXPECT_EQ(fileInfo.otherSubtype, OTHER_DYNAMIC_VIDEO_TYPE);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_001, TestSize.Level2)

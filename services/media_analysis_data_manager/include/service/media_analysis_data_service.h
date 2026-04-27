@@ -33,6 +33,7 @@
 #include "get_analysis_process_vo.h"
 #include "analysis_data_album_dao.h"
 #include "query_result_vo.h"
+#include "photo_album.h"
 #include "get_highlight_album_info_vo.h"
 #include "set_highlight_user_action_data_dto.h"
 #include "change_request_dismiss_assets_dto.h"
@@ -69,7 +70,7 @@ public:
     int32_t DismissAssets(ChangeRequestDismissAssetsDto &dismissAssetsDto);
     int32_t MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto);
     int32_t PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto);
-    int32_t ChangeRequestDismiss(int32_t albumId);
+    int32_t ChangeRequestDismiss(int32_t albumId, PhotoAlbumSubType albumSubtype);
     int32_t ChangeRequestSetDefaultCoverUri(const ChangeRequestSetDefaultCoverUriDto& dto);
     int32_t CreateAnalysisAlbum(CreateAnalysisAlbumDto &dto, CreateAnalysisAlbumRespBody &respBody);
     int32_t PrepareLcd(const std::vector<int64_t> &fileIds, uint32_t netBearerBitmap,

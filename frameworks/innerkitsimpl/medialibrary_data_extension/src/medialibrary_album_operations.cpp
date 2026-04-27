@@ -50,6 +50,7 @@
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"
+#include "portrait_is_removed_service.h"
 #include "asset_accurate_refresh.h"
 #include "portrait_nickname_merge_plan.h"
 #include "portrait_nickname_service.h"
@@ -3703,6 +3704,14 @@ int32_t MediaLibraryAlbumOperations::OperatePortraitAlbumNickName(
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     return PortraitNickNameService::Operate(albumId, operation, nickNames, rdbStore);
+}
+
+int32_t MediaLibraryAlbumOperations::OperatePortraitAlbumIsRemoved(
+    const string &albumId, const string &value)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    return PortraitIsRemovedService::Operate(albumId, value, rdbStore);
 }
 
 static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
