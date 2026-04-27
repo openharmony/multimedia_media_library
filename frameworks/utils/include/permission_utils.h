@@ -22,6 +22,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <safe_map.h>
 
 #include "bundle_mgr_interface.h"
 #include "userfile_manager_types.h"
@@ -99,7 +100,7 @@ public:
     static uint32_t GetTokenId();
     static bool IsBetaVersion();
     static bool IsSystemApp();
-    static bool IsSystemAppBycache(const uint64_t tokenId);
+    static bool IsSystemAppByCache(const uint64_t tokenId);
     static bool IsNativeSAApp();
     static bool IsRootShell();
     static bool IsHdcShell();
@@ -130,6 +131,7 @@ public:
     static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
     static bool GetTokenCallerForUid(const int &uid, Security::AccessToken::AccessTokenID &tokenCaller);
     static bool CheckCloudPermission();
+    static bool IsSystemAppByBundleName(const std::string &bundleName);
 
 private:
     static std::vector<Security::AccessToken::AddPermParamInfo> infos_;
@@ -148,7 +150,7 @@ private:
     static std::mutex uninstallMutex_;
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
-    static std::unordered_set<uint64_t> systemAppCache_;
+    static SafeMap<uint64_t, bool> systemAppCache_;
     static void DelayTaskInit();
     static std::vector<Security::AccessToken::AddPermParamInfo> GetPermissionRecord();
     static void CollectPermissionRecord(const Security::AccessToken::AccessTokenID &token, const std::string &perm,

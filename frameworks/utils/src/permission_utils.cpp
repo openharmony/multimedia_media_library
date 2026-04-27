@@ -48,7 +48,7 @@ const int32_t HDC_SHELL_UID = 2000;
 std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
-std::unordered_set<uint64_t> PermissionUtils::systemAppCache_ = {};
+SafeMap<uint64_t, bool> PermissionUtils::systemAppCache_;
 
 vector<AddPermParamInfo> PermissionUtils::infos_ {};
 vector<OpenPermissionInfo> PermissionUtils::pendingOpenPermissionInfos_ {};
@@ -751,21 +751,22 @@ bool PermissionUtils::IsBetaVersion()
     return versionType == "beta";
 }
 
-bool PermissionUtils::IsSystemAppBycache(const uint64_t tokenId)
+bool PermissionUtils::IsSystemAppByCache(const uint64_t tokenId)
 {
-    if (systemAppCache_.find(tokenId) != systemAppCache_.end()) {
-        return true;
-    } else if (TokenIdKit::IsSystemAppByFullTokenID(tokenId)) {
-        systemAppCache_.insert(tokenId);
-        return true;
+    bool isSystemApp = false;
+    if (systemAppCache_.Find(tokenId, isSystemApp)) {
+        return isSystemApp;
+    } else {
+        isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+        systemAppCache_.EnsureInsert(tokenId, isSystemApp);
+        return isSystemApp;
     }
-    return false;
 }
 
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-    return IsSystemAppBycache(tokenId);
+    return IsSystemAppByCache(tokenId);
 }
 
 bool PermissionUtils::CheckIsSystemAppByUid()
@@ -840,6 +841,24 @@ bool PermissionUtils::SetEPolicy()
     int ret = Security::AccessToken::El5FilekeyManagerKit::SetFilePathPolicy();
     CHECK_AND_RETURN_RET_LOG(ret == 0, false, "SetEPolicy fail of %{public}d", ret);
     return true;
+}
+
+bool PermissionUtils::IsSystemAppByBundleName(const std::string &bundleName)
+{
+    AppExecFwk::BundleInfo bundleInfo;
+    auto bundleMgr = GetSysBundleManager();
+    if (bundleMgr == nullptr) {
+        return false;
+    }
+    ErrCode state = bundleMgr->GetBundleInfoV9(
+        bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
+        bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
+    if (state != 0) {
+        MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
+        return false;
+    }
+    AccessTokenID tokenId = bundleInfo.applicationInfo.accessTokenId;
+    return IsSystemAppByCache(tokenId);
 }
 }  // namespace Media
 }  // namespace OHOS
