@@ -29,6 +29,7 @@ ohos_unittest("PortraitAlbumUpdateTest") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/is_removed/portrait_is_removed_service.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_merge_plan.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_relation_resolver.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/attribute/nickname/portrait_nickname_repository.cpp",

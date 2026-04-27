@@ -90,6 +90,7 @@ public:
         const DataShare::DataSharePredicates &predicates);
     static int32_t OperatePortraitAlbumNickName(
         const std::string &albumId, const std::string &operation, const std::vector<std::string> &nickNames);
+    static int32_t OperatePortraitAlbumIsRemoved(const string &albumId, const string &value);
     static int32_t SetHighlightAlbumName(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t HandleSetAlbumNameRequest(const NativeRdb::ValuesBucket &values,
