@@ -78,7 +78,7 @@ const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/rest
 const std::string I_PHONE_IMAGE_FILE_PATH = "/storage/media/local/files/.backup/restore/";
 const std::string I_PHONE_DYNAMIC_IMAGE = "_DYNAMIC";
 const std::string I_PHONE_DYNAMIC_VIDEO = "_DYNAMIC.MOV";
-const std::string OTHER_DYNAMIC_IMAGE = "_DYNAMIC.jpg";
+const std::string OTHER_DYNAMIC_IMAGE = "_DYNAMIC";
 const std::string OTHER_DYNAMIC_VIDEO = "_DYNAMIC.mp4";
 const std::string I_PHONE_VIDEO_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
@@ -1159,6 +1159,30 @@ size_t GetIosMovingPhotoSize(const std::string iosMovingPhotoImagePath)
     return (videoSize == 0) ? 0 : imageSize + videoSize + EXTRADATA_LEN;
 }
 
+static bool IsOtherDynamicVideoExist(const std::string &imagePath)
+{
+    size_t destPos = imagePath.find_last_of(".");
+    CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "imagePath not contain '.'");
+    std::string videoPath = imagePath.substr(0, destPos) + ".mp4";
+    size_t videoSize = 0;
+    (void)MediaFileUtils::GetFileSize(videoPath, videoSize);
+    return videoSize > 0;
+}
+
+static bool IsOtherDynamicImageExist(const std::string &videoPath)
+{
+    size_t destPos = videoPath.find_last_of(".");
+    CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "videoPath not contain '.'");
+    const std::string imagePathPrefix = videoPath.substr(0, destPos);
+    static const char *imageExtList[] = {".jpg", ".heic", ".JPG", ".HEIC"};
+    for (const char *ext : imageExtList) {
+        if (MediaFileUtils::IsFileExists(imagePathPrefix + ext)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 size_t GetOtherDynamicMovingPhotoSize(const std::string imagePath)
 {
     size_t destPos = imagePath.find_last_of(".");
@@ -1189,11 +1213,11 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
 
     if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
         const std::string filePath = fileInfo.filePath;
-        if (filePath.find(OTHER_DYNAMIC_VIDEO) != string::npos) {
+        if (filePath.find(OTHER_DYNAMIC_VIDEO) != string::npos && IsOtherDynamicImageExist(fileInfo.filePath)) {
             fileInfo.otherSubtype = OTHER_DYNAMIC_VIDEO_TYPE;
             return true;
         }
-        if (filePath.find(OTHER_DYNAMIC_IMAGE) != string::npos) {
+        if (filePath.find(OTHER_DYNAMIC_IMAGE) != string::npos && IsOtherDynamicVideoExist(fileInfo.filePath)) {
             fileInfo.subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
             fileInfo.fileSize = static_cast<int64_t>(GetOtherDynamicMovingPhotoSize(fileInfo.filePath));
         }
