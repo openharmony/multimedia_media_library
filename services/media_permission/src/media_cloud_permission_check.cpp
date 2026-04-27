@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "media_app_uri_permission_column.h"
 #include "media_log.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
@@ -35,7 +36,7 @@ int32_t CloudReadPermissionCheck::CheckPermission(uint32_t businessCode, const P
 
 int32_t CloudReadPermissionCheck::CheckPureCloudAssets(const std::string &fileId)
 {
-    CHECK_AND_RETURN_RET(PermissionUtils::CheckCloudPermission(), E_SUCCESS);
+    CHECK_AND_RETURN_RET(!PermissionUtils::CheckCloudPermission(), E_SUCCESS);
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
     vector<string> columns{PhotoColumn::PHOTO_POSITION};
@@ -50,14 +51,25 @@ int32_t CloudReadPermissionCheck::CheckPureCloudAssets(const std::string &fileId
     return E_SUCCESS;
 }
 
-void CloudReadPermissionCheck::AddCloudAssetFilter(DataShare::DataSharePredicates &predicates)
+void CloudReadPermissionCheck::AddCloudAssetFilter(NativeRdb::RdbPredicates &predicates)
 {
-    if (!PermissionUtils::CheckCloudPermission()) {
+    if (PermissionUtils::CheckCloudPermission()) {
         return;
     }
-    std::vector<std::string> positions{to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)),
-        to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD))};
-    predicates.And()->In(PhotoColumn::PHOTO_POSITION, positions);
+
+    string condition = predicates.GetWhereClause();
+    int64_t tokenId = static_cast<int64_t>(IPCSkeleton::GetCallingFullTokenID());
+    const string clause = " (" + PhotoColumn::PHOTO_POSITION + " IN (1, 3) OR EXISTS (SELECT 1 FROM " +
+                          AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + " WHERE " +
+                          AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." + AppUriPermissionColumn::FILE_ID +
+                          " = " + PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " AND " +
+                          AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+                          AppUriPermissionColumn::TARGET_TOKENID + " = " + to_string(tokenId) + " AND " +
+                          AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+                          AppUriPermissionColumn::PERMISSION_TYPE + " IN (0, 1, 2, 3, 4)))";
+    condition = condition.empty() ? clause : " (" + condition + ") AND " + clause;
+    predicates.SetWhereClause(condition);
+
     MEDIA_WARN_LOG("No READ_CLOUD_IMAGEVIDEO permission, filter pure cloud assets");
 }
 

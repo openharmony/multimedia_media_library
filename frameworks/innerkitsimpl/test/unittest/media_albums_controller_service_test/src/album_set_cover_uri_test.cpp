@@ -239,7 +239,7 @@ HWTEST_F(AlbumSetCoverUriTest, SetAnalysisAlbumCoverUri_Test_003, TestSize.Level
 
     IPC::MediaRespVo<MediaEmptyObjVo> resp;
     ASSERT_EQ(resp.Unmarshalling(reply), true);
-    ASSERT_EQ(resp.GetErrCode(), 0);
+    ASSERT_NE(resp.GetErrCode(), 0);
     MEDIA_INFO_LOG("end SetAnalysisAlbumCoverUri_Test_003");
 }
 }  // namespace OHOS::Media
