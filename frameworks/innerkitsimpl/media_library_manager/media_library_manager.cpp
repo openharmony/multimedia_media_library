@@ -701,11 +701,6 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
         " imageInfo size: %{public}d * %{public}d", size.width, size.height,
         imageInfo.size.width, imageInfo.size.height);
 
-    // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
-    // And then make the pixelmap subject to PurgeableManager's control.
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, imageSource, decodeOpts, size);
-#endif
     return pixelMap;
 }
 
