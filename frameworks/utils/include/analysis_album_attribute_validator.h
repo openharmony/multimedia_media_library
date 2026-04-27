@@ -90,7 +90,7 @@ inline int32_t CheckAnalysisAlbumOperationSupport(const std::string &attr, const
     const AnalysisAlbumAttributeSpec *spec = FindAnalysisAlbumAttributeSpec(attr);
     CHECK_AND_RETURN_RET(spec != nullptr, E_INVALID_VALUES);
     CHECK_AND_RETURN_RET(IsSupportedAnalysisAlbumOperationType(*spec, type), E_OPERATION_NOT_SUPPORT);
-    CHECK_AND_RETURN_RET(IsSupportedAnalysisAlbumOperationValues(*spec, type), E_OPERATION_NOT_SUPPORT);
+    CHECK_AND_RETURN_RET(IsSupportedAnalysisAlbumOperationValues(*spec, values), E_OPERATION_NOT_SUPPORT);
     return E_OK;
 }
 
