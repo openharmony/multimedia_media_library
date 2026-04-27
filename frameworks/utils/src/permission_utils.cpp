@@ -846,7 +846,11 @@ bool PermissionUtils::SetEPolicy()
 bool PermissionUtils::IsSystemAppByBundleName(const std::string &bundleName)
 {
     AppExecFwk::BundleInfo bundleInfo;
-    ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+    auto bundleMgr = GetSysBundleManager();
+    if (bundleMgr == nullptr) {
+        return false;
+    }
+    ErrCode state = bundleMgr->GetBundleInfoV9(
         bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
         bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
     if (state != 0) {
