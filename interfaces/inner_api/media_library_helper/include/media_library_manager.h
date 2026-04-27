@@ -22,6 +22,7 @@
 #include "pixel_map.h"
 #include "unique_fd.h"
 #include "media_library_extend_manager.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -90,6 +91,14 @@ public:
      * @version 1.0
      */
     EXPORT string CreateAsset(const string &displayName);
+
+    /**
+     * @brief Query supported file extensions for photo asset creation by photo type.
+     *
+     * @param photoType input photo type, supports PHOTOTYPE_IMAGE and PHOTOTYPE_VIDEO only
+     * @return supported extension list, empty when photoType is invalid
+     */
+    EXPORT std::vector<std::string> GetSupportedPhotoFormats(PhotoType photoType);
 
     /**
      * @brief open photo or video

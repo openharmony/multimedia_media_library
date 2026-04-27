@@ -152,6 +152,16 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
     return outUri;
 }
 
+std::vector<std::string> MediaLibraryManager::GetSupportedPhotoFormats(PhotoType photoType)
+{
+    int32_t mediaType = static_cast<int32_t>(photoType);
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_ERR_LOG("Invalid mediaType: %{public}d", mediaType);
+        return {};
+    }
+    return MediaFileUtils::GetAllTypes(mediaType);
+}
+
 static bool CheckUri(string &uri)
 {
     if (uri.find("../") != string::npos) {
