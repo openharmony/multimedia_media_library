@@ -669,9 +669,9 @@ bool PermissionUtils::CheckCloudPermission()
 {
     AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
     auto ret = AccessTokenKit::VerifyAccessToken(tokenCaller, CLOUD_READ_ALL_PHOTO_PERMISSION);
-    CHECK_AND_RETURN_RET(ret != PermissionState::PERMISSION_GRANTED, false);
+    CHECK_AND_RETURN_RET(ret != PermissionState::PERMISSION_GRANTED, true);
     ret = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_CLOUD_IMAGEVIDEO);
-    return ret != PermissionState::PERMISSION_GRANTED;
+    return ret == PermissionState::PERMISSION_GRANTED;
 }
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)

@@ -309,6 +309,7 @@ export struct PhotoPickerComponent {
             isEditSupported: false,
             recommendationOptions: this.pickerOptions?.recommendationOptions as photoAccessHelper.RecommendationOptions,
             assetCompatibleCapability: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.assetCompatibleCapability,
+            preferredCompatibleMode: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.preferredCompatibleMode,
             preselectedUri: this.pickerOptions?.preselectedUris as Array<string>,
             isFromPickerView: true,
             isNeedActionBar: false,

@@ -31,6 +31,8 @@
 namespace OHOS {
 namespace Media {
 
+struct AnalysisAlbumOperation;
+
 class AlbumHandle {
 };
 
@@ -58,6 +60,7 @@ enum class AlbumChangeOperation {
     SMART_MOVE_ASSET,
     ADD_NICK_NAME,
     REMOVE_NICK_NAME,
+    UPDATE_IS_REMOVED,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -100,7 +103,11 @@ public:
     void ClearMoveMap();
     std::vector<std::string> GetAddNickNames() const;
     std::vector<std::string> GetRemoveNickNames() const;
+    std::string GetOperationDataAttr() const;
+    std::string GetOperationDataType() const;
+    std::vector<std::string> GetOperationDataValues() const;
     void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
+    void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
     static ani_object GetAlbum(ani_env *env, ani_object object);
     static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,
         ani_string aniName);

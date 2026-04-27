@@ -42,7 +42,9 @@ const ERROR_MSG_OHOS_NO_PERMISSION = 'Permission denied';
 const PARAMETERS_VALIDATE_FAILED_MESSAGE = 
 'Scene parameters validate failed, possible causes:' +
 '  1. An invalid enumeration value was passed. Only MOVING_PHOTO_ENABLE and' +
-'  MOVING_PHOTO_DISABLE are supported for configuration;';
+'  MOVING_PHOTO_DISABLE are supported for globalMovingPhotoState;' +
+'  2. The elements of the array can only be \'image/heic\' or \'image/jpeg\',' +
+'  and the array length cannot be zero or greater than two for suppoertedMimeType';
 
 const PARAMETERS_VALIDATE_FAILED_CODE = 23800151;
 
@@ -953,6 +955,13 @@ const OperationType = {
   NOT_BETWEEN : 14
 }
 
+const ValidSupportedMimeType = {
+  
+  JPEG: 'image/jpeg',
+  
+  HEIF: 'image/heic'
+}
+
 const PickerFilterPhotoKeys = {
   
   URI: 'uri',
@@ -1010,6 +1019,12 @@ const SingleSelectionMode = {
   BROWSER_MODE: 0,
   SELECT_MODE: 1,
   BROWSER_AND_SELECT_MODE: 2,
+};
+
+const PreferredCompatibleMode = {
+  DEFAULT: 0,
+  CURRENT: 1,
+  COMPATIBLE: 2,
 };
 
 const SceneType = {
@@ -1123,6 +1138,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
     config.parameters.recommendationOptions = option.recommendationOptions;
     config.parameters.assetCompatibleCapability = option.assetCompatibleCapability;
+    config.parameters.preferredCompatibleMode = option.preferredCompatibleMode;
     config.parameters.preselectedUris = option.preselectedUris;
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
     config.parameters.singleSelectionMode = option.singleSelectionMode;
@@ -1217,6 +1233,26 @@ function checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState) {
     globalMovingPhotoState === MovingPhotoBadgeStateType.MOVING_PHOTO_DISABLED);
 }
 
+function checkAssetCompatibleCapabilityInvalid(assetCompatibleCapability) {
+  if (assetCompatibleCapability.supportedMimeType === undefined) {
+    return false;
+  }
+  let supportedMimeType = assetCompatibleCapability.supportedMimeType;
+  if (supportedMimeType.length === 0 || supportedMimeType.length > 2) {
+    return true;
+  }
+
+  const validSupportedMimeTypes = Object.values(ValidSupportedMimeType);
+
+  for (let i = 0; i < supportedMimeType.length; i++) {
+    if (!validSupportedMimeTypes.includes(supportedMimeType[i])) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function getPhotoPickerSelectResult(args) {
   let selectResult = {
     error: undefined,
@@ -1272,6 +1308,15 @@ async function photoPickerSelect(...args) {
     let isGlobalMovingPhotoStateInvalid = checkGlobalMovingPhotoStateInvalid(globalMovingPhotoState);
     if (isGlobalMovingPhotoStateInvalid) {
       console.error('[picker] config: globalMovingPhotoState has value but invalid');
+      throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
+    }
+  }
+  
+  let assetCompatibleCapability = config.parameters.assetCompatibleCapability;
+  if (assetCompatibleCapability !== undefined) {
+    let isAssetCompatibleCapabilityInvalid = checkAssetCompatibleCapabilityInvalid(assetCompatibleCapability);
+    if (isAssetCompatibleCapabilityInvalid) {
+      console.error('[picker] config: assetCompatibleCapability has value but invalid');
       throw new BusinessError(PARAMETERS_VALIDATE_FAILED_MESSAGE, PARAMETERS_VALIDATE_FAILED_CODE);
     }
   }
@@ -1500,6 +1545,7 @@ export default {
   RecommendationType: RecommendationType,
   RecommendationOptions: RecommendationOptions,
   AssetCompatibleCapability: AssetCompatibleCapability,
+  PreferredCompatibleMode: PreferredCompatibleMode,
   ResourceType: photoAccessHelper.ResourceType,
   MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
   MediaAssetChangeRequest: MediaAssetChangeRequest,
