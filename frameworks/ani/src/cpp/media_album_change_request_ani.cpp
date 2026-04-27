@@ -78,7 +78,7 @@ static bool CheckOperateAttributePermissionForCall(ani_env *env)
         return false;
     }
     if (!CheckAniCallerPermission(PERM_ACCESS_MEDIALIB_THUMB_DB)) {
-        AniError::ThrowError(env, E_PERMISSION_DENIED,
+        AniError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE,
             "Permission denied : ohos.permission.ACCESS_MEDIALIB_THUMB_DB required.");
         return false;
     }
