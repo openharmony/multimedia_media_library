@@ -751,7 +751,7 @@ bool PermissionUtils::IsBetaVersion()
     return versionType == "beta";
 }
 
-bool PermissionUtils::IsSystemAppBycache(const uint64_t tokenId)
+bool PermissionUtils::IsSystemAppByCache(const uint64_t tokenId)
 {
     bool isSystemApp = false;
     if (systemAppCache_.Find(tokenId, isSystemApp)) {
@@ -766,7 +766,7 @@ bool PermissionUtils::IsSystemAppBycache(const uint64_t tokenId)
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-    return IsSystemAppBycache(tokenId);
+    return IsSystemAppByCache(tokenId);
 }
 
 bool PermissionUtils::CheckIsSystemAppByUid()
