@@ -375,6 +375,7 @@ const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTI
 
 const std::vector<std::pair<std::string, std::string>> ALBUM_ATTRIBUTE_ENUM_PROPERTIES = {
     std::make_pair("NICK_NAME_ATTR", "nickname"),
+    std::make_pair("IS_REMOVED_ATTR", "is_removed"),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUM_OPERATION_TYPE_ENUM_PROPERTIES = {
