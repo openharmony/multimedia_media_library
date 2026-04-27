@@ -22,6 +22,7 @@
 #include "analysis_album_attribute_request_utils.h"
 #include "medialibrary_album_operations.h"
 #include "media_albums_rdb_operations.h"
+#include "media_cloud_permission_check.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -387,12 +388,16 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelec
     return this->rdbOperation_.GetSelectedAssets(dto);
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetAssets(AlbumGetAssetsDto &dto)
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetAssets(
+    AlbumGetAssetsDto &dto, int32_t passCode)
 {
     auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     NativeRdb::RdbPredicates predicates =
         RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    if (passCode == E_READ_CLOUD_PERMISSION_CHECK) {
+        CloudReadPermissionCheck::AddCloudAssetFilter(predicates);
+    }
     auto resultSet = PhotoMapOperations::QueryPhotoAssets(predicates, dto.columns);
     auto totalCostTime = MediaFileUtils::UTCTimeMilliSeconds() - startTime;
     AccurateRefresh::DfxRefreshManager::QueryStatementReport(

@@ -72,7 +72,7 @@ public:
     int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRemoveAssets(const AlbumRemoveAssetsDto& removeAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRecoverAssets(const AlbumRecoverAssetsDto& recoverAssetsDto);
-    std::shared_ptr<DataShare::DataShareResultSet> AlbumGetAssets(AlbumGetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> AlbumGetAssets(AlbumGetAssetsDto &dto, int32_t passCode = 0);
     std::shared_ptr<DataShare::DataShareResultSet> AlbumGetSelectedAssets(AlbumGetSelectedAssetsDto &dto);
     int32_t QueryAlbums(QueryAlbumsDto &dto);
     int32_t QueryHiddenAlbums(QueryAlbumsDto &dto);
