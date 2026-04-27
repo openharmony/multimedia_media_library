@@ -842,5 +842,19 @@ bool PermissionUtils::SetEPolicy()
     CHECK_AND_RETURN_RET_LOG(ret == 0, false, "SetEPolicy fail of %{public}d", ret);
     return true;
 }
+
+bool PermissionUtils::IsSystemAppByBundleName(const std::string &bundleName)
+{
+    AppExecFwk::BundleInfo bundleInfo;
+    ErrCode state = GetSysBundleManager()->GetBundleInfoV9(
+        bundleName, static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION),
+        bundleInfo, OHOS::AppExecFwk::Constants::START_USERID);
+    if (state != 0) {
+        MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
+        return false;
+    }
+    AccessTokenID tokenId = bundleInfo.applicationInfo.accessTokenId;
+    return IsSystemAppByCache(tokenId);
+}
 }  // namespace Media
 }  // namespace OHOS

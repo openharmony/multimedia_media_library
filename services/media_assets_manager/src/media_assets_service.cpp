@@ -759,7 +759,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(Get
 
     string clientBundle;
     MediaLibraryBundleManager::GetInstance()->GetBundleNameByTokenId(dto.tokenId, clientBundle);
-    if (!dto.columns.empty() && !PermissionUtils::IsSystemAppBycache(dto.tokenId) &&
+    if (!dto.columns.empty() && !PermissionUtils::IsSystemAppByCache(dto.tokenId) &&
         !HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(clientBundle, HighPixelType::PIXEL_200) &&
         !IsSupportHighResolution(clientBundle)) {
         MEDIA_INFO_LOG("CanSupportedHighPixelPicture");
@@ -2168,7 +2168,8 @@ int32_t MediaAssetsService::GetCompatibleInfo(const string &bundleName, GetCompa
 
     respBody.bundleName = compatibleInfo.bundleName;
     respBody.supportedHighResolution =
-        compatibleInfo.highResolution != -1 ? compatibleInfo.highResolution : (PermissionUtils::IsSystemApp() ? true :
+        compatibleInfo.highResolution != -1 ? compatibleInfo.highResolution : (
+        PermissionUtils::IsSystemAppByBundleName(bundleName) ? true :
         HeifTranscodingCheckUtils::CanSupportedHighPixelPicture(bundleName, HighPixelType::PIXEL_200));
     respBody.supportedMimeTypes = normalizedMimeTypes;
     return E_SUCCESS;

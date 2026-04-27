@@ -100,7 +100,7 @@ public:
     static uint32_t GetTokenId();
     static bool IsBetaVersion();
     static bool IsSystemApp();
-    static bool IsSystemAppBycache(const uint64_t tokenId);
+    static bool IsSystemAppByCache(const uint64_t tokenId);
     static bool IsNativeSAApp();
     static bool IsRootShell();
     static bool IsHdcShell();
@@ -131,6 +131,7 @@ public:
     static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
     static bool GetTokenCallerForUid(const int &uid, Security::AccessToken::AccessTokenID &tokenCaller);
     static bool CheckCloudPermission();
+    static bool IsSystemAppByBundleName(const std::string &bundleName);
 
 private:
     static std::vector<Security::AccessToken::AddPermParamInfo> infos_;
