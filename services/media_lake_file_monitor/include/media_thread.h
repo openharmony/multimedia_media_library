@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,11 +176,11 @@ protected:
             auto threadNum = ++threadNum_;
             auto pthread_slf = pthread_self();
             auto tid = gettid();
-            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}lu) enter. thread num:%{public}" PRIu64 "",
+            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}lu) enter. thread num:%{public}llu",
                 tid, name_.c_str(), pthread_self(), threadNum);
             func_();
             threadNum = --threadNum_;
-            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}lu): exit. thread num :%{public}" PRIu64 "",
+            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}lu): exit. thread num :%{public}llu",
                 tid, name_.c_str(), pthread_slf, threadNum);
         }
     private:
