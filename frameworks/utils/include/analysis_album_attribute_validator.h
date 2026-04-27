@@ -22,6 +22,8 @@
 
 #include "analysis_album_attribute_const.h"
 #include "analysis_album_attribute_spec.h"
+#include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 
 namespace OHOS::Media {
@@ -37,12 +39,16 @@ inline bool IsValidAnalysisAlbumOperationType(const std::string &type)
 
 inline bool IsValidAnalysisAlbumValue(const std::string &value, const AnalysisAlbumAttributeSpec &spec)
 {
-    return value.size() <= ANALYSIS_ALBUM_MAX_VALUE_LENGTH;
+    CHECK_AND_RETURN_RET(value.size() <= ANALYSIS_ALBUM_MAX_VALUE_LENGTH, false);
+    CHECK_AND_RETURN_RET(!value.empty(), true);
+    CHECK_AND_RETURN_RET(spec.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME, true);
+    CHECK_AND_RETURN_RET(MediaFileUtils::CheckAlbumNameCharacter(value) == E_OK, false);
+    return true;
 }
 
 inline bool IsValidAnalysisAlbumValues(const std::vector<std::string> &values, const AnalysisAlbumAttributeSpec &spec)
 {
-    return !values.empty() && values.size() <= ANALYSIS_ALBUM_MAX_OPERATION_VALUES &&
+    return values.size() <= ANALYSIS_ALBUM_MAX_OPERATION_VALUES &&
         std::all_of(values.begin(), values.end(),
         [&spec](const std::string &value) {
             return IsValidAnalysisAlbumValue(value, spec);
@@ -73,9 +79,8 @@ inline int32_t ValidateAnalysisAlbumOperationProtocol(const std::string &attr, c
     const std::vector<std::string> &values)
 {
     const AnalysisAlbumAttributeSpec *spec = FindAnalysisAlbumAttributeSpec(attr);
-    if (!IsValidAnalysisAlbumOperationType(type) || spec == nullptr || !IsValidAnalysisAlbumValues(values, *spec)) {
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET(IsValidAnalysisAlbumOperationType(type) && spec != nullptr &&
+        IsValidAnalysisAlbumValues(values, *spec), E_INVALID_VALUES);
     return E_OK;
 }
 
@@ -83,13 +88,9 @@ inline int32_t CheckAnalysisAlbumOperationSupport(const std::string &attr, const
     const std::vector<std::string> &values)
 {
     const AnalysisAlbumAttributeSpec *spec = FindAnalysisAlbumAttributeSpec(attr);
-    if (spec == nullptr) {
-        return E_INVALID_VALUES;
-    }
-    if (!IsSupportedAnalysisAlbumOperationType(*spec, type) ||
-        !IsSupportedAnalysisAlbumOperationValues(*spec, values)) {
-        return E_OPERATION_NOT_SUPPORT;
-    }
+    CHECK_AND_RETURN_RET(spec != nullptr, E_INVALID_VALUES);
+    CHECK_AND_RETURN_RET(IsSupportedAnalysisAlbumOperationType(*spec, type), E_OPERATION_NOT_SUPPORT);
+    CHECK_AND_RETURN_RET(IsSupportedAnalysisAlbumOperationValues(*spec, values), E_OPERATION_NOT_SUPPORT);
     return E_OK;
 }
 
@@ -97,10 +98,15 @@ inline int32_t CheckAnalysisAlbumOperation(const std::string &attr, const std::s
     const std::vector<std::string> &values)
 {
     int32_t checkResult = ValidateAnalysisAlbumOperationProtocol(attr, type, values);
-    if (checkResult != E_OK) {
-        return checkResult;
-    }
+    CHECK_AND_RETURN_RET(checkResult == E_OK, checkResult);
     return CheckAnalysisAlbumOperationSupport(attr, type, values);
+}
+
+inline int32_t CheckAnalysisAlbumOperationWithClientNoOpGuard(const std::string &attr, const std::string &type,
+    const std::vector<std::string> &values)
+{
+    CHECK_AND_RETURN_RET(!values.empty(), E_INVALID_VALUES);
+    return CheckAnalysisAlbumOperation(attr, type, values);
 }
 } // namespace OHOS::Media
 

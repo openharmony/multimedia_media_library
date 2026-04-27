@@ -115,6 +115,7 @@ public:
     EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
     EXPORT static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
+    EXPORT static int32_t CheckAlbumNameCharacter(const std::string &albumName);
     EXPORT static int32_t CheckAlbumName(const std::string &albumName);
     EXPORT static int32_t CheckHighlightSubtitle(const std::string &highlightSubtitle);
     EXPORT static int32_t CheckDentryName(const std::string &dentryName);
