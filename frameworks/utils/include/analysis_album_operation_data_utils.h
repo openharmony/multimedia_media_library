@@ -18,9 +18,11 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "analysis_album_attribute_const.h"
+#include "media_log.h"
 
 namespace OHOS::Media {
 struct AnalysisAlbumOperationData {
@@ -33,6 +35,13 @@ struct AnalysisAlbumOperationData {
 } // namespace OHOS::Media
 
 namespace OHOS::Media::AnalysisAlbumOperationDataUtils {
+template<typename OperationData>
+inline bool IsValidPendingNickNameOperationData(const OperationData &operationData)
+{
+    return operationData.addNickNames.size() + operationData.removeNickNames.size() <=
+        ANALYSIS_ALBUM_MAX_OPERATION_VALUES;
+}
+
 template<typename OperationType>
 inline void RemoveChangeOperation(std::vector<OperationType> &operations, OperationType operation)
 {
@@ -91,17 +100,34 @@ inline void UpdateRemoveNickNameOperationData(OperationData &operationData, std:
 }
 
 template<typename OperationData, typename OperationType>
-inline void SetNickNameOperationData(OperationData &operationData, std::vector<OperationType> &operations,
+inline bool ApplyNickNameOperationData(OperationData &operationData, std::vector<OperationType> &operations,
     const std::string &type, OperationType addOperation, OperationType removeOperation,
     const std::vector<std::string> &values)
 {
     if (type == ANALYSIS_ALBUM_OP_ADD) {
         UpdateAddNickNameOperationData(operationData, operations, addOperation, removeOperation, values);
-        return;
+        return true;
     }
     if (type == ANALYSIS_ALBUM_OP_REMOVE) {
         UpdateRemoveNickNameOperationData(operationData, operations, addOperation, removeOperation, values);
+        return true;
     }
+    return false;
+}
+
+template<typename OperationData, typename OperationType>
+inline bool SetNickNameOperationData(OperationData &operationData, std::vector<OperationType> &operations,
+    const std::string &type, OperationType addOperation, OperationType removeOperation,
+    const std::vector<std::string> &values)
+{
+    OperationData nextOperationData = operationData;
+    std::vector<OperationType> nextOperations = operations;
+    CHECK_AND_RETURN_RET(ApplyNickNameOperationData(nextOperationData, nextOperations, type,
+        addOperation, removeOperation, values), false);
+    CHECK_AND_RETURN_RET(IsValidPendingNickNameOperationData(nextOperationData), false);
+    operationData = std::move(nextOperationData);
+    operations = std::move(nextOperations);
+    return true;
 }
 } // namespace OHOS::Media::AnalysisAlbumOperationDataUtils
 
