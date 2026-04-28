@@ -15,6 +15,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 #include "media_library_manager_test.h"
 #include "datashare_helper.h"
@@ -94,6 +95,22 @@ static const unsigned char FILE_CONTENT_MP4[] = {
     0x20, 0x20, 0x20, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x20, 0x20, 0x02, 0x20, 0x69, 0x73, 0x6f,
     0x6d, 0x69, 0x73, 0x6f, 0x32, 0x61, 0x76, 0x63, 0x31, 0x6d, 0x70, 0x34, 0x31, 0x20, 0x20, 0x20, 0x08, 0x66, 0x72,
     0x65, 0x65, 0x20, 0x49, 0xdd, 0x01, 0x6d, 0x64, 0x61, 0x74, 0x20, 0x20, 0x02, 0xa0, 0x06, 0x05, 0xff, 0xff, 0x9c,
+};
+
+static const std::vector<std::string> EXPECTED_IMAGE_FORMATS = {
+    "xpm", "xbm", "rgb", "pef", "psd", "jng", "cpt", "pat", "wbmp", "ras", "ief", "crw",
+    "djvu", "djv", "tiff", "tif", "pcx", "ipm", "svg", "svgz", "jp2", "jpg2", "raw", "jpg",
+    "jpeg", "jpe", "nrw", "jpm", "raf", "cur", "heif", "hif", "orf", "avif", "heic", "nef",
+    "gif", "arw", "ico", "cdt", "rw2", "pgm", "heics", "heifs", "cdr", "pbm", "ppm", "png",
+    "cr2", "dng", "art", "srw", "xwd", "erf", "jpx", "jpf", "bmp", "bm", "webp", "pnm"
+};
+
+static const std::vector<std::string> EXPECTED_VIDEO_FORMATS = {
+    "wmx", "wm", "asf", "asx", "mng", "lsf", "lsx", "gl", "dif", "dv", "axv", "avi",
+    "flv", "h264", "webm", "mkv", "mpv", "mov", "qt", "wvx", "wrf", "yt", "m4v", "f4v",
+    "mp4v", "mpeg4", "mp4", "3gpp", "3gp", "3gpp2", "3gp2", "3g2", "ts", "rmvb", "dl",
+    "fli", "mxu", "mpe", "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1",
+    "mp1v", "m1v", "mpg", "m2ts", "mts", "wmv", "movie", "ogv"
 };
 
 static const std::vector<std::string> perms = {
@@ -1868,6 +1885,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetSupportedPhotoFormats_t
     auto imageFormats = mediaLibraryManager->GetSupportedPhotoFormats(PHOTOTYPE_IMAGE);
     MEDIA_INFO_LOG("image suffix list: %{public}s", JoinFormats(imageFormats).c_str());
     EXPECT_GT(imageFormats.size(), 0);
+    auto expectedSorted = EXPECTED_IMAGE_FORMATS;
+    auto actualSorted = imageFormats;
+    std::sort(expectedSorted.begin(), expectedSorted.end());
+    std::sort(actualSorted.begin(), actualSorted.end());
+
+    EXPECT_EQ(actualSorted, expectedSorted);
     MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_001 end");
 }
 
@@ -1878,6 +1901,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetSupportedPhotoFormats_t
     auto videoFormats = mediaLibraryManager->GetSupportedPhotoFormats(PHOTOTYPE_VIDEO);
     MEDIA_INFO_LOG("video suffix list: %{public}s", JoinFormats(videoFormats).c_str());
     EXPECT_GT(videoFormats.size(), 0);
+    auto expectedSorted = EXPECTED_VIDEO_FORMATS;
+    auto actualSorted = videoFormats;
+    std::sort(expectedSorted.begin(), expectedSorted.end());
+    std::sort(actualSorted.begin(), actualSorted.end());
+
+    EXPECT_EQ(actualSorted, expectedSorted);
     MEDIA_INFO_LOG("MediaLibraryManager_GetSupportedPhotoFormats_test_002 end");
 }
 
