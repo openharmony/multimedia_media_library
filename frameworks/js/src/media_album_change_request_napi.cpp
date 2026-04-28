@@ -1353,9 +1353,10 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
-void MediaAlbumChangeRequestNapi::SetNickNameOperationData(const string &type, const vector<string> &values)
+bool MediaAlbumChangeRequestNapi::SetNickNameOperationData(const string &type, const vector<string> &values)
 {
-    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(analysisAlbumOperationData_, albumChangeOperations_,
+    return AnalysisAlbumOperationDataUtils::SetNickNameOperationData(
+        analysisAlbumOperationData_, albumChangeOperations_,
         type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
 }
 
@@ -1400,7 +1401,7 @@ napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_ca
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-    CHECK_COND_WITH_ERR_MESSAGE(env, IsPortraitAlbumAttributeTarget(photoAlbum), E_OPERATION_NOT_SUPPORT,
+    CHECK_COND_WITH_ERR_MESSAGE(env, IsPortraitAlbumAttributeTarget(photoAlbum), JS_E_OPR_TYPE_NOT_SUPPORT,
         "Only portrait album can operate attribute");
 
     AnalysisAlbumOperation operation;
@@ -1411,7 +1412,7 @@ napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_ca
             NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid analysis album operation");
         },
         [env]() {
-            NapiError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Unsupported analysis album operation");
+            NapiError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Unsupported analysis album operation");
         })) {
         return nullptr;
     }
@@ -1420,13 +1421,14 @@ napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_ca
     }
 
     if (operation.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
-        asyncContext->objectInfo->SetNickNameOperationData(operation.type, operation.values);
+        CHECK_COND_WITH_ERR_MESSAGE(env,
+            asyncContext->objectInfo->SetNickNameOperationData(operation.type, operation.values),
+            JS_E_PARAM_INVALID, "The total number of pending nickname values exceeds the limit");
     } else if (operation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
         asyncContext->objectInfo->SetIsRemovedOperationData(operation);
     } else {
         NAPI_WARN_LOG("Unknown operation attr.");
     }
-
     RETURN_NAPI_UNDEFINED(env);
 }
 

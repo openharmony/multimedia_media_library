@@ -734,7 +734,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_E
             errorCode = JS_E_PARAM_INVALID;
         },
         [&errorCode]() {
-            errorCode = E_OPERATION_NOT_SUPPORT;
+            errorCode = JS_E_OPR_TYPE_NOT_SUPPORT;
         });
 
     EXPECT_FALSE(result);
