@@ -150,4 +150,12 @@ ohos_unittest("media_lake_load_test") {
     cfi_cross_dso = true
     debug = false
   }
+
+  defines = []
+  if (media_library_lake_enable) {
+    defines += [ "MEDIALIBRARY_LAKE_SUPPORT" ]
+  }
+  if (media_library_file_manager_enable) {
+    defines += [ "MEDIALIBRARY_FILE_MGR_SUPPORT" ]
+  }
 }

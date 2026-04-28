@@ -71,6 +71,8 @@ declare_args() {
   media_library_feature_custom_restore = true
   media_library_cellular_data_enable = true
   media_library_feature_secure_album = false
+  media_library_lake_enable = true
+  media_library_file_manager_enable = true
 }
 
 if (defined(global_parts_info) &&
