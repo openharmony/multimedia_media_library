@@ -405,9 +405,10 @@ ani_status MediaAlbumChangeRequestAni::SetDefaultCoverUri(ani_env *env, ani_obje
     return ANI_OK;
 }
 
-void MediaAlbumChangeRequestAni::SetNickNameOperationData(const string &type, const vector<string> &values)
+bool MediaAlbumChangeRequestAni::SetNickNameOperationData(const string &type, const vector<string> &values)
 {
-    AnalysisAlbumOperationDataUtils::SetNickNameOperationData(analysisAlbumOperationData_, albumChangeOperations_,
+    return AnalysisAlbumOperationDataUtils::SetNickNameOperationData(
+        analysisAlbumOperationData_, albumChangeOperations_,
         type, AlbumChangeOperation::ADD_NICK_NAME, AlbumChangeOperation::REMOVE_NICK_NAME, values);
 }
 
@@ -435,7 +436,7 @@ ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object
     auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
     if (!IsPortraitAlbumAttributeTarget(photoAlbum)) {
-        AniError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Only portrait album can operate attribute");
+        AniError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Only portrait album can operate attribute");
         return ANI_ERROR;
     }
 
@@ -453,7 +454,7 @@ ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object
             AniError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid analysis album operation");
         },
         [env]() {
-            AniError::ThrowError(env, E_OPERATION_NOT_SUPPORT, "Unsupported analysis album operation");
+            AniError::ThrowError(env, JS_E_OPR_TYPE_NOT_SUPPORT, "Unsupported analysis album operation");
         })) {
         return ANI_ERROR;
     }
@@ -462,7 +463,9 @@ ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object
     }
 
     if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
-        aniContext->objectInfo->SetNickNameOperationData(analysisOperation.type, analysisOperation.values);
+        CHECK_ARGS_WITH_RET_MSG(env,
+            aniContext->objectInfo->SetNickNameOperationData(analysisOperation.type, analysisOperation.values),
+            JS_E_PARAM_INVALID, ANI_ERROR, "The total number of pending nickname values exceeds the limit");
     } else if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
         aniContext->objectInfo->SetIsRemovedOperationData(analysisOperation);
     } else {
