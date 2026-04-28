@@ -967,6 +967,33 @@ HWTEST_F(MediaLibraryAlbumOperationTest, NickNameOperationData_SetOperationDataF
     MEDIA_INFO_LOG("NickNameOperationData_SetOperationDataFollowNetState_001::End");
 }
 
+HWTEST_F(MediaLibraryAlbumOperationTest, NickNameOperationData_ExceedLimitShouldNotPolluteState_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("NickNameOperationData_ExceedLimitShouldNotPolluteState_001::Start");
+    TestNickNameOperationData operationData;
+    vector<TestNickNameChangeOperation> operations;
+
+    for (int32_t i = 0; i < ANALYSIS_ALBUM_MAX_OPERATION_VALUES - 1; i++) {
+        operationData.addNickNames.emplace_back("nick_" + to_string(i));
+    }
+    operationData.removeNickNames = { "nick_remove" };
+    operations = { TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE };
+
+    const auto oldAddNickNames = operationData.addNickNames;
+    const auto oldRemoveNickNames = operationData.removeNickNames;
+    const auto oldOperations = operations;
+
+    bool ret = AnalysisAlbumOperationDataUtils::SetNickNameOperationData(operationData, operations,
+        ANALYSIS_ALBUM_OP_ADD, TestNickNameChangeOperation::ADD, TestNickNameChangeOperation::REMOVE,
+        { "nick_over_limit" });
+
+    EXPECT_FALSE(ret);
+    EXPECT_EQ(operationData.addNickNames, oldAddNickNames);
+    EXPECT_EQ(operationData.removeNickNames, oldRemoveNickNames);
+    EXPECT_EQ(operations, oldOperations);
+    MEDIA_INFO_LOG("NickNameOperationData_ExceedLimitShouldNotPolluteState_001::End");
+}
+
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_01, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_01::Start");
