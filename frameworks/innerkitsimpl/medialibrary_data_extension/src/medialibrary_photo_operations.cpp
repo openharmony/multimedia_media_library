@@ -4790,7 +4790,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(outputPath));
     int32_t quality = mimeType == MIME_TYPE_HEIF ? PACKOPTION_QUALITY_HEIF : PACKOPTION_QUALITY;
     if (isRevert) {
-        ret = MediaChangeEffect::TakeEffectRevert(inputPath, tempOutputPath, info);
+        ret = MediaChangeEffect::TakeEffectRevert(inputPath, tempOutputPath, info, quality);
     } else {
         ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info, quality);
     }
