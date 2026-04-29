@@ -104,8 +104,6 @@ void MediaAnalysisDataServiceTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaAnalysisDataServiceTest TearDownTestCase");
     g_rdbStore = nullptr;
-    CleanTestTables();
-    SetTables();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
 }
 
