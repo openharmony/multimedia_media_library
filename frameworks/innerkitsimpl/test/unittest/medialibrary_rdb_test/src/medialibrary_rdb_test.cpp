@@ -41,7 +41,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t SLEEP_SECOND = 1;
 const std::string QUERY_MEDIA_VOLUME = std::string("SELECT sum(") + CONST_MEDIA_DATA_DB_SIZE + ") AS " +
     CONST_MEDIA_DATA_DB_SIZE + "," +
     CONST_MEDIA_DATA_DB_MEDIA_TYPE + " FROM " +
@@ -105,14 +105,15 @@ void MediaLibraryRdbTest::SetUpTestCase(void)
 }
 
 void MediaLibraryRdbTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+{}
 
 // SetUp:Execute before each test case
 void MediaLibraryRdbTest::SetUp() {}
 
-void MediaLibraryRdbTest::TearDown(void) {}
+void MediaLibraryRdbTest::TearDown(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECOND));
+}
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level1)
 {
