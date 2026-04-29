@@ -19,6 +19,15 @@
 #include "analysis_net_connect_observer.h"
 #include "medialibrary_errno.h"
 #include "media_upgrade.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
+#include "media_column.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
+#include "result_set_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::Media::AnalysisData;
@@ -26,6 +35,8 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 static void CleanTestTables()
 {
