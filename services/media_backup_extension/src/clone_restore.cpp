@@ -2344,11 +2344,11 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisPortrait();
     RestoreAnalysisPet();
     RestoreGroupPhoto();
+    cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
+    RestoreAnalysisData();
     RestoreAnalysisDupSim();
     // selection clone is dependent on dup_sim clone
     RestoreAnalysisSelection();
-    cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
-    RestoreAnalysisData();
     ReportInvalidLocalFiles();
     ReportRestoreTaskofLakeFiles();
     InheritManualCover();
