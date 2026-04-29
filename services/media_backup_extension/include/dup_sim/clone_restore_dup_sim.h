@@ -84,10 +84,14 @@ private:
     void RestoreProfileData();
     void RestoreDedupData();
     void RestoreAffectiveData();
+    void UpdateScoreMask(int32_t fileId, uint32_t mask);
+    void PreprocessSourceTotalTable();
     void UpdateTotalTableForProfile();
     void UpdateTotalTableForDedup();
     void UpdateTotalTableForAffective();
-    void UpdateScoreMask(int32_t fileId, uint32_t mask);
+    void UpdateSimilarityAndDuplicateFields();
+    std::vector<int32_t> ConvertNewFileIdsToOldFileIds(const std::vector<int32_t> &newFileIds);
+    void UpdateTotalTableField(const std::string &field, const std::vector<int32_t> &insertedFileIds);
     std::vector<ProfileInfo> QueryProfileTblByFileIds(const std::string &fileIdClause);
     void BatchInsertProfileData(const std::vector<ProfileInfo> &profileInfos,
         const std::unordered_set<int32_t> &existingFileIds);
@@ -97,7 +101,8 @@ private:
         const std::unordered_set<int32_t> &existingFileIds);
     NativeRdb::ValuesBucket CreateValuesBucketFromDedupInfo(const DedupInfo &info);
     std::vector<AffectiveInfo> QueryAffectiveTblByFileIds(const std::string &fileIdClause);
-    void BatchInsertAffectiveData(const std::vector<AffectiveInfo> &affectiveInfos);
+    void BatchInsertAffectiveData(const std::vector<AffectiveInfo> &affectiveInfos,
+        const std::unordered_set<int32_t> &existingFileIds);
     NativeRdb::ValuesBucket CreateValuesBucketFromAffectiveInfo(const AffectiveInfo &info);
     int32_t BatchInsertWithRetry(
         const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
@@ -115,9 +120,8 @@ private:
     std::atomic<uint64_t> migrateProfileNumber_{0};
     std::atomic<uint64_t> migrateDedupNumber_{0};
     std::atomic<uint64_t> migrateAffectiveNumber_{0};
-    std::vector<int32_t> insertedProfileFileIds_;
-    std::vector<int32_t> insertedDedupFileIds_;
-    std::vector<int32_t> insertedAffectiveFileIds_;
+    std::vector<int32_t> insertedProfileFileIds_;   // 记录 Profile 表实际插入的 file_id
+    std::vector<int32_t> insertedAffectiveFileIds_; // 记录 Affective 表实际插入的 file_id
 };
 }  // namespace OHOS::Media
 #endif  // CLONE_RESTORE_DUP_SIM_H
