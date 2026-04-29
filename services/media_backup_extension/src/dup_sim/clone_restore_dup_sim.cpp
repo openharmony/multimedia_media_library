@@ -66,6 +66,14 @@ void CloneRestoreDupSim::Init(int32_t sceneCode, const std::string &taskId,
     this->photoInfoMap_ = photoInfoMap;
     this->isCloudRestoreSatisfied_ = isCloudRestoreSatisfied;
     this->externalScoreMaskMap_ = scoreMaskMap;
+
+    // 构建新file_id到旧file_id的哈希映射表缓存
+    newToOldMap_.reserve(photoInfoMap_.size());
+    for (const auto &pair : photoInfoMap_) {
+        if (pair.second.fileIdNew != -1) {
+            newToOldMap_[pair.second.fileIdNew] = pair.first;
+        }
+    }
 }
 
 int64_t CloneRestoreDupSim::GetShouldEndTime()
@@ -99,6 +107,7 @@ void CloneRestoreDupSim::Restore()
 
     CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
 
+    // Preprocess source total table: set similarity and duplicate to 1 if > 0
     PreprocessSourceTotalTable();
     RestoreProfileData();
     RestoreDedupData();
@@ -297,6 +306,7 @@ void CloneRestoreDupSim::RestoreAffectiveData()
         MEDIA_INFO_LOG("photoInfoMap_ is empty, no affective data to restore.");
         return;
     }
+    // 在循环外只查询一次existingFileIds
     std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(mediaLibraryRdb_, AFFECTIVE_TABLE);
 
     // 收集所有 oldFileIds
@@ -472,10 +482,12 @@ void CloneRestoreDupSim::BatchInsertDedupData(
             continue;
         }
 
+        // 检查groupId映射
         DedupInfo mappedInfo = info;
         mappedInfo.fileId = newFileId;
         bool groupRepSuccess = UpdateGroupId(mappedInfo, info.groupIdRep, photoInfoMap_);
         bool groupSimSuccess = UpdateGroupId(mappedInfo, info.groupIdSim, photoInfoMap_);
+        // 如果任何一个groupId映射失败，跳过这条数据
         if (!groupRepSuccess || !groupSimSuccess) {
             skipGroupMapping++;
             continue;
@@ -646,12 +658,13 @@ void CloneRestoreDupSim::UpdateSimilarityAndDuplicateFields()
 std::vector<int32_t> CloneRestoreDupSim::ConvertNewFileIdsToOldFileIds(const std::vector<int32_t> &newFileIds)
 {
     std::vector<int32_t> oldFileIds;
+    oldFileIds.reserve(newFileIds.size());
+
+    // 使用缓存的映射表直接查找
     for (int32_t newFileId : newFileIds) {
-        for (const auto &pair : photoInfoMap_) {
-            if (pair.second.fileIdNew == newFileId) {
-                oldFileIds.push_back(pair.first);
-                break;
-            }
+        auto it = newToOldMap_.find(newFileId);
+        if (it != newToOldMap_.end()) {
+            oldFileIds.push_back(it->second);
         }
     }
     return oldFileIds;
@@ -669,6 +682,19 @@ void CloneRestoreDupSim::UpdateTotalTableField(const std::string &field, const s
         return;
     }
 
+    // 从源端查询字段值
+    std::vector<std::pair<int32_t, int32_t>> fieldValues = QueryFieldValuesFromSource(field, oldFileIds);
+    if (fieldValues.empty()) {
+        return;
+    }
+
+    // 批量更新到目标端
+    BatchUpdateTotalTableField(field, fieldValues);
+}
+
+std::vector<std::pair<int32_t, int32_t>> CloneRestoreDupSim::QueryFieldValuesFromSource(
+    const std::string &field, const std::vector<int32_t> &oldFileIds)
+{
     std::string oldFileIdsStr = "(" + BackupDatabaseUtils::JoinValues(oldFileIds, ",") + ")";
     std::string querySourceSql =
         "SELECT file_id, " + field + " FROM " + std::string(VISION_TOTAL_TABLE) +
@@ -676,7 +702,7 @@ void CloneRestoreDupSim::UpdateTotalTableField(const std::string &field, const s
 
     auto sourceResultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySourceSql);
     if (sourceResultSet == nullptr) {
-        return;
+        return {};
     }
 
     std::vector<std::pair<int32_t, int32_t>> fieldValues;
@@ -695,12 +721,32 @@ void CloneRestoreDupSim::UpdateTotalTableField(const std::string &field, const s
         fieldValues.push_back({photoIt->second.fileIdNew, fieldValue});
     }
     sourceResultSet->Close();
+    return fieldValues;
+}
 
-    for (const auto &pair : fieldValues) {
-        std::string updateSql =
-            "UPDATE " + std::string(VISION_TOTAL_TABLE) +
-            " SET " + field + " = " + std::to_string(pair.second) +
-            " WHERE file_id = " + std::to_string(pair.first);
+void CloneRestoreDupSim::BatchUpdateTotalTableField(const std::string &field,
+    const std::vector<std::pair<int32_t, int32_t>> &fieldValues)
+{
+    // 批量更新：使用 CASE WHEN 语句，每批处理1000条记录
+    const int32_t BATCH_SIZE = 1000;
+    for (size_t i = 0; i < fieldValues.size(); i += BATCH_SIZE) {
+        auto batch_begin = fieldValues.begin() + i;
+        auto batch_end = (i + BATCH_SIZE < fieldValues.size()) ?
+                         (fieldValues.begin() + i + BATCH_SIZE) : fieldValues.end();
+
+        // 构建 CASE WHEN 批量更新SQL
+        std::string updateSql = "UPDATE " + std::string(VISION_TOTAL_TABLE) +
+                                " SET " + field + " = CASE file_id ";
+        std::string fileIdsStr;
+        for (auto it = batch_begin; it != batch_end; ++it) {
+            updateSql += "WHEN " + std::to_string(it->first) + " THEN " + std::to_string(it->second) + " ";
+            if (it != batch_begin) {
+                fileIdsStr += ",";
+            }
+            fileIdsStr += std::to_string(it->first);
+        }
+        updateSql += "END WHERE file_id IN (" + fileIdsStr + ")";
+
         BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
     }
     MEDIA_INFO_LOG("UpdateTotalTableField: %{public}s field updated, count=%{public}zu",
