@@ -18,6 +18,16 @@
 #include "lcd_download_operation.h"
 #include "analysis_net_connect_observer.h"
 #include "medialibrary_errno.h"
+#include "media_upgrade.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
+#include "media_column.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
+#include "result_set_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -25,10 +35,73 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void LcdDownloadOperationTest::SetUpTestCase() {}
-void LcdDownloadOperationTest::TearDownTestCase() {}
-void LcdDownloadOperationTest::SetUp() {}
-void LcdDownloadOperationTest::TearDown() {}
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+
+static void CleanTestTables()
+{
+    std::vector<std::string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        PhotoAlbumColumns::TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        std::string dropSql = "DROP TABLE IF EXISTS " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+ 
+static void SetTables()
+{
+    std::vector<std::string> createTableSqlList = {
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+void LcdDownloadOperationTest::SetUpTestCase()
+{
+    MEDIA_INFO_LOG("LcdDownloadOperationTest SetUpTestCase start");
+    MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Start LcdDownloadOperationTest failed, can not get rdbstore");
+        exit(1);
+    }
+    CleanTestTables();
+    SetTables();
+    MEDIA_INFO_LOG("LcdDownloadOperationTest SetUpTestCase end");
+}
+
+void LcdDownloadOperationTest::TearDownTestCase()
+{
+    MEDIA_INFO_LOG("LcdDownloadOperationTest TearDownTestCase");
+    g_rdbStore = nullptr;
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+}
+
+void LcdDownloadOperationTest::SetUp()
+{
+    CleanTestTables();
+    SetTables();
+    MEDIA_INFO_LOG("LcdDownloadOperationTest SetUp");
+}
+
+void LcdDownloadOperationTest::TearDown()
+{
+    MEDIA_INFO_LOG("LcdDownloadOperationTest TearDown");
+}
 
 // 用例说明：测试正常开始下载
 // 覆盖场景：IDLE状态开始下载
