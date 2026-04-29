@@ -18,6 +18,16 @@
 #include "analysis_lcd_aging_dao.h"
 #include "analysis_net_connect_observer.h"
 #include "medialibrary_errno.h"
+#include "media_upgrade.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
+#include "media_column.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
+#include "result_set_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::Media::AnalysisData;
@@ -26,10 +36,73 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void AnalysisLcdAgingDaoTest::SetUpTestCase() {}
-void AnalysisLcdAgingDaoTest::TearDownTestCase() {}
-void AnalysisLcdAgingDaoTest::SetUp() {}
-void AnalysisLcdAgingDaoTest::TearDown() {}
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+
+static void CleanTestTables()
+{
+    std::vector<std::string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        PhotoAlbumColumns::TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        std::string dropSql = "DROP TABLE IF EXISTS " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+ 
+static void SetTables()
+{
+    std::vector<std::string> createTableSqlList = {
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+void AnalysisLcdAgingDaoTest::SetUpTestCase()
+{
+    MEDIA_INFO_LOG("AnalysisLcdAgingDaoTest SetUpTestCase start");
+    MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Start AnalysisLcdAgingDaoTest failed, can not get rdbstore");
+        exit(1);
+    }
+    CleanTestTables();
+    SetTables();
+    MEDIA_INFO_LOG("AnalysisLcdAgingDaoTest SetUpTestCase end");
+}
+
+void AnalysisLcdAgingDaoTest::TearDownTestCase()
+{
+    MEDIA_INFO_LOG("AnalysisLcdAgingDaoTest TearDownTestCase");
+    g_rdbStore = nullptr;
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+}
+
+void AnalysisLcdAgingDaoTest::SetUp()
+{
+    CleanTestTables();
+    SetTables();
+    MEDIA_INFO_LOG("AnalysisLcdAgingDaoTest SetUp");
+}
+
+void AnalysisLcdAgingDaoTest::TearDown()
+{
+    MEDIA_INFO_LOG("AnalysisLcdAgingDaoTest TearDown");
+}
 
 // 用例说明：测试正常查询下载LCD信息
 // 覆盖场景：提供有效的fileIds列表
