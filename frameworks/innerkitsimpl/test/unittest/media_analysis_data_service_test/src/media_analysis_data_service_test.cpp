@@ -39,6 +39,7 @@
 #include "photo_album_column.h"
 #include "media_analysis_data_service.h"
 #include "analysis_net_connect_observer.h"
+#include "media_upgrade.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,6 +53,39 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 static int32_t JS_INNER_FAIL = 14000011;
 
+static void CleanTestTables()
+{
+    std::vector<std::string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        PhotoAlbumColumns::TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        std::string dropSql = "DROP TABLE IF EXISTS " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+ 
+static void SetTables()
+{
+    std::vector<std::string> createTableSqlList = {
+        PhotoUpgrade::CREATE_PHOTO_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
 void MediaAnalysisDataServiceTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaAnalysisDataServiceTest SetUpTestCase start");
@@ -61,6 +95,8 @@ void MediaAnalysisDataServiceTest::SetUpTestCase()
         MEDIA_ERR_LOG("Start MediaAnalysisDataServiceTest failed, can not get rdbstore");
         exit(1);
     }
+    CleanTestTables();
+    SetTables();
     MEDIA_INFO_LOG("MediaAnalysisDataServiceTest SetUpTestCase end");
 }
 
@@ -68,11 +104,15 @@ void MediaAnalysisDataServiceTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaAnalysisDataServiceTest TearDownTestCase");
     g_rdbStore = nullptr;
+    CleanTestTables();
+    SetTables();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
 }
 
 void MediaAnalysisDataServiceTest::SetUp()
 {
+    CleanTestTables();
+    SetTables();
     MEDIA_INFO_LOG("MediaAnalysisDataServiceTest SetUp");
 }
 
