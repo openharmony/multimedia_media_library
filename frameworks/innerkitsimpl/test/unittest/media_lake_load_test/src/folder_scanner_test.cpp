@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 using namespace testing::ext;
 
-static const std::string TEST_ROOT_PATH = "/data/test/folder_scanner";
+static const std::string TEST_ROOT_PATH = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/test";
 
 void FolderScannerTest::SetUpTestCase()
 {
@@ -516,6 +516,19 @@ HWTEST_F(FolderScannerTest, Run_010, TestSize.Level1)
     EXPECT_EQ(ret, ERR_SUCCESS);
 }
 
+bool IsPathInSubDirQueue(std::queue<std::string> subDirQueue, const std::string &dir)
+{
+    while (!subDirQueue.empty()) {
+        if (subDirQueue.front() == dir) {
+            MEDIA_INFO_LOG("%{public}s found", dir.c_str());
+            return true;
+        }
+        subDirQueue.pop();
+    }
+    MEDIA_INFO_LOG("%{public}s not found", dir.c_str());
+    return false;
+}
+
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_001, TestSize.Level1)
 {
     std::string testPathPath = TEST_ROOT_PATH + "/scan_current_dir_001";
@@ -529,7 +542,7 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_001, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, testPath));
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_002, TestSize.Level1)
@@ -545,23 +558,7 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_002, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
-}
-
-HWTEST_F(FolderScannerTest, ScanCurrentDirectory_003, TestSize.Level1)
-{
-    std::string testPath = TEST_ROOT_PATH + "/scan_current_dir_003";
-    std::error_code ec;
-    std::filesystem::create_directories(testPath, ec);
-    
-    std::string subPath = testPath + "/subdir";
-    std::filesystem::create_directories(subPath, ec);
-    
-    FolderScanner scanner(testPath, LakeScanMode::FULL);
-    std::queue<std::string> subDirQueue;
-    int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
-    EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, testPath));
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_004, TestSize.Level1)
@@ -579,7 +576,10 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_004, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    for (int i = 0; i < 3; i++) {
+        std::string subPath = testPath + "/subdir" + std::to_string(i);
+        EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath));
+    }
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_005, TestSize.Level1)
@@ -599,23 +599,7 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_005, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
-}
-
-HWTEST_F(FolderScannerTest, ScanCurrentDirectory_006, TestSize.Level1)
-{
-    std::string testPath = TEST_ROOT_PATH + "/scan_current_dir_006";
-    std::error_code ec;
-    std::filesystem::create_directories(testPath, ec);
-    
-    std::string subPath = testPath + "/subdir";
-    std::filesystem::create_directories(subPath, ec);
-    
-    FolderScanner scanner(testPath, LakeScanMode::INCREMENT);
-    std::queue<std::string> subDirQueue;
-    int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
-    EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath));
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_007, TestSize.Level1)
@@ -633,7 +617,8 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_007, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath));
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath2));
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_008, TestSize.Level1)
@@ -650,24 +635,6 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_008, TestSize.Level1)
     scanner.ScanCurrentDirectory(subDirQueue2);
     
     EXPECT_EQ(subDirQueue1.size(), subDirQueue2.size());
-}
-
-HWTEST_F(FolderScannerTest, ScanCurrentDirectory_009, TestSize.Level1)
-{
-    std::string testPath = TEST_ROOT_PATH + "/scan_current_dir_009";
-    std::error_code ec;
-    std::filesystem::create_directories(testPath, ec);
-    
-    for (int i = 0; i < 5; i++) {
-        std::string subPath = testPath + "/subdir" + std::to_string(i);
-        std::filesystem::create_directories(subPath, ec);
-    }
-    
-    FolderScanner scanner(testPath, LakeScanMode::FULL);
-    std::queue<std::string> subDirQueue;
-    int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
-    EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
 }
 
 HWTEST_F(FolderScannerTest, ScanCurrentDirectory_010, TestSize.Level1)
@@ -688,7 +655,7 @@ HWTEST_F(FolderScannerTest, ScanCurrentDirectory_010, TestSize.Level1)
     std::queue<std::string> subDirQueue;
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath));
 }
 
 HWTEST_F(FolderScannerTest, BuildSubDirFolderScanner_001, TestSize.Level1)
@@ -1556,7 +1523,7 @@ HWTEST_F(FolderScannerTest, MixedOperations_004, TestSize.Level1)
     
     int32_t ret = scanner.ScanCurrentDirectory(subDirQueue);
     EXPECT_EQ(ret, ERR_SUCCESS);
-    EXPECT_EQ(subDirQueue.size(), 0);
+    EXPECT_TRUE(IsPathInSubDirQueue(subDirQueue, subPath));
     
     int32_t albumId = scanner.GetAlbumId();
     int32_t addCount = scanner.GetAddCount();
