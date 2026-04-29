@@ -104,7 +104,7 @@ ohos_unittest("medialibrary_rdb_test") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
-    debug = false
+    debug = true
   }
 
   if (is_standard_system) {
