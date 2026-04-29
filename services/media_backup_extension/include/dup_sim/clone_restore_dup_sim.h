@@ -92,6 +92,10 @@ private:
     void UpdateSimilarityAndDuplicateFields();
     std::vector<int32_t> ConvertNewFileIdsToOldFileIds(const std::vector<int32_t> &newFileIds);
     void UpdateTotalTableField(const std::string &field, const std::vector<int32_t> &insertedFileIds);
+    std::vector<std::pair<int32_t, int32_t>> QueryFieldValuesFromSource(
+        const std::string &field, const std::vector<int32_t> &oldFileIds);
+    void BatchUpdateTotalTableField(const std::string &field,
+        const std::vector<std::pair<int32_t, int32_t>> &fieldValues);
     std::vector<ProfileInfo> QueryProfileTblByFileIds(const std::string &fileIdClause);
     void BatchInsertProfileData(const std::vector<ProfileInfo> &profileInfos,
         const std::unordered_set<int32_t> &existingFileIds);
@@ -117,6 +121,7 @@ private:
     bool isCloudRestoreSatisfied_;
     std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
     std::unordered_map<int32_t, uint32_t>* externalScoreMaskMap_ = nullptr;
+    std::unordered_map<int32_t, int32_t> newToOldMap_;  // 新file_id到旧file_id的缓存映射
     std::atomic<uint64_t> migrateProfileNumber_{0};
     std::atomic<uint64_t> migrateDedupNumber_{0};
     std::atomic<uint64_t> migrateAffectiveNumber_{0};
