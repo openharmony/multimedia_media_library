@@ -26,9 +26,11 @@
 #include "result_set.h"
 #include "result_set_utils.h"
 #include "photos_po_writer.h"
+#include "photo_album_po_writer.h"
 #include "result_set_reader.h"
 
 namespace OHOS::Media::CloudSync {
+// LCOV_EXCL_START
 int32_t CloudMediaCommonDao::QueryLocalByCloudId(
     const std::vector<std::string> &cloudIds, const std::vector<std::string> &columns, std::vector<PhotosPo> &result)
 {
@@ -60,4 +62,74 @@ int32_t CloudMediaCommonDao::QueryLocalMap(const int32_t &fileId, std::map<int32
     }
     return E_OK;
 }
+
+int32_t CloudMediaCommonDao::QueryPhotoByCloudId(
+    const std::string &cloudId, std::optional<PhotosPo> &photoInfoOp) const
+{
+    CHECK_AND_RETURN_RET_LOG(!cloudId.empty(), E_ERR, "cloudId is empty");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+
+    auto resultSet = rdbStore->Query(predicates, {});  // 查询所有字段
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
+    std::vector<PhotosPo> photosPoList;
+    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoList);
+    CHECK_AND_RETURN_RET_LOG(
+        ret == E_OK, ret, "Failed to read records. cloudId: %{public}s, ret: %{public}d", cloudId.c_str(), ret);
+    if (!photosPoList.empty()) {
+        photoInfoOp = photosPoList[0];
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaCommonDao::QueryPhotoByFilePath(const std::string &filePath,
+                                                  std::optional<PhotosPo> &photoInfoOp) const
+{
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_ERR, "filePath is empty");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
+
+    auto resultSet = rdbStore->Query(predicates, {});  // 查询所有字段
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
+    std::vector<PhotosPo> photosPoList;
+    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoList);
+    CHECK_AND_RETURN_RET_LOG(
+        ret == E_OK, ret, "Failed to read records. filePath: %{public}s, ret: %{public}d", filePath.c_str(), ret);
+    if (!photosPoList.empty()) {
+        photoInfoOp = photosPoList[0];
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaCommonDao::QueryPhotoAlbumByAlbumId(const int32_t albumId,
+                                                      std::optional<PhotoAlbumPo> &photoAlbumInfoOp) const
+{
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_ERR, "albumId is invalid");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+
+    auto resultSet = rdbStore->Query(predicates, {});  // 查询所有字段
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
+    std::vector<PhotoAlbumPo> photoAlbumPoList;
+    int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords(photoAlbumPoList);
+    CHECK_AND_RETURN_RET_LOG(
+        ret == E_OK, ret, "Failed to read records. albumId: %{public}d, ret: %{public}d", albumId, ret);
+    if (!photoAlbumPoList.empty()) {
+        photoAlbumInfoOp = photoAlbumPoList[0];
+    }
+    return E_OK;
+}
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

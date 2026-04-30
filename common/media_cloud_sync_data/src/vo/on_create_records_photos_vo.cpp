@@ -44,8 +44,6 @@ bool OnCreateRecord::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt64(this->version), false, "version");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->serverErrorCode), false, "serverErrorCode");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isSuccess), false, "isSuccess");
-    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
-    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
     CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
                              false,
                              "errorDetails");
@@ -74,8 +72,6 @@ bool OnCreateRecord::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt64(this->version), false, "version");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->serverErrorCode), false, "serverErrorCode");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isSuccess), false, "isSuccess");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
     CHECK_AND_RETURN_RET_LOG(IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel),
                              false,
                              "errorDetails");
@@ -100,8 +96,6 @@ std::string OnCreateRecord::ToString() const
        << "\"version\": " << version << ","
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "\"isSuccess\": \"" << isSuccess << "\","
-       << "\"fileSourceType\": \"" << fileSourceType << "\","
-       << "\"storagePath\": \"" << storagePath << "\","
        << "\"livePhotoCachePath\": \"" << livePhotoCachePath << "\","
        << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
        << "\"errorDetails\": [";

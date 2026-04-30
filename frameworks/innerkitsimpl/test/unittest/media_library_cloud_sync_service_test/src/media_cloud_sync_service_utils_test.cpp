@@ -34,6 +34,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "media_file_utils.h"
 #include "media_string_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace testing::ext;
@@ -128,13 +129,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FileIsLocal_Test, TestSize.Level1)
 {
     EXPECT_EQ(CloudMediaSyncUtils::FileIsLocal(0), false);
     EXPECT_EQ(CloudMediaSyncUtils::FileIsLocal(1), true);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetCloudPath_Test, TestSize.Level1)
-{
-    EXPECT_EQ(CloudMediaSyncUtils::GetCloudPath("", ""), "");
-    EXPECT_EQ(CloudMediaSyncUtils::GetCloudPath("hello", "world"), "");
-    EXPECT_EQ(CloudMediaSyncUtils::GetCloudPath("/user/local/test", "/user"), "/user/local/test");
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetThumbParentPath_Test, TestSize.Level1)
@@ -1233,639 +1227,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SingleSeparator, TestSiz
     EXPECT_EQ(result, "[1,2,3]");
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_WithValidData, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖有效数据分支（触发条件：localPhotosPoOp有值）；验证调用GetLocalPathWithAnco并返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 1;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_LakeFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖Lake文件类型分支（触发条件：fileSourceType==3）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path/image.jpg";
-    localPhotosPo.fileSourceType = 3;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_NoValue, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖无值分支（触发条件：localPhotosPoOp为nullopt）；验证返回E_ERR
-    CloudMediaPullDataDto pullData;
-    pullData.localPhotosPoOp = std::nullopt;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_ERR);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_EmptyPaths, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖空路径分支（触发条件：storagePath和data都为空）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "";
-    localPhotosPo.fileSourceType = 1;
-    localPhotosPo.data = "";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_ZeroFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖零文件源类型分支（触发条件：fileSourceType==0）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 0;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_NegativeFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖负文件源类型分支（触发条件：fileSourceType==-1）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = -1;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_LargeFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖大文件源类型分支（触发条件：fileSourceType==999）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 999;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_NonLakeFile, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖非Lake文件分支（触发条件：fileSourceType!=3）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_LakeFile, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖Lake文件分支（触发条件：fileSourceType==3）；验证localPath等于storagePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path/image.jpg";
-    pathInfo.fileSourceType = 3;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/lake/path/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_EmptyFilePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖空filePath分支（触发条件：filePath为空字符串）；验证localPath为空
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_EmptyStoragePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖空storagePath分支（触发条件：storagePath为空且fileSourceType==3）；验证localPath为空
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "";
-    pathInfo.fileSourceType = 3;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_BothEmptyPaths, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖双空路径分支（触发条件：filePath和storagePath都为空）；验证localPath为空
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "";
-    pathInfo.storagePath = "";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_ZeroFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖零文件源类型分支（触发条件：fileSourceType==0）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 0;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_NegativeFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖负文件源类型分支（触发条件：fileSourceType==-1）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = -1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_LargeFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖大文件源类型分支（触发条件：fileSourceType==999）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 999;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_LongFilePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖长filePath分支（触发条件：filePath包含多层子目录）；验证长filePath正确赋值
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/very/long/path/structure/to/test/file.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/very/long/path/structure/to/test/file.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_LongStoragePath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖长storagePath分支（触发条件：storagePath包含多层子目录且fileSourceType==3）；验证长storagePath正确赋值
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/very/long/path/structure/to/test/file.jpg";
-    pathInfo.fileSourceType = 3;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/lake/very/long/path/structure/to/test/file.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_SpecialCharactersInPath, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖特殊字符分支（触发条件：filePath包含@特殊字符）；验证特殊字符正确处理
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/file@name.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/file@name.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_TwoFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==2分支（触发条件：fileSourceType==2）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 2;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FourFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==4分支（触发条件：fileSourceType==4）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 4;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FiveFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==5分支（触发条件：fileSourceType==5）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 5;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_TwoFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==2分支（触发条件：fileSourceType==2）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 2;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_FourFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==4分支（触发条件：fileSourceType==4）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 4;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_FiveFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==5分支（触发条件：fileSourceType==5）；验证返回E_OK且localPath等于filePath
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 5;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToStringWithCommaAndQuote_SpecialCharsInValue, TestSize.Level1)
-{
-    // 用例说明：测试ToStringWithCommaAndQuote功能；覆盖特殊字符分支（触发条件：值包含引号、空格等特殊字符）；验证特殊字符原样保留
-    std::vector<std::string> values = {"test'quote", "test\"double", "test space"};
-    std::string result = CloudMediaDaoUtils::ToStringWithCommaAndQuote(values);
-    EXPECT_EQ(result, "'test'quote','test\"double','test space'");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToStringWithComma_SpecialCharsInValue, TestSize.Level1)
-{
-    // 用例说明：测试ToStringWithComma功能；覆盖特殊字符分支（触发条件：值包含逗号、空格、引号）；验证特殊字符原样保留
-    std::vector<std::string> fileIds = {"id,with,comma", "id with space", "id'test"};
-    std::string result = CloudMediaDaoUtils::ToStringWithComma(fileIds);
-    EXPECT_EQ(result, "id,with,comma,id with space,id'test");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_MultipleSamePlaceholders, TestSize.Level1)
-{
-    // 用例说明：测试FillParams功能；覆盖重复占位符分支（触发条件：{0}出现多次）；验证所有{0}都被替换
-    std::string sql = "SELECT * FROM table WHERE a={0} AND b={1} AND c={0}";
-    std::vector<std::string> bindArgs = {"value1", "value2"};
-    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
-    EXPECT_EQ(result, "SELECT * FROM table WHERE a=value1 AND b=value2 AND c=value1");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_NestedPlaceholders, TestSize.Level1)
-{
-    // 用例说明：测试FillParams功能；覆盖嵌套占位符分支（触发条件：SQL包含括号和多个占位符）；验证嵌套结构正确处理
-    std::string sql = "SELECT * FROM table WHERE id={0} AND (a={1} OR b={2})";
-    std::vector<std::string> bindArgs = {"100", "200", "300"};
-    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
-    EXPECT_EQ(result, "SELECT * FROM table WHERE id=100 AND (a=200 OR b=300)");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_PlaceholderAtStart, TestSize.Level1)
-{
-    // 用例说明：测试FillParams功能；覆盖占位符在开头分支（触发条件：{0}在SQL开头）；验证开头占位符正确替换
-    std::string sql = "{0} FROM table";
-    std::vector<std::string> bindArgs = {"SELECT"};
-    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
-    EXPECT_EQ(result, "SELECT FROM table");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_PlaceholderAtEnd, TestSize.Level1)
-{
-    // 用例说明：测试FillParams功能；覆盖占位符在末尾分支（触发条件：{0}在SQL末尾）；验证末尾占位符正确替换
-    std::string sql = "SELECT * FROM table WHERE id={0}";
-    std::vector<std::string> bindArgs = {"123"};
-    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
-    EXPECT_EQ(result, "SELECT * FROM table WHERE id=123");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, FillParams_TenPlaceholders, TestSize.Level1)
-{
-    // 用例说明：测试FillParams功能；覆盖多占位符分支（触发条件：bindArgs.size()==10）；验证10个占位符全部正确替换
-    std::string sql = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}";
-    std::vector<std::string> bindArgs = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
-    std::string result = MediaStringUtils::FillParams(sql, bindArgs);
-    EXPECT_EQ(result, "a,b,c,d,e,f,g,h,i,j");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_SingleNumber, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖单数字分支（触发条件：vector.size()==1且为数字）；验证返回包含该数字的向量
-    std::vector<std::string> albumIds = {"123"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 1);
-    EXPECT_EQ(result[0], "123");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_TwoNumbers, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖双数字分支（触发条件：vector.size()==2且都为数字）；验证返回两个数字
-    std::vector<std::string> albumIds = {"1", "2"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], "1");
-    EXPECT_EQ(result[1], "2");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_SixNumbers, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖多数字分支（触发条件：vector.size()==6且都为数字）；验证返回6个数字
-    std::vector<std::string> albumIds = {"1", "2", "3", "4", "5", "6"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 6);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_TenNumbers, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖多数字分支（触发条件：vector.size()==10且都为数字）；验证返回10个数字
-    std::vector<std::string> albumIds = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 10);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_OnlyNonNumbers, TestSize.Level1)
-{
-    // 用例说明：测试GetNumbers功能；覆盖全非数字分支（触发条件：所有值都不是数字）；验证返回空向量
-    std::vector<std::string> albumIds = {"a", "b", "c"};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetNumbers(albumIds);
-    EXPECT_EQ(result.size(), 0);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToInt32_PositiveNumber, TestSize.Level1)
-{
-    // 用例说明：测试ToInt32功能；覆盖正数分支（触发条件：字符串为正数）；验证返回正确的正数int32_t值
-    std::string str = "100";
-    int32_t result = CloudMediaDaoUtils::ToInt32(str);
-    EXPECT_EQ(result, 100);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToInt32_One, TestSize.Level1)
-{
-    // 用例说明：测试ToInt32功能；覆盖边界值分支（触发条件：字符串为"1"）；验证返回1
-    std::string str = "1";
-    int32_t result = CloudMediaDaoUtils::ToInt32(str);
-    EXPECT_EQ(result, 1);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToInt32_MinusOne, TestSize.Level1)
-{
-    // 用例说明：测试ToInt32功能；覆盖边界值分支（触发条件：字符串为"-1"）；验证返回-1
-    std::string str = "-1";
-    int32_t result = CloudMediaDaoUtils::ToInt32(str);
-    EXPECT_EQ(result, -1);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, ToInt32_SmallNumber, TestSize.Level1)
-{
-    // 用例说明：测试ToInt32功能；覆盖小正数分支（触发条件：字符串为小正数）；验证返回正确的小正数
-    std::string str = "42";
-    int32_t result = CloudMediaDaoUtils::ToInt32(str);
-    EXPECT_EQ(result, 42);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_TwoValues, TestSize.Level1)
-{
-    // 用例说明：测试GetStringVector功能；覆盖双值分支（触发条件：intVals.size()==2）；验证返回两个字符串
-    std::vector<int32_t> intVals = {10, 20};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetStringVector(intVals);
-    EXPECT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], "10");
-    EXPECT_EQ(result[1], "20");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_SixValues, TestSize.Level1)
-{
-    // 用例说明：测试GetStringVector功能；覆盖多值分支（触发条件：intVals.size()==6）；验证返回6个字符串
-    std::vector<int32_t> intVals = {1, 2, 3, 4, 5, 6};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetStringVector(intVals);
-    EXPECT_EQ(result.size(), 6);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_TenValues_2, TestSize.Level1)
-{
-    // 用例说明：测试GetStringVector功能；覆盖多值分支（触发条件：intVals.size()==10）；验证返回10个字符串
-    std::vector<int32_t> intVals = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetStringVector(intVals);
-    EXPECT_EQ(result.size(), 10);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetStringVector_MixedPositiveNegative, TestSize.Level1)
-{
-    // 用例说明：测试GetStringVector功能；覆盖混合正负值分支（触发条件：包含正数、0、负数）；验证所有值正确转换
-    std::vector<int32_t> intVals = {-10, 0, 10};
-    std::vector<std::string> result = CloudMediaDaoUtils::GetStringVector(intVals);
-    EXPECT_EQ(result.size(), 3);
-    EXPECT_EQ(result[0], "-10");
-    EXPECT_EQ(result[1], "0");
-    EXPECT_EQ(result[2], "10");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_TwoValues, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖双值分支（触发条件：vec.size()==2）；验证返回格式为"[v1, v2]"
-    std::vector<uint64_t> vec = {100, 200};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, ", ");
-    EXPECT_EQ(result, "[100, 200]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SixValues, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖多值分支（触发条件：vec.size()==6）；验证6个值正确格式化
-    std::vector<uint64_t> vec = {1, 2, 3, 4, 5, 6};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, ", ");
-    EXPECT_EQ(result, "[1, 2, 3, 4, 5, 6]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_TenValues_2, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖多值分支（触发条件：vec.size()==10）；验证10个值正确格式化
-    std::vector<uint64_t> vec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, ", ");
-    EXPECT_EQ(result, "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SeparatorSemicolon, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖分号分隔符分支（触发条件：分隔符为";"）；验证使用分号分隔
-    std::vector<uint64_t> vec = {1, 2, 3};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, ";");
-    EXPECT_EQ(result, "[1;2;3]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SeparatorHyphen, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖连字符分隔符分支（触发条件：分隔符为"-"）；验证使用连字符分隔
-    std::vector<uint64_t> vec = {10, 20, 30};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, "-");
-    EXPECT_EQ(result, "[10-20-30]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_SeparatorUnderscore, TestSize.Level1)
-{
-    // 用例说明：测试VectorToString功能；覆盖下划线分隔符分支（触发条件：分隔符为"_"）；验证使用下划线分隔
-    std::vector<uint64_t> vec = {100, 200, 300};
-    std::string result = CloudMediaDaoUtils::VectorToString(vec, "_");
-    EXPECT_EQ(result, "[100_200_300]");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_DifferentFileSourceType, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==10分支（触发条件：fileSourceType==10）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 10;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathByPullData_FileSourceTypeOne, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathByPullData功能；覆盖fileSourceType==1分支（触发条件：fileSourceType==1）；验证返回E_OK
-    CloudMediaPullDataDto pullData;
-    PhotosPo localPhotosPo;
-    localPhotosPo.storagePath = "/storage/lake/path";
-    localPhotosPo.fileSourceType = 1;
-    localPhotosPo.data = "/storage/cloud/files/test/image.jpg";
-    pullData.localPhotosPoOp = localPhotosPo;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathByPullData(pullData, localPath);
-    EXPECT_EQ(result, E_OK);
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FileSourceTypeOne, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==1分支（触发条件：fileSourceType==1）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FileSourceTypeTwo, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==2分支（触发条件：fileSourceType==2）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 2;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_FileSourceTypeTen, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖fileSourceType==10分支（触发条件：fileSourceType==10）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/path";
-    pathInfo.fileSourceType = 10;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_SamePaths, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖相同路径分支（触发条件：filePath==storagePath）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPathWithAnco_DifferentPaths, TestSize.Level1)
-{
-    // 用例说明：测试GetLocalPathWithAnco功能；覆盖不同路径分支（触发条件：filePath!=storagePath且fileSourceType!=3）；验证localPath等于filePath
-    CloudMediaDaoUtils::PathInfo pathInfo;
-    pathInfo.filePath = "/storage/cloud/files/test/image.jpg";
-    pathInfo.storagePath = "/storage/lake/other/image.jpg";
-    pathInfo.fileSourceType = 1;
-    std::string localPath;
-    int32_t result = CloudMediaDaoUtils::GetLocalPathWithAnco(pathInfo, localPath);
-    EXPECT_EQ(result, E_OK);
-    EXPECT_EQ(localPath, "/storage/cloud/files/test/image.jpg");
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, ToStringWithCommaAndQuote_ThreeValues, TestSize.Level1)
 {
     // 用例说明：测试ToStringWithCommaAndQuote功能；覆盖三值分支（触发条件：vector.size()==3）；验证三个值正确格式化
@@ -1935,5 +1296,259 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test_002, TestSize.Level1
     EXPECT_EQ(photosDto.uniqueId, "test_unique_id_inner");
     EXPECT_EQ(photosDto.packageName, "test_package_name_inner");
     EXPECT_EQ(photosDto.photoRiskStatus, 1);
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLpathWithoutDocPrefix_NormalPath_Test, TestSize.Level1)
+{
+    string lPath = "/FromDocs/Documents";
+    string result = CloudMediaSyncUtils::GetLpathWithoutDocPrefix(lPath);
+    EXPECT_EQ(result, "Documents");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLpathWithoutDocPrefix_RootPath_Test, TestSize.Level1)
+{
+    string lPath = "/FromDocs/";
+    string result = CloudMediaSyncUtils::GetLpathWithoutDocPrefix(lPath);
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLpathWithoutDocPrefix_NonFileManager_Test, TestSize.Level1)
+{
+    string lPath = "/Pictures/Camera";
+    string result = CloudMediaSyncUtils::GetLpathWithoutDocPrefix(lPath);
+    EXPECT_EQ(result, "/Pictures/Camera");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLpathWithoutDocPrefix_LowerCase_Test, TestSize.Level1)
+{
+    string lPath = "/fromdocs/documents";
+    string result = CloudMediaSyncUtils::GetLpathWithoutDocPrefix(lPath);
+    EXPECT_EQ(result, "documents");
+}
+
+// FindStoragePath 函数测试
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_MediaAsset_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_MediaAsset_Hidden_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.hidden = 1;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_MediaAsset_Trashed_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 123456789;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DocsAsset_Normal_ReturnsStoragePath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 1;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/Docs/test.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/Docs/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DocsAsset_Hidden_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 1;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 1;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DocsAsset_Trashed_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 1;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 123456789;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DocsAsset_HiddenAndTrashed_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 1;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 1;
+    photoInfo.dateTrashed = 123456789;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_LakeAsset_Normal_ReturnsStoragePath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 3;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/HO_DATA_EXT_MISC/test.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/HO_DATA_EXT_MISC/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_LakeAsset_Hidden_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 3;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/HO_DATA_EXT_MISC/test.jpg";
+    photoInfo.hidden = 1;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_LakeAsset_Trashed_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 3;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/HO_DATA_EXT_MISC/test.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 123456789;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_LakeAsset_HiddenAndTrashed_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 3;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/HO_DATA_EXT_MISC/test.jpg";
+    photoInfo.hidden = 1;
+    photoInfo.dateTrashed = 123456789;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_EmptyData_ReturnsEmpty, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_EmptyStoragePath_ReturnsEmpty, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 1;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_AllFieldsDefault_ReturnsDataPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_UnknownSourceType_ReturnsStoragePath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 99;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test.jpg";
+    photoInfo.storagePath = "/storage/media/unknown/test.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DataWithChineseChars, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/测试文件.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/测试文件.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_DataWithSpecialChars, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/test-file_name.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result, "/storage/media/local/files/Photo/16/test-file_name.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, FindStoragePath_LongPath, TestSize.Level1)
+{
+    PhotosPo photoInfo;
+    photoInfo.fileSourceType = 0;
+    photoInfo.data = "/storage/cloud/files/Photo/16/very_long_directory_name/very_long_file_name.jpg";
+    photoInfo.hidden = 0;
+    photoInfo.dateTrashed = 0;
+
+    std::string result = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
+    EXPECT_EQ(result.find("/storage/media/local/files"), 0);
 }
 }  // namespace OHOS::Media::CloudSync

@@ -23,6 +23,26 @@
 #include "photo_album_column.h"
 
 namespace OHOS::Media::CloudSync {
+// 文管资产路径关键字，用于识别文管相册（source_path 包含此路径）
+#define FROM_DOCS_KEYWORD "/FromDocs/"
+// 文管资产 storage_path 基础前缀
+#define DOCS_STORAGE_PATH_PREFIX "/storage/media/local/files/Docs/"
+// 文管资产 storage_path 根目录模式：{0}=display_name
+#define DOCS_STORAGE_PATH_ROOT_PATTERN "/storage/media/local/files/Docs/{0}"
+// 文管资产 storage_path 子目录模式：{0}=lPath(去掉/FromDocs/前缀), {1}=display_name
+#define DOCS_STORAGE_PATH_NORMAL_PATTERN "/storage/media/local/files/Docs/{0}/{1}"
+// 湖内资产 storage_path 基础前缀
+#define LAKE_STORAGE_PATH_PREFIX "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/"
+// 湖内资产 storage_path 根目录模式：{0}=display_name
+#define LAKE_STORAGE_PATH_ROOT_PATTERN "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/{0}"
+// 湖内资产 storage_path 子目录模式：{0}=lPath, {1}=display_name
+#define LAKE_STORAGE_PATH_NORMAL_PATTERN "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/{0}/{1}"
+// 湖内资产 data 字段前缀
+#define LAKE_DATA_PATH_PREFIX "/storage/cloud/files/Photo/0/"
+#define PATH_SEPARATOR "/"
+// 媒体资产 data 字段本地路径前缀
+#define CLOUD_STORAGE_PATH_PREFIX "/storage/media/local/files/Photo"
+
 const std::string FILE_ATTRIBUTES = "attributes";
 const std::string FILE_FIX_VERSION = "fix_version";
 const std::string FILE_LOCAL_ID = "local_id";

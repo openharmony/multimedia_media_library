@@ -29,9 +29,6 @@
 
 namespace OHOS::Media::CloudSync {
 
-// Anco FileSourceType
-const int32_t MEDIA_HO_LAKE_CONST = 3;
-
 std::string CloudMediaDaoUtils::ToStringWithCommaAndQuote(const std::vector<std::string> &values)
 {
     std::stringstream os;
@@ -128,29 +125,4 @@ int32_t CloudMediaDaoUtils::ExecuteSql(const std::string &sql)
     return rdbStore->ExecuteSql(sql);
 }
 
-int32_t CloudMediaDaoUtils::GetLocalPathByPullData(const CloudMediaPullDataDto &pullData, std::string &localPath)
-{
-    PathInfo pathInfo;
-    CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), E_ERR, "localPhotosPoOp has no value");
-    PhotosPo localPhotosPo = pullData.localPhotosPoOp.value();
-    pathInfo.storagePath = localPhotosPo.storagePath.value_or("");
-    pathInfo.fileSourceType = localPhotosPo.fileSourceType.value_or(0);
-    pathInfo.filePath = localPhotosPo.data.value_or("");
-    return GetLocalPathWithAnco(pathInfo, localPath);
-}
-
-int32_t CloudMediaDaoUtils::GetLocalPathWithAnco(PathInfo pathInfo, std::string &localPath)
-{
-    std::string storagePath = pathInfo.storagePath;
-    std::string filePath = pathInfo.filePath;
-    int32_t fileSourceType = pathInfo.fileSourceType;
-    if (fileSourceType != MEDIA_HO_LAKE_CONST) {
-        localPath = filePath;
-    } else {
-        localPath = storagePath;
-    }
-    MEDIA_INFO_LOG("Anco:: content storagePath: %{public}s, lowerPath: %{public}s",
-        storagePath.c_str(), localPath.c_str());
-    return E_OK;
-}
 }  // namespace OHOS::Media::CloudSync
