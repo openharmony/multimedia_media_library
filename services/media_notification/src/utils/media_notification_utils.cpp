@@ -139,8 +139,6 @@ bool NotificationUtils::WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo>
             MEDIA_ERR_LOG("fail to marshalling sercerParcel");
             return false;
         }
-        CHECK_AND_RETURN_RET_LOG(item->GetDataSize() < MAX_PARCEL_SIZE, false,
-            "The size of the parcel exceeds the limit.");
         auto *uBuf = new (std::nothrow) uint8_t[item->GetDataSize()];
         if (uBuf == nullptr) {
             MEDIA_ERR_LOG("parcel->GetDataSize is null");
