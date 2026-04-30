@@ -47,6 +47,7 @@
 #include "classify_aggregate_types.h"
 #undef protected
 #undef private
+#include <fstream>
 #include <random>
 #include "parameters.h"
 #include "media_config_info_column.h"
@@ -2773,11 +2774,26 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_004");
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    const std::string testDir = "/data/test/others_clone_dynamic_ut";
+    const std::string imagePath = testDir + "/test_DYNAMIC.jpg";
+    const std::string videoPath = testDir + "/test_DYNAMIC.mp4";
+    MediaFileUtils::CreateDirectory(testDir);
+    {
+        std::ofstream imageFile(imagePath, std::ios::binary);
+        imageFile << "img";
+    }
+    {
+        std::ofstream videoFile(videoPath, std::ios::binary);
+        videoFile << "video";
+    }
     FileInfo fileInfo;
-    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.jpg";
+    fileInfo.filePath = imagePath;
     bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
     EXPECT_FALSE(isDynamicVideo);
     EXPECT_EQ(fileInfo.subtype, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    (void)MediaFileUtils::DeleteFile(imagePath);
+    (void)MediaFileUtils::DeleteFile(videoPath);
+    (void)MediaFileUtils::DeleteDir(testDir);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005, TestSize.Level2)
@@ -2785,11 +2801,26 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005");
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    const std::string testDir = "/data/test/others_clone_dynamic_ut";
+    const std::string imagePath = testDir + "/test_DYNAMIC.jpg";
+    const std::string videoPath = testDir + "/test_DYNAMIC.mp4";
+    MediaFileUtils::CreateDirectory(testDir);
+    {
+        std::ofstream imageFile(imagePath, std::ios::binary);
+        imageFile << "img";
+    }
+    {
+        std::ofstream videoFile(videoPath, std::ios::binary);
+        videoFile << "video";
+    }
     FileInfo fileInfo;
-    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.mp4";
+    fileInfo.filePath = videoPath;
     bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
     EXPECT_TRUE(isDynamicVideo);
     EXPECT_EQ(fileInfo.otherSubtype, OTHER_DYNAMIC_VIDEO_TYPE);
+    (void)MediaFileUtils::DeleteFile(imagePath);
+    (void)MediaFileUtils::DeleteFile(videoPath);
+    (void)MediaFileUtils::DeleteDir(testDir);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_001, TestSize.Level2)
