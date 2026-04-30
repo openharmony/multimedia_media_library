@@ -248,9 +248,9 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
         this->ClearLocalData(pullData, fdirtyData);
     } else {
+        this->fileManagerService_.RelocateFile(pullData);
         // 处理元数据变更
         CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
-        this->fileManagerService_.RelocateFile(pullData);
     }
     return E_OK;
 }
@@ -1310,7 +1310,9 @@ int32_t CloudMediaPhotosService::RemoveLocalFile(const CloudMediaPullDataDto &pu
     const std::string fileStoragePath = CloudMediaSyncUtils::FindFileStoragePath(photoInfo);
     std::string targetPath = isLocal ? fileStoragePath : photoInfo.data.value_or("");
     int32_t ret = unlink(targetPath.c_str());
-    MEDIA_INFO_LOG("RemoveLocalFile, ret: %{public}d, targetPath: %{public}s", ret, targetPath.c_str());
+    MEDIA_INFO_LOG("RemoveLocalFile, ret: %{public}d, targetPath: %{public}s",
+        ret,
+        MediaFileUtils::DesensitizePath(targetPath).c_str());
     std::string cloudPath = photoInfo.data.value_or("");
     CloudMediaSyncUtils::RemoveThmParentPath(cloudPath, PhotoColumn::FILES_CLOUD_DIR);
     CloudMediaSyncUtils::RemoveEditDataParentPath(cloudPath);

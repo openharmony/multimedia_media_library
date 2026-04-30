@@ -586,7 +586,7 @@ std::string CloudMediaSyncUtils::GetLpathWithoutDocPrefix(const std::string &lPa
 std::string CloudMediaSyncUtils::FindFileStoragePathWithPullData(const CloudMediaPullDataDto &pullData)
 {
     CHECK_AND_RETURN_RET_LOG(pullData.localPhotosPoOp.has_value(), "", "localPhotosPoOp has no value");
-    PhotosPo photoInfo = pullData.localPhotosPoOp.value();
+    const PhotosPo &photoInfo = pullData.localPhotosPoOp.value();
     const int32_t fileSourceType = pullData.attributesFileSourceType;
     const bool isHidden = pullData.IsHiddenAsset();
     const bool isTrashed = pullData.basicRecycledTime != 0;
