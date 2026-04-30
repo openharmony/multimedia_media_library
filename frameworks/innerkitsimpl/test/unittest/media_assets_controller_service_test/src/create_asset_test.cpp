@@ -28,6 +28,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -135,6 +136,22 @@ static int32_t GetAlbumId(const std::string &albumName)
     return retId;
 }
 
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        Media::PhotoUpgrade::CREATE_PHOTO_TABLE,
+        Media::PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
 void CreateAssetTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -143,6 +160,7 @@ void CreateAssetTest::SetUpTestCase(void)
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
         exit(1);
     }
+    SetTables();
     ClearTable(PhotoAlbumColumns::TABLE);
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     CreateAlbum(PhotoAlbumType::USER, PhotoAlbumSubType::USER_GENERIC, "TestUserAlbum");
