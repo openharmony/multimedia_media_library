@@ -58,13 +58,13 @@ bool CloudMediaFileManagerService::Accept(CloudMediaPullDataDto &pullData)
     const bool isNeedRelocate = deviceFileStoragePath != cloudFileStoragePath;
     CHECK_AND_RETURN_RET_LOG(
         isNeedRelocate,
-        true,
+        false,
         "file path no change, "
         "cloudId: %{public}s, fileSourceType: %{public}d, storagePath: %{public}s, deviceFileStoragePath: %{public}s",
         pullData.cloudId.c_str(),
         photoInfo.fileSourceType.value_or(0),
-        photoInfo.storagePath.value_or("").c_str(),
-        deviceFileStoragePath.c_str());
+        MediaFileUtils::DesensitizePath(photoInfo.storagePath.value_or("")).c_str(),
+        MediaFileUtils::DesensitizePath(deviceFileStoragePath).c_str());
 
     // 媒体桶路劲已有文件，不能再进行文件移动
     const bool isMediaFile = MediaStringUtils::StartsWith(cloudFileStoragePath, CLOUD_STORAGE_PATH_PREFIX);
@@ -72,7 +72,7 @@ bool CloudMediaFileManagerService::Accept(CloudMediaPullDataDto &pullData)
     CHECK_AND_RETURN_RET_LOG(!isTargetMediaExists,
         false,
         "target media file exists, cloudFileStoragePath: %{public}s",
-        cloudFileStoragePath.c_str());
+        MediaFileUtils::DesensitizePath(cloudFileStoragePath).c_str());
 
     MEDIA_INFO_LOG("Relocate Accept, cloud: %{public}s", pullData.cloudId.c_str());
     return true;
@@ -97,9 +97,9 @@ int32_t CloudMediaFileManagerService::RelocateFile(CloudMediaPullDataDto &pullDa
         "Relocate file, ret: %{public}d, "
         "deviceFileStoragePath: %{public}s, cloudFileStoragePath: %{public}s, deviceTargetFileStoragePath: %{public}s",
         ret,
-        deviceFileStoragePath.c_str(),
-        cloudFileStoragePath.c_str(),
-        deviceTargetFileStoragePath.c_str());
+        MediaFileUtils::DesensitizePath(deviceFileStoragePath).c_str(),
+        MediaFileUtils::DesensitizePath(cloudFileStoragePath).c_str(),
+        MediaFileUtils::DesensitizePath(deviceTargetFileStoragePath).c_str());
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
