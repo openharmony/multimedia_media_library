@@ -22,6 +22,7 @@
 #include "medialibrary_db_const.h"
 #include "media_string_utils.h"
 #include "cloud_media_sync_const.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 /**
@@ -76,7 +77,7 @@ void CloudMediaFileInfoService::FixFileInfoWithCloudOnly(CloudMediaPullDataDto &
     MEDIA_INFO_LOG("cloudId: %{public}s, fileSourceType: %{public}d, storagePath: %{public}s",
                    pullData.cloudId.c_str(),
                    pullData.attributesFileSourceType,
-                   pullData.attributesStoragePath.c_str());
+                   MediaFileUtils::DesensitizePath(pullData.attributesStoragePath).c_str());
     return;
 }
 
@@ -135,10 +136,10 @@ void CloudMediaFileInfoService::FixFileInfoWithLocal(CloudMediaPullDataDto &pull
     // 修正规则为：/storage/media/local/files/Docs/HO_DATA_EXT_MISC/{lPath}/{displayName}
     const std::string lPath = CloudMediaSyncUtils::GetLpath(pullData);
     const std::string displayName = pullData.basicDisplayName;
-    const std::string LAKE_PATH_PREFIX = PATH_SEPARATOR;
+    const std::string lakePathPrefix = PATH_SEPARATOR;
     std::string lPathWithoutPrefix = lPath;
-    if (MediaStringUtils::StartsWith(lPath, LAKE_PATH_PREFIX)) {
-        lPathWithoutPrefix = lPath.substr(LAKE_PATH_PREFIX.length());
+    if (MediaStringUtils::StartsWith(lPath, lakePathPrefix)) {
+        lPathWithoutPrefix = lPath.substr(lakePathPrefix.length());
     }
     if (lPathWithoutPrefix.empty()) {
         storagePath = MediaStringUtils::FillParams(LAKE_STORAGE_PATH_ROOT_PATTERN, {displayName});
@@ -196,7 +197,7 @@ void CloudMediaFileInfoService::AdjustFileInfoWithLocal(CloudMediaPullDataDto &p
     MEDIA_INFO_LOG("No need relocate file, cloudId: %{public}s, fileSourceType: %{public}d, storagePath: %{public}s",
                    pullData.cloudId.c_str(),
                    pullData.attributesFileSourceType,
-                   pullData.attributesStoragePath.c_str());
+                   MediaFileUtils::DesensitizePath(pullData.attributesStoragePath).c_str());
     return;
 }
 
@@ -277,7 +278,7 @@ void CloudMediaFileInfoService::FixFileInfo(CloudMediaPullDataDto &pullData)
         pullData.cloudId.c_str(),
         fileSourceTypeBefore,
         fileSourceTypeAfter,
-        storagePathBefore.c_str(),
-        storagePathAfter.c_str());
+        MediaFileUtils::DesensitizePath(storagePathBefore).c_str(),
+        MediaFileUtils::DesensitizePath(storagePathAfter).c_str());
 }
 }  // namespace OHOS::Media::CloudSync

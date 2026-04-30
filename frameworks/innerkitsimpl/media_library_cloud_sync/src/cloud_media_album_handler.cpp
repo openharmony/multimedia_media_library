@@ -357,7 +357,6 @@ int32_t CloudMediaAlbumHandler::OnCopyRecords(const std::map<std::string, MDKRec
 
 int32_t CloudMediaAlbumHandler::OnStartSync()
 {
-    MEDIA_INFO_LOG("OnStartSync enter");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_START_SYNC);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
