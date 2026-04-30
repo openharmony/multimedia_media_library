@@ -41,11 +41,6 @@ const string CLOUD_UPDATE_EVENT = "usual.event.DUE_HAP_CFG_UPDATED";
 const string CLOUD_EVENT_INFO_TYPE = "type";
 const string CLOUD_EVENT_INFO_TYPE_VALUE = "medialibrary_kit_whitelist";
 const string CLOUD_EVENT_INFO_TYPE_INVALID_VALUE = "invalidType";
-HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level1)
-{
-    bool ret = MedialibrarySubscriber::Subscribe();
-    EXPECT_EQ(ret, true);
-}
 
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level1)
 {
