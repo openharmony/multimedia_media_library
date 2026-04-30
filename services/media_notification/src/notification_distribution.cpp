@@ -38,7 +38,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 namespace Notification {
-const size_t MAX_PARCEL_SIZE = 200 * 1024;
 
 NotificationDistribution::NotificationDistribution() {}
 
@@ -189,8 +188,6 @@ int32_t NotificationDistribution::ProcessUserDefineNotifyInfo(const UserDefineNo
     notifyInfo.WriteBodyFromParcel(parcel);
  
     uintptr_t buf = parcel->GetData();
-    CHECK_AND_RETURN_RET_LOG(parcel->GetDataSize() != 0 && parcel->GetDataSize() < MAX_PARCEL_SIZE, E_ERR,
-        "The size of the parcel exceeds the limit.");
     auto *uBuf = new (std::nothrow) uint8_t[parcel->GetDataSize()];
     CHECK_AND_RETURN_RET_LOG(uBuf != nullptr, E_ERR, "parcel GetDataSize is null");
     errno_t ret = memcpy_s(uBuf, parcel->GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel->GetDataSize());
