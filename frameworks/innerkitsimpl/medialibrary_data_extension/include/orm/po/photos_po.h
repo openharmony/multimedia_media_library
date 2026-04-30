@@ -20,6 +20,7 @@
 #include <vector>
 #include <sstream>
 #include "cloud_media_define.h"
+#include "photo_album_po.h"
 
 namespace OHOS::Media::ORM {
 class EXPORT PhotosPo {
@@ -110,6 +111,9 @@ public:
     // All the properties in the photo table are optional.
     // If they are not set, they will not be updated in the database.
     std::unordered_map<std::string, std::string> attributes;
+
+    // 资产关联的相册信息
+    std::optional<PhotoAlbumPo> albumInfoOp;
 
 private:
     void GetAlbumInfo(std::stringstream &ss) const;

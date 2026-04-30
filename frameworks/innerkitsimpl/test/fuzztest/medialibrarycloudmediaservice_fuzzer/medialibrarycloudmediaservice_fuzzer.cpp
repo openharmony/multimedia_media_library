@@ -180,15 +180,6 @@ static void HandleRecordFuzzer()
     service.HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
 }
 
-static void ConvertPullDataToPhotosDtoFuzzer()
-{
-    CloudMediaPhotosService service;
-    PhotosDto photo;
-    string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
-    CloudMediaPullDataDto data = FuzzCloudMediaPullDataDto(cloudId);
-    service.ConvertPullDataToPhotosDto(data, photo);
-}
-
 static void OnCreateRecordSuccessFuzzer()
 {
     CloudMediaPhotosService service;
@@ -201,7 +192,6 @@ static void CloudMediadPhotoServiceFuzzer()
 {
     InsertQueryAsset();
     HandleRecordFuzzer();
-    ConvertPullDataToPhotosDtoFuzzer();
     OnCreateRecordSuccessFuzzer();
 }
 

@@ -37,13 +37,12 @@ public:
     static std::string RestoreCloudPath(const std::string &filepath);
     static bool IsLocalDirty(int32_t dirty, bool isDelete);
     static bool FileIsLocal(const int32_t position);
-    static std::string GetCloudPath(const std::string &path, const std::string &prefixCloud);
     static std::string GetThumbParentPath(const std::string &path, const std::string &prefixCloud);
     static void RemoveThmParentPath(const std::string &path, const std::string &prefixCloud);
     static void RemoveEditDataParentPath(const std::string &path);
     static void RemoveMetaDataPath(const std::string &path);
     static void InvalidVideoCache(const std::string &localPath);
-    static void RemoveMovingPhoto(const CloudMediaPullDataDto &pullData);
+    static void RemoveMovingPhoto(const PhotosPo &photoInfo);
     static void BackUpEditDataSourcePath(const std::string &localPath);
     static void RemoveEditDataSourcePath(const std::string &localPath);
     static void RemoveEditDataPath(const std::string &localPath);
@@ -55,6 +54,7 @@ public:
         const NativeRdb::ValuesBucket &values);
     static std::string GetLpathFromSourcePath(const std::string &sourcePath);
     static std::string GetLpath(const CloudMediaPullDataDto &pullData);
+    static std::string GetLpathWithoutDocPrefix(const std::string &lPath);
     static std::string GetMovingPhotoExtraDataDir(const std::string &localPath);
     static std::string GetMovingPhotoExtraDataPath(const std::string &localPath);
     static std::string GetMovingPhotoVideoPath(const std::string &localPath);
@@ -70,8 +70,11 @@ public:
     static bool CanUpdateExifRotateOnly(int32_t mediaType, int32_t oldExifRotate, int32_t newExifRotate);
     static bool IsCloudEnhancementSupported();
     static void SyncDealWithCompositePhoto(const std::string &assetDataPath, int32_t photoId);
-    static std::string FindStoragePath(
-        const std::string &cloudPath, const std::string &storagePath, const int32_t fileSourceType);
+    static std::string FindFileStoragePath(const PhotosPo &photoInfo);
+    static std::string FindFileStoragePathWithPullData(const CloudMediaPullDataDto &pullData);
+    static int32_t FindUniqueFilePath(const std::string &destPath, std::string &targetFilePath);
+    static int32_t MoveFileWithConflictResolution(
+        const std::string &srcPath, const std::string &destPath, std::string &finalDestPath);
 };
 } // namespace OHOS::Media::CloudSync
 #endif // OHOS_CLOUD_MEDIA_SYNC_UTILS_H

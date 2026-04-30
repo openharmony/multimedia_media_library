@@ -1451,18 +1451,6 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_HandleRecord_Test_00
     EXPECT_EQ(stats[StatsIndex::DELETE_RECORDS_COUNT], 1);
 }
 
-HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_ConvertPullDataToPhotosDto_Test_001, TestSize.Level1)
-{
-    CloudMediaPhotosService service;
-    CloudMediaPullDataDto data;
-    data.basicFileType = FILE_TYPE_VIDEO;
-    data.localPath = "";
-    PhotosDto dto;
-
-    service.ConvertPullDataToPhotosDto(data, dto);
-    EXPECT_EQ(dto.size, data.localSize);
-}
-
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_PullDelete_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosService service;
@@ -1565,6 +1553,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_PullUpdate_Test_001,
     pullData.localPath = "";
     pullData.attributesMediaType = 2;
     pullData.cloudId = "cloud_id1";
+    pullData.localPhotosPoOp = PhotosPo();
 
     std::set<std::string> refreshAlbums;
     std::vector<PhotosDto> fdirtyData;
@@ -1946,6 +1935,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_RemoveLocalFile_Test_0
     dto.attributesSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
     dto.attributesMovingPhotoEffectMode = 0;
     dto.attributesOriginalSubtype = 0;
+    dto.localPhotosPoOp = PhotosPo();
     int32_t ret = service.RemoveLocalFile(dto);
     EXPECT_NE(ret, E_OK); // 暂未配置能删除的资源，先预期not ok
 }
