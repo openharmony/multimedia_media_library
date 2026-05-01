@@ -153,6 +153,7 @@ private:
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t ProcessDuplicatePhoto(const CloudMediaPullDataDto &pullData, const DuplicatePhotoInfo &duplicateInfo,
         std::set<std::string> &refreshAlbums, std::vector<NativeRdb::ValuesBucket> &updateFiles);
+    int32_t PullUpdateEndWithNoFdirty(CloudMediaPullDataDto &pullData, std::vector<PhotosDto> &fdirtyData);
 
 private:
     CloudMediaPhotoServiceProcessor processor_;

@@ -86,8 +86,6 @@ HWTEST_F(OnFetchPhotosVoTest, TC001_Marshalling_Unmarshalling_Success, TestSize.
     original.isRectificationCover = 0;
     original.exifRotate = 0;
     original.isDelete = false;
-    original.fileSourceType = 0;
-    original.storagePath = "/storage";
     original.photoRiskStatus = 0;
     original.isCritical = 0;
     original.hasAttributes = true;
@@ -222,8 +220,6 @@ HWTEST_F(OnFetchPhotosVoTest, TC004_Unmarshalling_ReadBoolHasAttributes_Fail, Te
     original.isRectificationCover = 0;
     original.exifRotate = 0;
     original.isDelete = false;
-    original.fileSourceType = 0;
-    original.storagePath = "/storage";
     original.photoRiskStatus = 0;
     original.isCritical = 0;
     original.hasAttributes = true;
