@@ -32,6 +32,11 @@ EXPORT constexpr int32_t CINEMAGRAPH_INFO_SIZE_LEN = 4;
 EXPORT constexpr int32_t MIN_STANDARD_SIZE = LIVE_TAG_LEN + PLAY_INFO_LEN + VERSION_TAG_LEN;
 EXPORT constexpr uint32_t LIVE_PHOTO_4D_VERSION = 8;
 
+enum class MOVING_PHOTO_VERSION : uint32_t {
+    MOVING_PHOTO_VERSION_8 = 8,        // 不允许外部写入（LIVE_PHOTO_4D_VERSION）
+    MOVING_PHOTO_VERSION_9 = 9,        // 允许外部写入
+};
+
 class MovingPhotoFileUtils : public PhotoFileUtils {
 public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
