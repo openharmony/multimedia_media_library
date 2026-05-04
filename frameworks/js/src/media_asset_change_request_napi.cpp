@@ -34,6 +34,7 @@
 #endif
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
+#include "media_library_error_code.h"
 #include "delete_photos_completed_vo.h"
 #include "trash_photos_vo.h"
 #include "asset_change_vo.h"
@@ -182,6 +183,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("deleteCloudAssetsWithUri", JSDeleteCloudAssetsWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssetsPermanentlyWithUri", JSDeleteAssetsPermanentlyWithUri),
             DECLARE_NAPI_FUNCTION("setLivePhoto4dStatus", JSSetLivePhoto4dStatus),
+            DECLARE_NAPI_FUNCTION("setMovingPhotoVersion", JSSetMovingPhotoVersion),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -580,6 +582,16 @@ void MediaAssetChangeRequestNapi::SetCompositeDisplayMode(int32_t val)
 int32_t MediaAssetChangeRequestNapi::GetCompositeDisplayMode()
 {
     return compositeDisplayMode_;
+}
+
+void MediaAssetChangeRequestNapi::SetMovingPhotoVersion(uint32_t movingPhotoVersion)
+{
+    movingPhotoVersion_ = movingPhotoVersion;
+}
+
+uint32_t MediaAssetChangeRequestNapi::GetMovingPhotoVersion()
+{
+    return movingPhotoVersion_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -3107,6 +3119,30 @@ static bool SetCompositeDisplayModeExecute(MediaAssetChangeRequestAsyncContext &
     return true;
 }
 
+static bool SetMovingPhotoVersionExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    NAPI_INFO_LOG("SetMovingPhotoVersionExecute enter");
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.movingPhotoVersion = changeRequest->GetMovingPhotoVersion();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_MOVING_PHOTO_VERSION);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(context.userId_).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update moving photo version of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -3131,6 +3167,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
     { AssetChangeOperation::ADD_RESOURCE_FOR_PICKER, AddResourceExecute },
     { AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS, SetLivePhoto4dStatusExecute },
+    { AssetChangeOperation::SET_MOVING_PHOTO_VERSION, SetMovingPhotoVersionExecute },
 };
 
 static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)
@@ -3623,6 +3660,37 @@ napi_value MediaAssetChangeRequestNapi::JSSetLivePhoto4dStatus(napi_env env, nap
         fileAsset->SetLivePhoto4dLatestPair(livePhoto4dLatestPair);
     }
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS);
+
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetMovingPhotoVersion(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("JSSetMovingPhotoVersion enter");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_ONE, ARGS_ONE) == napi_ok, "Failed to get object info");
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR);
+
+    uint32_t movingPhotoVersion = 0;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::GetUInt32(env, asyncContext->argv[PARAM0], movingPhotoVersion) == napi_ok,
+        "Failed to parse moving photo version");
+    if (movingPhotoVersion != static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_9)) {
+        NapiError::ThrowError(env, MEDIA_LIBRARY_INVALID_PARAMETER_ERROR,
+            "movingPhotoVersion: %{public}d is invalid, only version 9 is allowed.", movingPhotoVersion);
+        return nullptr;
+    }
+
+    NAPI_INFO_LOG("set moving photo version: %{public}d", movingPhotoVersion);
+    changeRequest->SetMovingPhotoVersion(movingPhotoVersion);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_VERSION);
 
     RETURN_NAPI_UNDEFINED(env);
 }

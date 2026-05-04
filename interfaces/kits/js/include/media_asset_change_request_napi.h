@@ -59,6 +59,7 @@ enum class AssetChangeOperation {
     ADD_RESOURCE_FOR_PICKER,
     SET_APPLINK_STATE,
     SET_LIVEPHOTO_4D_STATUS,
+    SET_MOVING_PHOTO_VERSION,
 };
 
 enum class AddResourceMode {
@@ -128,6 +129,9 @@ public:
     void SetCompositeDisplayMode(int32_t val);
     int32_t GetCompositeDisplayMode();
 
+    void SetMovingPhotoVersion(uint32_t movingPhotoVerion);
+    uint32_t GetMovingPhotoVersion();
+
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
 
@@ -169,6 +173,7 @@ private:
     EXPORT static napi_value JSDeleteCloudAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLivePhoto4dStatus(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetMovingPhotoVersion(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
@@ -200,6 +205,7 @@ private:
     int32_t imageFileType_;
     bool isWriteGpsAdvanced_{false};
     int32_t compositeDisplayMode_ {0};
+    uint32_t movingPhotoVersion_{0};
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

@@ -44,6 +44,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "moving_photo_file_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"
@@ -5292,6 +5293,54 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_photo_critical_is_criti
     EXPECT_EQ(isCritical, 0);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_set_photo_critical_is_critical_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_extra_data_version_invalid_version_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_set_extra_data_version_invalid_version_test_001");
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_version_invalid.jpg");
+    ASSERT_GT(fileId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetExtraDataVersion(fileId, 0);
+    EXPECT_NE(ret, E_OK);
+
+    ret = MediaLibraryPhotoOperations::SetExtraDataVersion(fileId, 7);
+    EXPECT_NE(ret, E_OK);
+
+    ret = MediaLibraryPhotoOperations::SetExtraDataVersion(fileId, 10);
+    EXPECT_NE(ret, E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_set_extra_data_version_invalid_version_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_extra_data_version_invalid_fileid_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_set_extra_data_version_invalid_fileid_test_001");
+
+    int32_t ret = MediaLibraryPhotoOperations::SetExtraDataVersion(-1,
+        static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8));
+    EXPECT_NE(ret, E_OK);
+
+    ret = MediaLibraryPhotoOperations::SetExtraDataVersion(99999,
+        static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_9));
+    EXPECT_NE(ret, E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_set_extra_data_version_invalid_fileid_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_set_extra_data_version_non_moving_photo_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_set_extra_data_version_non_moving_photo_test_001");
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test_non_moving.jpg");
+    ASSERT_GT(fileId, 0);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetExtraDataVersion(fileId,
+        static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8));
+    EXPECT_NE(ret, E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_set_extra_data_version_non_moving_photo_test_001");
 }
 
 // Test that non-critical photos are not filtered

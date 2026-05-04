@@ -45,7 +45,8 @@ bool AssetChangeReqBody::Unmarshalling(MessageParcel &parcel)
         compositeDisplayMode,
         appLinkState,
         livePhoto4dStatus,
-        livePhoto4dLatestPair);
+        livePhoto4dLatestPair,
+        movingPhotoVersion);
 }
 
 bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
@@ -71,7 +72,8 @@ bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
         compositeDisplayMode,
         appLinkState,
         livePhoto4dStatus,
-        livePhoto4dLatestPair);
+        livePhoto4dLatestPair,
+        movingPhotoVersion);
 }
 
 bool AssetChangeRespBody::Unmarshalling(MessageParcel &parcel)
