@@ -2207,4 +2207,13 @@ int32_t MediaAssetsService::ResumePhotoUriPermission(const ResumePhotoUriPermiss
     return E_SUCCESS;
 }
 
+int32_t MediaAssetsService::SetMovingPhotoVersion(const AssetChangeReqBody &reqBody)
+{
+    MEDIA_INFO_LOG("fileId: %{public}d", reqBody.fileId);
+
+    int32_t ret = MediaLibraryPhotoOperations::SetExtraDataVersion(reqBody.fileId, reqBody.movingPhotoVersion);
+
+    MEDIA_INFO_LOG("SetExtraDataVersion end, ret: %{public}d.", ret);
+    return ret;
+}
 } // namespace OHOS::Media
