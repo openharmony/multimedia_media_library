@@ -495,6 +495,7 @@ void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& da
         size_t imageSize;
         if (MediaFileUtils::GetFileSize(path, imageSize)) {
             data->SetFileSize(static_cast<int64_t>(imageSize));
+            data->SetLocalAssetSize(static_cast<int64_t>(imageSize));
         }
         data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
