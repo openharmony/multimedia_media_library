@@ -216,7 +216,7 @@ private:
     int64_t size_;
     int64_t dateModified_;
     int64_t dateAdded_;
-    int64_t localAssetSize_;
+    int64_t localAssetSize_{0};
 
     std::string fileExt_;
     int32_t parentId_;
