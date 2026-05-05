@@ -754,6 +754,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     if (fileInfo.fileSize != 0) {
         value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+        value.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, fileInfo.fileSize);
     } else {
         MEDIA_WARN_LOG("DB file size is zero!");
         value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
