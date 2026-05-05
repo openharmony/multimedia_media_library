@@ -637,6 +637,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::SetLivePhoto4dStatus
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_MOVING_PHOTO_VERSION),
+        &MediaAssetsControllerService::SetMovingPhotoVersion
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::SET_PREFERRED_COMPATIBLE_MODE),
         &MediaAssetsControllerService::SetPreferredCompatibleMode
     },
@@ -3206,5 +3210,23 @@ int32_t MediaAssetsControllerService::ResumePhotoUriPermission(MessageParcel &da
 
     ret = MediaAssetsService::GetInstance().ResumePhotoUriPermission(reqBody, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::SetMovingPhotoVersion(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("SetMovingPhotoVersion enter");
+    AssetChangeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetMovingPhotoVersion Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    if (reqBody.fileId <= 0) {
+        MEDIA_ERR_LOG("SetMovingPhotoVersion fileId is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
+    }
+
+    ret = MediaAssetsService::GetInstance().SetMovingPhotoVersion(reqBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

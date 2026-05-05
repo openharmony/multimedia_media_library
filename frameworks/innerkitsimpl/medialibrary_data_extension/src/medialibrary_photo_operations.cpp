@@ -5957,15 +5957,19 @@ int32_t MediaLibraryPhotoOperations::GetCompressAssetSize(const std::vector<std:
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::SetExtraDataVersionByLivePhoto4d(const int32_t fileId)
+int32_t MediaLibraryPhotoOperations::SetExtraDataVersion(const int32_t fileId, const uint32_t version)
 {
-    MEDIA_INFO_LOG("livePhoto4d:start SetExtraDataVersionByLivePhoto4d, fileId:%{public}d", fileId);
+    if (version < static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8) ||
+        version > static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_9)) {
+        MEDIA_ERR_LOG("version: %{public}d is invalid.", version);
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("livePhoto4d:start SetExtraDataVersion, fileId:%{public}d", fileId);
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "livePhoto4d:RdbStore is null");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    predicates.EqualTo(PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
-        static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D));
     std::vector<std::string> columns = {PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_SUBTYPE,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS, MediaColumn::MEDIA_FILE_PATH};
@@ -5977,13 +5981,15 @@ int32_t MediaLibraryPhotoOperations::SetExtraDataVersionByLivePhoto4d(const int3
     int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(subtype, effectMode, originalSubtype);
-    MEDIA_INFO_LOG("livePhoto4d:SetExtraDataVersionByLivePhoto4d isMovingPhoto:%{public}d", isMovingPhoto);
-    if (isMovingPhoto) {
-        auto filePath = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
-        string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(filePath);
-        return MovingPhotoFileUtils::ModifyExtraDataVersion(extraPath, LIVE_PHOTO_4D_VERSION);
+    MEDIA_INFO_LOG("livePhoto4d:SetExtraDataVersion isMovingPhoto:%{public}d", isMovingPhoto);
+
+    if (!isMovingPhoto) {
+        MEDIA_ERR_LOG("The asset is not moving photo.");
+        return E_ERR;
     }
-    return E_OK;
+    auto filePath = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(filePath);
+    return MovingPhotoFileUtils::ModifyExtraDataVersion(extraPath, version);
 }
 
 int32_t MediaLibraryPhotoOperations::SetLivePhoto4dStatus(const int32_t fileId, const int32_t livePhoto4dStatus,
@@ -6039,7 +6045,7 @@ int32_t MediaLibraryPhotoOperations::SetLivePhoto4dStatus(const int32_t fileId, 
     auto ret = MediaLibraryPhotoOperations::Update(cmd);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "livePhoto4d:update live photo 4d status failed, ret:%{public}d", ret);
     if ((livePhoto4dStatus == static_cast<int32_t>(LivePhoto4dStatusType::TYPE_LIVEPHOTO_4D)) && isMovingPhoto) {
-        ret = SetExtraDataVersionByLivePhoto4d(fileId);
+        ret = SetExtraDataVersion(fileId, static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8));
     }
     return ret;
 }

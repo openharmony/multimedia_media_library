@@ -732,5 +732,76 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLocalAssetSize_03, 
 
     EXPECT_EQ(localAssetSize, inputSize);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ModifyExtraDataVersion_001, TestSize.Level1)
+{
+    string dirPath = "/data/test/ModifyExtraDataVersion_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string extraDataPath = dirPath + "/" + "extraData";
+    EXPECT_EQ(WriteFileContent(extraDataPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
+
+    int32_t ret = MovingPhotoFileUtils::ModifyExtraDataVersion(extraDataPath,
+        static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_9));
+    EXPECT_EQ(ret, E_OK);
+
+    uint32_t version = 0;
+    ret = MovingPhotoFileUtils::GetExtraDataVersion(extraDataPath, version);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(version, static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_9));
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile(extraDataPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ModifyExtraDataVersion_002, TestSize.Level1)
+{
+    string dirPath = "/data/test/ModifyExtraDataVersion_002";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string extraDataPath = dirPath + "/" + "extraData";
+    EXPECT_EQ(WriteFileContent(extraDataPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
+
+    int32_t ret = MovingPhotoFileUtils::ModifyExtraDataVersion(extraDataPath,
+        static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8));
+    EXPECT_EQ(ret, E_OK);
+
+    uint32_t version = 0;
+    ret = MovingPhotoFileUtils::GetExtraDataVersion(extraDataPath, version);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(version, static_cast<uint32_t>(MOVING_PHOTO_VERSION::MOVING_PHOTO_VERSION_8));
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile(extraDataPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ModifyExtraDataVersion_003, TestSize.Level1)
+{
+    string invalidPath = "";
+    int32_t ret = MovingPhotoFileUtils::ModifyExtraDataVersion(invalidPath, 9);
+    EXPECT_NE(ret, E_OK);
+
+    ret = MovingPhotoFileUtils::ModifyExtraDataVersion(invalidPath, 8);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataVersion_001, TestSize.Level1)
+{
+    string dirPath = "/data/test/GetExtraDataVersion_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string extraDataPath = dirPath + "/" + "extraData";
+    EXPECT_EQ(WriteFileContent(extraDataPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
+
+    uint32_t version = 0;
+    int32_t ret = MovingPhotoFileUtils::GetExtraDataVersion(extraDataPath, version);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(version, 3);
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile(extraDataPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataVersion_002, TestSize.Level1)
+{
+    string invalidPath = "";
+    uint32_t version = 0;
+    int32_t ret = MovingPhotoFileUtils::GetExtraDataVersion(invalidPath, version);
+    EXPECT_NE(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
