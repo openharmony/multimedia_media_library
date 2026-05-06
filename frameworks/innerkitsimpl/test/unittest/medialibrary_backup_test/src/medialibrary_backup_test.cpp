@@ -3440,8 +3440,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file
     rowData.cleanFlag = 1;
     rowData.position = static_cast<int32_t>(PhotoPositionType::CLOUD);
     rowData.fileId = 1;
+    rowData.data = "/storage/cloud/files/Photo/1/test.jpg";
     bool ret = restoreService->BaseRestore::ExtraCheckForCloneSameFile(fileInfo, rowData);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(fileInfo.isNew, false);
+    EXPECT_EQ(fileInfo.fileIdNew, rowData.fileId);
+    EXPECT_EQ(fileInfo.cloudPath, rowData.data);
+    EXPECT_EQ(fileInfo.needMove, false);
 }
 
 /*

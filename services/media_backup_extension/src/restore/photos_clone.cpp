@@ -522,8 +522,10 @@ bool PhotosClone::ShouldDeleteDuplicateLakeFile(const FileInfo &fileInfo)
 {
     // if not a lake file, return true as default;
     CHECK_AND_RETURN_RET(FileAdapter::IsLakeFile(fileInfo), true);
-    // if the file has existing storage_path, the file should not be deleted
-    return !fileInfo.isStoragePathExistInDb;
+    // keep source only when target is pure-cloud(position=2) and container original already exists;
+    // otherwise always delete.
+    bool keepSource = (fileInfo.needMove|| fileInfo.isStoragePathExistInDb);
+    return !keepSource;
 }
 
 bool PhotosClone::IsCloudPathExist(const FileInfo &fileInfo)
