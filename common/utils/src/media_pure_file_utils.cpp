@@ -71,4 +71,9 @@ int32_t MediaPureFileUtils::RemoveDirectory(const std::string &path)
 {
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
+
+bool MediaPureFileUtils::DeleteFile(const std::string &fileName)
+{
+    return (remove(fileName.c_str()) == E_SUCCESS);
+}
 } // namespace OHOS::Media
