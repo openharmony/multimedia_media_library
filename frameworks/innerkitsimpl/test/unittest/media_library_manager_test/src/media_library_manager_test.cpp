@@ -1633,6 +1633,148 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_002, TestSi
     MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_002 exit");
 }
 
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_003
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_003 enter");
+    string displayName = "test.jpg";
+    string uri = mediaLibraryManager->CreateAsset(displayName);
+    ASSERT_NE(uri, "");
+    GTEST_LOG_(INFO) << "uri is " << uri;
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
+
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_004
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets when columns is not empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_004 enter");
+
+    ASSERT_NE(mediaLibraryManager, nullptr);
+
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset{ MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME };
+    FetchResult<FileAsset> assetsFetchResult;
+
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    unique_ptr<FileAsset> firstAssetPtr = assetsFetchResult.GetFirstObject();
+    ASSERT_NE(firstAssetPtr, nullptr);
+    string displayNameRec = firstAssetPtr->GetDisplayName();
+    GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << displayNameRec;
+    int32_t mediaId = firstAssetPtr->GetId();
+    GTEST_LOG_(INFO) << "firstAssetPtr's mediaId is " << mediaId;
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_004 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_005
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets when columns and predicates are not empty
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_005, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_005 enter");
+    string displayName = "test3.jpg";
+    string uri = mediaLibraryManager->CreateAsset(displayName);
+    ASSERT_NE(uri, "");
+    GTEST_LOG_(INFO) << "uri is " << uri;
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
+
+    FetchResult<FileAsset> assetsFetchResult;
+    vector<string> columnsAsset{ MediaColumn::MEDIA_NAME };
+    DataSharePredicates predicatesAsset;
+    predicatesAsset.EqualTo(MediaColumn::MEDIA_NAME, "test3.jpg");
+
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+
+    unique_ptr<FileAsset> firstAssetPtr = assetsFetchResult.GetFirstObject();
+    ASSERT_NE(firstAssetPtr, nullptr);
+    string assetDisplayName = firstAssetPtr->GetDisplayName();
+    GTEST_LOG_(INFO) << "firstAssetPtr's displayName is " << assetDisplayName;
+    EXPECT_EQ(assetDisplayName, displayName);
+    string assetUri = GetFileAssetUri(firstAssetPtr);
+    GTEST_LOG_(INFO) << "assetUri is " << assetUri;
+    int32_t assetFd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(assetFd, 0);
+    mediaLibraryManager->CloseAsset(assetUri, assetFd);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_005 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_006
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets fail, fetchColumns is invalid
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_006 enter");
+
+    ASSERT_NE(mediaLibraryManager, nullptr);
+
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+
+    columnsAsset.push_back("xxx");
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+    EXPECT_EQ(assetsFetchResult.GetCount(), 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_006 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAssets_test_007
+ * @tc.name      : Get assets
+ * @tc.desc      : Get assets fail, predicate is nullptr
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAssets_test_007, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_007 enter");
+
+    ASSERT_NE(mediaLibraryManager, nullptr);
+
+    DataSharePredicates predicatesAsset;
+    vector<string> columnsAsset;
+    FetchResult<FileAsset> assetsFetchResult;
+
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, &predicatesAsset);
+
+    EXPECT_GT(assetsFetchResult.GetCount(), 0);
+    assetsFetchResult = mediaLibraryManager->GetAssets(columnsAsset, nullptr);
+    EXPECT_EQ(assetsFetchResult.GetCount(), 0);
+
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAssets_test_007 exit");
+}
+
 void TestMoveAssets()
 {
     DataSharePredicates predicates;
