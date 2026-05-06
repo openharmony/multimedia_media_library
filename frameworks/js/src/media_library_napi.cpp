@@ -15770,8 +15770,6 @@ static napi_value NormalizeSupportedMimeTypes(napi_env env, const std::vector<st
     }
     CHECK_ARGS_WITH_MEG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
         JS_E_PARAM_INVALID, "supportedMimeTypes exceeds max size");
-    CHECK_ARGS_WITH_MEG(env, !mimeTypeMap.empty(), JS_E_PARAM_INVALID,
-        "supportedMimeType cannot be empty");
 
     normalizedMimeTypes.clear();
     normalizedMimeTypes.reserve(mimeTypeMap.size());
@@ -15804,9 +15802,26 @@ static napi_value ParseSupportedMimeTypesFromConfig(napi_env env, napi_value con
 
     napi_valuetype supportedMimeTypesType = napi_undefined;
     CHECK_ARGS(env, napi_typeof(env, supportedMimeTypesValue, &supportedMimeTypesType), JS_E_PARAM_INVALID);
-    CHECK_ARGS_WITH_MEG(env,
-        supportedMimeTypesType == napi_object,
-        JS_E_PARAM_INVALID, "supportedMimeType must be an array");
+    if (supportedMimeTypesType == napi_undefined) {
+        NAPI_INFO_LOG("ParseSupportedMimeTypesFromConfig: supportedMimeType is undefined, use default value");
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
+    bool isArray = false;
+    CHECK_ARGS_WITH_MSG(env, napi_is_array(env, supportedMimeTypesValue, &isArray), JS_E_INNER_FAIL,
+        "Failed to check array type");
+    CHECK_ARGS_WITH_MEG(env, isArray == true, JS_E_PARAM_INVALID, "Failed to check array type");
+
+    uint32_t len = 0;
+    CHECK_ARGS_WITH_MSG(env, napi_get_array_length(env, supportedMimeTypesValue, &len), JS_E_INNER_FAIL,
+        "Failed to get array length");
+    if (len == 0) {
+        NAPI_INFO_LOG("ParseSupportedMimeTypesFromConfig: supportedMimeType is empty, use default value");
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, supportedMimeTypesValue, supportedMimeTypes),
         JS_E_PARAM_INVALID);
     std::vector<std::string> normalizedMimeTypes;
