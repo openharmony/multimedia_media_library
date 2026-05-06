@@ -54,6 +54,7 @@
 #include "userfilemgr_uri.h"
 #include "media_library_manager.h"
 #include "medialibrary_object_utils.h"
+#include "moving_photo_file_utils.h"
 #include "rdb_store.h"
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
@@ -76,9 +77,12 @@ const std::string EDIT_DATA_PATH = TEST_FILE_ROOT + "assets_share/editdata";
 const std::string EDIT_DATA_CAMERA_PATH = TEST_FILE_ROOT + "assets_share/editdata_camera";
 const std::string EDIT_DATA_SOURCE_BACK_PATH = TEST_FILE_ROOT + "assets_share/HasHdrNoRotate.jpg";
 const std::string EDIT_DATA_SOURCE_PATH = TEST_FILE_ROOT + "assets_share/HasHdrHasRotate.jpg";
-const std::string TLV_FILE_CACHE = TEST_FILE_ROOT + "assets_share/tlv_cache/";
-const std::string TLV_FILE_CACHE_FILE = TLV_FILE_CACHE + "tlv_file_cache.tlv";
-const std::string OPEN_ORIGINAL_FILE = TLV_FILE_CACHE + "open_origin.jpg";
+const std::string TLV_FILE_CACHE = TEST_FILE_ROOT + "assets_share/tlv_cache";
+const std::string TLV_FILE_CACHE_FILE = TLV_FILE_CACHE + "/tlv_file_cache.tlv";
+const std::string OPEN_ORIGINAL_FILE = TLV_FILE_CACHE + "/open_origin.jpg";
+const std::string OPEN_COMPRESS_AFTER_DELETE_FILE = TLV_FILE_CACHE + "/open_compress_after_delete.tlv";
+const std::string OPEN_LIVE_PHOTO_AFTER_DELETE_FILE = TLV_FILE_CACHE + "/open_live_photo_after_delete.jpg";
+const std::string VIDEO_TEST_FILE_PATH = TEST_FILE_ROOT + "assets_share/CreateVideoThumbnailTest_001.mp4";
 
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
@@ -242,6 +246,8 @@ void MediaLibraryShareOpenTest::CheckTestFileExistence()
     EXPECT_TRUE(isFileExist);
     isFileExist = MediaFileUtils::IsFileExists(EDIT_DATA_SOURCE_PATH);
     EXPECT_TRUE(isFileExist);
+    isFileExist = MediaFileUtils::IsFileExists(VIDEO_TEST_FILE_PATH);
+    EXPECT_TRUE(isFileExist);
 }
 
 bool CheckAndCreateDir(const std::string &assetPath)
@@ -330,6 +336,203 @@ void MediaLibraryShareOpenTest::InitPhotoAsset(std::string &dataFileUri, bool is
     if (isEdited) {
         MediaLibraryShareOpenTest::InitEditedFiles(assetPath);
     }
+}
+
+static bool QueryAssetPathByUri(const std::string &assetUri, std::string &assetPath)
+{
+    std::string id = MediaFileUtils::GetIdFromUri(assetUri);
+    std::shared_ptr<FileAsset> fileAsset = MediaLibraryAssetOperations::GetFileAssetFromDb(MediaColumn::MEDIA_ID,
+        id, OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("QueryAssetPathByUri failed, id: %{public}s", id.c_str());
+        return false;
+    }
+    assetPath = fileAsset->GetPath();
+    return !assetPath.empty();
+}
+
+static bool PrepareMovingPhotoFiles(const std::string &assetUri, std::string &assetPath, std::string &cachePath)
+{
+    MEDIA_INFO_LOG("PrepareMovingPhotoFiles start");
+    if (!QueryAssetPathByUri(assetUri, assetPath)) {
+        return false;
+    }
+    if (!CheckAndCreateDir(assetPath) || !MediaFileUtils::CopyFileSafe(EFFECT_FILE_PATH, assetPath)) {
+        MEDIA_ERR_LOG("Prepare moving photo image failed, path: %{public}s", assetPath.c_str());
+        return false;
+    }
+
+    std::string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(assetPath);
+    if (!CheckAndCreateDir(videoPath) || !MediaFileUtils::CopyFileSafe(VIDEO_TEST_FILE_PATH, videoPath)) {
+        MEDIA_ERR_LOG("Prepare moving photo video failed, path: %{public}s", videoPath.c_str());
+        return false;
+    }
+
+    off_t extraDataSize = 0;
+    int32_t ret = MovingPhotoFileUtils::GetExtraDataLen(assetPath, videoPath, 0, 0, extraDataSize);
+    if (ret != E_OK || extraDataSize <= 0) {
+        MEDIA_ERR_LOG("Prepare moving photo extraData failed, ret: %{public}d", ret);
+        return false;
+    }
+
+    cachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(assetPath);
+    if (MediaFileUtils::IsFileExists(cachePath)) {
+        MediaFileUtils::DeleteFile(cachePath);
+    }
+    MEDIA_INFO_LOG("PrepareMovingPhotoFiles end");
+    return true;
+}
+
+static bool GenerateLivePhotoCache(const std::string &assetUri)
+{
+    MEDIA_INFO_LOG("GenerateLivePhotoCache start");
+    std::string livePhotoUri = assetUri;
+    MediaFileUtils::UriAppendKeyValue(livePhotoUri, CONST_MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+        CONST_OPEN_PRIVATE_LIVE_PHOTO);
+    Uri uri(livePhotoUri);
+    MediaLibraryCommand cmd(uri, Media::OperationType::OPEN);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "rw");
+    if (fd < 0) {
+        MEDIA_ERR_LOG("GenerateLivePhotoCache failed, uri: %{public}s", livePhotoUri.c_str());
+        return false;
+    }
+    close(fd);
+    MEDIA_INFO_LOG("GenerateLivePhotoCache end");
+    return true;
+}
+
+static int32_t OpenLivePhotoCacheFd(const std::string &assetUri)
+{
+    MEDIA_INFO_LOG("OpenLivePhotoCacheFd start");
+    std::string livePhotoUri = assetUri;
+    MediaFileUtils::UriAppendKeyValue(livePhotoUri, CONST_MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+        CONST_OPEN_PRIVATE_LIVE_PHOTO);
+    Uri uri(livePhotoUri);
+    MediaLibraryCommand cmd(uri, Media::OperationType::OPEN);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "rw");
+    MEDIA_INFO_LOG("OpenLivePhotoCacheFd end, fd: %{public}d", fd);
+    return fd;
+}
+
+static bool GenerateCompressCache(const std::string &assetUri, std::string &cachePath)
+{
+    MEDIA_INFO_LOG("GenerateCompressCache start, assetUri: %{public}s", assetUri.c_str());
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("GenerateCompressCache failed, dataManager is null");
+        return false;
+    }
+
+    std::string id = MediaFileUtils::GetIdFromUri(assetUri);
+    cachePath = MediaLibraryAssetOperations::GetAssetCompressCachePath(id);
+    if (cachePath.empty()) {
+        MEDIA_ERR_LOG("GenerateCompressCache failed, cachePath is empty");
+        return false;
+    }
+    if (MediaFileUtils::IsFileExists(cachePath)) {
+        MediaFileUtils::DeleteFile(cachePath);
+    }
+
+    std::string compressUri = assetUri;
+    int32_t type = static_cast<int32_t>(HideSensitiveType::ALL_DESENSITIZE);
+    MediaFileUtils::UriAppendKeyValue(compressUri, "type", to_string(type));
+    Uri openUri(compressUri);
+    MediaLibraryCommand cmd(openUri, Media::OperationType::OPEN);
+    int32_t version = dataManager->GetAssetCompressVersion();
+    int32_t fd = -1;
+    std::string tlvPath;
+    int32_t ret = MediaLibraryPhotoOperations::OpenAssetCompress(cmd, tlvPath, version, fd);
+    if (ret != E_OK || fd < 0) {
+        MEDIA_ERR_LOG("GenerateCompressCache failed, ret: %{public}d, fd: %{public}d", ret, fd);
+        return false;
+    }
+    close(fd);
+    cachePath = tlvPath;
+    MEDIA_INFO_LOG("GenerateCompressCache end, cachePath: %{public}s", cachePath.c_str());
+    return MediaFileUtils::IsFileExists(cachePath);
+}
+
+static int32_t OpenCompressCacheFd(const std::string &assetUri, std::string &cachePath)
+{
+    MEDIA_INFO_LOG("OpenCompressCacheFd start, assetUri: %{public}s", assetUri.c_str());
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("OpenCompressCacheFd failed, dataManager is null");
+        return E_ERR;
+    }
+
+    std::string compressUri = assetUri;
+    int32_t type = static_cast<int32_t>(HideSensitiveType::ALL_DESENSITIZE);
+    MediaFileUtils::UriAppendKeyValue(compressUri, "type", to_string(type));
+    Uri openUri(compressUri);
+    MediaLibraryCommand cmd(openUri, Media::OperationType::OPEN);
+    int32_t version = dataManager->GetAssetCompressVersion();
+    int32_t fd = -1;
+    std::string tlvPath;
+    int32_t ret = MediaLibraryPhotoOperations::OpenAssetCompress(cmd, tlvPath, version, fd);
+    if (ret != E_OK || fd < 0) {
+        MEDIA_ERR_LOG("OpenCompressCacheFd failed, ret: %{public}d, fd: %{public}d", ret, fd);
+        return E_ERR;
+    }
+    cachePath = tlvPath;
+    MEDIA_INFO_LOG("OpenCompressCacheFd end, cachePath: %{public}s, fd: %{public}d", cachePath.c_str(), fd);
+    return fd;
+}
+
+static void CleanupTempFiles(const std::initializer_list<std::string> &paths)
+{
+    for (const auto &path : paths) {
+        if (!path.empty() && MediaFileUtils::IsFileExists(path)) {
+            EXPECT_TRUE(MediaFileUtils::DeleteFile(path));
+        }
+    }
+}
+
+struct FileDigestInfo {
+    uint64_t hash = 14695981039346656037ULL;
+    uint64_t size = 0;
+    bool valid = false;
+};
+
+static FileDigestInfo CalculateFileDigest(const std::string &path)
+{
+    constexpr uint64_t fnvPrime = 1099511628211ULL;
+    constexpr size_t bufferSize = 4096;
+    std::ifstream ifs(path, std::ios::binary);
+    if (!ifs.is_open()) {
+        return {};
+    }
+
+    FileDigestInfo digestInfo;
+    char buffer[bufferSize];
+    while (ifs.good()) {
+        ifs.read(buffer, bufferSize);
+        std::streamsize bytesRead = ifs.gcount();
+        for (std::streamsize index = 0; index < bytesRead; ++index) {
+            digestInfo.hash ^= static_cast<unsigned char>(buffer[index]);
+            digestInfo.hash *= fnvPrime;
+        }
+        digestInfo.size += static_cast<uint64_t>(bytesRead);
+    }
+    digestInfo.valid = !ifs.bad();
+    return digestInfo;
+}
+
+static void InitMovingPhotoAsset(std::string &assetUri)
+{
+    MEDIA_INFO_LOG("InitMovingPhotoAsset start");
+    std::string effectFileName = MediaFileUtils::GetFileName(EFFECT_FILE_PATH);
+    int32_t dataFileId = MediaLibraryShareOpenTest::CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, effectFileName,
+        false, true);
+    ASSERT_GT(dataFileId, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(dataFileId), "", MEDIA_API_VERSION_V10);
+    assetUri = fileUri.ToString();
+    std::string id = MediaFileUtils::GetIdFromUri(assetUri);
+    MediaLibraryShareOpenTest::InitTestFileAsset(id, false);
+    MEDIA_INFO_LOG("InitMovingPhotoAsset assetUri: %{public}s", assetUri.c_str());
 }
 
 void MediaLibraryShareOpenTest::CopyToDestPath(int32_t srcFd, const std::string &destPath)
@@ -471,6 +674,249 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_005, TestSize.Level
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("GetCompressAssetSize totalSize: %{public}" PRId64, totalSize);
     MEDIA_INFO_LOG("media_library_share_test_005 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_006 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+
+    std::string assetPath;
+    std::string cachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, cachePath));
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    ASSERT_TRUE(GenerateLivePhotoCache(uri));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_006 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_007 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+
+    std::string assetPath;
+    std::string cachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, cachePath));
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    ASSERT_FALSE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_007 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_008 Start");
+    std::string uri;
+    InitPhotoAsset(uri, false);
+    std::string compressCachePath;
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_008 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_009 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+    std::string assetPath;
+    std::string cachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, cachePath));
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    ASSERT_TRUE(GenerateLivePhotoCache(uri));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended("", ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_ERR);
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({cachePath, compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_009 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_010 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+
+    std::string assetPath;
+    std::string cachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(QueryAssetPathByUri(uri, assetPath));
+    ASSERT_TRUE(CheckAndCreateDir(assetPath));
+    ASSERT_TRUE(MediaFileUtils::CopyFileSafe(EFFECT_FILE_PATH, assetPath));
+    cachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(assetPath);
+    if (MediaFileUtils::IsFileExists(cachePath)) {
+        EXPECT_TRUE(MediaFileUtils::DeleteFile(cachePath));
+    }
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    std::string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(assetPath);
+    if (MediaFileUtils::IsFileExists(videoPath)) {
+        EXPECT_TRUE(MediaFileUtils::DeleteFile(videoPath));
+    }
+    EXPECT_FALSE(GenerateLivePhotoCache(uri));
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_010 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_011 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+    std::string assetPath;
+    std::string cachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, cachePath));
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    ASSERT_TRUE(GenerateLivePhotoCache(uri));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, static_cast<ServiceShareType>(-1));
+    EXPECT_EQ(ret, E_ERR);
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    CleanupTempFiles({cachePath, compressCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_011 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_012 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+
+    std::string assetPath;
+    std::string livePhotoCachePath;
+    std::string compressCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, livePhotoCachePath));
+    ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
+    ASSERT_TRUE(GenerateLivePhotoCache(uri));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(livePhotoCachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(compressCachePath));
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(livePhotoCachePath));
+    CleanupTempFiles({livePhotoCachePath});
+    MEDIA_INFO_LOG("media_library_share_test_012 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_013, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_013 Start");
+    std::string uri;
+    InitPhotoAsset(uri, false);
+
+    std::string compressCachePath;
+    int32_t fd = OpenCompressCacheFd(uri, compressCachePath);
+    ASSERT_GE(fd, 0);
+    UniqueFd srcFdGuard(fd);
+    ASSERT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
+    FileDigestInfo expectedDigest = CalculateFileDigest(compressCachePath);
+    ASSERT_TRUE(expectedDigest.valid);
+    ASSERT_GT(expectedDigest.size, 0);
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(compressCachePath));
+
+    ASSERT_NE(lseek(fd, 0, SEEK_SET), -1);
+    MediaLibraryShareOpenTest::CopyToDestPath(fd, OPEN_COMPRESS_AFTER_DELETE_FILE);
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(OPEN_COMPRESS_AFTER_DELETE_FILE));
+    FileDigestInfo actualDigest = CalculateFileDigest(OPEN_COMPRESS_AFTER_DELETE_FILE);
+    EXPECT_TRUE(actualDigest.valid);
+    EXPECT_EQ(actualDigest.size, expectedDigest.size);
+    EXPECT_EQ(actualDigest.hash, expectedDigest.hash);
+    CleanupTempFiles({OPEN_COMPRESS_AFTER_DELETE_FILE});
+    MEDIA_INFO_LOG("media_library_share_test_013 End");
+}
+
+HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_014, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("media_library_share_test_014 Start");
+    std::string uri;
+    InitMovingPhotoAsset(uri);
+
+    std::string assetPath;
+    std::string livePhotoCachePath;
+    ASSERT_TRUE(PrepareMovingPhotoFiles(uri, assetPath, livePhotoCachePath));
+
+    int32_t fd = OpenLivePhotoCacheFd(uri);
+    ASSERT_GE(fd, 0);
+    UniqueFd srcFdGuard(fd);
+    ASSERT_TRUE(MediaFileUtils::IsFileExists(livePhotoCachePath));
+    FileDigestInfo expectedDigest = CalculateFileDigest(livePhotoCachePath);
+    ASSERT_TRUE(expectedDigest.valid);
+    ASSERT_GT(expectedDigest.size, 0);
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(MediaFileUtils::IsFileExists(livePhotoCachePath));
+
+    ASSERT_NE(lseek(fd, 0, SEEK_SET), -1);
+    MediaLibraryShareOpenTest::CopyToDestPath(fd, OPEN_LIVE_PHOTO_AFTER_DELETE_FILE);
+    EXPECT_TRUE(MediaFileUtils::IsFileExists(OPEN_LIVE_PHOTO_AFTER_DELETE_FILE));
+    FileDigestInfo actualDigest = CalculateFileDigest(OPEN_LIVE_PHOTO_AFTER_DELETE_FILE);
+    EXPECT_TRUE(actualDigest.valid);
+    EXPECT_EQ(actualDigest.size, expectedDigest.size);
+    EXPECT_EQ(actualDigest.hash, expectedDigest.hash);
+    CleanupTempFiles({OPEN_LIVE_PHOTO_AFTER_DELETE_FILE});
+    MEDIA_INFO_LOG("media_library_share_test_014 End");
 }
 } // namespace Media
 } // namespace OHOS

@@ -3023,7 +3023,7 @@ int32_t MediaAssetsControllerService::NotifyAssetSended(MessageParcel &data, Mes
         MEDIA_ERR_LOG("NotifyAssetSended Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ret = MediaAssetsService::GetInstance().NotifyAssetSended(reqBody.uri);
+    ret = MediaAssetsService::GetInstance().NotifyAssetSended(reqBody.uri, reqBody.shareType);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaAssetsControllerService::NotifyAssetSended fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
