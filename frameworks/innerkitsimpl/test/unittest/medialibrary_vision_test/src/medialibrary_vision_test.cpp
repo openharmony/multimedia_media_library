@@ -57,6 +57,7 @@
 #include "medialibrary_mock_tocken.h"
 #include "media_upgrade.h"
 #include "analysis_data_watermark_dao.h"
+#include "analysis_data_caption_dao.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -117,6 +118,7 @@ static std::vector<std::string> createTableSqlLists = {
     PhotoAlbumColumns::CREATE_TABLE,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_TAB_ANALYSIS_WATERMARK,
+    SQL_CREATE_TAB_ANALYSIS_CAPTION,
 };
 
 static std::vector<std::string> testTables = {
@@ -143,6 +145,7 @@ static std::vector<std::string> testTables = {
     CONST_BUNDLE_PERMISSION_TABLE,
     PhotoAlbumColumns::TABLE,
     CONST_VISION_WATERMARK_TABLE,
+    CONST_VISION_CAPTION_TABLE,
 };
 
 void CleanVisionDataPart1(DataShare::DataSharePredicates &predicates)
@@ -223,6 +226,15 @@ void ClearAnalysisWaterMarkData()
     MediaLibraryCommand watermarkCmd(watermarkUri);
     int32_t deleteRet = MediaLibraryDataManager::GetInstance()->Delete(watermarkCmd, predicates);
     EXPECT_GE(deleteRet, 0) << "Failed to clear watermark data, deleteRet" << deleteRet;
+}
+
+void ClearAnalysisCaptionData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri captionUri(CONST_URI_CAPTION);
+    MediaLibraryCommand captionCmd(captionUri);
+    int32_t deleteRet = MediaLibraryDataManager::GetInstance()->Delete(captionCmd, predicates);
+    EXPECT_GE(deleteRet, 0) << "Failed to clear caption data, deleteRet" << deleteRet;
 }
 
 void ClearVideoFaceData()
@@ -316,6 +328,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearPetFaceData();
     ClearPetTagData();
     ClearAnalysisWaterMarkData();
+    ClearAnalysisCaptionData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -327,6 +340,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     ClearPetFaceData();
     ClearPetTagData();
     ClearAnalysisWaterMarkData();
+    ClearAnalysisCaptionData();
     if (mockToken != nullptr) {
         delete mockToken;
         mockToken = nullptr;
@@ -349,6 +363,7 @@ void MediaLibraryVisionTest::SetUp(void)
     ClearPetFaceData();
     ClearPetTagData();
     ClearAnalysisWaterMarkData();
+    ClearAnalysisCaptionData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -4277,6 +4292,112 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteWatermark_Test_001, TestSize.Level
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ(retVal, 2);
     MEDIA_INFO_LOG("Vision_DeleteWatermark_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertCaption_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertCaption_Test_001::Start");
+    Uri captionUri(CONST_URI_CAPTION);
+    MediaLibraryCommand cmd(captionUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+
+    valuesBucket.Put(FILE_ID, 100);
+    valuesBucket.Put(CONST_CAPTION_RESULT, "A beautiful sunset over the ocean.");
+    valuesBucket.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket.Put(CONST_CAPTION_VECTOR, "feature_vector_data_example");
+    valuesBucket.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertCaption_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertCaption_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertCaption_Test_002::Start");
+    Uri captionUri(CONST_URI_CAPTION);
+    MediaLibraryCommand cmd(captionUri);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 101);
+    valuesBucket.Put(CONST_CAPTION_RESULT, "An orange cat sleeping on the sofa.");
+    valuesBucket.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket.Put(CONST_CAPTION_VECTOR, "vector_101");
+    valuesBucket.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 101);
+    valuesBucket2.Put(CONST_CAPTION_RESULT, "An orange cat playing on the sofa.");
+    valuesBucket2.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket2.Put(CONST_CAPTION_VECTOR, "vector_101_new");
+    valuesBucket2.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_LT(retVal2, 0);
+    
+    MEDIA_INFO_LOG("Vision_InsertCaption_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateCaption_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdateCaption_Test_001::Start");
+    Uri captionUri(CONST_URI_CAPTION);
+    MediaLibraryCommand cmd(captionUri);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 102);
+    valuesBucket.Put(CONST_CAPTION_RESULT, "Initial description.");
+    valuesBucket.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket.Put(CONST_CAPTION_VECTOR, "vector_102_init");
+    valuesBucket.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    auto insertRet = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(insertRet, 0);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(CONST_CAPTION_RESULT, "Updated description: City night view with traffic.");
+    updateValues.Put(CONST_CAPTION_VERSION, "1.1.0");
+    updateValues.Put(CONST_CAPTION_VECTOR, "vector_102_updated");
+    
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("102");
+    predicates.In(FILE_ID, inValues);
+    
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdateCaption_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteCaption_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeleteCaption_Test_001::Start");
+    Uri captionUri(CONST_URI_CAPTION);
+    MediaLibraryCommand cmd(captionUri);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 103);
+    valuesBucket1.Put(CONST_CAPTION_RESULT, "Test data 1");
+    valuesBucket1.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket1.Put(CONST_CAPTION_VECTOR, "vector_103");
+    valuesBucket1.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    auto insertRet1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_GT(insertRet1, 0);
+
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 104);
+    valuesBucket2.Put(CONST_CAPTION_RESULT, "Test data 2");
+    valuesBucket2.Put(CONST_CAPTION_VERSION, "1.0.0");
+    valuesBucket2.Put(CONST_CAPTION_VECTOR, "vector_104");
+    valuesBucket2.Put(CONST_CAPTION_ANALYSIS_VERSION, "2.0.0");
+    auto insertRet2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(insertRet2, 0);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.GreaterThan(FILE_ID, 102);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeleteCaption_Test_001::retVal = %{public}d. End", retVal);
 }
 } // namespace Media
 } // namespace OHOS

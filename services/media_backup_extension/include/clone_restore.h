@@ -147,7 +147,7 @@ private:
     void GetQueryWhereClause(const std::string &tableName,
         const std::unordered_map<std::string, std::string> &columnInfoMap);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
-    void UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName);
+    void UpdateAlbumOrderColumns(AlbumInfo &albumInfo, const string &tableName);
     void UpdateSystemAlbumColumns(const string &tableName);
     void PopulateSystemAlbumIdMap();
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
@@ -241,6 +241,7 @@ private:
     bool ShouldRestoreFromCloud();
     void UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos);
     void UpdatePositionForMergedCloudDuplicates(vector<FileInfo> &fileInfos);
+    void PrevailUUIDForSamePhotos(vector<FileInfo> &fileInfos);
     bool CheckDestDbHasRiskStatusColumn();
     bool CheckSrcDbHasRiskStatusColumn();
     int64_t CorrectTimestamp(int64_t originalTime);

@@ -32,6 +32,7 @@ ohos_unittest("medialibrary_vision_unittest") {
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_vision_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_video_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_watermark_dao.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/analysis_data_caption_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/src/dao/medialibrary_vision_operations.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",

@@ -220,6 +220,7 @@ public:
         ReservePhotoUriPermissionRespBody &respBody);
     int32_t ResumePhotoUriPermission(const ResumePhotoUriPermissionReqBody &reqBody,
         ResumePhotoUriPermissionRespBody &respBody);
+    int32_t SetMovingPhotoVersion(const AssetChangeReqBody &reqBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

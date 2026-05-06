@@ -38,6 +38,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "media_upgrade.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -70,6 +71,24 @@ static int32_t ClearTable(const string &table)
     return E_OK;
 }
 
+void SetTestTables()
+{
+    vector<string> createTableSqlList = {
+        Media::PhotoUpgrade::CREATE_PHOTO_TABLE,
+        Media::PhotoAlbumColumns::CREATE_TABLE,
+        AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+        Media::AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
 void CancelUriPermissionTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -78,6 +97,7 @@ void CancelUriPermissionTest::SetUpTestCase(void)
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
         exit(1);
     }
+    SetTestTables();
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     ClearTable(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     ClearTable(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);

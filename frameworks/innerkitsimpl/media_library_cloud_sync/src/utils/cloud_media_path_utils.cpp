@@ -20,7 +20,7 @@
 #include <string>
 
 #include "media_string_utils.h"
-#include "media_column.h"
+#include "medialibrary_db_const.h"
 
 namespace OHOS::Media::CloudSync {
 const int32_t FILE_SOURCE_TYPE_DOCS = 1;
@@ -29,8 +29,8 @@ const std::string LAKE_STORAGE_PATH_PREFIX = "/storage/media/local/files/Docs/HO
 const std::string LAKE_STORAGE_PATH_PATTERN = "/mnt/data/{0}/HO_MEDIA/{1}";
 const std::string DOCS_STORAGE_PATH_PREFIX = "/storage/media/local/files/Docs/";
 const std::string DOCS_STORAGE_PATH_PATTERN = "/data/service/el2/{0}/hmdfs/account/files/Docs/{1}";
-const std::string CLOUD_STORAGE_PATH_PREFIX = "/storage/cloud/files/";
-const std::string CLOUD_STORAGE_PATH_PATTERN = "/data/service/el2/{0}/hmdfs/account/files/{1}";
+const std::string CLOUD_STORAGE_PATH_PREFIX = "/storage/cloud/files/Photo/";
+const std::string CLOUD_STORAGE_PATH_PATTERN = "/data/service/el2/{0}/hmdfs/account/files/Photo/{1}";
 std::string CloudMediaPathUtils::FindStoragePath(const std::string &storagePath, const int32_t userId)
 {
     if (MediaStringUtils::StartsWith(storagePath, LAKE_STORAGE_PATH_PREFIX)) {
@@ -48,9 +48,25 @@ std::string CloudMediaPathUtils::FindStoragePath(const std::string &storagePath,
         return MediaStringUtils::FillParams(CLOUD_STORAGE_PATH_PATTERN, {std::to_string(userId), relativePath});
     }
 
-    return storagePath;
+    // if the storagePath doesn't match any known pattern, return empty string to indicate it's not a valid path.
+    return std::string();
 }
 
+/**
+ * 根据 fileSourceType ，返回带 userId 的 cloudPath 或者 storagePath 路径信息
+ * @return 文件路径信息（带userId）
+ * 数据场景：
+ * | fileSourceType | 返参 |
+ * |----------------|-----|
+ * | LAKE(3)        | storagePath |
+ * | FILE_MANAGER(1)| storagePath |
+ * | 其他            | data |
+ *
+ * 说明：此处不考虑纯云湖内资产(非隐藏&非回收站)的数据场景；
+ * | storagePath          | position | fileSourceType | 文件存储 |
+ * |----------------------|----------|----------------|---------|
+ * | ./HO_DATA_EXT_MISC/. | 2        | MEDIA(0)       | storagePath |
+ */
 std::string CloudMediaPathUtils::FindStoragePath(
     const int32_t fileSourceType, const std::string &cloudPath, const std::string &storagePath, const int32_t userId)
 {

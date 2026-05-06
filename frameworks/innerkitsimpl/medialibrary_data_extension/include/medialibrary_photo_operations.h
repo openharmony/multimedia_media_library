@@ -169,7 +169,7 @@ public:
         const std::string &photoId, const std::string &albumId);
     EXPORT static int32_t SetLivePhoto4dStatus(const int32_t fileId, const int32_t livePhoto4dStatus,
         const std::string &livePhoto4dLatestPair);
-    EXPORT static int32_t SetExtraDataVersionByLivePhoto4d(const int32_t fileId);
+    EXPORT static int32_t SetExtraDataVersion(const int32_t fileId, const uint32_t version);
     EXPORT static int32_t SubmitExistFileDBRecordExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     EXPORT static int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);

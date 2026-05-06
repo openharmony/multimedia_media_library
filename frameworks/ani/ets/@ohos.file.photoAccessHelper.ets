@@ -2630,9 +2630,9 @@ export namespace photoAccessHelper {
     isMediaDataReady(mediaDataKey: string): Promise<boolean>;
     acquireDebugDatabase(betaIssueId: string, betaScenario: string): Promise<Map<string, string>>;
     releaseDebugDatabase(betaIssueId: string, dbFd: int): Promise<void>;
-    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void>;
-    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void>;
-    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility>;
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleCapability): Promise<void>;
+    setAssetCompatibleCapability(config: AssetCompatibleCapability): Promise<void>;
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleCapability>;
     getAlbumIdByLpath(lpath: string): Promise<int>;
     getAlbumIdByBundleName(bundleName: string): Promise<int>;
   }
@@ -3929,7 +3929,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleCapability(config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(config: AssetCompatibleCapability): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3950,7 +3950,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleAbility): Promise<void> {
+    setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleCapability): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3971,10 +3971,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleAbility> {
-      return new Promise<AssetCompatibleAbility>((resolve: (v: AssetCompatibleAbility) => void, reject: RejectString) => {
-        let cb = (): AssetCompatibleAbility | MediaLibraryAniError => {
-          let result: AssetCompatibleAbility | MediaLibraryAniError;
+    getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleCapability> {
+      return new Promise<AssetCompatibleCapability>((resolve: (v: AssetCompatibleCapability) => void, reject: RejectString) => {
+        let cb = (): AssetCompatibleCapability | MediaLibraryAniError => {
+          let result: AssetCompatibleCapability | MediaLibraryAniError;
           try {
             result = this.getAssetCompatibleConfigInner(bundleName);
           } catch(e) {
@@ -3990,7 +3990,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as AssetCompatibleAbility);
+              resolve(ret as AssetCompatibleCapability);
             }
           }
         });
@@ -4114,19 +4114,19 @@ export namespace photoAccessHelper {
     native getPhotoAlbumsOrderInner(orderStyle: int, options?: FetchOptions): FetchResult<AlbumOrder>;
     native setPhotoAlbumsOrderInner(orderStyle: int, albumOrders: Array<AlbumOrder>): void;
     native isMediaDataReadyInner(mediaDataKey: string): boolean;
-    native setFileCompatibleConfigSysInner(bundleName: string, config: AssetCompatibleAbility): void;
-    native setFileCompatibleConfigInner(config: AssetCompatibleAbility): void;
-    native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleAbility;
+    native setFileCompatibleConfigSysInner(bundleName: string, config: AssetCompatibleCapability): void;
+    native setFileCompatibleConfigInner(config: AssetCompatibleCapability): void;
+    native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleCapability;
     native getAlbumIdByLpathInner(lpath: string): int;
     native getAlbumIdByBundleNameInner(bundleName: string): int;
   }
 
-  export interface AssetCompatibleAbility {
+  export interface AssetCompatibleCapability {
     supportedHighResolution: boolean;
     supportedMimeType?: Array<string>;
   }
 
-  class AssetCompatibleAbilityHandle implements AssetCompatibleAbility {
+  class AssetCompatibleCapabilityHandle implements AssetCompatibleCapability {
     constructor() {}
     supportedHighResolution: boolean;
     supportedMimeType?: Array<string>;

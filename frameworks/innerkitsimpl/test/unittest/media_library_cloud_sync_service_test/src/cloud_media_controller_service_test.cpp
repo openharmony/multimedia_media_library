@@ -1564,41 +1564,6 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_OnCre
     EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
-HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_OnCreateRecords_Test_003, TestSize.Level1)
-{
-    std::shared_ptr<CloudMediaPhotoControllerService> service = std::make_shared<CloudMediaPhotoControllerService>();
-    ASSERT_TRUE(service != nullptr);
-
-    MessageParcel data;
-    data.WriteInt32(1);
-    data.WriteString("test1");
-    data.WriteInt32(0);
-    data.WriteInt32(1);
-    data.WriteInt32(2);
-    data.WriteInt32(3);
-    data.WriteInt64(4);
-    data.WriteInt64(5);
-    data.WriteInt64(6);
-    data.WriteInt64(7);
-    data.WriteInt64(8);
-    data.WriteString("test1");
-    data.WriteString("test1");
-    data.WriteString("test1");
-    data.WriteString("test1");
-    data.WriteInt64(9);
-    data.WriteInt32(10);
-    data.WriteBool(false);
-    data.WriteInt32(0);
-    data.WriteInt32(1);
-    MessageParcel reply;
-    IPCContext context(MessageOption(), 0);
-    uint32_t code = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_CREATE_RECORDS);
-    service->OnRemoteRequest(code, data, reply, context);
-
-    int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
-}
-
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_OnMdirtyRecords_Test_001, TestSize.Level1)
 {
     std::shared_ptr<CloudMediaPhotoControllerService> service = std::make_shared<CloudMediaPhotoControllerService>();

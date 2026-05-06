@@ -229,6 +229,10 @@ void PermissionUtils::ClearBundleInfoInCache()
     lock_guard<mutex> lock(uninstallMutex_);
     bundleInfoMap_.clear();
     bundleInfoList_.clear();
+    bundleMgr_ = nullptr;
+    systemAppCache_.Clear();
+    infos_.clear();
+    pendingOpenPermissionInfos_.clear();
     MEDIA_INFO_LOG("clear all info from cache");
 }
 
