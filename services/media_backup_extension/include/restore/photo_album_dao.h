@@ -32,6 +32,7 @@ public:
         int32_t albumType;
         int32_t albumSubType;
         std::string albumName;
+        std::string uuid;
         std::string lPath;
         std::string bundleName;
         int32_t priority;
@@ -87,6 +88,7 @@ private:
     const std::string FIELD_NAME_ALBUM_TYPE = "album_type";
     const std::string FIELD_NAME_ALBUM_SUBTYPE = "album_subtype";
     const std::string FIELD_NAME_ALBUM_NAME = "album_name";
+    const std::string FIELD_NAME_UUID = "unique_id";
     const std::string FIELD_NAME_BUNDLE_NAME = "bundle_name";
     const std::string FIELD_NAME_LPATH = "lpath";
     const std::string FIELD_NAME_PRIORITY = "priority";
@@ -103,7 +105,8 @@ private:
             relative_path, \
             priority, \
             upload_status, \
-            is_local \
+            is_local, \
+            unique_id \
         FROM PhotoAlbum \
         WHERE album_type != 1024 \
         ORDER BY album_id \
@@ -119,7 +122,8 @@ private:
             relative_path, \
             priority, \
             upload_status, \
-            is_local \
+            is_local, \
+            unique_id \
         FROM PhotoAlbum \
         WHERE LOWER(lpath) = LOWER(?) \
         ORDER BY album_id DESC \
@@ -146,7 +150,8 @@ private:
             date_modified, \
             date_added, \
             upload_status, \
-            is_local \
+            is_local, \
+            unique_id \
         ) \
         SELECT \
             INPUT.album_type, \
@@ -185,7 +190,8 @@ private:
                 ? AS lpath, \
                 ? AS priority, \
                 ? AS upload_status, \
-                ? AS is_local \
+                ? AS is_local, \
+                ? AS unique_id \
         ) AS INPUT \
         LEFT JOIN album_plugin \
             ON LOWER(INPUT.lpath)=LOWER(album_plugin.lpath) \

@@ -22,7 +22,6 @@
 #include "media_old_photos_column.h"
 #include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
-#include "media_operation_log_column.h"
 #include "medialibrary_db_const.h"
 #include "ptp_medialibrary_manager_uri.h"
 #include "delete_permanently_operations_uri.h"
@@ -100,7 +99,6 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CONST_ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
         { CONST_MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationObject::MOVING_PHOTO_VIDEO_READY },
         { CONST_PAH_MULTISTAGES_VIDEO, OperationObject::PAH_MULTISTAGES_VIDEO },
-        { CONST_TAB_OPERATION_LOG, OperationObject::TAB_OPERATION_LOG },
 
         // use in Vision
         { CONST_PAH_TAB_PHOTOS_EXT_OPERATE, OperationObject::TAB_PHOTOS_EXT_OPERATE },
@@ -256,8 +254,6 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
         { OperationObject::ASSET_ALBUM_OPERATION,
             { { OperationType::UNKNOWN_TYPE, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE } } },
-        { OperationObject::TAB_OPERATION_LOG,
- 	        { { OperationType::UNKNOWN_TYPE, TabOperationLogColumn::TABLE } }},
         { OperationObject::TAB_PHOTOS_EXT_OPERATE,
             { { OperationType::UNKNOWN_TYPE, PhotoExtColumn::PHOTOS_EXT_TABLE } } },
 

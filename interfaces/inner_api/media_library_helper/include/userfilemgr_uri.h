@@ -402,8 +402,6 @@ namespace Media {
 #define CONST_PAH_STORE_FACARD_PHOTO "datashare:///media/tab_facard_photos_operation/store_form_id"
 
 #define CONST_ASSET_ALBUM_OPERATION "tab_asset_and_album_operation"
-
-#define CONST_TAB_OPERATION_LOG "tab_operation_log_table_operation"
 } // namespace Media
 } // namespace OHOS
 
