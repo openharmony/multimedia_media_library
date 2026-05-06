@@ -521,6 +521,7 @@
             <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /data/local/tmp/assets_share_resources/assets_share/" src="res"/>
             <option name="push" value="thumbnail_testfile/HasHdrHasRotate.jpg -> /data/local/tmp/assets_share_resources/assets_share/" src="res"/>
             <option name="push" value="thumbnail_testfile/HasHdrNoRotate.jpg -> /data/local/tmp/assets_share_resources/assets_share/" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /data/local/tmp/assets_share_resources/assets_share/" src="res"/>
         </preparer>
         <cleaner>
             <option name="shell" value="rm -rf /data/local/tmp/assets_share_resources"/>

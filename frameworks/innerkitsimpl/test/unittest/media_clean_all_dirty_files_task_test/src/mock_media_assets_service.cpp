@@ -635,7 +635,7 @@ int32_t MediaAssetsService::OpenAssetCompress(const OpenAssetCompressDto &dto, O
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri)
+int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri, int32_t shareType)
 {
     return E_SUCCESS;
 }
