@@ -1742,13 +1742,11 @@ int32_t CloneRestore::MergeDuplicateAsset(FileInfo &fileInfo)
         fileInfo.hasMergedOriginAsset = true;
         fileInfo.needUpdatePositionToLocalAndCloud =
             fileInfo.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
+        int32_t optRet = this->MoveEditedData(fileInfo);
+        CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     }
     if (needImportMovingVideo) {
         int32_t optRet = this->MoveMovingPhotoVideo(fileInfo);
-        CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
-    }
-    if (needImportEditData) {
-        int32_t optRet = this->MoveEditedData(fileInfo);
         CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     }
 
