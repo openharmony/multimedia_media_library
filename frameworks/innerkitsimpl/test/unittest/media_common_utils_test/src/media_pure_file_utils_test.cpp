@@ -17,7 +17,6 @@
 
 #include "media_pure_file_utils.h"
 
-
 namespace OHOS {
 namespace Media {
 using namespace testing::ext;
@@ -39,6 +38,8 @@ HWTEST_F(MediaPureFileUtilsUnitTest, medialib_is_file_exist_test_001, TestSize.L
     EXPECT_EQ(MediaPureFileUtils::IsDirectory(filePath2), false);
     string filePath3 = "";
     EXPECT_EQ(MediaPureFileUtils::DeleteDir(filePath3), false);
+    string filePath = "/data/test/deletefile_001";
+    EXPECT_EQ(MediaPureFileUtils::DeleteFile(filePath), false);
 }
 } // namespace Media
 } // namespace OHOS

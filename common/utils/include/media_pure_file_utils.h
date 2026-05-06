@@ -31,6 +31,7 @@ public:
     EXPORT static bool IsFileExists(const std::string &fileName);
     EXPORT static bool DeleteDir(const std::string &dirName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
+    EXPORT static bool DeleteFile(const std::string &fileName);
 private:
     static int32_t RemoveDirectory(const std::string &path);
 };
