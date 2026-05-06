@@ -423,9 +423,7 @@ static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
         if (ret == E_OK && compatibleInfo.highResolution != -1) {
             return compatibleInfo.highResolution == 0;
         }
-        AccessTokenID tokenId;
-        PermissionUtils::GetTokenCallerForUid(uid, tokenId);
-        bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+        bool isSystemApp = PermissionUtils::IsSystemAppByBundleName(bundleName);
         if (isSystemApp) {
             return false;
         }
