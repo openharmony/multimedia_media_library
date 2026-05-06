@@ -615,11 +615,12 @@ HWTEST_F(PhotosCloneTest, ShouldDeleteDuplicateLakeFile_Test_003, TestSize.Level
 
     FileInfo fileInfo;
     fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
-    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";  
     fileInfo.isStoragePathExistInDb = false;
+    fileInfo.needMove = true;
 
     bool result = photosClone.ShouldDeleteDuplicateLakeFile(fileInfo);
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
     MEDIA_INFO_LOG("ShouldDeleteDuplicateLakeFile_Test_003 end");
 }
 
