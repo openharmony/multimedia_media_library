@@ -71,6 +71,8 @@
 #include "media_change_info.h"
 #include "notify_register_permission.h"
 #include "medialibrary_client_errno.h"
+#include "analysis_album_get_attribute_vo.h"
+#include "analysis_album_get_attribute_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -247,6 +249,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_CLONE_STATUS),
         &MediaAlbumsControllerService::NotifyDbAvailability
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE),
+        &MediaAlbumsControllerService::GetAnalysisAlbumAttribute
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -376,6 +382,29 @@ int32_t MediaAlbumsControllerService::ChangeRequestOperateAlbumAttribute(Message
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().ChangeRequestOperateAlbumAttribute(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetAnalysisAlbumAttribute(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    GetAttributeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "AnalysisAlbumGetAttribute Read Request Error");
+    ret = CheckOperateAttributeThumbDbPermission(JS_INNER_FAIL);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
+        "AnalysisAlbumGetAttribute permission denied");
+    GetAttributeRespBody respBody;
+    std::vector<std::unordered_map<std::string, std::string>> queryResults;
+    AnalysisAlbumGetAttributeDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().GetAnalysisAlbumAttribute(dto, queryResults);
+    if (ret == E_OK) {
+        respBody.queryResults = queryResults;
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply)

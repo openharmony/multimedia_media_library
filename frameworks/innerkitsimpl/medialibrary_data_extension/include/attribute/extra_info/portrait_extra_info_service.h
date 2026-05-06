@@ -13,23 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
-#define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#ifndef OHOS_MEDIA_PORTRAIT_EXTRA_INFO_SERVICE_H
+#define OHOS_MEDIA_PORTRAIT_EXTRA_INFO_SERVICE_H
 
 #include <memory>
+#include <string>
+#include <vector>
 
-#include "analysis_album_attribute_request_utils.h"
-#include "photo_album.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
-class AnalysisAlbumAttributeDispatcher {
+struct MergeAlbumInfo;
+
+class PortraitExtraInfoService {
 public:
-    static int32_t Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        const AnalysisAlbumOperation &operation);
-    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        std::vector<std::string> &attributeArray,
-        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
+    static int32_t SetOperate(const std::string &albumId,
+        const std::vector<std::string> &extraInfos, const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    static int32_t GetOperate(const int32_t &albumId, std::string &extraInfo,
+        const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
 };
 } // namespace OHOS::Media
 
-#endif // OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#endif // OHOS_MEDIA_PORTRAIT_EXTRA_INFO_SERVICE_H

@@ -61,6 +61,7 @@
 #include "lake_file_operations.h"
 #include "photo_album_upload_status_operation.h"
 #include "media_string_utils.h"
+#include "portrait_extra_info_service.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2681,7 +2682,8 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
         updateAlbumInfo.albumName + "'," + IS_COVER_SATISFIED + " = " + to_string(updateAlbumInfo.isCoverSatisfied) +
-        "," + ALBUM_RELATIONSHIP + " = '" + updateAlbumInfo.relationship + "'" +
+        "," + ALBUM_RELATIONSHIP + " = '" + updateAlbumInfo.relationship + "' , " + EXTRA_INFO + " = '" +
+        updateAlbumInfo.extra_info + "'" +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId) + ")";
     std::string initAccurateRefreshSql = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
@@ -2711,7 +2713,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     const std::string queryAlbumInfo = "SELECT " + ALBUM_ID + "," + GROUP_TAG + "," + COUNT + "," + IS_ME + "," +
         COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + "," +
         ALBUM_NAME + "," + IS_COVER_SATISFIED + "," + ALBUM_TYPE + "," + ALBUM_SUBTYPE + "," +
-        ALBUM_RELATIONSHIP + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
+        ALBUM_RELATIONSHIP + "," + EXTRA_INFO + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
         to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
@@ -2735,7 +2737,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK ||
             GetIntValueFromResultSet(resultSet, ALBUM_TYPE, albumInfo.albumType) != E_OK ||
             GetIntValueFromResultSet(resultSet, ALBUM_SUBTYPE, albumInfo.albumSubtype) != E_OK ||
-            GetStringValueFromResultSet(resultSet, ALBUM_RELATIONSHIP, albumInfo.relationship) != E_OK) {
+            GetStringValueFromResultSet(resultSet, ALBUM_RELATIONSHIP, albumInfo.relationship) != E_OK ||
+            GetStringValueFromResultSet(resultSet, EXTRA_INFO, albumInfo.extra_info) != E_OK) {
                 MEDIA_ERR_LOG("Failed to get values from result set");
                 return E_HAS_DB_ERROR;
             }
@@ -2900,6 +2903,12 @@ static int32_t GetMergedAlbumInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo,
     if (updateAlbumInfo.relationship == "") {
         updateAlbumInfo.relationship =
             mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[1].relationship : mergeAlbumInfo[0].relationship;
+    }
+    updateAlbumInfo.extra_info =
+        mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[0].extra_info : mergeAlbumInfo[1].extra_info;
+    if (updateAlbumInfo.extra_info == "") {
+        updateAlbumInfo.extra_info =
+            mergeAlbumInfo[0].albumId == albumId ? mergeAlbumInfo[1].extra_info : mergeAlbumInfo[0].extra_info;
     }
     return E_OK;
 }
@@ -3712,6 +3721,22 @@ int32_t MediaLibraryAlbumOperations::OperatePortraitAlbumIsRemoved(
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     return PortraitIsRemovedService::Operate(albumId, value, rdbStore);
+}
+
+int32_t MediaLibraryAlbumOperations::OperatePortraitAlbumExtraInfo(
+    const string &albumId, const vector<string> &extraInfos)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    return PortraitExtraInfoService::SetOperate(albumId, extraInfos, rdbStore);
+}
+
+int32_t MediaLibraryAlbumOperations::GetPortraitAlbumExtraInfo(
+    const int32_t &albumId, string &extraInfo)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "Failed to get rdbStore.");
+    return PortraitExtraInfoService::GetOperate(albumId, extraInfo, rdbStore);
 }
 
 static bool GetArgsSetUserAlbumName(const ValuesBucket& values,

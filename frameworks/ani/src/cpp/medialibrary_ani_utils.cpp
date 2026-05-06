@@ -452,6 +452,38 @@ ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::ToAniStringObject(ani_env *env, const std::string &src, ani_object &aniObj)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    static const char *className = "std.core.String";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "s:", &ctor), "Failed to find method: ctor");
+
+    ani_string aniStr;
+    CHECK_COND_RET(ToAniString(env, src, aniStr) == ANI_OK, false,
+        "ToAniString src fail");
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, aniStr), "New string Object Fail");
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::MakeAniRecordObject(ani_env *env, ani_object &aniObj)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    static const char *className = "std.core.Record";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method method {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", nullptr, &method),
+        "Can't find method <ctor> in %{public}s", className);
+    CHECK_STATUS_RET(env->Object_New(cls, method, &aniObj),
+        "Call method <ctor> fail");
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
