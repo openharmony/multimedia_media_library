@@ -13,23 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
-#define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#ifndef OHOS_MEDIA_ASSETS_MANAGER_ANALYSIS_ALBUM_GET_ATTRIBUTE_DTO_H
+#define OHOS_MEDIA_ASSETS_MANAGER_ANALYSIS_ALBUM_GET_ATTRIBUTE_DTO_H
 
-#include <memory>
+#include <cstdint>
+#include <string>
+#include <vector>
 
-#include "analysis_album_attribute_request_utils.h"
-#include "photo_album.h"
+#include "analysis_album_get_attribute_vo.h"
 
 namespace OHOS::Media {
-class AnalysisAlbumAttributeDispatcher {
+class AnalysisAlbumGetAttributeDto {
 public:
-    static int32_t Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        const AnalysisAlbumOperation &operation);
-    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        std::vector<std::string> &attributeArray,
-        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
+    int32_t albumId;
+    std::vector<std::string> attrs;
+    int32_t albumType {-1};
+    int32_t albumSubType {-1};
+
+public:
+    void FromVo(const GetAttributeReqBody &reqBody);
 };
 } // namespace OHOS::Media
 
-#endif // OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#endif // OHOS_MEDIA_ASSETS_MANAGER_ANALYSIS_ALBUM_GET_ATTRIBUTE_DTO_H

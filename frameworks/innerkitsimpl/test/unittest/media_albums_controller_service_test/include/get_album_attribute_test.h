@@ -13,13 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef UPGRADE_OTHER_TABLE_SQLS_H
-#define UPGRADE_OTHER_TABLE_SQLS_H
-// table name need to be added here
-#define TABLE_ANALYSIS_ALBUM "AnalysisAlbum"
-// column name should be added here
-#define COLUMN_EXTRA_INFO "extra_info"
+#ifndef GET_ALBUM_ATTRIBUTE_TEST_H
+#define GET_ALBUM_ATTRIBUTE_TEST_H
 
-// sqls only execute in upgrade progress should be added here
+#include <gtest/gtest.h>
 
-#endif // UPGRADE_OTHER_TABLE_SQLS_H
+namespace OHOS {
+namespace Media {
+class GetAlbumAttributeTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace Media
+} // namespace OHOS
+#endif // GET_ALBUM_ATTRIBUTE_TEST_H

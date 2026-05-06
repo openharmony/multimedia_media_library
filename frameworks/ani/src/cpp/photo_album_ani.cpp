@@ -16,6 +16,7 @@
 #include "photo_album_ani.h"
 
 #include "ani_class_name.h"
+#include "accesstoken_kit.h"
 #include "fetch_result_ani.h"
 #include "file_asset_ani.h"
 #include "media_file_utils.h"
@@ -41,12 +42,16 @@
 #include "transfer_utils.h"
 #include "ani_transfer_lib_manager.h"
 #include "js_interface_helper.h"
+#include "analysis_album_attribute_request_utils.h"
+#include "analysis_album_get_attribute_vo.h"
+#include "permission_utils.h"
 
 namespace OHOS::Media {
 using CreatePhotoAlbumNapiFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
 using GetPhotoAlbumInstanceFn = TransferUtils::TransferSharedPtr (*)(PhotoAlbumNapi*);
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
+static const int32_t GET_ATTRIBUTE_MAX_COUNT = 20;
 struct PhotoAlbumAttributes {
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubtype;
@@ -97,6 +102,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
         ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
         ani_native_function {"getChangeTime", nullptr, reinterpret_cast<void *>(GetChangeTime)},
+        ani_native_function {"getAttributeInner", nullptr, reinterpret_cast<void *>(GetAttribute)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
@@ -1478,6 +1484,192 @@ ani_object PhotoAlbumAni::TransferToStaticAlbum(ani_env *env, [[maybe_unused]] a
     CHECK_COND_RET(aniFileAsset != nullptr, nullptr, "null aniWrapper");
 
     return aniFileAsset;
+}
+
+static void GetAttributeExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAttributeExecute");
+    ANI_INFO_LOG("JSGetAttributeExecute start");
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        ANI_ERR_LOG("photoAlbum is null");
+        context->error = JS_E_INNER_FAIL;
+        return;
+    }
+
+    GetAttributeReqBody reqBody;
+    GetAttributeRespBody respBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.attributeArray = context->attributeArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        ANI_ERR_LOG("Get attribute failed, errCode is %{public}d", result);
+        context->SaveError(result);
+        return;
+    }
+    context->attributeQueryResults = respBody.queryResults;
+    ANI_INFO_LOG("GetAttribute: albumId: %{public}d", reqBody.albumId);
+}
+
+static ani_status MakeAlbumAttributeInfoHandle(ani_env *env, ani_object &result)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    const char* name = PAH_ANI_CLASS_ALBUM_ATTRIBUTE_INFO_HANDLER.c_str();
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(name, &cls), "Can't find class %{public}s", name);
+    ani_method method {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", nullptr, &method),
+        "Can't find method <ctor> in %{public}s", name);
+    CHECK_STATUS_RET(env->Object_New(cls, method, &result),
+        "Call method <ctor> fail");
+    return ANI_OK;
+}
+
+static ani_status SetValueStringToRecord(ani_env *env, const string& key, const string& value,
+    ani_object &result)
+{
+    ani_object aniValue;
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniStringObject(env, value, aniValue),
+        "ToAniString value fail");
+
+    ani_object attrInfoObj {};
+    CHECK_STATUS_RET(MakeAlbumAttributeInfoHandle(env, attrInfoObj),
+        "Failed to create album attribute info object");
+    CHECK_STATUS_RET(env->Object_SetPropertyByName_Ref(attrInfoObj, "attrValue", aniValue),
+        "Failed to set value property");
+    CHECK_STATUS_RET(env->Object_SetPropertyByName_Ref(result, key.c_str(), attrInfoObj),
+        "Failed to set value property");
+    return ANI_OK;
+}
+
+static ani_object GetAttributeComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAttributeComplete");
+    ani_object retVal {};
+    if (MediaLibraryAniUtils::MakeAniRecordObject(env, retVal) != ANI_OK) {
+        context.reset();
+        AniError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute info to result");
+        return {};
+    }
+    if (context->error == ERR_DEFAULT) {
+        for (size_t i = 0; i < context->attributeArray.size() && i < context->attributeQueryResults.size(); ++i) {
+            const std::string& attrName = context->attributeArray[i];
+            if (context->attributeQueryResults[i].count(attrName) == 0) {
+                context.reset();
+                AniError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
+                return {};
+            }
+            const std::string& attrValue = context->attributeQueryResults[i].at(attrName);
+            if (SetValueStringToRecord(env, attrName, attrValue, retVal) != ANI_OK) {
+                context.reset();
+                AniError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute value to result");
+                return {};
+            }
+        }
+    } else {
+        context->HandleError(env, retVal);
+    }
+
+    tracer.Finish();
+    context.reset();
+    return retVal;
+}
+
+static bool CheckAniCallerPermission(const std::string &permission)
+{
+    OHOS::Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (result != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        ANI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool CheckGetAttributePermission(ani_env *env)
+{
+    CHECK_COND_RET(env != nullptr, false, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return false;
+    }
+    if (!CheckAniCallerPermission(PERM_READ_IMAGEVIDEO)) {
+        AniError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE,
+            "Permission denied : ohos.permission.READ_IMAGEVIDEO required.");
+        return false;
+    }
+    return true;
+}
+
+static bool ParseAttributeArray(ani_env *env, ani_object arg, vector<string> &attributeArray)
+{
+    std::vector<ani_object> aniValues;
+    CHECK_COND_RET(MediaLibraryAniUtils::GetObjectArray(env, arg, aniValues),
+        false, "Failed to get attribute array");
+    CHECK_COND_RET(!aniValues.empty(), false, "array is empty");
+    for (const auto& aniValue : aniValues) {
+        std::string attributeValue;
+        CHECK_ARGS_WITH_RET_MSG(env, MediaLibraryAniUtils::GetParamStringPathMax(env, aniValue, attributeValue) == ANI_OK,
+            JS_E_PARAM_INVALID, false, "Failed to get attribute value");
+        attributeArray.push_back(attributeValue);
+    }
+    return true;
+}
+
+bool hasDuplicate(std::vector<std::string>& vec)
+{
+    if (vec.size() <= 1) {
+        return false;
+    }
+
+    std::vector<std::string> tmp = vec;
+    std::sort(tmp.begin(), tmp.end());
+    return std::adjacent_find(tmp.begin(), tmp.end()) != tmp.end();
+}
+
+ani_object PhotoAlbumAni::GetAttribute(ani_env *env, ani_object object, ani_object attrsArray)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSAnalysisAlbumGetAttribute");
+
+    if (!CheckGetAttributePermission(env)) {
+        return nullptr;
+    }
+
+    // Create async context
+    unique_ptr<PhotoAlbumAniContext> asyncContext = make_unique<PhotoAlbumAniContext>();
+    CHECK_ARGS_WITH_RET_MSG(env, asyncContext != nullptr, JS_E_PARAM_INVALID, nullptr,"asyncContext context is null");
+    vector<string> attributeArray;
+    CHECK_ARGS_WITH_RET_MSG(env, ParseAttributeArray(env, attrsArray, attributeArray),
+        JS_E_PARAM_INVALID, nullptr, "Failed to parse attribute array");
+    CHECK_ARGS_WITH_RET_MSG(env, attributeArray.size() <= GET_ATTRIBUTE_MAX_COUNT && !attributeArray.empty(),
+        JS_E_PARAM_INVALID, nullptr, "Invalid attribute count");
+    CHECK_ARGS_WITH_RET_MSG(env, !hasDuplicate(attributeArray), JS_E_PARAM_INVALID, nullptr, "Duplicate attributes found");
+    for (const auto& attribute : attributeArray) {
+        CHECK_ARGS_WITH_RET_MSG(env, attribute == ANALYSIS_ALBUM_ATTR_EXTRA_INFO, JS_E_PARAM_INVALID, nullptr,
+            "Invalid attribute: " + attribute);
+    }
+    asyncContext->attributeArray = std::move(attributeArray);
+
+    asyncContext->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (asyncContext->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
+        return nullptr;
+    }
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_ARGS_WITH_RET_MSG(env, photoAlbum != nullptr, JS_ERR_PARAMETER_INVALID,
+        nullptr, "photoAlbum is null");
+    CHECK_ARGS_WITH_RET_MSG(env, IsPortraitAlbumAttributeTarget(photoAlbum), JS_E_PARAM_INVALID, nullptr,
+        "Only portrait album can operate attribute");
+    GetAttributeExecute(env, asyncContext);
+    return GetAttributeComplete(env, asyncContext);
 }
 
 } // namespace OHOS::Media

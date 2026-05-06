@@ -422,6 +422,14 @@ void MediaAlbumChangeRequestAni::SetIsRemovedOperationData(AnalysisAlbumOperatio
     albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_IS_REMOVED);
 }
 
+void MediaAlbumChangeRequestAni::SetExtraInfoOperationData(AnalysisAlbumOperation &operation)
+{
+    analysisAlbumOperationData_.attr = operation.attr;
+    analysisAlbumOperationData_.type = operation.type;
+    analysisAlbumOperationData_.values = operation.values;
+    albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_EXTRA_INFO);
+}
+
 ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object object, ani_object operation)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
@@ -468,6 +476,8 @@ ani_status MediaAlbumChangeRequestAni::OperateAttribute(ani_env *env, ani_object
             JS_E_PARAM_INVALID, ANI_ERROR, "The total number of pending nickname values exceeds the limit");
     } else if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
         aniContext->objectInfo->SetIsRemovedOperationData(analysisOperation);
+    } else if (analysisOperation.attr == ANALYSIS_ALBUM_ATTR_EXTRA_INFO) {
+        aniContext->objectInfo->SetExtraInfoOperationData(analysisOperation);
     } else {
         ANI_ERR_LOG("Unsupported operateAttribute attr: %{public}s", analysisOperation.attr.c_str());
     }
@@ -1681,6 +1691,14 @@ static bool UpdateIsRemovedExecute(MediaAlbumChangeRequestContext& context)
         changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
 }
 
+static bool UpdateExtraInfoExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteOperateAttributeOperation(context, changeRequest->GetOperationDataAttr(),
+        changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
+}
+
 static bool SetCoverUriExecute(MediaAlbumChangeRequestContext& context)
 {
     auto changeRequest = context.objectInfo;
@@ -1798,6 +1816,7 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::UPDATE_IS_REMOVED, UpdateIsRemovedExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
+    { AlbumChangeOperation::UPDATE_EXTRA_INFO, UpdateExtraInfoExecute },
 };
 
 static bool SetAlbumPropertyExecute(
@@ -1904,7 +1923,8 @@ static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeReque
                    changeOperation == AlbumChangeOperation::UPDATE_IS_REMOVED ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
-                   changeOperation == AlbumChangeOperation::RESET_COVER_URI) {
+                   changeOperation == AlbumChangeOperation::RESET_COVER_URI ||
+                   changeOperation == AlbumChangeOperation::UPDATE_EXTRA_INFO) {
             valid = SetAlbumPropertyExecute(aniContext, changeOperation);
         } else {
             ANI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);
