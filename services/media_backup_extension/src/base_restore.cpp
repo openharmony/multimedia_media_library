@@ -2272,12 +2272,6 @@ bool BaseRestore::ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::Phot
     fileInfo.isNew = false;
     fileInfo.fileIdNew = rowData.fileId;
     fileInfo.cloudPath = rowData.data;
-    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
-    // If the file was in cloud previously with clean_flag = 1, reset it's position to local
-    if (rowData.fileId > 0 && isInCloud) {
-        fileInfo.needUpdate = true;
-        return false;
-    }
     fileInfo.needMove = false;
     return true;
 }
@@ -2301,6 +2295,40 @@ void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore>
         }
     }
     BackupDatabaseUtils::BatchUpdatePhotosToLocal(mediaLibraryRdb, inColumn);
+}
+
+int32_t BaseRestore::DeleteOriginDentryByCloudPath(const std::string &cloudPath)
+{
+    if (cloudPath.length() <= RESTORE_CLOUD_DIR.length() ||
+        cloudPath.compare(0, RESTORE_CLOUD_DIR.length(), RESTORE_CLOUD_DIR) != 0) {
+        MEDIA_ERR_LOG("Invalid cloudPath for origin dentry cleanup: %{public}s",
+            MediaFileUtils::DesensitizePath(cloudPath).c_str());
+        return E_FAIL;
+    }
+    std::string dentryPath = cloudPath;
+    dentryPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_DENTRY_DIR);
+    if (MediaFileUtils::IsFileExists(dentryPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(dentryPath), E_FAIL,
+            "Delete origin dentry failed: %{public}s", MediaFileUtils::DesensitizePath(dentryPath).c_str());
+    }
+    return E_OK;
+}
+
+int32_t BaseRestore::DeleteThumbDentryByCloudPath(const std::string &cloudPath)
+{
+    if (cloudPath.length() <= RESTORE_CLOUD_DIR.length() ||
+        cloudPath.compare(0, RESTORE_CLOUD_DIR.length(), RESTORE_CLOUD_DIR) != 0) {
+        MEDIA_ERR_LOG("Invalid cloudPath for thumb dentry cleanup: %{public}s",
+            MediaFileUtils::DesensitizePath(cloudPath).c_str());
+        return E_FAIL;
+    }
+    string thumbPath = cloudPath;
+    thumbPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_THUMB_DENTRY_DIR);
+    if (MediaFileUtils::IsFileExists(thumbPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(thumbPath), E_FAIL,
+            "Delete thumb dentry failed: %{public}s", MediaFileUtils::DesensitizePath(thumbPath).c_str());
+    }
+    return E_OK;
 }
 
 int32_t BaseRestore::RemoveDentryFileWithConflict(const FileInfo &fileInfo)

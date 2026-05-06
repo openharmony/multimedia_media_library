@@ -103,6 +103,9 @@ void PhotosDao::ParseResultSetOfSameFile(PhotosDao::PhotosRowData &rowData,
 {
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.displayName = GetStringVal("display_name", resultSet);
+    rowData.fileSize = GetInt64Val("size", resultSet);
+    rowData.orientation = GetInt32Val("orientation", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
     rowData.fileSourceType = GetInt32Val("file_source_type", resultSet);
@@ -199,7 +202,9 @@ std::string PhotosDao::ToString(const FileInfo &fileInfo)
 std::string PhotosDao::ToString(const PhotosDao::PhotosRowData &rowData)
 {
     std::stringstream ss;
-    ss << "PhotosRowData[ fileId: " << rowData.fileId << ", data: " << rowData.data << " ]";
+    ss << "PhotosRowData[ fileId: " << rowData.fileId << ", data: " << rowData.data
+       << ", displayName: " << rowData.displayName << ", size: " << rowData.fileSize
+       << ", orientation: " << rowData.orientation << " ]";
     return ss.str();
 }
 
