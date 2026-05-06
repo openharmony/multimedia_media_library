@@ -148,6 +148,7 @@ public:
     EXPORT int32_t GetPreferredCompatibleMode(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetMovingPhotoVersion(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAssetsControllerService() = default;

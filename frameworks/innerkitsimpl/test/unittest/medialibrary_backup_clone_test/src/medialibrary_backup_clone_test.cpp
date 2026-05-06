@@ -47,6 +47,7 @@
 #include "classify_aggregate_types.h"
 #undef protected
 #undef private
+#include <fstream>
 #include <random>
 #include "parameters.h"
 #include "media_config_info_column.h"
@@ -2329,6 +2330,191 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_tes
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_photo_unique_id_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_photo_unique_id_test_001.");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        " (file_id, unique_id, media_type) " +
+        "VALUES (1343, 'new_test_uuid_1343', " + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + ")",
+    });
+    FileInfo fileInfo;
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = 1343;
+    fileInfo.uuid = "old_test_uuid_1343";
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService->InsertPhoto(fileInfos);
+    std::string querySql = "SELECT unique_id FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "new_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_photo_unique_id_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_photo_unique_id_test_002");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        " (file_id, unique_id, media_type) " +
+        "VALUES (1343, NULL, " + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + ")",
+    });
+    FileInfo fileInfo;
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = 1343;
+    fileInfo.uuid = "old_test_uuid_1343";
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService->InsertPhoto(fileInfos);
+    std::string querySql = "SELECT unique_id FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "old_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_photo_unique_id_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_photo_unique_id_test_003");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoColumn::PHOTOS_TABLE +
+        " (file_id, unique_id, media_type) " +
+        "VALUES (1343, 'new_test_uuid_1343', " + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + ")",
+    });
+    FileInfo fileInfo;
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = 1343;
+    fileInfo.uuid = "old_test_uuid_1343";
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService->PrevailUUIDForSamePhotos(fileInfos);
+    std::string querySql = "SELECT unique_id FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "new_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_album_unique_id_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_album_unique_id_test_001");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoAlbumColumns::TABLE +
+        " (album_id, unique_id, album_type, album_subtype) " +
+        "VALUES (1343, 'new_test_uuid_1343', " + std::to_string(PhotoAlbumType::SOURCE) +
+            + ", " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) + ")",
+    });
+    AlbumInfo albumInfo;
+    albumInfo.albumIdNew = 1343;
+    albumInfo.uuid = "old_test_uuid_1343";
+    std::vector<AlbumInfo> albumInfos = {albumInfo};
+    restoreService->InsertAlbum(albumInfos, PhotoAlbumColumns::TABLE);
+    std::string querySql = "SELECT unique_id FROM " + PhotoAlbumColumns::TABLE + " WHERE album_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "new_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_album_unique_id_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_album_unique_id_test_002");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoAlbumColumns::TABLE +
+        " (album_id, unique_id, album_type, album_subtype) " +
+        "VALUES (1343, NULL, " + std::to_string(PhotoAlbumType::SOURCE) +
+            + ", " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) + ")",
+    });
+    AlbumInfo albumInfo;
+    albumInfo.albumIdNew = 1343;
+    albumInfo.uuid = "old_test_uuid_1343";
+    std::vector<AlbumInfo> albumInfos = {albumInfo};
+    restoreService->InsertAlbum(albumInfos, PhotoAlbumColumns::TABLE);
+    std::string querySql = "SELECT unique_id FROM " + PhotoAlbumColumns::TABLE + " WHERE album_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "old_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prevail_album_unique_id_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prevail_album_unique_id_test_003");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    ASSERT_NE(restoreService->mediaLibraryRdb_, nullptr);
+
+    ExecuteSqls(restoreService->mediaLibraryRdb_, {
+        "INSERT INTO " + PhotoAlbumColumns::TABLE +
+        " (album_id, unique_id, album_type, album_subtype) " +
+        "VALUES (1343, 'new_test_uuid_1343', " + std::to_string(PhotoAlbumType::SOURCE) +
+            + ", " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) + ")",
+    });
+    AlbumInfo albumInfo;
+    albumInfo.albumIdNew = 1343;
+    albumInfo.uuid = "old_test_uuid_1343";
+    restoreService->UpdateAlbumOrderColumns(albumInfo, PhotoAlbumColumns::TABLE);
+    std::string querySql = "SELECT unique_id FROM " + PhotoAlbumColumns::TABLE + " WHERE album_id = 1343";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(restoreService->mediaLibraryRdb_, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query DB for verification";
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueId;
+        resultSet->GetString(0, uniqueId);
+        EXPECT_EQ(uniqueId, "new_test_uuid_1343");
+    } else {
+        ASSERT_EQ(true, false) << "Failed unique_id did not prevailed.";
+    }
+    resultSet->Close();
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_photo_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_cloud_photo_test");
@@ -2773,11 +2959,26 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_004");
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    const std::string testDir = "/data/test/others_clone_dynamic_ut";
+    const std::string imagePath = testDir + "/test_DYNAMIC.jpg";
+    const std::string videoPath = testDir + "/test_DYNAMIC.mp4";
+    MediaFileUtils::CreateDirectory(testDir);
+    {
+        std::ofstream imageFile(imagePath, std::ios::binary);
+        imageFile << "img";
+    }
+    {
+        std::ofstream videoFile(videoPath, std::ios::binary);
+        videoFile << "video";
+    }
     FileInfo fileInfo;
-    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.jpg";
+    fileInfo.filePath = imagePath;
     bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
     EXPECT_FALSE(isDynamicVideo);
     EXPECT_EQ(fileInfo.subtype, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    (void)MediaFileUtils::DeleteFile(imagePath);
+    (void)MediaFileUtils::DeleteFile(videoPath);
+    (void)MediaFileUtils::DeleteDir(testDir);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005, TestSize.Level2)
@@ -2785,11 +2986,26 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_005");
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"otherDeviceType\",\"detail\":\"test\"}]}");
+    const std::string testDir = "/data/test/others_clone_dynamic_ut";
+    const std::string imagePath = testDir + "/test_DYNAMIC.jpg";
+    const std::string videoPath = testDir + "/test_DYNAMIC.mp4";
+    MediaFileUtils::CreateDirectory(testDir);
+    {
+        std::ofstream imageFile(imagePath, std::ios::binary);
+        imageFile << "img";
+    }
+    {
+        std::ofstream videoFile(videoPath, std::ios::binary);
+        videoFile << "video";
+    }
     FileInfo fileInfo;
-    fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.mp4";
+    fileInfo.filePath = videoPath;
     bool isDynamicVideo = othersClone->IsIosMovingPhotoVideo(fileInfo, OTHERS_PHONE_CLONE_RESTORE);
     EXPECT_TRUE(isDynamicVideo);
     EXPECT_EQ(fileInfo.otherSubtype, OTHER_DYNAMIC_VIDEO_TYPE);
+    (void)MediaFileUtils::DeleteFile(imagePath);
+    (void)MediaFileUtils::DeleteFile(videoPath);
+    (void)MediaFileUtils::DeleteDir(testDir);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_001, TestSize.Level2)

@@ -52,14 +52,5 @@ HWTEST_F(MediaClearInvalidUserCommentTaskTest, GetLongUserCommentCount_test_001,
     MEDIA_INFO_LOG("GetLongUserCommentCount_test_001 end");
 }
 
-HWTEST_F(MediaClearInvalidUserCommentTaskTest, UpdateLongUserCommentsToEmpty_test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("UpdateLongUserCommentsToEmpty_test_001");
-    MediaClearInvalidUserCommentTask task;
-    auto ret = task.UpdateLongUserCommentsToEmpty();
-    EXPECT_FALSE(ret);
-    MEDIA_INFO_LOG("UpdateLongUserCommentsToEmpty_test_001 end");
-}
-
 } // namespace Media
 } // namespace OHOS

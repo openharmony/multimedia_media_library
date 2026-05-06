@@ -19,6 +19,7 @@
 #include "album_plugin_config.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
+#include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
 #include "media_file_utils.h"
@@ -127,6 +128,7 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
             albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
             albumRowData.uploadStatus = GetInt32Val(this->FIELD_UPLOAD_STATUS, resultSet);
             albumRowData.isLocal = GetInt32Val(this->FIELD_IS_LOCAL, resultSet);
+            albumRowData.uuid = GetStringVal(this->FIELD_NAME_UUID, resultSet);
             result.emplace_back(albumRowData);
         }
         // Check if there are more rows to fetch.
@@ -173,6 +175,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
     albumRowData.uploadStatus = GetInt32Val(this->FIELD_UPLOAD_STATUS, resultSet);
     albumRowData.isLocal = GetInt32Val(this->FIELD_IS_LOCAL, resultSet);
+    albumRowData.uuid = GetStringVal(this->FIELD_NAME_UUID, resultSet);
     resultSet->Close();
     // cache the PhotoAlbum info by lPath
     this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), albumRowData);
@@ -227,6 +230,10 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         album.priority,
         album.uploadStatus,
         album.isLocal,
+        ((album.albumType == PhotoAlbumType::USER && album.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+         (album.albumType == PhotoAlbumType::SOURCE && album.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC &&
+            album.albumName != ".hiddenAlbum")) ?
+            (album.uuid == "" ? MediaFileUtils::GenerateUUID() : album.uuid) : "",
     };
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, album, "Media_Restore: mediaLibraryRdb_ is null.");
     auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
@@ -297,6 +304,10 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
             data.priority,
             data.uploadStatus,
             data.isLocal,
+            ((data.albumType == PhotoAlbumType::USER && data.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+            (data.albumType == PhotoAlbumType::SOURCE && data.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC &&
+                data.albumName != ".hiddenAlbum")) ?
+            (data.uuid == "" ? MediaFileUtils::GenerateUUID() : data.uuid) : "",
         };
         err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         CHECK_AND_CONTINUE_ERR_LOG(err == NativeRdb::E_OK,

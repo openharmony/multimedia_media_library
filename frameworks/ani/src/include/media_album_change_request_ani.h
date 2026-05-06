@@ -106,7 +106,7 @@ public:
     std::string GetOperationDataAttr() const;
     std::string GetOperationDataType() const;
     std::vector<std::string> GetOperationDataValues() const;
-    void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
+    bool SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
     static ani_object GetAlbum(ani_env *env, ani_object object);
     static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,

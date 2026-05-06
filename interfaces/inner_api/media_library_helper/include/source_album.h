@@ -165,6 +165,13 @@ const std::string CLEAR_SOURCE_ALBUM_ANALYSIS_PHOTO_MAP = "DELETE FROM " + ANALY
 
 const std::string CLEAR_ANALYSIS_SOURCE_ALBUM = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_TO_CLEAR_WHERE;
 
+const std::string GENERATE_UUID = "(lower(hex(randomblob(4) ) ) || \
+    '-' || lower(hex(randomblob(2))) || '-4' || \
+    substr(lower(hex(randomblob(2))), 2) || '-' || \
+    substr('89ab', abs(random()) % 4 + 1, 1) || \
+    substr(lower(hex(randomblob(2))), 2) || '-' || \
+    lower(hex(randomblob(6))))";
+
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     "CREATE TRIGGER IF NOT EXISTS insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
@@ -174,11 +181,13 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
     PhotoAlbumColumns::ALBUM_NAME + " , " +
+    PhotoAlbumColumns::UNIQUE_ID + " , " +
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
     " ) VALUES ( " +
     std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
     std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
     "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
+    " (SELECT " + GENERATE_UUID + ") , " +
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE +
     ");" + INSERT_PHOTO_MAP + "END;";
 
@@ -313,6 +322,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
     PhotoAlbumColumns::ALBUM_NAME + " , " +
+    PhotoAlbumColumns::UNIQUE_ID + " , " +
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " , " +
     PhotoAlbumColumns::ALBUM_LPATH + " , " +
     PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
@@ -323,6 +333,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
     std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
     "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
+    " (SELECT " + GENERATE_UUID + ") , " +
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
     SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME + " , " +
     "1, "

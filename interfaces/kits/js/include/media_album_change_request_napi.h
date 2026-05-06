@@ -115,7 +115,7 @@ public:
     std::string GetOperationDataType() const;
     std::vector<std::string> GetOperationDataValues() const;
     void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
-    void SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
+    bool SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 

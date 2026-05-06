@@ -38,9 +38,11 @@
 #include "cloud_file_error.h"
 #include "metadata.h"
 #include "metadata_extractor.h"
+#include "photos_po.h"
 
 using namespace testing::ext;
 using namespace OHOS::AAFwk;
+using namespace OHOS::Media::ORM;
 
 namespace OHOS::Media::CloudSync {
 
@@ -296,6 +298,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullUpdate_Test_001, TestSi
     pullData.localDateModified = "";
     pullData.attributesEditedTimeMs = 1;
     pullData.localDateAdded = "";
+    pullData.localPhotosPoOp = PhotosPo();
 
     std::set<std::string> refreshAlbums;
     std::vector<PhotosDto> fdirtyData;
@@ -315,6 +318,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullUpdate_Test_002, TestSi
     pullData.attributesEditedTimeMs = 1;
     pullData.localPosition = 1;
     pullData.localPath = "/data/local/tmp";
+    pullData.localPhotosPoOp = PhotosPo();
 
     std::set<std::string> refreshAlbums;
     std::vector<PhotosDto> fdirtyData;

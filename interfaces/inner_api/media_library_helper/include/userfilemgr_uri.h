@@ -278,6 +278,7 @@ namespace Media {
 #define CONST_PAH_ANA_ALBUM_ASSET "tab_analysis_album_asset_map"
 #define CONST_PAH_ANA_FOREGROUND "phaccess_ana_foreground_operation"
 #define CONST_PAH_ANA_WATERMARK "phaccess_ana_watermark_operation"
+#define CONST_PAH_ANA_CAPTION "phaccess_ana_caption_operation"
 // PhotoAccessHelper photo operation constants
 #define CONST_PAH_CREATE_PHOTO "datashare:///media/phaccess_photo_operation/create"
 #define CONST_PAH_SYS_CREATE_PHOTO "datashare:///media/phaccess_photo_operation/sys_create"
@@ -401,8 +402,6 @@ namespace Media {
 #define CONST_PAH_STORE_FACARD_PHOTO "datashare:///media/tab_facard_photos_operation/store_form_id"
 
 #define CONST_ASSET_ALBUM_OPERATION "tab_asset_and_album_operation"
-
-#define CONST_TAB_OPERATION_LOG "tab_operation_log_table_operation"
 } // namespace Media
 } // namespace OHOS
 

@@ -18,8 +18,6 @@
 #include "watch_system_handler.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_event_db_operations.h"
-#include "media_operation_log_column.h"
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "watch_lite/cloud_audit_impl.h"
@@ -132,24 +130,6 @@ void WatchSystemHandler::SetAllowNetworkSwitch(int32_t val)
         return;
     }
     allowNetworkSwitch = val;
-}
-
-std::string WatchSystemHandler::GetUuidByFileId(const std::string &displayName)
-{
-    MEDIA_INFO_LOG("Start GetUuidByFileId");
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, "", "uniStore is nullptr");
-    std::string querySql = "SELECT " + PhotoColumn::UNIQUE_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        MediaColumn::MEDIA_NAME + " = '" + displayName + "'";
-    auto result = uniStore->QuerySql(querySql);
-    CHECK_AND_RETURN_RET_LOG(result != nullptr, "", "result is nullptr");
-    std::string uuid = "-1";
-    while (result->GoToNextRow() == NativeRdb::E_OK) {
-        uuid = GetStringVal(PhotoColumn::UNIQUE_ID, result);
-    }
-    result->Close();
-    return uuid;
 }
 }
 }

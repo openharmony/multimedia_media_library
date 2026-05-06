@@ -210,6 +210,11 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
         HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+    ExecuteRdbSqls(newRdbStore->GetRaw(), {
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+        CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
+    });
     CloneRestoreHighlight::InitInfo initInfo = {
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };

@@ -1217,7 +1217,8 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
             fileInfo.otherSubtype = OTHER_DYNAMIC_VIDEO_TYPE;
             return true;
         }
-        if (filePath.find(OTHER_DYNAMIC_IMAGE) != string::npos && IsOtherDynamicVideoExist(fileInfo.filePath)) {
+        if (filePath.find(OTHER_DYNAMIC_IMAGE) != string::npos &&
+            IsOtherDynamicImageExist(fileInfo.filePath) && IsOtherDynamicVideoExist(fileInfo.filePath)) {
             fileInfo.subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
             fileInfo.fileSize = static_cast<int64_t>(GetOtherDynamicMovingPhotoSize(fileInfo.filePath));
         }

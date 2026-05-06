@@ -18,6 +18,7 @@
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
 
 #include "medialibrary_rdb_utils.h"
 #include "rdb_utils.h"
@@ -51,6 +52,31 @@ static int32_t GetCriticalState(const NativeRdb::ValuesBucket& values, bool &isC
         isCritical = (riskStatus == 2 || riskStatus == 3);
     }
     return E_OK;
+}
+
+static void SetPhotoChangeTime(NativeRdb::ValuesBucket &values, NativeRdb::RdbPredicates &predicates,
+    int32_t photoRiskStatus)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is null.");
+        return;
+    }
+    vector<string> columns = {PhotoColumn::PHOTO_RISK_STATUS};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to execute query.");
+        return;
+    }
+    int32_t oldRiskStatus = -1;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        oldRiskStatus = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_RISK_STATUS,
+            resultSet, TYPE_INT32));
+        if (photoRiskStatus != oldRiskStatus) {
+            values.Put(PhotoColumn::PHOTO_CHANGE_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+        }
+    }
+    resultSet->Close();
 }
 
 // Safe Album: Set photo critical state (inner API)
@@ -88,6 +114,8 @@ int32_t MediaLibraryCriticalPhotoOperations::SetPhotoCritical(MediaLibraryComman
     NativeRdb::ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_RISK_STATUS, photoRiskStatus);
     values.Put(PhotoColumn::PHOTO_IS_CRITICAL, isCriticalInt);
+
+    SetPhotoChangeTime(values, predicates, photoRiskStatus);
 
     int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     MEDIA_INFO_LOG("SetPhotoCritical changedRows:%{public}d", changedRows);

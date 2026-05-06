@@ -26,8 +26,10 @@
 #include "medialibrary_type_const.h"
 #include "backup_const_column.h"
 #include "vision_column.h"
+#include "vision_total_column.h"
 #include "medialibrary_data_manager_utils.h"
 #include "backup_const.h"
+#include "clone_restore_analysis_total.h"
 
 using namespace std;
 namespace OHOS::Media {
@@ -48,7 +50,7 @@ const int64_t SUPPORT_NUMBER = 9999;                     // 余量
 const int64_t SINGLE_OVER_THRESHOLD_DATA_TIME = 216000;  // 216秒 (每1万条数据)
 
 static int32_t GetNewFileId(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t oldFileId);
-static void UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &groupId,
+static bool UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &groupId,
     const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 void CloneRestoreDupSim::Init(int32_t sceneCode, const std::string &taskId,
@@ -64,6 +66,14 @@ void CloneRestoreDupSim::Init(int32_t sceneCode, const std::string &taskId,
     this->photoInfoMap_ = photoInfoMap;
     this->isCloudRestoreSatisfied_ = isCloudRestoreSatisfied;
     this->externalScoreMaskMap_ = scoreMaskMap;
+
+    // 构建新file_id到旧file_id的哈希映射表缓存
+    newToOldMap_.reserve(photoInfoMap_.size());
+    for (const auto &pair : photoInfoMap_) {
+        if (pair.second.fileIdNew != -1) {
+            newToOldMap_[pair.second.fileIdNew] = pair.first;
+        }
+    }
 }
 
 int64_t CloneRestoreDupSim::GetShouldEndTime()
@@ -96,12 +106,12 @@ void CloneRestoreDupSim::Restore()
     CHECK_AND_RETURN_LOG(start <= shouldEndTime, "over shouldEndTime, skip Restore");
 
     CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
+
+    // Preprocess source total table: set similarity and duplicate to 1 if > 0
+    PreprocessSourceTotalTable();
     RestoreProfileData();
-    UpdateTotalTableForProfile();
     RestoreDedupData();
-    UpdateTotalTableForDedup();
     RestoreAffectiveData();
-    UpdateTotalTableForAffective();
     RefreshTotalScore();
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
@@ -176,8 +186,8 @@ static std::unordered_set<int32_t> GetExistingFileIds(
     return existingFileIds;
 }
 
-void CloneRestoreDupSim::BatchInsertProfileData(const std::vector<ProfileInfo> &profileInfos,
-    const std::unordered_set<int32_t> &existingFileIds)
+void CloneRestoreDupSim::BatchInsertProfileData(
+    const std::vector<ProfileInfo> &profileInfos, const std::unordered_set<int32_t> &existingFileIds)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!profileInfos.empty(), "profileInfos are empty");
@@ -283,6 +293,7 @@ void CloneRestoreDupSim::RestoreDedupData()
     MEDIA_INFO_LOG("RestoreDedupData completed, migrateDedupNum %{public}llu records, Total time: %{public}lld ms",
         (unsigned long long)migrateDedupNumber_.load(),
         (long long)(end - start));
+    UpdateTotalTableForDedup();
 }
 
 void CloneRestoreDupSim::RestoreAffectiveData()
@@ -295,6 +306,8 @@ void CloneRestoreDupSim::RestoreAffectiveData()
         MEDIA_INFO_LOG("photoInfoMap_ is empty, no affective data to restore.");
         return;
     }
+    // 在循环外只查询一次existingFileIds
+    std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(mediaLibraryRdb_, AFFECTIVE_TABLE);
 
     // 收集所有 oldFileIds
     std::vector<int32_t> oldFileIds;
@@ -323,7 +336,7 @@ void CloneRestoreDupSim::RestoreAffectiveData()
 
         MEDIA_INFO_LOG(
             "RestoreAffectiveData: batch index = %{public}zu, queried = %{public}zu", i, affectiveInfos.size());
-        BatchInsertAffectiveData(affectiveInfos);
+        BatchInsertAffectiveData(affectiveInfos, existingFileIds);
     }
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
@@ -331,6 +344,7 @@ void CloneRestoreDupSim::RestoreAffectiveData()
         "RestoreAffectiveData completed, migrateAffectiveNum %{public}llu records, Total time: %{public}lld ms",
         (unsigned long long)migrateAffectiveNumber_.load(),
         (long long)(end - start));
+    UpdateTotalTableForAffective();
 }
 
 void CloneRestoreDupSim::RestoreProfileData()
@@ -376,8 +390,7 @@ void CloneRestoreDupSim::RestoreProfileData()
     }
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG(
-        "RestoreProfileData completed, migrateProfileNum %{public}llu records, Total time: %{public}lld ms",
+    MEDIA_INFO_LOG("RestoreProfileData completed, migrateProfileNum %{public}llu records, Total time: %{public}lld ms",
         (unsigned long long)migrateProfileNumber_.load(),
         (long long)(end - start));
 
@@ -389,6 +402,7 @@ void CloneRestoreDupSim::RestoreProfileData()
             UpdateScoreMask(pair.second.fileIdNew, BIT20);
         }
     }
+    UpdateTotalTableForProfile();
 }
 
 std::vector<DedupInfo> CloneRestoreDupSim::QueryDedupTblByFileIds(const std::string &fileIdClause)
@@ -423,11 +437,11 @@ static int32_t GetNewFileId(const std::unordered_map<int32_t, PhotoInfo> &photoI
     return -1;
 }
 
-static void UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &groupId,
+static bool UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &groupId,
     const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
     if (!groupId.has_value()) {
-        return;
+        return true;  // groupId为空，视为成功
     }
     int32_t newGroupId = GetNewFileId(photoInfoMap, groupId.value());
     if (newGroupId != -1) {
@@ -436,17 +450,20 @@ static void UpdateGroupId(DedupInfo &mappedInfo, const std::optional<int32_t> &g
         } else if (groupId == mappedInfo.groupIdSim) {
             mappedInfo.groupIdSim = newGroupId;
         }
+        return true;  // 映射成功
     }
+    return false;  // 映射失败
 }
 
-void CloneRestoreDupSim::BatchInsertDedupData(const std::vector<DedupInfo> &dedupInfos,
-    const std::unordered_set<int32_t> &existingFileIds)
+void CloneRestoreDupSim::BatchInsertDedupData(
+    const std::vector<DedupInfo> &dedupInfos, const std::unordered_set<int32_t> &existingFileIds)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!dedupInfos.empty(), "dedupInfos are empty");
 
     int32_t skipNoFileId = 0;
     int32_t skipNoMapping = 0;
+    int32_t skipGroupMapping = 0;
     int32_t skipExisting = 0;
     int32_t toInsert = 0;
     std::vector<NativeRdb::ValuesBucket> valuesBuckets;
@@ -464,15 +481,20 @@ void CloneRestoreDupSim::BatchInsertDedupData(const std::vector<DedupInfo> &dedu
             skipExisting++;
             continue;
         }
-        toInsert++;
+
+        // 检查groupId映射
         DedupInfo mappedInfo = info;
         mappedInfo.fileId = newFileId;
-        UpdateGroupId(mappedInfo, info.groupIdRep, photoInfoMap_);
-        UpdateGroupId(mappedInfo, info.groupIdSim, photoInfoMap_);
-        mappedInfo.dedupGroupVersion = "backup1.0";
-        mappedInfo.simGroupVersion = "backup1.0";
+        bool groupRepSuccess = UpdateGroupId(mappedInfo, info.groupIdRep, photoInfoMap_);
+        bool groupSimSuccess = UpdateGroupId(mappedInfo, info.groupIdSim, photoInfoMap_);
+        // 如果任何一个groupId映射失败，跳过这条数据
+        if (!groupRepSuccess || !groupSimSuccess) {
+            skipGroupMapping++;
+            continue;
+        }
+
+        toInsert++;
         valuesBuckets.push_back(CreateValuesBucketFromDedupInfo(mappedInfo));
-        insertedDedupFileIds_.push_back(newFileId);
     }
     if (!valuesBuckets.empty()) {
         int64_t rowNum = 0;
@@ -480,6 +502,13 @@ void CloneRestoreDupSim::BatchInsertDedupData(const std::vector<DedupInfo> &dedu
         CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert dedup data");
         migrateDedupNumber_ += static_cast<uint64_t>(rowNum);
     }
+    MEDIA_INFO_LOG("BatchInsertDedupData: skipNoFileId=%{public}d, skipNoMapping=%{public}d, "
+                   "skipGroupMapping=%{public}d, skipExisting=%{public}d, toInsert=%{public}d",
+        skipNoFileId,
+        skipNoMapping,
+        skipGroupMapping,
+        skipExisting,
+        toInsert);
 }
 
 NativeRdb::ValuesBucket CloneRestoreDupSim::CreateValuesBucketFromDedupInfo(const DedupInfo &info)
@@ -527,12 +556,11 @@ std::vector<AffectiveInfo> CloneRestoreDupSim::QueryAffectiveTblByFileIds(const 
     return result;
 }
 
-void CloneRestoreDupSim::BatchInsertAffectiveData(const std::vector<AffectiveInfo> &affectiveInfos)
+void CloneRestoreDupSim::BatchInsertAffectiveData(
+    const std::vector<AffectiveInfo> &affectiveInfos, const std::unordered_set<int32_t> &existingFileIds)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!affectiveInfos.empty(), "affectiveInfos are empty");
-
-    std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(mediaLibraryRdb_, AFFECTIVE_TABLE);
 
     std::vector<NativeRdb::ValuesBucket> valuesBuckets;
     std::vector<int32_t> insertedFileIds;  // 记录实际插入的 file_id
@@ -567,7 +595,6 @@ NativeRdb::ValuesBucket CloneRestoreDupSim::CreateValuesBucketFromAffectiveInfo(
 {
     NativeRdb::ValuesBucket values;
 
-    // id 是自增字段，不需要插入
     BackupDatabaseUtils::PutIfPresent(values, "file_id", info.fileId);
     BackupDatabaseUtils::PutIfPresent(values, "category", info.emotionCategory);
     BackupDatabaseUtils::PutIfPresent(values, "valence", info.valence);
@@ -595,69 +622,168 @@ int32_t CloneRestoreDupSim::BatchInsertWithRetry(
     return ret;
 }
 
-void CloneRestoreDupSim::UpdateTotalTableForProfile()
+void CloneRestoreDupSim::PreprocessSourceTotalTable()
 {
-    MEDIA_INFO_LOG("UpdateTotalTableForProfile");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("PreprocessSourceTotalTable: Set similarity and duplicate to 1 if > 0 in source database");
 
-    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is nullptr.");
+    // Update similarity field: set to 1 if > 0
+    std::string updateSimilaritySql =
+        "UPDATE " + VISION_TOTAL_TABLE + " SET " + SIMILARITY + " = 1 WHERE " + SIMILARITY + " > 0";
+    int32_t ret1 = BackupDatabaseUtils::ExecuteSQL(mediaRdb_, updateSimilaritySql);
+    MEDIA_INFO_LOG("PreprocessSourceTotalTable: similarity updated, ret=%{public}d", ret1);
 
-    if (insertedProfileFileIds_.empty()) {
-        MEDIA_INFO_LOG("insertedProfileFileIds_ is empty, skip UpdateTotalTableForProfile");
+    // Update duplicate field: set to 1 if > 0
+    std::string updateDuplicateSql =
+        "UPDATE " + VISION_TOTAL_TABLE + " SET " + DUPLICATE + " = 1 WHERE " + DUPLICATE + " > 0";
+    int32_t ret2 = BackupDatabaseUtils::ExecuteSQL(mediaRdb_, updateDuplicateSql);
+    MEDIA_INFO_LOG("PreprocessSourceTotalTable: duplicate updated, ret=%{public}d", ret2);
+}
+
+void CloneRestoreDupSim::UpdateSimilarityAndDuplicateFields()
+{
+    std::vector<std::string> fields = {DUPLICATE, SIMILARITY};
+    for (const auto &field : fields) {
+        CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal;
+        cloneRestoreAnalysisTotal.Init(field, QUERY_COUNT, mediaRdb_, mediaLibraryRdb_, VISION_TOTAL_TABLE);
+        int32_t totalNumber = cloneRestoreAnalysisTotal.GetTotalNumber();
+        for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+            cloneRestoreAnalysisTotal.GetInfos(photoInfoMap_);
+            cloneRestoreAnalysisTotal.UpdateDatabase();
+        }
+        MEDIA_INFO_LOG("UpdateSimilarityAndDuplicateFields: field=%{public}s, totalNumber=%{public}d",
+            field.c_str(), totalNumber);
+    }
+}
+
+std::vector<int32_t> CloneRestoreDupSim::ConvertNewFileIdsToOldFileIds(const std::vector<int32_t> &newFileIds)
+{
+    std::vector<int32_t> oldFileIds;
+    oldFileIds.reserve(newFileIds.size());
+
+    // 使用缓存的映射表直接查找
+    for (int32_t newFileId : newFileIds) {
+        auto it = newToOldMap_.find(newFileId);
+        if (it != newToOldMap_.end()) {
+            oldFileIds.push_back(it->second);
+        }
+    }
+    return oldFileIds;
+}
+
+void CloneRestoreDupSim::UpdateTotalTableField(const std::string &field, const std::vector<int32_t> &insertedFileIds)
+{
+    if (insertedFileIds.empty()) {
+        MEDIA_INFO_LOG("UpdateTotalTableField: no inserted files, skip %{public}s update", field.c_str());
         return;
     }
 
-    std::string fileIdClause = "(" + BackupDatabaseUtils::JoinValues<int>(insertedProfileFileIds_, ", ") + ")";
-    std::string updateSql = "UPDATE " + VISION_TOTAL_TABLE + " SET similarity = 1, duplicate = 1, negative = 1" +
-                            " WHERE file_id IN " + fileIdClause;
-    int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
-    MEDIA_INFO_LOG("UpdateTotalTableForProfile ret: %{public}d", ret);
+    std::vector<int32_t> oldFileIds = ConvertNewFileIdsToOldFileIds(insertedFileIds);
+    if (oldFileIds.empty()) {
+        return;
+    }
+
+    // 从源端查询字段值
+    std::vector<std::pair<int32_t, int32_t>> fieldValues = QueryFieldValuesFromSource(field, oldFileIds);
+    if (fieldValues.empty()) {
+        return;
+    }
+
+    // 批量更新到目标端
+    BatchUpdateTotalTableField(field, fieldValues);
+}
+
+std::vector<std::pair<int32_t, int32_t>> CloneRestoreDupSim::QueryFieldValuesFromSource(
+    const std::string &field, const std::vector<int32_t> &oldFileIds)
+{
+    std::string oldFileIdsStr = "(" + BackupDatabaseUtils::JoinValues(oldFileIds, ",") + ")";
+    std::string querySourceSql =
+        "SELECT file_id, " + field + " FROM " + std::string(VISION_TOTAL_TABLE) +
+        " WHERE file_id IN " + oldFileIdsStr;
+
+    auto sourceResultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySourceSql);
+    if (sourceResultSet == nullptr) {
+        return {};
+    }
+
+    std::vector<std::pair<int32_t, int32_t>> fieldValues;
+    while (sourceResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t oldFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(sourceResultSet, "file_id").value_or(0);
+        int32_t fieldValue = BackupDatabaseUtils::GetOptionalValue<int32_t>(sourceResultSet, field).value_or(0);
+        if (oldFileId <= 0 || fieldValue <= 0) {
+            continue;
+        }
+
+        auto photoIt = photoInfoMap_.find(oldFileId);
+        if (photoIt == photoInfoMap_.end() || photoIt->second.fileIdNew <= 0) {
+            continue;
+        }
+
+        fieldValues.push_back({photoIt->second.fileIdNew, fieldValue});
+    }
+    sourceResultSet->Close();
+    return fieldValues;
+}
+
+void CloneRestoreDupSim::BatchUpdateTotalTableField(const std::string &field,
+    const std::vector<std::pair<int32_t, int32_t>> &fieldValues)
+{
+    // 批量更新：使用 CASE WHEN 语句，每批处理1000条记录
+    const int32_t BATCH_SIZE = 1000;
+    for (size_t i = 0; i < fieldValues.size(); i += BATCH_SIZE) {
+        auto batch_begin = fieldValues.begin() + i;
+        auto batch_end = (i + BATCH_SIZE < fieldValues.size()) ?
+                         (fieldValues.begin() + i + BATCH_SIZE) : fieldValues.end();
+
+        // 构建 CASE WHEN 批量更新SQL
+        std::string updateSql = "UPDATE " + std::string(VISION_TOTAL_TABLE) +
+                                " SET " + field + " = CASE file_id ";
+        std::string fileIdsStr;
+        for (auto it = batch_begin; it != batch_end; ++it) {
+            updateSql += "WHEN " + std::to_string(it->first) + " THEN " + std::to_string(it->second) + " ";
+            if (it != batch_begin) {
+                fileIdsStr += ",";
+            }
+            fileIdsStr += std::to_string(it->first);
+        }
+        updateSql += "END WHERE file_id IN (" + fileIdsStr + ")";
+
+        BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
+    }
+    MEDIA_INFO_LOG("UpdateTotalTableField: %{public}s field updated, count=%{public}zu",
+        field.c_str(), fieldValues.size());
+}
+
+void CloneRestoreDupSim::UpdateTotalTableForProfile()
+{
+    MEDIA_INFO_LOG("start UpdateTotalTableForProfile");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
+    UpdateSimilarityAndDuplicateFields();
+    UpdateTotalTableField(NEGATIVE, insertedProfileFileIds_);
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateTotalTableForProfile cost %{public}lld", (long long)(end - start));
+    MEDIA_INFO_LOG("UpdateTotalTableForProfile cost %{public}lld ms", (long long)(end - start));
 }
 
 void CloneRestoreDupSim::UpdateTotalTableForDedup()
 {
-    MEDIA_INFO_LOG("UpdateTotalTableForDedup");
+    MEDIA_INFO_LOG("start UpdateTotalTableForDedup");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
 
-    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is nullptr.");
-
-    if (insertedDedupFileIds_.empty()) {
-        MEDIA_INFO_LOG("insertedDedupFileIds_ is empty, skip UpdateTotalTableForDedup");
-        return;
-    }
-
-    std::string fileIdClause = "(" + BackupDatabaseUtils::JoinValues<int>(insertedDedupFileIds_, ", ") + ")";
-    std::string updateSql = "UPDATE " + VISION_TOTAL_TABLE + " SET similarity = 2, duplicate = 2" +
-                            " WHERE file_id IN " + fileIdClause;
-    int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
-    MEDIA_INFO_LOG("UpdateTotalTableForDedup ret: %{public}d", ret);
+    UpdateSimilarityAndDuplicateFields();
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateTotalTableForDedup cost %{public}lld", (long long)(end - start));
+    MEDIA_INFO_LOG("UpdateTotalTableForDedup cost %{public}lld ms", (long long)(end - start));
 }
 
 void CloneRestoreDupSim::UpdateTotalTableForAffective()
 {
-    MEDIA_INFO_LOG("UpdateTotalTableForAffective");
+    MEDIA_INFO_LOG("start UpdateTotalTableForAffective");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
 
-    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is nullptr.");
-
-    if (insertedAffectiveFileIds_.empty()) {
-        MEDIA_INFO_LOG("insertedAffectiveFileIds_ is empty, skip UpdateTotalTableForAffective");
-        return;
-    }
-
-    std::string fileIdClause = "(" + BackupDatabaseUtils::JoinValues<int>(insertedAffectiveFileIds_, ", ") + ")";
-    std::string updateSql = "UPDATE " + VISION_TOTAL_TABLE + " SET affective = 1" +
-                            " WHERE file_id IN " + fileIdClause;
-    int32_t ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
-    MEDIA_INFO_LOG("UpdateTotalTableForAffective ret: %{public}d", ret);
+    UpdateTotalTableField(AFFECTIVE, insertedAffectiveFileIds_);
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateTotalTableForAffective cost %{public}lld", (long long)(end - start));
+    MEDIA_INFO_LOG("UpdateTotalTableForAffective cost %{public}lld ms", (long long)(end - start));
 }
 }  // namespace OHOS::Media

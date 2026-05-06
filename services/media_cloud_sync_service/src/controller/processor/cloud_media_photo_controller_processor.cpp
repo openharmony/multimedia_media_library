@@ -352,8 +352,6 @@ PhotosDto CloudMediaPhotoControllerProcessor::ConvertToPhotoDto(const OnCreateRe
     record.serverErrorCode = recordVo.serverErrorCode;
     record.livePhotoCachePath = recordVo.livePhotoCachePath;
     record.errorDetails = recordVo.errorDetails;
-    record.fileSourceType = recordVo.fileSourceType;
-    record.storagePath = recordVo.storagePath;
     return record;
 }
 

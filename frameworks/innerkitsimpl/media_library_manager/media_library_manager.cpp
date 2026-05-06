@@ -64,6 +64,7 @@
 #include "album_get_assets_vo.h"
 #include "image_source.h"
 #include "js_interface_helper.h"
+#include "get_assets_vo.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -1563,6 +1564,40 @@ bool MediaLibraryManager::CheckIsCloudFile(const std::string &sandboxPath)
     CHECK_AND_RETURN_RET_LOG(valueLen > 0, false, "failed to getxattr, sandboxPath: %{public}s", sandboxPath.c_str());
     constexpr const char FILE_POSITION_CLOUD = '2';
     return cloudvalue[0] == FILE_POSITION_CLOUD;
+}
+
+FetchResult<FileAsset> MediaLibraryManager::GetAssets(const std::vector<std::string> &fetchColumns,
+    const DataShare::DataSharePredicates *predicate)
+{
+    MEDIA_DEBUG_LOG("GetAssets Start.");
+    FetchResult<FileAsset> fileAsset;
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, fileAsset, "dataShareHelper is nullptr");
+    CHECK_AND_RETURN_RET_LOG(predicate != nullptr, fileAsset, "predicate is nullptr");
+    std::vector<std::string> fetchColumnsForChange = fetchColumns;
+    DataShare::DataSharePredicates predicateForChange = *predicate;
+    CHECK_AND_RETURN_RET_LOG(AddDefaultAssetColumnsForInner(fetchColumnsForChange, PhotoColumn::IsPhotoColumn),
+        fileAsset, "AddDefaultAssetColumnsForInner invalid");
+
+    for (size_t i = 0; i < fetchColumnsForChange.size(); i++) {
+        if (fetchColumnsForChange[i] != "count(*)") {
+            fetchColumnsForChange[i] = PhotoColumn::PHOTOS_TABLE + "." + fetchColumnsForChange[i];
+        }
+    }
+
+    GetAssetsReqBody reqBody;
+    reqBody.predicates = predicateForChange;
+    reqBody.columns = fetchColumnsForChange;
+    GetAssetsRespBody respBody;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (ret == E_OK) {
+        resultSet = respBody.resultSet;
+    } else {
+        MEDIA_ERR_LOG("UserInnerIPCClient Call failed, errCode is %{public}d", ret);
+        return fileAsset;
+    }
+    return FetchResult<FileAsset>(std::move(resultSet));
 }
 } // namespace Media
 } // namespace OHOS

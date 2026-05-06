@@ -386,6 +386,7 @@ struct PhotoInfo {
 struct FileInfo {
     std::string filePath;
     std::string displayName;
+    std::string uuid;
     std::string title;
     std::string userComment;
     std::string relativePath;
@@ -501,6 +502,7 @@ struct AlbumInfo {
     int32_t albumIdOld {-1};
     int32_t albumIdNew {-1};
     std::string albumName;
+    std::string uuid;
     std::string albumBundleName;
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubType;
