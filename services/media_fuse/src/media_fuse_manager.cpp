@@ -697,6 +697,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     if (err == 0 && ret >= 0) {
         MEDIA_INFO_LOG("libc open transcode file success");
         auto dfxManager = DfxManager::GetInstance();
+        CHECK_AND_EXECUTE(dfxManager != nullptr, close(ret));
         CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INNER_FAIL, "DfxManager::GetInstance() returned nullptr");
         dfxManager->HandleTranscodeAccessTime(ACCESS_LIBC, transcodeType);
     }
