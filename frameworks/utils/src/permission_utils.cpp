@@ -861,8 +861,7 @@ bool PermissionUtils::IsSystemAppByBundleName(const std::string &bundleName)
         MEDIA_ERR_LOG("Failed to get bundle info for %{public}s, Error: %{public}d", bundleName.c_str(), state);
         return false;
     }
-    AccessTokenID tokenId = bundleInfo.applicationInfo.accessTokenId;
-    return IsSystemAppByCache(tokenId);
+    return bundleInfo.applicationInfo.isSystemApp;
 }
 }  // namespace Media
 }  // namespace OHOS
