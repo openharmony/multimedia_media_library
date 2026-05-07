@@ -52,7 +52,6 @@ void CloneStatusListener::RegisterCloneStatusChangeListener()
         MEDIA_ERR_LOG("CloneStatusListener RegisterParameterListener fail, ret: %{public}d", ret);
         return;
     }
-    HandleCloneStatusChanged();
     SetDeathRecipient();
     isCloneStatusChangedListenerRegistered_ = true;
 }
