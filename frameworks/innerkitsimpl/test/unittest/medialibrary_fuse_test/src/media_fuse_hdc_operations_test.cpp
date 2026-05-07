@@ -570,7 +570,7 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_OperationsSuccess_test_001, Le
     AssetsPrepare(albumId, uri);
     std::string displayName = "testPhoto.jpg";
     std::string albumName = "test01";
-    std::string path = "/test01/testPhoto.jpg";
+    std::string path = "/Photo/test01/testPhoto.jpg";
     std::string filePath;
     int32_t ret = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
     EXPECT_EQ(ret, E_SUCCESS);
