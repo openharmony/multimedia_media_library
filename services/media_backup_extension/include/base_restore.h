@@ -177,6 +177,8 @@ protected:
     void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::vector<FileInfo>& fileInfos);
     int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
+    int32_t DeleteOriginDentryByCloudPath(const std::string &cloudPath);
+    int32_t DeleteThumbDentryByCloudPath(const std::string &cloudPath);
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
     virtual bool IsCloudRestoreSatisfied();
