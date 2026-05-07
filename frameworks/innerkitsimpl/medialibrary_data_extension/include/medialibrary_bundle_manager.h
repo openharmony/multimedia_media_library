@@ -21,6 +21,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <safe_map.h>
 
 namespace OHOS {
 namespace Media {
@@ -41,7 +42,7 @@ private:
     const static int CAPACITY = 50;
     std::list<std::pair<int32_t, std::string>> cacheList_;
     std::unordered_map<int32_t, std::list<std::pair<int32_t, std::string>>::iterator> cacheMap_;
-    std::unordered_map<uint64_t, std::string> tokenIdToBundleNameCache_;
+    SafeMap<uint64_t, std::string> tokenIdToBundleNameCache_;
     std::mutex uninstallMutex_;
 
     static std::once_flag oc_;
