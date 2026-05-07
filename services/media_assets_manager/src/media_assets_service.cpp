@@ -740,7 +740,7 @@ static bool IsSupportHighResolution(const string& bundleName)
 {
     CompatibleInfo compatibleInfo;
     TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
-    if (compatibleInfo.highResolution) {
+    if (compatibleInfo.highResolution == 1) {
         return true;
     }
     return false;
