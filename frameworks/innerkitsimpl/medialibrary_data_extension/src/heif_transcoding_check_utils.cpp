@@ -510,7 +510,7 @@ TranscodeMode HeifTranscodingCheckUtils::CheckTranscodeMode(const std::string &b
     if (!compatibleInfo.encodings.empty()) {
         bool isSupportHeif = IsSupportHeif(compatibleInfo.encodings);
         uint8_t code = (isHighPixel ? HIGH_PIXEL_FLAG : 0) | (isHeifFile ? HEIF_FILE_FLAG : 0) |
-            (compatibleInfo.highResolution ? SUPPORT_HIGH_FLAG : 0) | (isSupportHeif ? SUPPORT_HEIF_FLAG : 0);
+            (compatibleInfo.highResolution == 1 ? SUPPORT_HIGH_FLAG : 0) | (isSupportHeif ? SUPPORT_HEIF_FLAG : 0);
         auto it = fileTypeMap.find(code);
         CHECK_AND_RETURN_RET_LOG(it != fileTypeMap.end(), transcodeMode, "[transcode]Unsupported %{public}u", code);
         MEDIA_INFO_LOG("[transcode]CheckTranscodeMode: code: %{public}u, result[%{public}d]", code, it->second);
