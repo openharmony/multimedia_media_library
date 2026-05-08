@@ -16128,12 +16128,12 @@ static void HandleCheckTranscodeUri(MediaLibraryAsyncContext *context,
         }
         std::string ext = item.uri.substr(atDot + 1);
         bool isHeifFile = (ext == "heif" || ext == "heic");
-        if (context->compatibleFlags == 0 || context->compatibleFlags == 3) {
+        if (context->compatibleFlags == 0 || context->compatibleFlags == THIRD_ENUM) {
             CompatibleInfo compatibleinfo;
             compatibleinfo.bundleName = context->bundleName;
             compatibleinfo.highResolution = context->supportedHighResolution;
             compatibleinfo.encodings = context->supportedMimeTypes;
-            compatibleinfo.preferredCompatibleMode = 
+            compatibleinfo.preferredCompatibleMode =
                 static_cast<PreferredCompatibleMode>(context->preferredCompatibleMode);
             TranscodeMode res =
                 PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleinfo, isHighPixel, isHeifFile);
