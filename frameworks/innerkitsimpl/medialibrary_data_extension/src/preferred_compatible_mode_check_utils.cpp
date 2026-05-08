@@ -55,7 +55,7 @@ TranscodeMode PreferredCompatibleModeCheckUtils::CheckTranscodeMode(
         TranscodeMode::CURRENT, "Compatible is CURRENT, bundleName: %{public}s", compatibleInfo.bundleName.c_str());
 
     CHECK_AND_RETURN_RET_INFO_LOG(compatibleInfo.preferredCompatibleMode != PreferredCompatibleMode::COMPATIBLE,
-        TranscodeMode::COMPATIBLE, "Compatible is COMPATIBLE, bundleName: %{public}s", 
+        TranscodeMode::COMPATIBLE, "Compatible is COMPATIBLE, bundleName: %{public}s",
         compatibleInfo.bundleName.c_str());
     if (!compatibleInfo.encodings.empty()) {
         bool isSupportHeif = IsSupportHeif(compatibleInfo.encodings);
