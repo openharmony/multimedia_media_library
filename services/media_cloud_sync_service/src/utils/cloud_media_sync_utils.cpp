@@ -512,6 +512,9 @@ void CloudMediaSyncUtils::SyncDealWithCompositePhoto(const std::string &assetDat
 
 /**
  * 获取资产的文件存储路径
+ * - 媒体文件路径：/storage/media/local/files/Photo/${bucketId}/${fileName}
+ * - 湖内文件路径：/storage/media/local/files/Docs/HO_DATA_EXT_MISC/${lPath}/${displayName}
+ * - 文管文件路径：/storage/media/local/files/Docs/${lPath}/${displayName}
  * @return 文件存储路径
  *
  * 数据场景：
@@ -600,6 +603,8 @@ std::string CloudMediaSyncUtils::FindFileStoragePathWithPullData(const CloudMedi
 
 int32_t CloudMediaSyncUtils::FindUniqueFilePath(const std::string &destPath, std::string &targetFilePath)
 {
+    targetFilePath = destPath;
+
     const std::string parentDir = MediaFileUtils::GetParentPath(destPath);
     CHECK_AND_RETURN_RET_LOG(!parentDir.empty(),
         E_INVALID_ARGUMENTS,
@@ -612,7 +617,6 @@ int32_t CloudMediaSyncUtils::FindUniqueFilePath(const std::string &destPath, std
         return E_INVALID_ARGUMENTS;
     }
 
-    targetFilePath = destPath;
     std::string fileName = MediaFileUtils::GetFileName(targetFilePath);
     const size_t dotPos = fileName.rfind('.');
     const std::string fileExtension = (dotPos != std::string::npos) ? fileName.substr(dotPos) : "";
@@ -666,5 +670,29 @@ int32_t CloudMediaSyncUtils::MoveFileWithConflictResolution(const std::string &s
                    MediaFileUtils::DesensitizePath(destPath).c_str(),
                    std::to_string(srcFileDateModified).c_str());
     return (renameRet == E_OK || cpRet) ? E_OK : E_ERR;
+}
+
+/**
+ * 根据元数据，判断是否是LivePhoto。满足以下条件即认为是LivePhoto：
+ * 1、是动图；
+ * 2、不是涂鸦；
+ * @return true: 是LivePhoto， false: 不是LivePhoto
+ */
+bool CloudMediaSyncUtils::IsLivePhotoWithMetaData(const PhotosPo &photosPo)
+{
+    const bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
+    const bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
+    return isMovingPhoto && !isGraffiti;
+}
+
+bool CloudMediaSyncUtils::IsMediaFile(const std::string &filePath)
+{
+    return MediaStringUtils::StartsWith(filePath, CLOUD_STORAGE_PATH_PREFIX);
+}
+
+int32_t CloudMediaSyncUtils::MoveLivePhoto(
+    const std::string &srcPath, const std::string &destPath, std::string &finalDestPath)
+{
+    return E_OPERATION_NOT_SUPPORT;
 }
 }  // namespace OHOS::Media::CloudSync
