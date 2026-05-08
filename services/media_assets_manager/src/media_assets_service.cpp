@@ -2216,4 +2216,22 @@ int32_t MediaAssetsService::SetMovingPhotoVersion(const AssetChangeReqBody &reqB
     MEDIA_INFO_LOG("SetExtraDataVersion end, ret: %{public}d.", ret);
     return ret;
 }
+
+int32_t MediaAssetsService::GetTranscodeCheckInfo(const std::string bundleName,
+    GetTranscodeCheckInfoRespBody &respBody)
+{
+    GetCompatibleInfoRespBody resp;
+    int32_t ret = GetCompatibleInfo(bundleName, resp);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to GetCompatibleInfo");
+    int32_t preferredCompatibleMode;
+    ret = GetPreferredCompatibleMode(bundleName, preferredCompatibleMode);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to GetPreferredCompatibleMode");
+    respBody.bundleName = bundleName;
+    respBody.supportedHighResolution = resp.supportedHighResolution;
+    respBody.supportedMimeTypes = resp.supportedMimeTypes;
+    respBody.preferredCompatibleMode = preferredCompatibleMode;
+    MEDIA_ERR_LOG("bundleName %{public}s, supportedHighResolution %{public}d, preferredCompatibleMode %{public}d",
+        respBody.bundleName.c_str(), respBody.supportedHighResolution, respBody.preferredCompatibleMode);
+    return E_OK;
+}
 } // namespace OHOS::Media

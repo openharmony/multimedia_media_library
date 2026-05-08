@@ -25,22 +25,10 @@
 #include "rdb_predicates.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_unistore_manager.h"
+#include "preferred_compatible_mode_check_utils.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-
-enum class PreferredCompatibleMode {
-    DEFAULT = 0,
-    CURRENT = 1,
-    COMPATIBLE = 2,
-};
-
-struct CompatibleInfo {
-    std::string bundleName;
-    int32_t highResolution = -1;
-    std::vector<std::string> encodings;
-    PreferredCompatibleMode preferredCompatibleMode = PreferredCompatibleMode::DEFAULT;
-};
 
 class TranscodeCompatibleInfoOperation {
 public:

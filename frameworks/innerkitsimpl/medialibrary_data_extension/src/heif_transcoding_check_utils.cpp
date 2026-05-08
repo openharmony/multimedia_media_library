@@ -60,29 +60,6 @@ const string PIXEL_50_WHITELIST = "50-whiteList";
 const string PIXEL_50_DENYLIST = "50-denyList";
 const string PIXEL_200_WHITELIST = "200-whiteList";
 const string PIXEL_200_DENYLIST = "200-denyList";
-constexpr uint8_t HIGH_PIXEL_FLAG = 1 << 3;
-constexpr uint8_t HEIF_FILE_FLAG = 1 << 2;
-constexpr uint8_t SUPPORT_HIGH_FLAG = 1 << 1;
-constexpr uint8_t SUPPORT_HEIF_FLAG = 1;
-static const std::map<uint8_t, TranscodeMode> fileTypeMap = {
-    // high/heif/supportHigh/supportHeif
-    {0b1010, TranscodeMode::CURRENT},   // high、not Heif、supportHigh、（）- current
-    {0b1011, TranscodeMode::CURRENT},
-    {0b1000, TranscodeMode::COMPATIBLE}, // high、not Heif、not supportHigh、()-   compatible
-    {0b1001, TranscodeMode::COMPATIBLE},
-    {0b1111, TranscodeMode::CURRENT},   // high、Heif、supportHigh、supportHeif - current
-    {0b1110, TranscodeMode::COMPATIBLE}, // high、Heif、supportHigh、not supportHeif - compatible
-    {0b1100, TranscodeMode::COMPATIBLE}, // high、Heif、not supportHigh、（）- compatible
-    {0b1101, TranscodeMode::COMPATIBLE},
-    {0b0000, TranscodeMode::CURRENT},   // not high、not Heif、（）、（）- current
-    {0b0001, TranscodeMode::CURRENT},
-    {0b0010, TranscodeMode::CURRENT},
-    {0b0011, TranscodeMode::CURRENT},
-    {0b0101, TranscodeMode::CURRENT},   // not high、Heif、（）、supportHeif - current
-    {0b0111, TranscodeMode::CURRENT},
-    {0b0100, TranscodeMode::COMPATIBLE}, // not high、Heif、（）、not supportHeif - compatible
-    {0b0110, TranscodeMode::COMPATIBLE},
-};
 
 const int CONFIG_EVENT_SUBSCRIBE_DELAY_TIME = 300;
 
@@ -487,11 +464,6 @@ int32_t HeifTranscodingCheckUtils::ParseHighPixelCheckList(const nlohmann::json 
     return E_OK;
 }
 
-inline bool IsSupportHeif(const std::vector<std::string> &encodings)
-{
-    return std::find(encodings.begin(), encodings.end(), "image/heic") != encodings.end();
-}
-
 TranscodeMode HeifTranscodingCheckUtils::CheckTranscodeMode(const std::string &bundleName,
     bool isHighPixel, bool isHeifFile)
 {
@@ -501,22 +473,7 @@ TranscodeMode HeifTranscodingCheckUtils::CheckTranscodeMode(const std::string &b
     auto ret = TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, transcodeMode, "QueryCompatibleInfo failed");
 
-    CHECK_AND_RETURN_RET_INFO_LOG(compatibleInfo.preferredCompatibleMode != PreferredCompatibleMode::CURRENT,
-        TranscodeMode::CURRENT, "Compatible is CURRENT, bundleName: %{public}s", bundleName.c_str());
-
-    CHECK_AND_RETURN_RET_INFO_LOG(compatibleInfo.preferredCompatibleMode != PreferredCompatibleMode::COMPATIBLE,
-        TranscodeMode::COMPATIBLE, "Compatible is COMPATIBLE, bundleName: %{public}s", bundleName.c_str());
-
-    if (!compatibleInfo.encodings.empty()) {
-        bool isSupportHeif = IsSupportHeif(compatibleInfo.encodings);
-        uint8_t code = (isHighPixel ? HIGH_PIXEL_FLAG : 0) | (isHeifFile ? HEIF_FILE_FLAG : 0) |
-            (compatibleInfo.highResolution == 1 ? SUPPORT_HIGH_FLAG : 0) | (isSupportHeif ? SUPPORT_HEIF_FLAG : 0);
-        auto it = fileTypeMap.find(code);
-        CHECK_AND_RETURN_RET_LOG(it != fileTypeMap.end(), transcodeMode, "[transcode]Unsupported %{public}u", code);
-        MEDIA_INFO_LOG("[transcode]CheckTranscodeMode: code: %{public}u, result[%{public}d]", code, it->second);
-        return it->second;
-    }
-    MEDIA_INFO_LOG("[transcode] encodings is not set, continue");
+    transcodeMode = PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleInfo, isHighPixel, isHeifFile);
     return transcodeMode;
 }
 
