@@ -6960,4 +6960,32 @@ int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
 }
+
+void MediaLibraryRdbStore::AddUpgradeTable(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+        CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
+        CREATE_SEARCH_TOTAL_TABLE,
+    };
+    MEDIA_INFO_LOG("start create table");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create table");
+}
+
+void MediaLibraryRdbStore::CheckAndAddColumns(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start check and add columns");
+    std::vector<std::string> sqls;
+    if (!HasColumnInTable(*store->GetRaw(), PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTOS_TABLE)) {
+        sqls.push_back("ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0");
+    }
+    if (!HasColumnInTable(*store->GetRaw(), PhotoAlbumColumns::CHANGE_TIME, PhotoAlbumColumns::TABLE)) {
+        sqls.push_back("ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0");
+    }
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end check and add columns");
+}
 } // namespace OHOS::Media
