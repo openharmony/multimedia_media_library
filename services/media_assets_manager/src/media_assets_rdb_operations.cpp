@@ -239,6 +239,58 @@ int32_t MediaAssetsRdbOperations::CancelPhotoUrisPermissionInner(MediaLibraryCom
     return errCode;
 }
 
+int32_t MediaAssetsRdbOperations::GetPhotoUriPersistPermission(uint32_t tokenId,
+    std::vector<int32_t> &permissionTypes)
+{
+    MEDIA_INFO_LOG("GetPhotoUriPersistPermission tokenId:%{public}u", tokenId);
+    std::vector<std::string> persistTypeStrs;
+    for (int persistType : AppUriPermissionColumn::PERMISSION_TYPES_PERSIST) {
+        persistTypeStrs.push_back(to_string(persistType));
+    }
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, persistTypeStrs);
+    std::vector<std::string> columns = { AppUriPermissionColumn::PERMISSION_TYPE };
+    auto resultSet = MediaLibraryAppUriPermissionOperations::QueryOperation(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetPhotoUriPersistPermission query failed");
+        return E_ERR;
+    }
+    std::set<int32_t> typeSet;
+    do {
+        int32_t permType = 0;
+        resultSet->GetInt(0, permType);
+        typeSet.insert(permType);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+    bool hasRead = typeSet.count(AppUriPermissionColumn::PERMISSION_PERSIST_READ) > 0;
+    bool hasWrite = typeSet.count(AppUriPermissionColumn::PERMISSION_PERSIST_WRITE) > 0;
+    bool hasReadWrite = typeSet.count(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) > 0;
+    permissionTypes.clear();
+    for (int32_t t : typeSet) {
+        permissionTypes.push_back(t);
+    }
+    if (hasRead && hasWrite && !hasReadWrite) {
+        permissionTypes.push_back(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaAssetsRdbOperations::CancelPhotoUriPersistPermission(uint32_t tokenId)
+{
+    MEDIA_INFO_LOG("CancelPhotoUriPersistPermission tokenId:%{public}u", tokenId);
+    std::vector<std::string> persistTypeStrs;
+    for (int persistType : AppUriPermissionColumn::PERMISSION_TYPES_PERSIST) {
+        persistTypeStrs.push_back(to_string(persistType));
+    }
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    rdbPredicate.In(AppUriPermissionColumn::PERMISSION_TYPE, persistTypeStrs);
+    int32_t deletedRows = MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+    MEDIA_INFO_LOG("CancelPhotoUriPersistPermission deleted rows:%{public}d", deletedRows);
+    return (deletedRows >= 0) ? E_SUCCESS : E_ERR;
+}
+
 int32_t MediaAssetsRdbOperations::CheckPhotoUriPermissionInner(MediaLibraryCommand &cmd,
     const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columns,
     std::vector<std::string> &outFileIds, std::vector<int32_t> &permissionTypes)
