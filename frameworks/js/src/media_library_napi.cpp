@@ -16117,58 +16117,73 @@ static void GetAssetCompatibleUrisExecute(napi_env env, void *data)
     context->retVal = E_OK;
 }
 
+static void HandleCheckTranscodeUri(MediaLibraryAsyncContext *context,
+    bool checkHighPixel, bool checkHeif, vector<string> &result)
+{
+    for (auto &item : context->photoAssetInfos) {
+        bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
+        size_t atDot = item.uri.find('.');
+        if (atDot == std::string::npos) {
+            continue;
+        }
+        std::string ext = item.uri.substr(atDot + 1);
+        bool isHeifFile = (ext == "heif" || ext == "heic");
+        if (context->compatibleFlags == 0 || context->compatibleFlags == 3) {
+            CompatibleInfo compatibleinfo;
+            compatibleinfo.bundleName = context->bundleName;
+            compatibleinfo.highResolution = context->supportedHighResolution;
+            compatibleinfo.encodings = context->supportedMimeTypes;
+            compatibleinfo.preferredCompatibleMode = 
+                static_cast<PreferredCompatibleMode>(context->preferredCompatibleMode);
+            TranscodeMode res =
+                PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleinfo, isHighPixel, isHeifFile);
+            if (res == TranscodeMode::CURRENT) {
+                continue;
+            } else if (res == TranscodeMode::COMPATIBLE) {
+                result.push_back(item.uri);
+                continue;
+            }
+        }
+        if (isHighPixel && checkHighPixel && !context->supportedHighResolution) {
+            result.push_back(item.uri);
+            continue;
+        }
+        if (isHeifFile && checkHeif &&
+            find(context->supportedMimeTypes.begin(), context->supportedMimeTypes.end(), "image/heic") ==
+            context->supportedMimeTypes.end()) {
+            result.push_back(item.uri);
+            continue;
+        }
+    }
+}
+
 static vector<string> CheckTranscodeUri(MediaLibraryAsyncContext *context)
 {
-        vector<string> result;
+    vector<string> result;
     bool checkHighPixel = (context->compatibleFlags & 0x1) != 0;
     bool checkHeif = (context->compatibleFlags & 0x2) != 0;
     if (context->preferredCompatibleMode ==
         static_cast<int32_t>(TranscodeMode::CURRENT)) {
         return result;
-    } else if (context->preferredCompatibleMode ==
+    }
+    if (context->preferredCompatibleMode ==
         static_cast<int32_t>(TranscodeMode::COMPATIBLE)) {
-        //满足该条件时，把context->photoAssetInfos中所有的uri都添加进result;
-        for(PhotoAssetInfo item : context->photoAssetInfos) {
+        for (auto &item : context->photoAssetInfos) {
             bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
             size_t atDot = item.uri.find('.');
-            string ext = item.uri.substr(atDot + 1);
+            if (atDot == std::string::npos) {
+                continue;
+            }
+            std::string ext = item.uri.substr(atDot + 1);
             bool isHeifFile = (ext == "heif" || ext == "heic");
             if (!isHighPixel && !isHeifFile) {
                 continue;
             }
             result.push_back(item.uri);
         }
-    } else {
-        for(PhotoAssetInfo item : context->photoAssetInfos) {
-            bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
-            size_t atDot = item.uri.find('.');
-            string ext = item.uri.substr(atDot + 1);
-            bool isHeifFile = (ext == "heif" || ext == "heic");
-            if (context->compatibleFlags == 0 || context->compatibleFlags == 3) {
-                CompatibleInfo compatibleinfo;
-                compatibleinfo.bundleName = context->bundleName;
-                compatibleinfo.highResolution = context->supportedHighResolution;
-                compatibleinfo.encodings = context->supportedMimeTypes;
-                compatibleinfo.preferredCompatibleMode = 
-                    static_cast<PreferredCompatibleMode>(context->preferredCompatibleMode);
-                NAPI_ERR_LOG("bundlename %{public}s, isHighPixel %{public}d, isHeifFile %{public}d",
-                    compatibleinfo.bundleName.c_str(), isHighPixel, isHeifFile);
-                TranscodeMode res =
-                    PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleinfo, isHighPixel, isHeifFile);
-                if (res == TranscodeMode::CURRENT) {
-                    continue;
-                } else if (res == TranscodeMode::COMPATIBLE) {
-                    result.push_back(item.uri);
-                }
-            } else if (isHighPixel && checkHighPixel && !context->supportedHighResolution) {
-                result.push_back(item.uri);
-            } else if (isHeifFile && checkHeif &&
-                find(context->supportedMimeTypes.begin(), context->supportedMimeTypes.end(), "image/heic") ==
-                context->supportedMimeTypes.end()) {
-                result.push_back(item.uri);
-            }
-        }
+        return result;
     }
+    HandleCheckTranscodeUri(context, checkHighPixel, checkHeif, result);
     return result;
 }
 
