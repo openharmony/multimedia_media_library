@@ -221,6 +221,7 @@ public:
     int32_t ResumePhotoUriPermission(const ResumePhotoUriPermissionReqBody &reqBody,
         ResumePhotoUriPermissionRespBody &respBody);
     int32_t SetMovingPhotoVersion(const AssetChangeReqBody &reqBody);
+    int32_t GetTranscodeCheckInfo(const std::string bundleName, GetTranscodeCheckInfoRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

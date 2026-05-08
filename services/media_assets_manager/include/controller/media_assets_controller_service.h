@@ -149,7 +149,8 @@ public:
     EXPORT int32_t SetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetMovingPhotoVersion(MessageParcel &data, MessageParcel &reply);
-
+    EXPORT int32_t GetTranscodeCheckInfo(MessageParcel &data, MessageParcel &reply);
+    
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;
