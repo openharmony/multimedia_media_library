@@ -58,6 +58,11 @@ namespace Media {
 class WatchSystemHandler;
 #endif
 using OHOS::AbilityRuntime::MediaDataShareExtAbility;
+
+enum class ServiceShareType : int32_t {
+    ASSET_LEVEL = 0,
+    NON_ASSET_LEVEL,
+};
 class MediaLibraryDataManager {
 public:
     static constexpr uint32_t URI_MIN_NUM = 3;
@@ -142,7 +147,8 @@ public:
     EXPORT std::shared_ptr<NativeRdb::ResultSet> ProcessBrokerChangeMsg(const std::string &operation);
     EXPORT static int32_t OpenAssetCompress(const std::string &uri, const int32_t type, const int32_t version,
         int32_t &fd);
-    EXPORT static int32_t NotifyAssetSended(const std::string &uri);
+    EXPORT static int32_t NotifyAssetSended(const std::string &uri,
+        ServiceShareType shareType = ServiceShareType::ASSET_LEVEL);
     EXPORT static int32_t GetAssetCompressVersion();
     EXPORT int32_t UpdateTabPhotosExt(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
@@ -199,6 +205,8 @@ private:
     bool ReadSupportHmos();
     void SetIsLakeAssetScanned(bool isScanned);
     bool IsSupportHmos();
+    static void ClearCompressCache(const std::string &fileId);
+    static void ClearLivePhotoCache(const std::string &fileId);
 
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;

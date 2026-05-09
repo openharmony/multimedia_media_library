@@ -27,6 +27,7 @@ namespace OHOS::Media {
 class NotifyAssetSendedReqBody : public IPC::IMediaParcelable {
 public:
     std::string uri;
+    int32_t shareType;
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;

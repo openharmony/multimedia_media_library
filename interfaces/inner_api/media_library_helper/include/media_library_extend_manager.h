@@ -27,6 +27,11 @@ using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
 
+enum class ShareType : int32_t {
+    ASSET_LEVEL = 0,
+    NON_ASSET_LEVEL,
+};
+
 class MediaLibraryExtendManager {
 public:
     EXPORT MediaLibraryExtendManager() = default;
@@ -115,9 +120,10 @@ public:
      * @brief notify asset compress sended
      *
      * @param uri uri of the asset
+     * @param shareType share type of the scene, default is asset level
      * @return notify ok or not
      */
-    EXPORT int32_t NotifyAssetSended(const string &uri);
+    EXPORT int32_t NotifyAssetSended(const string &uri, ShareType shareType = ShareType::ASSET_LEVEL);
 
     /**
      * @brief Get total compressed size of assets

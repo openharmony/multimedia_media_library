@@ -1986,12 +1986,12 @@ int32_t MediaAssetsService::OpenAssetCompress(const OpenAssetCompressDto &dto, O
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri)
+int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri, int32_t shareType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::NotifyAssetSended start");
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
-    int32_t ret = dataManager->NotifyAssetSended(uri);
+    int32_t ret = dataManager->NotifyAssetSended(uri, static_cast<ServiceShareType>(shareType));
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to notify asset sended, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
