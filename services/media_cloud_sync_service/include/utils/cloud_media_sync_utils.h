@@ -75,6 +75,9 @@ public:
     static int32_t FindUniqueFilePath(const std::string &destPath, std::string &targetFilePath);
     static int32_t MoveFileWithConflictResolution(
         const std::string &srcPath, const std::string &destPath, std::string &finalDestPath);
+    static bool IsLivePhotoWithMetaData(const PhotosPo &photosPo);
+    static bool IsMediaFile(const std::string &filePath);
+    static int32_t MoveLivePhoto(const std::string &srcPath, const std::string &destPath, std::string &finalDestPath);
 };
 } // namespace OHOS::Media::CloudSync
 #endif // OHOS_CLOUD_MEDIA_SYNC_UTILS_H

@@ -61,6 +61,7 @@
 #include "media_audio_column.h"
 #include "media_upgrade.h"
 #include "media_values_bucket_utils.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -75,6 +76,7 @@ const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
 const int32_t MIGRATE_CLOUD_ASTC_TYPE = 2;
 const int32_t RELEATED_TO_PHOTO_MAP = 1;
 const int32_t MAX_ALBUM_NAME_SEQUENCE = 1000;
+const std::string PHOTO_LCD_FILE_SIZE = "lcd_file_size";
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
@@ -147,6 +149,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
             PhotoColumn::PHOTO_FILE_INODE, PhotoColumn::PHOTO_STORAGE_PATH,
             PhotoColumn::PHOTO_FILE_SOURCE_TYPE, // east lake related
+            PhotoColumn::UNIQUE_ID,
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -155,6 +158,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoAlbumColumns::ALBUM_VIDEO_COUNT, // updated by album udpate
             PhotoAlbumColumns::ALBUM_DIRTY, PhotoAlbumColumns::ALBUM_CLOUD_ID, // cloud related
             PhotoAlbumColumns::ALBUM_ORDER, // created by trigger
+            PhotoAlbumColumns::UNIQUE_ID,
         }},
     { ANALYSIS_ALBUM_TABLE,
         {
@@ -1059,6 +1063,155 @@ void CloneRestore::UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos)
     }
 }
 
+void CloneRestore::UpdatePositionForMergedCloudDuplicates(vector<FileInfo> &fileInfos)
+{
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || !fileInfo.needVisible ||
+            !fileInfo.needUpdatePositionToLocalAndCloud) {
+            continue;
+        }
+
+        NativeRdb::ValuesBucket values;
+        values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+        if (FileAdapter::IsLakeFile(fileInfo)) {
+            values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, FileSourceType::MEDIA_HO_LAKE);
+        }
+        int64_t localAssetSize = 0;
+        MovingPhotoFileUtils::GetLocalAssetSize(fileInfo.effectMode, FileAdapter::GetOriginalFilePath(fileInfo),
+            fileInfo.fileSize, localAssetSize);
+        values.PutLong(PhotoColumn::LOCAL_ASSET_SIZE, localAssetSize);
+        std::string whereClause = PhotoColumn::MEDIA_ID + " = ?";
+        std::vector<std::string> whereArgs = {std::to_string(fileInfo.fileIdNew)};
+        int32_t changedRows = 0;
+        int32_t ret = mediaLibraryRdb_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Update position to local_and_cloud failed for file_id: %{public}d, ret: %{public}d",
+                fileInfo.fileIdNew, ret);
+        }
+    }
+}
+
+static int32_t GetThumbStatusByExistFlag(bool isLcdExist, bool isThmExist)
+{
+    if (isLcdExist && isThmExist) {
+        return RESTORE_THUMBNAIL_STATUS_ALL;
+    }
+    if (!isLcdExist && isThmExist) {
+        return RESTORE_THUMBNAIL_STATUS_NOT_LCD;
+    }
+    if (isLcdExist && !isThmExist) {
+        return RESTORE_THUMBNAIL_STATUS_NOT_THUMB;
+    }
+    return RESTORE_THUMBNAIL_STATUS_NOT_ALL;
+}
+
+static bool IsOriginAssetExistsForDentry(const FileInfo &fileInfo)
+{
+    if (fileInfo.fileSourceType == FileSourceType::MEDIA) {
+        return MediaFileUtils::IsFileExists(fileInfo.cloudPath);
+    }
+    return !fileInfo.sourcePath.empty() && MediaFileUtils::IsFileExists(fileInfo.sourcePath);
+}
+
+static bool IsSameAssetForCloudIdMove(const FileInfo &fileInfo, const PhotosDao::PhotosRowData &rowData)
+{
+    if (rowData.displayName != fileInfo.displayName || rowData.fileSize != fileInfo.fileSize) {
+        return false;
+    }
+    if (fileInfo.fileType == MEDIA_TYPE_VIDEO) {
+        return true;
+    }
+    return rowData.orientation == fileInfo.orientation;
+}
+
+static int32_t GetIntegralValueFromValMap(const FileInfo &fileInfo, const string &columnName, int64_t &outValue)
+{
+    auto it = fileInfo.valMap.find(columnName);
+    if (it == fileInfo.valMap.end()) {
+        return E_ERR;
+    }
+    if (const int64_t *p = std::get_if<int64_t>(&it->second)) {
+        outValue = *p;
+        return E_OK;
+    }
+    if (const int32_t *p = std::get_if<int32_t>(&it->second)) {
+        outValue = static_cast<int64_t>(*p);
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+bool CloneRestore::NeedSkipMergedThumbnailUpdate(const FileInfo &fileInfo)
+{
+    if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || !fileInfo.needVisible) {
+        return true;
+    }
+    return !fileInfo.hasMergedLcdThumbnail && !fileInfo.hasMergedThmThumbnail && !fileInfo.hasMergedOriginAsset;
+}
+
+void CloneRestore::ResolveMergedThumbExistence(const FileInfo &fileInfo, bool &isLcdExist, bool &isThmExist)
+{
+    std::string thumbnailDir = GetThumbnailLocalPath(fileInfo.cloudPath);
+    bool hasExThumbnail = HasExThumbnail(fileInfo);
+    isLcdExist = hasExThumbnail ? MediaFileUtils::IsFileExists(thumbnailDir + "/THM_EX/LCD.jpg") :
+        MediaFileUtils::IsFileExists(thumbnailDir + "/LCD.jpg");
+    isThmExist = hasExThumbnail ? MediaFileUtils::IsFileExists(thumbnailDir + "/THM_EX/THM.jpg") :
+        MediaFileUtils::IsFileExists(thumbnailDir + "/THM.jpg");
+}
+
+bool CloneRestore::FillMergedLcdValues(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
+{
+    if (!fileInfo.hasMergedLcdThumbnail) {
+        return false;
+    }
+    values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, RESTORE_LCD_VISIT_TIME_SUCCESS);
+    int64_t oldValue = 0;
+    if (GetIntegralValueFromValMap(fileInfo, PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME, oldValue) == E_OK) {
+        values.PutLong(PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME, oldValue);
+    }
+    if (GetIntegralValueFromValMap(fileInfo, PhotoColumn::PHOTO_LCD_VISIT_COUNT, oldValue) == E_OK) {
+        values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_COUNT, oldValue);
+    }
+    if (GetIntegralValueFromValMap(fileInfo, PhotoColumn::PHOTO_LCD_SIZE, oldValue) == E_OK) {
+        values.PutLong(PhotoColumn::PHOTO_LCD_SIZE, oldValue);
+    }
+    if (GetIntegralValueFromValMap(fileInfo, PHOTO_LCD_FILE_SIZE, oldValue) == E_OK) {
+        values.PutLong(PHOTO_LCD_FILE_SIZE, oldValue);
+    }
+    return true;
+}
+
+void CloneRestore::UpdateMergedThumbnailStatusForSamePhotos(vector<FileInfo> &fileInfos)
+{
+    for (FileInfo &fileInfo : fileInfos) {
+        if (NeedSkipMergedThumbnailUpdate(fileInfo)) {
+            continue;
+        }
+
+        NativeRdb::ValuesBucket values;
+        bool hasUpdate = FillMergedLcdValues(fileInfo, values);
+        if (fileInfo.hasMergedLcdThumbnail || fileInfo.hasMergedThmThumbnail) {
+            bool isLcdExist = false;
+            bool isThmExist = false;
+            ResolveMergedThumbExistence(fileInfo, isLcdExist, isThmExist);
+            values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, GetThumbStatusByExistFlag(isLcdExist, isThmExist));
+            hasUpdate = true;
+        }
+        if (!hasUpdate) {
+            continue;
+        }
+
+        std::string whereClause = PhotoColumn::MEDIA_ID + " = ?";
+        std::vector<std::string> whereArgs = {std::to_string(fileInfo.fileIdNew)};
+        int32_t changedRows = 0;
+        int32_t ret = mediaLibraryRdb_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Update merged thumbnail status failed for file_id: %{public}d, ret: %{public}d",
+                fileInfo.fileIdNew, ret);
+        }
+    }
+}
+
 void CloneRestore::UpdatePackageNameForSamePhotos(vector<FileInfo> &fileInfos)
 {
     for (FileInfo &fileInfo : fileInfos) {
@@ -1083,6 +1236,31 @@ void CloneRestore::UpdatePackageNameForSamePhotos(vector<FileInfo> &fileInfos)
     }
 }
 
+void CloneRestore::PrevailUUIDForSamePhotos(vector<FileInfo> &fileInfos)
+{
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew) {
+            continue;
+        }
+
+        if (fileInfo.uuid.empty()) {
+            fileInfo.uuid = MediaFileUtils::GenerateUUID();
+        }
+
+        std::string querySql = "UPDATE Photos SET unique_id = ? WHERE file_id = ? \
+            AND (unique_id IS NULL OR unique_id = '' OR unique_id = '-1') \
+            AND (media_type = ? OR media_type = ?)";
+        std::vector<NativeRdb::ValueObject> params = {fileInfo.uuid, fileInfo.fileIdNew,
+            MediaType::MEDIA_TYPE_IMAGE, MediaType::MEDIA_TYPE_VIDEO};
+        auto ret = mediaLibraryRdb_->ExecuteSql(querySql, params);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Update failed for file_id: %{public}d, error: %{public}d",
+                fileInfo.fileIdNew, ret);
+            continue;
+        }
+    }
+}
+
 int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
@@ -1091,6 +1269,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
     UpdateRiskStatusForSamePhotos(fileInfos);
     UpdatePackageNameForSamePhotos(fileInfos);
+    PrevailUUIDForSamePhotos(fileInfos);
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
@@ -1112,6 +1291,8 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
     int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdateMergedThumbnailStatusForSamePhotos(fileInfos);
+    UpdatePositionForMergedCloudDuplicates(fileInfos);
     UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related cost "
@@ -1154,9 +1335,10 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetCloudInsertValues(int32_t scene
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         CHECK_AND_CONTINUE(PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i]));
-        NativeRdb::ValuesBucket value = GetCloudInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
-        fileInfos[i].isNew = true;
-        values.emplace_back(value);
+        if (fileInfos[i].isNew) {
+            NativeRdb::ValuesBucket value = GetCloudInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
+            values.emplace_back(value);
+        }
     }
     return values;
 }
@@ -1280,6 +1462,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
         albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
         albumInfo.uploadStatus = GetInt32Val(PhotoAlbumColumns::UPLOAD_STATUS, resultSet);
+        albumInfo.uuid = GetStringVal(PhotoAlbumColumns::UNIQUE_ID, resultSet);
     }
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -1507,6 +1690,9 @@ int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
 
 int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
 {
+    if (!fileInfo.isNew) {
+        return MergeDuplicateAsset(fileInfo);
+    }
     // Picture files.
     int32_t optRet = this->MovePicture(fileInfo);
     CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
@@ -1521,6 +1707,110 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
 
     MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
     return E_OK;
+}
+
+int32_t CloneRestore::MergeDuplicateThumbnail(FileInfo &fileInfo)
+{
+    fileInfo.hasMergedLcdThumbnail = false;
+    fileInfo.hasMergedThmThumbnail = false;
+    string srcThumbnailDir = backupRestoreDir_ + RESTORE_FILES_LOCAL_DIR + ".thumbs" + fileInfo.relativePath;
+    string dstThumbnailDir = GetThumbnailLocalPath(fileInfo.cloudPath);
+    if (fileInfo.relativePath.empty() || dstThumbnailDir.empty() || !MediaFileUtils::IsDirectory(srcThumbnailDir)) {
+        return E_OK;
+    }
+
+    std::vector<std::string> relativeFiles = {
+        "LCD.jpg",
+        "THM.jpg",
+        "THM_EX/LCD.jpg",
+        "THM_EX/THM.jpg",
+    };
+    for (const auto &relativeFile : relativeFiles) {
+        std::string srcFile = srcThumbnailDir + "/" + relativeFile;
+        if (!MediaFileUtils::IsFileExists(srcFile)) {
+            continue;
+        }
+        std::string dstFile = dstThumbnailDir + "/" + relativeFile;
+        if (MediaFileUtils::IsFileExists(dstFile)) {
+            continue;
+        }
+        if (BackupFileUtils::PreparePath(dstFile) != E_OK || !MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
+            MEDIA_ERR_LOG("Merge duplicate thumbnail failed, src:%{public}s, dst:%{public}s",
+                MediaFileUtils::DesensitizePath(srcFile).c_str(), MediaFileUtils::DesensitizePath(dstFile).c_str());
+            return E_FAIL;
+        }
+        if (relativeFile == "LCD.jpg" || relativeFile == "THM_EX/LCD.jpg") {
+            fileInfo.hasMergedLcdThumbnail = true;
+        }
+        if (relativeFile == "THM.jpg" || relativeFile == "THM_EX/THM.jpg") {
+            fileInfo.hasMergedThmThumbnail = true;
+        }
+    }
+    return E_OK;
+}
+
+int32_t CloneRestore::MergeDuplicateAsset(FileInfo &fileInfo)
+{
+    fileInfo.hasMergedOriginAsset = false;
+    string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
+        fileInfo.cloudPath);
+    bool needImportOrigin = !MediaFileUtils::IsFileExists(localPath);
+    bool needImportMovingVideo = false;
+    if (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        fileInfo.effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        std::string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
+        needImportMovingVideo = !MediaFileUtils::IsFileExists(localVideoPath);
+    }
+    string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
+    bool needImportEditData = !MediaFileUtils::IsFileExists(dstEditDataPath);
+
+    if (needImportOrigin) {
+        int32_t optRet = this->MovePicture(fileInfo);
+        CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
+        fileInfo.hasMergedOriginAsset = true;
+        fileInfo.needUpdatePositionToLocalAndCloud =
+            fileInfo.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
+        optRet = this->MoveEditedData(fileInfo);
+        CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
+    }
+    if (needImportMovingVideo) {
+        int32_t optRet = this->MoveMovingPhotoVideo(fileInfo);
+        CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
+    }
+
+    if (MergeDuplicateThumbnail(fileInfo) != E_OK) {
+        return E_FAIL;
+    }
+    RemoveMergedDentryForSamePhoto(fileInfo);
+
+    MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
+    return E_OK;
+}
+
+void CloneRestore::RemoveMergedDentryForSamePhoto(const FileInfo &fileInfo)
+{
+    bool hasMergedThumbnail = fileInfo.hasMergedLcdThumbnail || fileInfo.hasMergedThmThumbnail;
+    if (!fileInfo.hasMergedOriginAsset && !hasMergedThumbnail) {
+        return;
+    }
+
+    if (fileInfo.hasMergedOriginAsset && IsOriginAssetExistsForDentry(fileInfo)) {
+        int32_t ret = DeleteOriginDentryByCloudPath(fileInfo.cloudPath);
+        if (ret != E_OK) {
+            MEDIA_WARN_LOG("Remove origin dentry failed for path: %{public}s, ret: %{public}d",
+                MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str(), ret);
+        }
+    }
+
+    if (!hasMergedThumbnail) {
+        return;
+    }
+    int32_t ret = DeleteThumbDentryByCloudPath(fileInfo.cloudPath);
+    if (ret != E_OK) {
+        MEDIA_WARN_LOG("Remove thumb dentry failed for path: %{public}s, ret: %{public}d",
+            MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str(), ret);
+    }
 }
 
 bool CloneRestore::IsFilePathExist(const string &filePath) const
@@ -1715,6 +2005,10 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
+    if (fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE || fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        values.PutString(PhotoColumn::UNIQUE_ID,
+            (fileInfo.uuid == "" || fileInfo.uuid == "-1") ? MediaFileUtils::GenerateUUID() : fileInfo.uuid);
+    }
     values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     // [time info]date_added, date_modified, date_taken, detail_time, date_year, date_month, date_day
     SetTimeInfo(fileInfo, values);
@@ -1935,6 +2229,14 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
             (albumInfo.dateModified ? albumInfo.dateModified : MediaFileUtils::UTCTimeMilliSeconds()));
         values.PutInt(PhotoAlbumColumns::UPLOAD_STATUS, this->photoAlbumClone_.FindUploadStatus(albumInfo));
+        if (((albumInfo.albumType == PhotoAlbumType::USER &&
+                albumInfo.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+             (albumInfo.albumType == PhotoAlbumType::SOURCE &&
+                albumInfo.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC)) &&
+            (albumInfo.albumName != ".hiddenAlbum")) {
+            values.PutString(PhotoAlbumColumns::UNIQUE_ID,
+                albumInfo.uuid == "" ? MediaFileUtils::GenerateUUID() : albumInfo.uuid);
+        }
     }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
@@ -1975,7 +2277,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
-void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName)
+void CloneRestore::UpdateAlbumOrderColumns(AlbumInfo &albumInfo, const string &tableName)
 {
     CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "rdbStore is null");
@@ -1983,8 +2285,32 @@ void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const str
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
     predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumInfo.albumIdNew);
+    std::string sql = "SELECT unique_id FROM " + PhotoAlbumColumns::TABLE +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumInfo.albumIdNew);
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, sql, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("The album does not exist or unique_id column not exist");
+    }
+
+    if (resultSet != nullptr) {
+        std::string newDeviceUUID = get<std::string>(ResultSetUtils::GetValFromColumn(
+            PhotoAlbumColumns::UNIQUE_ID, resultSet, TYPE_STRING));
+        resultSet->Close();
+        if (!newDeviceUUID.empty()) {
+            albumInfo.uuid = newDeviceUUID;
+        } else {
+            if (albumInfo.uuid.empty() && ((albumInfo.albumType == PhotoAlbumType::USER &&
+                albumInfo.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+                (albumInfo.albumType == PhotoAlbumType::SOURCE &&
+                    albumInfo.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC &&
+                    albumInfo.albumName != ".hiddenAlbum"))) {
+                albumInfo.uuid = MediaFileUtils::GenerateUUID();
+            }
+        }
+    }
 
     NativeRdb::ValuesBucket values;
+    values.PutString(PhotoAlbumColumns::UNIQUE_ID, albumInfo.uuid);
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (const auto &columns : PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP) {
         for (const auto &columnName : columns.second) {
@@ -2565,6 +2891,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.title = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
+    fileInfo.uuid = GetStringVal(PhotoColumn::UNIQUE_ID, resultSet);
     fileInfo.oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
         ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "", BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
@@ -2872,8 +3199,24 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     PhotosDao::PhotosRowData rowData = this->photosClone_.FindSameFile(fileInfo);
     bool cond = rowData.IsValid();
     CHECK_AND_RETURN_RET(cond, false);
-    // Meed extra check to determine whether or not to drop the duplicate file.
-    return ExtraCheckForCloneSameFile(fileInfo, rowData);
+    bool shouldDropDuplicate = ExtraCheckForCloneSameFile(fileInfo, rowData);
+    if (!shouldDropDuplicate) {
+        return false;
+    }
+
+    bool isDstPureCloud = rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    if (isDstPureCloud) {
+        fileInfo.needMove = IsSameAssetForCloudIdMove(fileInfo, rowData);
+        if (fileInfo.position != static_cast<int32_t>(PhotoPositionType::CLOUD)) {
+            fileInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
+            fileInfo.needUpdatePositionToLocalAndCloud = true;
+        } else if (FileAdapter::IsLakeFile(fileInfo)) {
+            fileInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
+            fileInfo.needUpdatePositionToLocalAndCloud = true;
+        }
+        return false;
+    }
+    return true;
 }
 
 bool CloneRestore::InitAllKvStore()

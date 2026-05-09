@@ -94,8 +94,8 @@ int32_t AnalysisAlbumAttributeDispatcher::Execute(const std::shared_ptr<PhotoAlb
 }
 
 int32_t AnalysisAlbumAttributeDispatcher::GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        std::vector<std::string> &attributeArray,
-        std::vector<std::unordered_map<std::string, std::string>> &queryResults)
+    std::vector<std::string> &attributeArray,
+    std::vector<std::unordered_map<std::string, std::string>> &queryResults)
 {
     CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "photoAlbum is nullptr");
     for (const auto &attr : attributeArray) {

@@ -44,7 +44,7 @@ const PARAMETERS_VALIDATE_FAILED_MESSAGE =
 '  1. An invalid enumeration value was passed. Only MOVING_PHOTO_ENABLE and' +
 '  MOVING_PHOTO_DISABLE are supported for globalMovingPhotoState;' +
 '  2. The elements of the array can only be \'image/heic\' or \'image/jpeg\',' +
-'  and the array length cannot be zero or greater than two for suppoertedMimeType';
+'  and the array length cannot be greater than two for supportedMimeType;';
 
 const PARAMETERS_VALIDATE_FAILED_CODE = 23800151;
 
@@ -1238,7 +1238,7 @@ function checkAssetCompatibleCapabilityInvalid(assetCompatibleCapability) {
     return false;
   }
   let supportedMimeType = assetCompatibleCapability.supportedMimeType;
-  if (supportedMimeType.length === 0 || supportedMimeType.length > 2) {
+  if (supportedMimeType.length > 2) {
     return true;
   }
 

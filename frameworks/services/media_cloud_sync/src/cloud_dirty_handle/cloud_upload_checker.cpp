@@ -243,6 +243,12 @@ void CloudUploadChecker::HandlePhotoInfos(const std::vector<CheckedPhotoInfo> &p
             // do nothing in lake, delete when check;
             continue;
         }
+#ifdef MEDIALIBRARY_FILE_MGR_SUPPORT
+        if (photoInfo.fileSourceType == static_cast<int32_t>(FileSourceType::FILE_MANAGER)) {
+            // Assets in the file manager will not be processed
+            continue;
+        }
+#endif
         bool isMovingPhoto = IsMovingPhoto(photoInfo.subtype, photoInfo.movingPhotoEffectMode);
         if (MediaFileUtils::IsFileExists(photoInfo.path)) {
             UpdateFileSize(photoInfo, isMovingPhoto);

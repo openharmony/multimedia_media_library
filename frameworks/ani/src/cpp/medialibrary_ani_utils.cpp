@@ -463,8 +463,7 @@ ani_status MediaLibraryAniUtils::ToAniStringObject(ani_env *env, const std::stri
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "s:", &ctor), "Failed to find method: ctor");
 
     ani_string aniStr;
-    CHECK_COND_RET(ToAniString(env, src, aniStr) == ANI_OK, false,
-        "ToAniString src fail");
+    CHECK_STATUS_RET(ToAniString(env, src, aniStr), "ToAniString src fail");
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, aniStr), "New string Object Fail");
     return ANI_OK;
 }

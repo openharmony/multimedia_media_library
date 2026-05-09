@@ -59,7 +59,6 @@ static std::vector<std::string> createTableSqlLists = {
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     CREATE_HIGHLIGHT_ALBUM_TABLE,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
-    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
 };
 
 static std::vector<std::string> testTables = {
@@ -67,7 +66,6 @@ static std::vector<std::string> testTables = {
     VISION_TOTAL_TABLE,
     USER_PHOTOGRAPHY_INFO_TABLE,
     HIGHLIGHT_ALBUM_TABLE,
-    ANALYSIS_ALBUM_TABLE,
 };
  
 void GetDataAnalysisProcessTest::SetUpTestCase(void)

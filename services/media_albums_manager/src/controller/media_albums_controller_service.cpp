@@ -397,7 +397,7 @@ int32_t MediaAlbumsControllerService::GetAnalysisAlbumAttribute(MessageParcel &d
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, ret),
         "AnalysisAlbumGetAttribute permission denied");
     GetAttributeRespBody respBody;
-    std::vector<std::unordered_map<std::string, std::string>> queryResults;
+    std::vector<std::unordered_map<std::string, std::string>> queryResults = {};
     AnalysisAlbumGetAttributeDto dto;
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().GetAnalysisAlbumAttribute(dto, queryResults);

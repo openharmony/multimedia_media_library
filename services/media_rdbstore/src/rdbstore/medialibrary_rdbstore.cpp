@@ -31,7 +31,6 @@
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
-#include "medialibrary_event_db_operations.h"
 #include "medialibrary_restore.h"
 #include "medialibrary_tracer.h"
 #include "media_container_types.h"
@@ -77,7 +76,6 @@
 #include "media_edit_utils.h"
 #include "media_string_utils.h"
 #include "media_values_bucket_utils.h"
-#include "media_operation_log_column.h"
 #include "media_compatible_info_column.h"
 #include "vision_portrait_nickname_column.h"
 #include "media_library_upgrade_macros.h"
@@ -2341,7 +2339,6 @@ static const vector<string> onCreateSqlStrs = {
     DownloadResourcesColumn::CREATE_TABLE,
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 
-    TabOperationLogColumn::CREATE_TABLE,
     TabCompatibleInfoColumn::CREATE_TABLE,
 };
 
@@ -4430,7 +4427,7 @@ REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_THUMB_LCD_SIZE_COLUMN, "Photos", AddLcdAn
 int32_t AddUniqueIdColumns(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::UNIQUE_ID + " TEXT DEFAULT '-1'",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::UNIQUE_ID + " TEXT DEFAULT NULL",
     };
 
     MEDIA_INFO_LOG("add Photos unique_id columns starts");
@@ -4439,15 +4436,6 @@ int32_t AddUniqueIdColumns(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTOS, "Photos", AddUniqueIdColumns);
-
-int32_t CreateTabOperationLog(RdbStore &store)
-{
-    MEDIA_INFO_LOG("create tab_operation_log starts");
-    int32_t ret = ExecSqlsWithDfx({TabOperationLogColumn::CREATE_TABLE}, store, VERSION_CREATE_TAB_OPERATION_LOG);
-    MEDIA_INFO_LOG("create tab_operation_log ends");
-    return ret;
-}
-REGISTER_SYNC_UPGRADE_TASK(VERSION_CREATE_TAB_OPERATION_LOG, "OtherTable", CreateTabOperationLog);
 
 static int32_t UpdatePhotoAlbumTigger(RdbStore &store, int32_t version)
 {
@@ -6439,7 +6427,7 @@ static int32_t AddPreferredCompatibleMode(RdbStore &store)
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_PREFERRED_COMPATIBLE_MODE, "OtherTable", AddPreferredCompatibleMode);
 
-int32_t AddUniqueIdColumnsToAlbums(RdbStore &store)
+static int32_t AddUniqueIdColumnsToAlbums(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
@@ -6452,6 +6440,22 @@ int32_t AddUniqueIdColumnsToAlbums(RdbStore &store)
     return ret;
 }
 REGISTER_SYNC_UPGRADE_TASK(VERSION_ADD_UNIQUE_ID_COLUMN_ON_PHOTO_ALBUM, "Album", AddUniqueIdColumnsToAlbums);
+
+static int32_t UpdateUniqueIdColumnOfPhotoAlbums(RdbStore &store)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    };
+
+    MEDIA_INFO_LOG("update unique_id column PhotoAlbum starts");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_UPDATE_UNIQUE_ID_COLUMN_PHOTO_ALBUM);
+    MEDIA_INFO_LOG("update unique_id column PhotoAlbum ends");
+    return ret;
+}
+REGISTER_SYNC_UPGRADE_TASK(VERSION_UPDATE_UNIQUE_ID_COLUMN_PHOTO_ALBUM, "Album", UpdateUniqueIdColumnOfPhotoAlbums);
 
 static int32_t AddPersistPermissionTable(RdbStore &store)
 {
@@ -6955,5 +6959,33 @@ int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std
     CHECK_AND_RETURN_RET_LOG(CheckRdbStore(), E_HAS_DB_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
+}
+
+void MediaLibraryRdbStore::AddUpgradeTable(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+        CREATE_TAB_ANALYSIS_VIDEO_TOTAL,
+        CREATE_SEARCH_TOTAL_TABLE,
+    };
+    MEDIA_INFO_LOG("start create table");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create table");
+}
+
+void MediaLibraryRdbStore::CheckAndAddColumns(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start check and add columns");
+    std::vector<std::string> sqls;
+    if (!HasColumnInTable(*store->GetRaw(), PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTOS_TABLE)) {
+        sqls.push_back("ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0");
+    }
+    if (!HasColumnInTable(*store->GetRaw(), PhotoAlbumColumns::CHANGE_TIME, PhotoAlbumColumns::TABLE)) {
+        sqls.push_back("ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::CHANGE_TIME +
+            " BIGINT NOT NULL DEFAULT 0");
+    }
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end check and add columns");
 }
 } // namespace OHOS::Media

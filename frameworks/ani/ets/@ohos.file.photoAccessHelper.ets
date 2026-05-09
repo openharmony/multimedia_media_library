@@ -4696,7 +4696,7 @@ export namespace photoAccessHelper {
 
   class AlbumAttributeInfoHandler implements AlbumAttributeInfo {
     constructor() {}
-    attrValue?: string = "";
+    attrValue?: string;
   }
 
   export enum AlbumOperationType {

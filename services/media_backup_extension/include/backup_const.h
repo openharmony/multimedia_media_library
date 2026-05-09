@@ -72,8 +72,10 @@ constexpr int32_t RECYCLE_FLAG_HARD_DELETE_UNSYNCED = -4;
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
+const std::string RESTORE_DENTRY_DIR = "/storage/media/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_THUMB_CLOUD_DIR = "/storage/cloud/files/.thumbs/Photo";
+const std::string RESTORE_THUMB_DENTRY_DIR = "/storage/media/cloud/files/.thumbs/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/UpdateBackup/";
@@ -384,6 +386,7 @@ struct PhotoInfo {
 struct FileInfo {
     std::string filePath;
     std::string displayName;
+    std::string uuid;
     std::string title;
     std::string userComment;
     std::string relativePath;
@@ -489,12 +492,17 @@ struct FileInfo {
     int32_t fileSourceType {0};
     bool isStoragePathExistInDb {false};
     bool isCloudPathExistInDb {false};
+    bool needUpdatePositionToLocalAndCloud {false};
+    bool hasMergedOriginAsset {false};
+    bool hasMergedLcdThumbnail {false};
+    bool hasMergedThmThumbnail {false};
 };
 
 struct AlbumInfo {
     int32_t albumIdOld {-1};
     int32_t albumIdNew {-1};
     std::string albumName;
+    std::string uuid;
     std::string albumBundleName;
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubType;

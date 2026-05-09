@@ -170,6 +170,7 @@ private:
                 LOWER(lpath) = LOWER('/DCIM/Camera') \
             ) AND \
             album_type IN (0, 2048) AND \
+            (album_name  != '.hiddenAlbum') AND \
             COALESCE(cloud_id, '') NOT IN ({0}) AND \
             COALESCE(lpath, '') NOT IN ({1}) \
         LIMIT ? ;";

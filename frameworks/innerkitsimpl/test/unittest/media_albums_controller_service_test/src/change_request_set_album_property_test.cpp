@@ -825,7 +825,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_D
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001,
     TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_UnsupportedType_001");
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001");
     int32_t albumId = CreatePortraitAlbum("portrait_album_unsupported_type");
     ASSERT_GT(albumId, 0);
 
@@ -838,7 +838,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_U
     reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
 
     EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OPERATION_NOT_SUPPORT);
-    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_UnsupportedType_001");
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001");
 }
 
 HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyExtraInfo_001, TestSize.Level0)
@@ -888,7 +888,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_E
     reqBody.albumId = to_string(albumId);
     reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
     reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
-    reqBody.values = { R"({"contact_key":"123456789"})" ,R"({"contact_key":"987654321"})" };
+    reqBody.values = { R"({"contact_key":"123456789"})", R"({"contact_key":"987654321"})" };
     reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
     reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
 

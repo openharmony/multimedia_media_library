@@ -1548,33 +1548,50 @@ static ani_status SetValueStringToRecord(ani_env *env, const string& key, const 
     return ANI_OK;
 }
 
+static int32_t SetSingleAttributeValue(ani_env *env, const std::string &attrName,
+    const std::string &attrValue, ani_object &retVal)
+{
+    if (SetValueStringToRecord(env, attrName, attrValue, retVal) != ANI_OK) {
+        AniError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute value to result");
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
+static bool ProcessAttributeQueryResults(ani_env *env, PhotoAlbumAniContext &context, ani_object &retVal)
+{
+    for (size_t i = 0; i < context.attributeArray.size() && i < context.attributeQueryResults.size(); ++i) {
+        const std::string& attrName = context.attributeArray[i];
+        if (context.attributeQueryResults[i].count(attrName) == 0) {
+            AniError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
+            return false;
+        }
+        const std::string& attrValue = context.attributeQueryResults[i].at(attrName);
+        if (SetSingleAttributeValue(env, attrName, attrValue, retVal) != ANI_OK) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static ani_object GetAttributeComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetAttributeComplete");
     ani_object retVal {};
+    ani_object errorObj {};
     if (MediaLibraryAniUtils::MakeAniRecordObject(env, retVal) != ANI_OK) {
         context.reset();
         AniError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute info to result");
         return {};
     }
     if (context->error == ERR_DEFAULT) {
-        for (size_t i = 0; i < context->attributeArray.size() && i < context->attributeQueryResults.size(); ++i) {
-            const std::string& attrName = context->attributeArray[i];
-            if (context->attributeQueryResults[i].count(attrName) == 0) {
-                context.reset();
-                AniError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
-                return {};
-            }
-            const std::string& attrValue = context->attributeQueryResults[i].at(attrName);
-            if (SetValueStringToRecord(env, attrName, attrValue, retVal) != ANI_OK) {
-                context.reset();
-                AniError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute value to result");
-                return {};
-            }
+        if (!ProcessAttributeQueryResults(env, *context, retVal)) {
+            context.reset();
+            return {};
         }
     } else {
-        context->HandleError(env, retVal);
+        context->HandleError(env, errorObj);
     }
 
     tracer.Finish();
@@ -1616,14 +1633,15 @@ static bool ParseAttributeArray(ani_env *env, ani_object arg, vector<string> &at
     CHECK_COND_RET(!aniValues.empty(), false, "array is empty");
     for (const auto& aniValue : aniValues) {
         std::string attributeValue;
-        CHECK_ARGS_WITH_RET_MSG(env, MediaLibraryAniUtils::GetParamStringPathMax(env, aniValue, attributeValue) == ANI_OK,
+        CHECK_ARGS_WITH_RET_MSG(env,
+            MediaLibraryAniUtils::GetParamStringPathMax(env, aniValue, attributeValue) == ANI_OK,
             JS_E_PARAM_INVALID, false, "Failed to get attribute value");
         attributeArray.push_back(attributeValue);
     }
     return true;
 }
 
-bool hasDuplicate(std::vector<std::string>& vec)
+bool HasDuplicate(std::vector<std::string>& vec)
 {
     if (vec.size() <= 1) {
         return false;
@@ -1645,13 +1663,14 @@ ani_object PhotoAlbumAni::GetAttribute(ani_env *env, ani_object object, ani_obje
 
     // Create async context
     unique_ptr<PhotoAlbumAniContext> asyncContext = make_unique<PhotoAlbumAniContext>();
-    CHECK_ARGS_WITH_RET_MSG(env, asyncContext != nullptr, JS_E_PARAM_INVALID, nullptr,"asyncContext context is null");
+    CHECK_ARGS_WITH_RET_MSG(env, asyncContext != nullptr, JS_E_PARAM_INVALID, nullptr, "asyncContext context is null");
     vector<string> attributeArray;
     CHECK_ARGS_WITH_RET_MSG(env, ParseAttributeArray(env, attrsArray, attributeArray),
         JS_E_PARAM_INVALID, nullptr, "Failed to parse attribute array");
     CHECK_ARGS_WITH_RET_MSG(env, attributeArray.size() <= GET_ATTRIBUTE_MAX_COUNT && !attributeArray.empty(),
         JS_E_PARAM_INVALID, nullptr, "Invalid attribute count");
-    CHECK_ARGS_WITH_RET_MSG(env, !hasDuplicate(attributeArray), JS_E_PARAM_INVALID, nullptr, "Duplicate attributes found");
+    CHECK_ARGS_WITH_RET_MSG(env, !HasDuplicate(attributeArray), JS_E_PARAM_INVALID,
+        nullptr, "Duplicate attributes found");
     for (const auto& attribute : attributeArray) {
         CHECK_ARGS_WITH_RET_MSG(env, attribute == ANALYSIS_ALBUM_ATTR_EXTRA_INFO, JS_E_PARAM_INVALID, nullptr,
             "Invalid attribute: " + attribute);
