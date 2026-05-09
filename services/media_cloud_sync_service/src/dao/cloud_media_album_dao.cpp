@@ -870,6 +870,7 @@ int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<Photo
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_MDIRTY)))
         ->NotEqualTo(PhotoAlbumColumns::ALBUM_CLOUD_ID, "")
+        ->NotEqualTo(PhotoAlbumColumns::ALBUM_NAME, ".hiddenAlbum")
         ->IsNotNull(PhotoAlbumColumns::ALBUM_CLOUD_ID)
         ->
         /* user and source albums */

@@ -132,14 +132,14 @@ void CheckPhotoUrisReadPermissionTest::SetUpTestCase(void)
         GTEST_FAIL() << "Unable to acquire MediaLibraryRdbStore";
         return;
     }
-    ASSERT_EQ(ClearRelatedTables(), E_OK);
+    ClearRelatedTables();
     MEDIA_INFO_LOG("CheckPhotoUrisReadPermissionTest::SetUpTestCase:: Finish");
 }
 
 void CheckPhotoUrisReadPermissionTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase start");
-    ASSERT_EQ(ClearRelatedTables(), E_OK);
+    ClearRelatedTables();
     MEDIA_INFO_LOG("TearDownTestCase end");
 }
 

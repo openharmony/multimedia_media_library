@@ -31,6 +31,7 @@
 #include "medialibrary_analysis_album_operations.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
+#include "analysis_album_accurate_refresh.h"
 
 namespace OHOS::Media {
 using namespace OHOS::NativeRdb;
@@ -53,6 +54,37 @@ static void NotifyUpdateAlbum(const vector<int32_t> &changedAlbumIds)
     }
 }
 
+static int32_t UpdateExtraInfoWithAccurateRefresh(const std::vector<int32_t> &albumIds,
+    const std::string &extraInfo)
+{
+    CHECK_AND_RETURN_RET_LOG(!albumIds.empty(), E_INNER_FAIL, "albumIds is empty");
+
+    AccurateRefresh::AnalysisAlbumAccurateRefresh albumRefresh;
+    int32_t ret = albumRefresh.Init(albumIds);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INNER_FAIL, "UpdateExtraInfo init failed");
+
+    std::string placeholders;
+    std::vector<ValueObject> bindArgs;
+    bindArgs.push_back(ValueObject(extraInfo));
+
+    for (size_t i = 0; i < albumIds.size(); ++i) {
+        if (i > 0) {
+            placeholders += ",";
+        }
+        placeholders += "?";
+        bindArgs.push_back(ValueObject(albumIds[i]));
+    }
+
+    std::string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + EXTRA_INFO + " = ? WHERE " +
+                      ALBUM_ID + " IN (" + placeholders + ")";
+
+    ret = albumRefresh.ExecuteSql(sql, bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INNER_FAIL, "UpdateExtraInfo execute sql failed");
+
+    albumRefresh.Notify();
+    return E_OK;
+}
+
 bool PortraitExtraInfoRepository::Exists(const std::string &albumId) const
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, false, "rdbStore is nullptr");
@@ -68,10 +100,9 @@ bool PortraitExtraInfoRepository::Exists(const std::string &albumId) const
     return resultSet->GoToFirstRow() == NativeRdb::E_OK;
 }
 
-static int32_t GetPortraitAlbumIds(const std::string &albumId, std::string &portraitAlbumIdStr,
+static int32_t GetPortraitAlbumIds(const std::string &albumId,
     std::vector<int32_t> &portraitAlbumIdsInt)
 {
-    std::vector<std::string> portraitAlbumIds;
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_INNER_FAIL, "uniStore is nullptr! failed query album order");
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(albumId), E_INVALID_VALUES,
@@ -86,15 +117,7 @@ static int32_t GetPortraitAlbumIds(const std::string &albumId, std::string &port
     auto resultSet = uniStore->QuerySql(queryPortraitAlbumIds, bindArgs);
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_INNER_FAIL);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        portraitAlbumIds.push_back(to_string(GetInt32Val(ALBUM_ID, resultSet)));
         portraitAlbumIdsInt.push_back(GetInt32Val(ALBUM_ID, resultSet));
-    }
-
-    for (size_t i = 0; i < portraitAlbumIds.size(); i++) {
-        if (i > 0) {
-            portraitAlbumIdStr += ",";
-        }
-        portraitAlbumIdStr += portraitAlbumIds[i];
     }
     return E_OK;
 }
@@ -103,19 +126,17 @@ int32_t PortraitExtraInfoRepository::UpdateExtraInfo(const std::string &albumId,
     const std::string &extraInfo) const
 {
     MEDIA_INFO_LOG("UpdateExtraInfo start");
-    std::string portraitAlbumIdStr;
     std::vector<int32_t> portraitAlbumIdsInt;
-    CHECK_AND_RETURN_RET_LOG(GetPortraitAlbumIds(albumId, portraitAlbumIdStr, portraitAlbumIdsInt) == E_OK,
+    CHECK_AND_RETURN_RET_LOG(GetPortraitAlbumIds(albumId, portraitAlbumIdsInt) == E_OK,
         E_INNER_FAIL, "Failed to get portrait album ids by albumId: %{public}s", albumId.c_str());
-    CHECK_AND_RETURN_RET_LOG(!portraitAlbumIdStr.empty() && !portraitAlbumIdsInt.empty(),
+    CHECK_AND_RETURN_RET_LOG(!portraitAlbumIdsInt.empty(),
         E_INNER_FAIL, "No portrait album found for albumId: %{public}s", albumId.c_str());
-    std::string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + EXTRA_INFO + " = '" + extraInfo +
-        "' WHERE " + ALBUM_ID + " IN (" + portraitAlbumIdStr + ")";
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryAnalysisAlbumOperations::UpdateAnalysisAlbum(
-        {updateSql}, portraitAlbumIdsInt) == E_OK,
-        E_INNER_FAIL, "Failed to set extra info for portrait album, albumId: %{public}s", albumId.c_str());
+
+    CHECK_AND_RETURN_RET_LOG(UpdateExtraInfoWithAccurateRefresh(portraitAlbumIdsInt, extraInfo) == E_OK,
+        E_INNER_FAIL, "Failed to update extra info for portrait album, albumId: %{public}s", albumId.c_str());
+
     NotifyUpdateAlbum(portraitAlbumIdsInt);
-    return NativeRdb::E_OK;
+    return E_OK;
 }
 
 int32_t PortraitExtraInfoRepository::GetExtraInfo(const int32_t &albumId,

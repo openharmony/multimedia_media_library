@@ -46,7 +46,6 @@ private:
     inline static const std::string ALBUM_TRAFFIC_MONITOR_SWITCH  = "albumTrafficMonitorSwitch";
 
     void SetAllowNetworkSwitch(int32_t val);
-    std::string GetUuidByFileId(const std::string &fileId);
     void ParsePushInfo(const std::string &msg, std::string &displayName, int32_t &isCritical,
         int32_t &criticalType);
 };

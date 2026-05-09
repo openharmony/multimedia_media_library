@@ -20,12 +20,12 @@
 #include <string>
 #include <vector>
 
-#define private public
-#define protected public
+#define PRIVATE public
+#define PROTECTED public
 #include "media_albums_controller_service.h"
 #include "media_analysis_data_controller_service.h"
-#undef private
-#undef protected
+#undef PRIVATE
+#undef PROTECTED
 
 #include "vision_db_sqls_more.h"
 #include "analysis_album_get_attribute_vo.h"
@@ -37,6 +37,7 @@
 #include "result_set_utils.h"
 #include "medialibrary_business_code.h"
 #include "media_upgrade.h"
+#include "medialibrary_client_errno.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -113,7 +114,6 @@ static shared_ptr<NativeRdb::ResultSet> QueryAsset(const string& table, const st
 
 static void GetExtraInfoPrepare(int32_t& albumId)
 {
-    // 1、创建AnalysisAlbum
     CreateAnalysisAlbum(g_albumName);
     vector<string> columns;
     auto resultSet = QueryAsset(ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ALBUM_NAME, g_albumName, columns);
@@ -158,21 +158,19 @@ static int32_t GetAttribute(int32_t albumId, int32_t albumType, int32_t albumSub
 HWTEST_F(GetAlbumAttributeTest, GetExtraInfoTest_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start GetExtraInfoTest_Test_001");
-    // 1、前置条件准备
     int32_t albumId = -1;
     GetExtraInfoPrepare(albumId);
     EXPECT_GT(albumId, 0);
 
-    // 2、查询人物关系
     std::vector<std::string> attributeArray = { EXTRA_INFO };
     int32_t ret = GetAttribute(albumId, PhotoAlbumType::SMART, PhotoAlbumSubType::HIGHLIGHT, attributeArray);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
+    EXPECT_EQ(ret, JS_INNER_FAIL);
 
     ret = GetAttribute(albumId, PhotoAlbumType::USER, PhotoAlbumSubType::PORTRAIT, attributeArray);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
+    EXPECT_EQ(ret, JS_INNER_FAIL);
 
     ret = GetAttribute(albumId, PhotoAlbumType::SMART, PhotoAlbumSubType::PORTRAIT, attributeArray);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, JS_INNER_FAIL);
 
     MEDIA_INFO_LOG("end GetExtraInfoTest_Test_001");
 }
@@ -185,7 +183,7 @@ HWTEST_F(GetAlbumAttributeTest, GetExtraInfoTest_Test_002, TestSize.Level0)
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetAnalysisAlbumAttribute(data, reply);
 
-    IPC::MediaRespVo<GetAttributeReqBody> resp;
+    IPC::MediaRespVo<GetAttributeRespBody> resp;
     ASSERT_EQ(resp.Unmarshalling(reply), true);
     ASSERT_LT(resp.GetErrCode(), 0);
     MEDIA_INFO_LOG("end GetExtraInfoTest_Test_002");

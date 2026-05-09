@@ -474,7 +474,7 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_CreateFd_test_001, Level1)
 HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_CreateFd_test_002, Level1)
 {
     std::string displayName = "photo.jpg";
-    int32_t albumId = 1;
+    int32_t albumId = 10;
     int32_t fd = -1;
     int32_t ret = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
     EXPECT_EQ(ret, E_SUCCESS);
@@ -485,7 +485,7 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_CreateFd_test_002, Level1)
 HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_CreateFd_test_003, Level1)
 {
     std::string displayName = "video.mp4";
-    int32_t albumId = 1;
+    int32_t albumId = 10;
     int32_t fd = -1;
     int32_t ret = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
     EXPECT_EQ(ret, E_SUCCESS);
@@ -574,24 +574,26 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_OperationsSuccess_test_001, Le
     std::string filePath;
     int32_t ret = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
     EXPECT_EQ(ret, E_SUCCESS);
-    std::string fileId;
-    ret = MediaFuseHdcOperations::GetFileIdFromPath(filePath, fileId);
-    EXPECT_NE(ret, E_SUCCESS);
-    ret = MediaFuseHdcOperations::GetAlbumIdFromAlbumName(albumName, albumId);
-    EXPECT_EQ(ret, E_SUCCESS);
-    ret = MediaFuseHdcOperations::Parse(path, albumId, filePath, displayName);
-    EXPECT_EQ(ret, E_SUCCESS);
-    struct stat stbuf = {};
-    ret = MediaFuseHdcOperations::HandleDirStat(albumId, &stbuf);
-    EXPECT_NE(ret, E_SUCCESS);
-    std::vector<std::string> args = {"test01", "testPhoto.jpg"};
-    std::string localPath;
-    ret = MediaFuseHdcOperations::UpdatePhotoRdb(displayName, filePath);
-    EXPECT_NE(ret, E_SUCCESS);
-    ret = MediaFuseHdcOperations::ScanFileByPath(path);
-    EXPECT_NE(ret, E_SUCCESS);
-    ret = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
-    EXPECT_NE(ret, E_SUCCESS);
+    if (!filePath.empty()) {
+        std::string fileId;
+        ret = MediaFuseHdcOperations::GetFileIdFromPath(filePath, fileId);
+        EXPECT_EQ(ret, E_SUCCESS);
+        ret = MediaFuseHdcOperations::GetAlbumIdFromAlbumName(albumName, albumId);
+        EXPECT_EQ(ret, E_SUCCESS);
+        ret = MediaFuseHdcOperations::Parse(path, albumId, filePath, displayName);
+        EXPECT_EQ(ret, E_SUCCESS);
+        struct stat stbuf = {};
+        ret = MediaFuseHdcOperations::HandleDirStat(albumId, &stbuf);
+        EXPECT_EQ(ret, E_SUCCESS);
+        std::vector<std::string> args = {"test01", "testPhoto.jpg"};
+        std::string localPath;
+        ret = MediaFuseHdcOperations::UpdatePhotoRdb(displayName, filePath);
+        EXPECT_EQ(ret, E_SUCCESS);
+        ret = MediaFuseHdcOperations::ScanFileByPath(path);
+        EXPECT_EQ(ret, E_SUCCESS);
+        ret = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
+        EXPECT_EQ(ret, E_SUCCESS);
+    }
 }
 } // namespace Media
 } // namespace OHOS

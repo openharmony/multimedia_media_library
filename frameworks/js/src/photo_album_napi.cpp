@@ -2252,9 +2252,9 @@ static void JSGetAttributeCompleteCallback(napi_env env, napi_status status, voi
     if (context->error == ERR_DEFAULT) {
         for (size_t i = 0; i < context->attributeArray.size() && i < context->attributeQueryResults.size(); ++i) {
             const std::string& attrName = context->attributeArray[i];
-            if (context->attributeArray[i].count(attrName) == 0) {
-                context.reset();
-                AniError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
+            if (context->attributeQueryResults[i].count(attrName) == 0) {
+                delete context;
+                NapiError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
                 return;
             }
             const std::string& attrValue = context->attributeQueryResults[i].at(attrName);
@@ -2321,7 +2321,7 @@ static bool ParseAttributeArray(napi_env env, napi_value arg,
     return true;
 }
 
-bool hasDuplicate(std::vector<std::string>& vec)
+bool HasDuplicate(std::vector<std::string>& vec)
 {
     if (vec.size() <= 1) {
         return false;
@@ -2352,7 +2352,7 @@ napi_value PhotoAlbumNapi::JSAnalysisAlbumGetAttribute(napi_env env, napi_callba
         JS_E_PARAM_INVALID, "Failed to parse attribute array");
     CHECK_COND_WITH_ERR_MESSAGE(env, attributeArray.size() <= GET_ATTRIBUTE_MAX_COUNT && !attributeArray.empty(),
         JS_E_PARAM_INVALID, "Invalid attribute count");
-    CHECK_COND_WITH_ERR_MESSAGE(env, !hasDuplicate(attributeArray), JS_E_PARAM_INVALID,
+    CHECK_COND_WITH_ERR_MESSAGE(env, !HasDuplicate(attributeArray), JS_E_PARAM_INVALID,
         "Duplicate attributes found");
     for (const auto& attribute : attributeArray) {
         CHECK_COND_WITH_ERR_MESSAGE(env, attribute == ANALYSIS_ALBUM_ATTR_EXTRA_INFO, JS_E_PARAM_INVALID,

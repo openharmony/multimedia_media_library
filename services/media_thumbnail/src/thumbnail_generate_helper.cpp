@@ -1160,7 +1160,7 @@ int32_t ThumbnailGenerateHelper::RegenerateAstcBackground(ThumbRdbOpt &opts)
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to GetNoAstcData %{private}d", err);
 
     MEDIA_INFO_LOG("need regenerate astc data size: %{public}d", static_cast<int>(infos.size()));
-    for (uint32_t i = 0; i < infos.size(); i++) {
+    for (size_t i = 0; i < infos.size(); i++) {
         infos[i].genThumbScene = GenThumbScene::NO_THUMB_AND_GEN_IT_BACKGROUND;
         opts.row = infos[i].id;
         IThumbnailHelper::AddThumbnailGenerateTask(RegenerateAstcByLocal,
