@@ -6287,6 +6287,20 @@ void MediaLibraryPhotoOperations::StoreThumbnailInfoAsync(const std::vector<Down
     CHECK_AND_RETURN_LOG(thumbFilesTask != nullptr, "Failed to create async task");
     asyncWorker->AddTask(thumbFilesTask, true);
 }
+
+std::string MediaLibraryPhotoOperations::GetLivePhotoCachePathById(const std::string &fileId)
+{
+    MEDIA_DEBUG_LOG("GetLivePhotoCachePathById start, fileId: %{public}s", fileId.c_str());
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, "", "Failed to get FileAsset from db");
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(fileAsset->GetPhotoSubType(),
+        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType());
+    CHECK_AND_RETURN_RET_LOG(isMovingPhoto, "", "not moving photo");
+    return MovingPhotoFileUtils::GetLivePhotoCachePath(fileAsset->GetPath());
+}
 } // namespace Media
 } // namespace OHOS
 //LCOV_EXCL_STOP
