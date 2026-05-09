@@ -1722,10 +1722,16 @@ int32_t CloneRestore::MergeDuplicateThumbnail(FileInfo &fileInfo)
     std::vector<std::string> relativeFiles = {
         "LCD.jpg",
         "THM.jpg",
+        "THM_ASTC.astc",
         "THM_EX/LCD.jpg",
         "THM_EX/THM.jpg",
     };
+    const std::string dstThmFile = dstThumbnailDir + "/THM.jpg";
+    const bool hasDstThmFile = MediaFileUtils::IsFileExists(dstThmFile);
     for (const auto &relativeFile : relativeFiles) {
+        if (hasDstThmFile && (relativeFile == "THM.jpg" || relativeFile == "THM_ASTC.astc")) {
+            continue;
+        }
         std::string srcFile = srcThumbnailDir + "/" + relativeFile;
         if (!MediaFileUtils::IsFileExists(srcFile)) {
             continue;
@@ -1734,7 +1740,8 @@ int32_t CloneRestore::MergeDuplicateThumbnail(FileInfo &fileInfo)
         if (MediaFileUtils::IsFileExists(dstFile)) {
             continue;
         }
-        if (BackupFileUtils::PreparePath(dstFile) != E_OK || !MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
+        if (BackupFileUtils::PreparePath(dstFile) != E_OK ||
+            BackupFileUtils::MoveFile(srcFile, dstFile, sceneCode_) != E_OK) {
             MEDIA_ERR_LOG("Merge duplicate thumbnail failed, src:%{public}s, dst:%{public}s",
                 MediaFileUtils::DesensitizePath(srcFile).c_str(), MediaFileUtils::DesensitizePath(dstFile).c_str());
             return E_FAIL;
@@ -1763,7 +1770,6 @@ int32_t CloneRestore::MergeDuplicateAsset(FileInfo &fileInfo)
     }
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
-    bool needImportEditData = !MediaFileUtils::IsFileExists(dstEditDataPath);
 
     if (needImportOrigin) {
         int32_t optRet = this->MovePicture(fileInfo);
@@ -3208,9 +3214,6 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     if (isDstPureCloud) {
         fileInfo.needMove = IsSameAssetForCloudIdMove(fileInfo, rowData);
         if (fileInfo.position != static_cast<int32_t>(PhotoPositionType::CLOUD)) {
-            fileInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
-            fileInfo.needUpdatePositionToLocalAndCloud = true;
-        } else if (FileAdapter::IsLakeFile(fileInfo)) {
             fileInfo.position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
             fileInfo.needUpdatePositionToLocalAndCloud = true;
         }
