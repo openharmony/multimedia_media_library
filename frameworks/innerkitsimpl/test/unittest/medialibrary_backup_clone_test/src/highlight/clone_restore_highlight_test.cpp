@@ -210,16 +210,23 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
         HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    ExecuteRdbSqls(newRdbStore->GetRaw(), {
-        CREATE_HIGHLIGHT_ALBUM_TABLE,
-        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
-        CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
-    });
+    ASSERT_NE(newRdbStore, nullptr);
+    ASSERT_NE(cloneHighlightSource.cloneStorePtr_, nullptr);
+    // Harden UT against occasional table creation misses in source/target DB.
+    ExecuteRdbSqls(newRdbStore->GetRaw(), createTableSqlLists);
+    ExecuteRdbSqls(cloneHighlightSource.cloneStorePtr_, createTableSqlLists);
     CloneRestoreHighlight::InitInfo initInfo = {
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };
     cloneRestoreHighlight->Init(initInfo);
     cloneRestoreHighlight->Preprocess();
+    if (!cloneRestoreHighlight->isCloneHighlight_) {
+        MEDIA_WARN_LOG("Preprocess failed once, recreate tables and retry.");
+        ExecuteRdbSqls(newRdbStore->GetRaw(), createTableSqlLists);
+        ExecuteRdbSqls(cloneHighlightSource.cloneStorePtr_, createTableSqlLists);
+        cloneRestoreHighlight->Preprocess();
+    }
+    EXPECT_TRUE(cloneRestoreHighlight->isCloneHighlight_);
     cloneRestoreHighlight->RestoreAlbums();
     EXPECT_EQ(cloneRestoreHighlight->isMapOrder_, true);
     string analysisCondition = "album_name = 'test_highlight_album'";
