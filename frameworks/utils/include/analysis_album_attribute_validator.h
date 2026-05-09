@@ -40,9 +40,9 @@ inline bool IsValidAnalysisAlbumOperationType(const std::string &type)
 inline bool IsValidAnalysisAlbumValue(const std::string &value, const AnalysisAlbumAttributeSpec &spec)
 {
     CHECK_AND_RETURN_RET(value.size() <= ANALYSIS_ALBUM_MAX_VALUE_LENGTH, false);
-    CHECK_AND_RETURN_RET(!value.empty(), true);
-    CHECK_AND_RETURN_RET(spec.attr == ANALYSIS_ALBUM_ATTR_NICK_NAME, true);
-    CHECK_AND_RETURN_RET(MediaFileUtils::CheckAlbumNameCharacter(value) == E_OK, false);
+    CHECK_AND_RETURN_RET(!value.empty() || spec.allowEmptyValue, true);
+    CHECK_AND_RETURN_RET(MediaFileUtils::CheckAlbumNameCharacter(value) == E_OK
+        || spec.supportSpecialSymbols, false);
     return true;
 }
 
@@ -68,7 +68,7 @@ inline bool IsSupportedAnalysisAlbumOperationValue(const AnalysisAlbumAttributeS
 inline bool IsSupportedAnalysisAlbumOperationValues(const AnalysisAlbumAttributeSpec &spec,
     const std::vector<std::string> &values)
 {
-    return values.size() <= spec.maxValueCount && (!spec.isSpecialValue ||
+    return values.size() <= spec.maxValueCount && values.size() > 0 &&(!spec.isSpecialValue ||
         std::all_of(values.begin(), values.end(),
         [&spec](const std::string &value) {
             return IsSupportedAnalysisAlbumOperationValue(spec, value);

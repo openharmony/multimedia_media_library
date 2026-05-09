@@ -2527,6 +2527,32 @@ export namespace photoAccessHelper {
       });
     }
 
+    getAttribute(attr: AlbumAttribute[]): Promise<Record<AlbumAttribute, AlbumAttributeInfo>> {
+      return new Promise<Record<AlbumAttribute, AlbumAttributeInfo>>((resolve: (v: Record<AlbumAttribute, AlbumAttributeInfo>) => void, reject: RejectString) => {
+        let cb = (): Record<AlbumAttribute, AlbumAttributeInfo> | MediaLibraryAniError => {
+          let result: Record<AlbumAttribute, AlbumAttributeInfo> | MediaLibraryAniError;
+          try {
+            result = this.getAttributeInner(attr);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Record<AlbumAttribute, AlbumAttributeInfo>);
+            }
+          }
+        });
+      });
+    }
+
     native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     native commitModifyInner(): void;
@@ -2542,6 +2568,7 @@ export namespace photoAccessHelper {
     native getdateAdded(): long;
     native getdateModified(): long;
     native getChangeTime(): long;
+    native getAttributeInner(attr: AlbumAttribute[]): Record<AlbumAttribute, AlbumAttributeInfo>;
   }
 
   export interface PhotoAccessHelper {
@@ -4660,6 +4687,16 @@ export namespace photoAccessHelper {
   export enum AlbumAttribute {
     NICK_NAME_ATTR = "nickname",
     IS_REMOVED_ATTR = "is_removed",
+    EXTRA_INFO_ATTR = "extra_info",
+  }
+
+  export interface AlbumAttributeInfo {
+    attrValue?: string;
+  }
+
+  class AlbumAttributeInfoHandler implements AlbumAttributeInfo {
+    constructor() {}
+    attrValue?: string;
   }
 
   export enum AlbumOperationType {

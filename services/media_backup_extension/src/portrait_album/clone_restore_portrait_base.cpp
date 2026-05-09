@@ -60,6 +60,7 @@ void CloneRestorePortraitBase::GetAnalysisAlbumInsertValue(NativeRdb::ValuesBuck
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_IS_LOCAL, info.isLocal);
     BackupDatabaseUtils::PutIfPresent<std::string>(value, ANALYSIS_COL_RELATIONSHIP, info.relationship);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_EDIT_OPERATION, info.editOperation);
+    BackupDatabaseUtils::PutIfPresent<std::string>(value, ANALYSIS_COL_EXTRA_INFO, info.extraInfo);
 }
 
 void CloneRestorePortraitBase::ParseAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -89,6 +90,8 @@ void CloneRestorePortraitBase::ParseAlbumResultSet(const std::shared_ptr<NativeR
  	    ANALYSIS_COL_EDIT_OPERATION);
     analysisAlbumTbl.relationship = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         ANALYSIS_COL_RELATIONSHIP);
+    analysisAlbumTbl.extraInfo = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        ANALYSIS_COL_EXTRA_INFO);
 }
 
 int32_t CloneRestorePortraitBase::BatchInsertWithRetry(const std::string &tableName,

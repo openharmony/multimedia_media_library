@@ -1368,6 +1368,14 @@ void MediaAlbumChangeRequestNapi::SetIsRemovedOperationData(AnalysisAlbumOperati
     albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_IS_REMOVED);
 }
 
+void MediaAlbumChangeRequestNapi::SetExtraInfoOperationData(AnalysisAlbumOperation &operation)
+{
+    analysisAlbumOperationData_.attr = operation.attr;
+    analysisAlbumOperationData_.type = operation.type;
+    analysisAlbumOperationData_.values = operation.values;
+    albumChangeOperations_.push_back(AlbumChangeOperation::UPDATE_EXTRA_INFO);
+}
+
 static bool ParseAnalysisAlbumOperation(napi_env env, napi_value arg, AnalysisAlbumOperation &operation)
 {
     napi_valuetype valueType = napi_undefined;
@@ -1426,6 +1434,8 @@ napi_value MediaAlbumChangeRequestNapi::JSOperateAttribute(napi_env env, napi_ca
             JS_E_PARAM_INVALID, "The total number of pending nickname values exceeds the limit");
     } else if (operation.attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
         asyncContext->objectInfo->SetIsRemovedOperationData(operation);
+    } else if (operation.attr == ANALYSIS_ALBUM_ATTR_EXTRA_INFO) {
+        asyncContext->objectInfo->SetExtraInfoOperationData(operation);
     } else {
         NAPI_WARN_LOG("Unknown operation attr.");
     }
@@ -2290,6 +2300,14 @@ static bool UpdateIsRemovedExecute(MediaAlbumChangeRequestAsyncContext& context)
         changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
 }
 
+static bool UpdateExtraInfoExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    return ExecuteOperateAttributeOperation(context, changeRequest->GetOperationDataAttr(),
+        changeRequest->GetOperationDataType(), changeRequest->GetOperationDataValues());
+}
+
 static bool SetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2486,6 +2504,7 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::DISMISS, DismissExecute },
     { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
     { AlbumChangeOperation::UPDATE_IS_REMOVED, UpdateIsRemovedExecute },
+    { AlbumChangeOperation::UPDATE_EXTRA_INFO, UpdateExtraInfoExecute },
 };
 
 static bool SetAlbumPropertyExecute(
@@ -2585,7 +2604,8 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
                    changeOperation == AlbumChangeOperation::UPDATE_IS_REMOVED ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
                    changeOperation == AlbumChangeOperation::DISMISS ||
-                   changeOperation == AlbumChangeOperation::RESET_COVER_URI) {
+                   changeOperation == AlbumChangeOperation::RESET_COVER_URI ||
+                   changeOperation == AlbumChangeOperation::UPDATE_EXTRA_INFO) {
             valid = SetAlbumPropertyExecute(*context, changeOperation);
         } else {
             NAPI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);

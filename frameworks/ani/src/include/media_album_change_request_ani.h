@@ -61,6 +61,7 @@ enum class AlbumChangeOperation {
     ADD_NICK_NAME,
     REMOVE_NICK_NAME,
     UPDATE_IS_REMOVED,
+    UPDATE_EXTRA_INFO,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -108,6 +109,7 @@ public:
     std::vector<std::string> GetOperationDataValues() const;
     bool SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
     void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
+    void SetExtraInfoOperationData(AnalysisAlbumOperation &operation);
     static ani_object GetAlbum(ani_env *env, ani_object object);
     static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,
         ani_string aniName);
