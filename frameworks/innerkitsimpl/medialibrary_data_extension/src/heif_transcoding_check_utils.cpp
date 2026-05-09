@@ -33,6 +33,7 @@
 #include "system_ability_definition.h"
 #include "bundle_constants.h"
 #include "transcode_compatible_info_operations.h"
+#include "directory_ex.h"
 
 using std::string;
 using std::unordered_map;
@@ -177,6 +178,9 @@ static bool CheckListDUE(nlohmann::json& json)
     if (!IsFileExists(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME)) {
         return false;
     }
+    string realPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME, realPath),
+        false, "check path failed");
     std::ifstream dueFile;
     dueFile.open(DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
     if (!dueFile.is_open()) {
@@ -209,7 +213,9 @@ int32_t HeifTranscodingCheckUtils::ParsePixelWhiteListFromFile()
         ParseHighPixelCheckList(dueCheckListJson, DUE_INSTALL_DIR + HEIF_TRANSCODING_CHECKLIST_NAME);
         return E_OK;
     }
-
+    string realPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH, realPath),
+        E_ERR, "check path failed");
     std::ifstream jFile;
     jFile.open(HEIF_TRANSCODING_CHECK_LIST_JSON_LOCAL_PATH);
     if (!jFile.is_open()) {
