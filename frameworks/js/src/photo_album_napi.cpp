@@ -42,9 +42,14 @@
 #include "shooting_mode_column.h"
 #include "get_fussion_assets_vo.h"
 #include "js_interface_helper.h"
+#include "analysis_album_attribute_request_utils.h"
+#include "analysis_album_get_attribute_vo.h"
+#include "permission_utils.h"
+#include "accesstoken_kit.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS::Media {
 thread_local PhotoAlbum *PhotoAlbumNapi::pAlbumData_ = nullptr;
@@ -56,6 +61,7 @@ static const string COUNT_GROUP_BY = "count(*) AS count";
 std::mutex PhotoAlbumNapi::mutex_;
 static const int32_t NAPI_INVALID_PARAMETER_ERROR = 23800151;
 static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
+static const int32_t GET_ATTRIBUTE_MAX_COUNT = 20;
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -137,6 +143,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getFaceId", PhotoAccessHelperGetFaceId),
             DECLARE_NAPI_FUNCTION("getSelectedAssets", JSPhotoAccessGetSelectedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getFusionAssetsInfo", PhotoAccessGetFusionAssetsInfo),
+            DECLARE_NAPI_FUNCTION("getAttribute", JSAnalysisAlbumGetAttribute),
         }
     };
 
@@ -2162,5 +2169,204 @@ napi_value PhotoAlbumNapi::PhotoAccessGetFusionAssetsInfo(napi_env env, napi_cal
         JS_ERR_PARAMETER_INVALID);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetFusionAssetsInfo",
         PhotoAccessGetFusionAssetsInfoExec, GetFusionAssetsInfoCompleteCallback);
+}
+static void JSGetAttributeExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAttributeExecute");
+    NAPI_INFO_LOG("JSGetAttributeExecute start");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        NapiError::ThrowError(env, JS_E_INNER_FAIL, "Async context is null");
+        return;
+    }
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NAPI_ERR_LOG("photoAlbum is null");
+        context->error = JS_E_INNER_FAIL;
+        return;
+    }
+
+    GetAttributeReqBody reqBody;
+    GetAttributeRespBody respBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.attributeArray = context->attributeArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        NAPI_ERR_LOG("Failed to get system contact, error: %{public}d", result);
+        context->SaveError(result);
+        return;
+    }
+    context->attributeQueryResults = respBody.queryResults;
+    NAPI_INFO_LOG("GetAttribute: albumId: %{public}d", reqBody.albumId);
+}
+
+static napi_status SetValueStringToRecord(napi_env env, const string& key, const string& value,
+    napi_value &result)
+{
+    napi_value outputValue = nullptr;
+    napi_value napiValue = nullptr;
+    napi_get_undefined(env, &outputValue);
+    if (napi_create_object(env, &outputValue) != napi_ok) {
+        NAPI_ERR_LOG("Failed to create napi object for extra info");
+        return napi_invalid_arg;
+    }
+    if (napi_create_string_utf8(env, value.c_str(), NAPI_AUTO_LENGTH, &napiValue) != napi_ok) {
+        NAPI_ERR_LOG("Failed to create napi string for extra info");
+        return napi_invalid_arg;
+    }
+    if (napi_set_named_property(env, outputValue, "attrValue", napiValue) != napi_ok) {
+        NAPI_ERR_LOG("Failed to set extra info to attrValue");
+        return napi_invalid_arg;
+    }
+    if (napi_set_named_property(env, result, key.c_str(), outputValue) != napi_ok) {
+        NAPI_ERR_LOG("Failed to set extra info to record");
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+static void JSGetAttributeCompleteCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAttributeCompleteCallback");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    napi_get_undefined(env, &jsContext->data);
+    if (napi_create_object(env, &jsContext->data) != napi_ok) {
+        NAPI_ERR_LOG("Failed to create napi object for extra info");
+        return;
+    }
+    if (context->error == ERR_DEFAULT) {
+        for (size_t i = 0; i < context->attributeArray.size() && i < context->attributeQueryResults.size(); ++i) {
+            const std::string& attrName = context->attributeArray[i];
+            if (context->attributeQueryResults[i].count(attrName) == 0) {
+                delete context;
+                NapiError::ThrowError(env, JS_E_INNER_FAIL, "Attribute not found in query result");
+                return;
+            }
+            const std::string& attrValue = context->attributeQueryResults[i].at(attrName);
+            if (SetValueStringToRecord(env, attrName, attrValue, jsContext->data) != napi_ok) {
+                delete context;
+                NapiError::ThrowError(env, JS_E_INNER_FAIL, "Failed to set attribute value to result");
+                return;
+            }
+        }
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+static bool CheckAlbumChangeRequestCallerPermission(string permission)
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (result != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool CheckGetAttributePermission(napi_env env)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return false;
+    }
+    if (!CheckAlbumChangeRequestCallerPermission(PERM_READ_IMAGEVIDEO)) {
+        NapiError::ThrowError(env, E_PERMISSION_DENIED, "Permission denied: "
+            + string(PERM_READ_IMAGEVIDEO));
+        return false;
+    }
+    return true;
+}
+
+static bool ParseAttributeArray(napi_env env, napi_value arg,
+    vector<string> &attributeArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS_BASE(env, napi_typeof(env, arg, &valueType), JS_E_PARAM_INVALID, false);
+    CHECK_COND_RET(valueType == napi_object, false, "Invalid argument type");
+    CHECK_COND_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues) != nullptr,
+        false, "Failed to get attribute array");
+    CHECK_COND_RET(!napiValues.empty(), false, "array is empty");
+    for (const auto& napiValue : napiValues) {
+        std::string attributeValue;
+        CHECK_ARGS_BASE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, napiValue, attributeValue),
+            JS_E_PARAM_INVALID, false);
+        attributeArray.push_back(attributeValue);
+    }
+    return true;
+}
+
+bool HasDuplicate(std::vector<std::string>& vec)
+{
+    if (vec.size() <= 1) {
+        return false;
+    }
+
+    std::vector<std::string> tmp = vec;
+    std::sort(tmp.begin(), tmp.end());
+    return std::adjacent_find(tmp.begin(), tmp.end()) != tmp.end();
+}
+
+napi_value PhotoAlbumNapi::JSAnalysisAlbumGetAttribute(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSAnalysisAlbumGetAttribute");
+
+    if (!CheckGetAttributePermission(env)) {
+        return nullptr;
+    }
+
+    // Create async context
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_COND_WITH_ERR_MESSAGE(env, asyncContext != nullptr, JS_E_PARAM_INVALID, "asyncContext context is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get object info");
+    vector<string> attributeArray;
+    CHECK_COND_WITH_ERR_MESSAGE(env, ParseAttributeArray(env, asyncContext->argv[ARGS_ZERO], attributeArray),
+        JS_E_PARAM_INVALID, "Failed to parse attribute array");
+    CHECK_COND_WITH_ERR_MESSAGE(env, attributeArray.size() <= GET_ATTRIBUTE_MAX_COUNT && !attributeArray.empty(),
+        JS_E_PARAM_INVALID, "Invalid attribute count");
+    CHECK_COND_WITH_ERR_MESSAGE(env, !HasDuplicate(attributeArray), JS_E_PARAM_INVALID,
+        "Duplicate attributes found");
+    for (const auto& attribute : attributeArray) {
+        CHECK_COND_WITH_ERR_MESSAGE(env, attribute == ANALYSIS_ALBUM_ATTR_EXTRA_INFO, JS_E_PARAM_INVALID,
+            "Invalid attribute: " + attribute);
+    }
+    asyncContext->attributeArray = std::move(attributeArray);
+
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_ERR_MESSAGE(env, photoAlbum != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "photoAlbum is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env, IsPortraitAlbumAttributeTarget(photoAlbum), JS_E_PARAM_INVALID,
+        "Only portrait album can operate attribute");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "JSGetAttribute", JSGetAttributeExecute, JSGetAttributeCompleteCallback);
 }
 } // namespace OHOS::Media

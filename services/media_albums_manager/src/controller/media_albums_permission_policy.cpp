@@ -39,6 +39,7 @@ namespace OHOS::Media {
  */
 static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> mediaAlbumsPermissionPolicy = {
     // ALBUMS_BUSINESS_CODE_START begin
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI), {{WRITE_PERM}}},

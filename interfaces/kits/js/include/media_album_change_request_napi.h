@@ -59,6 +59,7 @@ enum class AlbumChangeOperation {
     ADD_NICK_NAME,
     REMOVE_NICK_NAME,
     UPDATE_IS_REMOVED,
+    UPDATE_EXTRA_INFO,
 };
 
 enum class ParameterType {
@@ -116,6 +117,7 @@ public:
     std::vector<std::string> GetOperationDataValues() const;
     void SetIsRemovedOperationData(AnalysisAlbumOperation &operation);
     bool SetNickNameOperationData(const std::string &type, const std::vector<std::string> &values);
+    void SetExtraInfoOperationData(AnalysisAlbumOperation &operations);
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 

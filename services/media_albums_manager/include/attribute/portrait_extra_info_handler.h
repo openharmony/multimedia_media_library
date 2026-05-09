@@ -13,23 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
-#define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#ifndef OHOS_MEDIA_PORTRAIT_EXTRAINFO_HANDLER_H
+#define OHOS_MEDIA_PORTRAIT_EXTRAINFO_HANDLER_H
 
 #include <memory>
 
 #include "analysis_album_attribute_request_utils.h"
+#include "analysis_album_attribute_spec.h"
 #include "photo_album.h"
 
 namespace OHOS::Media {
-class AnalysisAlbumAttributeDispatcher {
+class PortraitExtraInfoHandler {
 public:
+    static const AnalysisAlbumAttributeSpec &GetSpec();
+    static int32_t ValidateTarget(const std::shared_ptr<PhotoAlbum> &photoAlbum);
     static int32_t Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
         const AnalysisAlbumOperation &operation);
-    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        std::vector<std::string> &attributeArray,
-        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
+    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum, std::string &extraInfo);
 };
 } // namespace OHOS::Media
 
-#endif // OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#endif // OHOS_MEDIA_PORTRAIT_EXTRAINFO_HANDLER_H

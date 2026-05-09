@@ -13,23 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
-#define OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#ifndef OHOS_MEDIA_PORTRAIT_EXTRAINFO_REPOSITORY_H
+#define OHOS_MEDIA_PORTRAIT_EXTRAINFO_REPOSITORY_H
 
 #include <memory>
+#include <string>
+#include <vector>
 
-#include "analysis_album_attribute_request_utils.h"
-#include "photo_album.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
-class AnalysisAlbumAttributeDispatcher {
+class PortraitExtraInfoRepository {
 public:
-    static int32_t Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        const AnalysisAlbumOperation &operation);
-    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
-        std::vector<std::string> &attributeArray,
-        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
+    explicit PortraitExtraInfoRepository(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+
+    bool Exists(const std::string &albumId) const;
+    int32_t GetExtraInfo(const int32_t &albumId, std::string &extraInfo) const;
+    int32_t UpdateExtraInfo(const std::string &albumId, const std::string &extraInfo) const;
+private:
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 };
 } // namespace OHOS::Media
 
-#endif // OHOS_MEDIA_ANALYSIS_ALBUM_ATTRIBUTE_DISPATCHER_H
+#endif // OHOS_MEDIA_PORTRAIT_EXTRAINFO_REPOSITORY_H

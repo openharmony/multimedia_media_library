@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef UPGRADE_OTHER_TABLE_SQLS_H
-#define UPGRADE_OTHER_TABLE_SQLS_H
-// table name need to be added here
-#define TABLE_ANALYSIS_ALBUM "AnalysisAlbum"
-// column name should be added here
-#define COLUMN_EXTRA_INFO "extra_info"
+#define MLOG_TAG "AnalysisAlbumGetAttributeDto"
 
-// sqls only execute in upgrade progress should be added here
+#include "analysis_album_get_attribute_dto.h"
 
-#endif // UPGRADE_OTHER_TABLE_SQLS_H
+namespace OHOS::Media {
+void AnalysisAlbumGetAttributeDto::FromVo(const GetAttributeReqBody &reqBody)
+{
+    albumId = reqBody.albumId;
+    albumType = reqBody.albumType;
+    albumSubType = reqBody.albumSubType;
+    attrs = reqBody.attributeArray;
+}
+} // namespace OHOS::Media

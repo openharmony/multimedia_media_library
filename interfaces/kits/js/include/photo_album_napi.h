@@ -115,6 +115,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFusionAssetsInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetPhotoAlbumtHidden(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSAnalysisAlbumGetAttribute(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -153,6 +154,9 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     napi_ref objectInfoRef;
     PhotoAlbumNapi *objectInfo;
     std::vector<FusionAssetsInfo> fusionAssetInfos;
+
+    std::vector<std::string> attributeArray;
+    std::vector<std::unordered_map<std::string, std::string>> attributeQueryResults;
 };
 } // namespace Media
 } // namespace OHOS

@@ -74,6 +74,16 @@ static std::shared_ptr<PhotoAlbum> BuildAnalysisAlbumTarget(const ChangeRequestO
     return photoAlbum;
 }
 
+static std::shared_ptr<PhotoAlbum> BuildAnalysisAlbumTarget(const AnalysisAlbumGetAttributeDto &dto)
+{
+    auto photoAlbum = std::make_shared<PhotoAlbum>();
+    CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, nullptr, "failed to create photoAlbum");
+    photoAlbum->SetAlbumId(dto.albumId);
+    photoAlbum->SetPhotoAlbumType(static_cast<PhotoAlbumType>(dto.albumType));
+    photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(dto.albumSubType));
+    return photoAlbum;
+}
+
 MediaAlbumsService &MediaAlbumsService::GetInstance()
 {
     static MediaAlbumsService service;
@@ -159,6 +169,15 @@ int32_t MediaAlbumsService::ChangeRequestOperateAlbumAttribute(const ChangeReque
     CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "failed to build analysis album target");
     AnalysisAlbumOperation operation { dto.attr, dto.type, dto.values };
     return AnalysisAlbumAttributeDispatcher::Execute(photoAlbum, operation);
+}
+
+int32_t MediaAlbumsService::GetAnalysisAlbumAttribute(const AnalysisAlbumGetAttributeDto &dto,
+    vector<std::unordered_map<std::string, std::string>> &queryResults)
+{
+    auto photoAlbum = BuildAnalysisAlbumTarget(dto);
+    CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "failed to build analysis album target");
+    std::vector<std::string> attrs = dto.attrs;
+    return AnalysisAlbumAttributeDispatcher::GetAttributeExecute(photoAlbum, attrs, queryResults);
 }
 
 int32_t MediaAlbumsService::SetPortraitCoverUri(const ChangeRequestSetCoverUriDto& dto)
