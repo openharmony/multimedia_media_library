@@ -16053,6 +16053,7 @@ static napi_value ParseArgsGetAssetCompatibleUris(napi_env env, napi_callback_in
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
         context->bundleName), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, !context->bundleName.empty(), JS_ERR_PARAMETER_INVALID, "invalid bundleName");
 
     bool isArray = false;
     CHECK_ARGS(env, napi_is_array(env, context->argv[ARGS_ONE], &isArray), JS_ERR_PARAMETER_INVALID);
