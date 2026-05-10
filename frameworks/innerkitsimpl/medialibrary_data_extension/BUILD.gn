@@ -806,6 +806,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/operation/shooting_mode_album_operation.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_critical_label_task.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_live_photo_4d_status_task.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_share_dirty_data_task.cpp",
   ]
 
   media_lake_scanner_source = [
@@ -1192,6 +1193,7 @@ ohos_shared_library("medialibrary_data_extension") {
     media_custom_restore_source = [
       "${MEDIALIB_NEW_SERVICES_PATH}/media_custom_restore/src/medialibrary_custom_restore_notify.cpp",
       "${MEDIALIB_NEW_SERVICES_PATH}/media_custom_restore/src/photo_custom_restore_operation.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_custom_restore/src/media_share_dirty_data_cleaner.cpp",
     ]
     sources += media_custom_restore_source
   }

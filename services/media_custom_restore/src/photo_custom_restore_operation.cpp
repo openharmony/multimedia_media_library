@@ -51,6 +51,8 @@
 #include "userfile_manager_types.h"
 #include "refresh_business_name.h"
 #include "media_edit_utils.h"
+#include "media_share_dirty_data_cleaner.h"
+#include "media_time_utils.h"
 // LCOV_EXCL_START
 using namespace std;
 namespace OHOS::Media {
@@ -167,7 +169,7 @@ unordered_map<string, TimeInfo> PhotoCustomRestoreOperation::QueryMediaInfo(
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, {}, "resultSet is null");
 
     unordered_map<string, TimeInfo> timeInfoMap;
-    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t nowTime = MediaTimeUtils::UTCTimeMilliSeconds();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string fileName = GetStringVal(SHARE_RESTORE_MEDIA_INFO_FILE_NAME, resultSet);
         int64_t dateTaken = GetInt64Val(SHARE_RESTORE_MEDIA_INFO_DATE_TAKEN, resultSet);
@@ -214,6 +216,8 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
     vector<string> files;
     GetDirFiles(restoreTaskInfo.sourceDir, files);
     InitRestoreTask(restoreTaskInfo, files.size());
+    MediaShareDirtyDataCleaner::CheckDirtyData();
+    MediaShareDirtyDataCleaner::UpdateShareTime(true);
     const unordered_map<string, TimeInfo> timeInfoMap = GetTimeInfoMap(restoreTaskInfo);
     bool isFirstRestoreSuccess = false;
     int32_t firstRestoreIndex = 0;
@@ -255,6 +259,7 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
         }
     }
     ffrt::wait();
+    MediaShareDirtyDataCleaner::UpdateShareTime(false);
     ReleaseCustomRestoreTask(restoreTaskInfo);
 }
 
@@ -277,7 +282,7 @@ void PhotoCustomRestoreOperation::PhotoCustomRestoreOperation::ReleaseCustomRest
 
 void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo)
 {
-    restoreTaskInfo.endTime = MediaFileUtils::UTCTimeSeconds();
+    restoreTaskInfo.endTime = MediaTimeUtils::UTCTimeSeconds();
     CustomRestoreDfxDataPoint point;
     point.customRestorePackageName = restoreTaskInfo.packageName;
     point.albumLPath = restoreTaskInfo.albumLpath;
@@ -348,7 +353,7 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
     photoCache_.clear();
     restoreTaskInfo.uriType = RESTORE_URI_TYPE_PHOTO;
     restoreTaskInfo.totalNum = fileNum;
-    restoreTaskInfo.beginTime = MediaFileUtils::UTCTimeSeconds();
+    restoreTaskInfo.beginTime = MediaTimeUtils::UTCTimeSeconds();
     std::thread applyEfficiencyQuotaThread([this, fileNum] { ApplyEfficiencyQuota(fileNum); });
     applyEfficiencyQuotaThread.detach();
     QueryAlbumId(restoreTaskInfo);
@@ -412,12 +417,14 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(const unordered_map<str
         return E_ERR;
     }
     int32_t sameFileNum = 0;
+    MediaShareDirtyDataCleaner::UpdateCleanFlag(true);
     vector<FileInfo> insertRestoreFiles =
         BatchInsert(timeInfoMap, restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
     errCode = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
+    MediaShareDirtyDataCleaner::UpdateCleanFlag(false);
     assetRefresh.RefreshAlbum();
     assetRefresh.Notify();
     UpdateAndNotifyShootingModeAlbumIfNeeded(insertRestoreFiles);
@@ -579,22 +586,13 @@ int32_t PhotoCustomRestoreOperation::HandleTlvSingleRestore(const std::unordered
     CHECK_AND_RETURN_RET_LOG(!destRestoreFiles.empty(), E_ERR, "restore file number is zero.");
 
     int32_t sameFileNum = 0;
+    MediaShareDirtyDataCleaner::UpdateCleanFlag(true);
     vector<FileInfo> insertRestoreFiles =
         BatchInsert(timeInfoMap, restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     CHECK_AND_RETURN_RET_INFO_LOG(sameFileNum == 0, E_FILE_EXIST, "tlv single restore has same file.");
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
     CHECK_AND_RETURN_RET_LOG(successFileNum > 0, E_ERR, "RenameFiles failed.");
 
-    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
-    ret = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchUpdateTimePending failed. ret: %{public}d", ret);
-    assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
-    UpdateAndNotifyShootingModeAlbumIfNeeded(insertRestoreFiles);
-    if (isFirst && !insertRestoreFiles.empty()) {
-        ret = UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdatePhotoAlbum failed.");
-    }
     std::string assetPath = insertRestoreFiles[0].filePath;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(assetPath), E_ERR, "Restored asset file not exists");
     ret = HandleAllEditData(editFileMap, assetPath);
@@ -605,6 +603,17 @@ int32_t PhotoCustomRestoreOperation::HandleTlvSingleRestore(const std::unordered
     }
     ret = UpdateTlvEditDataSize(assetPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateTlvEditDataSize failed");
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
+    ret = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchUpdateTimePending failed. ret: %{public}d", ret);
+    MediaShareDirtyDataCleaner::UpdateCleanFlag(false);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
+    UpdateAndNotifyShootingModeAlbumIfNeeded(insertRestoreFiles);
+    if (isFirst && !insertRestoreFiles.empty()) {
+        ret = UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdatePhotoAlbum failed.");
+    }
     return E_OK;
 }
 
@@ -1263,7 +1272,7 @@ void PhotoCustomRestoreOperation::SetTimeInfo(
     const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value)
 {
     int64_t dateModified =
-        PhotoFileUtils::NormalizeTimestamp(data->GetFileDateModified(), MediaFileUtils::UTCTimeMilliSeconds());
+        PhotoFileUtils::NormalizeTimestamp(data->GetFileDateModified(), MediaTimeUtils::UTCTimeMilliSeconds());
     int64_t dateAdded = PhotoFileUtils::NormalizeTimestamp(data->GetFileDateAdded(), dateModified);
     int64_t dateTaken = PhotoFileUtils::NormalizeTimestamp(data->GetDateTaken(), min(dateAdded, dateModified));
 
@@ -1279,7 +1288,7 @@ void PhotoCustomRestoreOperation::SetTimeInfo(
         MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
             detailTime.c_str(),
             static_cast<long long>(dateTaken));
-        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+        detailTime = MediaTimeUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
     } else {
         detailTime = normalizeDetailTime;
     }
@@ -1411,7 +1420,7 @@ int32_t PhotoCustomRestoreOperation::GetFileMetadata(std::unique_ptr<Metadata> &
     data->SetLocalAssetSize(statInfo.st_size);
     auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
     if (dateModified == 0) {
-        dateModified = MediaFileUtils::UTCTimeMilliSeconds();
+        dateModified = MediaTimeUtils::UTCTimeMilliSeconds();
         MEDIA_WARN_LOG("Invalid dateModified from st_mtim, use current time instead: %{public}lld",
             static_cast<long long>(dateModified));
     }
