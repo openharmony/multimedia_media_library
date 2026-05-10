@@ -27,6 +27,7 @@ const std::string SHARE_RESTORE_MEDIA_INFO_FILE_NAME = "file_name";
 const std::string SHARE_RESTORE_MEDIA_INFO_DATE_ADDED = "date_added";
 const std::string SHARE_RESTORE_MEDIA_INFO_DATE_TAKEN = "date_taken";
 const std::string SHARE_RESTORE_MEDIA_INFO_DETAIL_TIME = "detail_time";
+const std::string SHARE_XML = "/data/storage/el2/base/preferences/media_share.xml";
 }  // namespace Media
 }  // namespace OHOS
 
