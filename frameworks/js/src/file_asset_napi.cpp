@@ -3342,7 +3342,6 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     if (CheckSystemApiKeys(env, inputKey) < 0) {
         return nullptr;
     }
-    NAPI_INFO_LOG("inputKey : %{public}s", inputKey.c_str());
     napi_value jsResult = nullptr;
     auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);
