@@ -24,6 +24,7 @@ ohos_shared_library("media_ipc_common") {
     "./include/config",
     "./include/utils",
     "./include/vo",
+    "./include/callback",
   ]
 
   include_utils_dirs = [

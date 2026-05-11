@@ -407,5 +407,12 @@ int32_t ParameterUtils::CheckCancelRequest(const CancelRequestReqBody &reqBody)
     CHECK_AND_RETURN_RET_LOG(reqBody.photoId.size() <= MAX_PHOTO_ID_LEN, -EINVAL, "Invalid photoId");
     return E_OK;
 }
+
+int32_t ParameterUtils::CheckCreateFileMgrAsset(const CreateFileMgrAssetReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.displayName.empty(), -EINVAL, "Invalid displayName");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.ownerAlbumId.empty(), -EINVAL, "Invalid ownerAlbumId");
+    return E_OK;
+}
 }  // namespace Media
 }  // namespace OHOS

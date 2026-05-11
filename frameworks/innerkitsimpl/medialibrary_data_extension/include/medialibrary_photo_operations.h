@@ -47,6 +47,28 @@ struct PhotoExtInfo {
     bool isHighQualityPicture = false;
 };
 
+struct MoveCacheFileInfo {
+    int32_t subtype;
+    std::string cachePath;
+    std::string destPath;
+    bool isEdited;
+    bool isOriginalImageResource;
+    int32_t effectMode;
+    MoveCacheFileInfo() : subtype(0), cachePath(""), destPath(""), isEdited(false), isOriginalImageResource(false),
+        effectMode(0)
+    {}
+    MoveCacheFileInfo(
+        int32_t subtype, std::string cachePath, std::string destPath, bool isEdited, bool isOriginalImageResource,
+            int32_t effectMode)
+        : subtype(subtype), cachePath(cachePath), destPath(destPath), isEdited(isEdited),
+          isOriginalImageResource(isOriginalImageResource), effectMode(effectMode)
+    {}
+    MoveCacheFileInfo(int32_t subtype, std::string cachePath, std::string destPath)
+        : subtype(subtype), cachePath(cachePath), destPath(destPath), isEdited(false), isOriginalImageResource(false),
+        effectMode(0)
+    {}
+};
+
 struct FileSizeResult {
     int64_t size = 0;
     int64_t totalEditDataSize = 0;
@@ -130,7 +152,7 @@ public:
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
     EXPORT static int32_t SaveSourceVideoFile(const std::string &assetPath, const bool &isTemp);
     EXPORT static int32_t AddFiltersToVideoExecute(const std::string &assetPath,
-        bool isSaveVideo, bool isNeedScan = false, int32_t viedoType = 0);
+        bool isSaveVideo, bool isNeedScan = false, const std::string &outputVideoPath = "");
     EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
         std::string &path, std::string &sourcePath);
     EXPORT static int32_t CopyVideoFile(const std::string& assetPath, bool toSource);
@@ -150,7 +172,7 @@ public:
     static int32_t UpdateOrientation(MediaLibraryCommand &cmd, const shared_ptr<FileAsset> &fileAsset,
         bool &orientationUpdated, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &assetRefresh,
         int32_t &errCode);
-    static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t UpdateFileAsset(MediaLibraryCommand &cmd, bool useDotCompatibleRule = false);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
     EXPORT static int32_t Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -177,6 +199,8 @@ public:
     EXPORT static void StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos);
     EXPORT static std::string GetLivePhotoCachePathById(const std::string &fileId);
 private:
+    static int32_t HandleAssetRenameAndMove(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> fileAsset,
+        bool isNameChanged, AccurateRefresh::AccurateRefreshBase &baseRefresh);
     static int32_t HandleSaveCameraPhoto(MediaLibraryCommand &cmd);
     static bool CheckAndReport(bool cond, const int32_t &fileId,
         CaptureFaultType faultType, const string &reason);
@@ -228,8 +252,7 @@ private:
     static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &imageCachePath, std::string &videoCachePath);
     static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);
-    static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
-        const std::string &cachePath, const std::string &destPath);
+    static int32_t MoveCacheFile(MediaLibraryCommand &cmd, const MoveCacheFileInfo &moveCacheFileInfo);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &currentOrientation);
@@ -308,7 +331,18 @@ private:
         FileSizeResult &result);
     static int32_t ProcessEditDataSizeWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
         FileSizeResult &result);
+    static int32_t HandleSubmitEditCache(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset,
+        bool isWriteGpsAdvanced, MoveCacheFileInfo& moveCacheFileInfo, int32_t id);
+    static int32_t RevertFiltersWithoutEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &path,
+        const std::string &sourcePath);
+    static int32_t RevertFiltersWithEditDataLivePhoto(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourcePath, const std::string &editData);
+    static int32_t RevertFiltersWithEditData(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourcePath, const std::string &editDataCameraPath);
+    static int32_t RevertLivePhotoAsset(const string &realPath, const string &imagePath,
+        const string &sourceImagePath, const string &sourceVideoPath);
     static bool SafeAccumulateSize(int64_t add, int64_t &acc);
+    static void ProcessAlbumIdInCreate(FileAsset &fileAsset, MediaLibraryCommand &cmd);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
     static std::string lastPhotoId_;

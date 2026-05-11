@@ -25,7 +25,9 @@
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "media_app_uri_permission_column.h"
+#include "ability_context_impl.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "media_library_extend_manager.h"
@@ -39,6 +41,11 @@
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "photo_album_column.h"
+#include "medialibrary_unistore_manager.h"
+#include "photo_file_utils.h"
+#include "userfile_manager_types.h"
+#include "media_column.h"
+#include "medialibrary_unittest_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -64,6 +71,7 @@ const int CLEAN_TIME = 1;
 const int SCAN_WAIT_TIME = 10;
 constexpr int32_t URI_SIZE = 101;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+const std::string FILE_MANAGER_TEST_DIR = "/storage/media/local/files/Docs/Download/ManagerTest/";
 
 struct UriParams {
     string path;
@@ -241,6 +249,123 @@ static string CreatePhotoAsset(string displayName)
     mediaLibraryManager->CloseAsset(uri, destFd);
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
+    }
+    return uri;
+}
+
+static std::shared_ptr<MediaLibraryRdbStore> TryGetRdbStoreWithInit()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore != nullptr) {
+        return rdbStore;
+    }
+
+    MEDIA_WARN_LOG("rdbStore is nullptr, try InitMediaLibraryMgr once");
+    MediaLibraryUnitTestUtils::Init();
+    return MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+}
+
+using RdbStorePtr = decltype(TryGetRdbStoreWithInit());
+
+static bool QueryAssetPathFromDb(const RdbStorePtr &rdbStore, const std::string &fileId, std::string &assetPath)
+{
+    std::string sql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + " AS path FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + MediaColumn::MEDIA_ID + " = ? LIMIT 1;";
+    std::vector<std::string> whereArgs = { fileId };
+    auto resultSet = rdbStore->QuerySql(sql, whereArgs);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "query photo path failed, fileId=%{public}s",
+        fileId.c_str());
+    if (resultSet->GoToFirstRow() != E_OK) {
+        resultSet->Close();
+        MEDIA_ERR_LOG("resultSet GoToFirstRow failed, fileId=%{public}s", fileId.c_str());
+        return false;
+    }
+    if (resultSet->GetString(0, assetPath) != E_OK || assetPath.empty()) {
+        resultSet->Close();
+        MEDIA_ERR_LOG("query result invalid, fileId=%{public}s", fileId.c_str());
+        return false;
+    }
+    resultSet->Close();
+    return true;
+}
+
+static bool EnsureAssetFileExists(const std::string &assetPath)
+{
+    if (MediaFileUtils::IsFileExists(assetPath)) {
+        return true;
+    }
+    std::string assetParentDir = MediaFileUtils::GetParentPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsDirExists(assetParentDir) ||
+        MediaFileUtils::CreateDirectory(assetParentDir), false,
+        "create asset parent dir failed: %{public}s", assetParentDir.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(assetPath), false,
+        "create asset file failed, path=%{public}s", assetPath.c_str());
+    return true;
+}
+
+static bool MoveAssetToFileManagerPath(const std::string &assetPath, std::string &storagePath)
+{
+    std::string fileName = MediaFileUtils::GetFileName(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!fileName.empty(), false, "failed to get fileName from assetPath=%{public}s",
+        assetPath.c_str());
+    storagePath = FILE_MANAGER_TEST_DIR;
+    if (storagePath.back() != '/') {
+        storagePath += "/";
+    }
+    storagePath += fileName;
+    std::string parentDir = MediaFileUtils::GetParentPath(storagePath);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsDirExists(parentDir) || MediaFileUtils::CreateDirectory(parentDir),
+        false, "create parentDir failed: %{public}s", parentDir.c_str());
+    CHECK_AND_RETURN_RET_LOG(PhotoFileUtils::CheckFileManagerRealPath(storagePath), false,
+        "invalid file manager real path: %{public}s", storagePath.c_str());
+    if (MediaFileUtils::IsFileExists(storagePath)) {
+        MediaFileUtils::DeleteFile(storagePath);
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileAndDelSrc(assetPath, storagePath), false,
+        "copy and delete source failed, src=%{public}s, dst=%{public}s", assetPath.c_str(), storagePath.c_str());
+    return true;
+}
+
+static bool UpdateFileManagerSourceInDb(const RdbStorePtr &rdbStore, const std::string &fileId,
+    const std::string &storagePath)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::FILE_MANAGER));
+    values.PutString(PhotoColumn::PHOTO_STORAGE_PATH, storagePath);
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t changedRows = 0;
+    int32_t updateRet = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updateRet == E_OK && changedRows > 0, false,
+        "update db failed, ret=%{public}d, changedRows=%{public}d, fileId=%{public}s",
+        updateRet, changedRows, fileId.c_str());
+    return true;
+}
+
+static bool ConvertAssetToFileManager(const std::string &uri)
+{
+    CHECK_AND_RETURN_RET_LOG(!uri.empty() && !FILE_MANAGER_TEST_DIR.empty(), false,
+        "invalid input, uri empty: %{public}d, testDir empty: %{public}d", uri.empty(), FILE_MANAGER_TEST_DIR.empty());
+    std::string fileId = MediaFileUtils::GetIdFromUri(uri);
+    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), false, "failed to parse fileId from uri: %{public}s", uri.c_str());
+    auto rdbStore = TryGetRdbStoreWithInit();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
+    std::string assetPath;
+    CHECK_AND_RETURN_RET_LOG(QueryAssetPathFromDb(rdbStore, fileId, assetPath), false,
+        "query assetPath failed, fileId=%{public}s", fileId.c_str());
+    CHECK_AND_RETURN_RET_LOG(EnsureAssetFileExists(assetPath), false,
+        "ensure asset file exists failed, path=%{public}s", assetPath.c_str());
+    std::string storagePath;
+    CHECK_AND_RETURN_RET_LOG(MoveAssetToFileManagerPath(assetPath, storagePath), false,
+        "move asset to file manager path failed, fileId=%{public}s", fileId.c_str());
+    return UpdateFileManagerSourceInDb(rdbStore, fileId, storagePath);
+}
+
+static std::string CreateFileManagerAsset(const std::string &displayName)
+{
+    std::string uri = CreatePhotoAsset(displayName);
+    if (!uri.empty()) {
+        ConvertAssetToFileManager(uri);
     }
     return uri;
 }
@@ -2145,29 +2270,29 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DeleteAssets_test_003, Tes
     MEDIA_INFO_LOG("MediaLibraryManager_DeleteAssets_test_003 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenAsset_test, TestSize.Level1)
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_file_manager_test_001, TestSize.Level1)
 {
-    EXPECT_NE(mediaLibraryExtendManager, nullptr);
-    string uri = "test";
-    int fd = mediaLibraryExtendManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE, HideSensitiveType::ALL_DESENSITIZE);
-    EXPECT_LT(fd, 0);
-}
+    MEDIA_INFO_LOG("MediaLibraryManager_file_manager_test_001 enter");
+    string displayName = "test_file_manager.jpg";
+    string uri = CreateFileManagerAsset(displayName);
+    ASSERT_NE(uri, "");
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_GT(destFd, 0);
+    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    ASSERT_NE(resWrite, -1);
+    mediaLibraryManager->CloseAsset(uri, destFd);
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_SendBrokerChangeOperation_test_001, TestSize.Level1)
-{
-    EXPECT_NE(mediaLibraryExtendManager, nullptr);
-    string operation = "test";
-    int ret = mediaLibraryExtendManager->SendBrokerChangeOperation(operation);
-    EXPECT_EQ(ret, 0);
+    int32_t srcFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    int64_t srcLen = lseek(srcFd, 0, SEEK_END);
+    lseek(srcFd, 0, SEEK_SET);
+    unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
+    ASSERT_NE(buf, nullptr);
+    read(srcFd, buf, srcLen);
+    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    free(buf);
+    mediaLibraryManager->CloseAsset(uri, srcFd);
 }
-
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_SendBrokerChangeOperation_test_002, TestSize.Level1)
-{
-    EXPECT_NE(mediaLibraryExtendManager, nullptr);
-    string uri = "test";
-    vector<std::string> uris = {uri};
-    int ret = mediaLibraryExtendManager->GetCompressAssetSize(uris);
-    EXPECT_EQ(ret, E_ERR);
-}
+#endif
 } // namespace Media
 } // namespace OHOS

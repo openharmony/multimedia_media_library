@@ -60,6 +60,8 @@ enum class AssetChangeOperation {
     SET_APPLINK_STATE,
     SET_LIVEPHOTO_4D_STATUS,
     SET_MOVING_PHOTO_VERSION,
+    SET_HIDDEN_ATTRIBUTE,
+    SET_DISPLAY_NAME_BY_FILE,
 };
 
 enum class AddResourceMode {
@@ -174,6 +176,8 @@ private:
     EXPORT static napi_value JSDeleteAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLivePhoto4dStatus(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetMovingPhotoVersion(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHiddenAttribute(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetDisplayNameByFile(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();

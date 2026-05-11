@@ -29,6 +29,7 @@
 #include "refresh_business_name.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "photo_file_utils.h"
 
 namespace OHOS::Media {
 using MediaData = PhotoOwnerAlbumIdOperation::MediaData;
@@ -396,6 +397,9 @@ MediaData PhotoOwnerAlbumIdOperation::BuildAlbumInfoByLPath(const std::string &l
     if (lPathLower.find(target) == 0) {
         albumType = static_cast<int32_t>(PhotoAlbumType::USER);
         albumSubType = static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC);
+    }
+    if (PhotoFileUtils::CheckFileManagerLPath(lPath)) {
+        albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER);
     }
     return this->BuildAlbumInfoByLPath(lPath, albumType, albumSubType);
 }

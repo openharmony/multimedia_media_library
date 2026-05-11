@@ -50,6 +50,18 @@ ohos_unittest("medialibrary_video_mode_test") {
     "${MEDIALIB_COMMON_PATH}:media_library_common",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
+
+  defines = []
+
+  if (media_library_lake_enable) {
+    include_dirs += [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/include",
+    ]
+    sources += [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scan_utils.cpp",
+    ]
+    defines += [ "MEDIALIBRARY_LAKE_SUPPORT" ]
+  }
  
   external_deps = [
     "ability_base:configuration",
@@ -68,6 +80,7 @@ ohos_unittest("medialibrary_video_mode_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "image_framework:image_native",
     "ipc:ipc_single",

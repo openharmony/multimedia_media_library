@@ -24,6 +24,7 @@
 
 #include "avmetadatahelper.h"
 #include "directory_ex.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -42,6 +43,7 @@ const std::string LIVE_PHOTO_CINEMAGRAPH_INFO = "CinemagraphInfo";
 const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
 const std::string LIVE_PHOTO_SIGHT_TREMBLE_META_DATA = "SightTrembleMetadata";
 const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
+const std::string LOCAL_ROOT_MEDIA_DIR = "/storage/media/local/files/";
 constexpr int32_t HEX_BASE = 16;
 constexpr int64_t AUTO_PLAY_DURATION_MS = 600;
 
@@ -491,6 +493,60 @@ int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhoto
     return E_OK;
 }
 
+int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const std::string& movingPhotoImagePath,
+    const std::string& movingPhotoVideoPath, const std::string& movingPhotoExtraDataPath,
+    int64_t coverPosition, std::string &livePhotoPath, int32_t userId)
+{
+    string imagePath = MediaPathUtils::AppendUserId(movingPhotoImagePath, userId);
+    string videoPath = MediaPathUtils::AppendUserId(movingPhotoVideoPath, userId);
+    string extraPath = MediaPathUtils::AppendUserId(movingPhotoExtraDataPath, userId);
+    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagePath, userId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir),
+        E_HAS_FS_ERROR, "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
+    
+    string fileName = MediaFileUtils::GetFileName(movingPhotoImagePath);
+    string cachePath = cacheDir + "/livePhoto_" + fileName;
+    
+    string absImagePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(imagePath, absImagePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d",
+        imagePath.c_str(), errno);
+    UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
+    CHECK_AND_RETURN_RET_LOG(imageFd.Get() >= 0, E_ERR,
+        "failed to open image file, errno: %{public}d", errno);
+    
+    string absVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(videoPath, absVideoPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d",
+        videoPath.c_str(), errno);
+    UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
+    CHECK_AND_RETURN_RET_LOG(videoFd.Get() >= 0, E_ERR,
+        "failed to open video file, errno: %{public}d", errno);
+    
+    if (MediaFileUtils::CreateAsset(cachePath) != E_OK) {
+        MEDIA_ERR_LOG("Failed to create cache file, path:%{private}s", cachePath.c_str());
+        return E_ERR;
+    }
+    
+    string absCachePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(cachePath, absCachePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d",
+        cachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
+    CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_ERR,
+        "failed to open live photo file, errno: %{public}d", errno);
+    
+    if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, coverPosition) == E_ERR) {
+        MEDIA_ERR_LOG("failed to MergeFile file");
+        if (!MediaFileUtils::DeleteFile(absCachePath)) {
+            MEDIA_ERR_LOG("failed to delete cache file, errno: %{public}d", errno);
+        }
+        return E_ERR;
+    }
+    livePhotoPath = absCachePath;
+    return E_OK;
+}
+
 bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
 {
     string absPath;
@@ -523,67 +579,6 @@ bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
     return true;
 }
 
-int32_t MovingPhotoFileUtils::GetLivePhotoSize(int32_t fd, int64_t &liveSize)
-{
-    if (fd < 0) {
-        MEDIA_ERR_LOG("invalid live photo fd");
-        return E_ERR;
-    }
-    if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
-        MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
-        return E_ERR;
-    }
-    char buffer[LIVE_TAG_LEN + 1];
-    ssize_t bytesRead = read(fd, buffer, LIVE_TAG_LEN);
-    if (bytesRead == E_ERR) {
-        MEDIA_ERR_LOG("failed to read file, errno: %{public}d", errno);
-        return E_ERR;
-    }
-    buffer[bytesRead] = '\0';
-    for (size_t i = 0; i < LIVE_TAG.size(); i++) {
-        if (LIVE_TAG[i] != buffer[i]) {
-            return E_ERR;
-        }
-    }
-    liveSize = atoi(buffer + LIVE_TAG.length());
-    return E_OK;
-}
-
-static int32_t SendLivePhoto(const int32_t &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)
-{
-    struct stat64 statSrc {};
-    CHECK_AND_RETURN_RET_LOG(livePhotoFd >= 0, livePhotoFd, "Failed to check src fd of live photo");
-    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd, &statSrc) == 0, E_HAS_FS_ERROR,
-        "Failed to get file state of live photo, errno = %{public}d", errno);
-    off_t totalSize = statSrc.st_size;
-    CHECK_AND_RETURN_RET_LOG(sizeToSend <= totalSize - offset, E_INVALID_LIVE_PHOTO, "Failed to check sizeToSend");
-
-    if (!MediaFileUtils::IsFileExists(destPath) && MediaFileUtils::CreateAsset(destPath) != E_OK) {
-        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", destPath.c_str());
-        return E_HAS_FS_ERROR;
-    }
-    string absDestPath;
-    if (!PathToRealPath(destPath, absDestPath)) {
-        MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d", destPath.c_str(), errno);
-        return E_HAS_FS_ERROR;
-    }
-    UniqueFd destFd(open(absDestPath.c_str(), O_WRONLY));
-    if (destFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to open dest path:%{private}s, errno:%{public}d", absDestPath.c_str(), errno);
-        return destFd.Get();
-    }
-
-    while (sizeToSend > 0) {
-        ssize_t sent = sendfile(destFd.Get(), livePhotoFd, &offset, sizeToSend);
-        if (sent < 0) {
-            MEDIA_ERR_LOG("Failed to sendfile with errno=%{public}d", errno);
-            return sent;
-        }
-        sizeToSend -= sent;
-    }
-    return E_OK;
-}
-
 static bool IsValidHexInteger(const string &hexStr)
 {
     constexpr int32_t HEX_INT_LENGTH = 8;
@@ -604,28 +599,6 @@ static bool IsValidHexInteger(const string &hexStr)
         return false;
     }
     return true;
-}
-
-static int32_t ReadLivePhoto(const int32_t &fd, void *buffer, off_t needSize, off_t offset)
-{
-    if (buffer == nullptr) {
-        return E_OK;
-    }
-
-    if (lseek(fd, offset, SEEK_SET) == E_ERR) {
-        MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
-        return E_ERR;
-    }
-    memset_s(buffer, needSize + 1, 0, needSize + 1);
-    while (needSize > 0) {
-        ssize_t bytesRead = read(fd, buffer, needSize);
-        if (bytesRead < 0) {
-            MEDIA_ERR_LOG("Failed to read from live photo, errno=%{public}d", errno);
-            return bytesRead;
-        }
-        needSize -= bytesRead;
-    }
-    return E_OK;
 }
 
 static int32_t GetExtraDataSize(int32_t livePhotoFd, int64_t &extraDataSize, int64_t maxFileSize)
@@ -682,6 +655,143 @@ static int32_t GetExtraDataSize(int32_t livePhotoFd, int64_t &extraDataSize, int
     return E_OK;
 }
 
+bool MovingPhotoFileUtils::IsLivePhoto(const int32_t fd)
+{
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, false, "fd is invalid");
+    struct stat64 st;
+    CHECK_AND_RETURN_RET_LOG(fstat64(fd, &st) == 0, false,
+        "Failed to get file state of live photo, errno:%{public}d", errno);
+    int64_t totalSize = st.st_size;
+    CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, false,
+        "Failed to check live photo, total size is %{public}" PRId64, totalSize);
+
+    char liveTag[LIVE_TAG_LEN + 1] = {0};
+    // 保存当前位置
+    off_t savedPos = lseek(fd, 0, SEEK_CUR);
+    if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    if (read(fd, liveTag, LIVE_TAG_LEN) == E_ERR) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    if (!MediaStringUtils::StartsWith(liveTag, LIVE_TAG)) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
+    imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    if (imageSize <= 0) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    int32_t err = GetExtraDataSize(fd, extraDataSize, totalSize - imageSize);
+    if (err != E_OK) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    videoSize = totalSize - imageSize - extraDataSize;
+    if (videoSize <= 0) {
+        lseek(fd, savedPos, SEEK_SET);
+        return false;
+    }
+    // 恢复之前的位置
+    lseek(fd, savedPos, SEEK_SET);
+    return true;
+}
+
+int32_t MovingPhotoFileUtils::GetLivePhotoSize(const int32_t fd, int64_t &liveSize)
+{
+    if (fd < 0) {
+        MEDIA_ERR_LOG("invalid live photo fd");
+        return E_ERR;
+    }
+    if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
+        MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    char buffer[LIVE_TAG_LEN + 1];
+    ssize_t bytesRead = read(fd, buffer, LIVE_TAG_LEN);
+    if (bytesRead == E_ERR) {
+        MEDIA_ERR_LOG("failed to read file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    buffer[bytesRead] = '\0';
+    for (size_t i = 0; i < LIVE_TAG.size(); i++) {
+        if (LIVE_TAG[i] != buffer[i]) {
+            return E_ERR;
+        }
+    }
+    liveSize = atoi(buffer + LIVE_TAG.length());
+    return E_OK;
+}
+
+bool MovingPhotoFileUtils::IsLivePhotoAsset(const string &realPath)
+{
+    return !realPath.empty() && MediaFileUtils::IsFileExists(realPath) && IsLivePhoto(realPath);
+}
+
+static int32_t SendLivePhoto(const int32_t &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)
+{
+    struct stat64 statSrc {};
+    CHECK_AND_RETURN_RET_LOG(livePhotoFd >= 0, livePhotoFd, "Failed to check src fd of live photo");
+    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd, &statSrc) == 0, E_HAS_FS_ERROR,
+        "Failed to get file state of live photo, errno = %{public}d", errno);
+    off_t totalSize = statSrc.st_size;
+    CHECK_AND_RETURN_RET_LOG(sizeToSend <= totalSize - offset, E_INVALID_LIVE_PHOTO, "Failed to check sizeToSend");
+
+    if (!MediaFileUtils::IsFileExists(destPath) && MediaFileUtils::CreateAsset(destPath) != E_OK) {
+        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", destPath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    string absDestPath;
+    if (!PathToRealPath(destPath, absDestPath)) {
+        MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d", destPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+    UniqueFd destFd(open(absDestPath.c_str(), O_WRONLY));
+    if (destFd.Get() < 0) {
+        MEDIA_ERR_LOG("Failed to open dest path:%{private}s, errno:%{public}d", absDestPath.c_str(), errno);
+        return destFd.Get();
+    }
+
+    while (sizeToSend > 0) {
+        ssize_t sent = sendfile(destFd.Get(), livePhotoFd, &offset, sizeToSend);
+        if (sent < 0) {
+            MEDIA_ERR_LOG("Failed to sendfile with errno=%{public}d", errno);
+            return sent;
+        }
+        sizeToSend -= sent;
+    }
+    return E_OK;
+}
+
+static int32_t ReadLivePhoto(const int32_t &fd, void *buffer, off_t needSize, off_t offset)
+{
+    if (buffer == nullptr) {
+        return E_OK;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == E_ERR) {
+        MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
+        return E_ERR;
+    }
+    memset_s(buffer, needSize + 1, 0, needSize + 1);
+    while (needSize > 0) {
+        ssize_t bytesRead = read(fd, buffer, needSize);
+        if (bytesRead < 0) {
+            MEDIA_ERR_LOG("Failed to read from live photo, errno=%{public}d", errno);
+            return bytesRead;
+        }
+        needSize -= bytesRead;
+    }
+    return E_OK;
+}
+
 int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoPath, const string &movingPhotoImagePath,
     const string &movingPhotoVideoPath, const string &extraDataPath)
 {
@@ -696,40 +806,30 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open live photo:%{private}s, errno:%{public}d", absLivePhotoPath.c_str(), errno);
 
-    struct stat64 st;
-    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
-        "Failed to get file state of live photo, errno:%{public}d", errno);
-    int64_t totalSize = st.st_size;
-    CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
-        "Failed to check live photo, total size is %{public}" PRId64, totalSize);
-    char liveTag[LIVE_TAG_LEN + 1] = {0};
-    CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -LIVE_TAG_LEN, SEEK_END) != -1, E_HAS_FS_ERROR,
-        "Failed to lseek live tag, errno:%{public}d", errno);
-    CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), liveTag, LIVE_TAG_LEN) != -1, E_HAS_FS_ERROR,
-        "Failed to read live tag, errno:%{public}d", errno);
-    CHECK_AND_RETURN_RET_LOG(MediaStringUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
-
-    int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
-    int64_t imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
     int64_t extraDataSize = 0;
-    int32_t err = GetExtraDataSize(livePhotoFd.Get(), extraDataSize, totalSize - imageSize);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
-        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
-    int64_t videoSize = totalSize - imageSize - extraDataSize;
-    CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
-        "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
+    int32_t err = GetMovingPhotoDetailedSize(livePhotoFd.Get(), imageSize, videoSize, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to get detailed size of moving photo");
+
     off_t offset = 0;
     bool isSameImagePath = livePhotoPath.compare(movingPhotoImagePath) == 0;
     string tempImagePath = isSameImagePath ? movingPhotoImagePath + ".temp" : movingPhotoImagePath;
-    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), tempImagePath, imageSize, offset)) == E_OK, err,
-        "Failed to copy image of live photo");
-    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), movingPhotoVideoPath, videoSize, offset)) == E_OK,
-        err, "Failed to copy video of live photo");
+    if (!movingPhotoImagePath.empty()) {
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), tempImagePath, imageSize, offset)) == E_OK,
+            err, "Failed to copy image of live photo");
+    }
+    if (!movingPhotoVideoPath.empty()) {
+        offset = imageSize;
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), movingPhotoVideoPath, videoSize, offset)) ==
+            E_OK, err, "Failed to copy video of live photo");
+    }
     if (!extraDataPath.empty()) {
+        offset = imageSize + videoSize;
         CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), extraDataPath, extraDataSize, offset)) == E_OK,
             err, "Failed to copy extra data of live photo");
     }
-    if (isSameImagePath) {
+    if (!movingPhotoImagePath.empty() && isSameImagePath) {
         err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str());
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to rename image:%{public}d, errno:%{public}d", err, errno);
     }
@@ -762,6 +862,38 @@ int32_t MovingPhotoFileUtils::GetMovingPhotoDetailedSize(const int32_t fd,
     CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
     return E_OK;
+}
+
+bool MovingPhotoFileUtils::CheckMovingPhotoDetailedSize(const int32_t fd)
+{
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, false, "fd is invalid");
+    struct stat64 st;
+    CHECK_AND_RETURN_RET_LOG(fstat64(fd, &st) == 0, false,
+        "Failed to get file state of live photo, errno:%{public}d", errno);
+    int64_t totalSize = st.st_size;
+    CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, false,
+        "Failed to check live photo, total size is %{public}" PRId64, totalSize);
+    char liveTag[LIVE_TAG_LEN + 1] = {0};
+    CHECK_AND_RETURN_RET_LOG(lseek(fd, -LIVE_TAG_LEN, SEEK_END) != -1, false,
+        "Failed to lseek live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(read(fd, liveTag, LIVE_TAG_LEN) != -1, false,
+        "Failed to read live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(MediaStringUtils::StartsWith(liveTag, LIVE_TAG), false, "Invalid live photo");
+
+    int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
+    imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    CHECK_AND_RETURN_RET_LOG(imageSize > 0, false,
+        "Failed to check live photo, image size:%{public}" PRId64, imageSize);
+    int32_t err = GetExtraDataSize(fd, extraDataSize, totalSize - imageSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
+    videoSize = totalSize - imageSize - extraDataSize;
+    CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, false,
+        "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
+    return true;
 }
 
 int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const int32_t fd, const string &movingPhotoImagePath,
@@ -864,6 +996,235 @@ int32_t MovingPhotoFileUtils::GetCoverPosition(const std::string &videoPath, con
     return GetMovingPhotoCoverPosition(uniqueFd, st.st_size, frameIndex, coverPosition, scene);
 }
 
+static int32_t GetCoverTimeFromVideoMeta(const string &videoPath, float &coverTime)
+{
+    coverTime = 0.0f;
+    string absVideoPath;
+    if (!PathToRealPath(videoPath, absVideoPath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
+    if (videoFd.Get() < 0) {
+        MEDIA_ERR_LOG("Failed to open %{private}s, errno: %{public}d", absVideoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+    struct stat64 videoSt;
+    if (fstat64(videoFd.Get(), &videoSt) != 0) {
+        MEDIA_ERR_LOG("Failed to get file state, errno: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("AVMetadataHelper");
+    shared_ptr<AVMetadataHelper> helper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    if (helper == nullptr) {
+        MEDIA_ERR_LOG("AV metadata helper is null");
+        return E_AVMETADATA;
+    }
+
+    int32_t err = helper->SetSource(videoFd.Get(), 0, videoSt.st_size, AV_META_USAGE_META_ONLY);
+    tracer.Finish();
+    if (err != 0) {
+        MEDIA_ERR_LOG("SetSource failed for the given fd, err = %{public}d", err);
+        return E_AVMETADATA;
+    }
+
+    tracer.Start("AVMetadataHelper->GetAVMetadata");
+    shared_ptr<Meta> meta = helper->GetAVMetadata();
+    tracer.Finish();
+    if (meta == nullptr) {
+        MEDIA_ERR_LOG("Failed to get AVMetadata");
+        return E_AVMETADATA;
+    }
+
+    shared_ptr<Meta> customMeta = make_shared<Meta>();
+    bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
+    if (isValid && customMeta != nullptr) {
+        bool hasCoverTime = customMeta->GetData(PHOTO_DATA_VIDEO_COVER_TIME, coverTime);
+        if (hasCoverTime) {
+            MEDIA_INFO_LOG("Get coverTime from customMeta: %{public}f", coverTime);
+            return E_OK;
+        }
+    }
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::GetCoverPositionFromExtraData(const string &videoPath,
+    const string &extraDataPath, int64_t &coverPosition)
+{
+    string absExtraDataPath;
+    if (!PathToRealPath(extraDataPath, absExtraDataPath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s, errno: %{public}d", extraDataPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
+    if (extraDataFd.Get() < 0) {
+        MEDIA_ERR_LOG("Failed to open %{private}s, errno: %{public}d", absExtraDataPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    string versionTag;
+    char buffer[VERSION_TAG_LEN + 1] = {0};
+    ssize_t bytesRead = read(extraDataFd.Get(), buffer, VERSION_TAG_LEN);
+    if (bytesRead < 0) {
+        MEDIA_ERR_LOG("Failed to read extra data, errno: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+    versionTag = string(buffer, bytesRead);
+
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo = false;
+    int32_t err = GetVersionAndFrameNum(versionTag, version, frameIndex, hasCinemagraphInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get version and frameNum from extraData, err: %{public}d", err);
+        return err;
+    }
+
+    uint64_t coverPosU64 = 0;
+    err = GetCoverPosition(videoPath, frameIndex, coverPosU64);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get coverPosition from video, err: %{public}d", err);
+        return err;
+    }
+    coverPosition = static_cast<int64_t>(coverPosU64);
+    MEDIA_INFO_LOG("Get coverPosition from frameIndex %{public}u: %{public}" PRId64, frameIndex, coverPosition);
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::GetLivePhotoCoverPosition(const std::string &videoPath,
+    const std::string &livePhotoPath, int64_t &coverPosition)
+{
+    coverPosition = 0;
+    float coverTime = 0.0f;
+    int32_t err = GetCoverTimeFromVideoMeta(videoPath, coverTime);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get cover time from video meta, err: %{public}d", err);
+        return err;
+    }
+    if (coverTime > 0) {
+        constexpr int32_t MS_TO_US = 1000;
+        coverPosition = static_cast<int64_t>(coverTime * MS_TO_US);
+        MEDIA_INFO_LOG("Get coverPosition from customMeta: %{public}" PRId64, coverPosition);
+        return E_OK;
+    }
+
+    MEDIA_INFO_LOG("Video does not contain cover position, try to get from livePhoto");
+    string absLivePhotoPath;
+    if (!PathToRealPath(livePhotoPath, absLivePhotoPath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s, errno: %{public}d", livePhotoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    UniqueFd livePhotoFd(open(absLivePhotoPath.c_str(), O_RDONLY));
+    if (livePhotoFd.Get() < 0) {
+        MEDIA_ERR_LOG("Failed to open %{private}s, errno: %{public}d", absLivePhotoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo = false;
+    err = GetVersionAndFrameNum(livePhotoFd.Get(), version, frameIndex, hasCinemagraphInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get version and frameNum from livePhoto, err: %{public}d", err);
+        return err;
+    }
+
+    uint64_t coverPosU64 = 0;
+    err = GetCoverPosition(videoPath, frameIndex, coverPosU64);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get coverPosition from video, err: %{public}d", err);
+        return err;
+    }
+    coverPosition = static_cast<int64_t>(coverPosU64);
+    MEDIA_INFO_LOG("Get coverPosition from frameIndex %{public}u: %{public}" PRId64, frameIndex, coverPosition);
+    return E_OK;
+}
+
+static int32_t ParseLivePhotoCoverPosition(const UniqueFd &uniqueFd, int64_t &coverPosition,
+    shared_ptr<AVMetadataHelper> &helper)
+{
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo = false;
+    int32_t err = MovingPhotoFileUtils::GetVersionAndFrameNum(uniqueFd.Get(), version, frameIndex, hasCinemagraphInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get version and frameNum from livePhoto, err: %{public}d", err);
+        return err;
+    }
+
+    uint64_t coverPosU64 = 0;
+    err = helper->GetTimeByFrameIndex(frameIndex, coverPosU64);
+    if (err != 0) {
+        MEDIA_ERR_LOG("Failed to GetTimeByFrameIndex, err = %{public}d", err);
+        return E_AVMETADATA;
+    }
+
+    coverPosition = static_cast<int64_t>(coverPosU64);
+    MEDIA_INFO_LOG("Get coverPosition from frameIndex %{public}u: %{public}" PRId64, frameIndex, coverPosition);
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::GetLivePhotoCoverPosition(const std::string livePhotoPath, int64_t &coverPosition)
+{
+    string absLivePhotoPath;
+    if (!PathToRealPath(livePhotoPath, absLivePhotoPath)) {
+        MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d", livePhotoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    UniqueFd livePhotoFd(open(absLivePhotoPath.c_str(), O_RDONLY));
+    if (livePhotoFd.Get() < 0) {
+        MEDIA_ERR_LOG("Failed to open %{private}s, errno: %{public}d", absLivePhotoPath.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = GetMovingPhotoDetailedSize(livePhotoFd.Get(), imageSize, videoSize, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to get detailed size of moving photo");
+    struct stat64 st;
+    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
+        "Failed to get file state of live photo, errno:%{public}d", errno);
+
+    shared_ptr<AVMetadataHelper> helper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    if (helper == nullptr) {
+        MEDIA_ERR_LOG("AV metadata helper is null");
+        return E_AVMETADATA;
+    }
+
+    err = helper->SetSource(livePhotoFd.Get(), imageSize, videoSize, AV_META_USAGE_META_ONLY);
+    if (err != 0) {
+        MEDIA_ERR_LOG("SetSource failed for the given fd, err = %{public}d", err);
+        return E_AVMETADATA;
+    }
+
+    std::shared_ptr<Meta> meta = helper->GetAVMetadata();
+    shared_ptr<Meta> customMeta = make_shared<Meta>();
+    bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
+    if (!isValid || customMeta == nullptr) {
+        MEDIA_WARN_LOG("Unable to retrieve customInfo from Meta");
+        customMeta = nullptr;
+        return ParseLivePhotoCoverPosition(livePhotoFd, coverPosition, helper);
+    }
+
+    float metaCoverPosition = 0.0f;
+    isValid = customMeta->GetData(PHOTO_DATA_VIDEO_COVER_TIME, metaCoverPosition);
+    if (!isValid) {
+        MEDIA_INFO_LOG("Video of moving photo does not contain cover position");
+        return ParseLivePhotoCoverPosition(livePhotoFd, coverPosition, helper);
+    }
+    // convert cover position from ms(float) to us(int64_t)
+    constexpr int32_t MS_TO_US = 1000;
+    coverPosition = static_cast<int64_t>(metaCoverPosition * MS_TO_US);
+    return E_OK;
+}
+
 int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(const string &tag,
     uint32_t &version, uint32_t &frameIndex, bool &hasCinemagraphInfo)
 {
@@ -914,10 +1275,17 @@ string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath, in
 
 string MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(const string &imagePath, int32_t userId)
 {
-    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaStringUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
+    if (imagePath.empty()) {
+        MEDIA_ERR_LOG("imagePath is null");
         return "";
     }
-    return MediaPathUtils::AppendUserId(MEDIA_EXTRA_DATA_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
+    if (MediaStringUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
+        return MediaPathUtils::AppendUserId(MEDIA_EXTRA_DATA_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
+    } else if (MediaStringUtils::StartsWith(imagePath, LOCAL_ROOT_MEDIA_DIR)) {
+        return MediaPathUtils::AppendUserId(MEDIA_EXTRA_DATA_DIR, userId) +
+            imagePath.substr(LOCAL_ROOT_MEDIA_DIR.length());
+    }
+    return "";
 }
 
 string MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(const string &imagePath, int32_t userId)
@@ -941,10 +1309,16 @@ string MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(const string& imagePa
 
 string MovingPhotoFileUtils::GetLivePhotoCacheDir(const string &imagePath, int32_t userId)
 {
-    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaStringUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
+    if (imagePath.empty()) {
+        MEDIA_ERR_LOG("imagePath is null");
         return "";
     }
-    return MediaPathUtils::AppendUserId(MEDIA_CACHE_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
+    if (MediaStringUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
+        return MediaPathUtils::AppendUserId(MEDIA_CACHE_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
+    } else if (MediaStringUtils::StartsWith(imagePath, LOCAL_ROOT_MEDIA_DIR)) {
+        return MediaPathUtils::AppendUserId(MEDIA_CACHE_DIR, userId) + imagePath.substr(LOCAL_ROOT_MEDIA_DIR.length());
+    }
+    return "";
 }
 
 string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &imagePath, int32_t userId)

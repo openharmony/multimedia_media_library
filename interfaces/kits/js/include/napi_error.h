@@ -34,6 +34,8 @@ struct NapiError {
     void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     EXPORT void SaveError(int32_t ret);
     EXPORT void SaveRealErr(int32_t ret);
+    EXPORT void SaveSceneErr(int32_t ret);
+    EXPORT void SaveMoveError(int32_t ret);
     EXPORT void HandleError(napi_env env, napi_value &errorObj);
     EXPORT static void ThrowError(napi_env env, int32_t err, const std::string &errMsg = "");
     EXPORT static void ThrowError(napi_env env, int32_t err, const char *func, int32_t line,

@@ -24,8 +24,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "file_parser.h"
-#include "lake_file_utils.h"
+#include "lake_file_parser.h"
+#include "file_scan_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -241,7 +241,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Test_001, TestSize.Level1)
     std::string content = "test image content";
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
     EXPECT_EQ(fileInfo.displayName, "test_image.jpg");
@@ -255,7 +255,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Test_002, TestSize.Level1)
     std::string content = "test video content";
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::FULL);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::FULL);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_VIDEO_PATH);
     EXPECT_EQ(fileInfo.displayName, "test_video.mp4");
@@ -266,7 +266,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Test_002, TestSize.Level1)
 HWTEST_F(FileParserTest, Constructor_Path_Test_003, TestSize.Level1)
 {
     std::string nonExistentPath = "/data/test/nonexistent_file.jpg";
-    FileParser parser(nonExistentPath, LakeScanMode::INCREMENT);
+    LakeFileParser parser(nonExistentPath, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_TRUE(fileInfo.filePath.empty());
 }
@@ -277,13 +277,13 @@ HWTEST_F(FileParserTest, Constructor_NotifyInfo_Test_001, TestSize.Level1)
     std::string content = "test image content";
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
 
@@ -300,13 +300,13 @@ HWTEST_F(FileParserTest, Constructor_NotifyInfo_Test_002, TestSize.Level1)
     MediaFileUtils::CreateFile(newPath);
     MediaFileUtils::WriteStrToFile(newPath, content);
 
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::MOD;
     notifyInfo.beforePath = TEST_IMAGE_PATH;
     notifyInfo.afterPath = newPath;
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, newPath);
 
@@ -320,7 +320,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Test_001, TestSize.Level1)
     std::string content = "test image content";
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, true);
 
@@ -333,7 +333,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Test_002, TestSize.Level1)
     std::string content = "test video content";
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, true);
 
@@ -347,7 +347,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Test_003, TestSize.Level1)
     std::string content = "test text content";
     MediaFileUtils::WriteStrToFile(testPath, content);
 
-    FileParser parser(testPath, LakeScanMode::INCREMENT);
+    LakeFileParser parser(testPath, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, false);
 
@@ -360,7 +360,7 @@ HWTEST_F(FileParserTest, CheckSizeValid_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckSizeValid();
     EXPECT_EQ(result, true);
 
@@ -373,7 +373,7 @@ HWTEST_F(FileParserTest, CheckSizeValid_Test_002, TestSize.Level1)
     std::string content(512, 'a');
     MediaFileUtils::WriteStrToFile(TEST_SMALL_FILE, content);
 
-    FileParser parser(TEST_SMALL_FILE, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_SMALL_FILE, ScanMode::INCREMENT);
     bool result = parser.CheckSizeValid();
     EXPECT_EQ(result, false);
 
@@ -386,7 +386,7 @@ HWTEST_F(FileParserTest, CheckSizeValid_Test_003, TestSize.Level1)
     std::string content(1025, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckSizeValid();
     EXPECT_EQ(result, true);
 
@@ -399,7 +399,7 @@ HWTEST_F(FileParserTest, CheckIsNotHidden_Test_001, TestSize.Level1)
     std::string content = "test image content";
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckIsNotHidden();
     EXPECT_EQ(result, true);
 
@@ -412,7 +412,7 @@ HWTEST_F(FileParserTest, CheckIsNotHidden_Test_002, TestSize.Level1)
     std::string content = "test hidden content";
     MediaFileUtils::WriteStrToFile(TEST_HIDDEN_PATH, content);
 
-    FileParser parser(TEST_HIDDEN_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_HIDDEN_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckIsNotHidden();
     EXPECT_EQ(result, false);
 
@@ -425,7 +425,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, true);
 
@@ -438,7 +438,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_HIDDEN_PATH, content);
 
-    FileParser parser(TEST_HIDDEN_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_HIDDEN_PATH, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, false);
 
@@ -451,7 +451,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Test_003, TestSize.Level1)
     std::string content(512, 'a');
     MediaFileUtils::WriteStrToFile(TEST_SMALL_FILE, content);
 
-    FileParser parser(TEST_SMALL_FILE, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_SMALL_FILE, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, false);
 
@@ -464,7 +464,7 @@ HWTEST_F(FileParserTest, GetUniqueId_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     int32_t uniqueId = parser.GetUniqueId();
     EXPECT_GE(uniqueId, 0);
 
@@ -477,7 +477,7 @@ HWTEST_F(FileParserTest, GetUniqueId_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     int32_t uniqueId = parser.GetUniqueId();
     EXPECT_GE(uniqueId, 0);
 
@@ -490,7 +490,7 @@ HWTEST_F(FileParserTest, PrintInfo_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     std::string result = parser.PrintInfo(fileInfo);
     EXPECT_FALSE(result.empty());
@@ -501,104 +501,104 @@ HWTEST_F(FileParserTest, PrintInfo_Test_001, TestSize.Level1)
 
 HWTEST_F(FileParserTest, IsNotifyInfoValid_Test_001, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     bool result = parser.IsNotifyInfoValid();
     EXPECT_EQ(result, true);
 }
 
 HWTEST_F(FileParserTest, IsNotifyInfoValid_Test_002, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     bool result = parser.IsNotifyInfoValid();
     EXPECT_EQ(result, false);
 }
 
 HWTEST_F(FileParserTest, IsNotifyInfoValid_Test_003, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::MOD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     bool result = parser.IsNotifyInfoValid();
     EXPECT_EQ(result, true);
 }
 
 HWTEST_F(FileParserTest, IsNotifyInfoValid_Test_004, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::MOD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     bool result = parser.IsNotifyInfoValid();
     EXPECT_EQ(result, false);
 }
 
 HWTEST_F(FileParserTest, IsNotifyInfoValid_Test_005, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = static_cast<FileNotifyOperationType>(99);
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     bool result = parser.IsNotifyInfoValid();
     EXPECT_EQ(result, true);
 }
 
 HWTEST_F(FileParserTest, GetFileUpdateType_Test_001, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = static_cast<FileNotifyOperationType>(99);
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     FileUpdateType updateType = parser.GetFileUpdateType();
     EXPECT_EQ(updateType, FileUpdateType::INSERT);
 }
 
 HWTEST_F(FileParserTest, GetFileUpdateType_Test_002, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     FileUpdateType updateType = parser.GetFileUpdateType();
     EXPECT_EQ(updateType, FileUpdateType::NO_CHANGE);
 }
 
 HWTEST_F(FileParserTest, GetFileUpdateType_Test_003, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::MOD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     FileUpdateType updateType = parser.GetFileUpdateType();
     EXPECT_EQ(updateType, FileUpdateType::NO_CHANGE);
 }
@@ -609,7 +609,7 @@ HWTEST_F(FileParserTest, GetFileInfo_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
     EXPECT_EQ(fileInfo.displayName, "test_image.jpg");
@@ -624,7 +624,7 @@ HWTEST_F(FileParserTest, ToString_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     std::string result = parser.ToString();
     EXPECT_FALSE(result.empty());
     EXPECT_NE(result.find("InnerFileInfo"), std::string::npos);
@@ -638,7 +638,7 @@ HWTEST_F(FileParserTest, SetFileId_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(100);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.fileId, 100);
@@ -652,7 +652,7 @@ HWTEST_F(FileParserTest, SetFileId_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(0);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.fileId, 0);
@@ -666,7 +666,7 @@ HWTEST_F(FileParserTest, SetFileId_Test_003, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(-1);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.fileId, -1);
@@ -680,7 +680,7 @@ HWTEST_F(FileParserTest, SetAlbumInfo_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetAlbumInfo(1, "com.test.bundle", "TestAlbum");
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.ownerAlbumId, 1);
@@ -696,7 +696,7 @@ HWTEST_F(FileParserTest, SetAlbumInfo_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetAlbumInfo(0, "", "");
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.ownerAlbumId, 0);
@@ -712,40 +712,12 @@ HWTEST_F(FileParserTest, SetAlbumInfo_Test_003, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetAlbumInfo(999, "com.example.test", "ExampleAlbum");
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.ownerAlbumId, 999);
     EXPECT_EQ(fileInfo.bundleName, "com.example.test");
     EXPECT_EQ(fileInfo.packageName, "ExampleAlbum");
-
-    MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
-}
-
-HWTEST_F(FileParserTest, SetCloudPath_Test_001, TestSize.Level1)
-{
-    MediaFileUtils::CreateFile(TEST_IMAGE_PATH);
-    std::string content(2048, 'a');
-    MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
-
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(100);
-    InnerFileInfo fileInfo = parser.GetFileInfo();
-    EXPECT_FALSE(fileInfo.cloudPath.empty());
-
-    MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
-}
-
-HWTEST_F(FileParserTest, SetCloudPath_Test_002, TestSize.Level1)
-{
-    MediaFileUtils::CreateFile(TEST_IMAGE_PATH);
-    std::string content(2048, 'a');
-    MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
-
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(0);
-    InnerFileInfo fileInfo = parser.GetFileInfo();
-    EXPECT_FALSE(fileInfo.cloudPath.empty());
 
     MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
 }
@@ -756,7 +728,7 @@ HWTEST_F(FileParserTest, SetByPhotosRowData_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     FileParser::PhotosRowData rowData;
     rowData.fileId = 100;
     rowData.ownerAlbumId = 1;
@@ -785,7 +757,7 @@ HWTEST_F(FileParserTest, SetByPhotosRowData_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     FileParser::PhotosRowData rowData;
     rowData.fileId = 0;
     rowData.ownerAlbumId = 0;
@@ -813,7 +785,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(1, "com.test", "TestAlbum");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -826,7 +798,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(0, "", "");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -839,7 +811,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_Test_003, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(1, "com.test", "TestAlbum");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -852,8 +824,8 @@ HWTEST_F(FileParserTest, GetAssetInsertValues_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(100);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
+    parser.SetCloudPath();
     NativeRdb::ValuesBucket values = parser.GetAssetInsertValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -866,7 +838,7 @@ HWTEST_F(FileParserTest, GetAssetUpdateValues_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.GetAssetUpdateValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -879,7 +851,7 @@ HWTEST_F(FileParserTest, GetAssetCommonValues_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.GetAssetCommonValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -892,9 +864,9 @@ HWTEST_F(FileParserTest, GetFileAssetUri_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(100);
-    parser.SetCloudPath(100);
+    parser.SetCloudPath();
     std::string uri = parser.GetFileAssetUri();
     EXPECT_FALSE(uri.empty());
 
@@ -904,35 +876,35 @@ HWTEST_F(FileParserTest, GetFileAssetUri_Test_001, TestSize.Level1)
 HWTEST_F(FileParserTest, GenerateThumbnail_Test_001, TestSize.Level1)
 {
     std::vector<std::string> inodes;
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::FULL, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::FULL, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Test_002, TestSize.Level1)
 {
     std::vector<std::string> inodes = {"12345", "67890"};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::FULL, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::FULL, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Test_003, TestSize.Level1)
 {
     std::vector<std::string> inodes;
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::INCREMENT, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::INCREMENT, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Test_004, TestSize.Level1)
 {
     std::vector<std::string> inodes = {"12345"};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::INCREMENT, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::INCREMENT, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Test_005, TestSize.Level1)
 {
     std::vector<std::string> inodes;
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::VALIDATION, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::VALIDATION, inodes);
     EXPECT_TRUE(result.empty());
 }
 
@@ -1016,7 +988,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Full_Scan_Mode, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::FULL);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::FULL);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
 
@@ -1029,7 +1001,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Validation_Scan_Mode, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::VALIDATION);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::VALIDATION);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
 
@@ -1042,13 +1014,13 @@ HWTEST_F(FileParserTest, Constructor_NotifyInfo_Full_Scan_Mode, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::FULL);
+    LakeFileParser parser(notifyInfo, ScanMode::FULL);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
 
@@ -1061,13 +1033,13 @@ HWTEST_F(FileParserTest, Constructor_NotifyInfo_Validation_Scan_Mode, TestSize.L
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::MOD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::VALIDATION);
+    LakeFileParser parser(notifyInfo, ScanMode::VALIDATION);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
 
@@ -1080,7 +1052,7 @@ HWTEST_F(FileParserTest, CheckBurst_Test_001, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_BURST_COVER, content);
 
-    FileParser parser(TEST_BURST_COVER, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_BURST_COVER, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.isBurst, IsBurstType::BURST_COVER_TYPE);
 
@@ -1093,7 +1065,7 @@ HWTEST_F(FileParserTest, CheckBurst_Test_002, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_BURST_MEMBER, content);
 
-    FileParser parser(TEST_BURST_MEMBER, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_BURST_MEMBER, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.isBurst, IsBurstType::BURST_MEMBER_TYPE);
 
@@ -1106,7 +1078,7 @@ HWTEST_F(FileParserTest, CheckBurst_Test_003, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.isBurst, IsBurstType::OTHER_TYPE);
 
@@ -1119,7 +1091,7 @@ HWTEST_F(FileParserTest, GetFileInfo_Video_File, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
 
     EXPECT_EQ(fileInfo.filePath, TEST_VIDEO_PATH);
@@ -1135,10 +1107,10 @@ HWTEST_F(FileParserTest, GetUniqueId_Increment_Check, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser1(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser1(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     int32_t id1 = parser1.GetUniqueId();
 
-    FileParser parser2(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser2(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     int32_t id2 = parser2.GetUniqueId();
 
     EXPECT_GE(id2, id1);
@@ -1148,13 +1120,13 @@ HWTEST_F(FileParserTest, GetUniqueId_Increment_Check, TestSize.Level1)
 
 HWTEST_F(FileParserTest, GetFileUpdateType_Invalid_NotifyInfo, TestSize.Level1)
 {
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = "";
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     FileUpdateType updateType = parser.GetFileUpdateType();
     EXPECT_EQ(updateType, FileUpdateType::NO_CHANGE);
 }
@@ -1165,7 +1137,7 @@ HWTEST_F(FileParserTest, SetByPhotosRowData_With_Zero_DateTaken, TestSize.Level1
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     FileParser::PhotosRowData rowData;
     rowData.fileId = 100;
     rowData.ownerAlbumId = 1;
@@ -1189,7 +1161,7 @@ HWTEST_F(FileParserTest, SetByPhotosRowData_With_Negative_DateTaken, TestSize.Le
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     FileParser::PhotosRowData rowData;
     rowData.fileId = 100;
     rowData.ownerAlbumId = 1;
@@ -1213,7 +1185,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_With_Large_AlbumId, TestSize.Leve
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(2147483647, "com.test", "TestAlbum");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1226,7 +1198,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_With_Negative_AlbumId, TestSize.L
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(-1, "com.test", "TestAlbum");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1263,14 +1235,14 @@ HWTEST_F(FileParserTest, GenerateThumbnail_With_Large_Inodes, TestSize.Level1)
     for (int i = 0; i < 50; i++) {
         inodes.push_back(std::to_string(i));
     }
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::INCREMENT, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::INCREMENT, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_With_Empty_String_Inodes, TestSize.Level1)
 {
     std::vector<std::string> inodes = {""};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::INCREMENT, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::INCREMENT, inodes);
     EXPECT_TRUE(result.empty());
 }
 
@@ -1319,9 +1291,9 @@ HWTEST_F(FileParserTest, GetFileAssetUri_With_Large_FileId, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(2147483647);
-    parser.SetCloudPath(100);
+    parser.SetCloudPath();
     std::string uri = parser.GetFileAssetUri();
     EXPECT_FALSE(uri.empty());
 
@@ -1334,39 +1306,11 @@ HWTEST_F(FileParserTest, GetFileAssetUri_With_Negative_FileId, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(-1);
-    parser.SetCloudPath(100);
+    parser.SetCloudPath();
     std::string uri = parser.GetFileAssetUri();
     EXPECT_FALSE(uri.empty());
-
-    MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
-}
-
-HWTEST_F(FileParserTest, SetCloudPath_With_Large_UniqueId, TestSize.Level1)
-{
-    MediaFileUtils::CreateFile(TEST_IMAGE_PATH);
-    std::string content(2048, 'a');
-    MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
-
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(2147483647);
-    InnerFileInfo fileInfo = parser.GetFileInfo();
-    EXPECT_FALSE(fileInfo.cloudPath.empty());
-
-    MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
-}
-
-HWTEST_F(FileParserTest, SetCloudPath_With_Negative_UniqueId, TestSize.Level1)
-{
-    MediaFileUtils::CreateFile(TEST_IMAGE_PATH);
-    std::string content(2048, 'a');
-    MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
-
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(-1);
-    InnerFileInfo fileInfo = parser.GetFileInfo();
-    EXPECT_FALSE(fileInfo.cloudPath.empty());
 
     MediaFileUtils::DeleteFile(TEST_IMAGE_PATH);
 }
@@ -1377,7 +1321,7 @@ HWTEST_F(FileParserTest, SetCheckSizeValid_Boundary_Test, TestSize.Level1)
     std::string content(1024, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckSizeValid();
     EXPECT_EQ(result, false);
 
@@ -1390,7 +1334,7 @@ HWTEST_F(FileParserTest, SetCheckSizeValid_Just_Above_Boundary_Test, TestSize.Le
     std::string content(1025, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckSizeValid();
     EXPECT_EQ(result, true);
 
@@ -1403,7 +1347,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_All_Conditions_True_Test, TestSize.Lev
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, true);
 
@@ -1416,7 +1360,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Hidden_File_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_HIDDEN_PATH, content);
 
-    FileParser parser(TEST_HIDDEN_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_HIDDEN_PATH, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, false);
 
@@ -1429,7 +1373,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Small_File_Test, TestSize.Level1)
     std::string content(512, 'a');
     MediaFileUtils::WriteStrToFile(TEST_SMALL_FILE, content);
 
-    FileParser parser(TEST_SMALL_FILE, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_SMALL_FILE, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, false);
 
@@ -1443,7 +1387,7 @@ HWTEST_F(FileParserTest, IsFileValidAsset_Unsupported_Type_Test, TestSize.Level1
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(testPath, content);
 
-    FileParser parser(testPath, LakeScanMode::INCREMENT);
+    LakeFileParser parser(testPath, ScanMode::INCREMENT);
     bool result = parser.IsFileValidAsset();
     EXPECT_EQ(result, false);
 
@@ -1456,7 +1400,7 @@ HWTEST_F(FileParserTest, CheckIsNotHidden_Dot_Prefix_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_HIDDEN_PATH, content);
 
-    FileParser parser(TEST_HIDDEN_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_HIDDEN_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckIsNotHidden();
     EXPECT_EQ(result, false);
 
@@ -1469,7 +1413,7 @@ HWTEST_F(FileParserTest, CheckIsNotHidden_Normal_File_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckIsNotHidden();
     EXPECT_EQ(result, true);
 
@@ -1482,7 +1426,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Image_Type_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, true);
 
@@ -1495,7 +1439,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Video_Type_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, true);
 
@@ -1509,7 +1453,7 @@ HWTEST_F(FileParserTest, CheckTypeValid_Unsupported_Type_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(testPath, content);
 
-    FileParser parser(testPath, LakeScanMode::INCREMENT);
+    LakeFileParser parser(testPath, ScanMode::INCREMENT);
     bool result = parser.CheckTypeValid();
     EXPECT_EQ(result, false);
 
@@ -1522,7 +1466,7 @@ HWTEST_F(FileParserTest, ToString_Verify_Output_Format_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     std::string result = parser.ToString();
 
     EXPECT_FALSE(result.empty());
@@ -1562,7 +1506,7 @@ HWTEST_F(FileParserTest, SetFileId_Verify_Assignment_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
 
     int32_t testId = 12345;
     parser.SetFileId(testId);
@@ -1588,7 +1532,7 @@ HWTEST_F(FileParserTest, SetAlbumInfo_Verify_All_Fields_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetAlbumInfo(1, "com.test.bundle", "TestAlbum");
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_EQ(fileInfo.ownerAlbumId, 1);
@@ -1610,12 +1554,12 @@ HWTEST_F(FileParserTest, SetCloudPath_Verify_Path_Generation_Test, TestSize.Leve
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(1);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
+    parser.SetCloudPath();
     InnerFileInfo fileInfo = parser.GetFileInfo();
     EXPECT_FALSE(fileInfo.cloudPath.empty());
 
-    parser.SetCloudPath(100);
+    parser.SetCloudPath();
     fileInfo = parser.GetFileInfo();
     EXPECT_FALSE(fileInfo.cloudPath.empty());
 
@@ -1628,7 +1572,7 @@ HWTEST_F(FileParserTest, SetByPhotosRowData_Verify_All_Fields_Test, TestSize.Lev
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     FileParser::PhotosRowData rowData;
     rowData.fileId = 100;
     rowData.ownerAlbumId = 1;
@@ -1658,8 +1602,8 @@ HWTEST_F(FileParserTest, GetAssetInsertValues_Verify_Bucket_Content_Test, TestSi
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
-    parser.SetCloudPath(100);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
+    parser.SetCloudPath();
     NativeRdb::ValuesBucket values = parser.GetAssetInsertValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1672,7 +1616,7 @@ HWTEST_F(FileParserTest, GetAssetUpdateValues_Verify_Bucket_Content_Test, TestSi
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.GetAssetUpdateValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1685,7 +1629,7 @@ HWTEST_F(FileParserTest, GetAssetCommonValues_Verify_Bucket_Content_Test, TestSi
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.GetAssetCommonValues();
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1698,7 +1642,7 @@ HWTEST_F(FileParserTest, TransFileInfoToBucket_Verify_Bucket_Content_Test, TestS
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     NativeRdb::ValuesBucket values = parser.TransFileInfoToBucket(1, "com.test", "TestAlbum");
     EXPECT_FALSE(values.IsEmpty());
 
@@ -1711,9 +1655,9 @@ HWTEST_F(FileParserTest, GetFileAssetUri_Verify_Uri_Format_Test, TestSize.Level1
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     parser.SetFileId(100);
-    parser.SetCloudPath(100);
+    parser.SetCloudPath();
     std::string uri = parser.GetFileAssetUri();
     EXPECT_FALSE(uri.empty());
     EXPECT_NE(uri.find("file://"), std::string::npos);
@@ -1724,21 +1668,21 @@ HWTEST_F(FileParserTest, GetFileAssetUri_Verify_Uri_Format_Test, TestSize.Level1
 HWTEST_F(FileParserTest, GenerateThumbnail_Verify_Full_Scan_Mode_Test, TestSize.Level1)
 {
     std::vector<std::string> inodes = {"12345", "67890"};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::FULL, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::FULL, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Verify_Increment_Scan_Mode_Test, TestSize.Level1)
 {
     std::vector<std::string> inodes = {"12345", "67890"};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::INCREMENT, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::INCREMENT, inodes);
     EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(FileParserTest, GenerateThumbnail_Verify_Validation_Scan_Mode_Test, TestSize.Level1)
 {
     std::vector<std::string> inodes = {"12345", "67890"};
-    std::vector<std::string> result = FileParser::GenerateThumbnail(LakeScanMode::VALIDATION, inodes);
+    std::vector<std::string> result = FileParser::GenerateThumbnail(ScanMode::VALIDATION, inodes);
     EXPECT_TRUE(result.empty());
 }
 
@@ -1782,7 +1726,7 @@ HWTEST_F(FileParserTest, Constructor_Path_Verify_File_Info_Test, TestSize.Level1
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
 
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
@@ -1799,13 +1743,13 @@ HWTEST_F(FileParserTest, Constructor_NotifyInfo_Verify_File_Info_Test, TestSize.
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    MediaLakeNotifyInfo notifyInfo;
+    MediaNotifyInfo notifyInfo;
     notifyInfo.objType = FileNotifyObjectType::FILE;
     notifyInfo.optType = FileNotifyOperationType::ADD;
     notifyInfo.beforePath = "";
     notifyInfo.afterPath = TEST_IMAGE_PATH;
 
-    FileParser parser(notifyInfo, LakeScanMode::INCREMENT);
+    LakeFileParser parser(notifyInfo, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
 
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
@@ -1820,7 +1764,7 @@ HWTEST_F(FileParserTest, GetFileInfo_Verify_Image_File_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_IMAGE_PATH, content);
 
-    FileParser parser(TEST_IMAGE_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_IMAGE_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
 
     EXPECT_EQ(fileInfo.filePath, TEST_IMAGE_PATH);
@@ -1836,7 +1780,7 @@ HWTEST_F(FileParserTest, GetFileInfo_Verify_Video_File_Test, TestSize.Level1)
     std::string content(2048, 'a');
     MediaFileUtils::WriteStrToFile(TEST_VIDEO_PATH, content);
 
-    FileParser parser(TEST_VIDEO_PATH, LakeScanMode::INCREMENT);
+    LakeFileParser parser(TEST_VIDEO_PATH, ScanMode::INCREMENT);
     InnerFileInfo fileInfo = parser.GetFileInfo();
 
     EXPECT_EQ(fileInfo.filePath, TEST_VIDEO_PATH);

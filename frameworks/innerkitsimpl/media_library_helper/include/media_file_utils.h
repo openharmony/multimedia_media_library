@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -109,17 +110,20 @@ public:
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
+    EXPORT static int32_t SegmentedCopyFileUtile(const std::string &filePath, const std::string &newPath,
+        std::function<void(uint64_t)> progressCallback, const std::string &requestId);
     EXPORT static bool CopyFileSafe(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
     EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
     EXPORT static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
-    EXPORT static int32_t CheckAlbumNameCharacter(const std::string &albumName);
-    EXPORT static int32_t CheckAlbumName(const std::string &albumName);
+    EXPORT static int32_t CheckAlbumNameCharacter(const std::string &albumName, const std::string &regexRule);
+    EXPORT static int32_t CheckAlbumName(const std::string &albumName, bool useDotCompatibleRule = false);
     EXPORT static int32_t CheckHighlightSubtitle(const std::string &highlightSubtitle);
     EXPORT static int32_t CheckDentryName(const std::string &dentryName);
-    EXPORT static int32_t CheckDisplayName(const std::string &displayName, const bool compatibleCheckTitle = false);
+    EXPORT static int32_t CheckDisplayName(const std::string &displayName, const bool compatibleCheckTitle = false,
+        const bool useDotCompatibleRule = false);
     EXPORT static int32_t CheckTitle(const std::string& title);
     EXPORT static int32_t CheckTitleCompatible(const std::string& title);
     EXPORT static int32_t CheckFileDisplayName(const std::string &displayName);
@@ -238,11 +242,15 @@ public:
     EXPORT static void GetAllFileNameListUnderPath(const std::filesystem::path &path,
         std::vector<std::string> &fileNames);
     EXPORT static std::string GenerateUUID();
+    static int32_t CloneToAlbumCancel(const std::string &requestId);
+    static bool CheckCancelCopy(const std::string &requestId);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
     static int32_t CheckStringSize(const std::string &str, const size_t max);
+    static std::mutex cancelMutex_;
+    static std::unordered_set<std::string> requestIdSet_;
 };
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP

@@ -34,6 +34,7 @@
 #include "album_accurate_refresh.h"
 #include "asset_accurate_refresh.h"
 #include "dfx_transcode.h"
+#include "clone_to_album_service.h"
 
 namespace OHOS {
 namespace Media {
@@ -51,6 +52,14 @@ struct ExecuteObject {
     std::shared_ptr<TransactionOperations> trans = nullptr;
     std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr;
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr;
+};
+
+struct TargetAssetInfo {
+    int64_t newAssetId = -1;
+    std::string displayName = "";
+    std::string targetRealPath = "";
+    std::function<void(uint64_t)> progressCallback = nullptr;
+    std::string requestId = "";
 };
 
 public:
@@ -95,6 +104,9 @@ public:
     static bool ScreenOnInterrupt();
     static void MigratePhotoMapData(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     static void BuildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType);
+    EXPORT static int32_t CloneProgressAsset(const CloneAssetInfo &cloneAssetInfo, const int32_t targetAlbumId,
+        std::string &newAssetIds, std::function<void(uint64_t)> progressCallback);
+    EXPORT static int32_t CheckBatchAssets(const std::vector<string> &assetIds);
 
 private:
     EXPORT static void SetRefreshAlbum(bool needRefresh);

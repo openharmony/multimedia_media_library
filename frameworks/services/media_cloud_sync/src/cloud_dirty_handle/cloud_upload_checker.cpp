@@ -35,7 +35,9 @@
 #include "medialibrary_photo_operations.h"
 #include "moving_photo_file_utils.h"
 #include "medialibrary_subscriber.h"
-#include "lake_const.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_const.h"
+#endif
 
 namespace OHOS {
 namespace Media {

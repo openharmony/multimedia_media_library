@@ -74,6 +74,26 @@ static bool CheckAsset(int32_t assetId)
     return count == 1;
 }
 
+static bool CheckAssetStorageInfo(int32_t assetId, const std::string &ownerAlbumId,
+    const std::string &storagePath, int32_t fileSourceType)
+{
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::PHOTO_STORAGE_PATH, PhotoColumn::PHOTO_FILE_SOURCE_TYPE };
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(PhotoColumn::MEDIA_ID, assetId);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query asset storage info failed, assetId:%{public}d", assetId);
+        return false;
+    }
+
+    string actualAlbumId = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    string actualStoragePath = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH);
+    int32_t actualFileSourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+    resultSet->Close();
+    return actualAlbumId == ownerAlbumId && actualStoragePath == storagePath && actualFileSourceType == fileSourceType;
+}
+
 static int32_t CreateAlbum(int32_t albumType, int32_t albumSubType, const std::string &albumName)
 {
     int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
@@ -84,6 +104,35 @@ static int32_t CreateAlbum(int32_t albumType, int32_t albumSubType, const std::s
         {PhotoAlbumColumns::ALBUM_DATE_MODIFIED, to_string(now)},
         {PhotoAlbumColumns::ALBUM_DATE_ADDED, to_string(now)},
         {PhotoAlbumColumns::ALBUM_LPATH, Quote("/Pictures/" + albumName)},
+        {PhotoAlbumColumns::CONTAINS_HIDDEN, "0"},
+        {PhotoAlbumColumns::ALBUM_IS_LOCAL, "1"},
+        {PhotoAlbumColumns::ALBUM_PRIORITY, "1"},
+    };
+
+    std::string values;
+    std::string columns;
+    for (const auto &item : items) {
+        if (!columns.empty()) {
+            columns.append(",");
+            values.append(",");
+        }
+        columns.append(item.first);
+        values.append(item.second);
+    }
+    std::string sql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" + columns + ") VALUES (" + values + ")";
+    return g_rdbStore->ExecuteSql(sql);
+}
+
+static int32_t CreateFileManagerSourceAlbum(const std::string &albumName, const std::string &albumLPath)
+{
+    int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::pair<std::string, std::string>> items = {
+        {PhotoAlbumColumns::ALBUM_NAME, Quote(albumName)},
+        {PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE)},
+        {PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER)},
+        {PhotoAlbumColumns::ALBUM_DATE_MODIFIED, to_string(now)},
+        {PhotoAlbumColumns::ALBUM_DATE_ADDED, to_string(now)},
+        {PhotoAlbumColumns::ALBUM_LPATH, Quote(albumLPath)},
         {PhotoAlbumColumns::CONTAINS_HIDDEN, "0"},
         {PhotoAlbumColumns::ALBUM_IS_LOCAL, "1"},
         {PhotoAlbumColumns::ALBUM_PRIORITY, "1"},
@@ -333,6 +382,35 @@ int32_t CreateAssetForAppWithAlbum(int32_t tokenId, int32_t albumId,
     return ServiceCreateAssetForApp(reqBody, call);
 }
 
+int32_t CreateFileManagerAsset(const std::string &displayName, int32_t albumId)
+{
+    CreateFileMgrAssetReqBody reqBody;
+    reqBody.displayName = displayName;
+    if (albumId != -1) {
+        reqBody.ownerAlbumId = to_string(albumId);
+    }
+
+    MessageParcel data;
+    if (!reqBody.Marshalling(data)) {
+        MEDIA_ERR_LOG("CreateFileMgrAssetReqBody marshalling failed");
+        return -1;
+    }
+
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->CreateFileManagerAsset(data, reply);
+
+    IPC::MediaRespVo<CreateAssetRespBody> respVo;
+    if (!respVo.Unmarshalling(reply)) {
+        MEDIA_ERR_LOG("CreateFileManagerAsset response unmarshalling failed");
+        return -1;
+    }
+    if (respVo.GetErrCode() != E_OK) {
+        return respVo.GetErrCode();
+    }
+    return respVo.GetBody().fileId;
+}
+
 HWTEST_F(CreateAssetTest, PublicCreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start PublicCreateAsset_Test_001");
@@ -479,6 +557,34 @@ HWTEST_F(CreateAssetTest, CreateAssetForAppWithAlbum_Test_002, TestSize.Level0)
     ASSERT_GT(fileId, 0);
     hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
+}
+
+HWTEST_F(CreateAssetTest, CreateFileManagerAsset_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CreateFileManagerAsset_Test_001");
+    int32_t fileId = CreateFileManagerAsset("", 0);
+    ASSERT_LT(fileId, 0);
+
+    fileId = CreateFileManagerAsset("file_manager_asset.jpg", -1);
+    ASSERT_LT(fileId, 0);
+}
+
+HWTEST_F(CreateAssetTest, CreateFileManagerAsset_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CreateFileManagerAsset_Test_002");
+    const std::string albumName = "TestFileManagerSourceAlbum";
+    const std::string albumLPath = "/FromDocs/Download/TestFileManagerSourceAlbum";
+    if (CreateFileManagerSourceAlbum(albumName, albumLPath) == E_OK) {
+        int32_t albumId = GetAlbumId(albumName);
+        ASSERT_GT(albumId, 0);
+
+        int32_t fileId = CreateFileManagerAsset("controller_file_manager_asset.jpg", albumId);
+        ASSERT_GT(fileId, 0);
+        ASSERT_TRUE(CheckAsset(fileId));
+        EXPECT_TRUE(CheckAssetStorageInfo(fileId, to_string(albumId),
+            "/storage/media/local/files/Docs/Download/TestFileManagerSourceAlbum/controller_file_manager_asset.jpg",
+            static_cast<int32_t>(FileSourceType::FILE_MANAGER)));
+    }
 }
 
 }  // namespace OHOS::Media

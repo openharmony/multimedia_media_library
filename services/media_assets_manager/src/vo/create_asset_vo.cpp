@@ -108,4 +108,18 @@ bool CreateAssetForAppReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return parcel.WriteString(this->ownerAlbumId);
 }
+
+bool CreateFileMgrAssetReqBody::Unmarshalling(MessageParcel &parcel)
+{
+    bool status = parcel.ReadString(this->displayName);
+    CHECK_AND_RETURN_RET(status, status);
+    return parcel.ReadString(this->ownerAlbumId);
+}
+
+bool CreateFileMgrAssetReqBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = parcel.WriteString(this->displayName);
+    CHECK_AND_RETURN_RET(status, status);
+    return parcel.WriteString(this->ownerAlbumId);
+}
 } // namespace OHOS::Media

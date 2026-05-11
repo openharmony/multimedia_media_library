@@ -29,10 +29,19 @@
 #include "medialibrary_errno.h"
 #include "userfile_client.h"
 #include "dfx_utils.h"
+#include "moving_photo_file_utils.h"
 
 using namespace OHOS::Media;
 using UniqueFd = OHOS::UniqueFd;
 using Uri = OHOS::Uri;
+
+namespace {
+enum class MovingPhotoResourceType : int32_t {
+    DEFAULT = 0,
+    CLOUD_IMAGE_OR_LIVEPHOTO,
+    CLOUD_VIDEO_OR_LIVEPHOTO,
+};
+}
 
 std::shared_ptr<MovingPhoto> MovingPhotoFactory::CreateMovingPhoto(const std::string& uri)
 {
@@ -113,61 +122,7 @@ MediaLibrary_ErrorCode MovingPhotoImpl::RequestContentWithBuffer(MediaLibrary_Re
     return MEDIA_LIBRARY_OK;
 }
 
-int32_t MovingPhotoImpl::RequestContentToSandbox()
-{
-    std::string movingPhotoUri = imageUri_;
-    if (sourceMode_ == SourceMode::ORIGINAL_MODE) {
-        MediaFileUtils::UriAppendKeyValue(movingPhotoUri, CONST_MEDIA_OPERN_KEYWORD, CONST_SOURCE_REQUEST);
-    }
-
-    if (destImageUri_ && strlen(destImageUri_) > 0) {
-        MEDIA_DEBUG_LOG("Sandbox image movingPhotoUri = %{public}s, destImageUri_ = %{public}s",
-            movingPhotoUri.c_str(), destImageUri_);
-        int32_t imageFd = OpenReadOnlyFile(movingPhotoUri, true);
-        CHECK_AND_RETURN_RET_LOG(HandleFd(imageFd), imageFd, "Open source image file failed");
-        std::string imageUri(destImageUri_);
-        int32_t ret = WriteToSandboxUri(imageFd, imageUri);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write image to sandbox failed");
-    }
-    if (destVideoUri_ && strlen(destVideoUri_) > 0) {
-        MEDIA_DEBUG_LOG("Sandbox video movingPhotoUri = %{public}s, destVideoUri_ = %{public}s",
-            movingPhotoUri.c_str(), destVideoUri_);
-        int32_t videoFd = OpenReadOnlyFile(movingPhotoUri, false);
-        CHECK_AND_RETURN_RET_LOG(HandleFd(videoFd), videoFd, "Open source video file failed");
-        std::string videoUri(destVideoUri_);
-        int32_t ret = WriteToSandboxUri(videoFd, videoUri);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write video to sandbox failed");
-    }
-    MEDIA_INFO_LOG("Request content to sandbox done");
-    return E_OK;
-}
-
-int32_t MovingPhotoImpl::WriteToSandboxUri(int32_t srcFd, std::string& sandboxUri)
-{
-    UniqueFd srcUniqueFd(srcFd);
-    OHOS::AppFileService::ModuleFileUri::FileUri fileUri(sandboxUri);
-    std::string destPath = fileUri.GetRealPath();
-    MEDIA_INFO_LOG("Dest real path = %{public}s", destPath.c_str());
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
-        MEDIA_ERR_LOG("Create empty dest file in sandbox failed, path:%{public}s", destPath.c_str());
-        return E_HAS_FS_ERROR;
-    }
-
-    int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
-    if (destFd < 0) {
-        MEDIA_ERR_LOG("Open dest file failed, error: %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
-    UniqueFd destUniqueFd(destFd);
-
-    if (ftruncate(destUniqueFd.Get(), 0) == -1) {
-        MEDIA_ERR_LOG("Truncate old file in sandbox failed, error:%{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
-    return CopyFileFromMediaLibrary(srcUniqueFd.Get(), destUniqueFd.Get());
-}
-
-int32_t MovingPhotoImpl::CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
+static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
 {
     constexpr size_t bufferSize = 4096;
     char buffer[bufferSize];
@@ -187,6 +142,73 @@ int32_t MovingPhotoImpl::CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
         return E_HAS_FS_ERROR;
     }
     MEDIA_INFO_LOG("Copy file from media library done");
+    return E_OK;
+}
+
+static int32_t WriteToSandboxUri(int32_t srcFd, std::string& sandboxUri,
+    MovingPhotoResourceType type)
+{
+    UniqueFd srcUniqueFd(srcFd);
+    OHOS::AppFileService::ModuleFileUri::FileUri fileUri(sandboxUri);
+    std::string destPath = fileUri.GetRealPath();
+    MEDIA_INFO_LOG("Dest real path = %{public}s", destPath.c_str());
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
+        MEDIA_ERR_LOG("Create empty dest file in sandbox failed, path:%{public}s", destPath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+
+    if (type == MovingPhotoResourceType::CLOUD_IMAGE_OR_LIVEPHOTO) {
+        return MovingPhotoFileUtils::ConvertToMovingPhoto(srcUniqueFd.Get(), destPath, "", "");
+    } else if (type == MovingPhotoResourceType::CLOUD_VIDEO_OR_LIVEPHOTO) {
+        return MovingPhotoFileUtils::ConvertToMovingPhoto(srcUniqueFd.Get(), "", destPath, "");
+    }
+
+    int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
+    if (destFd < 0) {
+        MEDIA_ERR_LOG("Open dest file failed, error: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+    UniqueFd destUniqueFd(destFd);
+
+    if (ftruncate(destUniqueFd.Get(), 0) == -1) {
+        MEDIA_ERR_LOG("Truncate old file in sandbox failed, error:%{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+    return CopyFileFromMediaLibrary(srcUniqueFd.Get(), destUniqueFd.Get());
+}
+
+int32_t MovingPhotoImpl::RequestContentToSandbox()
+{
+    std::string movingPhotoUri = imageUri_;
+    if (sourceMode_ == SourceMode::ORIGINAL_MODE) {
+        MediaFileUtils::UriAppendKeyValue(movingPhotoUri, CONST_MEDIA_OPERN_KEYWORD, CONST_SOURCE_REQUEST);
+    }
+
+    if (destImageUri_ && strlen(destImageUri_) > 0) {
+        MEDIA_DEBUG_LOG("Sandbox image movingPhotoUri = %{public}s, destImageUri_ = %{public}s",
+            movingPhotoUri.c_str(), destImageUri_);
+        int32_t imageFd = OpenReadOnlyFile(movingPhotoUri, true);
+        CHECK_AND_RETURN_RET_LOG(HandleFd(imageFd), imageFd, "Open source image file failed");
+        MovingPhotoResourceType resourceType = MovingPhotoFileUtils::IsLivePhoto(imageFd)
+            ? MovingPhotoResourceType::CLOUD_IMAGE_OR_LIVEPHOTO
+            : MovingPhotoResourceType::DEFAULT;
+        std::string imageUri(destImageUri_);
+        int32_t ret = WriteToSandboxUri(imageFd, imageUri, resourceType);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write image to sandbox failed");
+    }
+    if (destVideoUri_ && strlen(destVideoUri_) > 0) {
+        MEDIA_DEBUG_LOG("Sandbox video movingPhotoUri = %{public}s, destVideoUri_ = %{public}s",
+            movingPhotoUri.c_str(), destVideoUri_);
+        int32_t videoFd = OpenReadOnlyFile(movingPhotoUri, false);
+        CHECK_AND_RETURN_RET_LOG(HandleFd(videoFd), videoFd, "Open source video file failed");
+        MovingPhotoResourceType resourceType = MovingPhotoFileUtils::IsLivePhoto(videoFd)
+            ? MovingPhotoResourceType::CLOUD_VIDEO_OR_LIVEPHOTO
+            : MovingPhotoResourceType::DEFAULT;
+        std::string videoUri(destVideoUri_);
+        int32_t ret = WriteToSandboxUri(videoFd, videoUri, resourceType);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Write video to sandbox failed");
+    }
+    MEDIA_INFO_LOG("Request content to sandbox done");
     return E_OK;
 }
 
@@ -289,47 +311,103 @@ int32_t MovingPhotoImpl::AcquireFdForArrayBuffer()
     }
 }
 
+static int32_t ProcessLivePhotoArrayBuffer(int32_t fd, int32_t resourceType,
+    void*& arrayBufferData, size_t& arrayBufferLength)
+{
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(
+        fd, imageSize, videoSize, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_HAS_FS_ERROR, "Failed to get moving photo detailed size");
+
+    size_t fileSize = 0;
+    off_t readOffset = 0;
+    switch (resourceType) {
+        case MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE:
+            fileSize = static_cast<size_t>(imageSize);
+            readOffset = 0;
+            break;
+        case MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE:
+            fileSize = static_cast<size_t>(videoSize);
+            readOffset = imageSize;
+            break;
+        default:
+            MEDIA_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(resourceType));
+            return E_HAS_FS_ERROR;
+    }
+
+    off_t ret = lseek(fd, readOffset, SEEK_SET);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to seek to offset %{public}lld, error: %{public}d",
+            static_cast<long long>(readOffset), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    arrayBufferData = malloc(fileSize);
+    if (!arrayBufferData) {
+        MEDIA_ERR_LOG("Failed to malloc array buffer, resource type is %{public}d",
+            static_cast<int32_t>(resourceType));
+        return E_HAS_FS_ERROR;
+    }
+    size_t readBytes = static_cast<size_t>(read(fd, arrayBufferData, fileSize));
+    if (readBytes != fileSize) {
+        MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu,"
+            " error: %{public}d", readBytes, fileSize, errno);
+        free(arrayBufferData);
+        arrayBufferData = nullptr;
+        return E_HAS_FS_ERROR;
+    }
+    arrayBufferLength = fileSize;
+    return E_OK;
+}
+
 int32_t MovingPhotoImpl::RequestContentToArrayBuffer()
 {
     int32_t fd = AcquireFdForArrayBuffer();
     CHECK_AND_RETURN_RET_LOG(fd >= 0, fd, "Acquire fd for arraybuffer failed");
 
     UniqueFd uniqueFd(fd);
-    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
-    if (fileLen < 0) {
-        MEDIA_ERR_LOG("Failed to get file length, error: %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
 
-    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
+    if (MovingPhotoFileUtils::IsLivePhoto(uniqueFd.Get())) {
+        return ProcessLivePhotoArrayBuffer(uniqueFd.Get(), resourceType_,
+            arrayBufferData_, arrayBufferLength_);
+    } else {
+        off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+        if (fileLen < 0) {
+            MEDIA_ERR_LOG("Failed to get file length, error: %{public}d", errno);
+            return E_HAS_FS_ERROR;
+        }
 
-    if (static_cast<uint64_t>(fileLen) > static_cast<uint64_t>(SIZE_MAX)) {
-        MEDIA_ERR_LOG("File length is too large to fit in a size_t, length: %{public}zu",
-            static_cast<size_t>(fileLen));
-        return E_HAS_FS_ERROR;
-    }
+        off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
+            return E_HAS_FS_ERROR;
+        }
 
-    size_t fileSize = static_cast<size_t>(fileLen);
-    arrayBufferData_ = malloc(fileSize);
-    if (!arrayBufferData_) {
-        MEDIA_ERR_LOG("Failed to malloc array buffer, moving photo uri is %{public}s, resource type is %{public}d",
-            imageUri_.c_str(), static_cast<int32_t>(resourceType_));
-        return E_HAS_FS_ERROR;
-    }
-    memset_s(arrayBufferData_, fileSize, 0, fileSize);
+        if (static_cast<uint64_t>(fileLen) > static_cast<uint64_t>(SIZE_MAX)) {
+            MEDIA_ERR_LOG("File length is too large to fit in a size_t, length: %{public}zu",
+                static_cast<size_t>(fileLen));
+            return E_HAS_FS_ERROR;
+        }
 
-    ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData_, fileSize);
-    if (readBytes != fileSize) {
-        MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, error: %{public}d",
-            readBytes, fileSize, errno);
-        free(arrayBufferData_);
-        arrayBufferData_ = nullptr;
-        return E_HAS_FS_ERROR;
+        size_t fileSize = static_cast<size_t>(fileLen);
+        arrayBufferData_ = malloc(fileSize);
+        if (!arrayBufferData_) {
+            MEDIA_ERR_LOG("Failed to malloc array buffer, moving photo uri is %{public}s, resource type is %{public}d",
+                imageUri_.c_str(), static_cast<int32_t>(resourceType_));
+            return E_HAS_FS_ERROR;
+        }
+
+        size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), arrayBufferData_, fileSize));
+        if (readBytes != fileSize) {
+            MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu,"
+                " error: %{public}d", readBytes, fileSize, errno);
+            free(arrayBufferData_);
+            arrayBufferData_ = nullptr;
+            return E_HAS_FS_ERROR;
+        }
+        arrayBufferLength_ = fileSize;
     }
-    arrayBufferLength_ = fileSize;
     return E_OK;
 }

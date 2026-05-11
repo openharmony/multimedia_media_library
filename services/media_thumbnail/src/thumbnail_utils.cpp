@@ -43,8 +43,13 @@
 #include "dfx_manager.h"
 #include "image_format_convert.h"
 #include "highlight_column.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "media_audio_column.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -1294,8 +1299,17 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{public}s", DfxUtils::GetSafePath(path).c_str());
-
-    int32_t fd = LakeFileUtils::OpenFile(path, O_RDONLY);
+    int32_t fd = -1;
+    string absFilePath;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    absFilePath = path;
+    fd = MediaFileAccessUtils::OpenAssetFile(absFilePath, MEDIA_FILEMODE_READONLY);
+#else
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(path, absFilePath),
+        E_ERR, "Failed to open a nullptr path, errno=%{public}d, path:%{public}s",
+        errno, DfxUtils::GetSafePath(path).c_str());
+    fd = open(absFilePath.c_str(), O_RDONLY);
+#endif
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
             errno, DfxUtils::GetSafePath(path).c_str(), MediaFileUtils::IsFileExists(path));

@@ -30,6 +30,7 @@
 
 #include "acl.h"
 #include "albums_refresh_manager.h"
+#include "album_scan_info_column.h"
 #include "asset_compress_version_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_file_processor.h"
@@ -72,6 +73,7 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_meta_recovery.h"
 #include "medialibrary_object_utils.h"
@@ -126,13 +128,20 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_upgrade_utils.h"
 #include "media_library_upgrade_manager.h"
+#include "media_library_upgrade_macros.h"
 #include "settings_data_manager.h"
 #include "media_image_framework_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "dfx_anco_manager.h"
 #include "global_scanner.h"
+#include "file_scan_utils.h"
+#endif
 #include "media_upgrade.h"
 #include <functional>
 #include "lcd_aging_manager.h"
-#include "media_library_upgrade_macros.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -960,6 +969,17 @@ static int32_t UpdatePhotoAlbumHidden(RdbStore& store)
     return ret;
 }
 REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_PHOTO_ALBUM_HIDDEN, "Album", UpdatePhotoAlbumHidden);
+
+static int32_t AddFileManagerRelatedIndex(RdbStore& store)
+{
+    MEDIA_INFO_LOG("Start AddFileManagerRelatedIndex");
+    int32_t ret = store.ExecuteSql(AlbumScanInfoColumn::CREATE_INDEX_ON_ALBUM_ID_STORAGE_PATH);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(VERSION_ADD_FILE_MANAGER_RELATED, 0, ret);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End AddFileManagerRelatedIndex");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_FILE_MANAGER_RELATED, "Album", AddFileManagerRelatedIndex);
 
 static void MultiStagesInitOperation()
 {
@@ -3468,7 +3488,12 @@ static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
     }
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK && MedialibrarySubscriber::IsCurrentStatusOn()) {
-        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        string filePath;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+        filePath = MediaFileAccessUtils::GetAssetRealPath(GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet));
+#else
+        filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+#endif
         g_updateHdrModeId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         SourceOptions opts;
         uint32_t err = E_OK;
@@ -3867,7 +3892,7 @@ void MediaLibraryDataManager::ScanLakeAsset()
         }
         closedir(dir);
         int64_t startLoadTime = MediaFileUtils::UTCTimeMilliSeconds();
-        GlobalScanner::GetInstance().Run(LAKE_SCAN_DIR.c_str());
+        GlobalScanner::GetInstance().RunLakeScan(LAKE_SCAN_DIR.c_str());
         int64_t endLoadTime = MediaFileUtils::UTCTimeMilliSeconds();
         AncoDfxManager::GetInstance().ReportFirstLoadInfo(startLoadTime, endLoadTime);
         this->SetIsLakeAssetScanned(true);
